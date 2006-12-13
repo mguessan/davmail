@@ -1,0 +1,50 @@
+<project name="DavMail" default="dist" basedir=".">
+
+    <path id="classpath">
+        <pathelement location="classes"/>
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="target"/>
+        <delete dir="dist"/>
+    </target>
+
+    <target name="init">
+        <mkdir dir="target/classes"/>
+    </target>
+
+    <target name="compile" depends="init">
+        <mkdir dir="target/classes"/>
+        <javac srcdir="src/java" destdir="target/classes" target="1.5">
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+        <copy todir="target/classes">
+            <fileset dir="src/java">
+                <include name="**/*"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="dist" depends="compile">
+        <delete dir="dist"/>
+        <mkdir dir="dist"/>
+        <jar basedir="target/classes" destfile="dist/davmail.jar"/>
+        <copy todir="dist/lib">
+            <fileset dir="lib">
+                <include name="**/*.jar"/>
+            </fileset>
+        </copy>
+        <copy todir="dist">
+            <fileset dir="src/jsmooth">
+                <include name="*.exe"/>
+            </fileset>
+        </copy>
+    </target>
+
+</project>
