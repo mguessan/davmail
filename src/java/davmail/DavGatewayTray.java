@@ -125,6 +125,7 @@ public class DavGatewayTray {
                 // create a popup menu
                 PopupMenu popup = new PopupMenu();
                 final SettingsFrame settingsFrame = new SettingsFrame();
+                settingsFrame.setIconImage(image);
                 // create an action settingsListener to listen for settings action executed on the tray icon
                 ActionListener settingsListener = new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
