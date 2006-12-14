@@ -2,11 +2,14 @@ package davmail;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
+import org.apache.log4j.lf5.LF5Appender;
+import org.apache.log4j.lf5.LogLevel;
+import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.net.URL;
 
 /**
@@ -104,12 +107,10 @@ public class DavGatewayTray {
         try {
             if (SystemTray.isSupported()) {
                 // set native look and feel
-                try
-                {
+                try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 }
-                catch(Exception e)
-                {
+                catch (Exception e) {
                     // ignore
                 }
 
@@ -124,7 +125,7 @@ public class DavGatewayTray {
                 // create a popup menu
                 PopupMenu popup = new PopupMenu();
                 final SettingsFrame settingsFrame = new SettingsFrame();
-                // create an action exitListener to listen for settings action executed on the tray icon
+                // create an action settingsListener to listen for settings action executed on the tray icon
                 ActionListener settingsListener = new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         settingsFrame.setVisible(true);
@@ -134,6 +135,25 @@ public class DavGatewayTray {
                 MenuItem defaultItem = new MenuItem("Settings...");
                 defaultItem.addActionListener(settingsListener);
                 popup.add(defaultItem);
+
+                MenuItem logItem = new MenuItem("Logs...");
+                logItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        Logger rootLogger = Logger.getRootLogger();
+                        LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
+                        if (lf5Appender == null) {
+                            lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                                protected void closeAfterConfirm() {
+                                    hide();
+                                }
+                            });
+                            lf5Appender.setName("LF5Appender");
+                            rootLogger.addAppender(lf5Appender);
+                        }
+                        lf5Appender.getLogBrokerMonitor().show();
+                    }
+                });
+                popup.add(logItem);
 
                 // create an action exitListener to listen for exit action executed on the tray icon
                 ActionListener exitListener = new ActionListener() {

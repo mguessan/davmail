@@ -1,67 +1,76 @@
 package davmail;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.*;
 
 /**
  * DavMail settings frame
  */
 public class SettingsFrame extends JFrame {
+    protected void addSettingComponent(JPanel panel, String label, Component component) {
+        JLabel fieldLabel = new JLabel(label);
+        fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        panel.add(fieldLabel);
+        panel.add(component);
+    }
+
     public SettingsFrame() {
         setTitle("DavMail Settings");
 
         JPanel panel = new JPanel(new GridLayout(3, 2));
         panel.setBorder(BorderFactory.createTitledBorder("Gateway settings"));
 
-        final TextField urlField = new TextField("", 20);
+        final JTextField urlField = new JTextField("", 15);
+        final JTextField popPortField = new JTextField(4);
+        final JTextField smtpPortField = new JTextField(4);
 
-        Label urlLabel = new Label("OWA url:");
-        urlLabel.setAlignment(Label.RIGHT);
-        panel.add(urlLabel);
-        panel.add(urlField);
-
-        final TextField popPortField = new TextField(4);
-        Label popPortLabel = new Label("Local POP port:");
-        popPortLabel.setAlignment(Label.RIGHT);
-        panel.add(popPortLabel);
-        panel.add(popPortField);
-
-        final TextField smtpPortField = new TextField(4);
-        Label smtpPortLabel = new Label("Local SMTP port:");
-        smtpPortLabel.setAlignment(Label.RIGHT);
-        panel.add(smtpPortLabel);
-        panel.add(smtpPortField);
+        addSettingComponent(panel, "OWA url: ", urlField);
+        addSettingComponent(panel, "Local POP port: ", popPortField);
+        addSettingComponent(panel, "Local SMTP port: ", smtpPortField);
 
         add("North", panel);
 
-        panel = new JPanel(new GridLayout(2, 2));
+        panel = new JPanel(new GridLayout(5, 2));
         panel.setBorder(BorderFactory.createTitledBorder("Proxy settings"));
 
-        final TextField httpProxyField = new TextField(System.getProperty("http.proxyHost"), 20);
+        final JCheckBox enableProxyField = new JCheckBox();
+        final JTextField httpProxyField = new JTextField(System.getProperty("http.proxyHost"), 15);
+        final JTextField httpProxyPortField = new JTextField(System.getProperty("http.proxyPort"), 4);
+        final JTextField httpProxyUserField = new JTextField(System.getProperty("http.proxyUser"), 4);
+        final JTextField httpProxyPasswordField = new JPasswordField (System.getProperty("http.proxyPassword"), 4);
 
-        Label httpProxyLabel = new Label("Proxy server:");
-        httpProxyLabel.setAlignment(Label.RIGHT);
-        panel.add(httpProxyLabel);
-        panel.add(httpProxyField);
+        boolean enableProxy = enableProxyField.isSelected();
+        httpProxyField.setEnabled(enableProxy);
+        httpProxyPortField.setEnabled(enableProxy);
+        httpProxyUserField.setEnabled(enableProxy);
+        httpProxyPasswordField.setEnabled(enableProxy);
 
-        final TextField httpProxyPortField = new TextField(System.getProperty("http.proxyPort"), 4);
-        Label httpProxyPortLabel = new Label("Proxy port:");
-        httpProxyPortLabel.setAlignment(Label.RIGHT);
-        panel.add(httpProxyPortLabel);
-        panel.add(httpProxyPortField);
+        enableProxyField.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                boolean enableProxy = enableProxyField.isSelected();
+                httpProxyField.setEnabled(enableProxy);
+                httpProxyPortField.setEnabled(enableProxy);
+                httpProxyUserField.setEnabled(enableProxy);
+                httpProxyPasswordField.setEnabled(enableProxy);
+            }
+        });
 
-        // TODO : add proxy user and password
+        addSettingComponent(panel, "Enable proxy: ", enableProxyField);
+        addSettingComponent(panel, "Proxy server: ", httpProxyField);
+        addSettingComponent(panel, "Proxy port: ", httpProxyPortField);
+        addSettingComponent(panel, "Proxy user: ", httpProxyUserField);
+        addSettingComponent(panel, "Proxy password: ", httpProxyPasswordField);
 
         add("Center", panel);
 
         panel = new JPanel();
-        Button cancel = new Button("Cancel");
-        Button ok = new Button("Save");
+        JButton cancel = new JButton("Cancel");
+        JButton ok = new JButton("Save");
         ActionListener save = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                // TODO : sava options
+                // TODO : save options
                 setVisible(false);
             }
         };
