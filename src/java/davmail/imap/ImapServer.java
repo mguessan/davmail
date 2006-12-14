@@ -15,12 +15,12 @@ public class ImapServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      */
-    public ImapServer(String url, int port) {
-        super(url, (port == 0) ? ImapServer.DEFAULT_PORT : port);
+    public ImapServer(int port) {
+        super((port == 0) ? ImapServer.DEFAULT_PORT : port);
     }
 
-    public void createConnectionHandler(String url, Socket clientSocket) {
-        new ImapConnection(url, clientSocket);
+    public void createConnectionHandler(Socket clientSocket) {
+        new ImapConnection(clientSocket);
     }
 
 }

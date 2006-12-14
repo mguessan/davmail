@@ -9,20 +9,18 @@ import java.io.IOException;
  */
 public abstract class AbstractServer extends Thread {
     protected int port;
-    protected String url;
     protected ServerSocket serverSocket;
 
     /**
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      */
-    public AbstractServer(String url, int port) {
+    public AbstractServer(int port) {
         this.port = port;
-        this.url = url;
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
-            fail(e, "Exception creating server socket");
+            DavGatewayTray.error("Exception creating server socket", e);
         }
     }
 
@@ -46,7 +44,7 @@ public abstract class AbstractServer extends Thread {
                 DavGatewayTray.debug("Connection from " + clientSocket.getInetAddress() + " on port " + port);
                 // only accept localhost connections for security reasons
                 if (clientSocket.getInetAddress().toString().indexOf("127.0.0.1") > 0) {
-                    createConnectionHandler(url, clientSocket);
+                    createConnectionHandler(clientSocket);
                 } else {
                     clientSocket.close();
                     DavGatewayTray.warn("Connection from external client refused");
@@ -54,10 +52,18 @@ public abstract class AbstractServer extends Thread {
                 System.gc();
             }
         } catch (IOException e) {
-            fail(e, "Exception while listening for connections");
+            DavGatewayTray.warn("Exception while listening for connections", e);
         }
     }
 
-    public abstract void createConnectionHandler(String url, Socket clientSocket);
+    public abstract void createConnectionHandler(Socket clientSocket);
+
+    public void close() {
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            DavGatewayTray.warn("Exception closing server socket", e);
+        }
+    }
 }
 

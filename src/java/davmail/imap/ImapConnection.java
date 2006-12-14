@@ -18,8 +18,8 @@ public class ImapConnection extends AbstractConnection {
     protected static final int AUTHENTICATED = 1;
 
     // Initialize the streams and start the thread
-    public ImapConnection(String url, Socket clientSocket) {
-        super(url, clientSocket);
+    public ImapConnection(Socket clientSocket) {
+        super(clientSocket);
     }
 
     public void run() {
@@ -50,7 +50,7 @@ public class ImapConnection extends AbstractConnection {
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
-                            session = new ExchangeSession(url);
+                            session = new ExchangeSession();
                             try {
                                 session.login(userName, password);
                                 sendClient(commandId + " OK Authenticated");

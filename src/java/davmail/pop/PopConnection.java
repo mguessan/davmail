@@ -19,8 +19,8 @@ public class PopConnection extends AbstractConnection {
     private List<ExchangeSession.Message> messages;
 
     // Initialize the streams and start the thread
-    public PopConnection(String url, Socket clientSocket) {
-        super(url, clientSocket);
+    public PopConnection(Socket clientSocket) {
+        super(clientSocket);
     }
 
     public long getTotalMessagesLength() {
@@ -91,7 +91,7 @@ public class PopConnection extends AbstractConnection {
                         } else {
                             password = tokens.nextToken();
                             try {
-                                session = new ExchangeSession(url);
+                                session = new ExchangeSession();
                                 session.login(userName, password);
                                 messages = session.getAllMessages();
                                 sendOK("PASS");

@@ -15,12 +15,12 @@ public class PopServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      */
-    public PopServer(String url, int port) {
-        super(url, (port == 0) ? PopServer.DEFAULT_PORT : port);
+    public PopServer(int port) {
+        super((port == 0) ? PopServer.DEFAULT_PORT : port);
     }
 
-    public void createConnectionHandler(String url, Socket clientSocket) {
-        new PopConnection(url, clientSocket);
+    public void createConnectionHandler(Socket clientSocket) {
+        new PopConnection(clientSocket);
     }
 
 }

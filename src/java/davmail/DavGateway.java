@@ -1,6 +1,5 @@
 package davmail;
 
-import davmail.imap.ImapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 
@@ -8,45 +7,59 @@ import davmail.smtp.SmtpServer;
  * DavGateway main class
  */
 public class DavGateway {
-    protected static final String USAGE_MESSAGE = "Usage : java davmail.DavGateway url [smtplistenport] [pop3listenport] [imaplistenport]";
+    protected static SmtpServer smtpServer;
+    protected static PopServer popServer;
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
      */
     public static void main(String[] args) {
 
-        int smtpPort = SmtpServer.DEFAULT_PORT;
-        int popPort = PopServer.DEFAULT_PORT;
-        int imapPort = ImapServer.DEFAULT_PORT;
-        String url;
-
+        String configFilePath = System.getProperty("user.home") + "/.davmail.properties";
         if (args.length >= 1) {
-            url = args[0];
-            try {
-                if (args.length >= 2) {
-                    smtpPort = Integer.parseInt(args[1]);
-                }
-                if (args.length >= 3) {
-                    popPort = Integer.parseInt(args[2]);
-                }
-                if (args.length >= 4) {
-                    imapPort = Integer.parseInt(args[3]);
-                }
-                DavGatewayTray.init();
-                                
-                SmtpServer smtpServer = new SmtpServer(url, smtpPort);
-                PopServer popServer = new PopServer(url, popPort);
-                ImapServer imapServer = new ImapServer(url, imapPort);
-                smtpServer.start();
-                popServer.start();
-                imapServer.start();
-                DavGatewayTray.info("Listening on ports " + smtpPort + " "+popPort+" "+imapPort);
-            } catch (NumberFormatException e) {
-                System.out.println(DavGateway.USAGE_MESSAGE);
-            }
-        } else {
-            System.out.println(DavGateway.USAGE_MESSAGE);
+            configFilePath = args[0];
         }
+        Settings.setConfigFilePath(configFilePath);
+        Settings.load();
+        DavGatewayTray.init();
+
+        start();
+    }
+
+    public static void start() {
+        // first stop existing servers
+        if (smtpServer != null) {
+            smtpServer.close();
+            try {
+                smtpServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+        if (popServer != null) {
+            popServer.close();
+            try {
+                popServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+        int smtpPort = Settings.getIntProperty("davmail.smtpPort");
+        if (smtpPort == 0) {
+            smtpPort = SmtpServer.DEFAULT_PORT;
+        }
+        int popPort = Settings.getIntProperty("davmail.popPort");
+        if (popPort == 0) {
+            popPort = PopServer.DEFAULT_PORT;
+        }
+        smtpServer = new SmtpServer(smtpPort);
+        popServer = new PopServer(popPort);
+        smtpServer.start();
+        popServer.start();
+
+        DavGatewayTray.info("DavMail gateway listening on SMTP port " + smtpPort +
+                " and POP port " + popPort);
+
     }
 
 }

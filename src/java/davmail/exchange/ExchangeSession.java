@@ -23,6 +23,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import davmail.Settings;
+
 /**
  * Exchange session through Outlook Web Access (DAV)
  */
@@ -96,8 +98,6 @@ public class ExchangeSession {
      */
     public final SimpleDateFormat dateFormatter;
 
-    protected String url;
-
     /**
      * Various standard mail boxes Urls
      */
@@ -119,8 +119,7 @@ public class ExchangeSession {
      *
      * @param url Outlook Web Access URL
      */
-    public ExchangeSession(String url) {
-        this.url = url;
+    public ExchangeSession() {
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
         dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -130,7 +129,22 @@ public class ExchangeSession {
 
     public void login(String userName, String password) throws Exception {
         try {
-            // TODO : support different ports
+            String url = Settings.getProperty("davmail.url");
+            String enableProxy = Settings.getProperty("davmail.enableProxy");
+            String proxyHost = null;
+            String proxyPort = null;
+            String proxyUser = null;
+            String proxyPassword = null;
+
+            if ("true".equals(enableProxy)) {
+                proxyHost = Settings.getProperty("davmail.proxyHost");
+                proxyPort = Settings.getProperty("davmail.proxyPort");
+                proxyUser = Settings.getProperty("davmail.proxyUser");
+                proxyPassword = Settings.getProperty("davmail.proxyPassword");
+            }
+
+            // get proxy configuration from setttings properties
+
             URL urlObject = new URL(url);
             // webdavresource is unable to create the correct url type
             HttpURL httpURL;
@@ -148,12 +162,6 @@ public class ExchangeSession {
             // set httpclient timeout to 30 seconds
             //wdr.retrieveSessionInstance().setTimeout(30000);
 
-            // get proxy configuration from system properties
-            String proxyHost = System.getProperty("http.proxyHost");
-            String proxyPort = System.getProperty("http.proxyPort");
-            String proxyUser = System.getProperty("http.proxyUser");
-            String proxyPassword = System.getProperty("http.proxyPassword");
-
             // get the internal HttpClient instance
             HttpClient httpClient = wdr.retrieveSessionInstance();
 
@@ -166,9 +174,9 @@ public class ExchangeSession {
             httpClient.getState().setAuthenticationPreemptive(false);
 
             // configure proxy
-            if (proxyHost != null) {
+            if (proxyHost != null && proxyHost.length() > 0) {
                 httpClient.getHostConfiguration().setProxy(proxyHost, Integer.parseInt(proxyPort));
-                if (proxyUser != null) {
+                if (proxyUser != null && proxyUser.length() > 0) {
                     // detect ntlm authentication (windows domain name in user name)
                     int backslashindex = proxyUser.indexOf("\\");
                     if (backslashindex > 0) {

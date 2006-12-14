@@ -21,8 +21,8 @@ public class SmtpConnection extends AbstractConnection {
     protected static final int MAILDATA = 4;
 
     // Initialize the streams and start the thread
-    public SmtpConnection(String url, Socket clientSocket) {
-        super(url, clientSocket);
+    public SmtpConnection(Socket clientSocket) {
+        super(clientSocket);
     }
 
     public void run() {
@@ -58,7 +58,7 @@ public class SmtpConnection extends AbstractConnection {
                             String authType = tokens.nextToken();
                             if ("PLAIN".equals(authType) && tokens.hasMoreElements()) {
                                 decodeCredentials(tokens.nextToken());
-                                session = new ExchangeSession(url);
+                                session = new ExchangeSession();
                                 try {
                                     session.login(userName, password);
                                     sendClient("235 OK Authenticated");

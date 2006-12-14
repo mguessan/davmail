@@ -16,8 +16,6 @@ public class AbstractConnection extends Thread {
     protected Socket client;
     protected BufferedReader in;
     protected OutputStream os;
-    // exchange server url
-    protected String url;
     // user name and password initialized through connection
     protected String userName = null;
     protected String password = null;
@@ -27,8 +25,7 @@ public class AbstractConnection extends Thread {
     protected ExchangeSession session;
 
     // Initialize the streams and start the thread
-    public AbstractConnection(String url, Socket clientSocket) {
-        this.url = url;
+    public AbstractConnection(Socket clientSocket) {
         client = clientSocket;
         try {
             in = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -72,7 +69,11 @@ public class AbstractConnection extends Thread {
      */
     public String readClient() throws IOException {
         String line = in.readLine();
+        if (line != null && !line.startsWith("PASS")) {
         DavGatewayTray.debug("< "+line);
+        } else {
+            DavGatewayTray.debug("< PASS ********");
+        }
         DavGatewayTray.switchIcon();
         return line;
     }
