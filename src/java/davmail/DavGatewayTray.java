@@ -3,6 +3,7 @@ package davmail;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -60,7 +61,7 @@ public class DavGatewayTray {
                 if (messageType != null) {
                     trayIcon.displayMessage("DavMail gateway", message, messageType);
                 }
-                trayIcon.setToolTip("DavMail gateway \n"+message);
+                trayIcon.setToolTip("DavMail gateway \n" + message);
             }
             logger.log(priority, message);
         }
@@ -102,6 +103,16 @@ public class DavGatewayTray {
     public static void init() {
         try {
             if (SystemTray.isSupported()) {
+                // set native look and feel
+                try
+                {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                }
+                catch(Exception e)
+                {
+                    // ignore
+                }
+
                 // get the SystemTray instance
                 SystemTray tray = SystemTray.getSystemTray();
                 // load an image
@@ -110,24 +121,37 @@ public class DavGatewayTray {
                 image = Toolkit.getDefaultToolkit().getImage(imageUrl);
                 URL imageUrl2 = classloader.getResource("tray2.png");
                 image2 = Toolkit.getDefaultToolkit().getImage(imageUrl2);
-                // create a action listener to listen for default action executed on the tray icon
-                ActionListener listener = new ActionListener() {
+                // create a popup menu
+                PopupMenu popup = new PopupMenu();
+                final SettingsFrame settingsFrame = new SettingsFrame();
+                // create an action exitListener to listen for settings action executed on the tray icon
+                ActionListener settingsListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        settingsFrame.setVisible(true);
+                    }
+                };
+                // create menu item for the default action
+                MenuItem defaultItem = new MenuItem("Settings...");
+                defaultItem.addActionListener(settingsListener);
+                popup.add(defaultItem);
+
+                // create an action exitListener to listen for exit action executed on the tray icon
+                ActionListener exitListener = new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         SystemTray.getSystemTray().remove(trayIcon);
                         System.exit(0);
                     }
                 };
-                // create a popup menu
-                PopupMenu popup = new PopupMenu();
-                // create menu item for the default action
-                MenuItem defaultItem = new MenuItem("Exit");
-                defaultItem.addActionListener(listener);
-                popup.add(defaultItem);
+                // create menu item for the exit action
+                MenuItem exitItem = new MenuItem("Exit");
+                exitItem.addActionListener(exitListener);
+                popup.add(exitItem);
+
                 /// ... add other items
                 // construct a TrayIcon
                 trayIcon = new TrayIcon(image, "DavMail Gateway", popup);
                 // set the TrayIcon properties
-                trayIcon.addActionListener(listener);
+                trayIcon.addActionListener(settingsListener);
                 // ...
                 // add the tray image
                 try {
