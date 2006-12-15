@@ -19,6 +19,9 @@ public class Settings {
 
     public static synchronized void load() {
         try {
+            if (configFilePath == null) {
+                configFilePath = System.getProperty("user.home") + "/.davmail.properties";
+            }
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
                 settings.load(new FileReader(configFile));

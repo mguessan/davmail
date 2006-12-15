@@ -601,7 +601,8 @@ public class ExchangeSession {
                             boundary = "----_=_NextPart_001_" + uid;
                             String contentType = "multipart/mixed";
                             // use multipart/related with inline images
-                            if (htmlBody != null && htmlBody.indexOf("src=\"cid:") > 0) {
+                            if (htmlBody != null && (htmlBody.indexOf("src=\"cid:") > 0 ||
+                                    htmlBody.indexOf("src=\"1_multipart") > 0)) {
                                 contentType = "multipart/related";
                             }
                             line = CONTENT_TYPE_HEADER + contentType + ";\n\tboundary=\"" + boundary + "\"";
@@ -662,7 +663,14 @@ public class ExchangeSession {
                                             .append(htmlBody.substring(attachmentIdStartIndex + 4, attachmentIdEndIndex))
                                             .append(">");
                                 }
+                            } else if (htmlBody.indexOf("src=\"1_multipart/" + attachmentName) >= 0) {
+                                // detect html body without cid in image link
+                                result.append("\nContent-ID: <")
+                                        .append(attachmentName)
+                                        .append(">");
                             }
+
+
                             result.append("\nContent-Transfer-Encoding: ").append(attachmentContentEncoding)
                                     .append("\n\n");
                         }
@@ -763,7 +771,12 @@ public class ExchangeSession {
             try {
                 OutputStream quotedOs;
                 try {
-                    quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
+                    // try another base64Encoder implementation
+                    if ("base64".equalsIgnoreCase(mimeHeader.contentTransferEncoding)) {
+                        quotedOs = new BASE64EncoderStream(os);
+                    } else {
+                        quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
+                    }
                 } catch (MessagingException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -782,7 +795,7 @@ public class ExchangeSession {
                     attachedMessage.write(quotedOs);
                 } else {
 
-                    GetMethod method = new GetMethod(URIUtil.encodePathQuery(decodedPath));
+                    GetMethod method = new GetMethod(URIUtil.encodePath(decodedPath));
                     wdr.retrieveSessionInstance().executeMethod(method);
 
                     // encode attachment
@@ -942,8 +955,31 @@ public class ExchangeSession {
             } catch (Exception e) {
                 throw new RuntimeException("Exception retrieving " + attachmentUrl + " : " + e + " " + e.getCause());
             }
+            // fix content type for known extension
+            if ("application/octet-stream".equals(result) && attachmentUrl.endsWith(".pdf")) {
+                result = "application/pdf";
+            }
             return result;
 
+        }
+
+        protected XmlDocument tidyDocument(InputStream inputStream) {
+            Tidy tidy = new Tidy();
+            tidy.setXmlTags(false); //treat input not XML
+            tidy.setQuiet(true);
+            tidy.setShowWarnings(false);
+            tidy.setDocType("omit");
+
+            DOMBuilder builder = new DOMBuilder();
+            XmlDocument xmlDocument = new XmlDocument();
+            try {
+                xmlDocument.load(builder.build(tidy.parseDOM(inputStream, null)));
+            } catch (IOException ex1) {
+                logger.error("Exception parsing document", ex1);
+            } catch (JDOMException ex1) {
+                logger.error("Exception parsing document", ex1);
+            }
+            return xmlDocument;
         }
 
         public Map<String, String> getAttachmentsUrls(String messageUrl) throws IOException {
@@ -959,23 +995,7 @@ public class ExchangeSession {
                             + " " + getMethod.getStatusLine());
                 }
 
-                InputStream in = getMethod.getResponseBodyAsStream();
-
-                Tidy tidy = new Tidy();
-                tidy.setXmlTags(false); //treat input not XML
-                tidy.setQuiet(true);
-                tidy.setShowWarnings(false);
-                tidy.setDocType("omit");
-
-                DOMBuilder builder = new DOMBuilder();
-                XmlDocument xmlDocument = new XmlDocument();
-                try {
-                    xmlDocument.load(builder.build(tidy.parseDOM(in, null)));
-                } catch (IOException ex1) {
-                    ex1.printStackTrace();
-                } catch (JDOMException ex1) {
-                    ex1.printStackTrace();
-                }
+                XmlDocument xmlDocument = tidyDocument(getMethod.getResponseBodyAsStream());
                 // Release the connection.
                 getMethod.releaseConnection();
 
@@ -1018,24 +1038,35 @@ public class ExchangeSession {
                     }
                 }
 
+                // use htmlBody and owa generated body to look for inline images
+                ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody.getBytes("UTF-8"));
+                XmlDocument xmlBody = tidyDocument(bais);
+
                 // get inline images
-                List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
+                List<Attribute> imgList = xmlBody.getNodes("//img/@src");
+                imgList.addAll(xmlDocument.getNodes("//img/@src"));
                 for (Attribute element : imgList) {
                     String attachmentHref = element.getValue();
                     if (attachmentHref.startsWith("1_multipart")) {
-                        attachmentHref =  URIUtil.decode(attachmentHref);
+                        attachmentHref = URIUtil.decode(attachmentHref);
                         if (attachmentHref.endsWith("?Security=3")) {
                             attachmentHref = attachmentHref.substring(0, attachmentHref.indexOf('?'));
                         }
                         String attachmentName = attachmentHref.substring(attachmentHref.lastIndexOf('/') + 1);
+                        // handle strange cases
                         if (attachmentName.charAt(1) == '_') {
                             attachmentName = attachmentName.substring(2);
+                        }
+                        if (attachmentName.startsWith("%31_multipart%3F2_")) {
+                            attachmentName = attachmentName.substring(18);
                         }
                         // exclude inline external images
                         if (!attachmentHref.startsWith("http://") && !attachmentHref.startsWith("https://")) {
                             attachmentsMap.put(attachmentName, messageUrl + "/" + attachmentHref);
                             logger.debug("Inline image attachment " + attachmentIndex + " : " + attachmentName);
                             attachmentsMap.put(String.valueOf(attachmentIndex++), attachmentHref);
+                            // fix html body
+                            htmlBody = htmlBody.replaceFirst(attachmentHref, "cid:" + attachmentName);
                         }
                     }
                 }

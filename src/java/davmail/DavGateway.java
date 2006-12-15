@@ -15,11 +15,10 @@ public class DavGateway {
      */
     public static void main(String[] args) {
 
-        String configFilePath = System.getProperty("user.home") + "/.davmail.properties";
         if (args.length >= 1) {
-            configFilePath = args[0];
+            Settings.setConfigFilePath(args[0]);
         }
-        Settings.setConfigFilePath(configFilePath);
+
         Settings.load();
         DavGatewayTray.init();
 
