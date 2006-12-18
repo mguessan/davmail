@@ -535,7 +535,7 @@ public class ExchangeSession {
         public String subject;
         public String priority;
 
-        protected Map<String, String> attachmentsMap;
+        protected Map<String, Attachment> attachmentsMap;
 
         // attachment index used during write
         protected int attachmentIndex;
@@ -628,7 +628,7 @@ public class ExchangeSession {
 
                 // exchange message : create mime part headers
                 if (boundary != null) {
-                    attachmentsMap = getAttachmentsUrls(messageUrl);
+                    attachmentsMap = getAttachments(messageUrl);
                     // TODO : test actual header values
                     result.append("\n--").append(boundary)
                             .append("\nContent-Type: text/html")
@@ -642,7 +642,8 @@ public class ExchangeSession {
                             parsedAttachmentIndex = Integer.parseInt(attachmentName);
                         } catch (Exception e) {/* ignore */}
                         if (parsedAttachmentIndex == 0) {
-                            String attachmentContentType = getAttachmentContentType(attachmentsMap.get(attachmentName));
+                            Attachment attachment = attachmentsMap.get(attachmentName);
+                            String attachmentContentType = getAttachmentContentType(attachment.href);
                             String attachmentContentEncoding = "base64";
                             if (attachmentContentType.startsWith("text/")) {
                                 attachmentContentEncoding = "quoted-printable";
@@ -655,21 +656,11 @@ public class ExchangeSession {
                                     .append(attachmentContentType)
                                     .append(";")
                                     .append("\n\tname=\"").append(attachmentName).append("\"");
-                            int attachmentIdStartIndex = htmlBody.indexOf("cid:" + attachmentName);
-                            if (attachmentIdStartIndex > 0) {
-                                int attachmentIdEndIndex = htmlBody.indexOf('"', attachmentIdStartIndex);
-                                if (attachmentIdEndIndex > 0) {
-                                    result.append("\nContent-ID: <")
-                                            .append(htmlBody.substring(attachmentIdStartIndex + 4, attachmentIdEndIndex))
-                                            .append(">");
-                                }
-                            } else if (htmlBody.indexOf("src=\"1_multipart/" + attachmentName) >= 0) {
-                                // detect html body without cid in image link
+                            if (attachment.contentid != null) {
                                 result.append("\nContent-ID: <")
-                                        .append(attachmentName)
+                                        .append(attachment.contentid)
                                         .append(">");
                             }
-
 
                             result.append("\nContent-Transfer-Encoding: ").append(attachmentContentEncoding)
                                     .append("\n\n");
@@ -708,13 +699,13 @@ public class ExchangeSession {
             } else {
                 attachmentIndex = 0;
 
-                attachmentsMap = getAttachmentsUrls(messageUrl);
+                attachmentsMap = getAttachments(messageUrl);
                 writeMimeMessage(reader, os, mimeHeader, attachmentsMap);
             }
             os.flush();
         }
 
-        public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader, Map<String, String> attachmentsMap) throws IOException {
+        public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader, Map<String, Attachment> attachmentsMap) throws IOException {
             String line;
             // with alternative, there are two body forms (plain+html)
             if ("multipart/alternative".equals(mimeHeader.contentType)) {
@@ -743,10 +734,10 @@ public class ExchangeSession {
                         attachmentIndex++;
                         writeBody(os, partHeader);
                     } else {
-                        String attachmentUrl = attachmentsMap.get(partHeader.name);
+                        String attachmentUrl = attachmentsMap.get(partHeader.name).href;
                         // try to get attachment by index, only if no name found
                         if (attachmentUrl == null && partHeader.name == null) {
-                            attachmentUrl = attachmentsMap.get(String.valueOf(attachmentIndex));
+                            attachmentUrl = attachmentsMap.get(String.valueOf(attachmentIndex)).href;
                         }
                         if (attachmentUrl == null) {
                             // only warn, could happen depending on IIS config
@@ -982,7 +973,7 @@ public class ExchangeSession {
             return xmlDocument;
         }
 
-        public Map<String, String> getAttachmentsUrls(String messageUrl) throws IOException {
+        public Map<String, Attachment> getAttachments(String messageUrl) throws IOException {
             if (attachmentsMap != null) {
                 // do not load attachments twice
                 return attachmentsMap;
@@ -999,11 +990,13 @@ public class ExchangeSession {
                 // Release the connection.
                 getMethod.releaseConnection();
 
-                Map<String, String> attachmentsMap = new HashMap<String, String>();
+                Map<String, Attachment> attachmentsMap = new HashMap<String, Attachment>();
                 int attachmentIndex = 2;
+                // list file attachments identified explicitly
                 List<Attribute> list = xmlDocument.getNodes("//table[@id='idAttachmentWell']//a/@href");
                 for (Attribute element : list) {
                     String attachmentHref = element.getValue();
+                    // exclude empty links (owa buttons)
                     if (!"#".equals(attachmentHref)) {
                         final String ATTACH_QUERY = "?attach=1";
                         if (attachmentHref.endsWith(ATTACH_QUERY)) {
@@ -1011,6 +1004,7 @@ public class ExchangeSession {
                         }
                         // url is encoded
                         attachmentHref = URIUtil.decode(attachmentHref);
+                        // exclude external URLs
                         if (attachmentHref.startsWith(messageUrl)) {
                             String attachmentName = attachmentHref.substring(messageUrl.length() + 1);
                             int slashIndex = attachmentName.indexOf('/');
@@ -1026,27 +1020,39 @@ public class ExchangeSession {
                                     attachmentName = attachmentName.substring(underscoreIndex + 1);
                                 }
                             }
-                            // decode slashes
+                            // decode slashes in attachment name
                             attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
 
-                            attachmentsMap.put(attachmentName, attachmentHref);
+                            Attachment attachment = new Attachment();
+                            attachment.name = attachmentName;
+                            attachment.href = attachmentHref;
+
+                            attachmentsMap.put(attachmentName, attachment);
                             logger.debug("Attachment " + attachmentIndex + " : " + attachmentName);
-                            attachmentsMap.put(String.valueOf(attachmentIndex++), attachmentHref);
+                            // add a second count based map entry
+                            attachmentsMap.put(String.valueOf(attachmentIndex++), attachment);
                         } else {
                             logger.warn("Message URL : " + messageUrl + " is not a substring of attachment URL : " + attachmentHref);
                         }
                     }
                 }
 
-                // use htmlBody and owa generated body to look for inline images
+                // get inline images from htmlBody (without OWA transformation)
                 ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody.getBytes("UTF-8"));
                 XmlDocument xmlBody = tidyDocument(bais);
+                List<Attribute> htmlBodyImgList = xmlBody.getNodes("//img/@src");
 
-                // get inline images
-                List<Attribute> imgList = xmlBody.getNodes("//img/@src");
-                imgList.addAll(xmlDocument.getNodes("//img/@src"));
+                // use owa generated body to look for inline images
+                List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
+
+                // TODO : add body background, does not work in thunderbird
+                // htmlBodyImgList.addAll(xmlBody.getNodes("//body/@background"));
+                // imgList.addAll(xmlDocument.getNodes("//td/@background"));
+
+                int inlineImageCount = 0;
                 for (Attribute element : imgList) {
                     String attachmentHref = element.getValue();
+                    // filter external images
                     if (attachmentHref.startsWith("1_multipart")) {
                         attachmentHref = URIUtil.decode(attachmentHref);
                         if (attachmentHref.endsWith("?Security=3")) {
@@ -1060,13 +1066,32 @@ public class ExchangeSession {
                         if (attachmentName.startsWith("%31_multipart%3F2_")) {
                             attachmentName = attachmentName.substring(18);
                         }
+
+                        // decode slashes
+                        attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
                         // exclude inline external images
-                        if (!attachmentHref.startsWith("http://") && !attachmentHref.startsWith("https://")) {
-                            attachmentsMap.put(attachmentName, messageUrl + "/" + attachmentHref);
-                            logger.debug("Inline image attachment " + attachmentIndex + " : " + attachmentName);
-                            attachmentsMap.put(String.valueOf(attachmentIndex++), attachmentHref);
-                            // fix html body
-                            htmlBody = htmlBody.replaceFirst(attachmentHref, "cid:" + attachmentName);
+                        if (!attachmentName.startsWith("http://") && !attachmentName.startsWith("https://")) {
+                            Attachment attachment = new Attachment();
+                            attachment.name = attachmentName;
+                            attachment.href = messageUrl + "/" + attachmentHref;
+                            if (htmlBodyImgList.size() > inlineImageCount) {
+                                String contentid = htmlBodyImgList.get(inlineImageCount++).getValue();
+                                if (contentid.startsWith("cid:")) {
+                                    attachment.contentid = contentid.substring("cid:".length());
+                                } else if (!contentid.startsWith("http://") && !contentid.startsWith("https://")) {
+                                    attachment.contentid = contentid;
+                                    // must patch htmlBody for inline image without cid
+                                    htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:"+attachment.contentid);
+                                }
+                            } else {
+                                logger.warn("More images in OWA body !");
+                            }
+                            // add only inline images
+                            if (attachment.contentid != null) {
+                                attachmentsMap.put(attachmentName, attachment);
+                            }
+                            logger.debug("Inline image attachment ID:" + attachment.contentid
+                                    + " name: " + attachment.name + " href: " + attachment.href);
                         }
                     }
                 }
@@ -1076,6 +1101,21 @@ public class ExchangeSession {
             }
         }
 
+    }
+
+    class Attachment {
+        /**
+         * attachment file name
+         */
+        public String name = null;
+        /**
+         * Content ID
+         */
+        public String contentid = null;
+        /**
+         * Attachment URL
+         */
+        public String href = null;
     }
 
     class MimeHeader {
