@@ -72,7 +72,6 @@ public class ExchangeSession {
         messageRequestProperties.add("urn:schemas:calendar:meetingstatus");
         messageRequestProperties.add("urn:schemas:calendar:alldayevent");
         messageRequestProperties.add("urn:schemas:calendar:responserequested");
-        // TODO : full headers rebuild with cc
         messageRequestProperties.add("urn:schemas:mailheader:cc");
 
     }
@@ -237,7 +236,6 @@ public class ExchangeSession {
                 throw ex;
             }
 
-            // TODO : catch exception
             // get user mail URL from html body (multi frame)
             String body = method.getResponseBodyAsString();
             int beginIndex = body.indexOf(url);
@@ -385,6 +383,8 @@ public class ExchangeSession {
                 message.from = prop.getPropertyAsString();
             } else if ("to".equals(prop.getLocalName())) {
                 message.to = prop.getPropertyAsString();
+            } else if ("cc".equals(prop.getLocalName())) {
+                message.cc = prop.getPropertyAsString();
             } else if ("subject".equals(prop.getLocalName())) {
                 message.subject = prop.getPropertyAsString();
             } else if ("priority".equals(prop.getLocalName())) {
@@ -402,7 +402,7 @@ public class ExchangeSession {
 
     public Message getMessage(String messageUrl) throws IOException {
 
-        // // TODO switch according to Log4J log level
+        // TODO switch according to Log4J log level
 
         wdr.setDebug(4);
         wdr.propfindMethod(messageUrl, 0);
@@ -443,7 +443,6 @@ public class ExchangeSession {
     public void sendMessage(BufferedReader reader) throws IOException {
         String subject = "davmailtemp";
         String line = reader.readLine();
-        // TODO : use reader directly instead of buffer
         StringBuffer mailBuffer = new StringBuffer();
         while (!".".equals(line)) {
             mailBuffer.append(line);
@@ -526,6 +525,7 @@ public class ExchangeSession {
         public String contentClass;
         public boolean hasAttachment;
         public String to;
+        public String cc;
         public String date;
         public String messageId;
         public String received;
@@ -551,7 +551,6 @@ public class ExchangeSession {
 
         protected void preProcessHeaders() {
             // only handle exchange messages
-            // TODO : handle calendar messages
             if (!"urn:content-classes:message".equals(contentClass) &&
                     !"urn:content-classes:calendarmessage".equals(contentClass)
                     ) {
@@ -580,6 +579,9 @@ public class ExchangeSession {
                             "To: " + to + "\n";
                     if (priority != null) {
                         fullHeaders += "X-Priority: " + priority + "\n";
+                    }
+                    if (cc != null) {
+                        fullHeaders += "CC: " + cc + "\n";
                     }
                 } catch (ParseException e) {
                     throw new RuntimeException("Unable to rebuild header " + e.getMessage());
