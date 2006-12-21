@@ -14,6 +14,9 @@ import org.jdom.Attribute;
 import org.jdom.JDOMException;
 import org.jdom.input.DOMBuilder;
 import org.w3c.tidy.Tidy;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeUtility;
@@ -966,7 +969,19 @@ public class ExchangeSession {
             DOMBuilder builder = new DOMBuilder();
             XmlDocument xmlDocument = new XmlDocument();
             try {
-                xmlDocument.load(builder.build(tidy.parseDOM(inputStream, null)));
+                Document w3cDocument = tidy.parseDOM(inputStream, null);
+                // Fix broken Office xml document with empty namespace
+                NamedNodeMap namedNodeMap = w3cDocument.getDocumentElement().getAttributes();
+                for (int i = 0; i < namedNodeMap.getLength(); i++) {
+                    Node node = namedNodeMap.item(i);
+                    String nodeName = node.getNodeName();
+                    String nodeValue = node.getNodeValue();
+                    if (nodeName != null && nodeName.startsWith("xmlns")
+                            && (nodeValue == null || nodeValue.length() == 0)) {
+                        w3cDocument.getDocumentElement().removeAttribute(nodeName);
+                    }
+                }
+                xmlDocument.load(builder.build(w3cDocument));
             } catch (IOException ex1) {
                 logger.error("Exception parsing document", ex1);
             } catch (JDOMException ex1) {
@@ -1040,7 +1055,10 @@ public class ExchangeSession {
                 }
 
                 // get inline images from htmlBody (without OWA transformation)
-                ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody.getBytes("UTF-8"));
+                ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
+                        // quick fix remove default office namespace
+                        .replaceFirst("xmlns=\".*\"", "")
+                        .getBytes("UTF-8"));
                 XmlDocument xmlBody = tidyDocument(bais);
                 List<Attribute> htmlBodyImgList = xmlBody.getNodes("//img/@src");
 
@@ -1083,7 +1101,7 @@ public class ExchangeSession {
                                 } else if (!contentid.startsWith("http://") && !contentid.startsWith("https://")) {
                                     attachment.contentid = contentid;
                                     // must patch htmlBody for inline image without cid
-                                    htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:"+attachment.contentid);
+                                    htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:" + attachment.contentid);
                                 }
                             } else {
                                 logger.warn("More images in OWA body !");
