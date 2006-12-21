@@ -16,10 +16,9 @@ public class TestExchangeSession {
         try {
             session.login(argv[1], argv[2]);
 
-            ExchangeSession.Folder folder = session.selectFolder("tests");
-            session.selectFolder("tests");
+            ExchangeSession.Folder folder = session.selectFolder(argv[3]);
             String messageName;
-            messageName = URIUtil.decode(argv[3]);
+            messageName = URIUtil.decode(argv[4]);
 
             long startTime = System.currentTimeMillis();
             ExchangeSession.Message messageTest = session.getMessage(folder.folderUrl+"/"+messageName);
