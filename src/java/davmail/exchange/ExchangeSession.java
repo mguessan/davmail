@@ -352,8 +352,17 @@ public class ExchangeSession {
     }
 
     protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
+        return buildMessage(responseEntity, null);
+    }
+
+    protected Message buildMessage(ResponseEntity responseEntity, String webMessageUrl) throws URIException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
+        if (webMessageUrl != null) {
+            message.webMessageUrl = webMessageUrl;
+        } else {
+            message.webMessageUrl = message.messageUrl;
+        }
         Enumeration propertiesEnum = responseEntity.getProperties();
         while (propertiesEnum.hasMoreElements()) {
             Property prop = (Property) propertiesEnum.nextElement();
@@ -403,7 +412,12 @@ public class ExchangeSession {
         return message;
     }
 
+
     public Message getMessage(String messageUrl) throws IOException {
+        return getMessage(messageUrl, null);
+    }
+
+    public Message getMessage(String messageUrl, String webMessageUrl) throws IOException {
 
         // TODO switch according to Log4J log level
 
@@ -420,7 +434,7 @@ public class ExchangeSession {
         }
         ResponseEntity entity = (ResponseEntity) messageEnum.nextElement();
 
-        return buildMessage(entity);
+        return buildMessage(entity, webMessageUrl);
 
     }
 
@@ -482,6 +496,8 @@ public class ExchangeSession {
         folder.folderUrl = null;
         if ("INBOX".equals(folderName)) {
             folder.folderUrl = inboxUrl;
+        } else if ("TRASH".equals(folderName)) {
+            folder.folderUrl = deleteditemsUrl;
         } else {
             folder.folderUrl = mailPath + folderName;
         }
@@ -520,6 +536,10 @@ public class ExchangeSession {
         public static final String CONTENT_TYPE_HEADER = "Content-Type: ";
         public static final String CONTENT_TRANSFER_ENCODING_HEADER = "Content-Transfer-Encoding: ";
         public String messageUrl;
+        /**
+         * OWA generated page URL, maybe different from DAV url
+         */
+        public String webMessageUrl;
         public String uid;
         public int size;
         public String fullHeaders;
@@ -583,7 +603,7 @@ public class ExchangeSession {
                     if (priority != null) {
                         fullHeaders += "X-Priority: " + priority + "\n";
                     }
-                    if (cc != null) {
+                    if (cc != null && cc.length() > 0) {
                         fullHeaders += "CC: " + cc + "\n";
                     }
                 } catch (ParseException e) {
@@ -633,7 +653,7 @@ public class ExchangeSession {
 
                 // exchange message : create mime part headers
                 if (boundary != null) {
-                    attachmentsMap = getAttachments(messageUrl);
+                    attachmentsMap = getAttachments(webMessageUrl);
                     // TODO : test actual header values
                     result.append("\n--").append(boundary)
                             .append("\nContent-Type: text/html")
@@ -704,7 +724,7 @@ public class ExchangeSession {
             } else {
                 attachmentIndex = 0;
 
-                attachmentsMap = getAttachments(messageUrl);
+                attachmentsMap = getAttachments(webMessageUrl);
                 writeMimeMessage(reader, os, mimeHeader, attachmentsMap);
             }
             os.flush();
@@ -739,18 +759,18 @@ public class ExchangeSession {
                         attachmentIndex++;
                         writeBody(os, partHeader);
                     } else {
-                        String attachmentUrl = attachmentsMap.get(partHeader.name).href;
+                        Attachment attachment = attachmentsMap.get(partHeader.name);
                         // try to get attachment by index, only if no name found
-                        if (attachmentUrl == null && partHeader.name == null) {
-                            attachmentUrl = attachmentsMap.get(String.valueOf(attachmentIndex)).href;
+                        if (attachment == null && partHeader.name == null) {
+                            attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
                         }
-                        if (attachmentUrl == null) {
+                        if (attachment == null) {
                             // only warn, could happen depending on IIS config
                             //throw new IOException("Attachment " + partHeader.name + " not found in " + messageUrl);
                             logger.warn("Attachment " + partHeader.name + " not found in " + messageUrl);
                         } else {
                             attachmentIndex++;
-                            writeAttachment(os, partHeader, attachmentUrl);
+                            writeAttachment(os, partHeader, attachment);
                         }
                     }
                 }
@@ -763,7 +783,7 @@ public class ExchangeSession {
             }
         }
 
-        protected void writeAttachment(OutputStream os, MimeHeader mimeHeader, String attachmentUrl) throws IOException {
+        protected void writeAttachment(OutputStream os, MimeHeader mimeHeader, Attachment attachment) throws IOException {
             try {
                 OutputStream quotedOs;
                 try {
@@ -776,18 +796,26 @@ public class ExchangeSession {
                 } catch (MessagingException e) {
                     throw new IOException(e.getMessage());
                 }
-                String decodedPath = URIUtil.decode(attachmentUrl);
+                String decodedPath = URIUtil.decode(attachment.href);
 
                 if ("message/rfc822".equals(mimeHeader.contentType)) {
-                    // messages are not available at the attachment URL, but
-                    // directly under the main message
                     String messageAttachmentPath = decodedPath;
-                    int index = decodedPath.toLowerCase().lastIndexOf(".eml");
-                    if (index > 0) {
-                        messageAttachmentPath = decodedPath.substring(0, index + 4);
+
+                    // Get real attachment path from owa page content
+                    GetMethod method = new GetMethod(URIUtil.encodePath(decodedPath));
+                    wdr.retrieveSessionInstance().executeMethod(method);
+                    String body = method.getResponseBodyAsString();
+                    final String URL_DECLARATION = "var g_szURL\t= \"";
+                    int messageUrlBeginIndex = body.indexOf(URL_DECLARATION);
+                    if (messageUrlBeginIndex >= 0) {
+                        messageUrlBeginIndex = messageUrlBeginIndex + URL_DECLARATION.length();
+                        int messageUrlEndIndex = body.indexOf("/\"", messageUrlBeginIndex);
+                        if (messageUrlBeginIndex >= 0) {
+                            messageAttachmentPath = URIUtil.decode(body.substring(messageUrlBeginIndex, messageUrlEndIndex));
+                        }
                     }
 
-                    Message attachedMessage = getMessage(messageAttachmentPath);
+                    Message attachedMessage = getMessage(messageAttachmentPath, decodedPath);
                     attachedMessage.write(quotedOs);
                 } else {
 
@@ -1024,11 +1052,18 @@ public class ExchangeSession {
                         // exclude external URLs
                         if (attachmentHref.startsWith(messageUrl)) {
                             String attachmentName = attachmentHref.substring(messageUrl.length() + 1);
+                            // yet another case, attached messages ?
+                            final String ANOTHER_MULTIPART_STRING = "1_multipart/2_";
+                            int anotherMultipartIndex = attachmentName.indexOf(ANOTHER_MULTIPART_STRING);
+                            if (anotherMultipartIndex >= 0) {
+                                attachmentName = attachmentName.substring(anotherMultipartIndex + ANOTHER_MULTIPART_STRING.length());
+                            }
+
                             int slashIndex = attachmentName.indexOf('/');
                             if (slashIndex >= 0) {
                                 attachmentName = attachmentName.substring(0, slashIndex);
                             }
-                            // attachmentName is now right for Exchange message, need to handle external MIME messages
+                            // attachmentName is now right for Exchange messages, need to handle external MIME messages
                             final String MULTIPART_STRING = "1_multipart_xF8FF_";
                             if (attachmentName.startsWith(MULTIPART_STRING)) {
                                 attachmentName = attachmentName.substring(MULTIPART_STRING.length());
@@ -1146,14 +1181,20 @@ public class ExchangeSession {
         public String boundary = null;
         public String name = null;
 
+        protected void writeLine(OutputStream os, String line) throws IOException {
+            if (os != null) {
+                os.write(line.getBytes());
+                os.write('\r');
+                os.write('\n');
+            }
+        }
+
         public void processHeaders(BufferedReader reader, OutputStream os) throws IOException {
             String line;
             line = reader.readLine();
             while (line != null && line.length() > 0) {
 
-                os.write(line.getBytes());
-                os.write('\r');
-                os.write('\n');
+                writeLine(os, line);
 
                 String lineToCompare = line.toLowerCase();
 
@@ -1165,9 +1206,7 @@ public class ExchangeSession {
                         line = reader.readLine();
                         header.append(line);
 
-                        os.write(line.getBytes());
-                        os.write('\r');
-                        os.write('\n');
+                        writeLine(os, line);
                     }
                     // decode header with accented file name (URL encoded)
                     int encodedIndex = header.indexOf("*=");
@@ -1217,8 +1256,20 @@ public class ExchangeSession {
                 }
                 line = reader.readLine();
             }
-            os.write('\r');
-            os.write('\n');
+            writeLine(os, "");
+
+            // strip header content for attached messages
+            if ("message/rfc822".equals(contentType)) {
+                MimeHeader internalMimeHeader = new MimeHeader();
+                internalMimeHeader.processHeaders(reader, null);
+                if (internalMimeHeader.boundary != null) {
+                    String endBoundary = internalMimeHeader.boundary + "--";
+                    line = reader.readLine();
+                    while (line != null && !endBoundary.equals(line)) {
+                        line = reader.readLine();
+                    }
+                }
+            }
         }
     }
 }
