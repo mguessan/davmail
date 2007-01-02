@@ -746,12 +746,12 @@ public class ExchangeSession {
                         if (attachment == null && partHeader.name == null) {
                             attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
                         }
+                        attachmentIndex++;
                         if (attachment == null) {
                             // only warn, could happen depending on IIS config
                             //throw new IOException("Attachment " + partHeader.name + " not found in " + messageUrl);
                             logger.warn("Attachment " + partHeader.name + " not found in " + messageUrl);
                         } else {
-                            attachmentIndex++;
                             writeAttachment(os, partHeader, attachment);
                         }
                     }
