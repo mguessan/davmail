@@ -352,17 +352,8 @@ public class ExchangeSession {
     }
 
     protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
-        return buildMessage(responseEntity, null);
-    }
-
-    protected Message buildMessage(ResponseEntity responseEntity, String webMessageUrl) throws URIException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
-        if (webMessageUrl != null) {
-            message.webMessageUrl = webMessageUrl;
-        } else {
-            message.webMessageUrl = message.messageUrl;
-        }
         Enumeration propertiesEnum = responseEntity.getProperties();
         while (propertiesEnum.hasMoreElements()) {
             Property prop = (Property) propertiesEnum.nextElement();
@@ -412,12 +403,7 @@ public class ExchangeSession {
         return message;
     }
 
-
     public Message getMessage(String messageUrl) throws IOException {
-        return getMessage(messageUrl, null);
-    }
-
-    public Message getMessage(String messageUrl, String webMessageUrl) throws IOException {
 
         // TODO switch according to Log4J log level
 
@@ -434,7 +420,7 @@ public class ExchangeSession {
         }
         ResponseEntity entity = (ResponseEntity) messageEnum.nextElement();
 
-        return buildMessage(entity, webMessageUrl);
+        return buildMessage(entity);
 
     }
 
@@ -536,10 +522,6 @@ public class ExchangeSession {
         public static final String CONTENT_TYPE_HEADER = "Content-Type: ";
         public static final String CONTENT_TRANSFER_ENCODING_HEADER = "Content-Transfer-Encoding: ";
         public String messageUrl;
-        /**
-         * OWA generated page URL, maybe different from DAV url
-         */
-        public String webMessageUrl;
         public String uid;
         public int size;
         public String fullHeaders;
@@ -653,7 +635,7 @@ public class ExchangeSession {
 
                 // exchange message : create mime part headers
                 if (boundary != null) {
-                    attachmentsMap = getAttachments(webMessageUrl);
+                    loadAttachments();
                     // TODO : test actual header values
                     result.append("\n--").append(boundary)
                             .append("\nContent-Type: text/html")
@@ -724,13 +706,13 @@ public class ExchangeSession {
             } else {
                 attachmentIndex = 0;
 
-                attachmentsMap = getAttachments(webMessageUrl);
-                writeMimeMessage(reader, os, mimeHeader, attachmentsMap);
+                loadAttachments();
+                writeMimeMessage(reader, os, mimeHeader);
             }
             os.flush();
         }
 
-        public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader, Map<String, Attachment> attachmentsMap) throws IOException {
+        public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader) throws IOException {
             String line;
             // with alternative, there are two body forms (plain+html)
             if ("multipart/alternative".equals(mimeHeader.contentType)) {
@@ -752,7 +734,7 @@ public class ExchangeSession {
                     if (partHeader.contentType != null
                             && partHeader.contentType.startsWith("multipart")
                             && partHeader.boundary != null) {
-                        writeMimeMessage(reader, os, partHeader, attachmentsMap);
+                        writeMimeMessage(reader, os, partHeader);
                     }
                     // body part
                     else if (attachmentIndex <= 0) {
@@ -815,7 +797,7 @@ public class ExchangeSession {
                         }
                     }
 
-                    Message attachedMessage = getMessage(messageAttachmentPath, decodedPath);
+                    Message attachedMessage = getMessage(messageAttachmentPath);
                     attachedMessage.write(quotedOs);
                 } else {
 
@@ -1018,11 +1000,9 @@ public class ExchangeSession {
             return xmlDocument;
         }
 
-        public Map<String, Attachment> getAttachments(String messageUrl) throws IOException {
-            if (attachmentsMap != null) {
-                // do not load attachments twice
-                return attachmentsMap;
-            } else {
+        public void loadAttachments() throws IOException {
+            // do not load attachments twice
+            if (attachmentsMap == null) {
 
                 GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl + "?Cmd=Open"));
                 wdr.retrieveSessionInstance().executeMethod(getMethod);
@@ -1035,7 +1015,7 @@ public class ExchangeSession {
                 // Release the connection.
                 getMethod.releaseConnection();
 
-                Map<String, Attachment> attachmentsMap = new HashMap<String, Attachment>();
+                attachmentsMap = new HashMap<String, Attachment>();
                 int attachmentIndex = 2;
                 // list file attachments identified explicitly
                 List<Attribute> list = xmlDocument.getNodes("//table[@id='idAttachmentWell']//a/@href");
@@ -1151,8 +1131,6 @@ public class ExchangeSession {
                     }
                 }
 
-
-                return attachmentsMap;
             }
         }
 
