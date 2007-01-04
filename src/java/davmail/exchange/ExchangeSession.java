@@ -781,7 +781,7 @@ public class ExchangeSession {
                 String decodedPath = URIUtil.decode(attachment.href);
 
                 if ("message/rfc822".equals(mimeHeader.contentType)) {
-                    String messageAttachmentPath = decodedPath;
+                    String messageAttachmentPath = null;
 
                     // Get real attachment path from owa page content
                     GetMethod method = new GetMethod(URIUtil.encodePath(decodedPath));
@@ -795,6 +795,11 @@ public class ExchangeSession {
                         if (messageUrlBeginIndex >= 0) {
                             messageAttachmentPath = URIUtil.decode(body.substring(messageUrlBeginIndex, messageUrlEndIndex));
                         }
+                    }
+
+                    // failover, exchange mail attachment
+                    if (messageAttachmentPath == null) {
+                       messageAttachmentPath = messageUrl + "/" + attachment.name;
                     }
 
                     Message attachedMessage = getMessage(messageAttachmentPath);
