@@ -443,6 +443,55 @@ public class ExchangeSession {
         return messages;
     }
 
+    /**
+     * Delete oldest messages in trash.
+     *
+     * @param keepDelay number of days to keep messages in trash before delete
+     * @throws IOException
+     */
+    public void purgeOldestTrashMessages(int keepDelay) throws IOException {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
+        logger.debug("Keep message not before " + cal.getTime());
+        long keepTimestamp = cal.getTimeInMillis();
+
+        Vector<String> deleteRequestProperties = new Vector<String>();
+        deleteRequestProperties.add("DAV:getlastmodified");
+        deleteRequestProperties.add("urn:schemas:mailheader:content-class");
+
+        Enumeration folderEnum = wdr.propfindMethod(deleteditemsUrl, 1, deleteRequestProperties);
+        while (folderEnum.hasMoreElements()) {
+            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+            String messageUrl = URIUtil.decode(entity.getHref());
+            String lastModifiedString = null;
+            String contentClass = null;
+            Enumeration propertiesEnum = entity.getProperties();
+            while (propertiesEnum.hasMoreElements()) {
+                Property prop = (Property) propertiesEnum.nextElement();
+                String localName = prop.getLocalName();
+                if ("getlastmodified".equals(localName)) {
+                    lastModifiedString = prop.getPropertyAsString();
+                } else if ("content-class".equals(prop.getLocalName())) {
+                    contentClass = prop.getPropertyAsString();
+                }
+            }
+            if ("urn:content-classes:message".equals(contentClass) &&
+                    lastModifiedString != null && lastModifiedString.length() > 0) {
+                Date parsedDate;
+                try {
+                    parsedDate = dateParser.parse(lastModifiedString);
+                    if (parsedDate.getTime() < keepTimestamp) {
+                        logger.debug("Delete " + messageUrl + " last modified " + parsedDate);
+                        wdr.deleteMethod(messageUrl);
+                    }
+                } catch (ParseException e) {
+                    logger.warn("Invalid message modified date " + lastModifiedString + " on " + messageUrl);
+                }
+            }
+
+        }
+    }
+
     public void sendMessage(BufferedReader reader) throws IOException {
         String subject = "davmailtemp";
         String line = reader.readLine();
@@ -680,7 +729,7 @@ public class ExchangeSession {
                 if (mstnefDetected) {
                     fullHeaders = result.toString();
                     // also fix invalid body characters
-                    htmlBody = htmlBody.replaceAll("&#8217;","'");
+                    htmlBody = htmlBody.replaceAll("&#8217;", "'");
                 }
 
             } catch (IOException e) {
@@ -801,7 +850,7 @@ public class ExchangeSession {
 
                     // failover, exchange mail attachment
                     if (messageAttachmentPath == null) {
-                       messageAttachmentPath = messageUrl + "/" + attachment.name;
+                        messageAttachmentPath = messageUrl + "/" + attachment.name;
                     }
 
                     Message attachedMessage = getMessage(messageAttachmentPath);
@@ -1080,7 +1129,7 @@ public class ExchangeSession {
                 ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
                         // quick fix remove default office namespace
                         .replaceFirst("xmlns=\".*\"", "")
-                        // quick fix remove inline processing instructions
+                                // quick fix remove inline processing instructions
                         .replaceAll("<\\?xml:namespace", "")
                         .getBytes("UTF-8"));
                 XmlDocument xmlBody = tidyDocument(bais);
