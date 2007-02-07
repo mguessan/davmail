@@ -29,6 +29,7 @@ public class Settings {
                 settings.put("davmail.url", "http://exchangeServer");
                 settings.put("davmail.popPort", "110");
                 settings.put("davmail.smtpPort", "25");
+                settings.put("davmail.keepDelay", "30");
                 settings.put("davmail.enableProxy", "false");
                 settings.put("davmail.proxyHost", "");
                 settings.put("davmail.proxyPort", "");

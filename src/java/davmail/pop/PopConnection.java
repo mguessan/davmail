@@ -68,6 +68,8 @@ public class PopConnection extends AbstractConnection {
                     String command = tokens.nextToken();
 
                     if ("QUIT".equalsIgnoreCase(command)) {
+                        // delete messages before quit
+                        session.purgeOldestTrashMessages();
                         sendOK("Bye");
                         break;
                     } else if ("USER".equalsIgnoreCase(command)) {

@@ -91,6 +91,8 @@ public class ExchangeSession {
     public static final String CONTENT_TYPE_HEADER = "content-type: ";
     public static final String CONTENT_TRANSFER_ENCODING_HEADER = "content-transfer-encoding: ";
 
+    private static final int DEFAULT_KEEP_DELAY = 30;
+
     /**
      * Date parser from Exchange format
      */
@@ -445,11 +447,15 @@ public class ExchangeSession {
 
     /**
      * Delete oldest messages in trash.
-     *
-     * @param keepDelay number of days to keep messages in trash before delete
+     * keepDelay is the number of days to keep messages in trash before delete
      * @throws IOException
      */
-    public void purgeOldestTrashMessages(int keepDelay) throws IOException {
+    public void purgeOldestTrashMessages() throws IOException {
+        int keepDelay = Settings.getIntProperty("davmail.keepDelay");
+        if (keepDelay == 0) {
+            keepDelay = DEFAULT_KEEP_DELAY;
+        }
+
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
         logger.debug("Keep message not before " + cal.getTime());
