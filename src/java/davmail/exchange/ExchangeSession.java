@@ -614,7 +614,7 @@ public class ExchangeSession {
                             }
                             line = CONTENT_TYPE_HEADER + contentType + ";\n\tboundary=\"" + boundary + "\"";
                         } else {
-                            line = CONTENT_TYPE_HEADER + "text/html";
+                            line = CONTENT_TYPE_HEADER + "text/html; charset=UTF-8";
                         }
                         // skip winmail.dat
                         reader.readLine();
@@ -638,7 +638,7 @@ public class ExchangeSession {
                     loadAttachments();
                     // TODO : test actual header values
                     result.append("\n--").append(boundary)
-                            .append("\nContent-Type: text/html")
+                            .append("\nContent-Type: text/html; charset=UTF-8")
                             .append("\nContent-Transfer-Encoding: 7bit")
                             .append("\n\n");
 
@@ -679,6 +679,8 @@ public class ExchangeSession {
                 }
                 if (mstnefDetected) {
                     fullHeaders = result.toString();
+                    // also fix invalid body characters
+                    htmlBody = htmlBody.replaceAll("&#8217;","'");
                 }
 
             } catch (IOException e) {
