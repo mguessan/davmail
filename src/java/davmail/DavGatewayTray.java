@@ -137,7 +137,7 @@ public class DavGatewayTray {
                 defaultItem.addActionListener(settingsListener);
                 popup.add(defaultItem);
 
-                MenuItem logItem = new MenuItem("Logs...");
+                MenuItem logItem = new MenuItem("Show logs...");
                 logItem.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         Logger rootLogger = Logger.getRootLogger();

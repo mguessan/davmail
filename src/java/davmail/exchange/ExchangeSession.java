@@ -1139,7 +1139,15 @@ public class ExchangeSession {
                         .replaceAll("<\\?xml:namespace", "")
                         .getBytes("UTF-8"));
                 XmlDocument xmlBody = tidyDocument(bais);
-                List<Attribute> htmlBodyImgList = xmlBody.getNodes("//img/@src");
+                List<Attribute> htmlBodyAllImgList = xmlBody.getNodes("//img/@src");
+                // remove absolute images from body img list
+                List<String> htmlBodyImgList = new ArrayList<String>();
+                for (Attribute imgAttribute:htmlBodyAllImgList) {
+                    String value = imgAttribute.getValue();
+                    if (!value.startsWith("http://") && !value.startsWith("https://")) {
+                        htmlBodyImgList.add(value);
+                    }
+                }
 
                 // use owa generated body to look for inline images
                 List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
@@ -1174,10 +1182,10 @@ public class ExchangeSession {
                             attachment.name = attachmentName;
                             attachment.href = messageUrl + "/" + attachmentHref;
                             if (htmlBodyImgList.size() > inlineImageCount) {
-                                String contentid = htmlBodyImgList.get(inlineImageCount++).getValue();
+                                String contentid = htmlBodyImgList.get(inlineImageCount++);
                                 if (contentid.startsWith("cid:")) {
                                     attachment.contentid = contentid.substring("cid:".length());
-                                } else if (!contentid.startsWith("http://") && !contentid.startsWith("https://")) {
+                                } else {
                                     attachment.contentid = contentid;
                                     // must patch htmlBody for inline image without cid
                                     htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:" + attachment.contentid);
