@@ -584,6 +584,7 @@ public class ExchangeSession {
         public String htmlBody;
         public String contentClass;
         public boolean hasAttachment;
+        public boolean hasInlineAttachment;
         public String to;
         public String cc;
         public String date;
@@ -660,11 +661,12 @@ public class ExchangeSession {
                     // patch exchange Content type
                     if (line.equals(CONTENT_TYPE_HEADER + "application/ms-tnef;")) {
                         if (hasAttachment) {
+                            // trigger attachments load
+                            loadAttachments();
                             boundary = "----_=_NextPart_001_" + uid;
                             String contentType = "multipart/mixed";
                             // use multipart/related with inline images
-                            if (htmlBody != null && (htmlBody.indexOf("src=\"cid:") > 0 ||
-                                    htmlBody.indexOf("src=\"1_multipart") > 0)) {
+                            if (hasInlineAttachment) {
                                 contentType = "multipart/related";
                             }
                             line = CONTENT_TYPE_HEADER + contentType + ";\n\tboundary=\"" + boundary + "\"";
@@ -1148,6 +1150,9 @@ public class ExchangeSession {
                         htmlBodyImgList.add(value);
                     }
                 }
+
+                // set inline attachments flag
+                hasInlineAttachment = (htmlBodyImgList.size() > 0);
 
                 // use owa generated body to look for inline images
                 List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
