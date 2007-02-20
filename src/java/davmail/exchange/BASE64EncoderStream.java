@@ -46,12 +46,12 @@ public class BASE64EncoderStream extends FilterOutputStream {
     /**
      * The internal buffer of encoded output bytes.
      **/
-    private byte output[] = new byte[4];
+    private byte[] output = new byte[4];
 
     /**
      * The internal buffer of input bytes to be encoded.
      **/
-    private byte input[]  = new byte[3];
+    private byte[] input  = new byte[3];
 
     /**
      * The index of the next position in the internal buffer of input bytes
@@ -100,6 +100,11 @@ public class BASE64EncoderStream extends FilterOutputStream {
         maxLineLength = max;
     }
 
+    public void flush() throws IOException {
+        pad();
+        out.flush();
+    }
+
     /**
      * Completes the encoding of data, padding the input data if necessary
      * to end the input on a multiple of 4 bytes, writes a terminating
@@ -111,12 +116,9 @@ public class BASE64EncoderStream extends FilterOutputStream {
     public void close() throws IOException {
         try {
             flush();
-        }
-        catch (IOException ignored) {
+        } catch (IOException ignored) {
         }
 
-        // Make sure the number of bytes output is a multiple of three.
-        pad();
 
         // Add a terminating CRLF sequence.
         out.write('\r');
