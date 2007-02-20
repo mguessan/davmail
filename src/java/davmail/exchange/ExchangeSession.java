@@ -508,7 +508,7 @@ public class ExchangeSession {
             line = reader.readLine();
 
             // patch thunderbird html in reply for correct outlook display
-            if (line.startsWith("  <meta content=\"text/html")) {
+            if (line.startsWith("<head>")) {
                 line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
             }
             if (line.startsWith("Subject")) {
