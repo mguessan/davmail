@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "DavMail"
-!define PRODUCT_VERSION "1.0"
+!define PRODUCT_VERSION "${VERSION}"
 !define PRODUCT_PUBLISHER "Mickaël Guessant"
 !define PRODUCT_WEB_SITE "http://sourceforge.net/projects/davmail"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\davmail.exe"

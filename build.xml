@@ -1,4 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
+    <property name="version" value="1.0"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -32,12 +33,16 @@
     </target>
 
     <target name="dist" depends="compile">
+        <taskdef name="nsis" classname="net.sf.nsisant.Task">
+            <classpath location="lib/nsisant-1.2.jar"/>
+        </taskdef>
         <delete dir="dist"/>
         <mkdir dir="dist"/>
         <jar basedir="target/classes" destfile="dist/davmail.jar"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
                 <include name="*.jar"/>
+                <exclude name="nsisant*.jar"/>
             </fileset>
         </copy>
         <copy todir="dist">
@@ -45,6 +50,16 @@
                 <include name="*.exe"/>
             </fileset>
         </copy>
+        <zip file="dist/davmail-${version}.zip">
+            <fileset dir="dist">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="davmail*.exe"/>
+            </fileset>
+        </zip>
+        <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
+            <define name="VERSION" value="${version}"/>
+        </nsis>
     </target>
 
 </project>
