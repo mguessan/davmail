@@ -44,7 +44,7 @@
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "davmail-${PRODUCT_VERSION}-setup.exe"
+OutFile "dist\davmail-${PRODUCT_VERSION}-setup.exe"
 InstallDir "$PROGRAMFILES\DavMail"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -79,6 +79,7 @@ Section "SectionPrincipale" SEC01
   File "dist\davmail.exe"
   CreateDirectory "$SMPROGRAMS\DavMail"
   CreateShortCut "$SMPROGRAMS\DavMail\DavMail.lnk" "$INSTDIR\davmail.exe"
+  CreateShortCut "$SMPROGRAMS\DavMail\DavMail Console.lnk" "$INSTDIR\davmailconsole.exe"
   CreateShortCut "$DESKTOP\DavMail.lnk" "$INSTDIR\davmail.exe"
   File "dist\davmail.jar"
   File "dist\davmailconsole.exe"

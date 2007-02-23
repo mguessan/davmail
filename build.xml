@@ -37,7 +37,7 @@
         <jar basedir="target/classes" destfile="dist/davmail.jar"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
-                <include name="**/*.jar"/>
+                <include name="*.jar"/>
             </fileset>
         </copy>
         <copy todir="dist">
