@@ -23,6 +23,7 @@ public class SettingsFrame extends JFrame {
         panel.setBorder(BorderFactory.createTitledBorder("Gateway settings"));
 
         final JTextField urlField = new JTextField(Settings.getProperty("davmail.url"), 15);
+        urlField.setToolTipText("Base outlook web access URL");
         final JTextField popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         final JTextField smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
         final JTextField keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);

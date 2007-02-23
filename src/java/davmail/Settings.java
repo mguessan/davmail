@@ -26,7 +26,7 @@ public class Settings {
             if (configFile.exists()) {
                 settings.load(new FileReader(configFile));
             } else {
-                settings.put("davmail.url", "http://exchangeServer");
+                settings.put("davmail.url", "http://exchangeServer/exchange/");
                 settings.put("davmail.popPort", "110");
                 settings.put("davmail.smtpPort", "25");
                 settings.put("davmail.keepDelay", "30");
