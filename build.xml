@@ -1,5 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
-    <property name="version" value="1.0"/>
+    <property name="version" value="1.0.1"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
