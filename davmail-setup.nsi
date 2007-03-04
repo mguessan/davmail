@@ -73,7 +73,7 @@ BailOut:
 no_quest:
 SectionEnd
 
-Section "SectionPrincipale" SEC01
+Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite try
   File "dist\davmail.exe"
@@ -118,7 +118,7 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) a été désinstallé avec succès de votre ordinateur."
+  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) has been removed from your system."
 FunctionEnd
 
 Function un.onInit
@@ -165,6 +165,7 @@ no_quest:
   Delete "$SMPROGRAMS\DavMail\Website.lnk"
   Delete "$DESKTOP\DavMail.lnk"
   Delete "$SMPROGRAMS\DavMail\DavMail.lnk"
+  Delete "$SMPROGRAMS\DavMail\DavMail Console.lnk"
 
   RMDir "$SMPROGRAMS\DavMail"
   RMDir "$INSTDIR\lib"
