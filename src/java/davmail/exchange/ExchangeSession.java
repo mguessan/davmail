@@ -809,6 +809,12 @@ public class ExchangeSession {
                         writeBody(os, partHeader);
                     } else {
                         Attachment attachment = attachmentsMap.get(partHeader.name);
+                        
+                        // TODO : test if .eml extension could be stripped from attachment name directly
+                        // try to get email attachment with .eml extension
+                        if (attachment == null && partHeader.name != null) {
+                            attachment = attachmentsMap.get(partHeader.name + ".eml");
+                        }
                         // try to get attachment by index, only if no name found
                         if (attachment == null && partHeader.name == null) {
                             attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
@@ -1126,6 +1132,8 @@ public class ExchangeSession {
                             }
                             // decode slashes in attachment name
                             attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
+                            // trim attachment name
+                            attachmentName = attachmentName.trim();
 
                             Attachment attachment = new Attachment();
                             attachment.name = attachmentName;
@@ -1275,8 +1283,13 @@ public class ExchangeSession {
                     int encodedIndex = header.indexOf("*=");
                     if (encodedIndex >= 0) {
                         StringBuffer decodedBuffer = new StringBuffer();
-                        decodedBuffer.append(header.substring(0, encodedIndex));
+                        decodedBuffer.append(header.substring(0, header.indexOf("*")));
                         decodedBuffer.append('=');
+                        // if attachment name enclosed in quotes, increase encodedIndex
+                        if (header.charAt(encodedIndex + 2) == '"') {
+                            decodedBuffer.append('"');
+                            encodedIndex++;
+                        }
                         int encodedDataIndex = header.indexOf("''");
                         if (encodedDataIndex >= 0) {
                             String encodedData = header.substring(encodedDataIndex + 2);
@@ -1285,7 +1298,13 @@ public class ExchangeSession {
                             header = decodedBuffer;
                         }
                     }
-                    StringTokenizer tokenizer = new StringTokenizer(header.toString(), ";");
+                    // internal header encoding ?
+                    String decodedHeader = header.toString();
+                    if (decodedHeader.indexOf("name*1*=") >= 0) {
+                        decodedHeader = decodedHeader.replaceFirst("name\\*1\\*=", "");
+                    }
+
+                    StringTokenizer tokenizer = new StringTokenizer(decodedHeader, ";");
                     // first part is Content type
                     if (tokenizer.hasMoreTokens()) {
                         contentType = tokenizer.nextToken().trim();
