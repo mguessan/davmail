@@ -1324,6 +1324,8 @@ public class ExchangeSession {
                                 if (name.startsWith("\"")) {
                                     name = name.substring(1, name.lastIndexOf("\""));
                                 }
+                                // name can be mime encoded
+                                name = MimeUtility.decodeText(name);
                             } else if ("boundary".equals(tokenName)) {
                                 boundary = token.substring(equalsIndex + 1);
                                 if (boundary.startsWith("\"")) {
