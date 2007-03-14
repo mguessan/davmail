@@ -12,6 +12,7 @@ public class DavGateway {
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
+     * @param args command line parameter config file path
      */
     public static void main(String[] args) {
 

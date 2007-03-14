@@ -12,7 +12,7 @@ import java.net.Socket;
  * Generic connection common to pop3 and smtp implementations
  */
 public class AbstractConnection extends Thread {
-    
+
     protected Socket client;
     protected BufferedReader in;
     protected OutputStream os;
@@ -34,7 +34,7 @@ public class AbstractConnection extends Thread {
             try {
                 client.close();
             } catch (IOException e2) {
-                DavGatewayTray.error("Exception while getting socket streams",e2);
+                DavGatewayTray.error("Exception while getting socket streams", e2);
             }
             DavGatewayTray.error("Exception while getting socket streams", e);
             return;
@@ -64,13 +64,14 @@ public class AbstractConnection extends Thread {
     /**
      * Read a line from the client connection.
      * Log message to stdout
+     *
      * @return command line or null
-     * @throws IOException
+     * @throws IOException when unable to read line
      */
     public String readClient() throws IOException {
         String line = in.readLine();
         if (line != null && !line.startsWith("PASS")) {
-        DavGatewayTray.debug("< "+line);
+            DavGatewayTray.debug("< " + line);
         } else {
             DavGatewayTray.debug("< PASS ********");
         }

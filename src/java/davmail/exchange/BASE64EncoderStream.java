@@ -80,6 +80,8 @@ public class BASE64EncoderStream extends FilterOutputStream {
     /**
      * Builds a BASE64 encoding stream on top of the given underlying output
      * stream, with the default maximum number of characters per line.
+     *
+     * @param out output stream
      **/
     public BASE64EncoderStream(OutputStream out) {
         this(out, LINE_LENGTH);
@@ -117,6 +119,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
         try {
             flush();
         } catch (IOException ignored) {
+            // ignore
         }
 
 
@@ -347,7 +350,8 @@ public class BASE64EncoderStream extends FilterOutputStream {
 			encoder.close();
 
 		} catch (IOException e) {
-		} // try
+            // ignore
+        } // try
 
 		// Return Encoded Byte Array
 		return byteStream.toByteArray();

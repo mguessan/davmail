@@ -102,7 +102,7 @@ public class SmtpConnection extends AbstractConnection {
                             } catch (Exception e) {
                                 DavGatewayTray.error("Authentication failed",e);
                                 state = AUTHENTICATED;
-                                sendClient("451 Error : " + e.getMessage());
+                                sendClient("451 Error : " +e+" "+ e.getMessage());
                             }
 
                         } else {
@@ -140,7 +140,7 @@ public class SmtpConnection extends AbstractConnection {
      * Decode SMTP credentials
      *
      * @param encodedCredentials smtp encoded credentials
-     * @throws java.io.IOException
+     * @throws java.io.IOException if invalid credentials
      */
     protected void decodeCredentials(String encodedCredentials) throws IOException {
         BASE64Decoder decoder = new BASE64Decoder();

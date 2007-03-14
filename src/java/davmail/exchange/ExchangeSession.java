@@ -120,8 +120,6 @@ public class ExchangeSession {
     /**
      * Create an exchange session for the given URL.
      * The session is not actually established until a call to login()
-     *
-     * @param url Outlook Web Access URL
      */
     public ExchangeSession() {
         // SimpleDateFormat are not thread safe, need to create one instance for
@@ -320,7 +318,7 @@ public class ExchangeSession {
      * Close session.
      * This will only close http client, not the actual Exchange session
      *
-     * @throws IOException
+     * @throws IOException if unable to close Webdav context
      */
     public void close() throws IOException {
         wdr.close();
@@ -328,6 +326,10 @@ public class ExchangeSession {
 
     /**
      * Create message in current folder
+     *
+     * @param subject     message subject line
+     * @param messageBody mail body
+     * @throws java.io.IOException when unable to create message
      */
     public void createMessage(String subject, String messageBody) throws IOException {
         createMessage(currentFolderUrl, subject, messageBody);
@@ -336,6 +338,11 @@ public class ExchangeSession {
     /**
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
+     *
+     * @param folderUrl   Exchange folder URL
+     * @param subject     message subject line
+     * @param messageBody mail body
+     * @throws java.io.IOException when unable to create message
      */
     public void createMessage(String folderUrl, String subject, String messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + subject + ".EML");
@@ -448,7 +455,8 @@ public class ExchangeSession {
     /**
      * Delete oldest messages in trash.
      * keepDelay is the number of days to keep messages in trash before delete
-     * @throws IOException
+     *
+     * @throws IOException when unable to purge messages
      */
     public void purgeOldestTrashMessages() throws IOException {
         int keepDelay = Settings.getIntProperty("davmail.keepDelay");
@@ -645,9 +653,9 @@ public class ExchangeSession {
                         fullHeaders += "CC: " + cc + "\n";
                     }
                 } catch (ParseException e) {
-                    throw new RuntimeException("Unable to rebuild header " + e.getMessage());
+                    throw new RuntimeException("Unable to rebuild header " + e + " " + e.getMessage());
                 } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException("Unable to rebuild header " + e.getMessage());
+                    throw new RuntimeException("Unable to rebuild header " + e + " " + e.getMessage());
                 }
             }
             StringBuffer result = new StringBuffer();
@@ -741,7 +749,7 @@ public class ExchangeSession {
                 }
 
             } catch (IOException e) {
-                throw new RuntimeException("Unable to preprocess headers " + e.getMessage());
+                throw new RuntimeException("Unable to preprocess headers " + e + " " + e.getMessage());
             }
         }
 
@@ -835,7 +843,7 @@ public class ExchangeSession {
                         quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
                     }
                 } catch (MessagingException e) {
-                    throw new IOException(e.getMessage());
+                    throw new IOException(e + " " + e.getMessage());
                 }
                 String decodedPath = URIUtil.decode(attachment.href);
 
@@ -882,7 +890,7 @@ public class ExchangeSession {
                 }
 
             } catch (HttpException e) {
-                throw new IOException(e.getMessage());
+                throw new IOException(e + " " + e.getMessage());
             }
         }
 
@@ -891,7 +899,7 @@ public class ExchangeSession {
             try {
                 quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
             } catch (MessagingException e) {
-                throw new IOException(e.getMessage());
+                throw new IOException(e + " " + e.getMessage());
             }
             String currentBody;
             if ("text/html".equals(mimeHeader.contentType)) {
@@ -1144,7 +1152,7 @@ public class ExchangeSession {
                 List<Attribute> htmlBodyAllImgList = xmlBody.getNodes("//img/@src");
                 // remove absolute images from body img list
                 List<String> htmlBodyImgList = new ArrayList<String>();
-                for (Attribute imgAttribute:htmlBodyAllImgList) {
+                for (Attribute imgAttribute : htmlBodyAllImgList) {
                     String value = imgAttribute.getValue();
                     if (!value.startsWith("http://") && !value.startsWith("https://")) {
                         htmlBodyImgList.add(value);

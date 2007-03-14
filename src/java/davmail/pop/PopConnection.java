@@ -99,13 +99,13 @@ public class PopConnection extends AbstractConnection {
                                 sendOK("PASS");
                                 state = AUTHENTICATED;
                             } catch (UnknownHostException e) {
-                                DavGatewayTray.error("Connection failed",e);
-                                sendERR("Connection failed : "+e+" "+e.getMessage());
+                                DavGatewayTray.error("Connection failed", e);
+                                sendERR("Connection failed : " + e + " " + e.getMessage());
                                 // close connection
                                 break;
                             } catch (Exception e) {
-                                DavGatewayTray.error("Authentication failed",e);
-                                sendERR("authentication failed : "+e+" "+e.getMessage());
+                                DavGatewayTray.error("Authentication failed", e);
+                                sendERR("authentication failed : " + e + " " + e.getMessage());
                             }
                         }
                     } else if ("CAPA".equalsIgnoreCase(command)) {
@@ -136,8 +136,8 @@ public class PopConnection extends AbstractConnection {
                                     sendClient("");
                                     sendClient(".");
                                 } catch (Exception e) {
-                                    DavGatewayTray.error("Error retreiving message",e);
-                                    sendERR("error retreiving message " + e.getMessage());
+                                    DavGatewayTray.error("Error retreiving message", e);
+                                    sendERR("error retreiving message " + e + " " + e.getMessage());
                                 }
                             } else {
                                 sendERR("invalid message number");
@@ -150,7 +150,7 @@ public class PopConnection extends AbstractConnection {
                                     messages.get(messageNumber).delete();
                                     sendOK("DELETE");
                                 } catch (Exception e) {
-                                    DavGatewayTray.error("Error deleting message",e);
+                                    DavGatewayTray.error("Error deleting message", e);
                                     sendERR("error deleting message");
                                 }
                             } else {
@@ -185,19 +185,19 @@ public class PopConnection extends AbstractConnection {
                 os.flush();
             }
         } catch (IOException e) {
-            DavGatewayTray.error("Exception handling client",e);
+            DavGatewayTray.error("Exception handling client", e);
         } finally {
             try {
                 client.close();
             } catch (IOException e2) {
-                DavGatewayTray.debug("Exception closing client",e2);
+                DavGatewayTray.debug("Exception closing client", e2);
             }
             try {
                 if (session != null) {
                     session.close();
                 }
             } catch (IOException e3) {
-                DavGatewayTray.debug("Exception closing gateway",e3);
+                DavGatewayTray.debug("Exception closing gateway", e3);
             }
 
         }
