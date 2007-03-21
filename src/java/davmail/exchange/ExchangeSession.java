@@ -17,6 +17,7 @@ import org.w3c.tidy.Tidy;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.Element;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeUtility;
@@ -809,7 +810,7 @@ public class ExchangeSession {
                         writeBody(os, partHeader);
                     } else {
                         Attachment attachment = attachmentsMap.get(partHeader.name);
-                        
+
                         // TODO : test if .eml extension could be stripped from attachment name directly
                         // try to get email attachment with .eml extension
                         if (attachment == null && partHeader.name != null) {
@@ -1058,15 +1059,19 @@ public class ExchangeSession {
             XmlDocument xmlDocument = new XmlDocument();
             try {
                 Document w3cDocument = tidy.parseDOM(inputStream, null);
-                // Fix broken Office xml document with empty namespace
-                NamedNodeMap namedNodeMap = w3cDocument.getDocumentElement().getAttributes();
-                for (int i = 0; i < namedNodeMap.getLength(); i++) {
-                    Node node = namedNodeMap.item(i);
-                    String nodeName = node.getNodeName();
-                    String nodeValue = node.getNodeValue();
-                    if (nodeName != null && nodeName.startsWith("xmlns")
-                            && (nodeValue == null || nodeValue.length() == 0)) {
-                        w3cDocument.getDocumentElement().removeAttribute(nodeName);
+                Element documentElement = w3cDocument.getDocumentElement();
+
+                if (documentElement != null) {
+                    // Fix broken Office xml document with empty namespace
+                    NamedNodeMap namedNodeMap = w3cDocument.getDocumentElement().getAttributes();
+                    for (int i = 0; i < namedNodeMap.getLength(); i++) {
+                        Node node = namedNodeMap.item(i);
+                        String nodeName = node.getNodeName();
+                        String nodeValue = node.getNodeValue();
+                        if (nodeName != null && nodeName.startsWith("xmlns")
+                                && (nodeValue == null || nodeValue.length() == 0)) {
+                            w3cDocument.getDocumentElement().removeAttribute(nodeName);
+                        }
                     }
                 }
                 xmlDocument.load(builder.build(w3cDocument));
@@ -1149,77 +1154,80 @@ public class ExchangeSession {
                     }
                 }
 
-                // get inline images from htmlBody (without OWA transformation)
-                ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
-                        // quick fix remove default office namespace
-                        .replaceFirst("xmlns=\".*\"", "")
-                                // quick fix remove inline processing instructions
-                        .replaceAll("<\\?xml:namespace", "")
-                        .getBytes("UTF-8"));
-                XmlDocument xmlBody = tidyDocument(bais);
-                List<Attribute> htmlBodyAllImgList = xmlBody.getNodes("//img/@src");
-                // remove absolute images from body img list
-                List<String> htmlBodyImgList = new ArrayList<String>();
-                for (Attribute imgAttribute : htmlBodyAllImgList) {
-                    String value = imgAttribute.getValue();
-                    if (!value.startsWith("http://") && !value.startsWith("https://")) {
-                        htmlBodyImgList.add(value);
+                // HTML body may be empty
+                if (htmlBody != null && htmlBody.length() > 0) {
+                    // get inline images from htmlBody (without OWA transformation)
+                    ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
+                            // quick fix remove default office namespace
+                            .replaceFirst("xmlns=\".*\"", "")
+                                    // quick fix remove inline processing instructions
+                            .replaceAll("<\\?xml:namespace", "")
+                            .getBytes("UTF-8"));
+                    XmlDocument xmlBody = tidyDocument(bais);
+                    List<Attribute> htmlBodyAllImgList = xmlBody.getNodes("//img/@src");
+                    // remove absolute images from body img list
+                    List<String> htmlBodyImgList = new ArrayList<String>();
+                    for (Attribute imgAttribute : htmlBodyAllImgList) {
+                        String value = imgAttribute.getValue();
+                        if (!value.startsWith("http://") && !value.startsWith("https://")) {
+                            htmlBodyImgList.add(value);
+                        }
                     }
-                }
 
-                // set inline attachments flag
-                hasInlineAttachment = (htmlBodyImgList.size() > 0);
+                    // set inline attachments flag
+                    hasInlineAttachment = (htmlBodyImgList.size() > 0);
 
-                // use owa generated body to look for inline images
-                List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
+                    // use owa generated body to look for inline images
+                    List<Attribute> imgList = xmlDocument.getNodes("//img/@src");
 
-                // TODO : add body background, does not work in thunderbird
-                // htmlBodyImgList.addAll(xmlBody.getNodes("//body/@background"));
-                // imgList.addAll(xmlDocument.getNodes("//td/@background"));
+                    // TODO : add body background, does not work in thunderbird
+                    // htmlBodyImgList.addAll(xmlBody.getNodes("//body/@background"));
+                    // imgList.addAll(xmlDocument.getNodes("//td/@background"));
 
-                int inlineImageCount = 0;
-                for (Attribute element : imgList) {
-                    String attachmentHref = element.getValue();
-                    // filter external images
-                    if (attachmentHref.startsWith("1_multipart")) {
-                        attachmentHref = URIUtil.decode(attachmentHref);
-                        if (attachmentHref.endsWith("?Security=3")) {
-                            attachmentHref = attachmentHref.substring(0, attachmentHref.indexOf('?'));
-                        }
-                        String attachmentName = attachmentHref.substring(attachmentHref.lastIndexOf('/') + 1);
-                        // handle strange cases
-                        if (attachmentName.charAt(1) == '_') {
-                            attachmentName = attachmentName.substring(2);
-                        }
-                        if (attachmentName.startsWith("%31_multipart%3F2_")) {
-                            attachmentName = attachmentName.substring(18);
-                        }
+                    int inlineImageCount = 0;
+                    for (Attribute element : imgList) {
+                        String attachmentHref = element.getValue();
+                        // filter external images
+                        if (attachmentHref.startsWith("1_multipart")) {
+                            attachmentHref = URIUtil.decode(attachmentHref);
+                            if (attachmentHref.endsWith("?Security=3")) {
+                                attachmentHref = attachmentHref.substring(0, attachmentHref.indexOf('?'));
+                            }
+                            String attachmentName = attachmentHref.substring(attachmentHref.lastIndexOf('/') + 1);
+                            // handle strange cases
+                            if (attachmentName.charAt(1) == '_') {
+                                attachmentName = attachmentName.substring(2);
+                            }
+                            if (attachmentName.startsWith("%31_multipart%3F2_")) {
+                                attachmentName = attachmentName.substring(18);
+                            }
 
-                        // decode slashes
-                        attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
-                        // exclude inline external images
-                        if (!attachmentName.startsWith("http://") && !attachmentName.startsWith("https://")) {
-                            Attachment attachment = new Attachment();
-                            attachment.name = attachmentName;
-                            attachment.href = messageUrl + "/" + attachmentHref;
-                            if (htmlBodyImgList.size() > inlineImageCount) {
-                                String contentid = htmlBodyImgList.get(inlineImageCount++);
-                                if (contentid.startsWith("cid:")) {
-                                    attachment.contentid = contentid.substring("cid:".length());
+                            // decode slashes
+                            attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
+                            // exclude inline external images
+                            if (!attachmentName.startsWith("http://") && !attachmentName.startsWith("https://")) {
+                                Attachment attachment = new Attachment();
+                                attachment.name = attachmentName;
+                                attachment.href = messageUrl + "/" + attachmentHref;
+                                if (htmlBodyImgList.size() > inlineImageCount) {
+                                    String contentid = htmlBodyImgList.get(inlineImageCount++);
+                                    if (contentid.startsWith("cid:")) {
+                                        attachment.contentid = contentid.substring("cid:".length());
+                                    } else {
+                                        attachment.contentid = contentid;
+                                        // must patch htmlBody for inline image without cid
+                                        htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:" + attachment.contentid);
+                                    }
                                 } else {
-                                    attachment.contentid = contentid;
-                                    // must patch htmlBody for inline image without cid
-                                    htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:" + attachment.contentid);
+                                    logger.warn("More images in OWA body !");
                                 }
-                            } else {
-                                logger.warn("More images in OWA body !");
+                                // add only inline images
+                                if (attachment.contentid != null) {
+                                    attachmentsMap.put(attachmentName, attachment);
+                                }
+                                logger.debug("Inline image attachment ID:" + attachment.contentid
+                                        + " name: " + attachment.name + " href: " + attachment.href);
                             }
-                            // add only inline images
-                            if (attachment.contentid != null) {
-                                attachmentsMap.put(attachmentName, attachment);
-                            }
-                            logger.debug("Inline image attachment ID:" + attachment.contentid
-                                    + " name: " + attachment.name + " href: " + attachment.href);
                         }
                     }
                 }
@@ -1314,19 +1322,19 @@ public class ExchangeSession {
                         int equalsIndex = token.indexOf('=');
                         if (equalsIndex > 0) {
                             String tokenName = token.substring(0, equalsIndex);
-                            if ("charset".equals(tokenName)) {
+                            if ("charset".equalsIgnoreCase(tokenName)) {
                                 charset = token.substring(equalsIndex + 1);
                                 if (charset.startsWith("\"")) {
                                     charset = charset.substring(1, charset.lastIndexOf("\""));
                                 }
-                            } else if ("name".equals(tokenName.toLowerCase())) {
+                            } else if ("name".equalsIgnoreCase(tokenName.toLowerCase())) {
                                 name = token.substring(equalsIndex + 1);
                                 if (name.startsWith("\"")) {
                                     name = name.substring(1, name.lastIndexOf("\""));
                                 }
                                 // name can be mime encoded
                                 name = MimeUtility.decodeText(name);
-                            } else if ("boundary".equals(tokenName)) {
+                            } else if ("boundary".equalsIgnoreCase(tokenName)) {
                                 boundary = token.substring(equalsIndex + 1);
                                 if (boundary.startsWith("\"")) {
                                     boundary = boundary.substring(1, boundary.lastIndexOf("\""));
