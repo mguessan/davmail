@@ -446,7 +446,8 @@ public class ExchangeSession {
 
             Message message = buildMessage(entity);
             if ("urn:content-classes:message".equals(message.contentClass) ||
-                    "urn:content-classes:calendarmessage".equals(message.contentClass)) {
+                    "urn:content-classes:calendarmessage".equals(message.contentClass) ||
+                    "urn:content-classes:recallmessage".equals(message.contentClass)) {
                 messages.add(message);
             }
         }
@@ -622,7 +623,8 @@ public class ExchangeSession {
         protected void preProcessHeaders() {
             // only handle exchange messages
             if (!"urn:content-classes:message".equals(contentClass) &&
-                    !"urn:content-classes:calendarmessage".equals(contentClass)
+                    !"urn:content-classes:calendarmessage".equals(contentClass) &&
+                    !"urn:content-classes:recallmessage".equals(contentClass)
                     ) {
                 return;
             }
