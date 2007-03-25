@@ -785,7 +785,7 @@ public class ExchangeSession {
         public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader) throws IOException {
             String line;
             // with alternative, there are two body forms (plain+html)
-            if ("multipart/alternative".equals(mimeHeader.contentType)) {
+            if ("multipart/alternative".equalsIgnoreCase(mimeHeader.contentType)) {
                 attachmentIndex--;
             }
 
@@ -856,7 +856,7 @@ public class ExchangeSession {
                 }
                 String decodedPath = URIUtil.decode(attachment.href);
 
-                if ("message/rfc822".equals(mimeHeader.contentType)) {
+                if ("message/rfc822".equalsIgnoreCase(mimeHeader.contentType)) {
                     String messageAttachmentPath = null;
 
                     // Get real attachment path from owa page content
@@ -911,7 +911,7 @@ public class ExchangeSession {
                 throw new IOException(e + " " + e.getMessage());
             }
             String currentBody;
-            if ("text/html".equals(mimeHeader.contentType)) {
+            if ("text/html".equalsIgnoreCase(mimeHeader.contentType)) {
                 currentBody = htmlBody;
                 // patch charset if null and html body encoded
                 if (mimeHeader.charset == null) {
@@ -1043,7 +1043,7 @@ public class ExchangeSession {
                 throw new RuntimeException("Exception retrieving " + attachmentUrl + " : " + e + " " + e.getCause());
             }
             // fix content type for known extension
-            if ("application/octet-stream".equals(result) && attachmentUrl.endsWith(".pdf")) {
+            if ("application/octet-stream".equalsIgnoreCase(result) && attachmentUrl.endsWith(".pdf")) {
                 result = "application/pdf";
             }
             return result;
@@ -1089,7 +1089,7 @@ public class ExchangeSession {
             // do not load attachments twice
             if (attachmentsMap == null) {
 
-                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl + "?Cmd=Open"));
+                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl + "?Cmd=Open&unfiltered=1"));
                 wdr.retrieveSessionInstance().executeMethod(getMethod);
                 if (getMethod.getStatusCode() != 200) {
                     throw new IOException("Unable to get attachments: " + getMethod.getStatusCode()
@@ -1353,7 +1353,7 @@ public class ExchangeSession {
             writeLine(os, "");
 
             // strip header content for attached messages
-            if ("message/rfc822".equals(contentType)) {
+            if ("message/rfc822".equalsIgnoreCase(contentType)) {
                 MimeHeader internalMimeHeader = new MimeHeader();
                 internalMimeHeader.processHeaders(reader, null);
                 if (internalMimeHeader.boundary != null) {
