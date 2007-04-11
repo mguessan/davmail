@@ -1162,8 +1162,10 @@ public class ExchangeSession {
                     ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
                             // quick fix remove default office namespace
                             .replaceFirst("xmlns=\".*\"", "")
-                                    // quick fix remove inline processing instructions
+                            // quick fix remove inline processing instructions
                             .replaceAll("<\\?xml:namespace", "")
+                            // quick fix invalid comments
+                            .replaceAll("<!---", "<!-- -")
                             .getBytes("UTF-8"));
                     XmlDocument xmlBody = tidyDocument(bais);
                     List<Attribute> htmlBodyAllImgList = xmlBody.getNodes("//img/@src");
