@@ -1,0 +1,111 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>davmail</groupId>
+    <artifactId>davmail</artifactId>
+    <packaging>jar</packaging>
+    <version>1.0.1</version>
+    <name>davmail</name>
+    <url>http://www.sourceforge.net/projects/davmail</url>
+    <description>
+        Ever wanted to get rid of Outlook ? Davmail is a POP/SMTP exchange gateway allowing
+        users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
+        through Outlook Web Access on any platform (Java based)
+    </description>
+    <developers>
+        <developer>
+            <name>Micka&euml;l Guessant</name>
+            <email>mguessan@free.fr</email>
+            <url>http://mguessan.free.fr</url>
+            <roles>
+                <role>Project Founder</role>
+                <!--  <role>Java Developer</role> -->
+            </roles>
+        </developer>
+    </developers>
+    <mailingLists>
+        <mailingList>
+            <name>DavMail User List</name>
+            <post>davmail-users@lists.sourceforge.net.</post>
+            <subscribe>http://lists.sourceforge.net/lists/listinfo/davmail-users</subscribe>
+            <unsubscribe>http://lists.sourceforge.net/lists/listinfo/davmail-users</unsubscribe>
+            <archive>http://sourceforge.net/mailarchive/forum.php?forum_name=davmail-users</archive>
+        </mailingList>
+    </mailingLists>
+    <scm>
+        <connection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</connection>
+        <developerConnection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://davmail.svn.sourceforge.net/svnroot/davmail/trunk/</url>
+    </scm>
+    <issueManagement>
+        <system>SourceForge</system>
+        <url>http://sourceforge.net/tracker/?group_id=184600</url>
+    </issueManagement>
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Repository Switchboard</name>
+            <layout>default</layout>
+            <url>http://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>oqube</id>
+            <name>javax additional repository</name>
+            <layout>default</layout>
+            <url>http://www.oqube.com/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>slide</groupId>
+            <artifactId>slide-webdavlib</artifactId>
+            <version>2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.8</version>
+        </dependency>
+        <dependency>
+            <groupId>jtidy</groupId>
+            <artifactId>jtidy</artifactId>
+            <version>4aug2000r7-dev</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>javamail</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>jaf</artifactId>
+            <version>1.1</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <sourceDirectory>src/java</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

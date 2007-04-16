@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Maven">
+    <bannerLeft>
+        <name>SourceForge</name>
+        <src>http://images.sourceforge.net/sfx/logo.gif</src>
+        <href>http://sf.net</href>
+    </bannerLeft>
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-default-skin</artifactId>
+    </skin>
+    <body>
+
+        <menu name="Quick Links">
+            <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
+            <item name="Download" href="http://sourceforge.net/project/platformdownload.php?group_id=184600"/>
+            <item name="Getting Started" href="/gettingstarted.html"/>
+        </menu>
+
+        ${reports}
+    </body>
+</project>
