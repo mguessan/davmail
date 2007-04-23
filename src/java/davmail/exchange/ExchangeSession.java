@@ -822,6 +822,13 @@ public class ExchangeSession {
                         if (attachment == null && partHeader.name == null) {
                             attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
                         }
+                        // try to get by index if attachment renamed to application
+                        if (attachment == null && partHeader.name != null) {
+                            Attachment currentAttachment = attachmentsMap.get(String.valueOf(attachmentIndex));
+                            if (currentAttachment.name.startsWith("application")) {
+                                attachment = currentAttachment;
+                            }
+                        }
                         attachmentIndex++;
                         if (attachment == null) {
                             // only warn, could happen depending on IIS config
@@ -1101,7 +1108,7 @@ public class ExchangeSession {
                 getMethod.releaseConnection();
 
                 attachmentsMap = new HashMap<String, Attachment>();
-                int attachmentIndex = 2;
+                int attachmentIndex = 1;
                 // list file attachments identified explicitly
                 List<Attribute> list = xmlDocument.getNodes("//table[@id='idAttachmentWell']//a/@href");
                 for (Attribute element : list) {
