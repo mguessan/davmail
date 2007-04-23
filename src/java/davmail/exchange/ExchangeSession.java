@@ -447,7 +447,8 @@ public class ExchangeSession {
             Message message = buildMessage(entity);
             if ("urn:content-classes:message".equals(message.contentClass) ||
                     "urn:content-classes:calendarmessage".equals(message.contentClass) ||
-                    "urn:content-classes:recallmessage".equals(message.contentClass)) {
+                    "urn:content-classes:recallmessage".equals(message.contentClass) ||
+                    "urn:content-classes:dsn".equals(message.contentClass)) {
                 messages.add(message);
             }
         }
@@ -785,7 +786,9 @@ public class ExchangeSession {
         public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader) throws IOException {
             String line;
             // with alternative, there are two body forms (plain+html)
-            if ("multipart/alternative".equalsIgnoreCase(mimeHeader.contentType)) {
+            // with multipart/report server sends plain and delivery-status
+            if ("multipart/alternative".equalsIgnoreCase(mimeHeader.contentType) ||
+                    "multipart/report".equalsIgnoreCase(mimeHeader.contentType)) {
                 attachmentIndex--;
             }
 
@@ -917,7 +920,7 @@ public class ExchangeSession {
             } catch (MessagingException e) {
                 throw new IOException(e + " " + e.getMessage());
             }
-            String currentBody;
+            String currentBody = null;
             if ("text/html".equalsIgnoreCase(mimeHeader.contentType)) {
                 currentBody = htmlBody;
                 // patch charset if null and html body encoded
@@ -942,22 +945,24 @@ public class ExchangeSession {
                     }
                 }
 
-            } else {
+            } else if ("text/plain".equalsIgnoreCase(mimeHeader.contentType)) {
                 currentBody = body;
             }
-            if (mimeHeader.charset != null) {
-                try {
-                    quotedOs.write(currentBody.getBytes(MimeUtility.javaCharset(mimeHeader.charset)));
-                } catch (UnsupportedEncodingException uee) {
-                    // TODO : try to decode other encodings
+            if (currentBody != null) {
+                if (mimeHeader.charset != null) {
+                    try {
+                        quotedOs.write(currentBody.getBytes(MimeUtility.javaCharset(mimeHeader.charset)));
+                    } catch (UnsupportedEncodingException uee) {
+                        // TODO : try to decode other encodings
+                        quotedOs.write(currentBody.getBytes());
+                    }
+                } else {
                     quotedOs.write(currentBody.getBytes());
                 }
-            } else {
-                quotedOs.write(currentBody.getBytes());
+                quotedOs.flush();
+                os.write('\r');
+                os.write('\n');
             }
-            quotedOs.flush();
-            os.write('\r');
-            os.write('\n');
         }
 
         public void delete() throws IOException {
@@ -1109,6 +1114,10 @@ public class ExchangeSession {
 
                 attachmentsMap = new HashMap<String, Attachment>();
                 int attachmentIndex = 1;
+                // fix empty body in dsn report
+                if (body == null || body.length() == 0) {
+                    body = xmlDocument.getValue("//textarea");
+                }
                 // list file attachments identified explicitly
                 List<Attribute> list = xmlDocument.getNodes("//table[@id='idAttachmentWell']//a/@href");
                 for (Attribute element : list) {
@@ -1169,9 +1178,9 @@ public class ExchangeSession {
                     ByteArrayInputStream bais = new ByteArrayInputStream(htmlBody
                             // quick fix remove default office namespace
                             .replaceFirst("xmlns=\".*\"", "")
-                            // quick fix remove inline processing instructions
+                                    // quick fix remove inline processing instructions
                             .replaceAll("<\\?xml:namespace", "")
-                            // quick fix invalid comments
+                                    // quick fix invalid comments
                             .replaceAll("<!---", "<!-- -")
                             .getBytes("UTF-8"));
                     XmlDocument xmlBody = tidyDocument(bais);
