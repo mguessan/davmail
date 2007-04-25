@@ -665,8 +665,9 @@ public class ExchangeSession {
             StringBuffer result = new StringBuffer();
             boolean mstnefDetected = false;
             String boundary = null;
+            BufferedReader reader = null;
             try {
-                BufferedReader reader = new BufferedReader(new StringReader(fullHeaders));
+                reader = new BufferedReader(new StringReader(fullHeaders));
                 String line;
                 line = reader.readLine();
                 while (line != null && line.length() > 0) {
@@ -754,33 +755,52 @@ public class ExchangeSession {
 
             } catch (IOException e) {
                 throw new RuntimeException("Unable to preprocess headers " + e + " " + e.getMessage());
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
             }
         }
 
 
         public void write(OutputStream os) throws IOException {
             // TODO : filter submessage headers in fullHeaders
-            BufferedReader reader = new BufferedReader(new StringReader(fullHeaders));
-            // skip first line
-            reader.readLine();
-            MimeHeader mimeHeader = new MimeHeader();
-            mimeHeader.processHeaders(reader, os);
-            // non MIME message without attachments, append body
-            if (mimeHeader.boundary == null) {
-                os.write('\r');
-                os.write('\n');
-                writeBody(os, mimeHeader);
+            BufferedReader reader = null;
+            try {
+                reader = new BufferedReader(new StringReader(fullHeaders));
+                // skip first line
+                reader.readLine();
+                MimeHeader mimeHeader = new MimeHeader();
+                mimeHeader.processHeaders(reader, os);
+                // non MIME message without attachments, append body
+                if (mimeHeader.boundary == null) {
+                    os.write('\r');
+                    os.write('\n');
+                    writeBody(os, mimeHeader);
 
-                if (hasAttachment) {
-                    os.write("**warning : missing attachments**".getBytes());
+                    if (hasAttachment) {
+                        os.write("**warning : missing attachments**".getBytes());
+                    }
+                } else {
+                    attachmentIndex = 0;
+
+                    loadAttachments();
+                    writeMimeMessage(reader, os, mimeHeader);
                 }
-            } else {
-                attachmentIndex = 0;
-
-                loadAttachments();
-                writeMimeMessage(reader, os, mimeHeader);
+                os.flush();
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
             }
-            os.flush();
         }
 
         public void writeMimeMessage(BufferedReader reader, OutputStream os, MimeHeader mimeHeader) throws IOException {
@@ -852,8 +872,8 @@ public class ExchangeSession {
         }
 
         protected void writeAttachment(OutputStream os, MimeHeader mimeHeader, Attachment attachment) throws IOException {
+            OutputStream quotedOs = null;
             try {
-                OutputStream quotedOs;
                 try {
                     // try another base64Encoder implementation
                     if ("base64".equalsIgnoreCase(mimeHeader.contentTransferEncoding)) {
@@ -896,11 +916,22 @@ public class ExchangeSession {
                     wdr.retrieveSessionInstance().executeMethod(method);
 
                     // encode attachment
-                    BufferedInputStream bis = new BufferedInputStream(method.getResponseBodyAsStream());
-                    byte[] buffer = new byte[4096];
-                    int count;
-                    while ((count = bis.read(buffer)) >= 0) {
-                        quotedOs.write(buffer, 0, count);
+                    BufferedInputStream bis = null;
+                    try {
+                        bis = new BufferedInputStream(method.getResponseBodyAsStream());
+                        byte[] buffer = new byte[4096];
+                        int count;
+                        while ((count = bis.read(buffer)) >= 0) {
+                            quotedOs.write(buffer, 0, count);
+                        }
+                    } finally {
+                        if (bis != null) {
+                            try {
+                                bis.close();
+                            } catch (IOException e) {
+                                // ignore
+                            }
+                        }
                     }
                     bis.close();
                     quotedOs.flush();
@@ -910,6 +941,14 @@ public class ExchangeSession {
 
             } catch (HttpException e) {
                 throw new IOException(e + " " + e.getMessage());
+            } finally {
+                if (quotedOs != null) {
+                    try {
+                        quotedOs.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
             }
         }
 
@@ -1009,15 +1048,26 @@ public class ExchangeSession {
 
         public void printHeaders(OutputStream os) throws IOException {
             String line;
-            BufferedReader reader = new BufferedReader(new StringReader(fullHeaders));
-            // skip first line
-            reader.readLine();
-            line = reader.readLine();
-            while (line != null && line.length() > 0) {
-                os.write(line.getBytes());
-                os.write('\r');
-                os.write('\n');
+            BufferedReader reader = null;
+            try {
+                reader = new BufferedReader(new StringReader(fullHeaders));
+                // skip first line
+                reader.readLine();
                 line = reader.readLine();
+                while (line != null && line.length() > 0) {
+                    os.write(line.getBytes());
+                    os.write('\r');
+                    os.write('\n');
+                    line = reader.readLine();
+                }
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
             }
         }
 
