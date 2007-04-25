@@ -54,8 +54,7 @@ public class PopConnection extends AbstractConnection {
         StringTokenizer tokens;
 
         try {
-            session = new ExchangeSession();
-            session.checkConfig();
+            ExchangeSession.checkConfig();
             sendOK("DavMail POP ready at " + new Date());
 
             for (; ;) {
@@ -96,6 +95,7 @@ public class PopConnection extends AbstractConnection {
                         } else {
                             password = tokens.nextToken();
                             try {
+                                session = new ExchangeSession();
                                 session.login(userName, password);
                                 messages = session.getAllMessages();
                                 sendOK("PASS");

@@ -135,7 +135,7 @@ public class ExchangeSession {
      *
      * @param httpClient current Http client
      */
-    protected void configureClient(HttpClient httpClient) {
+    protected static void configureClient(HttpClient httpClient) {
         String enableProxy = Settings.getProperty("davmail.enableProxy");
         String proxyHost = null;
         String proxyPort = null;
@@ -169,7 +169,7 @@ public class ExchangeSession {
 
     }
 
-    public void checkConfig() throws IOException {
+    public static void checkConfig() throws IOException {
         try {
             String url = Settings.getProperty("davmail.url");
 

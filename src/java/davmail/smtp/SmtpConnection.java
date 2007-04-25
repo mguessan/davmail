@@ -31,8 +31,7 @@ public class SmtpConnection extends AbstractConnection {
 
 
         try {
-            session = new ExchangeSession();
-            session.checkConfig();
+            ExchangeSession.checkConfig();
             sendClient("220 DavMail SMTP ready at " + new Date());
             for (; ;) {
                 line = readClient();
