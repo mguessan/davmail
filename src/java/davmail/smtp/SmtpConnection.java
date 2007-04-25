@@ -31,6 +31,8 @@ public class SmtpConnection extends AbstractConnection {
 
 
         try {
+            session = new ExchangeSession();
+            session.checkConfig();
             sendClient("220 DavMail SMTP ready at " + new Date());
             for (; ;) {
                 line = readClient();
@@ -118,7 +120,12 @@ public class SmtpConnection extends AbstractConnection {
                 os.flush();
             }
         } catch (IOException e) {
-            DavGatewayTray.error("Exception handling client",e);
+            DavGatewayTray.error(e.getMessage());
+            try {
+                sendClient("500 "+e.getMessage());
+            } catch (IOException e2) {
+                DavGatewayTray.debug("Exception sending error to client", e2);
+            }
         } finally {
             try {
                 client.close();

@@ -4,10 +4,11 @@ import davmail.AbstractConnection;
 import davmail.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.*;
 import java.io.IOException;
+import java.net.Socket;
+import java.util.Date;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Dav Gateway pop connection implementation
@@ -53,6 +54,8 @@ public class PopConnection extends AbstractConnection {
         StringTokenizer tokens;
 
         try {
+            session = new ExchangeSession();
+            session.checkConfig();
             sendOK("DavMail POP ready at " + new Date());
 
             for (; ;) {
@@ -93,16 +96,10 @@ public class PopConnection extends AbstractConnection {
                         } else {
                             password = tokens.nextToken();
                             try {
-                                session = new ExchangeSession();
                                 session.login(userName, password);
                                 messages = session.getAllMessages();
                                 sendOK("PASS");
                                 state = AUTHENTICATED;
-                            } catch (UnknownHostException e) {
-                                DavGatewayTray.error("Connection failed", e);
-                                sendERR("Connection failed : " + e + " " + e.getMessage());
-                                // close connection
-                                break;
                             } catch (Exception e) {
                                 DavGatewayTray.error("Authentication failed", e);
                                 sendERR("authentication failed : " + e + " " + e.getMessage());
@@ -185,7 +182,12 @@ public class PopConnection extends AbstractConnection {
                 os.flush();
             }
         } catch (IOException e) {
-            DavGatewayTray.error("Exception handling client", e);
+            DavGatewayTray.error(e.getMessage());
+            try {
+                sendERR(e.getMessage());
+            } catch (IOException e2) {
+                DavGatewayTray.debug("Exception sending error to client", e2);
+            }
         } finally {
             try {
                 client.close();

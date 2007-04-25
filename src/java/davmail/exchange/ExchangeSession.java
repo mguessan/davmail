@@ -130,24 +130,75 @@ public class ExchangeSession {
         dateFormatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
     }
 
+    /**
+     * Update http client configuration (proxy)
+     *
+     * @param httpClient current Http client
+     */
+    protected void configureClient(HttpClient httpClient) {
+        String enableProxy = Settings.getProperty("davmail.enableProxy");
+        String proxyHost = null;
+        String proxyPort = null;
+        String proxyUser = null;
+        String proxyPassword = null;
+
+        if ("true".equals(enableProxy)) {
+            proxyHost = Settings.getProperty("davmail.proxyHost");
+            proxyPort = Settings.getProperty("davmail.proxyPort");
+            proxyUser = Settings.getProperty("davmail.proxyUser");
+            proxyPassword = Settings.getProperty("davmail.proxyPassword");
+        }
+
+        // configure proxy
+        if (proxyHost != null && proxyHost.length() > 0) {
+            httpClient.getHostConfiguration().setProxy(proxyHost, Integer.parseInt(proxyPort));
+            if (proxyUser != null && proxyUser.length() > 0) {
+                // detect ntlm authentication (windows domain name in user name)
+                int backslashindex = proxyUser.indexOf("\\");
+                if (backslashindex > 0) {
+                    httpClient.getState().setProxyCredentials(null, proxyHost,
+                            new NTCredentials(proxyUser.substring(backslashindex + 1),
+                                    proxyPassword, null,
+                                    proxyUser.substring(0, backslashindex)));
+                } else {
+                    httpClient.getState().setProxyCredentials(null, proxyHost,
+                            new UsernamePasswordCredentials(proxyUser, proxyPassword));
+                }
+            }
+        }
+
+    }
+
+    public void checkConfig() throws IOException {
+        try {
+            String url = Settings.getProperty("davmail.url");
+
+            // create an HttpClient instance
+            HttpClient httpClient = new HttpClient();
+            configureClient(httpClient);
+
+            // get webmail root url (will follow redirects)
+            HttpMethod testMethod = new GetMethod(url);
+            int status = httpClient.executeMethod(testMethod);
+            testMethod.releaseConnection();
+            logger.debug("Test configuration status: " + status);
+            if (status != HttpStatus.SC_OK) {
+                throw new IOException("Unable to connect to OWA at " + url + ", status code " +
+                        status + ", check configuration");
+            }
+
+        } catch (Exception exc) {
+            logger.error("DavMail configuration exception: \n"+exc.getMessage(), exc);
+            throw new IOException("DavMail configuration exception: \n"+exc.getMessage(), exc);
+        }
+
+    }
+
     public void login(String userName, String password) throws Exception {
         try {
             String url = Settings.getProperty("davmail.url");
-            String enableProxy = Settings.getProperty("davmail.enableProxy");
-            String proxyHost = null;
-            String proxyPort = null;
-            String proxyUser = null;
-            String proxyPassword = null;
-
-            if ("true".equals(enableProxy)) {
-                proxyHost = Settings.getProperty("davmail.proxyHost");
-                proxyPort = Settings.getProperty("davmail.proxyPort");
-                proxyUser = Settings.getProperty("davmail.proxyUser");
-                proxyPassword = Settings.getProperty("davmail.proxyPassword");
-            }
 
             // get proxy configuration from setttings properties
-
             URL urlObject = new URL(url);
             // webdavresource is unable to create the correct url type
             HttpURL httpURL;
@@ -176,23 +227,7 @@ public class ExchangeSession {
             // do not send basic auth automatically
             httpClient.getState().setAuthenticationPreemptive(false);
 
-            // configure proxy
-            if (proxyHost != null && proxyHost.length() > 0) {
-                httpClient.getHostConfiguration().setProxy(proxyHost, Integer.parseInt(proxyPort));
-                if (proxyUser != null && proxyUser.length() > 0) {
-                    // detect ntlm authentication (windows domain name in user name)
-                    int backslashindex = proxyUser.indexOf("\\");
-                    if (backslashindex > 0) {
-                        httpClient.getState().setProxyCredentials(null, proxyHost,
-                                new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                        proxyPassword, null,
-                                        proxyUser.substring(0, backslashindex)));
-                    } else {
-                        httpClient.getState().setProxyCredentials(null, proxyHost,
-                                new UsernamePasswordCredentials(proxyUser, proxyPassword));
-                    }
-                }
-            }
+            configureClient(httpClient);
 
             // get webmail root url (will follow redirects)
             // providing credentials
