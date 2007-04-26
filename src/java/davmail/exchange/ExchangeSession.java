@@ -184,7 +184,8 @@ public class ExchangeSession {
             int status = httpClient.executeMethod(testMethod);
             testMethod.releaseConnection();
             logger.debug("Test configuration status: " + status);
-            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED) {
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
+                    && status != HttpStatus.SC_MOVED_TEMPORARILY) {
                 throw new IOException("Unable to connect to OWA at " + url + ", status code " +
                         status + ", check configuration");
             }
@@ -1252,6 +1253,8 @@ public class ExchangeSession {
                             }
                             // decode slashes in attachment name
                             attachmentName = attachmentName.replaceAll("_xF8FF_", "/");
+                            // decode tilde
+                            attachmentName = attachmentName.replaceAll("_x007E_", "~");
                             // trim attachment name
                             attachmentName = attachmentName.trim();
 
