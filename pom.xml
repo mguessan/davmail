@@ -108,4 +108,10 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <site>
+            <id>website</id>
+            <url>scpexe://shell.sourceforge.net/home/groups/d/da/davmail/htdocs</url>
+        </site>
+    </distributionManagement>
 </project>
