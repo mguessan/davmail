@@ -928,11 +928,13 @@ public class ExchangeSession {
         }
 
         protected void writeAttachment(OutputStream os, MimeHeader mimeHeader, Attachment attachment) throws IOException {
-            OutputStream quotedOs = null;
             try {
+                // quotedOs must not be closed : this would close the underlying outputstream
+                OutputStream quotedOs;
                 try {
                     // try another base64Encoder implementation
                     if ("base64".equalsIgnoreCase(mimeHeader.contentTransferEncoding)) {
+                        //noinspection IOResourceOpenedButNotSafelyClosed
                         quotedOs = new BASE64EncoderStream(os);
                     } else {
                         quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
@@ -989,7 +991,6 @@ public class ExchangeSession {
                             }
                         }
                     }
-                    bis.close();
                     quotedOs.flush();
                     os.write('\r');
                     os.write('\n');
@@ -997,14 +998,6 @@ public class ExchangeSession {
 
             } catch (HttpException e) {
                 throw new IOException(e + " " + e.getMessage());
-            } finally {
-                if (quotedOs != null) {
-                    try {
-                        quotedOs.close();
-                    } catch (IOException e) {
-                        // ignore
-                    }
-                }
             }
         }
 

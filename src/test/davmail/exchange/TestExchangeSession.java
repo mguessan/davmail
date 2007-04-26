@@ -14,7 +14,7 @@ public class TestExchangeSession {
         ExchangeSession session = new ExchangeSession();
         // test auth
         try {
-            session.checkConfig();
+            ExchangeSession.checkConfig();
             session.login(argv[1], argv[2]);
 
             ExchangeSession.Folder folder = session.selectFolder(argv[3]);
