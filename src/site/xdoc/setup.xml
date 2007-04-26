@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>Setup DavMail</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="DavMail Setup">
+            <p>Prerequisite : Sun J2SE 1.6 is mandatory to enable tray icon support. You may use
+                DavMail with an older version, but the gateway will run as a command line application.
+            </p>
+
+            <p>DavMail setup is straightforward, just follow the setup wizard.
+            </p>
+            <p>Choose language:
+            </p>
+            <img src="images/setup1.png"/>
+            <p>Click Next:
+            </p>
+            <img src="images/setup2.png"/>
+            <p>Accept GPL licence:
+            </p>
+            <img src="images/setup3.png"/>
+            <p>Choose path:
+            </p>
+            <img src="images/setup4.png"/>
+            <p>Launch installation and start gateway:
+            </p>
+            <img src="images/setup5.png"/>
+            <p>Adjust DavMail settings : <a href="gettingstarted.html">Getting started</a></p>
+        </section>
+
+    </body>
+</document>

@@ -2,25 +2,91 @@
 
 <document>
 
-<properties>
-  <title>Getting started with DavMail</title>
-  <author email="mguessan@free.fr">Mickaël Guessant</author>
-</properties>
+    <properties>
+        <title>Getting started with DavMail</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
 
-<body>
+    <body>
 
-<section name="Setup">
+        <section name="DavMail configuration">
+            <p>In order to change DavMail settings, double click on the tray icon or
+                right click on it and choose
+                <code>Settings...</code>
+            </p>
+            <img src="images/davmailSettings.png"/>
+            <p>
+                The following table describes the main options :
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Sample value</th>
+                    </tr>
+                    <tr>
+                        <td>OWA url</td>
+                        <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL</td>
+                        <td>https://mail.bt.com/exchange/</td>
+                    </tr>
+                    <tr>
+                        <td>Local POP port</td>
+                        <td>Local POP server port to configure in POP client configuration</td>
+                        <td>110</td>
+                    </tr>
+                    <tr>
+                        <td>Local SMTP port</td>
+                        <td>Local SMTP server port to configure in POP client configuration</td>
+                        <td>25</td>
+                    </tr>
+                    <tr>
+                        <td>Keep Delay</td>
+                        <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
+                        <td>30</td>
+                    </tr>
+                </table>
+            </p>
+            <p>The bottom panel can be activated to set an HTTP proxy and associated credentials if needed</p>
+        </section>
+        <section name="Thunderbird configuration">
+            <p>DavMail can be used with any POP3/SMTP client by adjusting the following description designed for
+                Thunderbird
+            </p>
 
-<p>
-</p>
+            <section name="Create a new account">
+                <img src="images/thunderbirdAccount1.png"/>
 
-</section>
+                <p>Edit common name and Exchange mail address:
+                </p>
+                <img src="images/thunderbirdAccount2.png"/>
 
-<section name="Thunderbird configuration">
+                <p>Choose POP as server type, located at localhost:
+                </p>
+                <img src="images/thunderbirdAccount3.png"/>
 
 
+                <p>Populate in and out login names with Active Directory account name, i.e. domain\account
+                </p>
+                <img src="images/thunderbirdAccount4.png"/>
 
-</section>
+                <p>Edit account name (email address by default):
+                </p>
+                <img src="images/thunderbirdAccount5.png"/>
 
-</body>
+                <p>Finish:
+                </p>
+                <img src="images/thunderbirdAccount6.png"/>
+
+            </section>
+            <section name="Create a new SMTP configuration">
+                <p>Create a new outgoing mail configuration under account settings:
+                </p>
+                <img src="images/thunderbirdSmtp.png"/>
+                <p>Server name is localhost, edit port according to DavMail settings.
+                    The connection must use authentication with Active Directory account and encryption is not needed.
+                </p>
+
+            </section>
+        </section>
+
+    </body>
 </document>
