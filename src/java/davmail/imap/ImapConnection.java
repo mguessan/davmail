@@ -56,7 +56,7 @@ public class ImapConnection extends AbstractConnection {
                                 sendClient(commandId + " OK Authenticated");
                                 state = AUTHENTICATED;
                             } catch (Exception e) {
-                                DavGatewayTray.error("Authentication failed",e);
+                                DavGatewayTray.error(e.getMessage());
                                 sendClient(commandId + " NO LOGIN failed");
                                 state = INITIAL;
                             }
@@ -178,7 +178,7 @@ public class ImapConnection extends AbstractConnection {
         return result;
     }
 
-    public void sendMessage(StringBuffer buffer) throws Exception {
+    public void sendMessage(StringBuffer buffer) {
         // TODO implement
     }
 }

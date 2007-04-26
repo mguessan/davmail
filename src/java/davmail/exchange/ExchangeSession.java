@@ -1,23 +1,23 @@
 package davmail.exchange;
 
+import davmail.Settings;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
-import org.apache.log4j.Logger;
 import org.jdom.Attribute;
-import org.jdom.JDOMException;
 import org.jdom.input.DOMBuilder;
-import org.w3c.tidy.Tidy;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.Element;
+import org.w3c.tidy.Tidy;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeUtility;
@@ -26,8 +26,6 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
-import davmail.Settings;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -136,6 +134,9 @@ public class ExchangeSession {
      * @param httpClient current Http client
      */
     protected static void configureClient(HttpClient httpClient) {
+        // do not send basic auth automatically
+        httpClient.getState().setAuthenticationPreemptive(false);
+
         String enableProxy = Settings.getProperty("davmail.enableProxy");
         String proxyHost = null;
         String proxyPort = null;
@@ -177,19 +178,20 @@ public class ExchangeSession {
             HttpClient httpClient = new HttpClient();
             configureClient(httpClient);
 
-            // get webmail root url (will follow redirects)
+            // get webmail root url (will not follow redirects)
             HttpMethod testMethod = new GetMethod(url);
+            testMethod.setFollowRedirects(false);
             int status = httpClient.executeMethod(testMethod);
             testMethod.releaseConnection();
             logger.debug("Test configuration status: " + status);
-            if (status != HttpStatus.SC_OK) {
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED) {
                 throw new IOException("Unable to connect to OWA at " + url + ", status code " +
                         status + ", check configuration");
             }
 
         } catch (Exception exc) {
-            logger.error("DavMail configuration exception: \n"+exc.getMessage(), exc);
-            throw new IOException("DavMail configuration exception: \n"+exc.getMessage(), exc);
+            logger.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
+            throw new IOException("DavMail configuration exception: \n" + exc.getMessage(), exc);
         }
 
     }
@@ -224,8 +226,6 @@ public class ExchangeSession {
             authPrefs.add(AuthPolicy.BASIC);
             httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY,authPrefs);
 */
-            // do not send basic auth automatically
-            httpClient.getState().setAuthenticationPreemptive(false);
 
             configureClient(httpClient);
 
@@ -272,6 +272,7 @@ public class ExchangeSession {
                     && status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
+                ex.setReason(method.getStatusText());
                 throw ex;
             }
 
@@ -338,14 +339,34 @@ public class ExchangeSession {
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
         } catch (Exception exc) {
-            logger.error("Exchange login exception ", exc);
+            StringBuffer message = new StringBuffer();
+            message.append("DavMail login exception: ");
+            if (exc.getMessage() != null) {
+                message.append(exc.getMessage());
+            } else if (exc instanceof HttpException) {
+                message.append(((HttpException) exc).getReasonCode());
+                String httpReason = ((HttpException) exc).getReason();
+                if (httpReason != null) {
+                    message.append(" ");
+                    message.append(httpReason);
+                }
+            } else {
+                message.append(exc);
+            }
             try {
-                System.err.println(
-                        wdr.getStatusCode() + " " + wdr.getStatusMessage());
+                message.append("\nWebdav status:");
+                message.append(wdr.getStatusCode());
+
+                String webdavStatusMessage = wdr.getStatusMessage();
+                if (webdavStatusMessage != null) {
+                    message.append(webdavStatusMessage);
+                }
             } catch (Exception e) {
                 logger.error("Exception getting status from " + wdr);
             }
-            throw exc;
+
+            logger.error(message.toString());
+            throw new IOException(message.toString());
         }
 
     }
@@ -1174,9 +1195,7 @@ public class ExchangeSession {
                     }
                 }
                 xmlDocument.load(builder.build(w3cDocument));
-            } catch (IOException ex1) {
-                logger.error("Exception parsing document", ex1);
-            } catch (JDOMException ex1) {
+            } catch (Exception ex1) {
                 logger.error("Exception parsing document", ex1);
             }
             return xmlDocument;

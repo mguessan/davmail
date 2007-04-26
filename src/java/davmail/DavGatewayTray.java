@@ -160,6 +160,7 @@ public class DavGatewayTray {
                 ActionListener exitListener = new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         SystemTray.getSystemTray().remove(trayIcon);
+                        //noinspection CallToSystemExit
                         System.exit(0);
                     }
                 };

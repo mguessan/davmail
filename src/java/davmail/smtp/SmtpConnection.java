@@ -65,8 +65,13 @@ public class SmtpConnection extends AbstractConnection {
                                     sendClient("235 OK Authenticated");
                                     state = AUTHENTICATED;
                                 } catch (Exception e) {
-                                    DavGatewayTray.warn("Authentication failed",e);
-                                    sendClient("554 Authenticated failed");
+                                    String message = e.getMessage();
+                                    if (message == null) {
+                                        message = e.toString();
+                                    }
+                                    DavGatewayTray.error(message);
+                                    message = message.replaceAll("\\n", " ");
+                                    sendClient("554 Authenticated failed " + message);
                                     state = INITIAL;
                                 }
                             } else {
@@ -101,9 +106,9 @@ public class SmtpConnection extends AbstractConnection {
                                 state = AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
                             } catch (Exception e) {
-                                DavGatewayTray.error("Authentication failed",e);
+                                DavGatewayTray.error("Authentication failed", e);
                                 state = AUTHENTICATED;
-                                sendClient("451 Error : " +e+" "+ e.getMessage());
+                                sendClient("451 Error : " + e + " " + e.getMessage());
                             }
 
                         } else {
@@ -121,7 +126,7 @@ public class SmtpConnection extends AbstractConnection {
         } catch (IOException e) {
             DavGatewayTray.error(e.getMessage());
             try {
-                sendClient("500 "+e.getMessage());
+                sendClient("500 " + e.getMessage());
             } catch (IOException e2) {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
@@ -129,14 +134,14 @@ public class SmtpConnection extends AbstractConnection {
             try {
                 client.close();
             } catch (IOException e2) {
-                DavGatewayTray.debug("Exception closing client",e2);
+                DavGatewayTray.debug("Exception closing client", e2);
             }
             try {
                 if (session != null) {
                     session.close();
                 }
             } catch (IOException e3) {
-                DavGatewayTray.debug("Exception closing gateway",e3);
+                DavGatewayTray.debug("Exception closing gateway", e3);
             }
         }
         DavGatewayTray.resetIcon();

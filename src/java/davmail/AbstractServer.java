@@ -18,17 +18,13 @@ public abstract class AbstractServer extends Thread {
     public AbstractServer(int port) {
         this.port = port;
         try {
+            //noinspection SocketOpenedButNotSafelyClosed
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
             DavGatewayTray.error("Exception creating server socket", e);
         }
     }
 
-    // Exit with an error message, when an exception occurs.
-    public static void fail(Exception e, String msg) {
-        System.err.println(msg + ": " + e);
-        System.exit(1);
-    }
 
     /**
      * The body of the server thread.  Loop forever, listening for and
@@ -37,10 +33,11 @@ public abstract class AbstractServer extends Thread {
      * new Socket.
      */
     public void run() {
+        Socket clientSocket = null;
         try {
             //noinspection InfiniteLoopStatement
             while (true) {
-                Socket clientSocket = serverSocket.accept();
+                clientSocket = serverSocket.accept();
                 DavGatewayTray.debug("Connection from " + clientSocket.getInetAddress() + " on port " + port);
                 // only accept localhost connections for security reasons
                 if (clientSocket.getInetAddress().toString().indexOf("127.0.0.1") > 0) {
@@ -53,6 +50,14 @@ public abstract class AbstractServer extends Thread {
             }
         } catch (IOException e) {
             DavGatewayTray.warn("Exception while listening for connections", e);
+        } finally {
+            try {
+                if (clientSocket != null) {
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                // ignore
+            }
         }
     }
 

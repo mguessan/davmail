@@ -1,6 +1,7 @@
 package davmail.exchange;
 
 // Imports
+
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,18 +17,18 @@ import java.io.UnsupportedEncodingException;
  * @author David A. Herman
  * @version 1.0 of September 2000
  * @see java.io.FilterOutputStream
- **/
+ */
 public class BASE64EncoderStream extends FilterOutputStream {
 
     /**
      * Useful constant representing the default maximum number of output
      * characters per line (76).
-     **/
+     */
     public static final int LINE_LENGTH = 76;
 
     /**
      * The BASE64 alphabet.
-     **/
+     */
     private static final byte[] alphabet;
 
     /**
@@ -45,28 +46,28 @@ public class BASE64EncoderStream extends FilterOutputStream {
 
     /**
      * The internal buffer of encoded output bytes.
-     **/
+     */
     private byte[] output = new byte[4];
 
     /**
      * The internal buffer of input bytes to be encoded.
-     **/
-    private byte[] input  = new byte[3];
+     */
+    private byte[] input = new byte[3];
 
     /**
      * The index of the next position in the internal buffer of input bytes
      * at which to store input.
-     **/
+     */
     private int inputIndex = 0;
 
     /**
      * The number of characters that have been output on the current line.
-     **/
+     */
     private int chars = 0;
 
     /**
      * The maximum number of characters to output per line.
-     **/
+     */
     private int maxLineLength;
 
     /**
@@ -74,7 +75,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * character of output data. This index is generated as input data comes
      * in, sometimes requiring more than one byte of input before it is
      * completely calculated, so it is shared in the object.
-     **/
+     */
     private int index;
 
     /**
@@ -82,7 +83,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * stream, with the default maximum number of characters per line.
      *
      * @param out output stream
-     **/
+     */
     public BASE64EncoderStream(OutputStream out) {
         this(out, LINE_LENGTH);
     }
@@ -96,7 +97,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      *
      * @param out the underlying output stream.
      * @param max the maximum number of output bytes per line.
-     **/
+     */
     public BASE64EncoderStream(OutputStream out, int max) {
         super(out);
         maxLineLength = max;
@@ -114,14 +115,13 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * underlying output stream, and closes the underlying output stream.
      *
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     public void close() throws IOException {
         try {
             flush();
         } catch (IOException ignored) {
             // ignore
         }
-
 
         // Add a terminating CRLF sequence.
         out.write('\r');
@@ -137,7 +137,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      *
      * @param b the byte array to be encoded.
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     public void write(byte b[]) throws IOException {
         write(b, 0, b.length);
     }
@@ -147,11 +147,11 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * at offset <code>off</code>, to be written to the underlying output
      * stream.
      *
-     * @param b the byte array to be encoded.
+     * @param b   the byte array to be encoded.
      * @param off the offset at which to start reading from the byte array.
      * @param len the number of bytes to read.
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     public void write(byte b[], int off, int len) throws IOException {
         for (int i = 0; i < len; i++) {
             write(b[off + i]);
@@ -167,7 +167,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      *
      * @param b the integer whose low-order byte is to be encoded.
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     public void write(int b) throws IOException {
         switch (inputIndex) {
             case 0:
@@ -179,7 +179,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
                 //            ----------------------------
                 // Output: 00 XXXXXX
 
-                input[0] = (byte)(b & 0xFF);
+                input[0] = (byte) (b & 0xFF);
                 index = ((input[0] & 0xFC) >> 2);
                 output[0] = alphabet[index];
 
@@ -188,7 +188,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
                 // to be the last byte of input, then it will
                 // already be padded with zeroes, and the rest
                 // can be padded with '=' characters.
-                index  = ((input[0] & 0x03) << 4);
+                index = ((input[0] & 0x03) << 4);
 
                 break;
 
@@ -202,7 +202,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
                 //         ----------------------------
                 // Output:    00 XX YYYY
 
-                input[1] = (byte)(b & 0xFF);
+                input[1] = (byte) (b & 0xFF);
 
                 // The first two bits of the second output character
                 // have already been calculated and stored in the
@@ -216,7 +216,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
                 // to be the last byte of input, then it will
                 // already be padded with zeroes, and the rest
                 // can be padded with '=' characters.
-                index  = ((input[1] & 0x0F) << 2);
+                index = ((input[1] & 0x0F) << 2);
 
                 break;
 
@@ -230,7 +230,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
                 //         ----------------------------
                 // Output:           00 XXXX YY
 
-                input[2] = (byte)(b & 0xFF);
+                input[2] = (byte) (b & 0xFF);
 
                 // The first four bits of the third output character
                 // have already been calculated and stored in the
@@ -268,21 +268,19 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * buffer is filled.
      *
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     private void writeOutput() throws IOException {
         int newchars = (chars + 4) % maxLineLength;
         if (newchars == 0) {
             out.write(output);
             out.write('\r');
             out.write('\n');
-        }
-        else if (newchars < chars) {
+        } else if (newchars < chars) {
             out.write(output, 0, 4 - newchars);
             out.write('\r');
             out.write('\n');
             out.write(output, 4 - newchars, newchars);
-        }
-        else
+        } else
             out.write(output);
         chars = newchars;
     }
@@ -297,7 +295,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
      * 6.8, for more information.
      *
      * @throws IOException if an I/O error occurs.
-     **/
+     */
     private void pad() throws IOException {
         // If the input index is 0, then we ended on a multiple of 3 bytes
         // of input, so no padding is necessary.
@@ -325,76 +323,44 @@ public class BASE64EncoderStream extends FilterOutputStream {
         }
     }
 
-	public static byte[] encode(byte[] bytes) {
+    public static byte[] encode(byte[] bytes) {
 
-		// Note: This is a public method on Sun's implementation
-		// and so it should be supported for compatibility.
-		// Also this method is used by the "B" encoding for now.
-		// This implementation usesthe encoding stream to
-		// process the bytes.  Possibly, the BASE64 encoding
-		// stream should use this method for it's encoding.
+        // Note: This is a public method on Sun's implementation
+        // and so it should be supported for compatibility.
+        // Also this method is used by the "B" encoding for now.
+        // This implementation usesthe encoding stream to
+        // process the bytes.  Possibly, the BASE64 encoding
+        // stream should use this method for it's encoding.
 
-		// Variables
-		ByteArrayOutputStream	byteStream;
-		BASE64EncoderStream		encoder;
+        // Variables
+        ByteArrayOutputStream byteStream;
+        BASE64EncoderStream encoder = null;
 
-		// Create Streams
-		byteStream = new ByteArrayOutputStream();
-		encoder = new BASE64EncoderStream(byteStream);
+        // Create Streams
+        byteStream = new ByteArrayOutputStream();
 
-		try {
-
-			// Write Bytes
-			encoder.write(bytes);
-			encoder.flush();
-			encoder.close();
-
-		} catch (IOException e) {
-            // ignore
-        } // try
-
-		// Return Encoded Byte Array
-		return byteStream.toByteArray();
-
-	} // encode()
-
-    /**
-     * <I>For testing.</I> Takes in a file name from the command line, or
-     * prompts the user for one if there are no command line options, and
-     * encodes the data in the file to BASE64, outputting the encoded
-     * data to <code>System.out</code>.
-     *
-     * @param args the command line arguments.
-     **/
-    public static void main(String args[]) {
-        String fileName = "";
-        if (args.length > 0)
-            fileName = args[0];
-        else {
-            System.out.print("File name: ");
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-            try {
-                fileName = in.readLine();
-            }
-            catch (Throwable e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        }
         try {
-            java.io.FileInputStream in = new java.io.FileInputStream(fileName);
-            BASE64EncoderStream out = new BASE64EncoderStream(System.out);
-            int d = in.read();
-            while (d != -1) {
-                out.write(d);
-                d = in.read();
+            encoder = new BASE64EncoderStream(byteStream);
+
+            // Write Bytes
+            encoder.write(bytes);
+            encoder.flush();
+
+        } catch (IOException e) {
+            // ignore
+        } finally {
+            try {
+                if (encoder != null) {
+                    encoder.close();
+                }
+            } catch (IOException e) {
+                // ignore
             }
-            in.close();
-            out.close();
         }
-        catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
+
+        // Return Encoded Byte Array
+        return byteStream.toByteArray();
+
+    } // encode()
 
 }

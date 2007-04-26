@@ -116,7 +116,7 @@ public class XmlDocument {
         document = new SAXBuilder().build(stream, dtd);
     }
 
-    public void load(Document value) throws JDOMException, IOException {
+    public void load(Document value) {
         document = value;
     }
 
