@@ -7,11 +7,15 @@ import davmail.smtp.SmtpServer;
  * DavGateway main class
  */
 public class DavGateway {
-    protected static SmtpServer smtpServer;
-    protected static PopServer popServer;
+    protected DavGateway() {
+    }
+
+    private static SmtpServer smtpServer;
+    private static PopServer popServer;
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
+     *
      * @param args command line parameter config file path
      */
     public static void main(String[] args) {

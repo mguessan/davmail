@@ -776,7 +776,11 @@ public class ExchangeSession {
                         int parsedAttachmentIndex = 0;
                         try {
                             parsedAttachmentIndex = Integer.parseInt(attachmentName);
-                        } catch (Exception e) {/* ignore */}
+                        } catch (Exception e) {
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("Current attachment name " + attachmentName + " is not an index", e);
+                            }
+                        }
                         if (parsedAttachmentIndex == 0) {
                             Attachment attachment = attachmentsMap.get(attachmentName);
                             String attachmentContentType = getAttachmentContentType(attachment.href);
@@ -819,7 +823,7 @@ public class ExchangeSession {
                     try {
                         reader.close();
                     } catch (IOException e) {
-                        // ignore
+                        LOGGER.warn("Error closing header reader", e);
                     }
                 }
             }
@@ -856,7 +860,7 @@ public class ExchangeSession {
                     try {
                         reader.close();
                     } catch (IOException e) {
-                        // ignore
+                        LOGGER.warn("Error closing header reader", e);
                     }
                 }
             }
@@ -887,9 +891,8 @@ public class ExchangeSession {
                             && partHeader.contentType.startsWith("multipart")
                             && partHeader.boundary != null) {
                         writeMimeMessage(reader, os, partHeader);
-                    }
-                    // body part
-                    else if (attachmentIndex <= 0) {
+                    } else if (attachmentIndex <= 0) {
+                        // body part
                         attachmentIndex++;
                         writeBody(os, partHeader);
                     } else {
@@ -990,7 +993,7 @@ public class ExchangeSession {
                             try {
                                 bis.close();
                             } catch (IOException e) {
-                                // ignore
+                                LOGGER.warn("Error closing message input stream", e);
                             }
                         }
                     }
@@ -1086,10 +1089,10 @@ public class ExchangeSession {
             }
             */
             wdr.moveMethod(messageUrl, destination);
-            if (wdr.getStatusCode() == 412) {
+            if (wdr.getStatusCode() == HttpURLConnection.HTTP_PRECON_FAILED) {
                 int count = 2;
                 // name conflict, try another name
-                while (wdr.getStatusCode() == 412) {
+                while (wdr.getStatusCode() == HttpURLConnection.HTTP_PRECON_FAILED) {
                     wdr.moveMethod(messageUrl, destination.substring(0, destination.lastIndexOf('.')) + "-" + count++ + ".eml");
                 }
             }
@@ -1117,7 +1120,7 @@ public class ExchangeSession {
                     try {
                         reader.close();
                     } catch (IOException e) {
-                        // ignore
+                        LOGGER.warn("Error closing header reader", e);
                     }
                 }
             }
@@ -1133,7 +1136,7 @@ public class ExchangeSession {
 
             public boolean isConnectionCloseForced() {
                 // force connection if attachment not found
-                return getStatusCode() == 404;
+                return getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND;
             }
 
         }
@@ -1146,7 +1149,7 @@ public class ExchangeSession {
 
                 ConnectionCloseHeadMethod method = new ConnectionCloseHeadMethod(URIUtil.encodePathQuery(decodedPath));
                 wdr.retrieveSessionInstance().executeMethod(method);
-                if (method.getStatusCode() == 404) {
+                if (method.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
                     method.releaseConnection();
                     System.err.println("Unable to retrieve attachment");
                 }
@@ -1203,7 +1206,7 @@ public class ExchangeSession {
 
                 GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl + "?Cmd=Open&unfiltered=1"));
                 wdr.retrieveSessionInstance().executeMethod(getMethod);
-                if (getMethod.getStatusCode() != 200) {
+                if (getMethod.getStatusCode() != HttpURLConnection.HTTP_OK) {
                     throw new IOException("Unable to get attachments: " + getMethod.getStatusCode()
                             + " " + getMethod.getStatusLine());
                 }

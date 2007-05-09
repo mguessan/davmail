@@ -16,18 +16,21 @@ import java.net.URL;
  * Tray icon handler
  */
 public class DavGatewayTray {
-    protected static final Logger logger = Logger.getLogger("davmail");
+    protected DavGatewayTray() {
+    }
 
-    // lock for synchronized block
-    protected static final Object lock = new Object();
+    protected static final Logger LOGGER = Logger.getLogger("davmail");
 
-    protected static TrayIcon trayIcon = null;
-    protected static Image image = null;
-    protected static Image image2 = null;
+    // LOCK for synchronized block
+    protected static final Object LOCK = new Object();
+
+    private static TrayIcon trayIcon = null;
+    private static Image image = null;
+    private static Image image2 = null;
 
     public static void switchIcon() {
         try {
-            synchronized (lock) {
+            synchronized (LOCK) {
                 if (trayIcon.getImage() == image) {
                     trayIcon.setImage(image2);
                 } else {
@@ -35,23 +38,23 @@ public class DavGatewayTray {
                 }
             }
         } catch (NoClassDefFoundError e) {
-            // ignore, jdk <= 1.6
+            LOGGER.debug("JDK not at least 1.6, tray not supported");
         }
 
     }
 
     public static void resetIcon() {
         try {
-            synchronized (lock) {
+            synchronized (LOCK) {
                 trayIcon.setImage(image);
             }
         } catch (NoClassDefFoundError e) {
-            // ignore, jdk <= 1.6
+            LOGGER.debug("JDK not at least 1.6, tray not supported");
         }
     }
 
     protected static void displayMessage(String message, Priority priority) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             if (trayIcon != null) {
                 TrayIcon.MessageType messageType = null;
                 if (priority == Priority.INFO) {
@@ -66,7 +69,7 @@ public class DavGatewayTray {
                 }
                 trayIcon.setToolTip("DavMail gateway \n" + message);
             }
-            logger.log(priority, message);
+            LOGGER.log(priority, message);
         }
 
     }
@@ -109,9 +112,8 @@ public class DavGatewayTray {
                 // set native look and feel
                 try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                }
-                catch (Exception e) {
-                    // ignore
+                } catch (Exception e) {
+                    LOGGER.warn("Unable to set system look and feel");
                 }
 
                 // get the SystemTray instance

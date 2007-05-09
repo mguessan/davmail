@@ -12,7 +12,7 @@ public class SmtpServer extends AbstractServer {
      * Start the thread.
      */
     public SmtpServer(int port) {
-        super((port == 0) ? SmtpServer.DEFAULT_PORT : port);
+        super(port, SmtpServer.DEFAULT_PORT);
     }
 
     public void createConnectionHandler(Socket clientSocket) {

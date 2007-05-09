@@ -15,8 +15,12 @@ public abstract class AbstractServer extends Thread {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      */
-    public AbstractServer(int port) {
-        this.port = port;
+    public AbstractServer(int port, int defaultPort) {
+        if (port == 0) {
+            this.port = defaultPort;
+        } else {
+            this.port = port;
+        }
         try {
             //noinspection SocketOpenedButNotSafelyClosed
             serverSocket = new ServerSocket(port);
@@ -56,7 +60,7 @@ public abstract class AbstractServer extends Thread {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                // ignore
+                DavGatewayTray.warn("Exception closing client socket", e);
             }
         }
     }

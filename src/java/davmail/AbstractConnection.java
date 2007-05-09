@@ -12,8 +12,8 @@ import java.net.Socket;
  * Generic connection common to pop3 and smtp implementations
  */
 public class AbstractConnection extends Thread {
-
     protected Socket client;
+    
     protected BufferedReader in;
     protected OutputStream os;
     // user name and password initialized through connection
@@ -26,7 +26,7 @@ public class AbstractConnection extends Thread {
 
     // Initialize the streams and start the thread
     public AbstractConnection(Socket clientSocket) {
-        client = clientSocket;
+        this.client = clientSocket;
         try {
             in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             os = client.getOutputStream();
@@ -34,7 +34,7 @@ public class AbstractConnection extends Thread {
             try {
                 client.close();
             } catch (IOException e2) {
-                DavGatewayTray.error("Exception while getting socket streams", e2);
+                DavGatewayTray.warn("Exception closing client socket", e2);
             }
             DavGatewayTray.error("Exception while getting socket streams", e);
             return;

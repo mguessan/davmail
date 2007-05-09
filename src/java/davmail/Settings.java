@@ -10,59 +10,83 @@ import java.io.IOException;
  * Settings facade
  */
 public class Settings {
-    protected static final Properties settings = new Properties();
-    protected static String configFilePath;
+    protected Settings() {
+    }
+
+    private static final Properties SETTINGS = new Properties();
+    private static String configFilePath;
 
     public static synchronized void setConfigFilePath(String value) {
         configFilePath = value;
     }
 
     public static synchronized void load() {
+        FileReader fileReader = null;
         try {
             if (configFilePath == null) {
+                //noinspection AccessOfSystemProperties
                 configFilePath = System.getProperty("user.home") + "/.davmail.properties";
             }
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                settings.load(new FileReader(configFile));
+                fileReader = new FileReader(configFile);
+                SETTINGS.load(fileReader);
             } else {
-                settings.put("davmail.url", "http://exchangeServer/exchange/");
-                settings.put("davmail.popPort", "110");
-                settings.put("davmail.smtpPort", "25");
-                settings.put("davmail.keepDelay", "30");
-                settings.put("davmail.enableProxy", "false");
-                settings.put("davmail.proxyHost", "");
-                settings.put("davmail.proxyPort", "");
-                settings.put("davmail.proxyUser", "");
-                settings.put("davmail.proxyPassword", "");
+                SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
+                SETTINGS.put("davmail.popPort", "110");
+                SETTINGS.put("davmail.smtpPort", "25");
+                SETTINGS.put("davmail.keepDelay", "30");
+                SETTINGS.put("davmail.enableProxy", "false");
+                SETTINGS.put("davmail.proxyHost", "");
+                SETTINGS.put("davmail.proxyPort", "");
+                SETTINGS.put("davmail.proxyUser", "");
+                SETTINGS.put("davmail.proxyPassword", "");
                 save();
             }
         } catch (IOException e) {
             DavGatewayTray.error("Unable to load settings: ", e);
+        } finally {
+            if (fileReader != null) {
+                try {
+                    fileReader.close();
+                } catch (IOException e) {
+                    DavGatewayTray.debug("Error closing configuration file: ", e);
+                }
+            }
         }
 
     }
 
     public static synchronized void save() {
+        FileWriter fileWriter = null;
         try {
-            settings.store(new FileWriter(configFilePath), "DavMail settings");
+            fileWriter = new FileWriter(configFilePath);
+            SETTINGS.store(fileWriter, "DavMail settings");
         } catch (IOException e) {
             DavGatewayTray.error("Unable to store settings: ", e);
+        } finally {
+            if (fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    DavGatewayTray.debug("Error closing configuration file: ", e);
+                }
+            }
         }
     }
 
     public static synchronized String getProperty(String property) {
-        return settings.getProperty(property);
+        return SETTINGS.getProperty(property);
     }
 
     public static synchronized void setProperty(String property, String value) {
-        settings.setProperty(property, value);
+        SETTINGS.setProperty(property, value);
     }
 
     public static synchronized int getIntProperty(String property) {
         int value = 0;
         try {
-            String propertyValue = settings.getProperty(property);
+            String propertyValue = SETTINGS.getProperty(property);
             if (propertyValue != null && propertyValue.length() > 0) {
                 value = Integer.valueOf(propertyValue);
             }

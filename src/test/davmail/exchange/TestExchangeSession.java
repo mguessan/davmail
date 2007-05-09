@@ -7,25 +7,30 @@ import org.apache.commons.httpclient.util.URIUtil;
  *
  */
 public class TestExchangeSession {
+
+    protected TestExchangeSession() {
+    }
+
     public static void main(String[] argv) {
-        Settings.setConfigFilePath(argv[0]);
+        int currentArg = 0;
+        Settings.setConfigFilePath(argv[currentArg++]);
         Settings.load();
 
         ExchangeSession session = new ExchangeSession();
         // test auth
         try {
             ExchangeSession.checkConfig();
-            session.login(argv[1], argv[2]);
+            session.login(argv[currentArg++], argv[currentArg++]);
 
-            ExchangeSession.Folder folder = session.selectFolder(argv[3]);
+            ExchangeSession.Folder folder = session.selectFolder(argv[currentArg++]);
             String messageName;
-            messageName = URIUtil.decode(argv[4]);
+            messageName = URIUtil.decode(argv[currentArg]);
 
             long startTime = System.currentTimeMillis();
-            ExchangeSession.Message messageTest = session.getMessage(folder.folderUrl+"/"+messageName);
+            ExchangeSession.Message messageTest = session.getMessage(folder.folderUrl + "/" + messageName);
             System.out.println("******");
             messageTest.write(System.out);
-            System.out.println("Elapsed time " + (System.currentTimeMillis()-startTime) + " ms");
+            System.out.println("Elapsed time " + (System.currentTimeMillis() - startTime) + " ms");
 
             session.purgeOldestTrashMessages();
 
