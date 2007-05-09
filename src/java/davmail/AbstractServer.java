@@ -1,15 +1,15 @@
 package davmail;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.IOException;
 
 /**
  * Generic abstract server common to SMTP and POP3 implementations
  */
 public abstract class AbstractServer extends Thread {
-    protected int port;
-    protected ServerSocket serverSocket;
+    private int port;
+    private ServerSocket serverSocket;
 
     /**
      * Create a ServerSocket to listen for connections.

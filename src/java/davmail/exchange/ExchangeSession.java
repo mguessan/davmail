@@ -22,6 +22,7 @@ import org.w3c.tidy.Tidy;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeUtility;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -31,60 +32,60 @@ import java.util.*;
  * Exchange session through Outlook Web Access (DAV)
  */
 public class ExchangeSession {
-    protected static final Logger logger = Logger.getLogger("davmail.exchange.ExchangeSession");
+    protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
     /**
      * exchange message properties needed to rebuild mime message
      */
-    protected static final Vector<String> messageRequestProperties = new Vector<String>();
+    protected static final Vector<String> MESSAGE_REQUEST_PROPERTIES = new Vector<String>();
 
     static {
-        messageRequestProperties.add("DAV:uid");
-        messageRequestProperties.add("urn:schemas:httpmail:subject");
-        messageRequestProperties.add("urn:schemas:mailheader:mime-version");
-        messageRequestProperties.add("urn:schemas:mailheader:content-class");
-        messageRequestProperties.add("urn:schemas:httpmail:hasattachment");
+        MESSAGE_REQUEST_PROPERTIES.add("DAV:uid");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:subject");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:mime-version");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:content-class");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:hasattachment");
 
         // needed only when full headers not found
-        messageRequestProperties.add("urn:schemas:mailheader:received");
-        messageRequestProperties.add("urn:schemas:mailheader:date");
-        messageRequestProperties.add("urn:schemas:mailheader:message-id");
-        messageRequestProperties.add("urn:schemas:mailheader:thread-topic");
-        messageRequestProperties.add("urn:schemas:mailheader:thread-index");
-        messageRequestProperties.add("urn:schemas:mailheader:from");
-        messageRequestProperties.add("urn:schemas:mailheader:to");
-        messageRequestProperties.add("urn:schemas:httpmail:priority");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:received");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:date");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:message-id");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:thread-topic");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:thread-index");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:from");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:to");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:priority");
 
         // full headers
-        messageRequestProperties.add("http://schemas.microsoft.com/mapi/proptag/x0007D001E");
+        MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0007D001E");
         // mail body
-        messageRequestProperties.add("http://schemas.microsoft.com/mapi/proptag/x01000001E");
+        MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x01000001E");
         // html body
-        messageRequestProperties.add("urn:schemas:httpmail:htmldescription");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:htmldescription");
         // same as htmldescription, remove
-        // messageRequestProperties.add("http://schemas.microsoft.com/mapi/proptag/x01013001E");
+        // MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x01013001E");
         // size
-        messageRequestProperties.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
+        MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
         // only for calendar events
-        messageRequestProperties.add("urn:schemas:calendar:location");
-        messageRequestProperties.add("urn:schemas:calendar:dtstart");
-        messageRequestProperties.add("urn:schemas:calendar:dtend");
-        messageRequestProperties.add("urn:schemas:calendar:instancetype");
-        messageRequestProperties.add("urn:schemas:calendar:busystatus");
-        messageRequestProperties.add("urn:schemas:calendar:meetingstatus");
-        messageRequestProperties.add("urn:schemas:calendar:alldayevent");
-        messageRequestProperties.add("urn:schemas:calendar:responserequested");
-        messageRequestProperties.add("urn:schemas:mailheader:cc");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:location");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:dtstart");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:dtend");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:instancetype");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:busystatus");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:meetingstatus");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:alldayevent");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:calendar:responserequested");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:cc");
 
     }
 
-    public static HashMap<String, String> priorities = new HashMap<String, String>();
+    public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
 
     static {
-        priorities.put("-2", "5 (Lowest)");
-        priorities.put("-1", "4 (Low)");
-        priorities.put("1", "2 (High)");
-        priorities.put("2", "1 (Highest)");
+        PRIORITIES.put("-2", "5 (Lowest)");
+        PRIORITIES.put("-1", "4 (Low)");
+        PRIORITIES.put("1", "2 (High)");
+        PRIORITIES.put("2", "1 (Highest)");
     }
 
     public static final String CONTENT_TYPE_HEADER = "content-type: ";
@@ -95,26 +96,26 @@ public class ExchangeSession {
     /**
      * Date parser from Exchange format
      */
-    public final SimpleDateFormat dateParser;
+    private final SimpleDateFormat dateParser;
     /**
      * Date formatter to MIME format
      */
-    public final SimpleDateFormat dateFormatter;
+    private final SimpleDateFormat dateFormatter;
 
     /**
      * Various standard mail boxes Urls
      */
-    protected String inboxUrl;
-    protected String deleteditemsUrl;
-    protected String sendmsgUrl;
-    protected String draftsUrl;
+    private String inboxUrl;
+    private String deleteditemsUrl;
+    private String sendmsgUrl;
+    private String draftsUrl;
 
     /**
      * Base user mailboxes path (used to select folder)
      */
-    protected String mailPath;
-    protected String currentFolderUrl;
-    WebdavResource wdr = null;
+    private String mailPath;
+    private String currentFolderUrl;
+    private WebdavResource wdr = null;
 
     /**
      * Create an exchange session for the given URL.
@@ -183,7 +184,7 @@ public class ExchangeSession {
             testMethod.setFollowRedirects(false);
             int status = httpClient.executeMethod(testMethod);
             testMethod.releaseConnection();
-            logger.debug("Test configuration status: " + status);
+            LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
                     && status != HttpStatus.SC_MOVED_TEMPORARILY) {
                 throw new IOException("Unable to connect to OWA at " + url + ", status code " +
@@ -191,7 +192,7 @@ public class ExchangeSession {
             }
 
         } catch (Exception exc) {
-            logger.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
+            LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
             throw new IOException("DavMail configuration exception: \n" + exc.getMessage(), exc);
         }
 
@@ -236,7 +237,7 @@ public class ExchangeSession {
             wdr.executeHttpRequestMethod(httpClient,
                     initmethod);
             if (initmethod.getPath().indexOf("exchweb/bin") > 0) {
-                logger.debug("** Form based authentication detected");
+                LOGGER.debug("** Form based authentication detected");
 
                 PostMethod logonMethod = new PostMethod(
                         "/exchweb/bin/auth/owaauth.dll?" +
@@ -257,7 +258,7 @@ public class ExchangeSession {
                 Header locationHeader = logonMethod.getResponseHeader(
                         "Location");
 
-                if (logonMethod.getStatusCode() != 302 ||
+                if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
                         locationHeader == null ||
                         !url.equals(locationHeader.getValue())) {
                     throw new HttpException("Authentication failed");
@@ -333,9 +334,9 @@ public class ExchangeSession {
             // set current folder to Inbox
             currentFolderUrl = inboxUrl;
 
-            logger.debug("Inbox URL : " + inboxUrl);
-            logger.debug("Trash URL : " + deleteditemsUrl);
-            logger.debug("Send URL : " + sendmsgUrl);
+            LOGGER.debug("Inbox URL : " + inboxUrl);
+            LOGGER.debug("Trash URL : " + deleteditemsUrl);
+            LOGGER.debug("Send URL : " + sendmsgUrl);
             deleteditemsUrl = URIUtil.getPath(deleteditemsUrl);
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
@@ -363,10 +364,10 @@ public class ExchangeSession {
                     message.append(webdavStatusMessage);
                 }
             } catch (Exception e) {
-                logger.error("Exception getting status from " + wdr);
+                LOGGER.error("Exception getting status from " + wdr);
             }
 
-            logger.error(message.toString());
+            LOGGER.error(message.toString());
             throw new IOException(message.toString());
         }
 
@@ -411,14 +412,14 @@ public class ExchangeSession {
 
         int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
-        if (code == 200) {
-            logger.warn("Overwritten message " + messageUrl);
-        } else if (code != 201) {
+        if (code == HttpURLConnection.HTTP_OK) {
+            LOGGER.warn("Overwritten message " + messageUrl);
+        } else if (code != HttpURLConnection.HTTP_CREATED) {
             throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
         }
     }
 
-    protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
+    protected Message buildMessage(ResponseEntity responseEntity) throws IOException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         Enumeration propertiesEnum = responseEntity.getProperties();
@@ -458,7 +459,7 @@ public class ExchangeSession {
             } else if ("subject".equals(prop.getLocalName())) {
                 message.subject = prop.getPropertyAsString();
             } else if ("priority".equals(prop.getLocalName())) {
-                String priorityLabel = priorities.get(prop.getPropertyAsString());
+                String priorityLabel = PRIORITIES.get(prop.getPropertyAsString());
                 if (priorityLabel != null) {
                     message.priority = priorityLabel;
                 }
@@ -477,11 +478,12 @@ public class ExchangeSession {
         wdr.setDebug(4);
         wdr.propfindMethod(messageUrl, 0);
 
-        Enumeration messageEnum = wdr.propfindMethod(messageUrl, 0, messageRequestProperties);
+        Enumeration messageEnum = wdr.propfindMethod(messageUrl, 0, MESSAGE_REQUEST_PROPERTIES);
         wdr.setDebug(0);
 
         // 201 created in some cases ?!?
-        if ((wdr.getStatusCode() != 200 && wdr.getStatusCode() != 201) || !messageEnum.hasMoreElements()) {
+        if ((wdr.getStatusCode() != HttpURLConnection.HTTP_OK && wdr.getStatusCode() != HttpURLConnection.HTTP_CREATED)
+                || !messageEnum.hasMoreElements()) {
             throw new IOException("Unable to get message: " + wdr.getStatusCode()
                     + " " + wdr.getStatusMessage());
         }
@@ -496,7 +498,7 @@ public class ExchangeSession {
         wdr.setDebug(4);
         wdr.propfindMethod(currentFolderUrl, 1);
 
-        Enumeration folderEnum = wdr.propfindMethod(currentFolderUrl, 1, messageRequestProperties);
+        Enumeration folderEnum = wdr.propfindMethod(currentFolderUrl, 1, MESSAGE_REQUEST_PROPERTIES);
         wdr.setDebug(0);
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
@@ -526,7 +528,7 @@ public class ExchangeSession {
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
-        logger.debug("Keep message not before " + cal.getTime());
+        LOGGER.debug("Keep message not before " + cal.getTime());
         long keepTimestamp = cal.getTimeInMillis();
 
         Vector<String> deleteRequestProperties = new Vector<String>();
@@ -555,11 +557,11 @@ public class ExchangeSession {
                 try {
                     parsedDate = dateParser.parse(lastModifiedString);
                     if (parsedDate.getTime() < keepTimestamp) {
-                        logger.debug("Delete " + messageUrl + " last modified " + parsedDate);
+                        LOGGER.debug("Delete " + messageUrl + " last modified " + parsedDate);
                         wdr.deleteMethod(messageUrl);
                     }
                 } catch (ParseException e) {
-                    logger.warn("Invalid message modified date " + lastModifiedString + " on " + messageUrl);
+                    LOGGER.warn("Invalid message modified date " + lastModifiedString + " on " + messageUrl);
                 }
             }
 
@@ -913,7 +915,7 @@ public class ExchangeSession {
                         if (attachment == null) {
                             // only warn, could happen depending on IIS config
                             //throw new IOException("Attachment " + partHeader.name + " not found in " + messageUrl);
-                            logger.warn("Attachment " + partHeader.name + " not found in " + messageUrl);
+                            LOGGER.warn("Attachment " + partHeader.name + " not found in " + messageUrl);
                         } else {
                             writeAttachment(os, partHeader, attachment);
                         }
@@ -1057,7 +1059,7 @@ public class ExchangeSession {
         public void delete() throws IOException {
             // TODO : refactor
             String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
-            logger.debug("Deleting : " + messageUrl + " to " + destination);
+            LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
 /*
 // first try without webdav library
             GetMethod moveMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl)) {
@@ -1092,7 +1094,7 @@ public class ExchangeSession {
                 }
             }
 
-            logger.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
+            LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
 
         }
 
@@ -1140,7 +1142,7 @@ public class ExchangeSession {
             String result;
             try {
                 String decodedPath = URIUtil.decode(attachmentUrl);
-                logger.debug("Head " + decodedPath);
+                LOGGER.debug("Head " + decodedPath);
 
                 ConnectionCloseHeadMethod method = new ConnectionCloseHeadMethod(URIUtil.encodePathQuery(decodedPath));
                 wdr.retrieveSessionInstance().executeMethod(method);
@@ -1190,7 +1192,7 @@ public class ExchangeSession {
                 }
                 xmlDocument.load(builder.build(w3cDocument));
             } catch (Exception ex1) {
-                logger.error("Exception parsing document", ex1);
+                LOGGER.error("Exception parsing document", ex1);
             }
             return xmlDocument;
         }
@@ -1263,11 +1265,11 @@ public class ExchangeSession {
                             attachment.href = attachmentHref;
 
                             attachmentsMap.put(attachmentName, attachment);
-                            logger.debug("Attachment " + attachmentIndex + " : " + attachmentName);
+                            LOGGER.debug("Attachment " + attachmentIndex + " : " + attachmentName);
                             // add a second count based map entry
                             attachmentsMap.put(String.valueOf(attachmentIndex++), attachment);
                         } else {
-                            logger.warn("Message URL : " + messageUrl + " is not a substring of attachment URL : " + attachmentHref);
+                            LOGGER.warn("Message URL : " + messageUrl + " is not a substring of attachment URL : " + attachmentHref);
                         }
                     }
                 }
@@ -1339,13 +1341,13 @@ public class ExchangeSession {
                                         htmlBody = htmlBody.replaceFirst(attachment.contentid, "cid:" + attachment.contentid);
                                     }
                                 } else {
-                                    logger.warn("More images in OWA body !");
+                                    LOGGER.warn("More images in OWA body !");
                                 }
                                 // add only inline images
                                 if (attachment.contentid != null) {
                                     attachmentsMap.put(attachmentName, attachment);
                                 }
-                                logger.debug("Inline image attachment ID:" + attachment.contentid
+                                LOGGER.debug("Inline image attachment ID:" + attachment.contentid
                                         + " name: " + attachment.name + " href: " + attachment.href);
                             }
                         }

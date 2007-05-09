@@ -19,6 +19,6 @@
             <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
         </menu>
 
-        ${reports}
+        <menu ref="reports"/>
     </body>
 </project>

@@ -1,10 +1,11 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>davmail</groupId>
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.1</version>
+    <version>1.0.3</version>
     <name>davmail</name>
     <url>http://www.sourceforge.net/projects/davmail</url>
     <description>
@@ -14,7 +15,7 @@
     </description>
     <developers>
         <developer>
-            <name>Micka&euml;l Guessant</name>
+            <name>Mickaël Guessant</name>
             <email>mguessan@free.fr</email>
             <url>http://mguessan.free.fr</url>
             <roles>
@@ -23,6 +24,13 @@
             </roles>
         </developer>
     </developers>
+    <licenses>
+        <license>
+            <name>GNU General Public License</name>
+            <url>http://www.gnu.org/licenses/gpl.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <mailingLists>
         <mailingList>
             <name>DavMail User List</name>
@@ -114,4 +122,70 @@
             <url>scpexe://shell.sourceforge.net/home/groups/d/da/davmail/htdocs</url>
         </site>
     </distributionManagement>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>project-team</report>
+                            <report>mailing-list</report>
+                            <report>issue-tracking</report>
+                            <report>dependencies</report>
+                            <report>license</report>
+                            <report>scm</report>
+                            <!--report>cim</report-->
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <!--plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-changelog-plugin</artifactId>
+            </plugin-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>1.0-beta-1</version>
+                <configuration>
+                    <!-- High|Normal|Low|Exp|Ignore -->
+                    <threshold>Normal</threshold>
+                    <!-- Min|Default|Max -->
+                    <effort>Default</effort>
+                    <excludeFilterFile>
+                        findbugs-exclude.xml
+                    </excludeFilterFile>
+                    <includeFilterFile>
+                        findbugs-include.xml
+                    </includeFilterFile>
+                    <visitors>
+                        FindDeadLocalStores,UnreadFields
+                    </visitors>
+                    <omitVisitors>
+                        FindDeadLocalStores,UnreadFields
+                    </omitVisitors>
+                    <pluginList>
+                        /libs/fb-contrib/fb-contrib-2.8.0.jar
+                    </pluginList>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <configLocation>src/checkstyle/checkstyle-configuration.xml</configLocation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

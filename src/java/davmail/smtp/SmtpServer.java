@@ -1,12 +1,11 @@
 package davmail.smtp;
 
+import davmail.AbstractServer;
+
 import java.net.Socket;
 
-import davmail.AbstractServer;
-import davmail.Settings;
-
 public class SmtpServer extends AbstractServer {
-    public final static int DEFAULT_PORT = 25;
+    public static final int DEFAULT_PORT = 25;
 
     /**
      * Create a ServerSocket to listen for connections.
