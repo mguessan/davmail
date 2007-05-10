@@ -609,6 +609,9 @@ public class ExchangeSession {
             folder.folderUrl = inboxUrl;
         } else if ("TRASH".equals(folderName)) {
             folder.folderUrl = deleteditemsUrl;
+            // absolute folder path
+        } else if (folderName != null && folderName.startsWith("/")) {
+            folder.folderUrl = folderName;
         } else {
             folder.folderUrl = mailPath + folderName;
         }
@@ -1394,6 +1397,7 @@ public class ExchangeSession {
         }
 
         public void processHeaders(BufferedReader reader, OutputStream os) throws IOException {
+            // TODO implement a reliable header tokenizer
             String line;
             line = reader.readLine();
             while (line != null && line.length() > 0) {
@@ -1455,6 +1459,15 @@ public class ExchangeSession {
                             } else if ("name".equalsIgnoreCase(tokenName.toLowerCase())) {
                                 name = token.substring(equalsIndex + 1);
                                 if (name.startsWith("\"")) {
+                                    // if name is on more than one line, current line does not end with "
+                                    if (!name.endsWith("\"")) {
+                                        // append next lines
+                                        do {
+                                            line = reader.readLine();
+                                            writeLine(os, line);
+                                            name += line;
+                                        } while (!line.trim().endsWith("\""));
+                                    }
                                     name = name.substring(1, name.lastIndexOf("\""));
                                 }
                                 // name can be mime encoded
