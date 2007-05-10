@@ -44,7 +44,7 @@
         <connection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</connection>
         <developerConnection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</developerConnection>
         <tag>HEAD</tag>
-        <url>https://davmail.svn.sourceforge.net/svnroot/davmail/trunk/</url>
+        <url>http://davmail.svn.sourceforge.net/viewvc/davmail/trunk/</url>
     </scm>
     <issueManagement>
         <system>SourceForge</system>
@@ -138,7 +138,6 @@
                             <report>license</report>
                             <report>scm</report>
                             <report>index</report>
-                            <report>summary</report>
                         </reports>
                     </reportSet>
                 </reportSets>
@@ -147,10 +146,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
-            <!--plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-changelog-plugin</artifactId>
-            </plugin-->
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
