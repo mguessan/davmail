@@ -1,5 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
-    <property name="version" value="1.0.3"/>
+    <property name="version" value="1.0.4"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -43,13 +43,14 @@
             <fileset dir="lib">
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
+                <exclude name="jsmoothgen-ant.jar"/>
             </fileset>
         </copy>
-        <copy todir="dist">
-            <fileset dir="src/jsmooth">
-                <include name="*.exe"/>
-            </fileset>
-        </copy>
+        <taskdef name="jsmoothgen"
+                 classname="net.charabia.jsmoothgen.ant.JSmoothGen"
+                 classpathref="classpath"/>
+        <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
+        <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <zip file="dist/davmail-${version}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
