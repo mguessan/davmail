@@ -38,6 +38,7 @@ public abstract class AbstractServer extends Thread {
      */
     public void run() {
         Socket clientSocket = null;
+        AbstractConnection connection = null;
         try {
             //noinspection InfiniteLoopStatement
             while (true) {
@@ -45,7 +46,8 @@ public abstract class AbstractServer extends Thread {
                 DavGatewayTray.debug("Connection from " + clientSocket.getInetAddress() + " on port " + port);
                 // only accept localhost connections for security reasons
                 if (clientSocket.getInetAddress().toString().indexOf("127.0.0.1") > 0) {
-                    createConnectionHandler(clientSocket);
+                    connection = createConnectionHandler(clientSocket);
+                    connection.start();
                 } else {
                     clientSocket.close();
                     DavGatewayTray.warn("Connection from external client refused");
@@ -62,10 +64,13 @@ public abstract class AbstractServer extends Thread {
             } catch (IOException e) {
                 DavGatewayTray.warn("Exception closing client socket", e);
             }
+            if (connection != null) {
+                connection.close();
+            }
         }
     }
 
-    public abstract void createConnectionHandler(Socket clientSocket);
+    public abstract AbstractConnection createConnectionHandler(Socket clientSocket);
 
     public void close() {
         try {

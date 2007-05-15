@@ -12,8 +12,8 @@ import java.net.Socket;
  * Generic connection common to pop3 and smtp implementations
  */
 public class AbstractConnection extends Thread {
-    protected Socket client;
-    
+    protected final Socket client;
+
     protected BufferedReader in;
     protected OutputStream os;
     // user name and password initialized through connection
@@ -28,19 +28,13 @@ public class AbstractConnection extends Thread {
     public AbstractConnection(Socket clientSocket) {
         this.client = clientSocket;
         try {
+            //noinspection IOResourceOpenedButNotSafelyClosed
             in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             os = client.getOutputStream();
         } catch (IOException e) {
-            try {
-                client.close();
-            } catch (IOException e2) {
-                DavGatewayTray.warn("Exception closing client socket", e2);
-            }
+            close();
             DavGatewayTray.error("Exception while getting socket streams", e);
-            return;
         }
-        // start the thread
-        this.start();
     }
 
     public void sendClient(String message) throws IOException {
@@ -77,6 +71,38 @@ public class AbstractConnection extends Thread {
         }
         DavGatewayTray.switchIcon();
         return line;
+    }
+
+    /**
+     * Close client connection, streams and Exchange session .
+     */
+    public void close() {
+        if (in != null) {
+            try {
+                in.close();
+            } catch (IOException e2) {
+                DavGatewayTray.warn("Exception closing client input stream", e2);
+            }
+        }
+        if (os != null) {
+            try {
+                os.close();
+            } catch (IOException e2) {
+                DavGatewayTray.warn("Exception closing client output stream", e2);
+            }
+        }
+        try {
+            client.close();
+        } catch (IOException e2) {
+            DavGatewayTray.warn("Exception closing client socket", e2);
+        }
+        try {
+            if (session != null) {
+                session.close();
+            }
+        } catch (IOException e3) {
+            DavGatewayTray.warn("Exception closing gateway", e3);
+        }
     }
 
 }

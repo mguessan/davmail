@@ -4,6 +4,7 @@ package davmail.imap;
 import java.net.Socket;
 
 import davmail.AbstractServer;
+import davmail.AbstractConnection;
 
 /**
  * Pop3 server
@@ -19,8 +20,8 @@ public class ImapServer extends AbstractServer {
         super(port, ImapServer.DEFAULT_PORT);
     }
 
-    public void createConnectionHandler(Socket clientSocket) {
-        new ImapConnection(clientSocket);
+    public AbstractConnection createConnectionHandler(Socket clientSocket) {
+        return new ImapConnection(clientSocket);
     }
 
 }

@@ -47,7 +47,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
     /**
      * The internal buffer of encoded output bytes.
      */
-    private byte[] output = new byte[4];
+    private final byte[] output = new byte[4];
 
     /**
      * The internal buffer of input bytes to be encoded.
@@ -68,7 +68,7 @@ public class BASE64EncoderStream extends FilterOutputStream {
     /**
      * The maximum number of characters to output per line.
      */
-    private int maxLineLength;
+    private final int maxLineLength;
 
     /**
      * The index into the BASE64 alphabet to generate the next encoded

@@ -198,7 +198,7 @@ public class ExchangeSession {
 
     }
 
-    public void login(String userName, String password) throws Exception {
+    public void login(String userName, String password) throws IOException {
         try {
             String url = Settings.getProperty("davmail.url");
 
@@ -419,7 +419,7 @@ public class ExchangeSession {
         }
     }
 
-    protected Message buildMessage(ResponseEntity responseEntity) throws IOException {
+    protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         Enumeration propertiesEnum = responseEntity.getProperties();
@@ -466,7 +466,6 @@ public class ExchangeSession {
             }
         }
         message.preProcessHeaders();
-
 
         return message;
     }

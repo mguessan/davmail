@@ -2,6 +2,7 @@ package davmail.pop;
 
 
 import davmail.AbstractServer;
+import davmail.AbstractConnection;
 
 import java.net.Socket;
 
@@ -20,8 +21,8 @@ public class PopServer extends AbstractServer {
         super(port, PopServer.DEFAULT_PORT);
     }
 
-    public void createConnectionHandler(Socket clientSocket) {
-        new PopConnection(clientSocket);
+    public AbstractConnection createConnectionHandler(Socket clientSocket) {
+        return new PopConnection(clientSocket);
     }
 
 }

@@ -1,6 +1,7 @@
 package davmail.smtp;
 
 import davmail.AbstractServer;
+import davmail.AbstractConnection;
 
 import java.net.Socket;
 
@@ -15,8 +16,8 @@ public class SmtpServer extends AbstractServer {
         super(port, SmtpServer.DEFAULT_PORT);
     }
 
-    public void createConnectionHandler(Socket clientSocket) {
-        new SmtpConnection(clientSocket);
+    public AbstractConnection createConnectionHandler(Socket clientSocket) {
+        return new SmtpConnection(clientSocket);
     }
 
 }

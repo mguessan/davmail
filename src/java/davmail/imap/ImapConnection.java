@@ -129,19 +129,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (IOException e) {
             DavGatewayTray.error("Exception handling client",e);
         } finally {
-            try {
-                client.close();
-            } catch (IOException e2) {
-                DavGatewayTray.debug("Exception closing client",e2);
-            }
-            try {
-                if (session != null) {
-                    session.close();
-                }
-            } catch (IOException e3) {
-                DavGatewayTray.debug("Exception closing gateway",e3);
-            }
-
+            close();
         }
         DavGatewayTray.resetIcon();
     }

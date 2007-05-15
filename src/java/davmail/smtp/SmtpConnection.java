@@ -29,7 +29,6 @@ public class SmtpConnection extends AbstractConnection {
         String line;
         StringTokenizer tokens;
 
-
         try {
             ExchangeSession.checkConfig();
             sendClient("220 DavMail SMTP ready at " + new Date());
@@ -131,18 +130,7 @@ public class SmtpConnection extends AbstractConnection {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
         } finally {
-            try {
-                client.close();
-            } catch (IOException e2) {
-                DavGatewayTray.debug("Exception closing client", e2);
-            }
-            try {
-                if (session != null) {
-                    session.close();
-                }
-            } catch (IOException e3) {
-                DavGatewayTray.debug("Exception closing gateway", e3);
-            }
+            close();
         }
         DavGatewayTray.resetIcon();
     }
