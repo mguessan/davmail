@@ -1041,7 +1041,8 @@ public class ExchangeSession {
                     }
                 }
 
-            } else if ("text/plain".equalsIgnoreCase(mimeHeader.contentType)) {
+            } else if (mimeHeader.contentType == null ||
+                    "text/plain".equalsIgnoreCase(mimeHeader.contentType)) {
                 currentBody = body;
             }
             if (currentBody != null) {
