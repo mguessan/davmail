@@ -24,6 +24,7 @@ import javax.mail.internet.MimeUtility;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -191,6 +192,9 @@ public class ExchangeSession {
                         status + ", check configuration");
             }
 
+        } catch (UnknownHostException exc) {
+            LOGGER.error("DavMail configuration exception: \n Unknown host " + exc.getMessage(), exc);
+            throw new IOException("DavMail configuration exception: \n Unknown host " + exc.getMessage(), exc);
         } catch (Exception exc) {
             LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
             throw new IOException("DavMail configuration exception: \n" + exc.getMessage(), exc);
