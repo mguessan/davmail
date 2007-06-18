@@ -910,7 +910,8 @@ public class ExchangeSession {
                             attachment = attachmentsMap.get(partHeader.name + ".eml");
                         }
                         // try to get attachment by index, only if no name found
-                        if (attachment == null && partHeader.name == null) {
+                        // or attachment renamed to winmail.dat by Exchange
+                        if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))) {
                             attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
                         }
                         // try to get by index if attachment renamed to application
