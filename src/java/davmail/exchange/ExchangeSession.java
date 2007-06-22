@@ -91,6 +91,7 @@ public class ExchangeSession {
 
     public static final String CONTENT_TYPE_HEADER = "content-type: ";
     public static final String CONTENT_TRANSFER_ENCODING_HEADER = "content-transfer-encoding: ";
+    public static final String CONTENT_DISPOSITION_HEADER = "content-disposition: ";
 
     private static final int DEFAULT_KEEP_DELAY = 30;
 
@@ -844,7 +845,7 @@ public class ExchangeSession {
                 // skip first line
                 reader.readLine();
                 MimeHeader mimeHeader = new MimeHeader();
-                mimeHeader.processHeaders(reader, os);
+                mimeHeader.processHeaders(reader, os, null);
                 // non MIME message without attachments, append body
                 if (mimeHeader.boundary == null) {
                     os.write('\r');
@@ -888,9 +889,15 @@ public class ExchangeSession {
 
                 // detect part boundary start
                 if (line.equals(mimeHeader.boundary)) {
+                    Attachment currentAttachment = attachmentsMap.get(String.valueOf(attachmentIndex));
+                    String currentAttachmentName = null;
+                    if (currentAttachment != null) {
+                        currentAttachmentName = currentAttachment.name;
+                    }
+
                     // process current part header
                     MimeHeader partHeader = new MimeHeader();
-                    partHeader.processHeaders(reader, os);
+                    partHeader.processHeaders(reader, os, currentAttachmentName);
 
                     // detect inner mime message
                     if (partHeader.contentType != null
@@ -916,11 +923,15 @@ public class ExchangeSession {
                         }
                         // try to get by index if attachment renamed to application
                         if (attachment == null && partHeader.name != null) {
-                            Attachment currentAttachment = attachmentsMap.get(String.valueOf(attachmentIndex));
-                            if (currentAttachment.name.startsWith("application")) {
+                            if (currentAttachment != null && currentAttachment.name.startsWith("application")) {
                                 attachment = currentAttachment;
                             }
                         }
+                        // try to get attachment with Content-Disposition header
+                        if (attachment == null && partHeader.fileName != null) {
+                            attachment = attachmentsMap.get(partHeader.fileName);
+                        }
+                        
                         attachmentIndex++;
                         if (attachment == null) {
                             // only warn, could happen depending on IIS config
@@ -1392,6 +1403,10 @@ public class ExchangeSession {
         public String contentTransferEncoding = null;
         public String boundary = null;
         public String name = null;
+        /**
+         * filename in Content-Disposition header
+         */
+        public String fileName = null;
 
         protected void writeLine(OutputStream os, String line) throws IOException {
             if (os != null) {
@@ -1401,10 +1416,34 @@ public class ExchangeSession {
             }
         }
 
-        public void processHeaders(BufferedReader reader, OutputStream os) throws IOException {
+        /**
+         * Try to restore attachment names renamed by Exchange.
+         *
+         * @param line                  current header line
+         * @param currentAttachmentName actual attachment name
+         * @return patched header line
+         */
+        protected String fixRenamedAttachment(String line, String currentAttachmentName) {
+            String result = line;
+            final String WINMAIL_DAT = "name=\"winmail.dat\"";
+            if (line != null && currentAttachmentName != null) {
+                int startIndex = line.indexOf(WINMAIL_DAT);
+                if (startIndex >= 0) {
+                    result = line.substring(0, startIndex) +
+                            "name=\"" +
+                            currentAttachmentName +
+                            "\"" +
+                            line.substring(startIndex + WINMAIL_DAT.length());
+                }
+            }
+            return result;
+        }
+
+        public void processHeaders(BufferedReader reader, OutputStream os, String currentAttachmentName) throws IOException {
             // TODO implement a reliable header tokenizer
+            // TODO : do not write header directly in outputstream, allow attachment name fix (winmail.dat)
             String line;
-            line = reader.readLine();
+            line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
             while (line != null && line.length() > 0) {
 
                 writeLine(os, line);
@@ -1416,7 +1455,7 @@ public class ExchangeSession {
                     // handle multi-line header
                     StringBuffer header = new StringBuffer(contentTypeHeader);
                     while (line.trim().endsWith(";")) {
-                        line = reader.readLine();
+                        line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
                         header.append(line);
 
                         writeLine(os, line);
@@ -1468,7 +1507,7 @@ public class ExchangeSession {
                                     if (!name.endsWith("\"")) {
                                         // append next lines
                                         do {
-                                            line = reader.readLine();
+                                            line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
                                             writeLine(os, line);
                                             name += line;
                                         } while (!line.trim().endsWith("\""));
@@ -1488,15 +1527,21 @@ public class ExchangeSession {
                     }
                 } else if (lineToCompare.startsWith(CONTENT_TRANSFER_ENCODING_HEADER)) {
                     contentTransferEncoding = line.substring(CONTENT_TRANSFER_ENCODING_HEADER.length()).trim();
+                } else if (lineToCompare.startsWith(CONTENT_DISPOSITION_HEADER)) {
+                    // TODO : recode with header parser
+                    int filenameIndex = line.indexOf("filename=\"");
+                    if (filenameIndex >= 0) {
+                        fileName = line.substring(filenameIndex + 10, line.lastIndexOf("\""));
+                    }
                 }
-                line = reader.readLine();
+                line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
             }
             writeLine(os, "");
 
             // strip header content for attached messages
             if ("message/rfc822".equalsIgnoreCase(contentType)) {
                 MimeHeader internalMimeHeader = new MimeHeader();
-                internalMimeHeader.processHeaders(reader, null);
+                internalMimeHeader.processHeaders(reader, null, null);
                 if (internalMimeHeader.boundary != null) {
                     String endBoundary = internalMimeHeader.boundary + "--";
                     line = reader.readLine();
