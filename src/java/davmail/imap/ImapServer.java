@@ -2,6 +2,7 @@ package davmail.imap;
 
 
 import java.net.Socket;
+import java.io.IOException;
 
 import davmail.AbstractServer;
 import davmail.AbstractConnection;
@@ -16,7 +17,7 @@ public class ImapServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      */
-    public ImapServer(int port) {
+    public ImapServer(int port) throws IOException {
         super(port, ImapServer.DEFAULT_PORT);
     }
 

@@ -3,6 +3,8 @@ package davmail;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 
+import java.io.IOException;
+
 /**
  * DavGateway main class
  */
@@ -56,13 +58,18 @@ public class DavGateway {
         if (popPort == 0) {
             popPort = PopServer.DEFAULT_PORT;
         }
-        smtpServer = new SmtpServer(smtpPort);
-        popServer = new PopServer(popPort);
-        smtpServer.start();
-        popServer.start();
 
-        DavGatewayTray.info("DavMail gateway listening on SMTP port " + smtpPort +
-                " and POP port " + popPort);
+        try {
+            smtpServer = new SmtpServer(smtpPort);
+            popServer = new PopServer(popPort);
+            smtpServer.start();
+            popServer.start();
+
+            DavGatewayTray.info("DavMail gateway listening on SMTP port " + smtpPort +
+                    " and POP port " + popPort);
+        } catch (IOException e) {
+            DavGatewayTray.error("Exception creating server socket", e);
+        }
 
     }
 
