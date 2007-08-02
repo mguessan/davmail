@@ -183,6 +183,11 @@ public class DavGatewayTray {
                 } catch (AWTException e) {
                     System.err.println(e);
                 }
+                
+                // display settings frame on first start
+                if (Settings.isFirstStart()) {
+                    settingsFrame.setVisible(true);
+                }
             }
 
         } catch (NoClassDefFoundError e) {

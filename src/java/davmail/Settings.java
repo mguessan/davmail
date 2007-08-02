@@ -15,9 +15,14 @@ public class Settings {
 
     private static final Properties SETTINGS = new Properties();
     private static String configFilePath;
+    private static boolean isFirstStart;
 
     public static synchronized void setConfigFilePath(String value) {
         configFilePath = value;
+    }
+    
+    public static boolean isFirstStart() {
+        return isFirstStart;
     }
 
     public static synchronized void load() {
@@ -32,9 +37,12 @@ public class Settings {
                 fileReader = new FileReader(configFile);
                 SETTINGS.load(fileReader);
             } else {
+                isFirstStart = true;
+
+                // first start : set default values, ports above 1024 for linux
                 SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
-                SETTINGS.put("davmail.popPort", "110");
-                SETTINGS.put("davmail.smtpPort", "25");
+                SETTINGS.put("davmail.popPort", "1110");
+                SETTINGS.put("davmail.smtpPort", "1025");
                 SETTINGS.put("davmail.keepDelay", "30");
                 SETTINGS.put("davmail.enableProxy", "false");
                 SETTINGS.put("davmail.proxyHost", "");
