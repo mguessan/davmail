@@ -46,6 +46,7 @@
                 <exclude name="jsmoothgen-ant.jar"/>
             </fileset>
         </copy>
+        <copy file="davmail.sh" todir="dist"/>
         <taskdef name="jsmoothgen"
                  classname="net.charabia.jsmoothgen.ant.JSmoothGen"
                  classpathref="classpath"/>
@@ -56,6 +57,7 @@
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="davmail*.exe"/>
+                <include name="davmail.sh"/>
             </fileset>
         </zip>
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
