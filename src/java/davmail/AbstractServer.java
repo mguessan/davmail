@@ -51,7 +51,10 @@ public abstract class AbstractServer extends Thread {
                 System.gc();
             }
         } catch (IOException e) {
-            DavGatewayTray.warn("Exception while listening for connections", e);
+            // do not warn if exception on socket close (gateway restart)
+            if (!serverSocket.isClosed()) {
+                DavGatewayTray.warn("Exception while listening for connections", e);
+            }
         } finally {
             try {
                 if (clientSocket != null) {
