@@ -931,7 +931,7 @@ public class ExchangeSession {
                         if (attachment == null && partHeader.fileName != null) {
                             attachment = attachmentsMap.get(partHeader.fileName);
                         }
-                        
+
                         attachmentIndex++;
                         if (attachment == null) {
                             // only warn, could happen depending on IIS config
@@ -1531,7 +1531,16 @@ public class ExchangeSession {
                     // TODO : recode with header parser
                     int filenameIndex = line.indexOf("filename=\"");
                     if (filenameIndex >= 0) {
-                        fileName = line.substring(filenameIndex + 10, line.lastIndexOf("\""));
+                        // handle multiline header
+                        if (line.endsWith("\"")) {
+                            fileName = line.substring(filenameIndex + 10, line.lastIndexOf("\""));
+                        } else {
+                            fileName = line.substring(filenameIndex + 10);
+                            // read next file name line
+                            line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
+                            writeLine(os, line);
+                            fileName += line.substring(1, line.lastIndexOf("\""));
+                        }
                     }
                 }
                 line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
