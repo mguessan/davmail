@@ -44,6 +44,7 @@ public class Settings {
                 SETTINGS.put("davmail.popPort", "1110");
                 SETTINGS.put("davmail.smtpPort", "1025");
                 SETTINGS.put("davmail.keepDelay", "30");
+                SETTINGS.put("davmail.allowRemote", "false");
                 SETTINGS.put("davmail.enableProxy", "false");
                 SETTINGS.put("davmail.proxyHost", "");
                 SETTINGS.put("davmail.proxyPort", "");
@@ -98,6 +99,17 @@ public class Settings {
             if (propertyValue != null && propertyValue.length() > 0) {
                 value = Integer.valueOf(propertyValue);
             }
+        } catch (NumberFormatException e) {
+            DavGatewayTray.error("Invalid setting value in " + property, e);
+        }
+        return value;
+    }
+
+    public static synchronized boolean getBooleanProperty(String property) {
+        boolean value = false;
+        try {
+            String propertyValue = SETTINGS.getProperty(property);
+            value = "true".equals(propertyValue);
         } catch (NumberFormatException e) {
             DavGatewayTray.error("Invalid setting value in " + property, e);
         }
