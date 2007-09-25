@@ -949,6 +949,20 @@ public class ExchangeSession {
                 os.write('\r');
                 os.write('\n');
             }
+            // failover for invalid mime headers : at least write body
+            if (attachmentIndex == 0) {
+                MimeHeader bodyHeader = new MimeHeader();
+                bodyHeader.contentType = "text/html";
+                bodyHeader.charset = "utf-8";
+                StringBuffer headerBuffer = new StringBuffer();
+                headerBuffer.append(mimeHeader.boundary).append("\r\n");
+                headerBuffer.append("Content-Type: text/html; charset=UTF-8\r\n");
+                headerBuffer.append("Content-Transfer-Encoding: 7bit\r\n");
+                headerBuffer.append("\r\n");
+                os.write(headerBuffer.toString().getBytes());
+                writeBody(os, bodyHeader);
+                os.write((mimeHeader.boundary+"--\r\n").getBytes());
+            }
         }
 
         protected void writeAttachment(OutputStream os, MimeHeader mimeHeader, Attachment attachment) throws IOException {
