@@ -26,7 +26,7 @@
                     <tr>
                         <td>OWA url</td>
                         <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL</td>
-                        <td>https://mail.bt.com/exchange/</td>
+                        <td>http://exchangeServer/exchange/</td>
                     </tr>
                     <tr>
                         <td>Local POP port</td>
@@ -42,6 +42,11 @@
                         <td>Keep Delay</td>
                         <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
                         <td>30</td>
+                    </tr>
+                    <tr>
+                        <td>Allow remote connections</td>
+                        <td>Allow remote connections to the gateway (server mode)</td>
+                        <td>false</td>
                     </tr>
                 </table>
             </p>
