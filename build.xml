@@ -1,5 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
-    <property name="version" value="1.0.4"/>
+    <property name="version" value="1.1.0"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -56,8 +56,9 @@
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
-                <include name="davmail*.exe"/>
                 <include name="davmail.sh"/>
+                <!-- exclude swt jars from platform independent package -->
+                <exclude name="lib/swt*.jar"/>
             </fileset>
         </zip>
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
