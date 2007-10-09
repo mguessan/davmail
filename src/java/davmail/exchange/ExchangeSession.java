@@ -92,6 +92,7 @@ public class ExchangeSession {
     public static final String CONTENT_TYPE_HEADER = "content-type: ";
     public static final String CONTENT_TRANSFER_ENCODING_HEADER = "content-transfer-encoding: ";
     public static final String CONTENT_DISPOSITION_HEADER = "content-disposition: ";
+    public static final String CONTENT_ID_HEADER = "content-id: ";    
 
     private static final int DEFAULT_KEEP_DELAY = 30;
 
@@ -921,6 +922,14 @@ public class ExchangeSession {
                         if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))) {
                             attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
                         }
+                        // try to get attachment by content id
+                        if (attachment == null && partHeader.contentId != null) {
+                            for (Attachment entry : attachmentsMap.values()) {
+                                if (partHeader.contentId.equals(entry.contentid)) {
+                                    attachment = entry;
+                                }
+                            }
+                        }
                         // try to get by index if attachment renamed to application
                         if (attachment == null && partHeader.name != null) {
                             if (currentAttachment != null && currentAttachment.name.startsWith("application")) {
@@ -1417,6 +1426,7 @@ public class ExchangeSession {
         public String contentTransferEncoding = null;
         public String boundary = null;
         public String name = null;
+        public String contentId = null;
         /**
          * filename in Content-Disposition header
          */
@@ -1555,6 +1565,14 @@ public class ExchangeSession {
                             writeLine(os, line);
                             fileName += line.substring(1, line.lastIndexOf("\""));
                         }
+                    }
+                } else if (lineToCompare.startsWith(CONTENT_ID_HEADER)) {
+                    contentId = line.substring(CONTENT_ID_HEADER.length()).trim();
+                    if (contentId.startsWith("<")) {
+                        contentId = contentId.substring(1);
+                    }
+                    if (contentId.endsWith(">")) {
+                        contentId = contentId.substring(0, contentId.length()-1);
                     }
                 }
                 line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
