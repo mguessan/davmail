@@ -1,7 +1,7 @@
 package davmail.pop;
 
 import davmail.AbstractConnection;
-import davmail.DavGatewayTray;
+import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 
 import java.io.IOException;

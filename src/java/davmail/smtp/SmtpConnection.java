@@ -1,7 +1,7 @@
 package davmail.smtp;
 
 import davmail.AbstractConnection;
-import davmail.DavGatewayTray;
+import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 import sun.misc.BASE64Decoder;
 

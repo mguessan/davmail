@@ -2,6 +2,7 @@ package davmail;
 
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
+import davmail.tray.DavGatewayTray;
 
 import java.io.IOException;
 

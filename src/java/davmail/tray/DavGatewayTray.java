@@ -1,8 +1,12 @@
-package davmail;
+package davmail.tray;
 
 import org.apache.log4j.Priority;
 
 import java.awt.SystemTray;
+
+import davmail.tray.AwtGatewayTray;
+import davmail.tray.DavGatewayTrayInterface;
+import davmail.tray.SwtGatewayTray;
 
 
 /**

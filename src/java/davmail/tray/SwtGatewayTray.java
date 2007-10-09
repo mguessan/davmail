@@ -1,4 +1,4 @@
-package davmail;
+package davmail.tray;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -16,6 +16,11 @@ import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
 import java.awt.*;
+
+import davmail.tray.DavGatewayTray;
+import davmail.tray.DavGatewayTrayInterface;
+import davmail.SettingsFrame;
+import davmail.Settings;
 
 /**
  * Tray icon handler based on SWT

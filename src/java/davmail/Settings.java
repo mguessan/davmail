@@ -1,5 +1,7 @@
 package davmail;
 
+import davmail.tray.DavGatewayTray;
+
 import java.util.Properties;
 import java.io.File;
 import java.io.FileReader;

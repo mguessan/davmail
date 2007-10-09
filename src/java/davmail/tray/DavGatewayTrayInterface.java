@@ -1,4 +1,4 @@
-package davmail;
+package davmail.tray;
 
 import org.apache.log4j.Priority;
 

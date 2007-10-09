@@ -6,7 +6,7 @@ import java.util.List;
 import java.io.IOException;
 
 import davmail.AbstractConnection;
-import davmail.DavGatewayTray;
+import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 
 /**
