@@ -3,10 +3,7 @@ package davmail;
 import davmail.tray.DavGatewayTray;
 
 import java.util.Properties;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Settings facade
@@ -28,7 +25,7 @@ public class Settings {
     }
 
     public static synchronized void load() {
-        FileReader fileReader = null;
+        FileInputStream fileInputStream = null;
         try {
             if (configFilePath == null) {
                 //noinspection AccessOfSystemProperties
@@ -36,8 +33,8 @@ public class Settings {
             }
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                fileReader = new FileReader(configFile);
-                SETTINGS.load(fileReader);
+                fileInputStream = new FileInputStream(configFile);
+                SETTINGS.load(fileInputStream);
             } else {
                 isFirstStart = true;
 
@@ -57,9 +54,9 @@ public class Settings {
         } catch (IOException e) {
             DavGatewayTray.error("Unable to load settings: ", e);
         } finally {
-            if (fileReader != null) {
+            if (fileInputStream != null) {
                 try {
-                    fileReader.close();
+                    fileInputStream.close();
                 } catch (IOException e) {
                     DavGatewayTray.debug("Error closing configuration file: ", e);
                 }
