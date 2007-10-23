@@ -19,7 +19,7 @@
 
     <target name="compile" depends="init">
         <mkdir dir="target/classes"/>
-        <javac srcdir="src/java" destdir="target/classes" target="1.5">
+        <javac srcdir="src/java" destdir="target/classes" source="1.5" target="1.5">
             <classpath>
                 <path refid="classpath"/>
             </classpath>
