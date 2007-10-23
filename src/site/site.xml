@@ -14,7 +14,8 @@
         <menu name="Quick Links">
             <item name="About" href="/index.html"/>
             <item name="Download" href="http://sourceforge.net/project/platformdownload.php?group_id=184600"/>
-            <item name="Setup" href="/setup.html"/>
+            <item name="Windows Setup" href="/windowssetup.html"/>
+            <item name="Linux Setup" href="/linuxsetup.html"/>
             <item name="Getting Started" href="/gettingstarted.html"/>
             <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
         </menu>

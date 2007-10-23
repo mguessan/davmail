@@ -3,16 +3,20 @@
 <document>
 
     <properties>
-        <title>Setup DavMail</title>
+        <title>Setup DavMail on windows</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
     <body>
 
-        <section name="DavMail Setup">
-            <p>Prerequisite : Sun J2SE 1.6 is mandatory to enable tray icon support. You may use
-                DavMail with an older version, but the gateway will run as a command line application.
+        <section name="DavMail Setup on windows">
+            <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
+                Java 1.5. You may use DavMail with an older version, but the gateway will run as a
+                command line application.
             </p>
+
+            <p>If Java is not available, DavMail Jsmooth launcher will trigger java download and
+                setup.</p>
 
             <p>DavMail setup is straightforward, just follow the setup wizard.
             </p>

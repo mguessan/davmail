@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>Setup DavMail on linux</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="DavMail Setup on linux">
+            <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
+                Java 1.5. You may use DavMail with an older version, but the gateway will run as a
+                command line application.
+            </p>
+
+            <p>You should first download and install Java, e.g. by running the following command on
+                Ubuntu :
+            </p>
+            <code>sudo apt-get install sun-java6-bin</code>
+
+            <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
+                your favorite tool. The standard package will run natively on x86, to use DavMail
+                on any other hardware platform, replace the SWT with the right one or use the
+                platform independent package. Sorry, no deb or rpm package yet !
+            </p>
+            <p>On Ubuntu and other Gnome or Kde distributions, just use the desktop launcher.
+                On other distributions, try
+                <code>davmail.sh</code>
+            </p>
+
+            <p>Adjust DavMail settings :
+                <a href="gettingstarted.html">Getting started</a>
+            </p>
+        </section>
+
+    </body>
+</document>
