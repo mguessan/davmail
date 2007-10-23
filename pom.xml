@@ -11,7 +11,8 @@
     <description>
         Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP exchange gateway allowing
         users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
-        through Outlook Web Access on any platform (Java based)
+        through Outlook Web Access. DavMail gateway is implemented in java and should run on
+        any platform. Releases are tested on Windows and Linux (Ubuntu).
     </description>
     <developers>
         <developer>
