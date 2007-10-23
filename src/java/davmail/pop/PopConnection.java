@@ -1,11 +1,12 @@
 package davmail.pop;
 
 import davmail.AbstractConnection;
-import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
+import davmail.tray.DavGatewayTray;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -102,6 +103,9 @@ public class PopConnection extends AbstractConnection {
                                 messages = session.getAllMessages();
                                 sendOK("PASS");
                                 state = AUTHENTICATED;
+                            } catch (SocketException e) {
+                                // can not send error to client after a socket exception
+                                DavGatewayTray.warn("Client closed connection ", e);
                             } catch (Exception e) {
                                 String message = e.getMessage();
                                 if (message == null) {
@@ -139,6 +143,9 @@ public class PopConnection extends AbstractConnection {
                                     messages.get(messageNumber).write(os);
                                     sendClient("");
                                     sendClient(".");
+                                } catch (SocketException e) {
+                                    // can not send error to client after a socket exception
+                                    DavGatewayTray.warn("Client closed connection ", e);
                                 } catch (Exception e) {
                                     DavGatewayTray.error("Error retreiving message", e);
                                     sendERR("error retreiving message " + e + " " + e.getMessage());
@@ -153,6 +160,9 @@ public class PopConnection extends AbstractConnection {
                                             nextToken()) - 1;
                                     messages.get(messageNumber).delete();
                                     sendOK("DELETE");
+                                } catch (SocketException e) {
+                                    // can not send error to client after a socket exception
+                                    DavGatewayTray.warn("Client closed connection ", e);
                                 } catch (Exception e) {
                                     DavGatewayTray.error("Error deleting message", e);
                                     sendERR("error deleting message");
@@ -172,6 +182,9 @@ public class PopConnection extends AbstractConnection {
                                     sendClient(".");
                                 }
                                 sendOK("TOP");
+                            } catch (SocketException e) {
+                                // can not send error to client after a socket exception
+                                DavGatewayTray.warn("Client closed connection ", e);
                             } catch (Exception e) {
                                 sendERR("error retreiving top of messages");
                             }
