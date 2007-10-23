@@ -22,8 +22,9 @@
 
             <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
                 your favorite tool. The standard package will run natively on x86, to use DavMail
-                on any other hardware platform, replace the SWT with the right one or use the
-                platform independent package. Sorry, no deb or rpm package yet !
+                on any other hardware platform, replace the SWT with the right one from
+                <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>
+                or use the platform independent package. Sorry, no deb or rpm package yet !
             </p>
             <p>On Ubuntu and other Gnome or Kde distributions, just use the desktop launcher.
                 On other distributions, try
