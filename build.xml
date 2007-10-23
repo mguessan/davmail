@@ -47,6 +47,7 @@
             </fileset>
         </copy>
         <copy file="davmail.sh" todir="dist"/>
+        <copy file="davmail.desktop" todir="dist"/>
         <taskdef name="jsmoothgen"
                  classname="net.charabia.jsmoothgen.ant.JSmoothGen"
                  classpathref="classpath"/>
