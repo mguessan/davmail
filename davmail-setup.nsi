@@ -94,7 +94,7 @@ Section "MainSection" SEC01
   File "dist\lib\mail-1.3.2.jar"
   File "dist\lib\saxpath-1.0-FCS.jar"
   File "dist\lib\slide-webdavlib-2.1.jar"
-  File "dist\lib\swt-3.3-win32-win32-x86.jar"
+  File "dist\lib\swt-3.3-win32-x86.jar"
   WriteRegStr HKEY_CURRENT_USER "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail" "$INSTDIR\davmail.exe"
 SectionEnd
 
@@ -147,7 +147,7 @@ BailOut:
 no_quest:
   Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\lib\swt-3.3-win32-win32-x86.jar"
+  Delete "$INSTDIR\lib\swt-3.3-win32-x86.jar"
   Delete "$INSTDIR\lib\slide-webdavlib-2.1.jar"
   Delete "$INSTDIR\lib\saxpath-1.0-FCS.jar"
   Delete "$INSTDIR\lib\mail-1.3.2.jar"
