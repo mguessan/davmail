@@ -5,11 +5,11 @@
     <groupId>davmail</groupId>
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
     <name>davmail</name>
     <url>http://www.sourceforge.net/projects/davmail</url>
     <description>
-        Ever wanted to get rid of Outlook ? Davmail is a POP/SMTP exchange gateway allowing
+        Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP exchange gateway allowing
         users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
         through Outlook Web Access on any platform (Java based)
     </description>
@@ -20,14 +20,14 @@
             <url>http://mguessan.free.fr</url>
             <roles>
                 <role>Project Founder</role>
-                <!--  <role>Java Developer</role> -->
+                <role>Java Developer</role>
             </roles>
         </developer>
     </developers>
     <licenses>
         <license>
             <name>GNU General Public License</name>
-            <url>http://www.gnu.org/licenses/gpl.html</url>
+            <url>http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -41,7 +41,7 @@
         </mailingList>
     </mailingLists>
     <scm>
-        <connection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</connection>
+        <connection>scm:svn:http://davmail.svn.sourceforge.net/svnroot/davmail/trunk</connection>
         <developerConnection>scm:svn:https://davmail.svn.sourceforge.net/svnroot/davmail/trunk</developerConnection>
         <tag>HEAD</tag>
         <url>http://davmail.svn.sourceforge.net/viewvc/davmail/trunk/</url>
@@ -101,6 +101,11 @@
             <groupId>javax.activation</groupId>
             <artifactId>jaf</artifactId>
             <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>swt</groupId>
+            <artifactId>swt</artifactId>
+            <version>3.3</version>
         </dependency>
     </dependencies>
     <build>
