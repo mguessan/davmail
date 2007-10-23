@@ -61,6 +61,18 @@
                 <exclude name="lib/swt*.jar"/>
             </fileset>
         </zip>
+        <tar tarfile="dist/davmail-linux-x86-${version}.tgz" compression="gzip">
+            <tarfileset prefix="davmail-linux-x86-${version}" dir="dist" filemode="755">
+                <include name="davmail.sh"/>
+            </tarfileset>
+            <tarfileset prefix="davmail-linux-x86-${version}" dir="dist">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="lib/swt-*-gtk-linux-x86.jar"/>
+                <exclude name="lib/swt-*-carbon-macosx.jar"/>
+                <exclude name="lib/swt-*-win32-x86.jar"/>
+            </tarfileset>
+        </tar>
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
             <define name="VERSION" value="${version}"/>
         </nsis>
