@@ -16,26 +16,39 @@
             </p>
 
             <p>If Java is not available, DavMail Jsmooth launcher will trigger java download and
-                setup.</p>
+                setup.
+            </p>
 
             <p>DavMail setup is straightforward, just follow the setup wizard.
             </p>
             <p>Choose language:
             </p>
-            <img src="images/setup1.png"/>
+            <div style="width: 100%;text-align: center">
+                <img src="images/setup1.png"/>
+            </div>
             <p>Click Next:
             </p>
-            <img src="images/setup2.png"/>
+            <div style="width: 100%;text-align: center">
+                <img src="images/setup2.png"/>
+            </div>
             <p>Accept GPL licence:
             </p>
-            <img src="images/setup3.png"/>
+            <div style="width: 100%;text-align: center">
+                <img src="images/setup3.png"/>
+            </div>
             <p>Choose path:
             </p>
-            <img src="images/setup4.png"/>
+            <div style="width: 100%;text-align: center">
+                <img src="images/setup4.png"/>
+            </div>
             <p>Launch installation and start gateway:
             </p>
-            <img src="images/setup5.png"/>
-            <p>Adjust DavMail settings : <a href="gettingstarted.html">Getting started</a></p>
+            <div style="width: 100%;text-align: center">
+                <img src="images/setup5.png"/>
+            </div>
+            <p>Adjust DavMail settings :
+                <a href="gettingstarted.html">Getting started</a>
+            </p>
         </section>
 
     </body>

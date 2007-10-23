@@ -14,7 +14,9 @@
                 right click on it and choose
                 <code>Settings...</code>
             </p>
-            <img src="images/davmailSettings.png"/>
+            <div style="width: 100%;text-align: center">
+                <img src="images/davmailSettings.png"/>
+            </div>
             <p>
                 The following table describes the main options :
                 <table>
@@ -58,34 +60,48 @@
             </p>
 
             <section name="Create a new account">
-                <img src="images/thunderbirdAccount1.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount1.png"/>
+                </div>
 
                 <p>Edit common name and Exchange mail address:
                 </p>
-                <img src="images/thunderbirdAccount2.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount2.png"/>
+                </div>
 
                 <p>Choose POP as server type, located at localhost:
                 </p>
-                <img src="images/thunderbirdAccount3.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount3.png"/>
+                </div>
 
 
                 <p>Populate in and out login names with Active Directory account name, i.e. domain\account
                 </p>
-                <img src="images/thunderbirdAccount4.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount4.png"/>
+                </div>
 
                 <p>Edit account name (email address by default):
                 </p>
-                <img src="images/thunderbirdAccount5.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount5.png"/>
+                </div>
 
                 <p>Finish:
                 </p>
-                <img src="images/thunderbirdAccount6.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdAccount6.png"/>
+                </div>
 
             </section>
             <section name="Create a new SMTP configuration">
                 <p>Create a new outgoing mail configuration under account settings:
                 </p>
-                <img src="images/thunderbirdSmtp.png"/>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdSmtp.png"/>
+                </div>
                 <p>Server name is localhost, edit port according to DavMail settings.
                     The connection must use authentication with Active Directory account and encryption is not needed.
                 </p>

@@ -27,9 +27,12 @@
             </p>
             <p>On Ubuntu and other Gnome or Kde distributions, just use the desktop launcher.
                 On other distributions, try
-                <code>davmail.sh</code>
+                <code>davmail.sh</code>.
+                You should now see the DavMail gateway icon in the tray :
             </p>
-
+            <div style="width: 100%;text-align: center">
+                <img align="center" src="images/ubuntutray.png"/>
+            </div>
             <p>Adjust DavMail settings :
                 <a href="gettingstarted.html">Getting started</a>
             </p>
