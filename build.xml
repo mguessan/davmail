@@ -56,6 +56,7 @@
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
+                <include name="davmail.desktop"/>
                 <include name="davmail.sh"/>
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
@@ -66,6 +67,7 @@
                 <include name="davmail.sh"/>
             </tarfileset>
             <tarfileset prefix="davmail-linux-x86-${version}" dir="dist">
+                <include name="davmail.desktop"/>
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="lib/swt-*-gtk-linux-x86.jar"/>

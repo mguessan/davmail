@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=DavMail
+Type=Application
+Terminal=false
+Exec=/usr/bin/java -cp davmail.jar:lib/* davmail.DavGateway
+Path=/home/mguessan/davmail-linux-x86-1.1.0
+Comment=DavMail POP/SMTP Webdav Exchange Gateway
