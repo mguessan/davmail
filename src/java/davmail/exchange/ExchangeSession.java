@@ -92,7 +92,7 @@ public class ExchangeSession {
     public static final String CONTENT_TYPE_HEADER = "content-type: ";
     public static final String CONTENT_TRANSFER_ENCODING_HEADER = "content-transfer-encoding: ";
     public static final String CONTENT_DISPOSITION_HEADER = "content-disposition: ";
-    public static final String CONTENT_ID_HEADER = "content-id: ";    
+    public static final String CONTENT_ID_HEADER = "content-id: ";
 
     private static final int DEFAULT_KEEP_DELAY = 30;
 
@@ -970,7 +970,7 @@ public class ExchangeSession {
                 headerBuffer.append("\r\n");
                 os.write(headerBuffer.toString().getBytes());
                 writeBody(os, bodyHeader);
-                os.write((mimeHeader.boundary+"--\r\n").getBytes());
+                os.write((mimeHeader.boundary + "--\r\n").getBytes());
             }
         }
 
@@ -1327,6 +1327,7 @@ public class ExchangeSession {
                             .replaceFirst("xmlns=\".*\"", "")
                                     // quick fix remove inline processing instructions
                             .replaceAll("<\\?xml:namespace", "")
+                            .replaceAll("<\\?XML:NAMESPACE", "")
                                     // quick fix invalid comments
                             .replaceAll("<!---", "<!-- -")
                             .getBytes("UTF-8"));
@@ -1572,7 +1573,7 @@ public class ExchangeSession {
                         contentId = contentId.substring(1);
                     }
                     if (contentId.endsWith(">")) {
-                        contentId = contentId.substring(0, contentId.length()-1);
+                        contentId = contentId.substring(0, contentId.length() - 1);
                     }
                 }
                 line = fixRenamedAttachment(reader.readLine(), currentAttachmentName);
