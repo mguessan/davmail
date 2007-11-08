@@ -610,6 +610,7 @@ public class ExchangeSession {
      * Select current folder.
      * Folder name can be logical names INBOX or TRASH (translated to local names),
      * relative path to user base folder or absolute path.
+     *
      * @param folderName folder name
      * @return Folder object
      * @throws IOException when unable to change folder
@@ -682,7 +683,7 @@ public class ExchangeSession {
         public String subject;
         public String priority;
 
-        protected Map<String, Attachment> attachmentsMap;
+        protected List<Attachment> attachments;
 
         // attachment index used during write
         protected int attachmentIndex;
@@ -787,38 +788,28 @@ public class ExchangeSession {
                             .append("\nContent-Transfer-Encoding: 7bit")
                             .append("\n\n");
 
-                    for (String attachmentName : attachmentsMap.keySet()) {
-                        // ignore indexed attachments
-                        int parsedAttachmentIndex = 0;
-                        try {
-                            parsedAttachmentIndex = Integer.parseInt(attachmentName);
-                        } catch (Exception e) {
-                            LOGGER.debug("Current attachment name " + attachmentName + " is not an index", e);
+                    for (Attachment attachment : attachments) {
+                        String attachmentContentType = getAttachmentContentType(attachment.href);
+                        String attachmentContentEncoding = "base64";
+                        if (attachmentContentType.startsWith("text/")) {
+                            attachmentContentEncoding = "quoted-printable";
+                        } else if (attachmentContentType.startsWith("message/rfc822")) {
+                            attachmentContentEncoding = "7bit";
                         }
-                        if (parsedAttachmentIndex == 0) {
-                            Attachment attachment = attachmentsMap.get(attachmentName);
-                            String attachmentContentType = getAttachmentContentType(attachment.href);
-                            String attachmentContentEncoding = "base64";
-                            if (attachmentContentType.startsWith("text/")) {
-                                attachmentContentEncoding = "quoted-printable";
-                            } else if (attachmentContentType.startsWith("message/rfc822")) {
-                                attachmentContentEncoding = "7bit";
-                            }
 
-                            result.append("\n--").append(boundary)
-                                    .append("\nContent-Type: ")
-                                    .append(attachmentContentType)
-                                    .append(";")
-                                    .append("\n\tname=\"").append(attachmentName).append("\"");
-                            if (attachment.contentid != null) {
-                                result.append("\nContent-ID: <")
-                                        .append(attachment.contentid)
-                                        .append(">");
-                            }
-
-                            result.append("\nContent-Transfer-Encoding: ").append(attachmentContentEncoding)
-                                    .append("\n\n");
+                        result.append("\n--").append(boundary)
+                                .append("\nContent-Type: ")
+                                .append(attachmentContentType)
+                                .append(";")
+                                .append("\n\tname=\"").append(attachment.name).append("\"");
+                        if (attachment.contentid != null) {
+                            result.append("\nContent-ID: <")
+                                    .append(attachment.contentid)
+                                    .append(">");
                         }
+
+                        result.append("\nContent-Transfer-Encoding: ").append(attachmentContentEncoding)
+                                .append("\n\n");
                     }
 
                     // end parts
@@ -896,9 +887,10 @@ public class ExchangeSession {
 
                 // detect part boundary start
                 if (line.equals(mimeHeader.boundary)) {
-                    Attachment currentAttachment = attachmentsMap.get(String.valueOf(attachmentIndex));
+                    Attachment currentAttachment = null;
                     String currentAttachmentName = null;
-                    if (currentAttachment != null) {
+                    if (attachmentIndex < attachments.size()) {
+                        currentAttachment = attachments.get(attachmentIndex);
                         currentAttachmentName = currentAttachment.name;
                     }
 
@@ -916,36 +908,7 @@ public class ExchangeSession {
                         attachmentIndex++;
                         writeBody(os, partHeader);
                     } else {
-                        Attachment attachment = attachmentsMap.get(partHeader.name);
-
-                        // TODO : test if .eml extension could be stripped from attachment name directly
-                        // try to get email attachment with .eml extension
-                        if (attachment == null && partHeader.name != null) {
-                            attachment = attachmentsMap.get(partHeader.name + ".eml");
-                        }
-                        // try to get attachment by index, only if no name found
-                        // or attachment renamed to winmail.dat by Exchange
-                        if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))) {
-                            attachment = attachmentsMap.get(String.valueOf(attachmentIndex));
-                        }
-                        // try to get attachment by content id
-                        if (attachment == null && partHeader.contentId != null) {
-                            for (Attachment entry : attachmentsMap.values()) {
-                                if (partHeader.contentId.equals(entry.contentid)) {
-                                    attachment = entry;
-                                }
-                            }
-                        }
-                        // try to get by index if attachment renamed to application
-                        if (attachment == null && partHeader.name != null) {
-                            if (currentAttachment != null && currentAttachment.name.startsWith("application")) {
-                                attachment = currentAttachment;
-                            }
-                        }
-                        // try to get attachment with Content-Disposition header
-                        if (attachment == null && partHeader.fileName != null) {
-                            attachment = attachmentsMap.get(partHeader.fileName);
-                        }
+                        Attachment attachment = getAttachment(partHeader, attachmentIndex - 1);
 
                         attachmentIndex++;
                         if (attachment == null) {
@@ -1225,7 +1188,7 @@ public class ExchangeSession {
 
         public void loadAttachments() throws IOException {
             // do not load attachments twice
-            if (attachmentsMap == null) {
+            if (attachments == null) {
 
                 GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl + "?Cmd=Open&unfiltered=1"));
                 wdr.retrieveSessionInstance().executeMethod(getMethod);
@@ -1238,7 +1201,7 @@ public class ExchangeSession {
                 // Release the connection.
                 getMethod.releaseConnection();
 
-                attachmentsMap = new HashMap<String, Attachment>();
+                attachments = new ArrayList<Attachment>();
                 int attachmentIndex = 1;
                 // fix empty body in dsn report
                 if (body == null || body.length() == 0) {
@@ -1290,10 +1253,8 @@ public class ExchangeSession {
                             attachment.name = attachmentName;
                             attachment.href = attachmentHref;
 
-                            attachmentsMap.put(attachmentName, attachment);
-                            LOGGER.debug("Attachment " + attachmentIndex + " : " + attachmentName);
-                            // add a second count based map entry
-                            attachmentsMap.put(String.valueOf(attachmentIndex++), attachment);
+                            attachments.add(attachment);
+                            LOGGER.debug("Attachment " + (attachmentIndex++) + " : " + attachmentName);
                         } else {
                             LOGGER.warn("Message URL : " + messageUrl + " is not a substring of attachment URL : " + attachmentHref);
                         }
@@ -1372,7 +1333,7 @@ public class ExchangeSession {
                                 }
                                 // add only inline images
                                 if (attachment.contentid != null) {
-                                    attachmentsMap.put(attachmentName, attachment);
+                                    attachments.add(attachment);
                                 }
                                 LOGGER.debug("Inline image attachment ID:" + attachment.contentid
                                         + " name: " + attachment.name + " href: " + attachment.href);
@@ -1384,7 +1345,42 @@ public class ExchangeSession {
             }
         }
 
+
+        protected Attachment getAttachment(MimeHeader partHeader, int attachmentIndex) {
+            Attachment attachment = null;
+
+            for (Attachment currentAttachment : attachments) {
+                if ((partHeader.name != null && partHeader.name.equals(currentAttachment.name)) ||
+                    // TODO : test if .eml extension could be stripped from attachment name directly
+                    // try to get email attachment with .eml extension
+                    (partHeader.name != null && (partHeader.name + ".eml").equals(currentAttachment.name)) ||
+                    // try to get attachment by content id
+                    (partHeader.contentId != null && partHeader.contentId.equals(currentAttachment.contentid)) ||
+                    // try to get attachment with Content-Disposition header
+                    (partHeader.fileName != null && partHeader.fileName.equals(currentAttachment.name))
+                   ){
+                    attachment = currentAttachment;
+                    break;
+                }
+            }
+
+            // try to get attachment by index, only if no name found
+            // or attachment renamed to winmail.dat by Exchange
+            if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))) {
+                attachment = attachments.get(attachmentIndex);
+            }
+
+            // try to get by index if attachment renamed to application
+            if (attachment == null && partHeader.name != null) {
+                Attachment currentAttachment = attachments.get(attachmentIndex);
+                if (currentAttachment != null && currentAttachment.name.startsWith("application")) {
+                    attachment = currentAttachment;
+                }
+            }
+            return attachment;
+        }
     }
+
 
     class Attachment {
         /**
