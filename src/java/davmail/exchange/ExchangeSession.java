@@ -141,24 +141,30 @@ public class ExchangeSession {
         // do not send basic auth automatically
         httpClient.getState().setAuthenticationPreemptive(false);
 
-        String enableProxy = Settings.getProperty("davmail.enableProxy");
+        boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
-        String proxyPort = null;
+        int proxyPort = 0;
         String proxyUser = null;
         String proxyPassword = null;
 
-        if ("true".equals(enableProxy)) {
+        if (enableProxy) {
             proxyHost = Settings.getProperty("davmail.proxyHost");
-            proxyPort = Settings.getProperty("davmail.proxyPort");
+            proxyPort = Settings.getIntProperty("davmail.proxyPort");
             proxyUser = Settings.getProperty("davmail.proxyUser");
             proxyPassword = Settings.getProperty("davmail.proxyPassword");
         }
 
         // configure proxy
         if (proxyHost != null && proxyHost.length() > 0) {
-            httpClient.getHostConfiguration().setProxy(proxyHost, Integer.parseInt(proxyPort));
+            httpClient.getHostConfiguration().setProxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyUser.length() > 0) {
-                // detect ntlm authentication (windows domain name in user name)
+
+/*              // Only available in newer HttpClient releases, not compatible with slide library
+                List authPrefs = new ArrayList();
+                authPrefs.add(AuthPolicy.BASIC);
+                httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY,authPrefs);
+*/
+                // instead detect ntlm authentication (windows domain name in user name)
                 int backslashindex = proxyUser.indexOf("\\");
                 if (backslashindex > 0) {
                     httpClient.getState().setProxyCredentials(null, proxyHost,
@@ -229,12 +235,6 @@ public class ExchangeSession {
             // get the internal HttpClient instance
             HttpClient httpClient = wdr.retrieveSessionInstance();
 
-/*          // Only available in newer HttpClient releases, not compatible with slide library
-            List authPrefs = new ArrayList();
-            authPrefs.add(AuthPolicy.BASIC);
-            httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY,authPrefs);
-*/
-
             configureClient(httpClient);
 
             // get webmail root url (will follow redirects)
@@ -243,7 +243,7 @@ public class ExchangeSession {
             wdr.executeHttpRequestMethod(httpClient,
                     initmethod);
             if (initmethod.getPath().indexOf("exchweb/bin") > 0) {
-                LOGGER.debug("** Form based authentication detected");
+                LOGGER.debug("Form based authentication detected");
 
                 PostMethod logonMethod = new PostMethod(
                         "/exchweb/bin/auth/owaauth.dll?" +
@@ -288,18 +288,17 @@ public class ExchangeSession {
             String body = method.getResponseBodyAsString();
             int beginIndex = body.indexOf(url);
             if (beginIndex < 0) {
-                throw new HttpException(url + "not found in body");
+                throw new HttpException(url + " not found in body");
             }
             body = body.substring(beginIndex);
             int endIndex = body.indexOf('"');
             if (endIndex < 0) {
-                throw new HttpException(url + "not found in body");
+                throw new HttpException(url + " not found in body");
             }
             body = body.substring(url.length(), endIndex);
             // got base http mailbox http url
             mailPath = "/exchange/" + body;
             wdr.setPath(mailPath);
-//            wdr.propfindMethod(0);
 
             // Retrieve inbox and trash URLs
             Vector<String> reqProps = new Vector<String>();
@@ -308,15 +307,15 @@ public class ExchangeSession {
             reqProps.add("urn:schemas:httpmail:sendmsg");
             reqProps.add("urn:schemas:httpmail:drafts");
 
-            Enumeration inboxEnum = wdr.propfindMethod(0, reqProps);
-            if (!inboxEnum.hasMoreElements()) {
-                throw new IOException("Unable to get inbox");
+            Enumeration foldersEnum = wdr.propfindMethod(0, reqProps);
+            if (!foldersEnum.hasMoreElements()) {
+                throw new IOException("Unable to get mail folders");
             }
-            ResponseEntity inboxResponse = (ResponseEntity) inboxEnum.
+            ResponseEntity inboxResponse = (ResponseEntity) foldersEnum.
                     nextElement();
             Enumeration inboxPropsEnum = inboxResponse.getProperties();
             if (!inboxPropsEnum.hasMoreElements()) {
-                throw new IOException("Unable to get inbox");
+                throw new IOException("Unable to get mail folders");
             }
             while (inboxPropsEnum.hasMoreElements()) {
                 Property inboxProp = (Property) inboxPropsEnum.nextElement();
@@ -343,6 +342,8 @@ public class ExchangeSession {
             LOGGER.debug("Inbox URL : " + inboxUrl);
             LOGGER.debug("Trash URL : " + deleteditemsUrl);
             LOGGER.debug("Send URL : " + sendmsgUrl);
+            LOGGER.debug("Drafts URL : " + draftsUrl);
+            // TODO : sometimes path, sometimes Url ?
             deleteditemsUrl = URIUtil.getPath(deleteditemsUrl);
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
@@ -376,7 +377,6 @@ public class ExchangeSession {
             LOGGER.error(message.toString());
             throw new IOException(message.toString());
         }
-
     }
 
     /**
@@ -479,12 +479,10 @@ public class ExchangeSession {
     public Message getMessage(String messageUrl) throws IOException {
 
         // TODO switch according to Log4J log level
-
-        wdr.setDebug(4);
-        wdr.propfindMethod(messageUrl, 0);
-
+        //wdr.setDebug(4);
+        //wdr.propfindMethod(messageUrl, 0);
         Enumeration messageEnum = wdr.propfindMethod(messageUrl, 0, MESSAGE_REQUEST_PROPERTIES);
-        wdr.setDebug(0);
+        //wdr.setDebug(0);
 
         // 201 created in some cases ?!?
         if ((wdr.getStatusCode() != HttpURLConnection.HTTP_OK && wdr.getStatusCode() != HttpURLConnection.HTTP_CREATED)
@@ -500,11 +498,11 @@ public class ExchangeSession {
 
     public List<Message> getAllMessages() throws IOException {
         List<Message> messages = new ArrayList<Message>();
-        wdr.setDebug(4);
-        wdr.propfindMethod(currentFolderUrl, 1);
-
+        //wdr.setDebug(4);
+        //wdr.propfindMethod(currentFolderUrl, 1);
+        // one level search
         Enumeration folderEnum = wdr.propfindMethod(currentFolderUrl, 1, MESSAGE_REQUEST_PROPERTIES);
-        wdr.setDebug(0);
+        //wdr.setDebug(0);
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
 
@@ -533,7 +531,7 @@ public class ExchangeSession {
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
-        LOGGER.debug("Keep message not before " + cal.getTime());
+        LOGGER.debug("Delete messages in trash since " + cal.getTime());
         long keepTimestamp = cal.getTimeInMillis();
 
         Vector<String> deleteRequestProperties = new Vector<String>();
@@ -592,6 +590,7 @@ public class ExchangeSession {
                 subject = subject.replaceAll("/", "_xF8FF_");
                 // '?' is also invalid
                 subject = subject.replaceAll("\\?", "");
+                // TODO : test & in subject
             }
         }
 
@@ -607,6 +606,14 @@ public class ExchangeSession {
 
     }
 
+    /**
+     * Select current folder.
+     * Folder name can be logical names INBOX or TRASH (translated to local names),
+     * relative path to user base folder or absolute path.
+     * @param folderName folder name
+     * @return Folder object
+     * @throws IOException when unable to change folder
+     */
     public Folder selectFolder(String folderName) throws IOException {
         Folder folder = new Folder();
         folder.folderUrl = null;
@@ -625,6 +632,7 @@ public class ExchangeSession {
         reqProps.add("urn:schemas:httpmail:unreadcount");
         reqProps.add("DAV:childcount");
         Enumeration folderEnum = wdr.propfindMethod(folder.folderUrl, 0, reqProps);
+
         if (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
             Enumeration propertiesEnum = entity.getProperties();
@@ -639,7 +647,7 @@ public class ExchangeSession {
             }
 
         } else {
-            throw new IOException("Folder not found :" + folder.folderUrl);
+            throw new IOException("Folder not found: " + folder.folderUrl);
         }
         currentFolderUrl = folder.folderUrl;
         return folder;
@@ -704,7 +712,8 @@ public class ExchangeSession {
                         Date parsedDate = dateParser.parse(date);
                         date = dateFormatter.format(parsedDate);
                     }
-                    fullHeaders = "Skipped header\n" + getReceived() +
+                    fullHeaders = "Skipped header\n" +
+                            getReceived() +
                             "MIME-Version: 1.0\n" +
                             "Content-Type: application/ms-tnef;\n" +
                             "\tname=\"winmail.dat\"\n" +
@@ -735,8 +744,7 @@ public class ExchangeSession {
             BufferedReader reader = null;
             try {
                 reader = new BufferedReader(new StringReader(fullHeaders));
-                String line;
-                line = reader.readLine();
+                String line = reader.readLine();
                 while (line != null && line.length() > 0) {
                     // patch exchange Content type
                     if (line.equals(CONTENT_TYPE_HEADER + "application/ms-tnef;")) {
@@ -785,9 +793,7 @@ public class ExchangeSession {
                         try {
                             parsedAttachmentIndex = Integer.parseInt(attachmentName);
                         } catch (Exception e) {
-                            if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("Current attachment name " + attachmentName + " is not an index", e);
-                            }
+                            LOGGER.debug("Current attachment name " + attachmentName + " is not an index", e);
                         }
                         if (parsedAttachmentIndex == 0) {
                             Attachment attachment = attachmentsMap.get(attachmentName);
@@ -1105,31 +1111,7 @@ public class ExchangeSession {
             // TODO : refactor
             String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
             LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
-/*
-// first try without webdav library
-            GetMethod moveMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl)) {
-                public String getName() {
-                    return "MOVE";
-                }
-            };
-            moveMethod.addRequestHeader("Destination", URIUtil.encodePathQuery(destination));
-            moveMethod.addRequestHeader("Overwrite", "F");
-            wdr.retrieveSessionInstance().executeMethod(moveMethod);
-            if (moveMethod.getStatusCode() == 412) {
-                int count = 2;
-                // name conflict, try another name
-                while (wdr.getStatusCode() == 412) {
-                    moveMethod = new GetMethod(URIUtil.encodePathQuery(messageUrl)) {
-                        public String getName() {
-                            return "MOVE";
-                        }
-                    };
-                    moveMethod.addRequestHeader("Destination", URIUtil.encodePathQuery(destination.substring(0, destination.lastIndexOf('.')) + "-" + count++ + ".eml"));
-                    moveMethod.addRequestHeader("Overwrite", "F");
-                }
 
-            }
-            */
             wdr.moveMethod(messageUrl, destination);
             if (wdr.getStatusCode() == HttpURLConnection.HTTP_PRECON_FAILED) {
                 int count = 2;
@@ -1140,7 +1122,6 @@ public class ExchangeSession {
             }
 
             LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
-
         }
 
         public void printHeaders(OutputStream os) throws IOException {
