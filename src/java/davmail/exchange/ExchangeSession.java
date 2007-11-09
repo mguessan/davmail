@@ -887,10 +887,10 @@ public class ExchangeSession {
 
                 // detect part boundary start
                 if (line.equals(mimeHeader.boundary)) {
-                    Attachment currentAttachment = null;
+                    Attachment currentAttachment;
                     String currentAttachmentName = null;
-                    if (attachmentIndex < attachments.size()) {
-                        currentAttachment = attachments.get(attachmentIndex);
+                    if (attachmentIndex > 0 && attachmentIndex <= attachments.size()) {
+                        currentAttachment = attachments.get(attachmentIndex - 1);
                         currentAttachmentName = currentAttachment.name;
                     }
 
