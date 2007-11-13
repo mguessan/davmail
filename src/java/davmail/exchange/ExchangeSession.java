@@ -958,13 +958,12 @@ public class ExchangeSession {
                 } catch (MessagingException e) {
                     throw new IOException(e + " " + e.getMessage());
                 }
-                String decodedPath = URIUtil.decode(attachment.href);
 
                 if ("message/rfc822".equalsIgnoreCase(mimeHeader.contentType)) {
                     String messageAttachmentPath = null;
 
                     // Get real attachment path from owa page content
-                    GetMethod method = new GetMethod(URIUtil.encodePath(decodedPath));
+                    GetMethod method = new GetMethod(URIUtil.encodePath(attachment.href));
                     wdr.retrieveSessionInstance().executeMethod(method);
                     String body = method.getResponseBodyAsString();
                     final String URL_DECLARATION = "var g_szURL\t= \"";
@@ -986,7 +985,7 @@ public class ExchangeSession {
                     attachedMessage.write(quotedOs);
                 } else {
 
-                    GetMethod method = new GetMethod(URIUtil.encodePath(decodedPath));
+                    GetMethod method = new GetMethod(URIUtil.encodePath(attachment.href));
                     wdr.retrieveSessionInstance().executeMethod(method);
 
                     // encode attachment
@@ -1351,14 +1350,14 @@ public class ExchangeSession {
 
             for (Attachment currentAttachment : attachments) {
                 if ((partHeader.name != null && partHeader.name.equals(currentAttachment.name)) ||
-                    // TODO : test if .eml extension could be stripped from attachment name directly
-                    // try to get email attachment with .eml extension
-                    (partHeader.name != null && (partHeader.name + ".eml").equals(currentAttachment.name)) ||
-                    // try to get attachment by content id
-                    (partHeader.contentId != null && partHeader.contentId.equals(currentAttachment.contentid)) ||
-                    // try to get attachment with Content-Disposition header
-                    (partHeader.fileName != null && partHeader.fileName.equals(currentAttachment.name))
-                   ){
+                        // TODO : test if .eml extension could be stripped from attachment name directly
+                        // try to get email attachment with .eml extension
+                        (partHeader.name != null && (partHeader.name + ".eml").equals(currentAttachment.name)) ||
+                        // try to get attachment by content id
+                        (partHeader.contentId != null && partHeader.contentId.equals(currentAttachment.contentid)) ||
+                        // try to get attachment with Content-Disposition header
+                        (partHeader.fileName != null && partHeader.fileName.equals(currentAttachment.name))
+                        ) {
                     attachment = currentAttachment;
                     break;
                 }
