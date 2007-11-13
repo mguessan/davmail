@@ -1164,8 +1164,12 @@ public class ExchangeSession {
                 throw new RuntimeException("Exception retrieving " + attachmentUrl + " : " + e + " " + e.getCause());
             }
             // fix content type for known extension
-            if ("application/octet-stream".equalsIgnoreCase(result) && attachmentUrl.endsWith(".pdf")) {
-                result = "application/pdf";
+            if ("application/octet-stream".equalsIgnoreCase(result)) {
+                if (attachmentUrl.endsWith(".pdf") || attachmentUrl.endsWith(".PDF")) {
+                    result = "application/pdf";
+                } else if (attachmentUrl.endsWith(".zip") || attachmentUrl.endsWith(".ZIP")) {
+                    result = "application/zip";
+                }
             }
             return result;
 
