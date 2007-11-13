@@ -1019,7 +1019,26 @@ public class ExchangeSession {
         protected void writeBody(OutputStream os, MimeHeader mimeHeader) throws IOException {
             OutputStream quotedOs;
             try {
-                quotedOs = (MimeUtility.encode(os, mimeHeader.contentTransferEncoding));
+                // double dot filter : avoid end of message in body
+                quotedOs = new FilterOutputStream(os) {
+                    byte state = 0;
+                    public void write(int achar) throws IOException {
+                            if (achar == 13 && state != 3) {
+                                state = 1;
+                            } else if (achar == 10 && state == 1) {
+                                state = 2;
+                            } else if (achar == '.' && state == 2) {
+                                state = 3;
+                            } else if (achar == 13) {
+                                state = 0;
+                                super.write('.');
+                            } else {
+                                state = 0;
+                            }
+                            super.write(achar);
+                    }
+                };
+                quotedOs = (MimeUtility.encode(quotedOs, mimeHeader.contentTransferEncoding));
             } catch (MessagingException e) {
                 throw new IOException(e + " " + e.getMessage());
             }
