@@ -1388,7 +1388,9 @@ public class ExchangeSession {
 
             // try to get attachment by index, only if no name found
             // or attachment renamed to winmail.dat by Exchange
-            if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))) {
+            if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))
+                // avoid out of bounds exception
+                && attachmentIndex >= 0 && attachmentIndex < attachments.size()) {
                 attachment = attachments.get(attachmentIndex);
             }
 
