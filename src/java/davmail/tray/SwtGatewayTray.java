@@ -139,7 +139,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     final Menu popup = new Menu(shell, SWT.POP_UP);
                     trayItem.addListener(SWT.MenuDetect, new Listener() {
                         public void handleEvent(Event event) {
-                            popup.setVisible(true);
+                            display.asyncExec(
+                                    new Runnable() {
+                                        public void run() {
+                                            popup.setVisible(true);
+                                        }
+                                    });
                         }
                     });
 
@@ -163,7 +168,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     defaultItem.setText("Settings...");
                     defaultItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
+                            display.asyncExec(
+                                    new Runnable() {
+                                        public void run() {
                             settingsFrame.setVisible(true);
+                                        }
+                                    });
                         }
                     });
 
