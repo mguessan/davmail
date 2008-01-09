@@ -66,16 +66,16 @@ public class Settings {
     }
 
     public static synchronized void save() {
-        FileWriter fileWriter = null;
+        FileOutputStream fileOutputStream = null;
         try {
-            fileWriter = new FileWriter(configFilePath);
-            SETTINGS.store(fileWriter, "DavMail settings");
+            fileOutputStream = new FileOutputStream(configFilePath);
+            SETTINGS.store(fileOutputStream, "DavMail settings");
         } catch (IOException e) {
             DavGatewayTray.error("Unable to store settings: ", e);
         } finally {
-            if (fileWriter != null) {
+            if (fileOutputStream != null) {
                 try {
-                    fileWriter.close();
+                    fileOutputStream.close();
                 } catch (IOException e) {
                     DavGatewayTray.debug("Error closing configuration file: ", e);
                 }
