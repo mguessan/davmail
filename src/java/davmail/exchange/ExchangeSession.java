@@ -210,9 +210,28 @@ public class ExchangeSession {
 
     }
 
+    /**
+     * Test authentication mode : form based or basic.
+     *
+     * @param url exchange base URL
+     * @return true if basic authentication detected
+     * @throws java.io.IOException unable to connect to exchange
+     */
+    protected boolean isBasicAuthentication(String url) throws IOException {
+        // create an HttpClient instance
+        HttpClient httpClient = new HttpClient();
+        configureClient(httpClient);
+        HttpMethod testMethod = new GetMethod(url);
+        int status = httpClient.executeMethod(testMethod);
+        testMethod.releaseConnection();
+        return status == HttpStatus.SC_UNAUTHORIZED;
+    }
+
     public void login(String userName, String password) throws IOException {
         try {
             String url = Settings.getProperty("davmail.url");
+
+            boolean isBasicAuthentication = isBasicAuthentication(url);
 
             // get proxy configuration from setttings properties
             URL urlObject = new URL(url);
@@ -242,42 +261,44 @@ public class ExchangeSession {
             HttpMethod initmethod = new GetMethod(url);
             wdr.executeHttpRequestMethod(httpClient,
                     initmethod);
-            if (initmethod.getPath().indexOf("exchweb/bin") > 0) {
+            if (!isBasicAuthentication) {
                 LOGGER.debug("Form based authentication detected");
+                if (initmethod.getPath().indexOf("exchweb/bin") == -1) {
+                    LOGGER.error("DavMail configuration exception: authentication form not found at " + url +
+                            " and basic authentication not requested");
+                    throw new IOException("DavMail configuration exception: authentication form not found at " + url +
+                            " and basic authentication not requested");
+                } else {
+                    PostMethod logonMethod = new PostMethod(
+                            "/exchweb/bin/auth/owaauth.dll?" +
+                                    "ForcedBasic=false&Basic=false&Private=true" +
+                                    "&Language=No_Value"
+                    );
+                    logonMethod.addParameter("destination", url);
+                    logonMethod.addParameter("flags", "4");
+//                  logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
+                    logonMethod.addParameter("username", userName);
+                    logonMethod.addParameter("password", password);
+//                  logonMethod.addParameter("SubmitCreds", "Log On");
+//                  logonMethod.addParameter("forcedownlevel", "0");
+                    logonMethod.addParameter("trusted", "4");
 
-                PostMethod logonMethod = new PostMethod(
-                        "/exchweb/bin/auth/owaauth.dll?" +
-                                "ForcedBasic=false&Basic=false&Private=true" +
-                                "&Language=No_Value"
-                );
-                logonMethod.addParameter("destination", url);
-                logonMethod.addParameter("flags", "4");
-//                logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
-                logonMethod.addParameter("username", userName);
-                logonMethod.addParameter("password", password);
-//                logonMethod.addParameter("SubmitCreds", "Log On");
-//                logonMethod.addParameter("forcedownlevel", "0");
-                logonMethod.addParameter("trusted", "4");
+                    wdr.executeHttpRequestMethod(httpClient, logonMethod);
+                    Header locationHeader = logonMethod.getResponseHeader("Location");
 
-                wdr.executeHttpRequestMethod(wdr.retrieveSessionInstance(),
-                        logonMethod);
-                Header locationHeader = logonMethod.getResponseHeader(
-                        "Location");
+                    if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
+                            locationHeader == null ||
+                            !url.equals(locationHeader.getValue())) {
+                        throw new HttpException("Authentication failed");
+                    }
 
-                if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
-                        locationHeader == null ||
-                        !url.equals(locationHeader.getValue())) {
-                    throw new HttpException("Authentication failed");
                 }
-
             }
 
-            // User now authenticated, get various session information
+            // User may be authenticated, get various session information
             HttpMethod method = new GetMethod(url);
-            int status = wdr.executeHttpRequestMethod(wdr.
-                    retrieveSessionInstance(), method);
-            if (status != HttpStatus.SC_MULTI_STATUS
-                    && status != HttpStatus.SC_OK) {
+            int status = wdr.executeHttpRequestMethod(httpClient, method);
+            if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
                 ex.setReason(method.getStatusText());
@@ -285,19 +306,24 @@ public class ExchangeSession {
             }
 
             // get user mail URL from html body (multi frame)
-            String body = method.getResponseBodyAsString();
-            int beginIndex = body.indexOf(url);
+            String mailboxName = method.getResponseBodyAsString();
+            int beginIndex = mailboxName.indexOf(url);
             if (beginIndex < 0) {
                 throw new HttpException(url + " not found in body");
             }
-            body = body.substring(beginIndex);
-            int endIndex = body.indexOf('"');
+            mailboxName = mailboxName.substring(beginIndex);
+            int endIndex = mailboxName.indexOf('"');
             if (endIndex < 0) {
                 throw new HttpException(url + " not found in body");
             }
-            body = body.substring(url.length(), endIndex);
+            mailboxName = mailboxName.substring(url.length(), endIndex);
+
+            // if body is empty : wrong password, not authenticated
+            if (mailboxName.length() == 0) {
+                throw new HttpException("Authentication failed");
+            }
             // got base http mailbox http url
-            mailPath = "/exchange/" + body;
+            mailPath = "/exchange/" + mailboxName;
             wdr.setPath(mailPath);
 
             // Retrieve inbox and trash URLs
@@ -1022,20 +1048,21 @@ public class ExchangeSession {
                 // double dot filter : avoid end of message in body
                 quotedOs = new FilterOutputStream(os) {
                     byte state = 0;
+
                     public void write(int achar) throws IOException {
-                            if (achar == 13 && state != 3) {
-                                state = 1;
-                            } else if (achar == 10 && state == 1) {
-                                state = 2;
-                            } else if (achar == '.' && state == 2) {
-                                state = 3;
-                            } else if (achar == 13) {
-                                state = 0;
-                                super.write('.');
-                            } else {
-                                state = 0;
-                            }
-                            super.write(achar);
+                        if (achar == 13 && state != 3) {
+                            state = 1;
+                        } else if (achar == 10 && state == 1) {
+                            state = 2;
+                        } else if (achar == '.' && state == 2) {
+                            state = 3;
+                        } else if (achar == 13) {
+                            state = 0;
+                            super.write('.');
+                        } else {
+                            state = 0;
+                        }
+                        super.write(achar);
                     }
                 };
                 quotedOs = (MimeUtility.encode(quotedOs, mimeHeader.contentTransferEncoding));
@@ -1389,13 +1416,13 @@ public class ExchangeSession {
             // try to get attachment by index, only if no name found
             // or attachment renamed to winmail.dat by Exchange
             if (attachment == null && (partHeader.name == null || "winmail.dat".equals(partHeader.name))
-                // avoid out of bounds exception
-                && attachmentIndex >= 0 && attachmentIndex < attachments.size()) {
+                    // avoid out of bounds exception
+                    && attachmentIndex >= 0 && attachmentIndex < attachments.size()) {
                 attachment = attachments.get(attachmentIndex);
             }
 
             // try to get by index if attachment renamed to application
-            if (attachment == null && partHeader.name != null) {
+            if (attachment == null && partHeader.name != null && attachmentIndex < attachments.size()) {
                 Attachment currentAttachment = attachments.get(attachmentIndex);
                 if (currentAttachment != null && currentAttachment.name.startsWith("application")) {
                     attachment = currentAttachment;
