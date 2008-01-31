@@ -4,7 +4,9 @@ import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSession;
 import davmail.tray.DavGatewayTray;
 
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Date;
@@ -172,21 +174,19 @@ public class PopConnection extends AbstractConnection {
                             }
                         } else if ("TOP".equalsIgnoreCase(command)) {
                             try {
-                                int firstMessage = Integer.valueOf(tokens.
-                                        nextToken()) - 1;
-                                int lastMessage = Integer.valueOf(tokens.
-                                        nextToken()) - 1;
-                                for (int i = firstMessage; i <= lastMessage; i++) {
-                                    messages.get(i).printHeaders(os);
-                                    sendClient("");
-                                    sendClient(".");
-                                }
-                                sendOK("TOP");
+                                int message = Integer.valueOf(tokens.nextToken()) - 1;
+                                int lines = Integer.valueOf(tokens.nextToken());
+                                ExchangeSession.Message m = messages.get(message);
+                                sendOK("");
+                                m.write(new TopOutputStream(os, lines));
+                                sendClient("");
+                                sendClient(".");
                             } catch (SocketException e) {
                                 // can not send error to client after a socket exception
                                 DavGatewayTray.warn("Client closed connection ", e);
                             } catch (Exception e) {
                                 sendERR("error retreiving top of messages");
+                                DavGatewayTray.error(e.getMessage(), e);
                             }
                         } else if ("RSET".equalsIgnoreCase(command)) {
                             sendOK("RSET");
@@ -221,4 +221,29 @@ public class PopConnection extends AbstractConnection {
     public void sendERR(String message) throws IOException {
         sendClient("-ERR ", message);
     }
+
+    /**
+     * Filter to limit output lines to maxLines
+     */
+    private class TopOutputStream extends FilterOutputStream {
+
+        private int maxLines;
+
+        public TopOutputStream(OutputStream os, int maxLines) {
+            super(os);
+            this.maxLines = maxLines;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            if (maxLines > 0) {
+                super.write(b);
+            }
+
+            if (b == '\n') {
+                maxLines--;
+            }
+        }
+    }
+
 }
