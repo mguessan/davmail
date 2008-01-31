@@ -96,7 +96,7 @@ public class Settings {
         try {
             String propertyValue = SETTINGS.getProperty(property);
             if (propertyValue != null && propertyValue.length() > 0) {
-                value = Integer.valueOf(propertyValue);
+                value = Integer.parseInt(propertyValue);
             }
         } catch (NumberFormatException e) {
             DavGatewayTray.error("Invalid setting value in " + property, e);
