@@ -47,6 +47,7 @@ public class SmtpConnection extends AbstractConnection {
                         sendClient("221 Closing connection");
                         break;
                     } else if ("EHLO".equals(command)) {
+                        sendClient("250-" + tokens.nextToken());
                         // inform server that AUTH is supported
                         // actually it is mandatory (only way to get credentials)
                         sendClient("250-AUTH LOGIN PLAIN");
