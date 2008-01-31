@@ -21,8 +21,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected AwtGatewayTray() {
     }
 
-    protected static final Logger LOGGER = Logger.getLogger("davmail");
-
     // LOCK for synchronized block
     protected static final Object LOCK = new Object();
 
@@ -31,19 +29,19 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     private static Image image2 = null;
 
     public void switchIcon() {
-            synchronized (LOCK) {
-                if (trayIcon.getImage() == image) {
-                    trayIcon.setImage(image2);
-                } else {
-                    trayIcon.setImage(image);
-                }
+        synchronized (LOCK) {
+            if (trayIcon.getImage() == image) {
+                trayIcon.setImage(image2);
+            } else {
+                trayIcon.setImage(image);
             }
+        }
     }
 
     public void resetIcon() {
-            synchronized (LOCK) {
-                trayIcon.setImage(image);
-            }
+        synchronized (LOCK) {
+            trayIcon.setImage(image);
+        }
     }
 
     public void displayMessage(String message, Priority priority) {
@@ -62,7 +60,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 }
                 trayIcon.setToolTip("DavMail gateway \n" + message);
             }
-            LOGGER.log(priority, message);
         }
 
     }
@@ -72,7 +69,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            LOGGER.warn("Unable to set system look and feel");
+            DavGatewayTray.warn("Unable to set system look and feel", e);
         }
 
         // get the SystemTray instance
@@ -140,7 +137,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         try {
             tray.add(trayIcon);
         } catch (AWTException e) {
-            System.err.println(e);
+            DavGatewayTray.warn("Unable to create tray", e);
         }
 
         // display settings frame on first start

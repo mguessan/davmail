@@ -26,8 +26,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected SwtGatewayTray() {
     }
 
-    protected static final Logger LOGGER = Logger.getLogger("davmail");
-
     // LOCK for synchronized block
     protected static final Object LOCK = new Object();
 
@@ -86,7 +84,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         });
             }
-            LOGGER.log(priority, message);
         }
 
     }
@@ -101,7 +98,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             }
             UIManager.setLookAndFeel(lafClassName);
         } catch (Exception e) {
-            LOGGER.warn("Unable to set look and feel");
+            DavGatewayTray.warn("Unable to set look and feel");
         }
 
         new Thread() {
@@ -123,14 +120,14 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         image = new Image(display, imageUrl.openStream());
                         awtImage = Toolkit.getDefaultToolkit().getImage(imageUrl);
                     } catch (IOException e) {
-                        LOGGER.warn("Unable to load image");
+                        DavGatewayTray.warn("Unable to load image", e);
                     }
 
                     try {
                         URL imageUrl2 = classloader.getResource("tray2.png");
                         image2 = new Image(display, imageUrl2.openStream());
                     } catch (IOException e) {
-                        LOGGER.warn("Unable to load image");
+                        DavGatewayTray.warn("Unable to load image", e);
                     }
 
                     trayItem.setImage(image);
@@ -171,7 +168,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             display.asyncExec(
                                     new Runnable() {
                                         public void run() {
-                            settingsFrame.setVisible(true);
+                                            settingsFrame.setVisible(true);
                                         }
                                     });
                         }
@@ -238,4 +235,5 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             }
         }.start();
     }
+
 }
