@@ -792,6 +792,18 @@ public class ExchangeSession {
                         reader.readLine();
                         mstnefDetected = true;
 
+                    } else if (line.startsWith(CONTENT_TYPE_HEADER)) {
+                        if (line.endsWith(";")) {
+                            result.append(line);
+                            result.append("\n");
+
+                            // boundary is on next line
+                            line = reader.readLine();
+                        }
+                        if (line != null && line.indexOf("boundary=\"") >= 0) {
+                            boundary = line.substring(line.indexOf("boundary=\"") + 10, line.length() - 1);
+                        }
+
                     } else if (line.startsWith(CONTENT_TRANSFER_ENCODING_HEADER)) {
                         if (hasAttachment && mstnefDetected) {
                             line = null;
@@ -805,8 +817,17 @@ public class ExchangeSession {
                     line = reader.readLine();
                 }
 
+                // look for ms-tnef inside mime part headers
+                while (line != null) {
+                    if (line.equals(CONTENT_TYPE_HEADER + "application/ms-tnef;")) {
+                        LOGGER.debug("application/ms-tnef detected inside part headers");
+                        mstnefDetected = true;
+                    }
+                    line = reader.readLine();
+                }
+
                 // exchange message : create mime part headers
-                if (boundary != null) {
+                if (boundary != null && mstnefDetected) {
                     loadAttachments();
                     // TODO : test actual header values
                     result.append("\n--").append(boundary)
@@ -884,6 +905,9 @@ public class ExchangeSession {
 
                     loadAttachments();
                     writeMimeMessage(reader, os, mimeHeader);
+                    if (attachmentIndex - 1 != attachments.size()) {
+                        LOGGER.error("Found " + (attachmentIndex - 1) + " attachments, expected " + attachments.size());
+                    }
                 }
                 os.flush();
             } finally {
@@ -947,6 +971,7 @@ public class ExchangeSession {
                     }
                 }
             }
+            
             // write mime end marker
             if (line != null) {
                 os.write(line.getBytes());
