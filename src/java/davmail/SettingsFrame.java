@@ -44,7 +44,7 @@ public class SettingsFrame extends JFrame {
         panel = new JPanel(new GridLayout(5, 2));
         panel.setBorder(BorderFactory.createTitledBorder("Proxy settings"));
 
-        boolean enableProxy = Settings.getBooleanProperty("davmail.allowRemote");
+        boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         final JCheckBox enableProxyField = new JCheckBox();
         enableProxyField.setSelected(enableProxy);
         final JTextField httpProxyField = new JTextField(Settings.getProperty("davmail.proxyHost"), 15);
