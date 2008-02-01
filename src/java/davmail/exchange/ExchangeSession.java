@@ -46,6 +46,7 @@ public class ExchangeSession {
         MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:mime-version");
         MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:content-class");
         MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:hasattachment");
+        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:httpmail:read");
 
         // needed only when full headers not found
         MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:received");
@@ -474,6 +475,8 @@ public class ExchangeSession {
                 message.hasAttachment = "1".equals(prop.getPropertyAsString());
             } else if ("received".equals(prop.getLocalName())) {
                 message.received = prop.getPropertyAsString();
+            } else if ("read".equals(prop.getLocalName())) {
+                message.read = "1".equals(prop.getPropertyAsString());
             } else if ("date".equals(prop.getLocalName())) {
                 message.date = prop.getPropertyAsString();
             } else if ("message-id".equals(prop.getLocalName())) {
@@ -708,6 +711,7 @@ public class ExchangeSession {
         public String from;
         public String subject;
         public String priority;
+        public boolean read;
 
         protected List<Attachment> attachments;
 
