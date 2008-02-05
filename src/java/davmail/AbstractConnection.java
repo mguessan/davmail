@@ -51,8 +51,8 @@ public class AbstractConnection extends Thread {
         logBuffer.append(message);
         DavGatewayTray.debug(logBuffer.toString());
         os.write(message.getBytes());
-        os.write('\r');
-        os.write('\n');
+        os.write((char)13);
+        os.write((char)10);
         os.flush();
     }
 
