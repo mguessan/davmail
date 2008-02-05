@@ -433,11 +433,11 @@ public class ExchangeSession {
 
     public List<Message> getAllMessages() throws IOException {
         List<Message> messages = new ArrayList<Message>();
-        wdr.setDebug(4);
-        wdr.propfindMethod(currentFolderUrl, 1);
+        //wdr.setDebug(4);
+        //wdr.propfindMethod(currentFolderUrl, 1);
         // one level search
         Enumeration folderEnum = wdr.propfindMethod(currentFolderUrl, 1, MESSAGE_REQUEST_PROPERTIES);
-        wdr.setDebug(0);
+        //wdr.setDebug(0);
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
 
