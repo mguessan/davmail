@@ -619,6 +619,22 @@ public class ExchangeSession {
                 while ((line = reader.readLine()) != null) {
                     if (".".equals(line)) {
                         line = "..";
+                        // patch text/calendar to include utf-8 encoding
+                    } else if ("Content-Type: text/calendar;".equals(line)) {
+                        StringBuffer headerBuffer = new StringBuffer();
+                        headerBuffer.append(line);
+                        while ((line = reader.readLine()) != null && line.startsWith("\t")) {
+                            headerBuffer.append((char) 13);
+                            headerBuffer.append((char) 10);
+                            headerBuffer.append(line);
+                        }
+                        if (headerBuffer.indexOf("charset") < 0) {
+                            headerBuffer.append(";charset=utf-8");
+                        }
+                        headerBuffer.append((char) 13);
+                        headerBuffer.append((char) 10);
+                        headerBuffer.append(line);
+                        line = headerBuffer.toString();
                         // detect html body to patch Exchange html body
                     } else if (line.startsWith("<html")) {
                         inHTML = true;
@@ -627,6 +643,7 @@ public class ExchangeSession {
                     }
                     if (inHTML) {
                         line = line.replaceAll("&#8217;", "'");
+                        line = line.replaceAll("&#8230;", "...");
                     }
                     isoWriter.write(line);
                     isoWriter.write((char) 13);
