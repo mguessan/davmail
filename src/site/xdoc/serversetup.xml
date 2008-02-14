@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>Setup DavMail as a server</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="DavMail Setup as a server">
+            <p>Prerequisite : Sun J2SE 1.5 or 1.6.
+            </p>
+
+            <p>Davmail Gateway can now run in server mode as a gateway between the mail
+                client and the Outlook Web Access (Exchange) server.
+                In server mode Davmail can run on any Java supported platform. This is
+                currently the only way to run DavMail on MacOS X due to poor Java support
+                (no Java 6 yet).
+                This mode was tested successfully with the Iphone and should work with
+                any phone with POP/SMTP client.
+            </p>
+
+            <p>Download the generic DavMail package from Sourceforge and uncompress it with
+                your favorite tool, e.g. on Linux:<code>unzip davmail-*.zip</code>.
+            </p>
+            <p>Prepare a davmail.properties file according to you local needs :
+            </p>
+            <source>
+davmail.url=http://exchangeServer/exchange/
+davmail.popPort=1110
+davmail.smtpPort=1025
+davmail.keepDelay=30
+davmail.allowRemote=true
+davmail.enableProxy=false
+davmail.proxyHost=
+davmail.proxyPort=
+davmail.proxyUser=
+davmail.proxyPassword=
+davmail.server=true
+            </source>
+            <p>See
+                <a href="gettingstarted.html">Getting started</a>
+                for more information on
+                the options. Make sure davmail.server is set to true (no icon tray) and allow
+                remote connections: davmail.allowRemote=true.
+            </p>
+            <p>Launch Davmail with the following command:
+                <source>nohup davmail.sh davmail.properties &amp;</source>.
+            </p>
+            <p>Then check messages:
+                <source>tail -f nohup.out</source>
+            </p>
+            <p>Proceed with client configuration:
+                <a href="gettingstarted.html">Getting started</a>
+            </p>
+        </section>
+
+    </body>
+</document>

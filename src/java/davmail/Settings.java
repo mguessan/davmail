@@ -24,6 +24,10 @@ public class Settings {
         return isFirstStart;
     }
 
+    public static synchronized void load(InputStream inputStream) throws IOException {
+        SETTINGS.load(inputStream);
+    }
+
     public static synchronized void load() {
         FileInputStream fileInputStream = null;
         try {
@@ -34,7 +38,7 @@ public class Settings {
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
                 fileInputStream = new FileInputStream(configFile);
-                SETTINGS.load(fileInputStream);
+                load(fileInputStream);
             } else {
                 isFirstStart = true;
 
@@ -49,6 +53,7 @@ public class Settings {
                 SETTINGS.put("davmail.proxyPort", "");
                 SETTINGS.put("davmail.proxyUser", "");
                 SETTINGS.put("davmail.proxyPassword", "");
+                SETTINGS.put("davmail.server", "false");
                 save();
             }
         } catch (IOException e) {
