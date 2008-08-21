@@ -35,22 +35,7 @@ public class DavGateway {
 
     public static void start() {
         // first stop existing servers
-        if (smtpServer != null) {
-            smtpServer.close();
-            try {
-                smtpServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
-        if (popServer != null) {
-            popServer.close();
-            try {
-                popServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
+        DavGateway.stop();
         int smtpPort = Settings.getIntProperty("davmail.smtpPort");
         if (smtpPort == 0) {
             smtpPort = SmtpServer.DEFAULT_PORT;
@@ -73,5 +58,24 @@ public class DavGateway {
         }
 
     }
+
+     public static void stop() {
+         if (smtpServer != null) {
+             smtpServer.close();
+             try {
+                 smtpServer.join();
+             } catch (InterruptedException e) {
+                 DavGatewayTray.warn("Exception waiting for listener to die", e);
+             }
+         }
+         if (popServer != null) {
+             popServer.close();
+             try {
+                 popServer.join();
+             } catch (InterruptedException e) {
+                 DavGatewayTray.warn("Exception waiting for listener to die", e);
+             }
+         }
+     }
 
 }

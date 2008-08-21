@@ -44,6 +44,7 @@
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant.jar"/>
+                <exclude name="servlet-api.jar"/>
             </fileset>
         </copy>
         <copy file="davmail.sh" todir="dist"/>
@@ -63,6 +64,20 @@
                 <exclude name="lib/swt*.jar"/>
             </fileset>
         </zip>
+        <copy todir="dist/web">
+            <fileset dir="src/web"/>
+        </copy>
+        <copy todir="dist/web/WEB-INF/lib">
+            <fileset dir="dist/lib">
+                <include name="*.jar"/>
+                <exclude name="nsisant*.jar"/>
+                <exclude name="jsmoothgen-ant.jar"/>
+                <exclude name="lib/swt*.jar"/>
+            </fileset>
+        </copy>
+        <jar destfile="dist/davmail-${version}.war">
+            <fileset dir="dist/web"/>
+        </jar>
         <tar tarfile="dist/davmail-linux-x86-${version}.tgz" compression="gzip">
             <tarfileset prefix="davmail-linux-x86-${version}" dir="dist" filemode="755">
                 <include name="davmail.sh"/>
