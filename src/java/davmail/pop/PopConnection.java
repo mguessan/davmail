@@ -118,11 +118,11 @@ public class PopConnection extends AbstractConnection {
                             } catch (Exception e) {
                                 String message = e.getMessage();
                                 if (message == null) {
-                                    message = e.toString();
+                                    message = "Authentication failed: "+e.toString();
                                 }
                                 DavGatewayTray.error(message);
                                 message = message.replaceAll("\\n", " ");
-                                sendERR("authentication failed : " + message);
+                                sendERR(message);
                             }
                         }
                     } else if ("CAPA".equalsIgnoreCase(command)) {

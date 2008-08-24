@@ -201,42 +201,69 @@ public class ExchangeSession {
             HttpMethod initmethod = new GetMethod(url);
             wdr.executeHttpRequestMethod(httpClient,
                     initmethod);
+
+            // default destination is provided url
+            String destination = url;
+
             if (!isBasicAuthentication) {
                 LOGGER.debug("Form based authentication detected");
-                if (initmethod.getPath().indexOf("exchweb/bin") == -1) {
-                    LOGGER.error("DavMail configuration exception: authentication form not found at " + url +
-                            " and basic authentication not requested");
-                    throw new IOException("DavMail configuration exception: authentication form not found at " + url +
-                            " and basic authentication not requested");
-                } else {
-                    PostMethod logonMethod = new PostMethod(
-                            "/exchweb/bin/auth/owaauth.dll?" +
-                                    "ForcedBasic=false&Basic=false&Private=true" +
-                                    "&Language=No_Value"
-                    );
-                    logonMethod.addParameter("destination", url);
-                    logonMethod.addParameter("flags", "4");
+                // default logon method path
+                String logonMethodPath = "/exchweb/bin/auth/owaauth.dll";
+
+                // try to parse login form to determine logon url and destination
+                BufferedReader loginFormReader = null;
+                try {
+                    loginFormReader = new BufferedReader(new InputStreamReader(initmethod.getResponseBodyAsStream()));
+                    String line;
+                    // skip to form action
+                    final String FORM_ACTION = "<FORM action=\"";
+                    final String DESTINATION_INPUT = "name=\"destination\" value=\"";
+                    //noinspection StatementWithEmptyBody
+                    while ((line = loginFormReader.readLine()) != null && line.indexOf(FORM_ACTION) == -1) ;
+                    if (line != null) {
+                        int start = line.indexOf(FORM_ACTION) + FORM_ACTION.length();
+                        int end = line.indexOf("\"", start);
+                        logonMethodPath = line.substring(start, end);
+                        //noinspection StatementWithEmptyBody
+                        while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) ;
+                        if (line != null) {
+                            start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
+                            end = line.indexOf("\"", start);
+                            destination = line.substring(start, end);
+                        }
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing login form at " + initmethod.getPath());
+                } finally {
+                    if (loginFormReader != null) {
+                        loginFormReader.close();
+                    }
+                }
+                PostMethod logonMethod = new PostMethod(
+                        logonMethodPath + "?ForcedBasic=false&Basic=false&Private=true&Language=No_Value"
+                );
+                logonMethod.addParameter("destination", destination);
+                logonMethod.addParameter("flags", "4");
 //                  logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
-                    logonMethod.addParameter("username", userName);
-                    logonMethod.addParameter("password", password);
+                logonMethod.addParameter("username", userName);
+                logonMethod.addParameter("password", password);
 //                  logonMethod.addParameter("SubmitCreds", "Log On");
 //                  logonMethod.addParameter("forcedownlevel", "0");
-                    logonMethod.addParameter("trusted", "4");
+                logonMethod.addParameter("trusted", "4");
 
-                    wdr.executeHttpRequestMethod(httpClient, logonMethod);
-                    Header locationHeader = logonMethod.getResponseHeader("Location");
+                httpClient.executeMethod(logonMethod);
+                Header locationHeader = logonMethod.getResponseHeader("Location");
 
-                    if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
-                            locationHeader == null ||
-                            !url.equals(locationHeader.getValue())) {
-                        throw new HttpException("Authentication failed");
-                    }
-
+                if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
+                        locationHeader == null ||
+                        !destination.equals(locationHeader.getValue())) {
+                    throw new HttpException("Authentication failed");
                 }
+
             }
 
             // User may be authenticated, get various session information
-            HttpMethod method = new GetMethod(url);
+            HttpMethod method = new GetMethod(destination);
             int status = wdr.executeHttpRequestMethod(httpClient, method);
             if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
@@ -244,26 +271,41 @@ public class ExchangeSession {
                 ex.setReason(method.getStatusText());
                 throw ex;
             }
+            // test form based authentication
+            String queryString = method.getQueryString();
+            if (queryString != null && queryString.endsWith("reason=2")) {
+                 throw new HttpException("Authentication failed: invalid user or password");
+            }
 
             // get user mail URL from html body (multi frame)
-            String mailboxName = method.getResponseBodyAsString();
-            int beginIndex = mailboxName.indexOf(url);
-            if (beginIndex < 0) {
-                throw new HttpException(url + " not found in body");
+            BufferedReader mainPageReader = null;
+            try {
+                mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
+                String line;
+                // find base url
+                final String BASE_HREF = "<base href=\"";
+                //noinspection StatementWithEmptyBody
+                while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) ;
+                if (line != null) {
+                    int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
+                    int end = line.indexOf("\"", start);
+                    String mailBoxBaseHref = line.substring(start, end);
+                    URL baseURL = new URL(mailBoxBaseHref);
+                    mailPath = baseURL.getPath();
+                }
+            } catch (IOException e) {
+                LOGGER.error("Error parsing main page at " + method.getPath());
+            } finally {
+                if (mainPageReader != null) {
+                    mainPageReader.close();
+                }
             }
-            mailboxName = mailboxName.substring(beginIndex);
-            int endIndex = mailboxName.indexOf('"');
-            if (endIndex < 0) {
-                throw new HttpException(url + " not found in body");
-            }
-            mailboxName = mailboxName.substring(url.length(), endIndex);
 
-            // if body is empty : wrong password, not authenticated
-            if (mailboxName.length() == 0) {
-                throw new HttpException("Authentication failed");
+            if (mailPath == null) {
+                throw new HttpException(destination + " not found in body, authentication failed");
             }
+
             // got base http mailbox http url
-            mailPath = "/exchange/" + mailboxName;
             wdr.setPath(mailPath);
 
             // Retrieve inbox and trash URLs
