@@ -4,6 +4,7 @@ import davmail.AbstractConnection;
 import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -19,6 +20,8 @@ public class SmtpConnection extends AbstractConnection {
     protected static final int STARTMAIL = 2;
     protected static final int RECIPIENT = 3;
     protected static final int MAILDATA = 4;
+    protected static final int LOGIN = 5;
+    protected static final int PASSWORD = 6;
 
     // Initialize the streams and start the thread
     public SmtpConnection(Socket clientSocket) {
@@ -43,7 +46,16 @@ public class SmtpConnection extends AbstractConnection {
                 if (tokens.hasMoreTokens()) {
                     String command = tokens.nextToken();
 
-                    if ("QUIT".equalsIgnoreCase(command)) {
+                    if (state == LOGIN) {
+                        // AUTH LOGIN, read userName
+                        userName = base64Decode(command);
+                        sendClient("334 " + base64Encode("Password:"));
+                        state = PASSWORD;
+                    } else if (state == PASSWORD) {
+                        // AUTH LOGIN, read password
+                        password = base64Decode(command);
+                        authenticate();
+                    } else if ("QUIT".equalsIgnoreCase(command)) {
                         sendClient("221 Closing connection");
                         break;
                     } else if ("EHLO".equals(command)) {
@@ -59,21 +71,10 @@ public class SmtpConnection extends AbstractConnection {
                             String authType = tokens.nextToken();
                             if ("PLAIN".equals(authType) && tokens.hasMoreElements()) {
                                 decodeCredentials(tokens.nextToken());
-                                session = new ExchangeSession();
-                                try {
-                                    session.login(userName, password);
-                                    sendClient("235 OK Authenticated");
-                                    state = AUTHENTICATED;
-                                } catch (Exception e) {
-                                    String message = e.getMessage();
-                                    if (message == null) {
-                                        message = e.toString();
-                                    }
-                                    DavGatewayTray.error(message);
-                                    message = message.replaceAll("\\n", " ");
-                                    sendClient("554 Authenticated failed " + message);
-                                    state = INITIAL;
-                                }
+                                authenticate();
+                            } else if ("LOGIN".equals(authType)) {
+                                sendClient("334 " + base64Encode("Username:"));
+                                state = LOGIN;
                             } else {
                                 sendClient("451 Error : unknown authentication type");
                             }
@@ -137,14 +138,46 @@ public class SmtpConnection extends AbstractConnection {
     }
 
     /**
+     * Create authenticated session with Exchange server
+     * @throws IOException on error
+     */
+    protected void authenticate() throws IOException {
+        session = new ExchangeSession();
+        try {
+            session.login(userName, password);
+            sendClient("235 OK Authenticated");
+            state = AUTHENTICATED;
+        } catch (Exception e) {
+            String message = e.getMessage();
+            if (message == null) {
+                message = e.toString();
+            }
+            DavGatewayTray.error(message);
+            message = message.replaceAll("\\n", " ");
+            sendClient("554 Authenticated failed " + message);
+            state = INITIAL;
+        }
+
+    }
+
+    protected String base64Encode(String value) {
+        BASE64Encoder encoder = new BASE64Encoder();
+        return encoder.encode(value.getBytes());
+    }
+
+    protected String base64Decode(String value) throws IOException {
+        BASE64Decoder decoder = new BASE64Decoder();
+        return new String(decoder.decodeBuffer(value));
+    }
+
+    /**
      * Decode SMTP credentials
      *
      * @param encodedCredentials smtp encoded credentials
      * @throws java.io.IOException if invalid credentials
      */
     protected void decodeCredentials(String encodedCredentials) throws IOException {
-        BASE64Decoder decoder = new BASE64Decoder();
-        String decodedCredentials = new String(decoder.decodeBuffer(encodedCredentials));
+        String decodedCredentials = base64Decode(encodedCredentials);
         int index = decodedCredentials.indexOf((char) 0, 1);
         if (index > 0) {
             userName = decodedCredentials.substring(1, index);
