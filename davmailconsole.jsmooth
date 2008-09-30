@@ -21,7 +21,7 @@
 <classPath>dist\davmail.jar</classPath>
 <embeddedJar>false</embeddedJar>
 <executableName>dist\davmailconsole.exe</executableName>
-<iconLocation>src\java\tray.png</iconLocation>
+<iconLocation>src\java\tray32.png</iconLocation>
 <initialMemoryHeap>-1</initialMemoryHeap>
 <javaProperties>
 <name>sun.net.inetaddr.ttl</name>
