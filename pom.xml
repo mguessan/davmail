@@ -127,7 +127,7 @@
     <distributionManagement>
         <site>
             <id>website</id>
-            <url>scpexe://shell.sourceforge.net/home/groups/d/da/davmail/htdocs</url>
+            <url>scpexe://web.sourceforge.net/home/groups/d/da/davmail/htdocs</url>
         </site>
     </distributionManagement>
     <reporting>

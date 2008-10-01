@@ -2,7 +2,7 @@
 <project name="Maven">
     <bannerLeft>
         <name>SourceForge</name>
-        <src>http://images.sourceforge.net/sfx/logo.gif</src>
+        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=2</src>
         <href>http://sf.net</href>
     </bannerLeft>
     <skin>
