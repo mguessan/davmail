@@ -16,7 +16,7 @@ public class DavGatewayServletContextListener implements ServletContextListener 
     public void contextInitialized(ServletContextEvent event) {
         InputStream settingInputStream = null;
         try {
-            settingInputStream = DavGatewayServlet.class.getClassLoader().getResourceAsStream("davmail.properties");
+            settingInputStream = DavGatewayServletContextListener.class.getClassLoader().getResourceAsStream("davmail.properties");
             Settings.load(settingInputStream);
             DavGateway.start();
         } catch (IOException e) {
