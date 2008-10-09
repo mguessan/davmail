@@ -19,8 +19,12 @@ public class SettingsFrame extends JFrame {
     public SettingsFrame() {
         setTitle("DavMail Settings");
 
-        JPanel panel = new JPanel(new GridLayout(5, 2));
-        panel.setBorder(BorderFactory.createTitledBorder("Gateway settings"));
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        JPanel mainPanel = new JPanel(new GridLayout(2, 1));
+
+        JPanel settingsPanel = new JPanel(new GridLayout(4, 2));
+        settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway settings"));
 
         final JTextField urlField = new JTextField(Settings.getProperty("davmail.url"), 15);
         urlField.setToolTipText("Base outlook web access URL");
@@ -29,20 +33,16 @@ public class SettingsFrame extends JFrame {
         final JTextField keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);
         keepDelayField.setToolTipText("Number of days to keep messages in trash");
 
-        final JCheckBox allowRemoteField = new JCheckBox();
-        allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
-        allowRemoteField.setToolTipText("Allow remote connections to the gateway (server mode)");
 
-        addSettingComponent(panel, "OWA url: ", urlField);
-        addSettingComponent(panel, "Local POP port: ", popPortField);
-        addSettingComponent(panel, "Local SMTP port: ", smtpPortField);
-        addSettingComponent(panel, "Keep Delay: ", keepDelayField);
-        addSettingComponent(panel, "Allow Remote Connections: ", allowRemoteField);
+        addSettingComponent(settingsPanel, "OWA url: ", urlField);
+        addSettingComponent(settingsPanel, "Local POP port: ", popPortField);
+        addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField);
+        addSettingComponent(settingsPanel, "Keep Delay: ", keepDelayField);
 
-        add("North", panel);
+        mainPanel.add(settingsPanel);
 
-        panel = new JPanel(new GridLayout(5, 2));
-        panel.setBorder(BorderFactory.createTitledBorder("Proxy settings"));
+        JPanel proxyPanel = new JPanel(new GridLayout(5, 2));
+        proxyPanel.setBorder(BorderFactory.createTitledBorder("Proxy settings"));
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         final JCheckBox enableProxyField = new JCheckBox();
@@ -67,15 +67,38 @@ public class SettingsFrame extends JFrame {
             }
         });
 
-        addSettingComponent(panel, "Enable proxy: ", enableProxyField);
-        addSettingComponent(panel, "Proxy server: ", httpProxyField);
-        addSettingComponent(panel, "Proxy port: ", httpProxyPortField);
-        addSettingComponent(panel, "Proxy user: ", httpProxyUserField);
-        addSettingComponent(panel, "Proxy password: ", httpProxyPasswordField);
+        addSettingComponent(proxyPanel, "Enable proxy: ", enableProxyField);
+        addSettingComponent(proxyPanel, "Proxy server: ", httpProxyField);
+        addSettingComponent(proxyPanel, "Proxy port: ", httpProxyPortField);
+        addSettingComponent(proxyPanel, "Proxy user: ", httpProxyUserField);
+        addSettingComponent(proxyPanel, "Proxy password: ", httpProxyPasswordField);
 
-        add("Center", panel);
+        mainPanel.add(proxyPanel);
 
-        panel = new JPanel();
+        tabbedPane.add("Main", mainPanel);
+
+        JPanel advancedPanel = new JPanel();
+
+        JPanel networkSettingsPanel = new JPanel(new GridLayout(2, 2));
+        networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network settings"));
+
+        final JCheckBox allowRemoteField = new JCheckBox();
+        allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
+        allowRemoteField.setToolTipText("Allow remote connections to the gateway (server mode)");
+
+        final JTextField bindAddressField = new JTextField(Settings.getProperty("davmail.bindAddress"), 15);
+        bindAddressField.setToolTipText("Bind only to the specified network address");
+
+        addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField);
+        addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField);
+
+        advancedPanel.add(networkSettingsPanel);
+        
+        tabbedPane.add("Advanced", advancedPanel);
+
+        add("Center", tabbedPane);
+
+        JPanel buttonPanel = new JPanel();
         JButton cancel = new JButton("Cancel");
         JButton ok = new JButton("Save");
         ActionListener save = new ActionListener() {
@@ -86,6 +109,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.smtpPort", smtpPortField.getText());
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
                 Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
+                Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
                 Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
                 Settings.setProperty("davmail.proxyHost", httpProxyField.getText());
                 Settings.setProperty("davmail.proxyPort", httpProxyPortField.getText());
@@ -107,6 +131,7 @@ public class SettingsFrame extends JFrame {
                 smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
                 keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
                 allowRemoteField.setSelected(Settings.getBooleanProperty(("davmail.allowRemote")));
+                bindAddressField.setText(Settings.getProperty("davmail.bindAddress"));
                 boolean enableProxy = Settings.getBooleanProperty("davmail.allowRemote");
                 enableProxyField.setSelected(enableProxy);
                 httpProxyField.setEnabled(enableProxy);
@@ -121,10 +146,10 @@ public class SettingsFrame extends JFrame {
             }
         });
 
-        panel.add(ok);
-        panel.add(cancel);
+        buttonPanel.add(ok);
+        buttonPanel.add(cancel);
 
-        add("South", panel);
+        add("South", buttonPanel);
 
         pack();
         setResizable(false);
