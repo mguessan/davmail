@@ -17,6 +17,7 @@ public class SettingsFrame extends JFrame {
     }
 
     public SettingsFrame() {
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle("DavMail Settings");
 
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -78,6 +79,7 @@ public class SettingsFrame extends JFrame {
         tabbedPane.add("Main", mainPanel);
 
         JPanel advancedPanel = new JPanel();
+        advancedPanel.setLayout(new BorderLayout());
 
         JPanel networkSettingsPanel = new JPanel(new GridLayout(2, 2));
         networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network settings"));
@@ -92,8 +94,8 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField);
         addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField);
 
-        advancedPanel.add(networkSettingsPanel);
-        
+        advancedPanel.add("North", networkSettingsPanel);
+
         tabbedPane.add("Advanced", advancedPanel);
 
         add("Center", tabbedPane);
@@ -116,7 +118,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
                 Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
                 Settings.save();
-                setVisible(false);
+                dispose();
                 // restart listeners with new config
                 DavGateway.start();
             }
@@ -142,7 +144,7 @@ public class SettingsFrame extends JFrame {
                 httpProxyPortField.setText(Settings.getProperty("davmail.proxyPort"));
                 httpProxyUserField.setText(Settings.getProperty("davmail.proxyUser"));
                 httpProxyPasswordField.setText(Settings.getProperty("davmail.proxyPassword"));
-                setVisible(false);
+                dispose();
             }
         });
 

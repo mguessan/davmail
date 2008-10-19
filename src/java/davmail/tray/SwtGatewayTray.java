@@ -2,6 +2,7 @@ package davmail.tray;
 
 import davmail.Settings;
 import davmail.SettingsFrame;
+import davmail.AboutFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
@@ -145,6 +146,23 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         }
                     });
 
+                    MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
+                    aboutItem.setText("About...");
+                    final AboutFrame aboutFrame = new AboutFrame();
+                    if (awtImage != null) {
+                        aboutFrame.setIconImage(awtImage);
+                    }
+                    aboutItem.addListener(SWT.Selection, new Listener() {
+                        public void handleEvent(Event event) {
+                            display.asyncExec(
+                                    new Runnable() {
+                                        public void run() {
+                                            aboutFrame.setVisible(true);
+                                        }
+                                    });
+                        }
+                    });
+
                     final SettingsFrame settingsFrame = new SettingsFrame();
                     if (awtImage != null) {
                         settingsFrame.setIconImage(awtImage);
@@ -205,10 +223,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         public void handleEvent(Event event) {
                             shell.dispose();
 
-                            if (image != null)
+                            if (image != null) {
                                 image.dispose();
-                            if (image2 != null)
+                            }
+                            if (image2 != null) {
                                 image2.dispose();
+                            }
                             display.dispose();
 
                             //noinspection CallToSystemExit
@@ -222,14 +242,17 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     }
 
                     while (!shell.isDisposed()) {
-                        if (!display.readAndDispatch())
+                        if (!display.readAndDispatch()) {
                             display.sleep();
+                        }
                     }
 
-                    if (image != null)
+                    if (image != null) {
                         image.dispose();
-                    if (image2 != null)
+                    }
+                    if (image2 != null) {
                         image2.dispose();
+                    }
                     display.dispose();
                 }
             }

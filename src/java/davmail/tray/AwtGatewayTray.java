@@ -2,6 +2,7 @@ package davmail.tray;
 
 import davmail.Settings;
 import davmail.SettingsFrame;
+import davmail.AboutFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
@@ -82,6 +83,20 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         image2 = Toolkit.getDefaultToolkit().getImage(imageUrl2);
         // create a popup menu
         PopupMenu popup = new PopupMenu();
+
+        final AboutFrame aboutFrame = new AboutFrame();
+        aboutFrame.setIconImage(image);
+        // create an action settingsListener to listen for settings action executed on the tray icon
+        ActionListener aboutListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                aboutFrame.setVisible(true);
+            }
+        };
+        // create menu item for the default action
+        MenuItem aboutItem = new MenuItem("About...");
+        aboutItem.addActionListener(aboutListener);
+        popup.add(aboutItem);
+
         final SettingsFrame settingsFrame = new SettingsFrame();
         settingsFrame.setIconImage(image);
         // create an action settingsListener to listen for settings action executed on the tray icon

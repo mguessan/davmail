@@ -38,7 +38,15 @@
         </taskdef>
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <jar basedir="target/classes" destfile="dist/davmail.jar"/>
+        <jar basedir="target/classes" destfile="dist/davmail.jar">
+            <manifest>
+                <section name="davmail/">
+                    <attribute name="Implementation-Title" value="DavMail Gateway"/>
+                    <attribute name="Implementation-Version" value="${version}"/>
+                    <attribute name="Implementation-Vendor" value="Mickael Guessant"/>
+                </section>
+            </manifest>
+            </jar>
         <copy todir="dist/lib">
             <fileset dir="lib">
                 <include name="*.jar"/>
