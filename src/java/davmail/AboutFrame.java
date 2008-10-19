@@ -38,18 +38,18 @@ public class AboutFrame extends JFrame {
         }
         Package davmailPackage = this.getClass().getPackage();
         StringBuilder buffer = new StringBuilder();
-        buffer.append("<html><b>DavMail Gateway</b><br/>");
+        buffer.append("<html><b>DavMail Gateway</b><br>");
         String version = davmailPackage.getImplementationVersion();
         if (version != null) {
-            buffer.append("<b>Version ").append(version).append("</b><br/>");
+            buffer.append("<b>Version ").append(version).append("</b><br>");
         }
-        buffer.append("By Mickaël Guessant<br/>" +
-                "<br/>" +
-                "Help and setup instructions available at:<br/>" +
-                "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br/>" +
-                "<br/>" +
-                "To send comments or report bugs, <br/>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
-                "DavMail Sourceforge trackers</a><br/>" +
+        buffer.append("By Mickaël Guessant<br>" +
+                "<br>" +
+                "Help and setup instructions available at:<br>" +
+                "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
+                "<br>" +
+                "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
+                "DavMail Sourceforge trackers</a><br>" +
                 "or contact me at <a href=\"mailto:mguessan@free.fr\">mguessan@free.fr</a>" +
                 "</html>");
         JEditorPane jEditorPane = new JEditorPane("text/html", buffer.toString());
