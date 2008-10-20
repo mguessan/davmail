@@ -1,8 +1,8 @@
 package davmail.tray;
 
+import davmail.AboutFrame;
 import davmail.Settings;
 import davmail.SettingsFrame;
-import davmail.AboutFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
@@ -10,10 +10,15 @@ import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.ToolTip;
+import org.eclipse.swt.widgets.Tray;
+import org.eclipse.swt.widgets.TrayItem;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,8 +1,8 @@
 package davmail.tray;
 
+import davmail.AboutFrame;
 import davmail.Settings;
 import davmail.SettingsFrame;
-import davmail.AboutFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;

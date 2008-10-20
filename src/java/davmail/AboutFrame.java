@@ -1,6 +1,6 @@
 package davmail;
 
-import org.apache.log4j.Logger;
+import davmail.tray.DavGatewayTray;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -18,8 +18,6 @@ import java.net.URL;
  * About frame
  */
 public class AboutFrame extends JFrame {
-    protected static final Logger LOGGER = Logger.getLogger(AboutFrame.class);
-
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle("About DavMail");
@@ -34,7 +32,7 @@ public class AboutFrame extends JFrame {
             imagePanel.add(imageLabel);
             add("West", imagePanel);
         } catch (IOException e) {
-            LOGGER.error("Unable to create icon", e);
+            DavGatewayTray.error("Unable to create icon", e);
         }
         Package davmailPackage = this.getClass().getPackage();
         StringBuilder buffer = new StringBuilder();
@@ -62,11 +60,28 @@ public class AboutFrame extends JFrame {
             public void hyperlinkUpdate(HyperlinkEvent hle) {
                 if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
                     try {
-                        Desktop desktop = Desktop.getDesktop();
-                        desktop.browse(hle.getURL().toURI());
+                        // trigger ClassNotFoundException
+                        ClassLoader classloader = AboutFrame.class.getClassLoader();
+                        classloader.loadClass("java.awt.Desktop");
+
+                        // Open link in default browser
+                        AwtDesktopBrowser.browse(hle.getURL().toURI());
                         dispose();
+                    } catch (ClassNotFoundException e) {
+                        DavGatewayTray.debug("Java 6 Desktop class not available");
+                        // failover : try SWT
+                        try {
+                            // trigger ClassNotFoundException
+                            ClassLoader classloader = AboutFrame.class.getClassLoader();
+                            classloader.loadClass("org.eclipse.swt.program.Program");
+                            SwtDesktopBrowser.browse(hle.getURL().toURI());
+                        } catch (ClassNotFoundException e2) {
+                            DavGatewayTray.error("Open link not supported (tried AWT Desktop and SWT Program");
+                        } catch (Exception e2) {
+                            DavGatewayTray.error("Unable to open link", e2);
+                        }
                     } catch (Exception e) {
-                        LOGGER.error("Unable to open link", e);
+                        DavGatewayTray.error("Unable to open link", e);
                     }
                 }
             }

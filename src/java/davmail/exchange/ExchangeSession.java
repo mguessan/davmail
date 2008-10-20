@@ -219,13 +219,13 @@ public class ExchangeSession {
                     final String FORM_ACTION = "<FORM action=\"";
                     final String DESTINATION_INPUT = "name=\"destination\" value=\"";
                     //noinspection StatementWithEmptyBody
-                    while ((line = loginFormReader.readLine()) != null && line.indexOf(FORM_ACTION) == -1) ;
+                    while ((line = loginFormReader.readLine()) != null && line.indexOf(FORM_ACTION) == -1){}
                     if (line != null) {
                         int start = line.indexOf(FORM_ACTION) + FORM_ACTION.length();
                         int end = line.indexOf("\"", start);
                         logonMethodPath = line.substring(start, end);
                         //noinspection StatementWithEmptyBody
-                        while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) ;
+                        while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) {}
                         if (line != null) {
                             start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
                             end = line.indexOf("\"", start);
@@ -285,7 +285,7 @@ public class ExchangeSession {
                 // find base url
                 final String BASE_HREF = "<base href=\"";
                 //noinspection StatementWithEmptyBody
-                while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) ;
+                while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1){}
                 if (line != null) {
                     int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
                     int end = line.indexOf("\"", start);
@@ -302,7 +302,7 @@ public class ExchangeSession {
             }
 
             if (mailPath == null) {
-                throw new HttpException(destination + " not found in body, authentication failed");
+                throw new HttpException(destination + " not found in body, authentication failed: password expired ?");
             }
 
             // got base http mailbox http url

@@ -1,8 +1,8 @@
 package davmail.tray;
 
 import davmail.Settings;
-import org.apache.log4j.Priority;
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 
 import java.awt.*;
 
