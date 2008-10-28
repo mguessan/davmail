@@ -18,7 +18,7 @@
                 <img src="images/davmailSettings.png"/>
             </div>
             <p>
-                The following table describes the main options :
+                The following table describes the main and advanced options :
                 <table>
                     <tr>
                         <th>Parameter</th>
@@ -48,6 +48,11 @@
                     <tr>
                         <td>Allow remote connections</td>
                         <td>Allow remote connections to the gateway (server mode)</td>
+                        <td>false</td>
+                    </tr>
+                     <tr>
+                        <td>Bind Address</td>
+                        <td>Bind only to the specified network address</td>
                         <td>false</td>
                     </tr>
                 </table>

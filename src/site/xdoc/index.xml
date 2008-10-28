@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>DavMail Gateway</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="About">
+            <p>Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP exchange gateway allowing
+                users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
+                through Outlook Web Access. DavMail gateway is implemented in java and should run on
+                any platform. Releases are tested on Windows and Linux (Ubuntu). MacOS support is currently
+                limited to server (headless) mode. Tested successfully with the Iphone (gateway running on a
+                server).
+            </p>
+            <div style="width: 100%;text-align: center">
+                <img src="images/ubuntutray.png"/>
+            </div>
+        </section>
+        <section name="Download">
+            <p>Download latest DavMail Gateway release from
+                <a href="http://sourceforge.net/project/platformdownload.php?group_id=184600">
+                    SourceForge DavMail Gateway Files
+                </a>
+            </p>
+        </section>
+    </body>
+</document>
