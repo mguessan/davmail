@@ -62,7 +62,6 @@ public abstract class AbstractServer extends Thread {
                     clientSocket.close();
                     DavGatewayTray.warn("Connection from external client refused");
                 }
-                System.gc();
             }
         } catch (IOException e) {
             // do not warn if exception on socket close (gateway restart)
