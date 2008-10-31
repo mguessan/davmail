@@ -1,8 +1,8 @@
 package davmail.smtp;
 
 import davmail.AbstractConnection;
+import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
-import davmail.exchange.ExchangeSession;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
@@ -33,7 +33,7 @@ public class SmtpConnection extends AbstractConnection {
         StringTokenizer tokens;
 
         try {
-            ExchangeSession.checkConfig();
+            ExchangeSessionFactory.checkConfig();
             sendClient("220 DavMail SMTP ready at " + new Date());
             for (; ;) {
                 line = readClient();
@@ -142,9 +142,8 @@ public class SmtpConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void authenticate() throws IOException {
-        session = new ExchangeSession();
         try {
-            session.login(userName, password);
+            session = ExchangeSessionFactory.getInstance(userName, password);
             sendClient("235 OK Authenticated");
             state = AUTHENTICATED;
         } catch (Exception e) {

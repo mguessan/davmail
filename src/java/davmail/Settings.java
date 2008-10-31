@@ -55,6 +55,7 @@ public class Settings {
                 SETTINGS.put("davmail.proxyUser", "");
                 SETTINGS.put("davmail.proxyPassword", "");
                 SETTINGS.put("davmail.server", "false");
+                SETTINGS.put("davmail.server.certificate.hash", "");
                 save();
             }
         } catch (IOException e) {
@@ -114,4 +115,11 @@ public class Settings {
         String propertyValue = SETTINGS.getProperty(property);
         return "true".equals(propertyValue);
     }
+
+    public static synchronized void saveProperty(String property, String value) {
+        Settings.load();
+        Settings.setProperty(property, value);
+        Settings.save();
+    }
+
 }

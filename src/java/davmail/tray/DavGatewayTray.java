@@ -16,7 +16,7 @@ public class DavGatewayTray {
     protected DavGatewayTray() {
     }
 
-    protected static DavGatewayTrayInterface davGatewayTray;
+    static DavGatewayTrayInterface davGatewayTray;
 
     public static void switchIcon() {
         if (davGatewayTray != null) {
@@ -40,7 +40,7 @@ public class DavGatewayTray {
     protected static void displayMessage(String message, Exception e, Priority priority) {
         LOGGER.log(priority, message, e);
         if (davGatewayTray != null) {
-            davGatewayTray.displayMessage(message + " " + e +" "+ e.getMessage(), priority);
+            davGatewayTray.displayMessage(message + " " + e + " " + e.getMessage(), priority);
         }
     }
 

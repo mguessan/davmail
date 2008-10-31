@@ -177,6 +177,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             display.asyncExec(
                                     new Runnable() {
                                         public void run() {
+                                            settingsFrame.reload();
                                             settingsFrame.setVisible(true);
                                         }
                                     });
@@ -191,6 +192,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             display.asyncExec(
                                     new Runnable() {
                                         public void run() {
+                                            settingsFrame.reload();
                                             settingsFrame.setVisible(true);
                                         }
                                     });

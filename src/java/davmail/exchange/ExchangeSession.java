@@ -1,7 +1,15 @@
 package davmail.exchange;
 
 import davmail.Settings;
-import org.apache.commons.httpclient.*;
+import davmail.http.DavGatewayHttpClientFactory;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.HttpURL;
+import org.apache.commons.httpclient.HttpsURL;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
@@ -12,13 +20,22 @@ import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 
 import javax.mail.internet.MimeUtility;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.SimpleTimeZone;
+import java.util.Vector;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -65,89 +82,11 @@ public class ExchangeSession {
      * Create an exchange session for the given URL.
      * The session is not actually established until a call to login()
      */
-    public ExchangeSession() {
+    ExchangeSession() {
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
         dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
-    }
-
-    /**
-     * Update http client configuration (proxy)
-     *
-     * @param httpClient current Http client
-     */
-    protected static void configureClient(HttpClient httpClient) {
-        // do not send basic auth automatically
-        httpClient.getState().setAuthenticationPreemptive(false);
-
-        boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
-        String proxyHost = null;
-        int proxyPort = 0;
-        String proxyUser = null;
-        String proxyPassword = null;
-
-        if (enableProxy) {
-            proxyHost = Settings.getProperty("davmail.proxyHost");
-            proxyPort = Settings.getIntProperty("davmail.proxyPort");
-            proxyUser = Settings.getProperty("davmail.proxyUser");
-            proxyPassword = Settings.getProperty("davmail.proxyPassword");
-        }
-
-        // configure proxy
-        if (proxyHost != null && proxyHost.length() > 0) {
-            httpClient.getHostConfiguration().setProxy(proxyHost, proxyPort);
-            if (proxyUser != null && proxyUser.length() > 0) {
-
-/*              // Only available in newer HttpClient releases, not compatible with slide library
-                List authPrefs = new ArrayList();
-                authPrefs.add(AuthPolicy.BASIC);
-                httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY,authPrefs);
-*/
-                // instead detect ntlm authentication (windows domain name in user name)
-                int backslashindex = proxyUser.indexOf("\\");
-                if (backslashindex > 0) {
-                    httpClient.getState().setProxyCredentials(null, proxyHost,
-                            new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                    proxyPassword, null,
-                                    proxyUser.substring(0, backslashindex)));
-                } else {
-                    httpClient.getState().setProxyCredentials(null, proxyHost,
-                            new UsernamePasswordCredentials(proxyUser, proxyPassword));
-                }
-            }
-        }
-
-    }
-
-    public static void checkConfig() throws IOException {
-        try {
-            String url = Settings.getProperty("davmail.url");
-
-            // create an HttpClient instance
-            HttpClient httpClient = new HttpClient();
-            configureClient(httpClient);
-
-            // get webmail root url (will not follow redirects)
-            HttpMethod testMethod = new GetMethod(url);
-            testMethod.setFollowRedirects(false);
-            int status = httpClient.executeMethod(testMethod);
-            testMethod.releaseConnection();
-            LOGGER.debug("Test configuration status: " + status);
-            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
-                    && status != HttpStatus.SC_MOVED_TEMPORARILY) {
-                throw new IOException("Unable to connect to OWA at " + url + ", status code " +
-                        status + ", check configuration");
-            }
-
-        } catch (UnknownHostException exc) {
-            LOGGER.error("DavMail configuration exception: \n Unknown host " + exc.getMessage(), exc);
-            throw new IOException("DavMail configuration exception: \n Unknown host " + exc.getMessage(), exc);
-        } catch (Exception exc) {
-            LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
-            throw new IOException("DavMail configuration exception: \n" + exc.getMessage(), exc);
-        }
-
     }
 
     /**
@@ -159,15 +98,14 @@ public class ExchangeSession {
      */
     protected boolean isBasicAuthentication(String url) throws IOException {
         // create an HttpClient instance
-        HttpClient httpClient = new HttpClient();
-        configureClient(httpClient);
+        HttpClient httpClient = DavGatewayHttpClientFactory.getInstance();
         HttpMethod testMethod = new GetMethod(url);
         int status = httpClient.executeMethod(testMethod);
         testMethod.releaseConnection();
         return status == HttpStatus.SC_UNAUTHORIZED;
     }
 
-    public void login(String userName, String password) throws IOException {
+    void login(String userName, String password) throws IOException {
         try {
             String url = Settings.getProperty("davmail.url");
 
@@ -194,13 +132,24 @@ public class ExchangeSession {
             // get the internal HttpClient instance
             HttpClient httpClient = wdr.retrieveSessionInstance();
 
-            configureClient(httpClient);
+            DavGatewayHttpClientFactory.configureClient(httpClient);
 
-            // get webmail root url (will follow redirects)
+            // get webmail root url
             // providing credentials
+            // manually follow redirect
             HttpMethod initmethod = new GetMethod(url);
-            wdr.executeHttpRequestMethod(httpClient,
-                    initmethod);
+            initmethod.setFollowRedirects(false);
+            httpClient.executeMethod(initmethod);
+            int redirectCount = 0;
+            while (redirectCount++ < 10 && initmethod.getStatusCode() == 302) {
+                initmethod.releaseConnection();
+                initmethod = new GetMethod(initmethod.getResponseHeader("Location").getValue());
+                initmethod.setFollowRedirects(false);
+                httpClient.executeMethod(initmethod);
+            }
+            if (initmethod.getStatusCode() == 302) {
+                throw new IOException("Maximum redirections reached");
+            }
 
             // default destination is provided url
             String destination = url;
@@ -216,12 +165,12 @@ public class ExchangeSession {
                     loginFormReader = new BufferedReader(new InputStreamReader(initmethod.getResponseBodyAsStream()));
                     String line;
                     // skip to form action
-                    final String FORM_ACTION = "<FORM action=\"";
+                    final String FORM_ACTION = "<form action=\"";
                     final String DESTINATION_INPUT = "name=\"destination\" value=\"";
                     //noinspection StatementWithEmptyBody
-                    while ((line = loginFormReader.readLine()) != null && line.indexOf(FORM_ACTION) == -1){}
+                    while ((line = loginFormReader.readLine()) != null && line.toLowerCase().indexOf(FORM_ACTION) == -1){}
                     if (line != null) {
-                        int start = line.indexOf(FORM_ACTION) + FORM_ACTION.length();
+                        int start = line.toLowerCase().indexOf(FORM_ACTION) + FORM_ACTION.length();
                         int end = line.indexOf("\"", start);
                         logonMethodPath = line.substring(start, end);
                         //noinspection StatementWithEmptyBody
@@ -230,6 +179,14 @@ public class ExchangeSession {
                             start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
                             end = line.indexOf("\"", start);
                             destination = line.substring(start, end);
+                        }
+                    }
+                    // allow relative URLs
+                    if (!logonMethodPath.startsWith("/")) {
+                        String path = initmethod.getPath();
+                        int end = path.lastIndexOf('/');
+                        if (end >=0) {
+                        logonMethodPath = path.substring(0, end+1) + logonMethodPath;
                         }
                     }
                 } catch (IOException e) {
@@ -264,7 +221,18 @@ public class ExchangeSession {
 
             // User may be authenticated, get various session information
             HttpMethod method = new GetMethod(destination);
-            int status = wdr.executeHttpRequestMethod(httpClient, method);
+            method.setFollowRedirects(false);
+            int status = httpClient.executeMethod(method);
+            redirectCount = 0;
+            while (redirectCount++ < 10 && method.getStatusCode() == 302) {
+                method.releaseConnection();
+                method = new GetMethod(method.getResponseHeader("Location").getValue());
+                method.setFollowRedirects(false);
+                status = httpClient.executeMethod(method);
+            }
+            if (method.getStatusCode() == 302) {
+                throw new IOException("Maximum redirections reached");
+            }
             if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);

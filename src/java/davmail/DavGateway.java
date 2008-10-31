@@ -1,5 +1,6 @@
 package davmail;
 
+import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
@@ -57,25 +58,27 @@ public class DavGateway {
             DavGatewayTray.error("Exception creating server socket", e);
         }
 
+        // register custom SSL Socket factory
+        DavGatewaySSLProtocolSocketFactory.register();
     }
 
-     public static void stop() {
-         if (smtpServer != null) {
-             smtpServer.close();
-             try {
-                 smtpServer.join();
-             } catch (InterruptedException e) {
-                 DavGatewayTray.warn("Exception waiting for listener to die", e);
-             }
-         }
-         if (popServer != null) {
-             popServer.close();
-             try {
-                 popServer.join();
-             } catch (InterruptedException e) {
-                 DavGatewayTray.warn("Exception waiting for listener to die", e);
-             }
-         }
-     }
+    public static void stop() {
+        if (smtpServer != null) {
+            smtpServer.close();
+            try {
+                smtpServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+        if (popServer != null) {
+            popServer.close();
+            try {
+                popServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+    }
 
 }

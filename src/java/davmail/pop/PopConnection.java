@@ -2,6 +2,7 @@ package davmail.pop;
 
 import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 
 import java.io.FilterOutputStream;
@@ -64,7 +65,7 @@ public class PopConnection extends AbstractConnection {
         StringTokenizer tokens;
 
         try {
-            ExchangeSession.checkConfig();
+            ExchangeSessionFactory.checkConfig();
             sendOK("DavMail POP ready at " + new Date());
 
             for (; ;) {
@@ -107,8 +108,7 @@ public class PopConnection extends AbstractConnection {
                         } else {
                             password = tokens.nextToken();
                             try {
-                                session = new ExchangeSession();
-                                session.login(userName, password);
+                                session = ExchangeSessionFactory.getInstance(userName, password);
                                 messages = session.getAllMessages();
                                 sendOK("PASS");
                                 state = AUTHENTICATED;

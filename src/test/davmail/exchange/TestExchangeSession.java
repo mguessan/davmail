@@ -19,7 +19,7 @@ public class TestExchangeSession {
         ExchangeSession session = new ExchangeSession();
         // test auth
         try {
-            ExchangeSession.checkConfig();
+            ExchangeSessionFactory.checkConfig();
             session.login(argv[currentArg++], argv[currentArg++]);
 
             ExchangeSession.Folder folder = session.selectFolder(argv[currentArg++]);

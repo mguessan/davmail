@@ -8,6 +8,7 @@ import java.io.IOException;
 import davmail.AbstractConnection;
 import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -50,9 +51,8 @@ public class ImapConnection extends AbstractConnection {
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
-                            session = new ExchangeSession();
                             try {
-                                session.login(userName, password);
+                                session = ExchangeSessionFactory.getInstance(userName, password);
                                 sendClient(commandId + " OK Authenticated");
                                 state = AUTHENTICATED;
                             } catch (Exception e) {
@@ -127,7 +127,7 @@ public class ImapConnection extends AbstractConnection {
 
             os.flush();
         } catch (IOException e) {
-            DavGatewayTray.error("Exception handling client",e);
+            DavGatewayTray.error("Exception handling client", e);
         } finally {
             close();
         }
