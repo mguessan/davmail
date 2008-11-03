@@ -72,7 +72,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     public void displayMessage(final String message, final Priority priority) {
         synchronized (LOCK) {
             if (trayItem != null) {
-                display.syncExec(
+                display.asyncExec(
                         new Runnable() {
                             public void run() {
                                 int messageType = 0;
