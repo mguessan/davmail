@@ -13,6 +13,7 @@ import java.security.Principal;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Accept certificate dialog
@@ -55,7 +56,7 @@ public class AcceptCertificateDialog extends JDialog {
             }
             builder.append(serial.charAt(i));
         }
-        return builder.toString();
+        return builder.toString().toUpperCase();
     }
 
     public AcceptCertificateDialog(X509Certificate certificate) {
@@ -82,8 +83,17 @@ public class AcceptCertificateDialog extends JDialog {
         subjectPanel.setBorder(BorderFactory.createTitledBorder("Server Certificate"));
         addFieldValue(subjectPanel, "Issued to", getRDN(certificate.getSubjectDN()));
         addFieldValue(subjectPanel, "Issued by", getRDN(certificate.getIssuerDN()));
-        addFieldValue(subjectPanel, "Valid from", formatter.format(certificate.getNotBefore()));
-        addFieldValue(subjectPanel, "Valid until", formatter.format(certificate.getNotAfter()));
+        Date now = new Date();
+        String notBefore = formatter.format(certificate.getNotBefore());
+        if (now.before(certificate.getNotBefore())) {
+           notBefore = "<html><font color=\"#FF0000\">"+notBefore+"</font></html>"; 
+        }
+        addFieldValue(subjectPanel, "Valid from", notBefore);
+        String notAfter = formatter.format(certificate.getNotAfter());
+        if (now.after(certificate.getNotAfter())) {
+           notAfter = "<html><font color=\"#FF0000\">"+notAfter+"</font></html>";
+        }
+        addFieldValue(subjectPanel, "Valid until", notAfter);
         addFieldValue(subjectPanel, "Serial", getFormattedSerial(certificate));
         addFieldValue(subjectPanel, "FingerPrint", sha1Hash);
 
