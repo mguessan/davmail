@@ -75,16 +75,17 @@
             <groupId>slide</groupId>
             <artifactId>slide-webdavlib</artifactId>
             <version>2.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>de.zeigermann.xml</groupId>
+                    <artifactId>xml-im-exporter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.8</version>
-        </dependency>
-        <dependency>
-            <groupId>jtidy</groupId>
-            <artifactId>jtidy</artifactId>
-            <version>4aug2000r7-dev</version>
         </dependency>
         <dependency>
             <groupId>javax.mail</groupId>
@@ -94,7 +95,7 @@
         <dependency>
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>
-             <version>1.1</version>            
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>swt</groupId>
@@ -114,15 +115,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.5</source>
+                    <target>1.5</target>
                 </configuration>
             </plugin>
         </plugins>
     </build>
     <distributionManagement>
         <site>
-            <id>website</id>
+            <id>sourceforge.net</id>
             <url>scp://web.sourceforge.net/home/groups/d/da/davmail/htdocs</url>
         </site>
     </distributionManagement>
@@ -157,27 +158,10 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
-                <version>1.0-beta-1</version>
+                <version>1.2</version>
                 <configuration>
-                    <!-- High|Normal|Low|Exp|Ignore -->
                     <threshold>Normal</threshold>
-                    <!-- Min|Default|Max -->
                     <effort>Default</effort>
-                    <excludeFilterFile>
-                        findbugs-exclude.xml
-                    </excludeFilterFile>
-                    <includeFilterFile>
-                        findbugs-include.xml
-                    </includeFilterFile>
-                    <visitors>
-                        FindDeadLocalStores,UnreadFields
-                    </visitors>
-                    <omitVisitors>
-                        FindDeadLocalStores,UnreadFields
-                    </omitVisitors>
-                    <pluginList>
-                        /libs/fb-contrib/fb-contrib-2.8.0.jar
-                    </pluginList>
                 </configuration>
             </plugin>
             <plugin>
