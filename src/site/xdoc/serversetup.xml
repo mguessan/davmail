@@ -40,6 +40,7 @@ davmail.proxyUser=
 davmail.proxyPassword=
 davmail.server=true
 davmail.bindAddress=
+davmail.server.certificate.hash=
             </source>
             <p>See
                 <a href="gettingstarted.html">Getting started</a>

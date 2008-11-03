@@ -55,6 +55,12 @@
                         <td>Bind only to the specified network address</td>
                         <td>false</td>
                     </tr>
+                    <tr>
+                        <td>Server certificate hash</td>
+                        <td>Manually accepted server certificate hash, contains the SHA1 hash of
+                            a manually accepted certificate (invalid or self signed)</td>
+                        <td>false</td>
+                    </tr>
                 </table>
             </p>
             <p>The bottom panel can be activated to set an HTTP proxy and associated credentials if needed</p>
