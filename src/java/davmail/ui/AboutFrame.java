@@ -1,6 +1,7 @@
 package davmail.ui;
 
 import davmail.tray.DavGatewayTray;
+import davmail.DavGateway;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -35,16 +36,21 @@ public class AboutFrame extends JFrame {
         } catch (IOException e) {
             DavGatewayTray.error("Unable to create icon", e);
         }
-        Package davmailPackage = this.getClass().getPackage();
+        Package davmailPackage = DavGateway.class.getPackage();
         StringBuilder buffer = new StringBuilder();
         buffer.append("<html><b>DavMail Gateway</b><br>");
-        String version = davmailPackage.getImplementationVersion();
-        if (version != null) {
-            buffer.append("<b>Version ").append(version).append("</b><br>");
+        String currentVersion = davmailPackage.getImplementationVersion();
+        if (currentVersion != null) {
+            buffer.append("<b>Version ").append(currentVersion).append("</b><br>");
         }
-        buffer.append("By Mickaël Guessant<br>" +
-                "<br>" +
-                "Help and setup instructions available at:<br>" +
+        buffer.append("By Mickaël Guessant<br><br>");
+        String releasedVersion = DavGateway.getReleasedVersion();
+        if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+            buffer.append("<b>Latest version available ").append(releasedVersion).append("</b><br>" +
+                    "A new version of DavMail Gateway is available." +
+                    "<a href=\"http://sourceforge.net/project/platformdownload.php?group_id=184600\">Download latest version</a><br>");
+        }
+        buffer.append("Help and setup instructions available at:<br>" +
                 "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
                 "<br>" +
                 "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
@@ -114,5 +120,7 @@ public class AboutFrame extends JFrame {
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
     }
+
+
 
 }

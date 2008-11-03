@@ -1,11 +1,18 @@
 package davmail;
 
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.http.DavGatewayHttpClientFactory;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
 
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
 
 /**
  * DavGateway main class
@@ -52,8 +59,15 @@ public class DavGateway {
             smtpServer.start();
             popServer.start();
 
-            DavGatewayTray.info("DavMail gateway listening on SMTP port " + smtpPort +
-                    " and POP port " + popPort);
+            String message = "DavMail gateway listening on SMTP port " + smtpPort +
+                    " and POP port " + popPort;
+            String releasedVersion = getReleasedVersion();
+            String currentVersion = getCurrentVersion();
+            if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+                message += " A new version ("+releasedVersion+") of DavMail Gateway is available !";
+            }
+
+            DavGatewayTray.info(message);
         } catch (IOException e) {
             DavGatewayTray.error("Exception creating server socket", e);
         }
@@ -81,4 +95,33 @@ public class DavGateway {
         }
     }
 
+    public static String getCurrentVersion() {
+        Package davmailPackage = DavGateway.class.getPackage();
+        return davmailPackage.getImplementationVersion();
+    }
+
+     public static String getReleasedVersion() {
+        String version = null;
+        BufferedReader versionReader = null;
+        try {
+            HttpClient httpClient = DavGatewayHttpClientFactory.getInstance();
+            GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
+            int status = httpClient.executeMethod(getMethod);
+            if (status == HttpStatus.SC_OK) {
+                versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
+                version = versionReader.readLine();
+            }
+        } catch (IOException e) {
+            // ignore
+        } finally {
+            if (versionReader != null) {
+                try {
+                    versionReader.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+        return version;
+    }
 }
