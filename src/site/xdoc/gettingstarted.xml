@@ -59,7 +59,7 @@
                         <td>Server certificate hash</td>
                         <td>Manually accepted server certificate hash, contains the SHA1 hash of
                             a manually accepted certificate (invalid or self signed)</td>
-                        <td>false</td>
+                        <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
                     </tr>
                 </table>
             </p>
