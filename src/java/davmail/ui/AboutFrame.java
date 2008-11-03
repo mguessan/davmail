@@ -1,4 +1,4 @@
-package davmail;
+package davmail.ui;
 
 import davmail.tray.DavGatewayTray;
 
@@ -20,7 +20,8 @@ import java.net.URL;
 public class AboutFrame extends JFrame {
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("About DavMail");
+        setTitle("About DavMail Gateway");
+        setIconImage(DavGatewayTray.getFrameIcon());
         try {
             JLabel imageLabel = new JLabel();
             ClassLoader classloader = this.getClass().getClassLoader();

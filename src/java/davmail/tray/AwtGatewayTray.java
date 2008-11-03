@@ -1,8 +1,8 @@
 package davmail.tray;
 
-import davmail.AboutFrame;
 import davmail.Settings;
-import davmail.SettingsFrame;
+import davmail.ui.AboutFrame;
+import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
@@ -10,10 +10,12 @@ import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.URL;
+import java.io.IOException;
 
 /**
  * Tray icon handler based on java 1.6
@@ -28,6 +30,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     private static TrayIcon trayIcon = null;
     private static Image image = null;
     private static Image image2 = null;
+
+    public Image getFrameIcon() {
+        return image;
+    }
 
     public void switchIcon() {
         synchronized (LOCK) {
@@ -77,15 +83,24 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         SystemTray tray = SystemTray.getSystemTray();
         // load an image
         ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-        URL imageUrl = classloader.getResource("tray.png");
-        image = Toolkit.getDefaultToolkit().getImage(imageUrl);
-        URL imageUrl2 = classloader.getResource("tray2.png");
-        image2 = Toolkit.getDefaultToolkit().getImage(imageUrl2);
+        try {
+            URL imageUrl = classloader.getResource("tray.png");
+            image = ImageIO.read(imageUrl);
+        } catch (IOException e) {
+            DavGatewayTray.warn("Unable to load image", e);
+        }
+
+        try {
+            URL imageUrl2 = classloader.getResource("tray2.png");
+            image2 = ImageIO.read(imageUrl2);
+        } catch (IOException e) {
+            DavGatewayTray.warn("Unable to load image", e);
+        }
+
         // create a popup menu
         PopupMenu popup = new PopupMenu();
 
         final AboutFrame aboutFrame = new AboutFrame();
-        aboutFrame.setIconImage(image);
         // create an action settingsListener to listen for settings action executed on the tray icon
         ActionListener aboutListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -98,7 +113,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         popup.add(aboutItem);
 
         final SettingsFrame settingsFrame = new SettingsFrame();
-        settingsFrame.setIconImage(image);
         // create an action settingsListener to listen for settings action executed on the tray icon
         ActionListener settingsListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {

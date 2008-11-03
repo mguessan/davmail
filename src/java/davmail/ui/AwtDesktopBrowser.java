@@ -1,4 +1,4 @@
-package davmail;
+package davmail.ui;
 
 import java.io.IOException;
 import java.net.URI;

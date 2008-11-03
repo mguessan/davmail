@@ -47,10 +47,7 @@ public class DavGatewaySSLProtocolSocketFactory extends SSLProtocolSocketFactory
 
     private SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
         SSLContext context = SSLContext.getInstance("SSL");
-        context.init(
-                null,
-                new TrustManager[]{new DavGatewayX509TrustManager()},
-                null);
+        context.init(null, new TrustManager[]{new DavGatewayX509TrustManager()}, null);
         return context;
     }
 
@@ -64,48 +61,39 @@ public class DavGatewaySSLProtocolSocketFactory extends SSLProtocolSocketFactory
 
     public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort) throws IOException {
         try {
-            return getSSLContext().getSocketFactory().createSocket(
-                    host,
-                    port,
-                    clientHost,
-                    clientPort
-            );
+            return getSSLContext().getSocketFactory().createSocket(host, port, clientHost, clientPort);
         } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyManagementException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyStoreException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         }
     }
 
 
     public Socket createSocket(String host, int port) throws IOException {
         try {
-            return getSSLContext().getSocketFactory().createSocket(
-                    host,
-                    port
-            );
+            return getSSLContext().getSocketFactory().createSocket(host, port);
         } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyManagementException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyStoreException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         }
     }
 
 
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
         try {
-            return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose
-            );
+            return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose);
         } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyManagementException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         } catch (KeyStoreException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         }
     }
 }

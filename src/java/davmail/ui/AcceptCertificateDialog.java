@@ -49,8 +49,8 @@ public class AcceptCertificateDialog extends JDialog {
     public String getFormattedSerial(X509Certificate certificate) {
         StringBuilder builder = new StringBuilder();
         String serial = certificate.getSerialNumber().toString(16);
-        for (int i = 0;i<serial.length();i++) {
-            if (i > 0 && i%2 == 0) {
+        for (int i = 0; i < serial.length(); i++) {
+            if (i > 0 && i % 2 == 0) {
                 builder.append(' ');
             }
             builder.append(serial.charAt(i));
@@ -59,6 +59,7 @@ public class AcceptCertificateDialog extends JDialog {
     }
 
     public AcceptCertificateDialog(X509Certificate certificate) {
+        setAlwaysOnTop(true);
         String sha1Hash;
         try {
             sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
@@ -69,7 +70,12 @@ public class AcceptCertificateDialog extends JDialog {
         }
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
 
-        setTitle("Accept certificate ?");
+        setTitle("DavMail: Accept certificate ?");
+        try {
+            setIconImage(DavGatewayTray.getFrameIcon());
+        } catch (NoSuchMethodError error) {
+            DavGatewayTray.debug("Unable to set JDialog icon image (not available under Java 1.5)");
+        }
 
         JPanel subjectPanel = new JPanel();
         subjectPanel.setLayout(new BoxLayout(subjectPanel, BoxLayout.Y_AXIS));

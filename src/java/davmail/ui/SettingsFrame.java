@@ -1,4 +1,8 @@
-package davmail;
+package davmail.ui;
+
+import davmail.Settings;
+import davmail.DavGateway;
+import davmail.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
@@ -128,7 +132,8 @@ public class SettingsFrame extends JFrame {
 
     public SettingsFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("DavMail Settings");
+        setTitle("DavMail Gateway Settings");
+        setIconImage(DavGatewayTray.getFrameIcon());
 
         JTabbedPane tabbedPane = new JTabbedPane();
 

@@ -60,24 +60,25 @@ public class ExchangeSessionFactory {
             }
 
         } catch (UnknownHostException exc) {
-            String message = "DavMail configuration exception: \n Unknown host ";
+            String message = "DavMail configuration exception: \n";
             if (checkNetwork()) {
-                message += exc.getMessage();
+                message += "Unknown host " + exc.getMessage();
             } else {
                 message += "All network interfaces down !";
             }
 
             ExchangeSession.LOGGER.error(message, exc);
-            throw new IOException(message, exc);
+            throw new IOException(message);
         } catch (Exception exc) {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
-            throw new IOException("DavMail configuration exception: \n" + exc.getMessage(), exc);
+            throw new IOException("DavMail configuration exception: \n" + exc.getMessage());
         }
 
     }
 
     /**
      * Check if at least one network interface is up and active (i.e. has an address)
+     *
      * @return true if network available
      */
     protected static boolean checkNetwork() {
@@ -90,6 +91,9 @@ public class ExchangeSessionFactory {
                 up = networkInterface.isUp() && !networkInterface.isLoopback()
                         && networkInterface.getInetAddresses().hasMoreElements();
             }
+        } catch (NoSuchMethodError error) {
+            ExchangeSession.LOGGER.debug("Unable to test network interfaces (not available under Java 1.5)");
+            up = true;
         } catch (SocketException exc) {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n Error listing network interfaces " + exc.getMessage(), exc);
         }

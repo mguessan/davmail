@@ -18,6 +18,14 @@ public class DavGatewayTray {
 
     static DavGatewayTrayInterface davGatewayTray;
 
+    public static Image getFrameIcon() {
+        Image icon = null;
+        if (davGatewayTray != null) {
+            icon = davGatewayTray.getFrameIcon();
+        }
+        return icon;
+    }
+
     public static void switchIcon() {
         if (davGatewayTray != null) {
             davGatewayTray.switchIcon();

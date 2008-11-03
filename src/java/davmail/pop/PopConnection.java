@@ -121,7 +121,6 @@ public class PopConnection extends AbstractConnection {
                                     message = "Authentication failed: "+e.toString();
                                 }
                                 DavGatewayTray.error(message);
-                                message = message.replaceAll("\\n", " ");
                                 sendERR(message);
                             }
                         }
@@ -240,7 +239,7 @@ public class PopConnection extends AbstractConnection {
     }
 
     public void sendERR(String message) throws IOException {
-        sendClient("-ERR ", message);
+        sendClient("-ERR ", message.replaceAll("\\n", " "));
     }
 
     /**

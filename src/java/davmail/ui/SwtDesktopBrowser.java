@@ -1,4 +1,4 @@
-package davmail;
+package davmail.ui;
 
 import org.eclipse.swt.program.Program;
 

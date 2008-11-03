@@ -1,8 +1,8 @@
 package davmail.tray;
 
-import davmail.AboutFrame;
 import davmail.Settings;
-import davmail.SettingsFrame;
+import davmail.ui.AboutFrame;
+import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
@@ -20,8 +20,8 @@ import org.eclipse.swt.widgets.ToolTip;
 import org.eclipse.swt.widgets.Tray;
 import org.eclipse.swt.widgets.TrayItem;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 
@@ -36,10 +36,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected static final Object LOCK = new Object();
 
     private static TrayItem trayItem = null;
+    private static java.awt.Image awtImage = null;
     private static Image image = null;
     private static Image image2 = null;
     private static Display display;
     private static Shell shell;
+
+    public java.awt.Image getFrameIcon() {
+        return awtImage;
+    }
 
     public void switchIcon() {
         display.syncExec(
@@ -120,11 +125,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                     // load an image
                     ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-                    java.awt.Image awtImage = null;
                     try {
                         URL imageUrl = classloader.getResource("tray.png");
                         image = new Image(display, imageUrl.openStream());
-                        awtImage = Toolkit.getDefaultToolkit().getImage(imageUrl);
+                        awtImage = ImageIO.read(imageUrl);
                     } catch (IOException e) {
                         DavGatewayTray.warn("Unable to load image", e);
                     }
@@ -154,9 +158,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
                     aboutItem.setText("About...");
                     final AboutFrame aboutFrame = new AboutFrame();
-                    if (awtImage != null) {
-                        aboutFrame.setIconImage(awtImage);
-                    }
                     aboutItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
                             display.asyncExec(
@@ -169,9 +170,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     });
 
                     final SettingsFrame settingsFrame = new SettingsFrame();
-                    if (awtImage != null) {
-                        settingsFrame.setIconImage(awtImage);
-                    }
                     trayItem.addListener(SWT.DefaultSelection, new Listener() {
                         public void handleEvent(Event event) {
                             display.asyncExec(
