@@ -48,12 +48,12 @@ public class SmtpConnection extends AbstractConnection {
 
                     if (state == LOGIN) {
                         // AUTH LOGIN, read userName
-                        userName = base64Decode(command);
+                        userName = base64Decode(line);
                         sendClient("334 " + base64Encode("Password:"));
                         state = PASSWORD;
                     } else if (state == PASSWORD) {
                         // AUTH LOGIN, read password
-                        password = base64Decode(command);
+                        password = base64Decode(line);
                         authenticate();
                     } else if ("QUIT".equalsIgnoreCase(command)) {
                         sendClient("221 Closing connection");

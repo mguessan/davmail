@@ -106,7 +106,8 @@ public class PopConnection extends AbstractConnection {
                         } else if (!tokens.hasMoreTokens()) {
                             sendERR("invalid syntax");
                         } else {
-                            password = tokens.nextToken();
+                            // bug 2194492 : allow space in password
+                            password = line.substring("PASS".length()+1);
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                                 messages = session.getAllMessages();
