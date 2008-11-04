@@ -6,6 +6,7 @@ import davmail.tray.DavGatewayTray;
 import org.apache.log4j.Level;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,14 +41,17 @@ public class SettingsFrame extends JFrame {
         JLabel fieldLabel = new JLabel(label);
         fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(fieldLabel);
-        panel.add(component);
+        component.setMaximumSize(component.getPreferredSize());
+        JPanel innerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        innerPanel.add(component);
+        panel.add(innerPanel);
     }
 
     protected JPanel getSettingsPanel() {
         JPanel settingsPanel = new JPanel(new GridLayout(4, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
-        urlField = new JTextField(Settings.getProperty("davmail.url"), 15);
+        urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
         urlField.setToolTipText("Base outlook web access URL");
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
@@ -71,8 +75,8 @@ public class SettingsFrame extends JFrame {
         enableProxyField.setSelected(enableProxy);
         httpProxyField = new JTextField(Settings.getProperty("davmail.proxyHost"), 15);
         httpProxyPortField = new JTextField(Settings.getProperty("davmail.proxyPort"), 4);
-        httpProxyUserField = new JTextField(Settings.getProperty("davmail.proxyUser"), 4);
-        httpProxyPasswordField = new JPasswordField(Settings.getProperty("davmail.proxyPassword"), 4);
+        httpProxyUserField = new JTextField(Settings.getProperty("davmail.proxyUser"), 10);
+        httpProxyPasswordField = new JPasswordField(Settings.getProperty("davmail.proxyPassword"), 10);
 
         httpProxyField.setEnabled(enableProxy);
         httpProxyPortField.setEnabled(enableProxy);
@@ -180,7 +184,6 @@ public class SettingsFrame extends JFrame {
 
         advancedPanel.add(getNetworkSettingsPanel());
         advancedPanel.add(getLoggingSettingsPanel());
-        advancedPanel.add(Box.createVerticalGlue());
 
         tabbedPane.add("Advanced", advancedPanel);
 
@@ -231,7 +234,7 @@ public class SettingsFrame extends JFrame {
         add("South", buttonPanel);
 
         pack();
-        setResizable(false);
+        //setResizable(false);
         // center frame
         setLocation(getToolkit().getScreenSize().width / 2 -
                 getSize().width / 2,
