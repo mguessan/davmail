@@ -46,7 +46,7 @@
                     <attribute name="Implementation-Vendor" value="Mickael Guessant"/>
                 </section>
             </manifest>
-            </jar>
+        </jar>
         <copy todir="dist/lib">
             <fileset dir="lib">
                 <include name="*.jar"/>
@@ -79,8 +79,8 @@
             <fileset dir="dist/lib">
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
-                <exclude name="jsmoothgen-ant.jar"/>
-                <exclude name="lib/swt*.jar"/>
+                <exclude name="jsmoothgen-ant*.jar"/>
+                <exclude name="swt*.jar"/>
             </fileset>
         </copy>
         <jar destfile="dist/davmail-${version}.war">
@@ -95,6 +95,21 @@
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="lib/swt-*-gtk-linux-x86.jar"/>
+                <exclude name="lib/swt-*-gtk-linux-x86_64.jar"/>
+                <exclude name="lib/swt-*-carbon-macosx.jar"/>
+                <exclude name="lib/swt-*-win32-x86.jar"/>
+            </tarfileset>
+        </tar>
+        <tar tarfile="dist/davmail-linux-x86_64-${version}.tgz" compression="gzip">
+            <tarfileset prefix="davmail-linux-x86_64-${version}" dir="dist" filemode="755">
+                <include name="davmail.sh"/>
+            </tarfileset>
+            <tarfileset prefix="davmail-linux-x86_64-${version}" dir="dist">
+                <include name="davmail.desktop"/>
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="lib/swt-*-gtk-linux-x86_64.jar"/>
+                <exclude name="lib/swt-*-gtk-linux-x86.jar"/>
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
                 <exclude name="lib/swt-*-win32-x86.jar"/>
             </tarfileset>
@@ -102,6 +117,13 @@
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
             <define name="VERSION" value="${version}"/>
         </nsis>
+        <!-- source package -->
+        <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip">
+            <tarfileset prefix="davmail-src-${version}" dir=".">
+                <include name="**/*"/>
+                <exclude name="dist"/>
+            </tarfileset>
+        </tar>
     </target>
 
 </project>
