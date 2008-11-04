@@ -50,6 +50,7 @@ public class ExchangeSessionFactory {
 
             // get webmail root url (will not follow redirects)
             testMethod.setFollowRedirects(false);
+            testMethod.setDoAuthentication(false);
             int status = httpClient.executeMethod(testMethod);
             testMethod.releaseConnection();
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);

@@ -88,6 +88,7 @@ public class DavGatewayHttpClientFacade {
         int status = 0;
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
         HttpMethod testMethod = new GetMethod(url);
+        testMethod.setDoAuthentication(false);
         try {
             status = httpClient.executeMethod(testMethod);
         } finally {

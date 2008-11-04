@@ -260,14 +260,15 @@ public class ExchangeSession {
             // get webmail root url
             // providing credentials
             // manually follow redirect
-            HttpMethod initmethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
+            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
 
             if (!isBasicAuthentication) {
-                formLogin(httpClient, initmethod, userName, password);
+                formLogin(httpClient, method, userName, password);
+                // reexecute method with new base URL
+                method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
             }
 
             // User may be authenticated, get various session information
-            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
             int status = method.getStatusCode();
             if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
