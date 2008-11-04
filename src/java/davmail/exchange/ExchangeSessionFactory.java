@@ -1,7 +1,7 @@
 package davmail.exchange;
 
 import davmail.Settings;
-import davmail.http.DavGatewayHttpClientFactory;
+import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
@@ -41,14 +41,14 @@ public class ExchangeSessionFactory {
 
 
     public static void checkConfig() throws IOException {
+        String url = Settings.getProperty("davmail.url");
+        HttpMethod testMethod = new GetMethod(url);
         try {
-            String url = Settings.getProperty("davmail.url");
 
             // create an HttpClient instance
-            HttpClient httpClient = DavGatewayHttpClientFactory.getInstance();
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
 
             // get webmail root url (will not follow redirects)
-            HttpMethod testMethod = new GetMethod(url);
             testMethod.setFollowRedirects(false);
             int status = httpClient.executeMethod(testMethod);
             testMethod.releaseConnection();
@@ -72,6 +72,8 @@ public class ExchangeSessionFactory {
         } catch (Exception exc) {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
             throw new IOException("DavMail configuration exception: \n" + exc.getMessage());
+        } finally {
+            testMethod.releaseConnection();
         }
 
     }

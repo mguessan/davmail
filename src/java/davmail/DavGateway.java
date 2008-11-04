@@ -1,7 +1,7 @@
 package davmail;
 
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
-import davmail.http.DavGatewayHttpClientFactory;
+import davmail.http.DavGatewayHttpClientFacade;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
@@ -103,9 +103,9 @@ public class DavGateway {
      public static String getReleasedVersion() {
         String version = null;
         BufferedReader versionReader = null;
+         GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
         try {
-            HttpClient httpClient = DavGatewayHttpClientFactory.getInstance();
-            GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
             int status = httpClient.executeMethod(getMethod);
             if (status == HttpStatus.SC_OK) {
                 versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
@@ -121,6 +121,7 @@ public class DavGateway {
                     // ignore
                 }
             }
+            getMethod.releaseConnection();
         }
         return version;
     }

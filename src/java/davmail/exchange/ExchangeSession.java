@@ -1,7 +1,7 @@
 package davmail.exchange;
 
 import davmail.Settings;
-import davmail.http.DavGatewayHttpClientFactory;
+import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -64,6 +64,11 @@ public class ExchangeSession {
     private final SimpleDateFormat dateParser;
 
     /**
+     * Base Exchange URL
+     */
+    private String baseUrl;
+
+    /**
      * Various standard mail boxes Urls
      */
     private String inboxUrl;
@@ -97,32 +102,150 @@ public class ExchangeSession {
      * @throws java.io.IOException unable to connect to exchange
      */
     protected boolean isBasicAuthentication(String url) throws IOException {
-        // create an HttpClient instance
-        HttpClient httpClient = DavGatewayHttpClientFactory.getInstance();
-        HttpMethod testMethod = new GetMethod(url);
-        int status = httpClient.executeMethod(testMethod);
-        testMethod.releaseConnection();
-        return status == HttpStatus.SC_UNAUTHORIZED;
+        return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
+    }
+
+    /**
+     * Try to find logon method path from logon form body.
+     *
+     * @param initmethod form body http method
+     * @return logon method path
+     */
+    protected String getLogonMethodPathAndBaseUrl(HttpMethod initmethod) {
+        // default logon method path
+        String logonMethodPath = "/exchweb/bin/auth/owaauth.dll";
+
+        // try to parse login form to determine logon url and destination
+        BufferedReader loginFormReader = null;
+        try {
+            loginFormReader = new BufferedReader(new InputStreamReader(initmethod.getResponseBodyAsStream()));
+            String line;
+            // skip to form action
+            final String FORM_ACTION = "<form action=\"";
+            final String DESTINATION_INPUT = "name=\"destination\" value=\"";
+            //noinspection StatementWithEmptyBody
+            while ((line = loginFormReader.readLine()) != null && line.toLowerCase().indexOf(FORM_ACTION) == -1) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().indexOf(FORM_ACTION) + FORM_ACTION.length();
+                int end = line.indexOf("\"", start);
+                logonMethodPath = line.substring(start, end);
+                //noinspection StatementWithEmptyBody
+                while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) {
+                }
+                if (line != null) {
+                    start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
+                    end = line.indexOf("\"", start);
+                    baseUrl = line.substring(start, end);
+                }
+            }
+            // allow relative URLs
+            if (!logonMethodPath.startsWith("/")) {
+                String path = initmethod.getPath();
+                int end = path.lastIndexOf('/');
+                if (end >= 0) {
+                    logonMethodPath = path.substring(0, end + 1) + logonMethodPath;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing login form at " + initmethod.getPath());
+        } finally {
+            if (loginFormReader != null) {
+                try {
+                    loginFormReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing login form at " + initmethod.getPath());
+                }
+            }
+            initmethod.releaseConnection();
+        }
+        return logonMethodPath;
+    }
+
+    protected void formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
+        LOGGER.debug("Form based authentication detected");
+        // get logon method path and actual destination (baseUrl)
+        String logonMethodPath = getLogonMethodPathAndBaseUrl(initmethod);
+
+        PostMethod logonMethod = new PostMethod(
+                logonMethodPath + "?ForcedBasic=false&Basic=false&Private=true&Language=No_Value"
+        );
+        logonMethod.addParameter("destination", baseUrl);
+        logonMethod.addParameter("flags", "4");
+//                  logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
+        logonMethod.addParameter("username", userName);
+        logonMethod.addParameter("password", password);
+//                  logonMethod.addParameter("SubmitCreds", "Log On");
+//                  logonMethod.addParameter("forcedownlevel", "0");
+        logonMethod.addParameter("trusted", "4");
+
+        try {
+            httpClient.executeMethod(logonMethod);
+        } finally {
+            logonMethod.releaseConnection();
+        }
+        Header locationHeader = logonMethod.getResponseHeader("Location");
+
+        if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
+                locationHeader == null ||
+                !baseUrl.equals(locationHeader.getValue())) {
+            throw new HttpException("Authentication failed");
+        }
+    }
+
+    protected String getMailPath(HttpMethod method) {
+        String result = null;
+        // get user mail URL from html body (multi frame)
+        BufferedReader mainPageReader = null;
+        try {
+            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
+            String line;
+            // find base url
+            final String BASE_HREF = "<base href=\"";
+            //noinspection StatementWithEmptyBody
+            while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
+                int end = line.indexOf("\"", start);
+                String mailBoxBaseHref = line.substring(start, end);
+                URL baseURL = new URL(mailBoxBaseHref);
+                result = baseURL.getPath();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing main page at " + method.getPath());
+        } finally {
+            if (mainPageReader != null) {
+                try {
+                    mainPageReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing main page at " + method.getPath());
+                }
+            }
+            method.releaseConnection();
+        }
+
+        return result;
     }
 
     void login(String userName, String password) throws IOException {
         try {
-            String url = Settings.getProperty("davmail.url");
+            baseUrl = Settings.getProperty("davmail.url");
 
-            boolean isBasicAuthentication = isBasicAuthentication(url);
+            boolean isBasicAuthentication = isBasicAuthentication(baseUrl);
 
             // get proxy configuration from setttings properties
-            URL urlObject = new URL(url);
+            URL urlObject = new URL(baseUrl);
             // webdavresource is unable to create the correct url type
             HttpURL httpURL;
-            if (url.startsWith("http://")) {
+            if (baseUrl.startsWith("http://")) {
                 httpURL = new HttpURL(userName, password,
                         urlObject.getHost(), urlObject.getPort());
-            } else if (url.startsWith("https://")) {
+            } else if (baseUrl.startsWith("https://")) {
                 httpURL = new HttpsURL(userName, password,
                         urlObject.getHost(), urlObject.getPort());
             } else {
-                throw new IllegalArgumentException("Invalid URL: " + url);
+                throw new IllegalArgumentException("Invalid URL: " + baseUrl);
             }
             wdr = new WebdavResource(httpURL, WebdavResource.NOACTION, 0);
 
@@ -132,107 +255,20 @@ public class ExchangeSession {
             // get the internal HttpClient instance
             HttpClient httpClient = wdr.retrieveSessionInstance();
 
-            DavGatewayHttpClientFactory.configureClient(httpClient);
+            DavGatewayHttpClientFacade.configureClient(httpClient);
 
             // get webmail root url
             // providing credentials
             // manually follow redirect
-            HttpMethod initmethod = new GetMethod(url);
-            initmethod.setFollowRedirects(false);
-            httpClient.executeMethod(initmethod);
-            int redirectCount = 0;
-            while (redirectCount++ < 10 && initmethod.getStatusCode() == 302) {
-                initmethod.releaseConnection();
-                initmethod = new GetMethod(initmethod.getResponseHeader("Location").getValue());
-                initmethod.setFollowRedirects(false);
-                httpClient.executeMethod(initmethod);
-            }
-            if (initmethod.getStatusCode() == 302) {
-                throw new IOException("Maximum redirections reached");
-            }
-
-            // default destination is provided url
-            String destination = url;
+            HttpMethod initmethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
 
             if (!isBasicAuthentication) {
-                LOGGER.debug("Form based authentication detected");
-                // default logon method path
-                String logonMethodPath = "/exchweb/bin/auth/owaauth.dll";
-
-                // try to parse login form to determine logon url and destination
-                BufferedReader loginFormReader = null;
-                try {
-                    loginFormReader = new BufferedReader(new InputStreamReader(initmethod.getResponseBodyAsStream()));
-                    String line;
-                    // skip to form action
-                    final String FORM_ACTION = "<form action=\"";
-                    final String DESTINATION_INPUT = "name=\"destination\" value=\"";
-                    //noinspection StatementWithEmptyBody
-                    while ((line = loginFormReader.readLine()) != null && line.toLowerCase().indexOf(FORM_ACTION) == -1){}
-                    if (line != null) {
-                        int start = line.toLowerCase().indexOf(FORM_ACTION) + FORM_ACTION.length();
-                        int end = line.indexOf("\"", start);
-                        logonMethodPath = line.substring(start, end);
-                        //noinspection StatementWithEmptyBody
-                        while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) {}
-                        if (line != null) {
-                            start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
-                            end = line.indexOf("\"", start);
-                            destination = line.substring(start, end);
-                        }
-                    }
-                    // allow relative URLs
-                    if (!logonMethodPath.startsWith("/")) {
-                        String path = initmethod.getPath();
-                        int end = path.lastIndexOf('/');
-                        if (end >=0) {
-                        logonMethodPath = path.substring(0, end+1) + logonMethodPath;
-                        }
-                    }
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing login form at " + initmethod.getPath());
-                } finally {
-                    if (loginFormReader != null) {
-                        loginFormReader.close();
-                    }
-                }
-                PostMethod logonMethod = new PostMethod(
-                        logonMethodPath + "?ForcedBasic=false&Basic=false&Private=true&Language=No_Value"
-                );
-                logonMethod.addParameter("destination", destination);
-                logonMethod.addParameter("flags", "4");
-//                  logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
-                logonMethod.addParameter("username", userName);
-                logonMethod.addParameter("password", password);
-//                  logonMethod.addParameter("SubmitCreds", "Log On");
-//                  logonMethod.addParameter("forcedownlevel", "0");
-                logonMethod.addParameter("trusted", "4");
-
-                httpClient.executeMethod(logonMethod);
-                Header locationHeader = logonMethod.getResponseHeader("Location");
-
-                if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
-                        locationHeader == null ||
-                        !destination.equals(locationHeader.getValue())) {
-                    throw new HttpException("Authentication failed");
-                }
-
+                formLogin(httpClient, initmethod, userName, password);
             }
 
             // User may be authenticated, get various session information
-            HttpMethod method = new GetMethod(destination);
-            method.setFollowRedirects(false);
-            int status = httpClient.executeMethod(method);
-            redirectCount = 0;
-            while (redirectCount++ < 10 && method.getStatusCode() == 302) {
-                method.releaseConnection();
-                method = new GetMethod(method.getResponseHeader("Location").getValue());
-                method.setFollowRedirects(false);
-                status = httpClient.executeMethod(method);
-            }
-            if (method.getStatusCode() == 302) {
-                throw new IOException("Maximum redirections reached");
-            }
+            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
+            int status = method.getStatusCode();
             if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
@@ -242,35 +278,14 @@ public class ExchangeSession {
             // test form based authentication
             String queryString = method.getQueryString();
             if (queryString != null && queryString.endsWith("reason=2")) {
-                 throw new HttpException("Authentication failed: invalid user or password");
+                method.releaseConnection();
+                throw new HttpException("Authentication failed: invalid user or password");
             }
 
-            // get user mail URL from html body (multi frame)
-            BufferedReader mainPageReader = null;
-            try {
-                mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-                String line;
-                // find base url
-                final String BASE_HREF = "<base href=\"";
-                //noinspection StatementWithEmptyBody
-                while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1){}
-                if (line != null) {
-                    int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
-                    int end = line.indexOf("\"", start);
-                    String mailBoxBaseHref = line.substring(start, end);
-                    URL baseURL = new URL(mailBoxBaseHref);
-                    mailPath = baseURL.getPath();
-                }
-            } catch (IOException e) {
-                LOGGER.error("Error parsing main page at " + method.getPath());
-            } finally {
-                if (mainPageReader != null) {
-                    mainPageReader.close();
-                }
-            }
+            mailPath = getMailPath(method);
 
             if (mailPath == null) {
-                throw new HttpException(destination + " not found in body, authentication failed: password expired ?");
+                throw new HttpException(baseUrl + " not found in body, authentication failed: password expired ?");
             }
 
             // got base http mailbox http url
