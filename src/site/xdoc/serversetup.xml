@@ -41,6 +41,10 @@ davmail.proxyPassword=
 davmail.server=true
 davmail.bindAddress=
 davmail.server.certificate.hash=
+log4j.rootLogger=WARN
+log4j.logger.davmail=DEBUG
+log4j.logger.org.apache.commons.httpclient=WARN
+log4j.logger.httpclient.wire=WARN
             </source>
             <p>See
                 <a href="gettingstarted.html">Getting started</a>

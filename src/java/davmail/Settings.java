@@ -5,6 +5,9 @@ import davmail.tray.DavGatewayTray;
 import java.util.Properties;
 import java.io.*;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 /**
  * Settings facade
  */
@@ -56,6 +59,12 @@ public class Settings {
                 SETTINGS.put("davmail.proxyPassword", "");
                 SETTINGS.put("davmail.server", "false");
                 SETTINGS.put("davmail.server.certificate.hash", "");
+
+                // logging
+                SETTINGS.put("log4j.rootLogger", "WARN");
+                SETTINGS.put("log4j.logger.davmail", "DEBUG");
+                SETTINGS.put("log4j.logger.httpclient.wire", "WARN");
+                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", "WARN");
                 save();
             }
         } catch (IOException e) {
@@ -69,6 +78,11 @@ public class Settings {
                 }
             }
         }
+        // update logging levels
+        Settings.setLoggingLevel("rootLogger", Settings.getLoggingLevel("rootLogger"));
+        Settings.setLoggingLevel("davmail", Settings.getLoggingLevel("davmail"));
+        Settings.setLoggingLevel("httpclient.wire", Settings.getLoggingLevel("httpclient.wire"));
+        Settings.setLoggingLevel("org.apache.commons.httpclient", Settings.getLoggingLevel("org.apache.commons.httpclient"));
 
     }
 
@@ -114,6 +128,39 @@ public class Settings {
     public static synchronized boolean getBooleanProperty(String property) {
         String propertyValue = SETTINGS.getProperty(property);
         return "true".equals(propertyValue);
+    }
+
+    protected static String getLoggingPrefix(String category) {
+        String prefix;
+        if ("rootLogger".equals(category)) {
+            prefix = "log4j.";
+        } else {
+            prefix = "log4j.logger.";
+        }
+        return prefix;
+    }
+
+    public static synchronized Level getLoggingLevel(String category) {
+        String prefix = getLoggingPrefix(category);
+        String currentValue = SETTINGS.getProperty(prefix + category);
+
+        if (currentValue != null && currentValue.length() > 0) {
+            return Level.toLevel(currentValue);
+        } else if ("rootLogger".equals(category)) {
+            return Logger.getRootLogger().getLevel();
+        } else {
+            return Logger.getLogger(category).getLevel();
+        }
+    }
+
+    public static synchronized void setLoggingLevel(String category, Level level) {
+        String prefix = getLoggingPrefix(category);
+        SETTINGS.setProperty(prefix + category, level.toString());
+        if ("rootLogger".equals(category)) {
+            Logger.getRootLogger().setLevel(level);
+        } else {
+            Logger.getLogger(category).setLevel(level);
+        }
     }
 
     public static synchronized void saveProperty(String property, String value) {

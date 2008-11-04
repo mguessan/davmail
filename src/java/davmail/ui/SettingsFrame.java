@@ -1,18 +1,21 @@
 package davmail.ui;
 
-import davmail.Settings;
 import davmail.DavGateway;
+import davmail.Settings;
 import davmail.tray.DavGatewayTray;
+import org.apache.log4j.Level;
 
 import javax.swing.*;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * DavMail settings frame
  */
 public class SettingsFrame extends JFrame {
+    public static final Level[] LOG_LEVELS = {Level.OFF, Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.ALL};
+
     protected JTextField urlField;
     protected JTextField popPortField;
     protected JTextField smtpPortField;
@@ -28,6 +31,11 @@ public class SettingsFrame extends JFrame {
     JTextField bindAddressField;
     JTextField certHashField;
 
+    JComboBox rootLoggingLevelField;
+    JComboBox davmailLoggingLevelField;
+    JComboBox httpclientLoggingLevelField;
+    JComboBox wireLoggingLevelField;
+
     protected void addSettingComponent(JPanel panel, String label, Component component) {
         JLabel fieldLabel = new JLabel(label);
         fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -37,7 +45,7 @@ public class SettingsFrame extends JFrame {
 
     protected JPanel getSettingsPanel() {
         JPanel settingsPanel = new JPanel(new GridLayout(4, 2));
-        settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway settings"));
+        settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 15);
         urlField.setToolTipText("Base outlook web access URL");
@@ -56,7 +64,7 @@ public class SettingsFrame extends JFrame {
 
     protected JPanel getProxyPanel() {
         JPanel proxyPanel = new JPanel(new GridLayout(5, 2));
-        proxyPanel.setBorder(BorderFactory.createTitledBorder("Proxy settings"));
+        proxyPanel.setBorder(BorderFactory.createTitledBorder("Proxy"));
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField = new JCheckBox();
@@ -91,7 +99,7 @@ public class SettingsFrame extends JFrame {
 
     public JPanel getNetworkSettingsPanel() {
         JPanel networkSettingsPanel = new JPanel(new GridLayout(3, 2));
-        networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network settings"));
+        networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network"));
 
         allowRemoteField = new JCheckBox();
         allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
@@ -107,6 +115,23 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField);
         addSettingComponent(networkSettingsPanel, "Server certificate hash: ", certHashField);
         return networkSettingsPanel;
+    }
+
+    public JPanel getLoggingSettingsPanel() {
+        JPanel loggingSettingsPanel = new JPanel(new GridLayout(4, 2));
+        loggingSettingsPanel.setBorder(BorderFactory.createTitledBorder("Logging levels"));
+
+        rootLoggingLevelField = new JComboBox(LOG_LEVELS);
+        davmailLoggingLevelField = new JComboBox(LOG_LEVELS);
+        httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
+        wireLoggingLevelField = new JComboBox(LOG_LEVELS);
+
+        addSettingComponent(loggingSettingsPanel, "Default: ", rootLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, "DavMail: ", davmailLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, "HttpClient: ", httpclientLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, "Wire: ", wireLoggingLevelField);
+
+        return loggingSettingsPanel;
     }
 
     public void reload() {
@@ -128,6 +153,11 @@ public class SettingsFrame extends JFrame {
         httpProxyUserField.setText(Settings.getProperty("davmail.proxyUser"));
         httpProxyPasswordField.setText(Settings.getProperty("davmail.proxyPassword"));
         certHashField.setText(Settings.getProperty("davmail.server.certificate.hash"));
+
+        rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
+        davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
+        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
     }
 
     public SettingsFrame() {
@@ -137,16 +167,20 @@ public class SettingsFrame extends JFrame {
 
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        JPanel mainPanel = new JPanel(new GridLayout(2, 1));
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.add(getSettingsPanel());
         mainPanel.add(getProxyPanel());
+        mainPanel.add(Box.createVerticalGlue());
 
         tabbedPane.add("Main", mainPanel);
 
         JPanel advancedPanel = new JPanel();
-        advancedPanel.setLayout(new BorderLayout());
+        advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
 
-        advancedPanel.add("North", getNetworkSettingsPanel());
+        advancedPanel.add(getNetworkSettingsPanel());
+        advancedPanel.add(getLoggingSettingsPanel());
+        advancedPanel.add(Box.createVerticalGlue());
 
         tabbedPane.add("Advanced", advancedPanel);
 
@@ -170,6 +204,12 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
                 Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
+
+                Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
+                Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
+                Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
+                Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
+
                 dispose();
                 Settings.save();
                 // restart listeners with new config

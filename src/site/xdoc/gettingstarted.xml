@@ -61,6 +61,11 @@
                             a manually accepted certificate (invalid or self signed)</td>
                         <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
                     </tr>
+                    <tr>
+                        <td>Logging levels</td>
+                        <td>Default, DavMail and HttpClient logging levels, see Log4J documentation for more details</td>
+                        <td>WARN</td>
+                    </tr>
                 </table>
             </p>
             <p>The bottom panel can be activated to set an HTTP proxy and associated credentials if needed</p>
