@@ -39,18 +39,18 @@ public class AboutFrame extends JFrame {
         Package davmailPackage = DavGateway.class.getPackage();
         StringBuilder buffer = new StringBuilder();
         buffer.append("<html><b>DavMail Gateway</b><br>");
+        buffer.append("By Mickaël Guessant<br><br>");
         String currentVersion = davmailPackage.getImplementationVersion();
         if (currentVersion != null) {
-            buffer.append("<b>Version ").append(currentVersion).append("</b><br>");
+            buffer.append("Current version: ").append(currentVersion).append("<br>");
         }
-        buffer.append("By Mickaël Guessant<br><br>");
         String releasedVersion = DavGateway.getReleasedVersion();
         if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-            buffer.append("<b>Latest version available ").append(releasedVersion).append("</b><br>" +
-                    "A new version of DavMail Gateway is available." +
+            buffer.append("Latest version available: ").append(releasedVersion).append("<br>" +
+                    "A new version of DavMail Gateway is available.<br>" +
                     "<a href=\"http://sourceforge.net/project/platformdownload.php?group_id=184600\">Download latest version</a><br>");
         }
-        buffer.append("Help and setup instructions available at:<br>" +
+        buffer.append("<br>Help and setup instructions available at:<br>" +
                 "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
                 "<br>" +
                 "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
