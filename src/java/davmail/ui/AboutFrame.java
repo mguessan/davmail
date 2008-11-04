@@ -19,6 +19,8 @@ import java.net.URL;
  * About frame
  */
 public class AboutFrame extends JFrame {
+    protected JEditorPane jEditorPane;
+
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle("About DavMail Gateway");
@@ -36,28 +38,8 @@ public class AboutFrame extends JFrame {
         } catch (IOException e) {
             DavGatewayTray.error("Unable to create icon", e);
         }
-        Package davmailPackage = DavGateway.class.getPackage();
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<html><b>DavMail Gateway</b><br>");
-        buffer.append("By Mickaël Guessant<br><br>");
-        String currentVersion = davmailPackage.getImplementationVersion();
-        if (currentVersion != null) {
-            buffer.append("Current version: ").append(currentVersion).append("<br>");
-        }
-        String releasedVersion = DavGateway.getReleasedVersion();
-        if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-            buffer.append("Latest version available: ").append(releasedVersion).append("<br>" +
-                    "A new version of DavMail Gateway is available.<br>" +
-                    "<a href=\"http://sourceforge.net/project/platformdownload.php?group_id=184600\">Download latest version</a><br>");
-        }
-        buffer.append("<br>Help and setup instructions available at:<br>" +
-                "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
-                "<br>" +
-                "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
-                "DavMail Sourceforge trackers</a><br>" +
-                "or contact me at <a href=\"mailto:mguessan@free.fr\">mguessan@free.fr</a>" +
-                "</html>");
-        JEditorPane jEditorPane = new JEditorPane("text/html", buffer.toString());
+
+        jEditorPane = new JEditorPane("text/html", getContent());
         StyleSheet stylesheet = ((HTMLEditorKit) jEditorPane.getEditorKit()).getStyleSheet();
         stylesheet.addRule("body { font-size:small;font-family: " + jEditorPane.getFont().getFamily() + "}");
 
@@ -121,6 +103,35 @@ public class AboutFrame extends JFrame {
                         getSize().height / 2);
     }
 
+    public String getContent() {
+        Package davmailPackage = DavGateway.class.getPackage();
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("<html><b>DavMail Gateway</b><br>");
+        buffer.append("By Mickaël Guessant<br><br>");
+        String currentVersion = davmailPackage.getImplementationVersion();
+        if (currentVersion != null) {
+            buffer.append("Current version: ").append(currentVersion).append("<br>");
+        }
+        String releasedVersion = DavGateway.getReleasedVersion();
+        if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+            buffer.append("Latest version available: ").append(releasedVersion).append("<br>" +
+                    "A new version of DavMail Gateway is available.<br>" +
+                    "<a href=\"http://sourceforge.net/project/platformdownload.php?group_id=184600\">Download latest version</a><br>");
+        }
+        buffer.append("<br>Help and setup instructions available at:<br>" +
+                "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
+                "<br>" +
+                "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
+                "DavMail Sourceforge trackers</a><br>" +
+                "or contact me at <a href=\"mailto:mguessan@free.fr\">mguessan@free.fr</a>" +
+                "</html>");
+        return buffer.toString();
+    }
 
+
+    public void update() {
+        jEditorPane.setText(getContent());
+        pack();
+    }
 
 }

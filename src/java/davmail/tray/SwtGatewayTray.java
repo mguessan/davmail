@@ -163,6 +163,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             display.asyncExec(
                                     new Runnable() {
                                         public void run() {
+                                            aboutFrame.update();
                                             aboutFrame.setVisible(true);
                                         }
                                     });

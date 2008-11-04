@@ -104,6 +104,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // create an action settingsListener to listen for settings action executed on the tray icon
         ActionListener aboutListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                aboutFrame.update();
                 aboutFrame.setVisible(true);
             }
         };

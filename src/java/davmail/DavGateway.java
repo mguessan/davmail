@@ -64,7 +64,7 @@ public class DavGateway {
             String releasedVersion = getReleasedVersion();
             String currentVersion = getCurrentVersion();
             if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-                message += " A new version ("+releasedVersion+") of DavMail Gateway is available !";
+                message += " A new version (" + releasedVersion + ") of DavMail Gateway is available !";
             }
 
             DavGatewayTray.info(message);
@@ -100,18 +100,19 @@ public class DavGateway {
         return davmailPackage.getImplementationVersion();
     }
 
-     public static String getReleasedVersion() {
+    public static String getReleasedVersion() {
         String version = null;
         BufferedReader versionReader = null;
-         GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
+        GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
         try {
             HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
+            httpClient.setConnectionTimeout(250);
             int status = httpClient.executeMethod(getMethod);
             if (status == HttpStatus.SC_OK) {
                 versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
                 version = versionReader.readLine();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             // ignore
         } finally {
             if (versionReader != null) {
