@@ -121,8 +121,9 @@
         <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${version}" dir=".">
                 <include name="**/*"/>
-                <exclude name="dist"/>
-                <exclude name="target"/>
+                <exclude name="build.log"/>
+                <exclude name="dist/**"/>
+                <exclude name="target/**"/>
             </tarfileset>
         </tar>
     </target>
