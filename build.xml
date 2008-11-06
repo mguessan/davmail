@@ -77,6 +77,9 @@
             <fileset dir="src/web"/>
         </copy>
         <copy todir="dist/web/WEB-INF/lib">
+            <fileset dir="dist">
+                <include name="*.jar"/>
+            </fileset>
             <fileset dir="dist/lib">
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
