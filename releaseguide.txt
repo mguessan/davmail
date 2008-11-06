@@ -1,0 +1,11 @@
+Release guide :
+- change version in build.xml and pom.xml, commit
+- update staging (clean checkout) directory
+- launch ant, check generated packages
+- upload packages with winscp to user@frs.sourceforge.net
+- create release on sourceforge, write notes, add files
+- create news message
+- create tag in subversion
+- generate site : mvn site
+- upload site to mguessan,davmail@web.sourceforge.net
+- upload version.txt
