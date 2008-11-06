@@ -6,7 +6,6 @@ import davmail.tray.DavGatewayTray;
 import org.apache.log4j.Level;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,6 +30,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox allowRemoteField;
     JTextField bindAddressField;
     JTextField certHashField;
+    JCheckBox disableUpdateCheck;
 
     JComboBox rootLoggingLevelField;
     JComboBox davmailLoggingLevelField;
@@ -102,7 +102,7 @@ public class SettingsFrame extends JFrame {
     }
 
     public JPanel getNetworkSettingsPanel() {
-        JPanel networkSettingsPanel = new JPanel(new GridLayout(3, 2));
+        JPanel networkSettingsPanel = new JPanel(new GridLayout(4, 2));
         networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network"));
 
         allowRemoteField = new JCheckBox();
@@ -115,9 +115,14 @@ public class SettingsFrame extends JFrame {
         certHashField = new JTextField(Settings.getProperty("davmail.server.certificate.hash"), 15);
         certHashField.setToolTipText("Manually accepted server certificate hash");
 
+        disableUpdateCheck = new JCheckBox();
+        disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
+        disableUpdateCheck.setToolTipText("Disable DavMail check for new version");
+
         addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField);
         addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField);
         addSettingComponent(networkSettingsPanel, "Server certificate hash: ", certHashField);
+        addSettingComponent(networkSettingsPanel, "Disable update check: ", disableUpdateCheck);
         return networkSettingsPanel;
     }
 
@@ -144,8 +149,6 @@ public class SettingsFrame extends JFrame {
         popPortField.setText(Settings.getProperty("davmail.popPort"));
         smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
-        allowRemoteField.setSelected(Settings.getBooleanProperty(("davmail.allowRemote")));
-        bindAddressField.setText(Settings.getProperty("davmail.bindAddress"));
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField.setSelected(enableProxy);
         httpProxyField.setEnabled(enableProxy);
@@ -156,7 +159,11 @@ public class SettingsFrame extends JFrame {
         httpProxyPortField.setText(Settings.getProperty("davmail.proxyPort"));
         httpProxyUserField.setText(Settings.getProperty("davmail.proxyUser"));
         httpProxyPasswordField.setText(Settings.getProperty("davmail.proxyPassword"));
+
+        bindAddressField.setText(Settings.getProperty("davmail.bindAddress"));
+        allowRemoteField.setSelected(Settings.getBooleanProperty(("davmail.allowRemote")));
         certHashField.setText(Settings.getProperty("davmail.server.certificate.hash"));
+        disableUpdateCheck.setSelected(Settings.getBooleanProperty(("davmail.disableUpdateCheck")));
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
@@ -199,14 +206,16 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.popPort", popPortField.getText());
                 Settings.setProperty("davmail.smtpPort", smtpPortField.getText());
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
-                Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
-                Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
                 Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
                 Settings.setProperty("davmail.proxyHost", httpProxyField.getText());
                 Settings.setProperty("davmail.proxyPort", httpProxyPortField.getText());
                 Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
                 Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
+
+                Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
+                Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
+                Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
 
                 Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
