@@ -178,6 +178,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                         public void run() {
                                             settingsFrame.reload();
                                             settingsFrame.setVisible(true);
+                                            // workaround for focus on first open
+                                            settingsFrame.setVisible(true);
                                         }
                                     });
                         }
@@ -192,6 +194,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                     new Runnable() {
                                         public void run() {
                                             settingsFrame.reload();
+                                            settingsFrame.setVisible(true);
+                                            // workaround for focus on first open
                                             settingsFrame.setVisible(true);
                                         }
                                     });
