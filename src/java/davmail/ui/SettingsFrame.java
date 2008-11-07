@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * DavMail settings frame
@@ -177,6 +179,14 @@ public class SettingsFrame extends JFrame {
         setIconImage(DavGatewayTray.getFrameIcon());
 
         JTabbedPane tabbedPane = new JTabbedPane();
+        // add help (F1 handler)
+        tabbedPane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("F1"),
+                "help");
+        tabbedPane.getActionMap().put("help", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                DesktopBrowser.browse("http://davmail.sourceforge.net");
+            }
+        });
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));

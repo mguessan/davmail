@@ -14,6 +14,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URISyntaxException;
 
 /**
  * About frame
@@ -49,29 +50,11 @@ public class AboutFrame extends JFrame {
             public void hyperlinkUpdate(HyperlinkEvent hle) {
                 if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
                     try {
-                        // trigger ClassNotFoundException
-                        ClassLoader classloader = AboutFrame.class.getClassLoader();
-                        classloader.loadClass("java.awt.Desktop");
-
-                        // Open link in default browser
-                        AwtDesktopBrowser.browse(hle.getURL().toURI());
-                        dispose();
-                    } catch (ClassNotFoundException e) {
-                        DavGatewayTray.debug("Java 6 Desktop class not available");
-                        // failover : try SWT
-                        try {
-                            // trigger ClassNotFoundException
-                            ClassLoader classloader = AboutFrame.class.getClassLoader();
-                            classloader.loadClass("org.eclipse.swt.program.Program");
-                            SwtDesktopBrowser.browse(hle.getURL().toURI());
-                        } catch (ClassNotFoundException e2) {
-                            DavGatewayTray.error("Open link not supported (tried AWT Desktop and SWT Program");
-                        } catch (Exception e2) {
-                            DavGatewayTray.error("Unable to open link", e2);
-                        }
-                    } catch (Exception e) {
+                        DesktopBrowser.browse(hle.getURL().toURI());
+                    } catch (URISyntaxException e) {
                         DavGatewayTray.error("Unable to open link", e);
                     }
+                    dispose();
                 }
             }
         });
