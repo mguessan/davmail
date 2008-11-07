@@ -72,6 +72,14 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     }
 
     public void init() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowGUI();
+            }
+        });
+    }
+
+    public void createAndShowGUI() {
         // set native look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
