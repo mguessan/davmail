@@ -3,8 +3,6 @@ package davmail.smtp;
 import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -21,7 +19,7 @@ public class SmtpConnection extends AbstractConnection {
     protected static final int RECIPIENT = 3;
     protected static final int MAILDATA = 4;
     protected static final int LOGIN = 5;
-    protected static final int PASSWORD = 6;
+    public static final int PASSWORD = 6;
 
     // Initialize the streams and start the thread
     public SmtpConnection(Socket clientSocket) {
@@ -147,26 +145,16 @@ public class SmtpConnection extends AbstractConnection {
             sendClient("235 OK Authenticated");
             state = AUTHENTICATED;
         } catch (Exception e) {
+            DavGatewayTray.error(e);
             String message = e.getMessage();
             if (message == null) {
                 message = e.toString();
             }
-            DavGatewayTray.error(message);
             message = message.replaceAll("\\n", " ");
             sendClient("554 Authenticated failed " + message);
             state = INITIAL;
         }
 
-    }
-
-    protected String base64Encode(String value) {
-        BASE64Encoder encoder = new BASE64Encoder();
-        return encoder.encode(value.getBytes());
-    }
-
-    protected String base64Decode(String value) throws IOException {
-        BASE64Decoder decoder = new BASE64Decoder();
-        return new String(decoder.decodeBuffer(value));
     }
 
     /**

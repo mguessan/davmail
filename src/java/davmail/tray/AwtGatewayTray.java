@@ -10,12 +10,9 @@ import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.net.URL;
-import java.io.IOException;
 
 /**
  * Tray icon handler based on java 1.6
@@ -24,35 +21,53 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected AwtGatewayTray() {
     }
 
-    // LOCK for synchronized block
-    protected static final Object LOCK = new Object();
-
     private static TrayIcon trayIcon = null;
     private static Image image = null;
     private static Image image2 = null;
+    private static Image inactiveImage = null;
+    private boolean isActive = true;
 
     public Image getFrameIcon() {
         return image;
     }
 
     public void switchIcon() {
-        synchronized (LOCK) {
-            if (trayIcon.getImage() == image) {
-                trayIcon.setImage(image2);
-            } else {
-                trayIcon.setImage(image);
+        isActive = true;
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                if (trayIcon.getImage() == image) {
+                    trayIcon.setImage(image2);
+                } else {
+                    trayIcon.setImage(image);
+                }
             }
-        }
+        });
     }
 
     public void resetIcon() {
-        synchronized (LOCK) {
-            trayIcon.setImage(image);
-        }
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                trayIcon.setImage(image);
+            }
+        });
     }
 
-    public void displayMessage(String message, Priority priority) {
-        synchronized (LOCK) {
+    public void inactiveIcon() {
+        isActive = false;
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                trayIcon.setImage(inactiveImage);
+            }
+        });
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void displayMessage(final String message, final Priority priority) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
             if (trayIcon != null) {
                 TrayIcon.MessageType messageType = null;
                 if (priority == Priority.INFO) {
@@ -67,8 +82,8 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 }
                 trayIcon.setToolTip("DavMail gateway \n" + message);
             }
-        }
-
+            }
+        });
     }
 
     public void init() {
@@ -79,7 +94,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
-    public void createAndShowGUI() {
+    
+
+    protected void createAndShowGUI() {
         // set native look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -89,21 +106,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();
-        // load an image
-        ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-        try {
-            URL imageUrl = classloader.getResource("tray.png");
-            image = ImageIO.read(imageUrl);
-        } catch (IOException e) {
-            DavGatewayTray.warn("Unable to load image", e);
-        }
-
-        try {
-            URL imageUrl2 = classloader.getResource("tray2.png");
-            image2 = ImageIO.read(imageUrl2);
-        } catch (IOException e) {
-            DavGatewayTray.warn("Unable to load image", e);
-        }
+        image = DavGatewayTray.loadImage("tray.png");
+        image2 = DavGatewayTray.loadImage("tray.png");
+        inactiveImage = DavGatewayTray.loadImage("trayinactive.png");
 
         // create a popup menu
         PopupMenu popup = new PopupMenu();

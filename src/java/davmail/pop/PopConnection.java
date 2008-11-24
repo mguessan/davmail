@@ -75,7 +75,6 @@ public class PopConnection extends AbstractConnection {
                     break;
                 }
 
-
                 tokens = new StringTokenizer(line);
                 if (tokens.hasMoreTokens()) {
                     String command = tokens.nextToken();
@@ -117,12 +116,8 @@ public class PopConnection extends AbstractConnection {
                                 // can not send error to client after a socket exception
                                 DavGatewayTray.warn("Client closed connection ", e);
                             } catch (Exception e) {
-                                String message = e.getMessage();
-                                if (message == null) {
-                                    message = "Authentication failed: "+e.toString();
-                                }
-                                DavGatewayTray.error(message);
-                                sendERR(message);
+                                DavGatewayTray.error(e);
+                                sendERR(e);
                             }
                         }
                     } else if ("CAPA".equalsIgnoreCase(command)) {
@@ -223,7 +218,7 @@ public class PopConnection extends AbstractConnection {
                 os.flush();
             }
         } catch (IOException e) {
-            DavGatewayTray.error(e.getMessage());
+            DavGatewayTray.error(e);
             try {
                 sendERR(e.getMessage());
             } catch (IOException e2) {
@@ -237,6 +232,14 @@ public class PopConnection extends AbstractConnection {
 
     public void sendOK(String message) throws IOException {
         sendClient("+OK ", message);
+    }
+
+    public void sendERR(Exception e) throws IOException {
+        String message = e.getMessage();
+        if (message == null) {
+            message = e.toString();
+        }
+        sendERR(message);
     }
 
     public void sendERR(String message) throws IOException {

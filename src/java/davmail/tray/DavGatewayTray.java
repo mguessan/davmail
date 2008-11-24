@@ -1,10 +1,14 @@
 package davmail.tray;
 
 import davmail.Settings;
+import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.io.IOException;
+import java.net.URL;
 
 
 /**
@@ -33,9 +37,19 @@ public class DavGatewayTray {
     }
 
     public static void resetIcon() {
-        if (davGatewayTray != null) {
+        if (davGatewayTray != null && isActive()) {
             davGatewayTray.resetIcon();
         }
+    }
+
+    public static void inactiveIcon() {
+        if (davGatewayTray != null) {
+            davGatewayTray.inactiveIcon();
+        }
+    }
+
+    public static boolean isActive() {
+        return davGatewayTray == null || davGatewayTray.isActive();
     }
 
     protected static void displayMessage(String message, Priority priority) {
@@ -47,8 +61,21 @@ public class DavGatewayTray {
 
     protected static void displayMessage(String message, Exception e, Priority priority) {
         LOGGER.log(priority, message, e);
-        if (davGatewayTray != null) {
-            davGatewayTray.displayMessage(message + " " + e + " " + e.getMessage(), priority);
+        if (davGatewayTray != null
+                && (!(e instanceof NetworkDownException) || isActive())) {
+            StringBuilder buffer = new StringBuilder();
+            if (message != null) {
+                buffer.append(message).append(" ");
+            }
+            if (e.getMessage() != null) {
+                buffer.append(e.getMessage());
+            } else {
+                buffer.append(e.toString());
+            }
+            davGatewayTray.displayMessage(buffer.toString(), priority);
+        }
+        if (davGatewayTray != null && e instanceof NetworkDownException) {
+            davGatewayTray.inactiveIcon();
         }
     }
 
@@ -66,6 +93,10 @@ public class DavGatewayTray {
 
     public static void error(String message) {
         displayMessage(message, Priority.ERROR);
+    }
+
+    public static void error(Exception e) {
+        displayMessage(null, e, Priority.ERROR);
     }
 
     public static void debug(String message, Exception e) {
@@ -112,5 +143,23 @@ public class DavGatewayTray {
                 DavGatewayTray.warn("No system tray support found (tried SWT and native java)");
             }
         }
+    }
+
+    /**
+     * Load image with current class loader.
+     *
+     * @param fileName image resource file name
+     * @return image
+     */
+    public static Image loadImage(String fileName) {
+        Image result = null;
+        try {
+            ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+            URL imageUrl = classloader.getResource(fileName);
+            result = ImageIO.read(imageUrl);
+        } catch (IOException e) {
+            DavGatewayTray.warn("Unable to load image", e);
+        }
+        return result;
     }
 }

@@ -34,7 +34,7 @@ public class ExchangeSessionFactory {
             if (checkNetwork()) {
                 throw e;
             } else {
-                throw new IOException("All network interfaces down !");
+                throw new NetworkDownException("All network interfaces down !");
             }
         }
     }
@@ -64,12 +64,16 @@ public class ExchangeSessionFactory {
             String message = "DavMail configuration exception: \n";
             if (checkNetwork()) {
                 message += "Unknown host " + exc.getMessage();
+                ExchangeSession.LOGGER.error(message, exc);
+                throw new IOException(message);
             } else {
                 message += "All network interfaces down !";
+                ExchangeSession.LOGGER.error(message, exc);
+                throw new NetworkDownException(message);
             }
 
-            ExchangeSession.LOGGER.error(message, exc);
-            throw new IOException(message);
+        } catch (NetworkDownException exc) {
+            throw exc;
         } catch (Exception exc) {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
             throw new IOException("DavMail configuration exception: \n" + exc.getMessage());

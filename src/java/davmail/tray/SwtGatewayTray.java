@@ -10,17 +10,8 @@ import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.ToolTip;
-import org.eclipse.swt.widgets.Tray;
-import org.eclipse.swt.widgets.TrayItem;
+import org.eclipse.swt.widgets.*;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
@@ -32,71 +23,96 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected SwtGatewayTray() {
     }
 
-    // LOCK for synchronized block
-    protected static final Object LOCK = new Object();
-
     private static TrayItem trayItem = null;
     private static java.awt.Image awtImage = null;
     private static Image image = null;
     private static Image image2 = null;
+    private static Image inactiveImage = null;
     private static Display display;
     private static Shell shell;
+    private boolean isActive = true;
 
     public java.awt.Image getFrameIcon() {
         return awtImage;
     }
 
     public void switchIcon() {
-        display.syncExec(
-                new Runnable() {
-                    public void run() {
-                        if (trayItem.getImage() == image) {
-                            trayItem.setImage(image2);
-                        } else {
-                            trayItem.setImage(image);
-                        }
-                    }
-                });
+        isActive = true;
+        display.syncExec(new Runnable() {
+            public void run() {
+                if (trayItem.getImage() == image) {
+                    trayItem.setImage(image2);
+                } else {
+                    trayItem.setImage(image);
+                }
+            }
+        });
 
     }
 
     public void resetIcon() {
-        display.syncExec(
-                new Runnable() {
-                    public void run() {
-                        trayItem.setImage(image);
-                    }
-                });
+        display.syncExec(new Runnable() {
+            public void run() {
+                trayItem.setImage(image);
+            }
+        });
+    }
+
+    public void inactiveIcon() {
+        isActive = false;
+        display.syncExec(new Runnable() {
+            public void run() {
+                trayItem.setImage(inactiveImage);
+            }
+        });
+    }
+
+    public boolean isActive() {
+        return isActive;
     }
 
     public void displayMessage(final String message, final Priority priority) {
-        synchronized (LOCK) {
-            if (trayItem != null) {
-                display.asyncExec(
-                        new Runnable() {
-                            public void run() {
-                                int messageType = 0;
-                                if (priority == Priority.INFO) {
-                                    messageType = SWT.ICON_INFORMATION;
-                                } else if (priority == Priority.WARN) {
-                                    messageType = SWT.ICON_WARNING;
-                                } else if (priority == Priority.ERROR) {
-                                    messageType = SWT.ICON_ERROR;
-                                }
-                                if (messageType == 0) {
-                                    trayItem.setToolTipText("DavMail gateway \n" + message);
-                                } else {
-                                    final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
-                                    toolTip.setText("DavMail gateway");
-                                    toolTip.setMessage(message);
-                                    trayItem.setToolTip(toolTip);
-                                    toolTip.setVisible(true);
-                                }
-                            }
-                        });
-            }
+        if (trayItem != null) {
+            display.asyncExec(new Runnable() {
+                public void run() {
+                    int messageType = 0;
+                    if (priority == Priority.INFO) {
+                        messageType = SWT.ICON_INFORMATION;
+                    } else if (priority == Priority.WARN) {
+                        messageType = SWT.ICON_WARNING;
+                    } else if (priority == Priority.ERROR) {
+                        messageType = SWT.ICON_ERROR;
+                    }
+                    if (messageType == 0) {
+                        trayItem.setToolTipText("DavMail gateway \n" + message);
+                    } else {
+                        final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
+                        toolTip.setText("DavMail gateway");
+                        toolTip.setMessage(message);
+                        trayItem.setToolTip(toolTip);
+                        toolTip.setVisible(true);
+                    }
+                }
+            });
         }
+    }
 
+    /**
+     * Load image with current class loader.
+     *
+     * @param fileName image resource file name
+     * @return image
+     */
+    public static Image loadSwtImage(String fileName) {
+        Image result = null;
+        try {
+            ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+            URL imageUrl = classloader.getResource(fileName);
+            result = new Image(display, imageUrl.openStream());
+        } catch (IOException e) {
+            DavGatewayTray.warn("Unable to load image", e);
+        }
+        return result;
     }
 
     public void init() {
@@ -123,22 +139,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     trayItem = new TrayItem(tray, SWT.NONE);
                     trayItem.setToolTipText("DavMail gateway");
 
-                    // load an image
-                    ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-                    try {
-                        URL imageUrl = classloader.getResource("tray.png");
-                        image = new Image(display, imageUrl.openStream());
-                        awtImage = ImageIO.read(imageUrl);
-                    } catch (IOException e) {
-                        DavGatewayTray.warn("Unable to load image", e);
-                    }
-
-                    try {
-                        URL imageUrl2 = classloader.getResource("tray2.png");
-                        image2 = new Image(display, imageUrl2.openStream());
-                    } catch (IOException e) {
-                        DavGatewayTray.warn("Unable to load image", e);
-                    }
+                    awtImage = DavGatewayTray.loadImage("tray.png");
+                    image = loadSwtImage("tray.png");
+                    image2 = loadSwtImage("tray2.png");
+                    inactiveImage = loadSwtImage("trayinactive.png");
 
                     trayItem.setImage(image);
 

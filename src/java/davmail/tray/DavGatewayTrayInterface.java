@@ -10,6 +10,8 @@ import java.awt.*;
 public interface DavGatewayTrayInterface {
     void switchIcon();
     void resetIcon();
+    void inactiveIcon();
+    boolean isActive();
     Image getFrameIcon();
     void displayMessage(String message, Priority priority);
     void init();
