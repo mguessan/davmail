@@ -49,6 +49,7 @@ public class Settings {
                 SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
                 SETTINGS.put("davmail.popPort", "1110");
                 SETTINGS.put("davmail.smtpPort", "1025");
+                SETTINGS.put("davmail.caldavPort", "1080");
                 SETTINGS.put("davmail.keepDelay", "30");
                 SETTINGS.put("davmail.allowRemote", "false");
                 SETTINGS.put("davmail.bindAddress", "");

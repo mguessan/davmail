@@ -19,7 +19,7 @@ public class PopServer extends AbstractServer {
      * @param port pop listen port, 110 if not defined (0)
      */
     public PopServer(int port) throws IOException {
-        super(port, PopServer.DEFAULT_PORT);
+        super("PopServer", port, PopServer.DEFAULT_PORT);
     }
 
     public AbstractConnection createConnectionHandler(Socket clientSocket) {

@@ -23,7 +23,7 @@ public class SmtpConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public SmtpConnection(Socket clientSocket) {
-        super(clientSocket);
+        super("SmtpConnection", clientSocket);
     }
 
     public void run() {

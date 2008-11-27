@@ -21,6 +21,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField urlField;
     protected JTextField popPortField;
     protected JTextField smtpPortField;
+    protected JTextField caldavPortField;
     protected JTextField keepDelayField;
 
     JCheckBox enableProxyField;
@@ -50,13 +51,14 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getSettingsPanel() {
-        JPanel settingsPanel = new JPanel(new GridLayout(4, 2));
+        JPanel settingsPanel = new JPanel(new GridLayout(5, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
         urlField.setToolTipText("Base outlook web access URL");
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
+        caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
         keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);
         keepDelayField.setToolTipText("Number of days to keep messages in trash");
 
@@ -64,6 +66,7 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(settingsPanel, "OWA url: ", urlField);
         addSettingComponent(settingsPanel, "Local POP port: ", popPortField);
         addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField);
+        addSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField);
         addSettingComponent(settingsPanel, "Keep Delay: ", keepDelayField);
         return settingsPanel;
     }
@@ -150,6 +153,7 @@ public class SettingsFrame extends JFrame {
         urlField.setText(Settings.getProperty("davmail.url"));
         popPortField.setText(Settings.getProperty("davmail.popPort"));
         smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
+        caldavPortField.setText(Settings.getProperty("davmail.caldavPort"));
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField.setSelected(enableProxy);
@@ -215,6 +219,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.url", urlField.getText());
                 Settings.setProperty("davmail.popPort", popPortField.getText());
                 Settings.setProperty("davmail.smtpPort", smtpPortField.getText());
+                Settings.setProperty("davmail.caldavPort", caldavPortField.getText());
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
                 Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
                 Settings.setProperty("davmail.proxyHost", httpProxyField.getText());

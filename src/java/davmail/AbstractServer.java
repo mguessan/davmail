@@ -18,11 +18,13 @@ public abstract class AbstractServer extends Thread {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      *
+     * @param name        thread name
      * @param port        tcp socket chosen port
      * @param defaultPort tcp socket default port
      * @throws java.io.IOException unable to create server socket
      */
-    public AbstractServer(int port, int defaultPort) throws IOException {
+    public AbstractServer(String name, int port, int defaultPort) throws IOException {
+        super(name);
         if (port == 0) {
             this.port = defaultPort;
         } else {
@@ -52,6 +54,8 @@ public abstract class AbstractServer extends Thread {
             //noinspection InfiniteLoopStatement
             while (true) {
                 clientSocket = serverSocket.accept();
+                // set default timeout to 5 minutes
+                clientSocket.setSoTimeout(300000);
                 DavGatewayTray.debug("Connection from " + clientSocket.getInetAddress() + " on port " + port);
                 // only accept localhost connections for security reasons
                 if (Settings.getBooleanProperty("davmail.allowRemote") ||

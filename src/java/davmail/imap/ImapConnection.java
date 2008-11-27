@@ -20,7 +20,7 @@ public class ImapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public ImapConnection(Socket clientSocket) {
-        super(clientSocket);
+        super("ImapConnection", clientSocket);
     }
 
     public void run() {

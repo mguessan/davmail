@@ -2,12 +2,15 @@ package davmail;
 
 import davmail.exchange.ExchangeSession;
 import davmail.tray.DavGatewayTray;
+import davmail.smtp.SmtpConnection;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+
+import org.apache.commons.httpclient.util.Base64;
 
 /**
  * Generic connection common to pop3 and smtp implementations
@@ -26,11 +29,12 @@ public class AbstractConnection extends Thread {
     protected ExchangeSession session;
 
     // Initialize the streams and start the thread
-    public AbstractConnection(Socket clientSocket) {
+    public AbstractConnection(String name, Socket clientSocket) {
+        super(name+"-"+clientSocket.getPort());
         this.client = clientSocket;
         try {
             //noinspection IOResourceOpenedButNotSafelyClosed
-            in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
             os = client.getOutputStream();
         } catch (IOException e) {
             close();
@@ -38,10 +42,21 @@ public class AbstractConnection extends Thread {
         }
     }
 
+    /**
+     * Send message to client followed by CRLF.
+     * @param message message
+     * @throws IOException on error
+     */
     public void sendClient(String message) throws IOException {
         sendClient(null, message);
     }
 
+    /**
+     * Send prefix and message to client followed by CRLF.
+     * @param prefix prefix
+     * @param message message
+     * @throws IOException on error
+     */
     public void sendClient(String prefix, String message) throws IOException {
         StringBuffer logBuffer = new StringBuffer("> ");
         if (prefix != null) {
@@ -57,6 +72,19 @@ public class AbstractConnection extends Thread {
     }
 
     /**
+     * Send only bytes to client.
+     * @param messageBytes content
+     * @throws IOException on error
+     */
+    public void sendClient(byte[] messageBytes) throws IOException {
+        StringBuffer logBuffer = new StringBuffer("> ");
+        logBuffer.append(new String(messageBytes));
+        DavGatewayTray.debug(logBuffer.toString());
+        os.write(messageBytes);
+        os.flush();
+    }
+
+    /**
      * Read a line from the client connection.
      * Log message to stdout
      *
@@ -65,10 +93,17 @@ public class AbstractConnection extends Thread {
      */
     public String readClient() throws IOException {
         String line = in.readLine();
-        if (line != null && !line.startsWith("PASS")) {
-            DavGatewayTray.debug("< " + line);
-        } else {
-            DavGatewayTray.debug("< PASS ********");
+        // TODO : add basic authorization check
+        if (line != null) {
+            if (line.startsWith("PASS")) {
+                DavGatewayTray.debug("< PASS ********");
+            } else if (state == SmtpConnection.PASSWORD){
+                DavGatewayTray.debug("< ********");
+            } else if (line.startsWith("Authorization:")){
+                DavGatewayTray.debug("< Authorization: ********");
+            } else {
+                DavGatewayTray.debug("< " + line);
+            }
         }
         DavGatewayTray.switchIcon();
         return line;
@@ -106,4 +141,11 @@ public class AbstractConnection extends Thread {
         }
     }
 
+    protected String base64Encode(String value) {
+        return new String(Base64.encode(value.getBytes()));
+    }
+
+    protected String base64Decode(String value) throws IOException {
+        return new String(Base64.decode(value.getBytes()));
+    }
 }

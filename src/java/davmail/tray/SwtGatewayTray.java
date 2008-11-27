@@ -128,7 +128,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             DavGatewayTray.warn("Unable to set look and feel");
         }
 
-        new Thread() {
+        new Thread("SWT") {
             public void run() {
                 display = new Display();
                 shell = new Shell(display);

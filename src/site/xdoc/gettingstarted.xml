@@ -41,6 +41,11 @@
                         <td>25</td>
                     </tr>
                     <tr>
+                        <td>Local Caldav HTTP port</td>
+                        <td>Local Caldav server port to configure in Caldav (calendar) client configuration</td>
+                        <td>80</td>
+                    </tr>
+                    <tr>
                         <td>Keep Delay</td>
                         <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
                         <td>30</td>

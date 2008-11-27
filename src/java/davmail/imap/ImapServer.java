@@ -18,7 +18,7 @@ public class ImapServer extends AbstractServer {
      * Start the thread.
      */
     public ImapServer(int port) throws IOException {
-        super(port, ImapServer.DEFAULT_PORT);
+        super("ImapServer", port, ImapServer.DEFAULT_PORT);
     }
 
     public AbstractConnection createConnectionHandler(Socket clientSocket) {

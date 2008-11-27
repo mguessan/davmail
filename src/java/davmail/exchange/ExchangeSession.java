@@ -1,6 +1,7 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.tray.DavGatewayTray;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
@@ -18,24 +19,20 @@ import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
+import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.PropFindMethod;
 
 import javax.mail.internet.MimeUtility;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamConstants;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.SimpleTimeZone;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -75,6 +72,7 @@ public class ExchangeSession {
     private String deleteditemsUrl;
     private String sendmsgUrl;
     private String draftsUrl;
+    private String calendarUrl;
 
     /**
      * Base user mailboxes path (used to select folder)
@@ -92,6 +90,7 @@ public class ExchangeSession {
         // each session
         dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        LOGGER.debug("Session " + this + " created");
     }
 
     /**
@@ -229,6 +228,7 @@ public class ExchangeSession {
     }
 
     void login(String userName, String password) throws IOException {
+        LOGGER.debug("Session " + this + " login");
         try {
             baseUrl = Settings.getProperty("davmail.url");
 
@@ -280,7 +280,12 @@ public class ExchangeSession {
             String queryString = method.getQueryString();
             if (queryString != null && queryString.endsWith("reason=2")) {
                 method.releaseConnection();
-                throw new HttpException("Authentication failed: invalid user or password");
+                if (userName != null && userName.contains("\\")) {
+                    throw new HttpException("Authentication failed: invalid user or password");
+                } else {
+                    throw new HttpException("Authentication failed: invalid user or password, " +
+                            "retry with domain\\user");
+                }
             }
 
             mailPath = getMailPath(method);
@@ -298,6 +303,7 @@ public class ExchangeSession {
             reqProps.add("urn:schemas:httpmail:deleteditems");
             reqProps.add("urn:schemas:httpmail:sendmsg");
             reqProps.add("urn:schemas:httpmail:drafts");
+            reqProps.add("urn:schemas:httpmail:calendar");
 
             Enumeration foldersEnum = wdr.propfindMethod(0, reqProps);
             if (!foldersEnum.hasMoreElements()) {
@@ -324,6 +330,10 @@ public class ExchangeSession {
                 }
                 if ("drafts".equals(inboxProp.getLocalName())) {
                     draftsUrl = URIUtil.decode(inboxProp.
+                            getPropertyAsString());
+                }
+                if ("calendar".equals(inboxProp.getLocalName())) {
+                    calendarUrl = URIUtil.decode(inboxProp.
                             getPropertyAsString());
                 }
             }
@@ -378,6 +388,7 @@ public class ExchangeSession {
      * @throws IOException if unable to close Webdav context
      */
     public void close() throws IOException {
+        LOGGER.debug("Session " + this + " closed");
         wdr.close();
     }
 
@@ -405,15 +416,20 @@ public class ExchangeSession {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + subject + ".EML");
 
         PutMethod putmethod = new PutMethod(messageUrl);
+        // TODO : test, bcc ?
+        putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
         putmethod.setRequestBody(messageBody);
+        try {
+            int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
-        int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
-
-        if (code == HttpURLConnection.HTTP_OK) {
-            LOGGER.warn("Overwritten message " + messageUrl);
-        } else if (code != HttpURLConnection.HTTP_CREATED) {
-            throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
+            if (code == HttpURLConnection.HTTP_OK) {
+                LOGGER.warn("Overwritten message " + messageUrl);
+            } else if (code != HttpURLConnection.HTTP_CREATED) {
+                throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
+            }
+        } finally {
+            putmethod.releaseConnection();
         }
     }
 
@@ -706,6 +722,382 @@ public class ExchangeSession {
             LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
         }
 
+    }
+
+    public WebdavResource getWebDavResource() throws IOException {
+        return wdr;
+    }
+
+    public class Event {
+        protected String href;
+        protected String etag;
+
+        public String getICS() throws IOException {
+            DavGatewayTray.debug("Get event: " + href);
+            StringBuilder buffer = new StringBuilder();
+            GetMethod method = new GetMethod(URIUtil.encodePath(href));
+            method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+            method.setRequestHeader("Translate", "f");
+            BufferedReader eventReader = null;
+            try {
+                int status = wdr.retrieveSessionInstance().executeMethod(method);
+                if (status != HttpStatus.SC_OK) {
+                    DavGatewayTray.warn("Unable to get event at " + href + " status: " + status);
+                }
+                eventReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
+                String line;
+                boolean inbody = false;
+                while ((line = eventReader.readLine()) != null) {
+                    if ("BEGIN:VCALENDAR".equals(line)) {
+                        inbody = true;
+                    }
+                    if (inbody) {
+                        buffer.append(line);
+                        buffer.append((char) 13);
+                        buffer.append((char) 10);
+                    }
+                    if ("END:VCALENDAR".equals(line)) {
+                        inbody = false;
+                    }
+                }
+
+            } finally {
+                if (eventReader != null) {
+                    try {
+                        eventReader.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Error parsing event at " + method.getPath());
+                    }
+                }
+                method.releaseConnection();
+            }
+            return buffer.toString();
+        }
+
+        public String getPath() throws URIException {
+            return href.substring(calendarUrl.length());
+        }
+
+        public String getEtag() {
+            return etag;
+        }
+    }
+
+    public List<Event> getAllEvents() throws IOException {
+        List<Event> events = new ArrayList<Event>();
+        String searchRequest = "<?xml version=\"1.0\"?>\n" +
+                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
+                "        <d:sql> Select \"DAV:getetag\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
+                "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 1\n" +
+                "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
+                "                AND \"urn:schemas:calendar:dtstart\" > '2008/11/01 00:00:00'\n" +
+                "                ORDER BY \"urn:schemas:calendar:dtstart\" ASC\n" +
+                "         </d:sql>\n" +
+                "</d:searchrequest>";
+        SearchMethod searchMethod = new SearchMethod(calendarUrl, searchRequest);
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
+            // Also accept OK sent by buggy servers.
+            if (status != HttpStatus.SC_MULTI_STATUS
+                    && status != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                throw ex;
+            }
+
+            Enumeration calendarEnum = searchMethod.getResponses();
+            while (calendarEnum.hasMoreElements()) {
+                ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
+                        nextElement();
+                String href = calendarResponse.getHref();
+                Event event = new Event();
+                event.href = URIUtil.decode(href);
+                String contentclass = null;
+                Enumeration propertiesEnumeration = calendarResponse.getProperties();
+                while (propertiesEnumeration.hasMoreElements()) {
+                    Property property = (Property) propertiesEnumeration.nextElement();
+                    if ("getetag".equals(property.getLocalName())) {
+                        event.etag = property.getPropertyAsString();
+                    }
+                    /*
+                    if ("contentclass".equals(property.getLocalName())) {
+                        contentclass = property.getPropertyAsString();
+                    }
+                    */
+                }
+                // filter folder and non appointment objects
+                //if ("urn:content-classes:appointment".equals(contentclass)) {
+                events.add(event);
+                //}
+            }
+        } finally {
+            searchMethod.releaseConnection();
+        }
+        return events;
+    }
+
+    public Event getEvent(String path) throws IOException {
+        // TODO : refactor with getAllEvents
+        Event event = new Event();
+        final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
+        EVENT_REQUEST_PROPERTIES.add("DAV:getetag");
+
+        //wdr.setDebug(4);
+        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl + "/" + path, 0, EVENT_REQUEST_PROPERTIES);
+        //wdr.setDebug(0);
+        if (!calendarEnum.hasMoreElements()) {
+            throw new IOException("Unable to get calendar event");
+        }
+        ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
+                nextElement();
+        String href = calendarResponse.getHref();
+        event.href = URIUtil.decode(href);
+        Enumeration propertiesEnumeration = calendarResponse.getProperties();
+        while (propertiesEnumeration.hasMoreElements()) {
+            Property property = (Property) propertiesEnumeration.nextElement();
+            if ("getetag".equals(property.getLocalName())) {
+                event.etag = property.getPropertyAsString();
+            }
+        }
+        return event;
+    }
+
+    public int createOrUpdateEvent(String path, String icsBody, String etag) throws IOException {
+        String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
+        String uid = path.substring(0, path.lastIndexOf("."));
+        PutMethod putmethod = new PutMethod(messageUrl);
+        putmethod.setRequestHeader("Translate", "f");
+        putmethod.setRequestHeader("Overwrite", "f");
+        if (etag != null) {
+            // TODO
+            putmethod.setRequestHeader("If-Match", etag);
+        }
+        putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        StringBuilder body = new StringBuilder();
+        body.append("Content-Transfer-Encoding: 7bit\n" +
+                "Content-class: urn:content-classes:appointment\n" +
+                "MIME-Version: 1.0\n" +
+                "Content-Type: multipart/alternative;\n" +
+                "\tboundary=\"----=_NextPart_" + uid + "\"\n" +
+                "\n" +
+                "This is a multi-part message in MIME format.\n" +
+                "\n" +
+                "------=_NextPart_" + uid + "\n" +
+                "Content-class: urn:content-classes:appointment\n" +
+                "Content-Type: text/calendar;\n" +
+                "\tmethod=REQUEST;\n" +
+                "\tcharset=\"utf-8\"\n" +
+                "Content-Transfer-Encoding: 8bit\n\n");
+        body.append(new String(icsBody.getBytes("UTF-8"), "ISO-8859-1"));
+        body.append("------=_NextPart_" + uid + "--\n");
+        putmethod.setRequestBody(body.toString());
+        int status;
+        try {
+            status = wdr.retrieveSessionInstance().executeMethod(putmethod);
+
+            if (status == HttpURLConnection.HTTP_OK) {
+                LOGGER.warn("Overwritten event " + messageUrl);
+            } else if (status != HttpURLConnection.HTTP_CREATED) {
+                throw new IOException("Unable to create message " + status + " " + putmethod.getStatusLine());
+            }
+        } finally {
+            putmethod.releaseConnection();
+        }
+        return status;
+    }
+
+    public int deleteEvent(String path) throws IOException {
+        //wdr.setDebug(4);
+        wdr.deleteMethod(calendarUrl + "/" + path);
+        //wdr.setDebug(0);
+        int status = wdr.getStatusCode();
+        if (status == HttpStatus.SC_NOT_FOUND) {
+            status = HttpStatus.SC_OK;
+        }
+        return status;
+    }
+
+    public String getCalendarEtag() throws IOException {
+        String etag = null;
+        //wdr.setDebug(4);
+        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0);
+        //wdr.setDebug(0);
+        if (!calendarEnum.hasMoreElements()) {
+            throw new IOException("Unable to get calendar object");
+        }
+        while (calendarEnum.hasMoreElements()) {
+            ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
+                    nextElement();
+            Enumeration propertiesEnumeration = calendarResponse.getProperties();
+            while (propertiesEnumeration.hasMoreElements()) {
+                Property property = (Property) propertiesEnumeration.nextElement();
+                if ("http://schemas.microsoft.com/repl/".equals(property.getNamespaceURI())
+                        && "contenttag".equals(property.getLocalName())) {
+                    etag = property.getPropertyAsString();
+                }
+            }
+        }
+        if (etag == null) {
+            throw new IOException("Unable to get calendar etag");
+        }
+        return etag;
+    }
+
+    /**
+     * Get current Exchange user name
+     *
+     * @return user name
+     * @throws java.io.IOException on error
+     */
+    public String getUserName() throws IOException {
+        int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+        if (index >= 0 && mailPath.endsWith("/")) {
+            return mailPath.substring(index + 1, mailPath.length() - 1);
+        } else {
+            throw new IOException("Invalid mail path: " + mailPath);
+        }
+    }
+
+    /**
+     * Get current user email
+     *
+     * @return user email
+     * @throws java.io.IOException on error
+     */
+    public String getEmail() throws IOException {
+        String email = null;
+        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + getUserName());
+        // force XML response with Internet Explorer header
+        getMethod.setRequestHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
+        XMLStreamReader reader = null;
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            if (status != HttpStatus.SC_OK) {
+                throw new IOException("Unable to get user email from: " + getMethod.getPath());
+            }
+            XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+            inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
+            inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
+
+            reader = inputFactory.createXMLStreamReader(getMethod.getResponseBodyAsStream());
+            boolean inEM = false;
+            while (reader.hasNext()) {
+                int event = reader.next();
+                if (event == XMLStreamConstants.START_ELEMENT && "EM".equals(reader.getLocalName())) {
+                    inEM = true;
+                } else if (event == XMLStreamConstants.CHARACTERS && inEM) {
+                    email = reader.getText();
+                    inEM = false;
+                }
+            }
+        } catch (XMLStreamException e) {
+            throw new IOException(e.getMessage());
+        } finally {
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                LOGGER.error(e);
+            }
+            getMethod.releaseConnection();
+        }
+        if (email == null) {
+            throw new IOException("Unable to get user email from: " + getMethod.getPath());
+        }
+
+        return email;
+    }
+
+    public String getFreebusy(Map<String, String> valueMap) throws IOException {
+        String result = null;
+
+        String startDateValue = valueMap.get("DTSTART");
+        String endDateValue = valueMap.get("DTEND");
+        String attendee = valueMap.get("ATTENDEE");
+        if (attendee.startsWith("mailto:")) {
+            attendee = attendee.substring("mailto:".length());
+        }
+        int interval = 30;
+
+        SimpleDateFormat icalParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+        icalParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+
+        SimpleDateFormat shortIcalParser = new SimpleDateFormat("yyyyMMdd");
+        shortIcalParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+
+        SimpleDateFormat owaFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        owaFormatter.setTimeZone(new SimpleTimeZone(0, "GMT"));
+
+        String url = null;
+        Date startDate = null;
+        Date endDate = null;
+        try {
+            if (startDateValue.length() == 8) {
+                startDate = shortIcalParser.parse(startDateValue);
+            } else {
+                startDate = icalParser.parse(startDateValue);
+            }
+            if (endDateValue.length() == 8) {
+            endDate = shortIcalParser.parse(endDateValue);
+            } else {
+                endDate = icalParser.parse(endDateValue);
+            }
+            url = "/public/?cmd=freebusy" +
+                    "&start=" + owaFormatter.format(startDate) +
+                    "&end=" + owaFormatter.format(endDate) +
+                    "&interval=" + interval +
+                    "&u=SMTP:" + attendee;
+        } catch (ParseException e) {
+            throw new IOException(e.getMessage());
+        }
+
+        GetMethod getMethod = new GetMethod(url);
+        getMethod.setRequestHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
+        getMethod.setRequestHeader("Content-Type", "text/xml");
+
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            if (status != HttpStatus.SC_OK) {
+                throw new IOException("Unable to get free-busy from: " + getMethod.getPath());
+            }
+            // TODO : parse
+            String body = getMethod.getResponseBodyAsString();
+            int startIndex = body.lastIndexOf("<a:fbdata>");
+            int endIndex = body.lastIndexOf("</a:fbdata>");
+            if (startIndex >= 0 && endIndex >= 0) {
+                String fbdata = body.substring(startIndex + "<a:fbdata>".length(), endIndex);
+                Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                currentCal.setTime(startDate);
+
+                StringBuilder busyBuffer = new StringBuilder();
+                boolean isBusy = fbdata.charAt(0) != '0';
+                if (isBusy) {
+                    busyBuffer.append(icalParser.format(currentCal.getTime()));
+                }
+                for (int i = 1; i < fbdata.length(); i++) {
+                    currentCal.add(Calendar.MINUTE, interval);
+                    if (isBusy && fbdata.charAt(i) == '0') {
+                        // busy -> non busy
+                        busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
+                    } else if (!isBusy && fbdata.charAt(i) != '0') {
+                        // non busy -> busy
+                        if (busyBuffer.length() > 0) {
+                            busyBuffer.append(',');
+                        }
+                        busyBuffer.append(icalParser.format(currentCal.getTime()));
+                    }
+                    isBusy = fbdata.charAt(i) != '0';
+                }
+                result = busyBuffer.toString();
+            }
+        } finally {
+            getMethod.releaseConnection();
+        }
+        if (result == null) {
+            throw new IOException("Unable to get user email from: " + getMethod.getPath());
+        }
+
+        return result;
     }
 
 }

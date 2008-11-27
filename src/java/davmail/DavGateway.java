@@ -1,18 +1,18 @@
 package davmail;
 
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.caldav.CaldavServer;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
-
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * DavGateway main class
@@ -23,6 +23,7 @@ public class DavGateway {
 
     private static SmtpServer smtpServer;
     private static PopServer popServer;
+    private static CaldavServer caldavServer;
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
@@ -52,14 +53,21 @@ public class DavGateway {
         if (popPort == 0) {
             popPort = PopServer.DEFAULT_PORT;
         }
+        int caldavPort = Settings.getIntProperty("davmail.caldavPort");
+        if (caldavPort == 0) {
+            caldavPort = CaldavServer.DEFAULT_PORT;
+        }
 
         try {
             smtpServer = new SmtpServer(smtpPort);
             popServer = new PopServer(popPort);
+            caldavServer = new CaldavServer(caldavPort);
             smtpServer.start();
             popServer.start();
+            caldavServer.start();
 
             String message = "DavMail gateway listening on SMTP port " + smtpPort +
+                    ", Caldav port " + caldavPort +
                     " and POP port " + popPort;
             String releasedVersion = getReleasedVersion();
             String currentVersion = getCurrentVersion();
@@ -89,6 +97,14 @@ public class DavGateway {
             popServer.close();
             try {
                 popServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+        if (caldavServer != null) {
+            caldavServer.close();
+            try {
+                caldavServer.join();
             } catch (InterruptedException e) {
                 DavGatewayTray.warn("Exception waiting for listener to die", e);
             }

@@ -25,7 +25,7 @@ public class PopConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public PopConnection(Socket clientSocket) {
-        super(clientSocket);
+        super("PopConnection", clientSocket);
     }
 
     public long getTotalMessagesLength() {
