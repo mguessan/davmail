@@ -61,7 +61,8 @@ public class CaldavConnection extends AbstractConnection {
                 throw new IOException("End of stream reached reading content");
             }
             String result = new String(buffer, 0, actualSize);
-            DavGatewayTray.debug("< " + result);
+            // TODO : create a wire debug level
+            // DavGatewayTray.debug("< " + result);
             return result;
         }
     }

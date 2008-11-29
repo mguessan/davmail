@@ -86,7 +86,8 @@ public class AbstractConnection extends Thread {
     public void sendClient(byte[] messageBytes) throws IOException {
         StringBuffer logBuffer = new StringBuffer("> ");
         logBuffer.append(new String(messageBytes));
-        DavGatewayTray.debug(logBuffer.toString());
+        // TODO : create a wire debug level
+        // DavGatewayTray.debug(logBuffer.toString());
         os.write(messageBytes);
         os.flush();
     }
