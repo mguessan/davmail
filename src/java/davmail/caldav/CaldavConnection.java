@@ -4,20 +4,22 @@ import davmail.AbstractConnection;
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.NetworkDownException;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.util.URIUtil;
 
-import javax.xml.stream.*;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.BufferedReader;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.*;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Handle a caldav connection.
@@ -163,8 +165,7 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("                </C:calendar-home-set>");
 
             buffer.append("                <C:calendar-user-address-set>\n");
-            // TODO
-            buffer.append("                    <D:href>mailto:" + session.getEmail() + "</D:href>\n");
+            buffer.append("                    <D:href>mailto:").append(session.getEmail()).append("</D:href>\n");
             buffer.append("                </C:calendar-user-address-set>");
 
             buffer.append("                <C:schedule-inbox-URL>\n");
@@ -305,7 +306,6 @@ public class CaldavConnection extends AbstractConnection {
             }
             buffer.append("</D:multistatus>");
 
-            // TODO : remove
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
         } else if ("PUT".equals(command) && path.startsWith("/calendar/")) {
             String etag = headers.get("if-match");
