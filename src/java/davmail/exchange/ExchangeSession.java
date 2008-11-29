@@ -419,8 +419,11 @@ public class ExchangeSession {
         // TODO : test, bcc ?
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
-        putmethod.setRequestBody(messageBody);
+        InputStream bodyStream = null;
         try {
+            // use same encoding as client socket reader
+            bodyStream = new ByteArrayInputStream(messageBody.getBytes());
+            putmethod.setRequestBody(bodyStream);
             int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
             if (code == HttpURLConnection.HTTP_OK) {
@@ -429,6 +432,13 @@ public class ExchangeSession {
                 throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
             }
         } finally {
+            if (bodyStream != null) {
+                try {
+                    bodyStream.close();
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            }
             putmethod.releaseConnection();
         }
     }
@@ -684,8 +694,8 @@ public class ExchangeSession {
                         inHTML = false;
                     }
                     if (inHTML) {
-                        line = line.replaceAll("&#8217;", "'");
-                        line = line.replaceAll("&#8230;", "...");
+                    //    line = line.replaceAll("&#8217;", "'");
+                    //    line = line.replaceAll("&#8230;", "...");
                     }
                     isoWriter.write(line);
                     isoWriter.write((char) 13);
@@ -908,13 +918,8 @@ public class ExchangeSession {
     }
 
     public int deleteEvent(String path) throws IOException {
-        //wdr.setDebug(4);
-        wdr.deleteMethod(calendarUrl + "/" + path);
-        //wdr.setDebug(0);
+        wdr.deleteMethod(calendarUrl + "/" + URIUtil.decode(path));
         int status = wdr.getStatusCode();
-        if (status == HttpStatus.SC_NOT_FOUND) {
-            status = HttpStatus.SC_OK;
-        }
         return status;
     }
 
@@ -1038,7 +1043,7 @@ public class ExchangeSession {
                 startDate = icalParser.parse(startDateValue);
             }
             if (endDateValue.length() == 8) {
-            endDate = shortIcalParser.parse(endDateValue);
+                endDate = shortIcalParser.parse(endDateValue);
             } else {
                 endDate = icalParser.parse(endDateValue);
             }

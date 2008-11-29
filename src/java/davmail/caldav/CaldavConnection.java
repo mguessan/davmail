@@ -27,7 +27,7 @@ public class CaldavConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public CaldavConnection(Socket clientSocket) {
-        super("CaldavConnection", clientSocket);
+        super("CaldavConnection", clientSocket, "UTF-8");
     }
 
     protected Map<String, String> parseHeaders() throws IOException {

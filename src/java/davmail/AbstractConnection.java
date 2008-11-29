@@ -29,12 +29,16 @@ public class AbstractConnection extends Thread {
     protected ExchangeSession session;
 
     // Initialize the streams and start the thread
-    public AbstractConnection(String name, Socket clientSocket) {
-        super(name+"-"+clientSocket.getPort());
+    public AbstractConnection(String name, Socket clientSocket, String encoding) {
+        super(name + "-" + clientSocket.getPort());
         this.client = clientSocket;
         try {
-            //noinspection IOResourceOpenedButNotSafelyClosed
-            in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+            if (encoding == null) {
+                //noinspection IOResourceOpenedButNotSafelyClosed
+                in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            } else {
+                in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+            }
             os = client.getOutputStream();
         } catch (IOException e) {
             close();
@@ -44,6 +48,7 @@ public class AbstractConnection extends Thread {
 
     /**
      * Send message to client followed by CRLF.
+     *
      * @param message message
      * @throws IOException on error
      */
@@ -53,7 +58,8 @@ public class AbstractConnection extends Thread {
 
     /**
      * Send prefix and message to client followed by CRLF.
-     * @param prefix prefix
+     *
+     * @param prefix  prefix
      * @param message message
      * @throws IOException on error
      */
@@ -66,13 +72,14 @@ public class AbstractConnection extends Thread {
         logBuffer.append(message);
         DavGatewayTray.debug(logBuffer.toString());
         os.write(message.getBytes());
-        os.write((char)13);
-        os.write((char)10);
+        os.write((char) 13);
+        os.write((char) 10);
         os.flush();
     }
 
     /**
      * Send only bytes to client.
+     *
      * @param messageBytes content
      * @throws IOException on error
      */
@@ -97,9 +104,9 @@ public class AbstractConnection extends Thread {
         if (line != null) {
             if (line.startsWith("PASS")) {
                 DavGatewayTray.debug("< PASS ********");
-            } else if (state == SmtpConnection.PASSWORD){
+            } else if (state == SmtpConnection.PASSWORD) {
                 DavGatewayTray.debug("< ********");
-            } else if (line.startsWith("Authorization:")){
+            } else if (line.startsWith("Authorization:")) {
                 DavGatewayTray.debug("< Authorization: ********");
             } else {
                 DavGatewayTray.debug("< " + line);
