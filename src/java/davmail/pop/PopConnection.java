@@ -25,7 +25,7 @@ public class PopConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public PopConnection(Socket clientSocket) {
-        super("PopConnection", clientSocket);
+        super("PopConnection", clientSocket, null);
     }
 
     public long getTotalMessagesLength() {
@@ -138,7 +138,7 @@ public class PopConnection extends AbstractConnection {
                                     sendOK(""+messageNumber+" "+message.size);
                                 } catch (NumberFormatException e) {
                                     sendERR("Invalid message index: "+token);
-                                } catch (ArrayIndexOutOfBoundsException e) {
+                                } catch (IndexOutOfBoundsException e) {
                                     sendERR("Invalid message index: "+token);
                                 }
                             } else {
@@ -189,10 +189,11 @@ public class PopConnection extends AbstractConnection {
                                 sendERR("invalid message number");
                             }
                         } else if ("TOP".equalsIgnoreCase(command)) {
+                            int message = 0;
                             try {
-                                int message = Integer.valueOf(tokens.nextToken()) - 1;
+                                message = Integer.valueOf(tokens.nextToken());
                                 int lines = Integer.valueOf(tokens.nextToken());
-                                ExchangeSession.Message m = messages.get(message);
+                                ExchangeSession.Message m = messages.get(message-1);
                                 sendOK("");
                                 m.write(new TopOutputStream(os, lines));
                                 sendClient("");
@@ -200,6 +201,8 @@ public class PopConnection extends AbstractConnection {
                             } catch (SocketException e) {
                                 // can not send error to client after a socket exception
                                 DavGatewayTray.warn("Client closed connection ", e);
+                            } catch (IndexOutOfBoundsException e) {
+                                sendERR("Invalid message index: "+message);
                             } catch (Exception e) {
                                 sendERR("error retreiving top of messages");
                                 DavGatewayTray.error(e.getMessage(), e);
@@ -247,11 +250,17 @@ public class PopConnection extends AbstractConnection {
     }
 
     /**
-     * Filter to limit output lines to maxLines
+     * Filter to limit output lines to max body lines after header
      */
     private class TopOutputStream extends FilterOutputStream {
+        protected static final int START = 0;
+        protected static final int CR = 1;
+        protected static final int CRLF = 2;
+        protected static final int CRLFCR = 3;
+        protected static final int BODY = 4;
 
-        private int maxLines;
+        protected int maxLines;
+        protected int STATE = START;
 
         public TopOutputStream(OutputStream os, int maxLines) {
             super(os);
@@ -260,12 +269,35 @@ public class PopConnection extends AbstractConnection {
 
         @Override
         public void write(int b) throws IOException {
-            if (maxLines > 0) {
+            if (STATE != BODY || maxLines > 0) {
                 super.write(b);
             }
-
-            if (b == '\n') {
-                maxLines--;
+            if (STATE == BODY) {
+                if (b == '\n') {
+                    maxLines--;
+                }
+            } else if (STATE == START) {
+                if (b == '\r') {
+                    STATE = CR;
+                }
+            } else if (STATE == CR) {
+                if (b == '\n') {
+                    STATE = CRLF;
+                } else {
+                    STATE = START;
+                }
+            } else if (STATE == CRLF) {
+                 if (b == '\r') {
+                    STATE = CRLFCR;
+                } else {
+                    STATE = START;
+                }
+            } else if (STATE == CRLFCR) {
+                 if (b == '\n') {
+                    STATE = BODY;
+                } else {
+                    STATE = START;
+                }
             }
         }
     }
