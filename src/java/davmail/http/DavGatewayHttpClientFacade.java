@@ -16,6 +16,11 @@ import java.io.IOException;
  * Create HttpClient instance according to DavGateway Settings
  */
 public class DavGatewayHttpClientFacade {
+    static {
+        // force XML response with Internet Explorer header
+        System.getProperties().setProperty("httpclient.useragent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
+    }
+
     /**
      * Create a configured HttpClient instance.
      *
@@ -34,6 +39,7 @@ public class DavGatewayHttpClientFacade {
      * @param httpClient current Http client
      */
     public static void configureClient(HttpClient httpClient) {
+
         // do not send basic auth automatically
         httpClient.getState().setAuthenticationPreemptive(false);
 

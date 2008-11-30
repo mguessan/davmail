@@ -42,12 +42,9 @@ public class ExchangeSessionFactory {
 
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
+        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
         HttpMethod testMethod = new GetMethod(url);
         try {
-
-            // create an HttpClient instance
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
-
             // get webmail root url (will not follow redirects)
             testMethod.setFollowRedirects(false);
             testMethod.setDoAuthentication(false);

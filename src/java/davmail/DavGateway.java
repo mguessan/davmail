@@ -119,9 +119,9 @@ public class DavGateway {
     public static String getReleasedVersion() {
         String version = null;
         BufferedReader versionReader = null;
+        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
         GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
         try {
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
             httpClient.setConnectionTimeout(250);
             int status = httpClient.executeMethod(getMethod);
             if (status == HttpStatus.SC_OK) {

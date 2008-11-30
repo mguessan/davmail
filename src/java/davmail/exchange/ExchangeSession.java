@@ -1,16 +1,9 @@
 package davmail.exchange;
 
 import davmail.Settings;
-import davmail.tray.DavGatewayTray;
 import davmail.http.DavGatewayHttpClientFacade;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.HttpURL;
-import org.apache.commons.httpclient.HttpsURL;
-import org.apache.commons.httpclient.URIException;
+import davmail.tray.DavGatewayTray;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
@@ -20,13 +13,12 @@ import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.SearchMethod;
-import org.apache.webdav.lib.methods.PropFindMethod;
 
 import javax.mail.internet.MimeUtility;
-import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -694,8 +686,8 @@ public class ExchangeSession {
                         inHTML = false;
                     }
                     if (inHTML) {
-                    //    line = line.replaceAll("&#8217;", "'");
-                    //    line = line.replaceAll("&#8230;", "...");
+                        //    line = line.replaceAll("&#8217;", "'");
+                        //    line = line.replaceAll("&#8230;", "...");
                     }
                     isoWriter.write(line);
                     isoWriter.write((char) 13);
@@ -973,8 +965,6 @@ public class ExchangeSession {
     public String getEmail() throws IOException {
         String email = null;
         GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + getUserName());
-        // force XML response with Internet Explorer header
-        getMethod.setRequestHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
         XMLStreamReader reader = null;
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
@@ -1057,7 +1047,6 @@ public class ExchangeSession {
         }
 
         GetMethod getMethod = new GetMethod(url);
-        getMethod.setRequestHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
         try {
