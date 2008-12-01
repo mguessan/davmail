@@ -13,6 +13,8 @@ import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
 
 import javax.mail.internet.MimeUtility;
 import javax.xml.stream.XMLInputFactory;
@@ -100,88 +102,73 @@ public class ExchangeSession {
      * Try to find logon method path from logon form body.
      *
      * @param initmethod form body http method
-     * @return logon method path
+     * @return logon method
      */
-    protected String getLogonMethodPathAndBaseUrl(HttpMethod initmethod) {
-        // default logon method path
-        String logonMethodPath = "/exchweb/bin/auth/owaauth.dll";
+    protected PostMethod buildLogonMethod(HttpClient httpClient, HttpMethod initmethod) throws IOException {
 
-        // try to parse login form to determine logon url and destination
-        BufferedReader loginFormReader = null;
+        PostMethod logonMethod = null;
+
+        // create an instance of HtmlCleaner
+        HtmlCleaner cleaner = new HtmlCleaner();
+
         try {
-            loginFormReader = new BufferedReader(new InputStreamReader(initmethod.getResponseBodyAsStream()));
-            String line;
-            // skip to form action
-            final String FORM_ACTION = "<form action=\"";
-            final String DESTINATION_INPUT = "name=\"destination\" value=\"";
-            //noinspection StatementWithEmptyBody
-            while ((line = loginFormReader.readLine()) != null && line.toLowerCase().indexOf(FORM_ACTION) == -1) {
-            }
-            if (line != null) {
-                int start = line.toLowerCase().indexOf(FORM_ACTION) + FORM_ACTION.length();
-                int end = line.indexOf("\"", start);
-                logonMethodPath = line.substring(start, end);
-                //noinspection StatementWithEmptyBody
-                while ((line = loginFormReader.readLine()) != null && line.indexOf(DESTINATION_INPUT) == -1) {
+            TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
+            List<TagNode> forms = node.getElementListByName("form", true);
+            if (forms.size() == 1) {
+                TagNode form = forms.get(0);
+                String logonMethodPath = form.getAttributeByName("action");
+
+                // allow relative URLs
+                if (!logonMethodPath.startsWith("/")) {
+                    String path = initmethod.getPath();
+                    int end = path.lastIndexOf('/');
+                    if (end >= 0) {
+                        logonMethodPath = path.substring(0, end + 1) + logonMethodPath;
+                    }
                 }
-                if (line != null) {
-                    start = line.indexOf(DESTINATION_INPUT) + DESTINATION_INPUT.length();
-                    end = line.indexOf("\"", start);
-                    baseUrl = line.substring(start, end);
+                logonMethod = new PostMethod(logonMethodPath);
+
+                List<TagNode> inputList = form.getElementListByName("input", true);
+                for (TagNode input : inputList) {
+                    String type = input.getAttributeByName("type");
+                    String name = input.getAttributeByName("name");
+                    String value = input.getAttributeByName("value");
+                    if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
+                        logonMethod.addParameter(name, value);
+                    }
                 }
-            }
-            // allow relative URLs
-            if (!logonMethodPath.startsWith("/")) {
-                String path = initmethod.getPath();
-                int end = path.lastIndexOf('/');
-                if (end >= 0) {
-                    logonMethodPath = path.substring(0, end + 1) + logonMethodPath;
+            } else {
+                List<TagNode> frameList = node.getElementListByName("frame", true);
+                if (frameList.size() == 1) {
+                    String src = frameList.get(0).getAttributeByName("src");
+                    if (src != null) {
+                        LOGGER.debug("Frames detected in form page, try frame content");
+                        initmethod.releaseConnection();
+                        HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
+                        logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                    }
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Error parsing login form at " + initmethod.getPath());
+            LOGGER.error("Error parsing login form at " + initmethod.getURI());
         } finally {
-            if (loginFormReader != null) {
-                try {
-                    loginFormReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing login form at " + initmethod.getPath());
-                }
-            }
             initmethod.releaseConnection();
         }
-        return logonMethodPath;
+
+        if (logonMethod == null) {
+            throw new IOException("Authentication form not found at " + initmethod.getURI() + ", retry with " + initmethod.getURI() + "exchange");
+        }
+        return logonMethod;
     }
 
-    protected void formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
+    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
-        // get logon method path and actual destination (baseUrl)
-        String logonMethodPath = getLogonMethodPathAndBaseUrl(initmethod);
-
-        PostMethod logonMethod = new PostMethod(
-                logonMethodPath + "?ForcedBasic=false&Basic=false&Private=true&Language=No_Value"
-        );
-        logonMethod.addParameter("destination", baseUrl);
-        logonMethod.addParameter("flags", "4");
-//                  logonMethod.addParameter("visusername", userName.substring(userName.lastIndexOf('\\')));
-        logonMethod.addParameter("username", userName);
-        logonMethod.addParameter("password", password);
-//                  logonMethod.addParameter("SubmitCreds", "Log On");
-//                  logonMethod.addParameter("forcedownlevel", "0");
-        logonMethod.addParameter("trusted", "4");
-
-        try {
-            httpClient.executeMethod(logonMethod);
-        } finally {
-            logonMethod.releaseConnection();
-        }
-        Header locationHeader = logonMethod.getResponseHeader("Location");
-
-        if (logonMethod.getStatusCode() != HttpURLConnection.HTTP_MOVED_TEMP ||
-                locationHeader == null ||
-                !baseUrl.equals(locationHeader.getValue())) {
-            throw new HttpException("Authentication failed");
-        }
+        // build logon method with actual destination (baseUrl)
+        HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
+        ((PostMethod) logonMethod).addParameter("username", userName);
+        ((PostMethod) logonMethod).addParameter("password", password);
+        logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
+        return logonMethod;
     }
 
     protected String getMailPath(HttpMethod method) {
@@ -255,13 +242,13 @@ public class ExchangeSession {
             HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
 
             if (!isBasicAuthentication) {
-                formLogin(httpClient, method, userName, password);
+                method = formLogin(httpClient, method, userName, password);
                 // reexecute method with new base URL
-                method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
+//                method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
             }
+            int status = method.getStatusCode();
 
             // User may be authenticated, get various session information
-            int status = method.getStatusCode();
             if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
@@ -270,7 +257,7 @@ public class ExchangeSession {
             }
             // test form based authentication
             String queryString = method.getQueryString();
-            if (queryString != null && queryString.endsWith("reason=2")) {
+            if (queryString != null && queryString.contains("reason=2")) {
                 method.releaseConnection();
                 if (userName != null && userName.contains("\\")) {
                     throw new HttpException("Authentication failed: invalid user or password");

@@ -121,8 +121,12 @@ public class DavGatewayHttpClientFacade {
      */
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, String url) throws IOException {
         HttpMethod method = new GetMethod(url);
+        method.setFollowRedirects(false);
+        return executeFollowRedirects(httpClient, method);
+    }
+
+    public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
         try {
-            method.setFollowRedirects(false);
             httpClient.executeMethod(method);
             Header location = method.getResponseHeader("Location");
             int redirectCount = 0;

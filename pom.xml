@@ -107,6 +107,11 @@
             <artifactId>servlet-api</artifactId>
             <version>2.4</version>
         </dependency>
+        <dependency>
+            <groupId>htmlcleaner</groupId>
+            <artifactId>htmlcleaner</artifactId>
+            <version>2.1</version>
+        </dependency>
     </dependencies>
     <build>
         <sourceDirectory>src/java</sourceDirectory>
