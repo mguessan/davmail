@@ -41,8 +41,6 @@ public class ExchangeSession {
 
     static {
         MESSAGE_REQUEST_PROPERTIES.add("DAV:uid");
-        MESSAGE_REQUEST_PROPERTIES.add("urn:schemas:mailheader:content-class");
-
         // size
         MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
     }
@@ -53,11 +51,6 @@ public class ExchangeSession {
      * Date parser from Exchange format
      */
     private final SimpleDateFormat dateParser;
-
-    /**
-     * Base Exchange URL
-     */
-    private String baseUrl;
 
     /**
      * Various standard mail boxes Urls
@@ -101,8 +94,10 @@ public class ExchangeSession {
     /**
      * Try to find logon method path from logon form body.
      *
+     * @param httpClient httpClient instance
      * @param initmethod form body http method
      * @return logon method
+     * @throws java.io.IOException on error
      */
     protected PostMethod buildLogonMethod(HttpClient httpClient, HttpMethod initmethod) throws IOException {
 
@@ -113,7 +108,7 @@ public class ExchangeSession {
 
         try {
             TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
-            List<TagNode> forms = node.getElementListByName("form", true);
+            List<TagNode> forms = (List<TagNode>) node.getElementListByName("form", true);
             if (forms.size() == 1) {
                 TagNode form = forms.get(0);
                 String logonMethodPath = form.getAttributeByName("action");
@@ -209,7 +204,7 @@ public class ExchangeSession {
     void login(String userName, String password) throws IOException {
         LOGGER.debug("Session " + this + " login");
         try {
-            baseUrl = Settings.getProperty("davmail.url");
+            String baseUrl = Settings.getProperty("davmail.url");
 
             boolean isBasicAuthentication = isBasicAuthentication(baseUrl);
 
@@ -434,8 +429,6 @@ public class ExchangeSession {
                 message.size = Integer.parseInt(prop.getPropertyAsString());
             } else if ("uid".equals(localName)) {
                 message.uid = prop.getPropertyAsString();
-            } else if ("content-class".equals(prop.getLocalName())) {
-                message.contentClass = prop.getPropertyAsString();
             }
         }
 
@@ -464,22 +457,35 @@ public class ExchangeSession {
 
     public List<Message> getAllMessages() throws IOException {
         List<Message> messages = new ArrayList<Message>();
-        //wdr.setDebug(4);
-        //wdr.propfindMethod(currentFolderUrl, 1);
-        // one level search
-        Enumeration folderEnum = wdr.propfindMethod(currentFolderUrl, 1, MESSAGE_REQUEST_PROPERTIES);
-        //wdr.setDebug(0);
-        while (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+        String searchRequest = "<?xml version=\"1.0\"?>\n" +
+                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
+                "        <d:sql>Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + currentFolderUrl + "\"')\n" +
+                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
+                "                ORDER BY \"urn:schemas:httpmail:date\" ASC" +
+                "         </d:sql>\n" +
+                "</d:searchrequest>";
+        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(currentFolderUrl), searchRequest);
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
+            // Also accept OK sent by buggy servers.
+            if (status != HttpStatus.SC_MULTI_STATUS
+                    && status != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                throw ex;
+            }
+            // one level search
+            Enumeration folderEnum = searchMethod.getResponses();
 
-            Message message = buildMessage(entity);
-            if ("urn:content-classes:message".equals(message.contentClass) ||
-                    "urn:content-classes:calendarmessage".equals(message.contentClass) ||
-                    "urn:content-classes:recallmessage".equals(message.contentClass) ||
-                    "urn:content-classes:appointment".equals(message.contentClass) ||
-                    "urn:content-classes:dsn".equals(message.contentClass)) {
+            while (folderEnum.hasMoreElements()) {
+                ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+
+                Message message = buildMessage(entity);
                 messages.add(message);
             }
+        } finally {
+            searchMethod.releaseConnection();
         }
         return messages;
     }
@@ -631,7 +637,6 @@ public class ExchangeSession {
         public String messageUrl;
         public String uid;
         public int size;
-        public String contentClass;
 
         public void write(OutputStream os) throws IOException {
             HttpMethod method = null;
@@ -802,23 +807,14 @@ public class ExchangeSession {
                 String href = calendarResponse.getHref();
                 Event event = new Event();
                 event.href = URIUtil.decode(href);
-                String contentclass = null;
                 Enumeration propertiesEnumeration = calendarResponse.getProperties();
                 while (propertiesEnumeration.hasMoreElements()) {
                     Property property = (Property) propertiesEnumeration.nextElement();
                     if ("getetag".equals(property.getLocalName())) {
                         event.etag = property.getPropertyAsString();
                     }
-                    /*
-                    if ("contentclass".equals(property.getLocalName())) {
-                        contentclass = property.getPropertyAsString();
-                    }
-                    */
                 }
-                // filter folder and non appointment objects
-                //if ("urn:content-classes:appointment".equals(contentclass)) {
                 events.add(event);
-                //}
             }
         } finally {
             searchMethod.releaseConnection();
@@ -868,18 +864,18 @@ public class ExchangeSession {
                 "Content-class: urn:content-classes:appointment\n" +
                 "MIME-Version: 1.0\n" +
                 "Content-Type: multipart/alternative;\n" +
-                "\tboundary=\"----=_NextPart_" + uid + "\"\n" +
+                "\tboundary=\"----=_NextPart_").append(uid).append("\"\n" +
                 "\n" +
                 "This is a multi-part message in MIME format.\n" +
                 "\n" +
-                "------=_NextPart_" + uid + "\n" +
+                "------=_NextPart_").append(uid).append("\n" +
                 "Content-class: urn:content-classes:appointment\n" +
                 "Content-Type: text/calendar;\n" +
                 "\tmethod=REQUEST;\n" +
                 "\tcharset=\"utf-8\"\n" +
                 "Content-Transfer-Encoding: 8bit\n\n");
         body.append(new String(icsBody.getBytes("UTF-8"), "ISO-8859-1"));
-        body.append("------=_NextPart_" + uid + "--\n");
+        body.append("------=_NextPart_").append(uid).append("--\n");
         putmethod.setRequestBody(body.toString());
         int status;
         try {
@@ -898,8 +894,7 @@ public class ExchangeSession {
 
     public int deleteEvent(String path) throws IOException {
         wdr.deleteMethod(calendarUrl + "/" + URIUtil.decode(path));
-        int status = wdr.getStatusCode();
-        return status;
+        return wdr.getStatusCode();
     }
 
     public String getCalendarEtag() throws IOException {
@@ -1010,9 +1005,9 @@ public class ExchangeSession {
         SimpleDateFormat owaFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         owaFormatter.setTimeZone(new SimpleTimeZone(0, "GMT"));
 
-        String url = null;
-        Date startDate = null;
-        Date endDate = null;
+        String url;
+        Date startDate;
+        Date endDate;
         try {
             if (startDateValue.length() == 8) {
                 startDate = shortIcalParser.parse(startDateValue);
