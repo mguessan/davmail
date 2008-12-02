@@ -1,6 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -130,6 +131,7 @@ public class DavGatewayHttpClientFacade {
 
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
         try {
+            DavGatewayTray.debug("executeFollowRedirects: "+method.getURI());
             httpClient.executeMethod(method);
             Header location = method.getResponseHeader("Location");
             int redirectCount = 0;
@@ -137,8 +139,9 @@ public class DavGatewayHttpClientFacade {
                     && location != null
                     && isRedirect(method.getStatusCode())) {
                 method.releaseConnection();
-                method = new GetMethod(method.getResponseHeader("Location").getValue());
+                method = new GetMethod(location.getValue());
                 method.setFollowRedirects(false);
+                DavGatewayTray.debug("executeFollowRedirects: "+method.getURI()+" redirectCount:"+redirectCount);
                 httpClient.executeMethod(method);
                 location = method.getResponseHeader("Location");
             }
