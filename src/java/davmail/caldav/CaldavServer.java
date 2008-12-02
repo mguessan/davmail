@@ -1,8 +1,7 @@
 package davmail.caldav;
 
-import davmail.AbstractServer;
 import davmail.AbstractConnection;
-import davmail.pop.PopConnection;
+import davmail.AbstractServer;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -16,6 +15,7 @@ public class CaldavServer extends AbstractServer {
     /**
      * Create a ServerSocket to listen for connections.
      * Start the thread.
+     *
      * @param port pop listen port, 80 if not defined (0)
      * @throws java.io.IOException on error
      */

@@ -158,7 +158,7 @@ public class ExchangeSession {
 
     protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
-        // build logon method with actual destination (baseUrl)
+
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
         ((PostMethod) logonMethod).addParameter("username", userName);
         ((PostMethod) logonMethod).addParameter("password", password);
@@ -548,22 +548,23 @@ public class ExchangeSession {
         String subject = "davmailtemp";
         String line = reader.readLine();
         StringBuffer mailBuffer = new StringBuffer();
-        while (!".".equals(line)) {
+        while (line != null && !".".equals(line)) {
             mailBuffer.append(line);
             mailBuffer.append("\n");
             line = reader.readLine();
 
-            // patch thunderbird html in reply for correct outlook display
-            if (line.startsWith("<head>")) {
-                line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
-            }
-            if (line.startsWith("Subject")) {
-                subject = MimeUtility.decodeText(line.substring(8).trim());
-                // '/' is invalid as message URL
-                subject = subject.replaceAll("/", "_xF8FF_");
-                // '?' is also invalid
-                subject = subject.replaceAll("\\?", "");
-                // TODO : test & in subject
+            if (line != null) {
+                // patch thunderbird html in reply for correct outlook display
+                if (line.startsWith("<head>")) {
+                    line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
+                } else if (line.startsWith("Subject")) {
+                    subject = MimeUtility.decodeText(line.substring(8).trim());
+                    // '/' is invalid as message URL
+                    subject = subject.replaceAll("/", "_xF8FF_");
+                    // '?' is also invalid
+                    subject = subject.replaceAll("\\?", "");
+                    // TODO : test & in subject
+                }
             }
         }
 
@@ -627,7 +628,7 @@ public class ExchangeSession {
         return folder;
     }
 
-    public class Folder {
+    public static class Folder {
         public String folderUrl;
         public int childCount;
         public int unreadCount;
@@ -953,29 +954,8 @@ public class ExchangeSession {
             if (status != HttpStatus.SC_OK) {
                 throw new IOException("Unable to get user email from: " + getMethod.getPath());
             }
-            XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-            inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
-            inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
-
-            reader = inputFactory.createXMLStreamReader(getMethod.getResponseBodyAsStream());
-            boolean inEM = false;
-            while (reader.hasNext()) {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT && "EM".equals(reader.getLocalName())) {
-                    inEM = true;
-                } else if (event == XMLStreamConstants.CHARACTERS && inEM) {
-                    email = reader.getText();
-                    inEM = false;
-                }
-            }
-        } catch (XMLStreamException e) {
-            throw new IOException(e.getMessage());
+            email = XMLStreamUtil.getElementContentByLocalName(getMethod.getResponseBodyAsStream(), "EM");
         } finally {
-            try {
-                reader.close();
-            } catch (XMLStreamException e) {
-                LOGGER.error(e);
-            }
             getMethod.releaseConnection();
         }
         if (email == null) {

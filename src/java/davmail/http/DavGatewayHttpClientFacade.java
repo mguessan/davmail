@@ -21,6 +21,9 @@ public class DavGatewayHttpClientFacade {
         System.getProperties().setProperty("httpclient.useragent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
     }
 
+    private DavGatewayHttpClientFacade() {
+    }
+
     /**
      * Create a configured HttpClient instance.
      *

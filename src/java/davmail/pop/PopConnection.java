@@ -252,7 +252,7 @@ public class PopConnection extends AbstractConnection {
     /**
      * Filter to limit output lines to max body lines after header
      */
-    private class TopOutputStream extends FilterOutputStream {
+    private static class TopOutputStream extends FilterOutputStream {
         protected static final int START = 0;
         protected static final int CR = 1;
         protected static final int CRLF = 2;

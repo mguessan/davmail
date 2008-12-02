@@ -68,7 +68,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void setSocketTimeout(String keepAliveValue) throws IOException {
-        if (keepAliveValue != null || keepAliveValue.length() > 0) {
+        if (keepAliveValue != null && keepAliveValue.length() > 0) {
             int keepAlive;
             try {
                 keepAlive = Integer.parseInt(keepAliveValue);
@@ -320,7 +320,7 @@ public class CaldavConnection extends AbstractConnection {
             String line;
             String key = null;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith(" ") & "ATTENDEE".equals(key)) {
+                if (line.startsWith(" ") && "ATTENDEE".equals(key)) {
                     valueMap.put(key, valueMap.get(key)+line.substring(1));
                 } else {
                     int index = line.indexOf(':');
@@ -411,8 +411,8 @@ public class CaldavConnection extends AbstractConnection {
         SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         sendClient("Date: " + formatter.format(new java.util.Date()));
         if (headers != null) {
-            for (String header : headers.keySet()) {
-                sendClient(header + ": " + headers.get(header));
+            for (Map.Entry<String,String> header : headers.entrySet()) {
+                sendClient(header.getKey() + ": " + header.getValue());
             }
         }
         if (contentType != null) {
