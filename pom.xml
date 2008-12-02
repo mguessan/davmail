@@ -63,6 +63,14 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>xwiki</id>
+            <layout>default</layout>
+            <url>http://maven.xwiki.org/externals</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -98,9 +106,10 @@
             <version>1.1</version>
         </dependency>
         <dependency>
-            <groupId>swt</groupId>
+            <groupId>org.eclipse</groupId>
             <artifactId>swt</artifactId>
-            <version>3.3</version>
+            <version>3.3.0-v3346</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -108,9 +117,15 @@
             <version>2.4</version>
         </dependency>
         <dependency>
-            <groupId>htmlcleaner</groupId>
+            <groupId>net.sourceforge.htmlcleaner</groupId>
             <artifactId>htmlcleaner</artifactId>
             <version>2.1</version>
+        </dependency>
+        <!-- included in Java 1.6, needed with Java 1.5 -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jsr173_api</artifactId>
+            <version>1.0</version>
         </dependency>
     </dependencies>
     <build>
