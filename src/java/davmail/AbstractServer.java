@@ -15,6 +15,14 @@ public abstract class AbstractServer extends Thread {
     private ServerSocket serverSocket;
 
     /**
+     * Server socket TCP port
+     * @return port
+     */
+    public int getPort() {
+        return port;
+    }
+
+    /**
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      *

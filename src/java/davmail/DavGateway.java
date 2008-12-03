@@ -3,10 +3,10 @@ package davmail;
 import davmail.caldav.CaldavServer;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
-import davmail.ldap.LdapServer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -47,44 +47,29 @@ public class DavGateway {
     public static void start() {
         // first stop existing servers
         DavGateway.stop();
-        int smtpPort = Settings.getIntProperty("davmail.smtpPort");
-        if (smtpPort == 0) {
-            smtpPort = SmtpServer.DEFAULT_PORT;
-        }
-        int popPort = Settings.getIntProperty("davmail.popPort");
-        if (popPort == 0) {
-            popPort = PopServer.DEFAULT_PORT;
-        }
-        int caldavPort = Settings.getIntProperty("davmail.caldavPort");
-        if (caldavPort == 0) {
-            caldavPort = CaldavServer.DEFAULT_PORT;
-        }
-        int ldapPort = Settings.getIntProperty("davmail.ldapPort");
-        if (ldapPort == 0) {
-            ldapPort = LdapServer.DEFAULT_PORT;
-        }
 
         try {
-            smtpServer = new SmtpServer(smtpPort);
-            popServer = new PopServer(popPort);
-            caldavServer = new CaldavServer(caldavPort);
-            ldapServer = new LdapServer(ldapPort);
+            smtpServer = new SmtpServer(Settings.getIntProperty("davmail.smtpPort"));
+            popServer = new PopServer(Settings.getIntProperty("davmail.popPort"));
+            caldavServer = new CaldavServer(Settings.getIntProperty("davmail.caldavPort"));
+            ldapServer = new LdapServer(Settings.getIntProperty("davmail.ldapPort"));
             smtpServer.start();
             popServer.start();
             caldavServer.start();
             ldapServer.start();
 
-            String message = "DavMail gateway listening on SMTP port " + smtpPort +
-                    ", Caldav port " + caldavPort +
-                    ", LDAP port " + ldapPort +
-                    " and POP port " + popPort;
+            String message = "DavMail gateway listening on SMTP port " + smtpServer.getPort() +
+                    ", Caldav port " + caldavServer.getPort() +
+                    ", LDAP port " + ldapServer.getPort() +
+                    " and POP port " + popServer.getPort();
+            DavGatewayTray.info(message);
+
+            // check for new version
             String releasedVersion = getReleasedVersion();
             String currentVersion = getCurrentVersion();
             if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-                message += " A new version (" + releasedVersion + ") of DavMail Gateway is available !";
+                DavGatewayTray.info("A new version (" + releasedVersion + ") of DavMail Gateway is available !");
             }
-
-            DavGatewayTray.info(message);
         } catch (IOException e) {
             DavGatewayTray.error("Exception creating server socket", e);
         }
@@ -93,39 +78,22 @@ public class DavGateway {
         DavGatewaySSLProtocolSocketFactory.register();
     }
 
+    protected static void stopServer(AbstractServer server) {
+        if (server != null) {
+            server.close();
+            try {
+                server.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+    }
+
     public static void stop() {
-        if (smtpServer != null) {
-            smtpServer.close();
-            try {
-                smtpServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
-        if (popServer != null) {
-            popServer.close();
-            try {
-                popServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
-        if (caldavServer != null) {
-            caldavServer.close();
-            try {
-                caldavServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
-        if (ldapServer != null) {
-            ldapServer.close();
-            try {
-                ldapServer.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
-            }
-        }
+        stopServer(smtpServer);
+        stopServer(popServer);
+        stopServer(caldavServer);
+        stopServer(ldapServer);
     }
 
     public static String getCurrentVersion() {
