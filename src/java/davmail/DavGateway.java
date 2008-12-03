@@ -6,6 +6,7 @@ import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
+import davmail.ldap.LdapServer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -24,6 +25,7 @@ public class DavGateway {
     private static SmtpServer smtpServer;
     private static PopServer popServer;
     private static CaldavServer caldavServer;
+    private static LdapServer ldapServer;
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
@@ -57,17 +59,24 @@ public class DavGateway {
         if (caldavPort == 0) {
             caldavPort = CaldavServer.DEFAULT_PORT;
         }
+        int ldapPort = Settings.getIntProperty("davmail.ldapPort");
+        if (ldapPort == 0) {
+            ldapPort = LdapServer.DEFAULT_PORT;
+        }
 
         try {
             smtpServer = new SmtpServer(smtpPort);
             popServer = new PopServer(popPort);
             caldavServer = new CaldavServer(caldavPort);
+            ldapServer = new LdapServer(ldapPort);
             smtpServer.start();
             popServer.start();
             caldavServer.start();
+            ldapServer.start();
 
             String message = "DavMail gateway listening on SMTP port " + smtpPort +
                     ", Caldav port " + caldavPort +
+                    ", LDAP port " + ldapPort +
                     " and POP port " + popPort;
             String releasedVersion = getReleasedVersion();
             String currentVersion = getCurrentVersion();
@@ -105,6 +114,14 @@ public class DavGateway {
             caldavServer.close();
             try {
                 caldavServer.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn("Exception waiting for listener to die", e);
+            }
+        }
+        if (ldapServer != null) {
+            ldapServer.close();
+            try {
+                ldapServer.join();
             } catch (InterruptedException e) {
                 DavGatewayTray.warn("Exception waiting for listener to die", e);
             }

@@ -1,16 +1,12 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
-import davmail.tray.DavGatewayTray;
 import davmail.smtp.SmtpConnection;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.Socket;
-
+import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.util.Base64;
+
+import java.io.*;
+import java.net.Socket;
 
 /**
  * Generic connection common to pop3 and smtp implementations
@@ -28,7 +24,13 @@ public class AbstractConnection extends Thread {
     // Exchange session proxy
     protected ExchangeSession session;
 
-    // Initialize the streams and start the thread
+    // only set the thread name and socket
+    public AbstractConnection(String name, Socket clientSocket) {
+        super(name);
+        this.client = clientSocket;
+    }
+
+    // Initialize the streams and set thread name
     public AbstractConnection(String name, Socket clientSocket, String encoding) {
         super(name + "-" + clientSocket.getPort());
         this.client = clientSocket;
@@ -39,7 +41,7 @@ public class AbstractConnection extends Thread {
             } else {
                 in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
             }
-            os = client.getOutputStream();
+            os = new BufferedOutputStream(client.getOutputStream());
         } catch (IOException e) {
             close();
             DavGatewayTray.error("Exception while getting socket streams", e);

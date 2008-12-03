@@ -17,10 +17,6 @@ import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
 import javax.mail.internet.MimeUtility;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -337,17 +333,6 @@ public class ExchangeSession {
                 }
             } else {
                 message.append(exc);
-            }
-            try {
-                message.append("\nWebdav status:");
-                message.append(wdr.getStatusCode());
-
-                String webdavStatusMessage = wdr.getStatusMessage();
-                if (webdavStatusMessage != null) {
-                    message.append(webdavStatusMessage);
-                }
-            } catch (Exception e) {
-                LOGGER.error("Exception getting status from " + wdr);
             }
 
             LOGGER.error(message.toString());
@@ -948,7 +933,6 @@ public class ExchangeSession {
     public String getEmail() throws IOException {
         String email = null;
         GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + getUserName());
-        XMLStreamReader reader = null;
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
@@ -963,6 +947,59 @@ public class ExchangeSession {
         }
 
         return email;
+    }
+
+    /**
+     * Search users in global address book
+     *
+     * @param searchValue
+     * @return List of users
+     */
+    public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
+        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + "=" + searchValue));
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            if (status != HttpStatus.SC_OK) {
+                throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
+            }
+            results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+            // add detailed information, only if few results
+            if (results.size() <=10) {
+            for (Map<String, String> person : results.values()) {
+                galLookup(person);
+            }
+            }
+        } finally {
+            getMethod.releaseConnection();
+        }
+
+        return results;
+    }
+
+    public void galLookup(Map<String, String> person) {
+        GetMethod getMethod = null;
+        try {
+            getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=gallookup&ADDR=" + person.get("EM")));
+            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            if (status != HttpStatus.SC_OK) {
+                throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
+            }
+            Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
+            // add detailed information
+            if (results.size() > 0) {
+                Map<String, String> fullperson = results.get(person.get("AN"));
+                for (Map.Entry<String, String> entry : fullperson.entrySet()) {
+                    person.put(entry.getKey(), entry.getValue());
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Unable to gallookup person: " + person);
+        } finally {
+            if (getMethod != null) {
+                getMethod.releaseConnection();
+            }
+        }
     }
 
     public String getFreebusy(Map<String, String> valueMap) throws IOException {
