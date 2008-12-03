@@ -38,7 +38,11 @@ public class SettingsFrame extends JFrame {
     JComboBox httpclientLoggingLevelField;
     JComboBox wireLoggingLevelField;
 
-    protected void addSettingComponent(JPanel panel, String label, Component component) {
+    protected void addSettingComponent(JPanel panel, String label, JComponent component) {
+         addSettingComponent(panel, label, component, null);
+    }
+
+    protected void addSettingComponent(JPanel panel, String label, JComponent component, String toolTipText) {
         JLabel fieldLabel = new JLabel(label);
         fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(fieldLabel);
@@ -46,6 +50,10 @@ public class SettingsFrame extends JFrame {
         JPanel innerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         innerPanel.add(component);
         panel.add(innerPanel);
+        if (toolTipText != null) {
+            fieldLabel.setToolTipText(toolTipText);
+            component.setToolTipText(toolTipText);
+        }
     }
 
     protected JPanel getSettingsPanel() {
@@ -53,19 +61,16 @@ public class SettingsFrame extends JFrame {
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
-        urlField.setToolTipText("Base outlook web access URL");
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
         caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
         keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);
-        keepDelayField.setToolTipText("Number of days to keep messages in trash");
 
-
-        addSettingComponent(settingsPanel, "OWA url: ", urlField);
+        addSettingComponent(settingsPanel, "OWA url: ", urlField, "Base outlook web access URL");
         addSettingComponent(settingsPanel, "Local POP port: ", popPortField);
         addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField);
         addSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField);
-        addSettingComponent(settingsPanel, "Keep Delay: ", keepDelayField);
+        addSettingComponent(settingsPanel, "Keep Delay: ", keepDelayField, "Number of days to keep messages in trash");
         return settingsPanel;
     }
 
@@ -110,22 +115,22 @@ public class SettingsFrame extends JFrame {
 
         allowRemoteField = new JCheckBox();
         allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
-        allowRemoteField.setToolTipText("Allow remote connections to the gateway (server mode)");
 
         bindAddressField = new JTextField(Settings.getProperty("davmail.bindAddress"), 15);
-        bindAddressField.setToolTipText("Bind only to the specified network address");
 
         certHashField = new JTextField(Settings.getProperty("davmail.server.certificate.hash"), 15);
-        certHashField.setToolTipText("Manually accepted server certificate hash");
 
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
-        disableUpdateCheck.setToolTipText("Disable DavMail check for new version");
 
-        addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField);
-        addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField);
-        addSettingComponent(networkSettingsPanel, "Server certificate hash: ", certHashField);
-        addSettingComponent(networkSettingsPanel, "Disable update check: ", disableUpdateCheck);
+        addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField,
+                "Bind only to the specified network address");
+        addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField,
+                "Allow remote connections to the gateway (server mode)");
+        addSettingComponent(networkSettingsPanel, "Server certificate hash: ", certHashField,
+                "Manually accepted server certificate hash");
+        addSettingComponent(networkSettingsPanel, "Disable update check: ", disableUpdateCheck,
+                "Disable DavMail check for new version");
         return networkSettingsPanel;
     }
 
