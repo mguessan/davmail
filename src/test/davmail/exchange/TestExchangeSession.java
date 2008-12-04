@@ -16,11 +16,11 @@ public class TestExchangeSession {
         Settings.setConfigFilePath(argv[currentArg++]);
         Settings.load();
 
-        ExchangeSession session = new ExchangeSession();
+        ExchangeSession session;
         // test auth
         try {
             ExchangeSessionFactory.checkConfig();
-            session.login(argv[currentArg++], argv[currentArg++]);
+            session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg++]);
 
             ExchangeSession.Folder folder = session.selectFolder(argv[currentArg++]);
             String messageName;

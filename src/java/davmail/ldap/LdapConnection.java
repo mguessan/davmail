@@ -178,7 +178,7 @@ public class LdapConnection extends AbstractConnection {
 
                 } else if (operation == LDAP_REQ_UNBIND) {
                     if (session != null) {
-                        session.close();
+                        ExchangeSessionFactory.close(session);
                         session = null;
                     }
                 } else if (operation == LDAP_REQ_SEARCH) {

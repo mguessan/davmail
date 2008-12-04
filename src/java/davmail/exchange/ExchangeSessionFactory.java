@@ -11,12 +11,69 @@ import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
+import java.util.*;
 
 /**
  * Create ExchangeSession instances.
  */
 public class ExchangeSessionFactory {
+    private static final Object LOCK = new Object();
+    private static final Map<PoolKey, ExchangeSessionStack> poolMap = new HashMap<PoolKey, ExchangeSessionStack>();
+
+    static class PoolKey {
+        public String url;
+        public String userName;
+        public String password;
+
+        public PoolKey(String url, String userName, String password) {
+            this.url = url;
+            this.userName = userName;
+            this.password = password;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            return object == this ||
+                    object instanceof PoolKey &&
+                            ((PoolKey) object).url.equals(this.url) &&
+                            ((PoolKey) object).userName.equals(this.userName) &&
+                            ((PoolKey) object).password.equals(this.password);
+        }
+
+        @Override
+        public int hashCode() {
+            return url.hashCode() + userName.hashCode() + password.hashCode();
+        }
+    }
+
+    static class ExchangeSessionStack extends Stack<ExchangeSession> {
+        // 15 minutes expire delay
+        protected static final long EXPIRE_DELAY = 1000 * 60 * 15;
+        protected long timestamp = System.currentTimeMillis();
+
+        @Override
+        public ExchangeSession pop() throws EmptyStackException {
+            timestamp = System.currentTimeMillis();
+            return super.pop();
+        }
+
+        @Override
+        public ExchangeSession push(ExchangeSession session) {
+            timestamp = System.currentTimeMillis();
+            return super.push(session);
+        }
+
+        public boolean isExpired() {
+            return (System.currentTimeMillis() - timestamp) > EXPIRE_DELAY;
+        }
+
+        public void clean() {
+            while (!isEmpty()) {
+                pop().close();
+            }
+        }
+    }
+
     /**
      * Create authenticated Exchange session
      *
@@ -27,14 +84,70 @@ public class ExchangeSessionFactory {
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
         try {
-            ExchangeSession session = new ExchangeSession();
-            session.login(userName, password);
+            String baseUrl = Settings.getProperty("davmail.url");
+            PoolKey poolKey = new PoolKey(baseUrl, userName, password);
+
+            ExchangeSession session = null;
+            synchronized (LOCK) {
+                Stack<ExchangeSession> sessionStack = poolMap.get(poolKey);
+                if (sessionStack != null && !sessionStack.isEmpty()) {
+                    session = sessionStack.pop();
+                    ExchangeSession.LOGGER.debug("Got session " + session + " from pool");
+                }
+            }
+
+            if (session != null && session.isExpired()) {
+                ExchangeSession.LOGGER.debug("Session " + session + " expired");
+                session.close();
+                session = null;
+            }
+
+            if (session == null) {
+                session = new ExchangeSession(poolKey);
+                session.login();
+                ExchangeSession.LOGGER.debug("Created new session: " + session);
+            }
             return session;
         } catch (IOException e) {
             if (checkNetwork()) {
                 throw e;
             } else {
                 throw new NetworkDownException("All network interfaces down !");
+            }
+        }
+    }
+
+    /**
+     * Close (or pool) session.
+     *
+     * @param session exchange session
+     */
+    public static void close(ExchangeSession session) {
+        synchronized (LOCK) {
+            if (session != null) {
+                PoolKey poolKey = session.getPoolKey();
+                ExchangeSessionStack sessionStack = poolMap.get(poolKey);
+                if (sessionStack == null) {
+                    sessionStack = new ExchangeSessionStack();
+                    poolMap.put(poolKey, sessionStack);
+                }
+                // keep httpClient, but close HTTP connection
+                session.close();
+                sessionStack.push(session);
+                ExchangeSession.LOGGER.debug("Pooled session: " + session);
+            }
+
+            // clean pool
+            List<PoolKey> toDeleteKeys = new ArrayList<PoolKey>();
+            for (Map.Entry<PoolKey, ExchangeSessionStack> entry : poolMap.entrySet()) {
+                if (entry.getValue().isExpired()) {
+                    ExchangeSession.LOGGER.debug("Session pool for " + entry.getKey().userName + " expired");
+                    entry.getValue().clean();
+                    toDeleteKeys.add(entry.getKey());
+                }
+            }
+            for (PoolKey toDeleteKey : toDeleteKeys) {
+                poolMap.remove(toDeleteKey);
             }
         }
     }
@@ -49,7 +162,6 @@ public class ExchangeSessionFactory {
             testMethod.setFollowRedirects(false);
             testMethod.setDoAuthentication(false);
             int status = httpClient.executeMethod(testMethod);
-            testMethod.releaseConnection();
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
                     && status != HttpStatus.SC_MOVED_TEMPORARILY) {

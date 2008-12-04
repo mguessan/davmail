@@ -1,6 +1,7 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
 import davmail.smtp.SmtpConnection;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.util.Base64;
@@ -142,13 +143,7 @@ public class AbstractConnection extends Thread {
         } catch (IOException e2) {
             DavGatewayTray.warn("Exception closing client socket", e2);
         }
-        try {
-            if (session != null) {
-                session.close();
-            }
-        } catch (IOException e3) {
-            DavGatewayTray.warn("Exception closing gateway", e3);
-        }
+        ExchangeSessionFactory.close(session);
     }
 
     protected String base64Encode(String value) {

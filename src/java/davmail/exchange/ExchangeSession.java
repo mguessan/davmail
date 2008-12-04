@@ -64,16 +64,50 @@ public class ExchangeSession {
     private String currentFolderUrl;
     private WebdavResource wdr = null;
 
+    private ExchangeSessionFactory.PoolKey poolKey;
+
+    ExchangeSessionFactory.PoolKey getPoolKey() {
+        return poolKey;
+    }
+
     /**
      * Create an exchange session for the given URL.
      * The session is not actually established until a call to login()
+     *
+     * @param poolKey session pool key
      */
-    ExchangeSession() {
+    ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) {
+        this.poolKey = poolKey;
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
         dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
         LOGGER.debug("Session " + this + " created");
+    }
+
+    public boolean isExpired() {
+        boolean isExpired = false;
+        HttpMethod testMethod = null;
+        try {
+            testMethod = DavGatewayHttpClientFacade.executeFollowRedirects(wdr.retrieveSessionInstance(),
+                    URIUtil.encodePath(currentFolderUrl));
+            String queryString = testMethod.getQueryString();
+
+            if (testMethod.getStatusCode() != HttpStatus.SC_OK) {
+                isExpired = true;
+            } else if (queryString != null && queryString.contains("reason=")) {
+                isExpired = true;
+            }
+
+        } catch (IOException e) {
+            isExpired = true;
+        } finally {
+            if (testMethod != null) {
+                testMethod.releaseConnection();
+            }
+        }
+
+        return isExpired;
     }
 
     /**
@@ -197,25 +231,23 @@ public class ExchangeSession {
         return result;
     }
 
-    void login(String userName, String password) throws IOException {
+    void login() throws IOException {
         LOGGER.debug("Session " + this + " login");
         try {
-            String baseUrl = Settings.getProperty("davmail.url");
-
-            boolean isBasicAuthentication = isBasicAuthentication(baseUrl);
+            boolean isBasicAuthentication = isBasicAuthentication(poolKey.url);
 
             // get proxy configuration from setttings properties
-            URL urlObject = new URL(baseUrl);
+            URL urlObject = new URL(poolKey.url);
             // webdavresource is unable to create the correct url type
             HttpURL httpURL;
-            if (baseUrl.startsWith("http://")) {
-                httpURL = new HttpURL(userName, password,
+            if (poolKey.url.startsWith("http://")) {
+                httpURL = new HttpURL(poolKey.userName, poolKey.password,
                         urlObject.getHost(), urlObject.getPort());
-            } else if (baseUrl.startsWith("https://")) {
-                httpURL = new HttpsURL(userName, password,
+            } else if (poolKey.url.startsWith("https://")) {
+                httpURL = new HttpsURL(poolKey.userName, poolKey.password,
                         urlObject.getHost(), urlObject.getPort());
             } else {
-                throw new IllegalArgumentException("Invalid URL: " + baseUrl);
+                throw new IllegalArgumentException("Invalid URL: " + poolKey.url);
             }
             wdr = new WebdavResource(httpURL, WebdavResource.NOACTION, 0);
 
@@ -230,10 +262,10 @@ public class ExchangeSession {
             // get webmail root url
             // providing credentials
             // manually follow redirect
-            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
+            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, poolKey.url);
 
             if (!isBasicAuthentication) {
-                method = formLogin(httpClient, method, userName, password);
+                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
                 // reexecute method with new base URL
 //                method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
             }
@@ -250,7 +282,7 @@ public class ExchangeSession {
             String queryString = method.getQueryString();
             if (queryString != null && queryString.contains("reason=2")) {
                 method.releaseConnection();
-                if (userName != null && userName.contains("\\")) {
+                if (poolKey.userName != null && poolKey.userName.contains("\\")) {
                     throw new HttpException("Authentication failed: invalid user or password");
                 } else {
                     throw new HttpException("Authentication failed: invalid user or password, " +
@@ -261,7 +293,7 @@ public class ExchangeSession {
             mailPath = getMailPath(method);
 
             if (mailPath == null) {
-                throw new HttpException(baseUrl + " not found in body, authentication failed: password expired ?");
+                throw new HttpException(poolKey.url + " not found in body, authentication failed: password expired ?");
             }
 
             // got base http mailbox http url
@@ -343,12 +375,14 @@ public class ExchangeSession {
     /**
      * Close session.
      * This will only close http client, not the actual Exchange session
-     *
-     * @throws IOException if unable to close Webdav context
      */
-    public void close() throws IOException {
-        LOGGER.debug("Session " + this + " closed");
-        wdr.close();
+    void close() {
+        try {
+            wdr.close();
+            LOGGER.debug("Session " + this + " closed");
+        } catch (IOException e) {
+            LOGGER.warn("Exception closing session", e);
+        }
     }
 
     /**
@@ -422,14 +456,9 @@ public class ExchangeSession {
 
     public Message getMessage(String messageUrl) throws IOException {
 
-        // TODO switch according to Log4J log level
-        //wdr.setDebug(4);
-        //wdr.propfindMethod(messageUrl, 0);
         Enumeration messageEnum = wdr.propfindMethod(messageUrl, 0, MESSAGE_REQUEST_PROPERTIES);
-        //wdr.setDebug(0);
 
-        // 201 created in some cases ?!?
-        if ((wdr.getStatusCode() != HttpURLConnection.HTTP_OK && wdr.getStatusCode() != HttpURLConnection.HTTP_CREATED)
+        if ((wdr.getStatusCode() != HttpURLConnection.HTTP_OK)
                 || !messageEnum.hasMoreElements()) {
             throw new IOException("Unable to get message: " + wdr.getStatusCode()
                     + " " + wdr.getStatusMessage());
@@ -771,7 +800,7 @@ public class ExchangeSession {
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
                 "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
-                "                AND \"urn:schemas:calendar:dtstart\" > '2008/11/01 00:00:00'\n" +
+//                "                AND \"urn:schemas:calendar:dtstart\" > '2008/11/01 00:00:00'\n" +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" ASC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
@@ -965,10 +994,10 @@ public class ExchangeSession {
             }
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
             // add detailed information, only if few results
-            if (results.size() <=10) {
-            for (Map<String, String> person : results.values()) {
-                galLookup(person);
-            }
+            if (results.size() <= 10) {
+                for (Map<String, String> person : results.values()) {
+                    galLookup(person);
+                }
             }
         } finally {
             getMethod.releaseConnection();
