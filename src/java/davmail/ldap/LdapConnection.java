@@ -12,23 +12,59 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.HashMap;
 
 /**
  * Handle a caldav connection.
  */
 public class LdapConnection extends AbstractConnection {
-    static final int LDAP_VERSION2 = 0x02;
-    static final int LDAP_VERSION3 = 0x03;              // LDAPv3
+    /**
+     * Davmail base context
+     */
+    static final String BASE_CONTEXT = "ou=people";
+    /**
+     * Exchange to LDAP attribute map
+     */
+    static final HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
+    static {
+        ATTRIBUTE_MAP.put("AN", "uid");
+        ATTRIBUTE_MAP.put("EM", "mail");
+        ATTRIBUTE_MAP.put("DN", "displayName");
+        ATTRIBUTE_MAP.put("PH", "telephoneNumber");
+        ATTRIBUTE_MAP.put("OFFICE", "l");
+        ATTRIBUTE_MAP.put("CP", "company");
+        ATTRIBUTE_MAP.put("TL", "title");
 
-    static final int LDAP_OTHER = 80;
+        ATTRIBUTE_MAP.put("first", "givenName");
+        ATTRIBUTE_MAP.put("initials", "initials");
+        ATTRIBUTE_MAP.put("last", "sn");
+        ATTRIBUTE_MAP.put("street", "street");
+        ATTRIBUTE_MAP.put("state", "st");
+        ATTRIBUTE_MAP.put("zip", "postalCode");
+        ATTRIBUTE_MAP.put("country", "c");
+        ATTRIBUTE_MAP.put("departement", "department");
+        ATTRIBUTE_MAP.put("mobile", "mobile");
+    }
+
+    // LDAP version
+    static final int LDAP_VERSION2 = 0x02;
+    static final int LDAP_VERSION3 = 0x03;
+
+    // LDAP request operations
     static final int LDAP_REQ_BIND = 0x60;
     static final int LDAP_REQ_SEARCH = 99;
+    static final int LDAP_REQ_UNBIND = 0x42;
+
+    // LDAP response operations
     static final int LDAP_REP_BIND = 0x61;
     static final int LDAP_REP_SEARCH = 0x64;
     static final int LDAP_REP_RESULT = 0x65;
+
+    // LDAP return codes
+    static final int LDAP_OTHER = 80;
     static final int LDAP_SUCCESS = 0;
     static final int LDAP_SIZE_LIMIT_EXCEEDED = 4;
     static final int LDAP_INVALID_CREDENTIALS = 49;
@@ -36,26 +72,37 @@ public class LdapConnection extends AbstractConnection {
 
     static final int LDAP_FILTER_OR = 0xa1;
 
+    // LDAP filter operators (only LDAP_FILTER_SUBSTRINGS is supported)
     static final int LDAP_FILTER_SUBSTRINGS = 0xa4;
     static final int LDAP_FILTER_GE = 0xa5;
     static final int LDAP_FILTER_LE = 0xa6;
     static final int LDAP_FILTER_PRESENT = 0x87;
     static final int LDAP_FILTER_APPROX = 0xa8;
 
+    // LDAP filter mode (only startsWith supported by galfind)
     static final int LDAP_SUBSTRING_INITIAL = 0x80;
     static final int LDAP_SUBSTRING_ANY = 0x81;
     static final int LDAP_SUBSTRING_FINAL = 0x82;
 
+    // BER data types
     static final int LBER_ENUMERATED = 0x0a;
     static final int LBER_SET = 0x31;
     static final int LBER_SEQUENCE = 0x30;
-    static final int LDAP_REQ_UNBIND = 0x42;
 
+    // LDAP search scope
     static final int SCOPE_BASE_OBJECT = 0;
     static final int SCOPE_ONE_LEVEL = 1;
     static final int SCOPE_SUBTREE = 2;
 
+    /**
+     * raw connection inputStream
+     */
     protected InputStream is;
+
+    /**
+     * reusable BER encoder
+     */
+    protected BerEncoder responseBer = new BerEncoder();
 
     // Initialize the streams and start the thread
     public LdapConnection(String name, Socket clientSocket) {
@@ -71,7 +118,7 @@ public class LdapConnection extends AbstractConnection {
 
     public void run() {
         byte inbuf[] = new byte[2048];   // Buffer for reading incoming bytes
-        int inMsgId = 0;    // Message id of incoming response
+        int currentMessageId = 0;    // Message id of incoming response
         int bytesread;  // Number of bytes in inbuf
         int bytesleft;  // Number of bytes that need to read for completing resp
         int br;         // Temp; number of bytes read from stream
@@ -154,26 +201,27 @@ public class LdapConnection extends AbstractConnection {
                 reqBer = new BerDecoder(inbuf, 0, offset);
 
                 reqBer.parseSeq(null);
-                inMsgId = reqBer.parseInt();
+                currentMessageId = reqBer.parseInt();
                 operation = reqBer.parseSeq(null);
 
-                Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
+                responseBer.reset();
+                //Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
 
                 if (operation == LDAP_REQ_BIND) {
                     int ldapVersion = reqBer.parseInt();
                     String userName = reqBer.parseString(ldapVersion == LDAP_VERSION3);
-                    String password = reqBer.parseStringWithTag(0x80, ldapVersion == LDAP_VERSION3, null);
+                    String password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, ldapVersion == LDAP_VERSION3, null);
 
                     if (userName.length() > 0 && password.length() > 0) {
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
-                            sendClient(inMsgId, LDAP_REP_BIND, LDAP_SUCCESS, "");
+                            sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                         } catch (IOException e) {
-                            sendClient(inMsgId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
+                            sendClient(currentMessageId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
                         }
                     } else {
                         // anonymous bind
-                        sendClient(inMsgId, LDAP_REP_BIND, LDAP_SUCCESS, "");
+                        sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                     }
 
                 } else if (operation == LDAP_REQ_UNBIND) {
@@ -193,74 +241,36 @@ public class LdapConnection extends AbstractConnection {
                     boolean attrsOnly = reqBer.parseBoolean();
                     int size = 0;
 
-                    BerEncoder retBer = new BerEncoder(2048);
-
                     if (scope == SCOPE_BASE_OBJECT) {
                         if ("".equals(dn)) {
-                            // Root DSE
+                            size = 1;
+                            sendRootDSE(currentMessageId);
+                        }
+                        if (BASE_CONTEXT.equals(dn)) {
                             size = 1;
                             // root
-                            retBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-                            retBer.encodeInt(inMsgId);
-                            retBer.beginSeq(LDAP_REP_SEARCH);
+                            responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+                            responseBer.encodeInt(currentMessageId);
+                            responseBer.beginSeq(LDAP_REP_SEARCH);
 
-                            retBer.encodeString("Root DSE", true);
-                            retBer.beginSeq(LBER_SEQUENCE);
-                            retBer.beginSeq(LBER_SEQUENCE);
-                            retBer.encodeString("namingContexts", true);
-                            retBer.beginSeq(LBER_SET);
-                            retBer.encodeString("ou=people", true);
-                            retBer.endSeq();
-                            retBer.endSeq();
-                            retBer.endSeq();
+                            responseBer.encodeString(BASE_CONTEXT, true);
+                            responseBer.beginSeq(LBER_SEQUENCE);
+                            responseBer.beginSeq(LBER_SEQUENCE);
+                            responseBer.encodeString("description", true);
+                            responseBer.beginSeq(LBER_SET);
+                            responseBer.encodeString("people", true);
+                            responseBer.endSeq();
+                            responseBer.endSeq();
+                            responseBer.endSeq();
 
-                            retBer.endSeq();
-                            retBer.endSeq();
-                        } if ("ou=people".equals(dn)) {
-                            size = 1;
-                            // root
-                            retBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-                            retBer.encodeInt(inMsgId);
-                            retBer.beginSeq(LDAP_REP_SEARCH);
-
-                            retBer.encodeString("ou=people", true);
-                            retBer.beginSeq(LBER_SEQUENCE);
-                            retBer.beginSeq(LBER_SEQUENCE);
-                            retBer.encodeString("description", true);
-                            retBer.beginSeq(LBER_SET);
-                            retBer.encodeString("people", true);
-                            retBer.endSeq();
-                            retBer.endSeq();
-                            retBer.endSeq();
-
-                            retBer.endSeq();
-                            retBer.endSeq();
+                            responseBer.endSeq();
+                            responseBer.endSeq();
                         } else if (dn.startsWith("uid=") && session != null) {
                             String uid = dn.substring(4, dn.indexOf(','));
                             Map<String, Map<String, String>> persons = session.galFind("AN", uid);
                             size = persons.size();
                             // TODO refactor
                             for (Map<String, String> person : persons.values()) {
-                                HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
-                                ATTRIBUTE_MAP.put("uid", "AN");
-                                ATTRIBUTE_MAP.put("mail", "EM");
-                                ATTRIBUTE_MAP.put("displayName", "DN");
-                                ATTRIBUTE_MAP.put("telephoneNumber", "PH");
-                                ATTRIBUTE_MAP.put("l", "OFFICE");
-                                ATTRIBUTE_MAP.put("company", "CP");
-                                ATTRIBUTE_MAP.put("title", "TL");
-
-                                ATTRIBUTE_MAP.put("cn", "DN");
-                                ATTRIBUTE_MAP.put("givenName", "first");
-                                ATTRIBUTE_MAP.put("initials", "initials");
-                                ATTRIBUTE_MAP.put("sn", "last");
-                                ATTRIBUTE_MAP.put("street", "street");
-                                ATTRIBUTE_MAP.put("st", "state");
-                                ATTRIBUTE_MAP.put("postalCode", "zip");
-                                ATTRIBUTE_MAP.put("c", "country");
-                                ATTRIBUTE_MAP.put("departement", "department");
-                                ATTRIBUTE_MAP.put("mobile", "mobile");
-
                                 Map<String, String> ldapPerson = new HashMap<String, String>();
 
                                 for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
@@ -272,31 +282,31 @@ public class LdapConnection extends AbstractConnection {
                                     }
                                 }
 
-                                retBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-                                retBer.encodeInt(inMsgId);
-                                retBer.beginSeq(LDAP_REP_SEARCH);
+                                responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+                                responseBer.encodeInt(currentMessageId);
+                                responseBer.beginSeq(LDAP_REP_SEARCH);
 
-                                retBer.encodeString("uid=" + ldapPerson.get("uid") + ",ou=people", true);
-                                retBer.beginSeq(LBER_SEQUENCE);
+                                responseBer.encodeString("uid=" + ldapPerson.get("uid") + ","+BASE_CONTEXT, true);
+                                responseBer.beginSeq(LBER_SEQUENCE);
 
                                 for (Map.Entry<String, String> entry : ldapPerson.entrySet()) {
-                                    retBer.beginSeq(LBER_SEQUENCE);
-                                    retBer.encodeString(entry.getKey(), true);
-                                    retBer.beginSeq(LBER_SET);
-                                    retBer.encodeString(entry.getValue(), true);
-                                    retBer.endSeq();
-                                    retBer.endSeq();
+                                    responseBer.beginSeq(LBER_SEQUENCE);
+                                    responseBer.encodeString(entry.getKey(), true);
+                                    responseBer.beginSeq(LBER_SET);
+                                    responseBer.encodeString(entry.getValue(), true);
+                                    responseBer.endSeq();
+                                    responseBer.endSeq();
                                 }
-                                retBer.endSeq();
+                                responseBer.endSeq();
 
-                                retBer.endSeq();
-                                retBer.endSeq();
+                                responseBer.endSeq();
+                                responseBer.endSeq();
 
                             }
                             //end TODO
                         }
 
-                    } else if ("ou=people".equals(dn) && session != null) {
+                    } else if (BASE_CONTEXT.equals(dn) && session != null) {
                         // filter
                         Map<String, String> criteria = new HashMap<String, String>();
                         try {
@@ -447,24 +457,7 @@ public class LdapConnection extends AbstractConnection {
 
                         size = persons.size();
                         for (Map<String, String> person : persons.values()) {
-                            HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
-                            ATTRIBUTE_MAP.put("AN", "uid");
-                            ATTRIBUTE_MAP.put("EM", "mail");
-                            ATTRIBUTE_MAP.put("DN", "displayName");
-                            ATTRIBUTE_MAP.put("PH", "telephoneNumber");
-                            ATTRIBUTE_MAP.put("OFFICE", "l");
-                            ATTRIBUTE_MAP.put("CP", "company");
-                            ATTRIBUTE_MAP.put("TL", "title");
 
-                            ATTRIBUTE_MAP.put("first", "givenName");
-                            ATTRIBUTE_MAP.put("initials", "initials");
-                            ATTRIBUTE_MAP.put("last", "sn");
-                            ATTRIBUTE_MAP.put("street", "street");
-                            ATTRIBUTE_MAP.put("state", "st");
-                            ATTRIBUTE_MAP.put("zip", "postalCode");
-                            ATTRIBUTE_MAP.put("country", "c");
-                            ATTRIBUTE_MAP.put("departement", "department");
-                            ATTRIBUTE_MAP.put("mobile", "mobile");
 
                             Map<String, String> ldapPerson = new HashMap<String, String>();
                             for (Map.Entry<String, String> entry : person.entrySet()) {
@@ -475,48 +468,45 @@ public class LdapConnection extends AbstractConnection {
                             }
 
 
-                            retBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-                            retBer.encodeInt(inMsgId);
-                            retBer.beginSeq(LDAP_REP_SEARCH);
+                            responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+                            responseBer.encodeInt(currentMessageId);
+                            responseBer.beginSeq(LDAP_REP_SEARCH);
 
-                            retBer.encodeString("uid=" + ldapPerson.get("uid") + ",ou=people", true);
-                            retBer.beginSeq(LBER_SEQUENCE);
+                            responseBer.encodeString("uid=" + ldapPerson.get("uid") + ","+BASE_CONTEXT, true);
+                            responseBer.beginSeq(LBER_SEQUENCE);
 
                             for (Map.Entry<String, String> entry : ldapPerson.entrySet()) {
-                                retBer.beginSeq(LBER_SEQUENCE);
-                                retBer.encodeString(entry.getKey(), true);
-                                retBer.beginSeq(LBER_SET);
-                                retBer.encodeString(entry.getValue(), true);
-                                retBer.endSeq();
-                                retBer.endSeq();
+                                responseBer.beginSeq(LBER_SEQUENCE);
+                                responseBer.encodeString(entry.getKey(), true);
+                                responseBer.beginSeq(LBER_SET);
+                                responseBer.encodeString(entry.getValue(), true);
+                                responseBer.endSeq();
+                                responseBer.endSeq();
                             }
-                            retBer.endSeq();
+                            responseBer.endSeq();
 
-                            retBer.endSeq();
-                            retBer.endSeq();
+                            responseBer.endSeq();
+                            responseBer.endSeq();
 
                         }
                     }
 
-                    Ber.dumpBER(System.out, "response\n", retBer.getBuf(), 0, retBer.getDataLen());
-
-                    os.write(retBer.getBuf(), 0, retBer.getDataLen());
-                    os.flush();
+                    sendResponse();
                     if (size == sizeLimit) {
-                        sendClient(inMsgId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
+                        sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
                     } else {
-                        sendClient(inMsgId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
+                        sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
                     }
                 } else {
-                    sendClient(inMsgId, 0, LDAP_OTHER, "Unsupported operation");
+                    sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_OTHER, "Unsupported operation");
                 }
-
-
             }
+        } catch (SocketTimeoutException e) {
+            DavGatewayTray.debug("Closing connection on timeout");
         } catch (IOException e) {
             DavGatewayTray.error(e);
             try {
-                sendErr(inMsgId, operation, e);
+                sendErr(currentMessageId, LDAP_REP_RESULT, e);
             } catch (IOException e2) {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
@@ -526,33 +516,75 @@ public class LdapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    public void sendErr(int inMsgId, int operation, Exception e) throws IOException {
+    /**
+     * Send Root DSE
+     * @throws IOException
+     */
+    public void sendRootDSE(int currentMessageId) throws IOException {
+        Map<String,Object> attributes = new HashMap<String,Object>();
+        attributes.put("namingContexts", BASE_CONTEXT);
+        sendEntry(currentMessageId, "Root DSE", attributes);
+    }
+
+    public void sendEntry(int currentMessageId, String dn, Map<String,Object> attributes) throws IOException {
+        responseBer.reset();
+        responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+            responseBer.encodeInt(currentMessageId);
+            responseBer.beginSeq(LDAP_REP_SEARCH);
+                responseBer.encodeString(dn, true);
+                responseBer.beginSeq(LBER_SEQUENCE);
+                    for (Map.Entry<String,Object> entry:attributes.entrySet()) {
+                        responseBer.beginSeq(LBER_SEQUENCE);
+                            responseBer.encodeString(entry.getKey(), true);
+                            responseBer.beginSeq(LBER_SET);
+                                Object values = entry.getValue();
+                                if (values instanceof String) {
+                                    responseBer.encodeString((String)values, true);
+                                } else if (values instanceof List) {
+                                    for (Object value: (List)values) {
+                                        responseBer.encodeString((String) value, true);
+                                    }
+                                } else {
+                                    throw new IllegalArgumentException();
+                                }
+                            responseBer.endSeq();
+                        responseBer.endSeq();
+                    }
+                responseBer.endSeq();
+            responseBer.endSeq();
+        responseBer.endSeq();
+        sendResponse();
+    }
+
+    public void sendErr(int currentMessageId, int responseOperation, Exception e) throws IOException {
         String message = e.getMessage();
         if (message == null) {
             message = e.toString();
         }
-        sendClient(inMsgId, operation, LDAP_OTHER, message);
+        sendClient(currentMessageId, responseOperation, LDAP_OTHER, message);
     }
 
-    public void sendClient(int inMsgId, int operation, int status, String message) throws IOException {
-        BerEncoder retBer = new BerEncoder(2048);
+    public void sendClient(int currentMessageId, int responseOperation, int status, String message) throws IOException {
+        responseBer.reset();
 
-        retBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-        retBer.encodeInt(inMsgId);
-        retBer.beginSeq(operation);
-        retBer.encodeInt(status, LBER_ENUMERATED);
-        // dn
-        retBer.encodeString("", true);
-        // error message
-        retBer.encodeString(message, true);
-        retBer.endSeq();
+        responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+            responseBer.encodeInt(currentMessageId);
+            responseBer.beginSeq(responseOperation);
+                responseBer.encodeInt(status, LBER_ENUMERATED);
+                // dn
+                responseBer.encodeString("", true);
+                // error message
+                responseBer.encodeString(message, true);
+            responseBer.endSeq();
+        responseBer.endSeq();
+       sendResponse();
+    }
 
-        retBer.endSeq();
-
-        os.write(retBer.getBuf(), 0, retBer.getDataLen());
+    public void sendResponse() throws IOException {
+        //Ber.dumpBER(System.out, ">\n", responseBer.getBuf(), 0, responseBer.getDataLen());
+        os.write(responseBer.getBuf(), 0, responseBer.getDataLen());
         os.flush();
     }
-
 
 }
 
