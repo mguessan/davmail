@@ -993,12 +993,6 @@ public class ExchangeSession {
                 throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
             }
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-            // add detailed information, only if few results
-            if (results.size() <= 10) {
-                for (Map<String, String> person : results.values()) {
-                    galLookup(person);
-                }
-            }
         } finally {
             getMethod.releaseConnection();
         }
