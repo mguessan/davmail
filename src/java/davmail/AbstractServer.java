@@ -42,9 +42,9 @@ public abstract class AbstractServer extends Thread {
         String bindAddress = Settings.getProperty("davmail.bindAddress");
         //noinspection SocketOpenedButNotSafelyClosed
         if (bindAddress == null || bindAddress.length() == 0) {
-            serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket(this.port);
         } else {
-            serverSocket = new ServerSocket(port, 0, Inet4Address.getByName(bindAddress));
+            serverSocket = new ServerSocket(this.port, 0, Inet4Address.getByName(bindAddress));
         }
     }
 
