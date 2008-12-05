@@ -28,7 +28,7 @@ public class PopConnection extends AbstractConnection {
         super("PopConnection", clientSocket, null);
     }
 
-    public long getTotalMessagesLength() {
+    protected long getTotalMessagesLength() {
         int result = 0;
         for (ExchangeSession.Message message : messages) {
             result += message.size;
@@ -36,14 +36,14 @@ public class PopConnection extends AbstractConnection {
         return result;
     }
 
-    public void printCapabilities() throws IOException {
+    protected void printCapabilities() throws IOException {
         sendClient("TOP");
         sendClient("USER");
         sendClient("UIDL");
         sendClient(".");
     }
 
-    public void printList() throws IOException {
+    protected void printList() throws IOException {
         int i = 1;
         for (ExchangeSession.Message message : messages) {
             sendClient(i++ + " " + message.size);
@@ -51,7 +51,7 @@ public class PopConnection extends AbstractConnection {
         sendClient(".");
     }
 
-    public void printUidList() throws IOException {
+    protected void printUidList() throws IOException {
         int i = 1;
         for (ExchangeSession.Message message : messages) {
             sendClient(i++ + " " + message.uid);
@@ -233,11 +233,11 @@ public class PopConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    public void sendOK(String message) throws IOException {
+    protected void sendOK(String message) throws IOException {
         sendClient("+OK ", message);
     }
 
-    public void sendERR(Exception e) throws IOException {
+    protected void sendERR(Exception e) throws IOException {
         String message = e.getMessage();
         if (message == null) {
             message = e.toString();
@@ -245,7 +245,7 @@ public class PopConnection extends AbstractConnection {
         sendERR(message);
     }
 
-    public void sendERR(String message) throws IOException {
+    protected void sendERR(String message) throws IOException {
         sendClient("-ERR ", message.replaceAll("\\n", " "));
     }
 

@@ -51,6 +51,11 @@
                         <td>30</td>
                     </tr>
                     <tr>
+                        <td>Sent Keep Delay</td>
+                        <td>Number of days to keep sent messages in Exchange sent folder</td>
+                        <td>90</td>
+                    </tr>
+                    <tr>
                         <td>Allow remote connections</td>
                         <td>Allow remote connections to the gateway (server mode)</td>
                         <td>false</td>

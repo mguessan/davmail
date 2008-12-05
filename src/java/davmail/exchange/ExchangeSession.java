@@ -41,8 +41,6 @@ public class ExchangeSession {
         MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
     }
 
-    private static final int DEFAULT_KEEP_DELAY = 30;
-
     /**
      * Date parser from Exchange format
      */
@@ -53,6 +51,7 @@ public class ExchangeSession {
      */
     private String inboxUrl;
     private String deleteditemsUrl;
+    private String sentitemsUrl;
     private String sendmsgUrl;
     private String draftsUrl;
     private String calendarUrl;
@@ -303,6 +302,7 @@ public class ExchangeSession {
             Vector<String> reqProps = new Vector<String>();
             reqProps.add("urn:schemas:httpmail:inbox");
             reqProps.add("urn:schemas:httpmail:deleteditems");
+            reqProps.add("urn:schemas:httpmail:sentitems");
             reqProps.add("urn:schemas:httpmail:sendmsg");
             reqProps.add("urn:schemas:httpmail:drafts");
             reqProps.add("urn:schemas:httpmail:calendar");
@@ -323,20 +323,19 @@ public class ExchangeSession {
                     inboxUrl = URIUtil.decode(inboxProp.getPropertyAsString());
                 }
                 if ("deleteditems".equals(inboxProp.getLocalName())) {
-                    deleteditemsUrl = URIUtil.decode(inboxProp.
-                            getPropertyAsString());
+                    deleteditemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+                }
+                if ("sentitems".equals(inboxProp.getLocalName())) {
+                    sentitemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
                 }
                 if ("sendmsg".equals(inboxProp.getLocalName())) {
-                    sendmsgUrl = URIUtil.decode(inboxProp.
-                            getPropertyAsString());
+                    sendmsgUrl = URIUtil.decode(inboxProp.getPropertyAsString());
                 }
                 if ("drafts".equals(inboxProp.getLocalName())) {
-                    draftsUrl = URIUtil.decode(inboxProp.
-                            getPropertyAsString());
+                    draftsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
                 }
                 if ("calendar".equals(inboxProp.getLocalName())) {
-                    calendarUrl = URIUtil.decode(inboxProp.
-                            getPropertyAsString());
+                    calendarUrl = URIUtil.decode(inboxProp.getPropertyAsString());
                 }
             }
 
@@ -345,10 +344,9 @@ public class ExchangeSession {
 
             LOGGER.debug("Inbox URL : " + inboxUrl);
             LOGGER.debug("Trash URL : " + deleteditemsUrl);
+            LOGGER.debug("Sent URL : " + sentitemsUrl);
             LOGGER.debug("Send URL : " + sendmsgUrl);
             LOGGER.debug("Drafts URL : " + draftsUrl);
-            // TODO : sometimes path, sometimes Url ?
-            deleteditemsUrl = URIUtil.getPath(deleteditemsUrl);
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
         } catch (Exception exc) {
@@ -509,27 +507,35 @@ public class ExchangeSession {
      *
      * @throws IOException when unable to purge messages
      */
-    public void purgeOldestTrashMessages() throws IOException {
+    public void purgeOldestTrashAndSentMessages() throws IOException {
         int keepDelay = Settings.getIntProperty("davmail.keepDelay");
-        if (keepDelay == 0) {
-            keepDelay = DEFAULT_KEEP_DELAY;
+        if (keepDelay != 0) {
+            purgeOldestFolderMessages(deleteditemsUrl, keepDelay);
         }
+        // this is a new feature, default is : do nothing
+        int sentKeepDelay = Settings.getIntProperty("davmail.sentKeepDelay");
+        if (sentKeepDelay != 0) {
+            purgeOldestFolderMessages(sentitemsUrl, sentKeepDelay);
+        }
+    }
+
+    public void purgeOldestFolderMessages(String folderUrl, int keepDelay) throws IOException {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
-        LOGGER.debug("Delete messages in trash since " + cal.getTime());
+        LOGGER.debug("Delete messages in " + folderUrl + " since " + cal.getTime());
 
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
         String searchRequest = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql>Select \"DAV:uid\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + deleteditemsUrl + "\"')\n" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
-                "                   AND \"DAV:getlastmodified\" &lt; '"+dateFormatter.format(cal.getTime())+"'\n" +
+                "                   AND \"DAV:getlastmodified\" &lt; '" + dateFormatter.format(cal.getTime()) + "'\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(currentFolderUrl), searchRequest);
-        searchMethod.setDebug(4);
+        //searchMethod.setDebug(4);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
