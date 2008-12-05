@@ -74,6 +74,9 @@ public class ExchangeSessionFactory {
         }
     }
 
+    private ExchangeSessionFactory() {
+    }
+
     /**
      * Create authenticated Exchange session
      *

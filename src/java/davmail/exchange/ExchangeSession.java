@@ -798,10 +798,10 @@ public class ExchangeSession {
     public List<Event> getAllEvents() throws IOException {
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", 90);
         String dateCondition = "";
-        if(caldavPastDelay != 0) {
+        if (caldavPastDelay != 0) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
-            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '"+dateFormatter.format(cal.getTime())+"'\n";
+            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + dateFormatter.format(cal.getTime()) + "'\n";
         }
 
         List<Event> events = new ArrayList<Event>();
@@ -992,11 +992,13 @@ public class ExchangeSession {
     /**
      * Search users in global address book
      *
-     * @param searchValue
+     * @param searchAttribute exchange search attribute
+     * @param searchValue     search value
      * @return List of users
+     * @throws java.io.IOException on error
      */
     public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
-        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> results;
         GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + "=" + searchValue));
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(getMethod);

@@ -31,6 +31,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Display display;
     private static Shell shell;
     private boolean isActive = true;
+    private boolean isReady = false;
 
     public java.awt.Image getFrameIcon() {
         return awtImage;
@@ -257,6 +258,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         settingsFrame.setVisible(true);
                     }
                     // ready
+                    isReady = true;
                     synchronized (mainThread) {
                         mainThread.notify();
                     }
@@ -277,13 +279,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             }
         }.start();
-        // wait for SWT init
-        try {
-            synchronized (mainThread) {
-                mainThread.wait();
+        while (!isReady) {
+            // wait for SWT init
+            try {
+                synchronized (mainThread) {
+                    mainThread.wait(1000);
+                }
+            } catch (InterruptedException e) {
+                DavGatewayTray.error("Error waiting for SWT init", e);
             }
-        } catch (InterruptedException e) {
-            DavGatewayTray.error("Error waiting for SWT init",e);
         }
     }
 

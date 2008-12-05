@@ -6,15 +6,13 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * XmlStreamReader utility methods
  */
-public class XMLStreamUtil {
+public final class XMLStreamUtil {
     private XMLStreamUtil() {
     }
 

@@ -113,8 +113,8 @@ public class DavGateway {
                 versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
                 version = versionReader.readLine();
             }
-        } catch (Exception e) {
-            // ignore
+        } catch (IOException e) {
+            DavGatewayTray.debug("Exception getting released version",e);
         } finally {
             if (versionReader != null) {
                 try {
