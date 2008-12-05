@@ -805,6 +805,7 @@ public class ExchangeSession {
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(calendarUrl, searchRequest);
+        //searchMethod.setDebug(4);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
@@ -870,7 +871,6 @@ public class ExchangeSession {
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Overwrite", "f");
         if (etag != null) {
-            // TODO
             putmethod.setRequestHeader("If-Match", etag);
         }
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
@@ -899,7 +899,7 @@ public class ExchangeSession {
             if (status == HttpURLConnection.HTTP_OK) {
                 LOGGER.warn("Overwritten event " + messageUrl);
             } else if (status != HttpURLConnection.HTTP_CREATED) {
-                throw new IOException("Unable to create message " + status + " " + putmethod.getStatusLine());
+                LOGGER.warn("Unable to create or update message " + status + " " + putmethod.getStatusLine());
             }
         } finally {
             putmethod.releaseConnection();

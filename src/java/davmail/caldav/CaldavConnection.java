@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -123,6 +124,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
+        } catch (SocketException e) {
+            DavGatewayTray.debug("Connection closed");
         } catch (IOException e) {
             DavGatewayTray.error(e);
             try {
@@ -254,9 +257,10 @@ public class CaldavConnection extends AbstractConnection {
                             inHref = true;
                         } else if (event == XMLStreamConstants.CHARACTERS && inHref) {
                             try {
-                                events.add(session.getEvent(URIUtil.decode(reader.getText().substring("/calendar/".length()))));
+                                events.add(session.getEvent(reader.getText().substring("/calendar/".length())));
                             } catch (HttpException e) {
-                                notFound.add(reader.getText().substring("/calendar/".length()));
+                                String href = reader.getText();
+                                notFound.add(href);
                             }
                             inHref = false;
                         }
@@ -294,16 +298,17 @@ public class CaldavConnection extends AbstractConnection {
                 buffer.append("            </D:prop>\n");
                 buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
                 buffer.append("        </D:propstat>\n");
-                if (notFound.size() > 0) {
-                    buffer.append("        <D:propstat>\n");
-                    for (String href : notFound) {
-                        buffer.append("        <D:href>").append(href).append("</D:href>\n");
-                    }
-                    buffer.append("            <D:status>HTTP/1.1 404 Not Found</D:status>\n");
-                    buffer.append("        </D:propstat>\n");
-                }
-                buffer.append("    </D:response>").append((char) 13).append((char) 10);
+                buffer.append("    </D:response>\n");
 
+            }
+            // TODO : handle not found
+            for (String href : notFound) {
+                buffer.append("<D:response>\n");
+                buffer.append("        <D:href>").append(href).append("</D:href>\n");
+                buffer.append("        <D:propstat>\n");
+                buffer.append("            <D:status>HTTP/1.1 404 Not Found</D:status>\n");
+                buffer.append("        </D:propstat>\n");
+                buffer.append("    </D:response>\n");
             }
             buffer.append("</D:multistatus>");
 
