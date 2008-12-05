@@ -32,18 +32,23 @@
                     </tr>
                     <tr>
                         <td>Local POP port</td>
-                        <td>Local POP server port to configure in POP client configuration</td>
+                        <td>Local POP server port to configure in POP client</td>
                         <td>110</td>
                     </tr>
                     <tr>
                         <td>Local SMTP port</td>
-                        <td>Local SMTP server port to configure in POP client configuration</td>
+                        <td>Local SMTP server port to configure in POP client</td>
                         <td>25</td>
                     </tr>
                     <tr>
                         <td>Local Caldav HTTP port</td>
-                        <td>Local Caldav server port to configure in Caldav (calendar) client configuration</td>
+                        <td>Local Caldav server port to configure in Caldav (calendar) client</td>
                         <td>80</td>
+                    </tr>
+                    <tr>
+                        <td>Local LDAP port</td>
+                        <td>Local LDAP server port to configure in add directory (addresse book) client</td>
+                        <td>389</td>
                     </tr>
                     <tr>
                         <td>Keep Delay</td>

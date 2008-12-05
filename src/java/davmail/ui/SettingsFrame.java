@@ -20,6 +20,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField popPortField;
     protected JTextField smtpPortField;
     protected JTextField caldavPortField;
+    protected JTextField ldapPortField;
     protected JTextField keepDelayField;
     protected JTextField sentKeepDelayField;
     protected JTextField caldavPastDelayField;
@@ -61,18 +62,24 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getSettingsPanel() {
-        JPanel settingsPanel = new JPanel(new GridLayout(4, 2));
+        JPanel settingsPanel = new JPanel(new GridLayout(5, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
         caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
+        ldapPortField = new JTextField(Settings.getProperty("davmail.ldapPort"), 4);
 
         addSettingComponent(settingsPanel, "OWA url: ", urlField, "Base outlook web access URL");
-        addSettingComponent(settingsPanel, "Local POP port: ", popPortField);
-        addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField);
-        addSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField);
+        addSettingComponent(settingsPanel, "Local POP port: ", popPortField,
+                "Local POP server port to configure in POP client");
+        addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField,
+                "Local SMTP server port to configure in POP client");
+        addSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField,
+                "Local Caldav server port to configure in Caldav (calendar) client");
+        addSettingComponent(settingsPanel, "Local LDAP port: ", ldapPortField,
+                "Local LDAP server port to configure in add directory (addresse book) client");
         return settingsPanel;
     }
 
@@ -176,6 +183,7 @@ public class SettingsFrame extends JFrame {
         popPortField.setText(Settings.getProperty("davmail.popPort"));
         smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
         caldavPortField.setText(Settings.getProperty("davmail.caldavPort"));
+        ldapPortField.setText(Settings.getProperty("davmail.ldapPort"));
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
         sentKeepDelayField.setText(Settings.getProperty("davmail.sentKeepDelay"));
         caldavPastDelayField.setText(Settings.getProperty("davmail.caldavPastDelay"));
@@ -220,7 +228,6 @@ public class SettingsFrame extends JFrame {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.add(getSettingsPanel());
         mainPanel.add(getDelaysPanel());
-        mainPanel.add(getProxyPanel());
         mainPanel.add(Box.createVerticalGlue());
 
         tabbedPane.add("Main", mainPanel);
@@ -228,13 +235,17 @@ public class SettingsFrame extends JFrame {
         JPanel advancedPanel = new JPanel();
         advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
 
+        JPanel proxyPanel = new JPanel();
+        proxyPanel.setLayout(new BoxLayout(proxyPanel, BoxLayout.Y_AXIS));
+        proxyPanel.add(getProxyPanel());
+        // empty panel
+        proxyPanel.add(new JPanel());
+        tabbedPane.add("Proxy", proxyPanel);
+
         advancedPanel.add(getNetworkSettingsPanel());
         advancedPanel.add(getLoggingSettingsPanel());
-        // empty panel
-        advancedPanel.add(new JPanel());
 
         tabbedPane.add("Advanced", advancedPanel);
-
 
         add("Center", tabbedPane);
 
@@ -248,6 +259,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.popPort", popPortField.getText());
                 Settings.setProperty("davmail.smtpPort", smtpPortField.getText());
                 Settings.setProperty("davmail.caldavPort", caldavPortField.getText());
+                Settings.setProperty("davmail.ldapPort", ldapPortField.getText());
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
                 Settings.setProperty("davmail.sentKeepDelay", sentKeepDelayField.getText());
                 Settings.setProperty("davmail.caldavPastDelay", caldavPastDelayField.getText());
