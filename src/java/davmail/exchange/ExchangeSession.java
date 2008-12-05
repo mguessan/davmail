@@ -796,9 +796,9 @@ public class ExchangeSession {
     }
 
     public List<Event> getAllEvents() throws IOException {
-        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", 90);
+        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", Integer.MAX_VALUE);
         String dateCondition = "";
-        if (caldavPastDelay != 0) {
+        if (caldavPastDelay != Integer.MAX_VALUE) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + dateFormatter.format(cal.getTime()) + "'\n";
@@ -812,7 +812,7 @@ public class ExchangeSession {
                 "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
                 dateCondition +
-                "                ORDER BY \"urn:schemas:calendar:dtstart\" ASC\n" +
+                "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(calendarUrl, searchRequest);
