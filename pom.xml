@@ -124,9 +124,9 @@
         </dependency>
         <!-- included in Java 1.6, needed with Java 1.5 -->
         <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jsr173_api</artifactId>
-            <version>1.0</version>
+            <groupId>org.codehaus.woodstox</groupId>
+            <artifactId>wstx-asl</artifactId>
+            <version>3.2.7</version>
         </dependency>
     </dependencies>
     <build>
