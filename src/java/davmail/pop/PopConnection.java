@@ -134,12 +134,12 @@ public class PopConnection extends AbstractConnection {
                                 String token = tokens.nextToken();
                                 try {
                                     int messageNumber = Integer.valueOf(token);
-                                    ExchangeSession.Message message = messages.get(messageNumber-1);
-                                    sendOK(""+messageNumber+" "+message.size);
+                                    ExchangeSession.Message message = messages.get(messageNumber - 1);
+                                    sendOK("" + messageNumber + " " + message.size);
                                 } catch (NumberFormatException e) {
-                                    sendERR("Invalid message index: "+token);
+                                    sendERR("Invalid message index: " + token);
                                 } catch (IndexOutOfBoundsException e) {
-                                    sendERR("Invalid message index: "+token);
+                                    sendERR("Invalid message index: " + token);
                                 }
                             } else {
                                 sendOK(messages.size() +
@@ -193,7 +193,7 @@ public class PopConnection extends AbstractConnection {
                             try {
                                 message = Integer.valueOf(tokens.nextToken());
                                 int lines = Integer.valueOf(tokens.nextToken());
-                                ExchangeSession.Message m = messages.get(message-1);
+                                ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
                                 m.write(new TopOutputStream(os, lines));
                                 sendClient("");
@@ -202,7 +202,7 @@ public class PopConnection extends AbstractConnection {
                                 // can not send error to client after a socket exception
                                 DavGatewayTray.warn("Client closed connection ", e);
                             } catch (IndexOutOfBoundsException e) {
-                                sendERR("Invalid message index: "+message);
+                                sendERR("Invalid message index: " + message);
                             } catch (Exception e) {
                                 sendERR("error retreiving top of messages");
                                 DavGatewayTray.error(e.getMessage(), e);
@@ -287,13 +287,13 @@ public class PopConnection extends AbstractConnection {
                     STATE = START;
                 }
             } else if (STATE == CRLF) {
-                 if (b == '\r') {
+                if (b == '\r') {
                     STATE = CRLFCR;
                 } else {
                     STATE = START;
                 }
             } else if (STATE == CRLFCR) {
-                 if (b == '\n') {
+                if (b == '\n') {
                     STATE = BODY;
                 } else {
                     STATE = START;

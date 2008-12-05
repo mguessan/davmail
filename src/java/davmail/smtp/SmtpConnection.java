@@ -6,6 +6,7 @@ import davmail.tray.DavGatewayTray;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Date;
 import java.util.StringTokenizer;
 
@@ -122,6 +123,9 @@ public class SmtpConnection extends AbstractConnection {
 
                 os.flush();
             }
+
+        } catch (SocketException e) {
+            DavGatewayTray.debug("Connection closed");
         } catch (IOException e) {
             DavGatewayTray.error(e.getMessage());
             try {
@@ -137,6 +141,7 @@ public class SmtpConnection extends AbstractConnection {
 
     /**
      * Create authenticated session with Exchange server
+     *
      * @throws IOException on error
      */
     protected void authenticate() throws IOException {

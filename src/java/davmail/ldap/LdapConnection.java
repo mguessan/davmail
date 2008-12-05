@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -228,6 +229,9 @@ public class LdapConnection extends AbstractConnection {
 
                 handleRequest(new BerDecoder(inbuf, 0, offset));
             }
+
+        } catch (SocketException e) {
+            DavGatewayTray.debug("Connection closed");
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
         } catch (IOException e) {
