@@ -128,6 +128,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             DavGatewayTray.warn("Unable to set look and feel");
         }
 
+        final Thread mainThread = Thread.currentThread();
+
         new Thread("SWT") {
             public void run() {
                 display = new Display();
@@ -254,6 +256,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     if (Settings.isFirstStart()) {
                         settingsFrame.setVisible(true);
                     }
+                    // ready
+                    synchronized (mainThread) {
+                        mainThread.notify();
+                    }
 
                     while (!shell.isDisposed()) {
                         if (!display.readAndDispatch()) {
@@ -271,6 +277,14 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             }
         }.start();
+        // wait for SWT init
+        try {
+            synchronized (mainThread) {
+                mainThread.wait();
+            }
+        } catch (InterruptedException e) {
+            DavGatewayTray.error("Error waiting for SWT init",e);
+        }
     }
 
 }
