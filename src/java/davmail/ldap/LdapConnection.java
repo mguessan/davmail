@@ -399,13 +399,23 @@ public class LdapConnection extends AbstractConnection {
 
     protected void parseSimpleFilter(BerDecoder reqBer, Map<String, String> criteria) throws IOException {
         String attributeName = reqBer.parseString(isLdapV3()).toLowerCase();
-        /*LBER_SEQUENCE*/
-        reqBer.parseSeq(null);
-        int ldapFilterMode = reqBer.peekByte();
-        String value = reqBer.parseStringWithTag(ldapFilterMode, isLdapV3(), null);
         String exchangeAttributeName = CRITERIA_MAP.get(attributeName);
+
+        // Thunderbird sends values with space as separate strings, rebuild value
+        StringBuilder value = new StringBuilder();
+        int[] seqSize = new int[1];
+        /*LBER_SEQUENCE*/
+        reqBer.parseSeq(seqSize);
+        int end = reqBer.getParsePosition() + seqSize[0];
+        while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+            int ldapFilterMode = reqBer.peekByte();
+            if (value.length() > 0) {
+                value.append(' ');
+            }
+            value.append(reqBer.parseStringWithTag(ldapFilterMode, isLdapV3(), null));
+        }
         if (exchangeAttributeName != null) {
-            criteria.put(exchangeAttributeName, value);
+            criteria.put(exchangeAttributeName, value.toString());
         } else {
             DavGatewayTray.warn("Unsupported filter attribute: " + attributeName);
         }
