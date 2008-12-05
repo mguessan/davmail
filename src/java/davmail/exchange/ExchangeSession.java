@@ -489,7 +489,6 @@ public class ExchangeSession {
                 ex.setReasonCode(status);
                 throw ex;
             }
-            // one level search
             Enumeration folderEnum = searchMethod.getResponses();
 
             while (folderEnum.hasMoreElements()) {
@@ -515,46 +514,43 @@ public class ExchangeSession {
         if (keepDelay == 0) {
             keepDelay = DEFAULT_KEEP_DELAY;
         }
-
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
         LOGGER.debug("Delete messages in trash since " + cal.getTime());
-        long keepTimestamp = cal.getTimeInMillis();
 
-        Vector<String> deleteRequestProperties = new Vector<String>();
-        deleteRequestProperties.add("DAV:getlastmodified");
-        deleteRequestProperties.add("urn:schemas:mailheader:content-class");
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
-        Enumeration folderEnum = wdr.propfindMethod(deleteditemsUrl, 1, deleteRequestProperties);
-        while (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            String messageUrl = URIUtil.decode(entity.getHref());
-            String lastModifiedString = null;
-            String contentClass = null;
-            Enumeration propertiesEnum = entity.getProperties();
-            while (propertiesEnum.hasMoreElements()) {
-                Property prop = (Property) propertiesEnum.nextElement();
-                String localName = prop.getLocalName();
-                if ("getlastmodified".equals(localName)) {
-                    lastModifiedString = prop.getPropertyAsString();
-                } else if ("content-class".equals(prop.getLocalName())) {
-                    contentClass = prop.getPropertyAsString();
-                }
-            }
-            if ("urn:content-classes:message".equals(contentClass) &&
-                    lastModifiedString != null && lastModifiedString.length() > 0) {
-                Date parsedDate;
-                try {
-                    parsedDate = dateParser.parse(lastModifiedString);
-                    if (parsedDate.getTime() < keepTimestamp) {
-                        LOGGER.debug("Delete " + messageUrl + " last modified " + parsedDate);
-                        wdr.deleteMethod(messageUrl);
-                    }
-                } catch (ParseException e) {
-                    LOGGER.warn("Invalid message modified date " + lastModifiedString + " on " + messageUrl);
-                }
+        String searchRequest = "<?xml version=\"1.0\"?>\n" +
+                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
+                "        <d:sql>Select \"DAV:uid\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + deleteditemsUrl + "\"')\n" +
+                "                WHERE \"DAV:isfolder\" = False\n" +
+                "                   AND \"DAV:getlastmodified\" &lt; '"+dateFormatter.format(cal.getTime())+"'\n" +
+                "         </d:sql>\n" +
+                "</d:searchrequest>";
+        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(currentFolderUrl), searchRequest);
+        searchMethod.setDebug(4);
+        try {
+            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
+            // Also accept OK sent by buggy servers.
+            if (status != HttpStatus.SC_MULTI_STATUS
+                    && status != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                throw ex;
             }
 
+            Enumeration folderEnum = searchMethod.getResponses();
+
+            while (folderEnum.hasMoreElements()) {
+                ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+                String messageUrl = URIUtil.decode(entity.getHref());
+
+                LOGGER.debug("Delete " + messageUrl);
+                wdr.deleteMethod(messageUrl);
+            }
+        } finally {
+            searchMethod.releaseConnection();
         }
     }
 
