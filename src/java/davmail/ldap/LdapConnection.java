@@ -579,7 +579,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected void sendResponse() throws IOException {
-        Ber.dumpBER(System.out, ">\n", responseBer.getBuf(), 0, responseBer.getDataLen());
+        //Ber.dumpBER(System.out, ">\n", responseBer.getBuf(), 0, responseBer.getDataLen());
         os.write(responseBer.getBuf(), 0, responseBer.getDataLen());
         os.flush();
     }
