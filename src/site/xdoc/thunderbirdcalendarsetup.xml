@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>Thunderbird calendar setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Thunderbird calendar setup">
+            <p>DavMail Calendar support is now available, tested with Thunderbird with Lightning.
+                This should also work with other Caldav clients.
+            </p>
+
+            <section name="Create a new network calendar">
+                <p>Obviously, you need to install the Thunderbird Lightning extension. You can
+                then create a new network calendar:</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCalendar1.png"/>
+                </div>
+
+                <p>Choose CalDav format and specify location (adjust port to your settings):
+                    <code>http://localhost:1080/calendar</code>
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCalendar2.png"/>
+                </div>
+
+                <p>Choose a name, color and set the associated email address (as set in mail setup)
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCalendar3.png"/>
+                </div>
+
+
+                <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCalendar4.png"/>
+                </div>
+
+
+                <p>Finish:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCalendar5.png"/>
+                </div>
+
+                <p>Proceeed to <a href="thunderbirddirectorysetup.html">Thunderbird calendar setup</a></p>
+            </section>
+        </section>
+    </body>
+</document>

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>Thunderbird directory setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Thunderbird directory setup">
+            <p>DavMail Directory support is now available to access Exchange address book through LDAPS.
+            </p>
+
+            <section name="Create a new LDAP directory">
+                <p>Open Thunderbird address book and choose File/New/LDAP Directory:</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdDirectory1.png"/>
+                </div>
+
+                <p>Choose a name, host is always localhost, LDAP base context <code>ou=people</code>,
+                    adjust port to your settings and set user to your Active Directory account name,
+                    i.e. domain\account. Leave other options to default values.
+                </p>
+                <p>You may also want to use this directory for mail completion in compoze window :
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdDirectory2.png"/>
+                </div>
+            </section>
+        </section>
+    </body>
+</document>
