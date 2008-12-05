@@ -56,6 +56,11 @@
                         <td>90</td>
                     </tr>
                     <tr>
+                        <td>Calendar past events</td>
+                        <td>Get events in the past not older than specified days count, leave empty for no limits</td>
+                        <td>90</td>
+                    </tr>
+                    <tr>
                         <td>Allow remote connections</td>
                         <td>Allow remote connections to the gateway (server mode)</td>
                         <td>false</td>

@@ -45,6 +45,7 @@ public class ExchangeSession {
      * Date parser from Exchange format
      */
     private final SimpleDateFormat dateParser;
+    private final SimpleDateFormat dateFormatter;
 
     /**
      * Various standard mail boxes Urls
@@ -81,6 +82,8 @@ public class ExchangeSession {
         // each session
         dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+
+        dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         LOGGER.debug("Session " + this + " created");
     }
 
@@ -524,8 +527,6 @@ public class ExchangeSession {
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
         LOGGER.debug("Delete messages in " + folderUrl + " since " + cal.getTime());
 
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
         String searchRequest = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql>Select \"DAV:uid\"" +
@@ -795,6 +796,14 @@ public class ExchangeSession {
     }
 
     public List<Event> getAllEvents() throws IOException {
+        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", 90);
+        String dateCondition = "";
+        if(caldavPastDelay != 0) {
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
+            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '"+dateFormatter.format(cal.getTime())+"'\n";
+        }
+
         List<Event> events = new ArrayList<Event>();
         String searchRequest = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
@@ -802,7 +811,7 @@ public class ExchangeSession {
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
                 "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
-//                "                AND \"urn:schemas:calendar:dtstart\" > '2008/11/01 00:00:00'\n" +
+                dateCondition +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" ASC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";

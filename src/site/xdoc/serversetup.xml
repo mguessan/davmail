@@ -33,6 +33,7 @@ davmail.popPort=1110
 davmail.smtpPort=1025
 davmail.keepDelay=30
 davmail.sentKeepDelay=90
+davmail.caldavPastDelay=90
 davmail.enableProxy=false
 davmail.proxyHost=
 davmail.proxyPort=

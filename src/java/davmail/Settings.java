@@ -52,6 +52,7 @@ public class Settings {
                 SETTINGS.put("davmail.caldavPort", "1080");
                 SETTINGS.put("davmail.keepDelay", "30");
                 SETTINGS.put("davmail.sentKeepDelay", "90");
+                SETTINGS.put("davmail.caldavPastDelay", "90");
                 SETTINGS.put("davmail.allowRemote", "false");
                 SETTINGS.put("davmail.bindAddress", "");
                 SETTINGS.put("davmail.enableProxy", "false");
@@ -115,7 +116,11 @@ public class Settings {
     }
 
     public static synchronized int getIntProperty(String property) {
-        int value = 0;
+        return getIntProperty(property, 0);
+    }
+
+    public static synchronized int getIntProperty(String property, int defaultValue) {
+        int value = defaultValue;
         try {
             String propertyValue = SETTINGS.getProperty(property);
             if (propertyValue != null && propertyValue.length() > 0) {

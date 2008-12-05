@@ -82,7 +82,7 @@ public class PopConnection extends AbstractConnection {
                     if ("QUIT".equalsIgnoreCase(command)) {
                         // delete messages before quit
                         if (session != null) {
-                            session.purgeOldestTrashMessages();
+                            session.purgeOldestTrashAndSentMessages();
                         }
                         sendOK("Bye");
                         break;
