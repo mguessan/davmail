@@ -6,15 +6,18 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
+import java.net.*;
+import java.net.URI;
+import java.util.List;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
  */
 public class DavGatewayHttpClientFacade {
-    static final MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
+    static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
     static {
-        multiThreadedHttpConnectionManager.setMaxConnectionsPerHost(10);
+        DavGatewayHttpClientFacade.start();
         // force XML response with Internet Explorer header
         System.getProperties().setProperty("httpclient.useragent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
     }
@@ -46,12 +49,39 @@ public class DavGatewayHttpClientFacade {
         httpClient.getState().setAuthenticationPreemptive(false);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
+        boolean systemProxy = Settings.getBooleanProperty("davmail.systemProxy");
         String proxyHost = null;
         int proxyPort = 0;
         String proxyUser = null;
         String proxyPassword = null;
 
-        if (enableProxy) {
+        if (systemProxy) {
+            String url = Settings.getProperty("davmail.url");
+            try {
+                List<Proxy> proxyList = ProxySelector.getDefault().select(
+                        new URI(url));
+                // get first returned proxy
+                if (proxyList.size() > 0) {
+                    Proxy proxy = proxyList.get(0);
+                    if (proxy.equals(Proxy.NO_PROXY)) {
+                        DavGatewayTray.debug("System proxy : direct connection");
+                    } else {
+                        InetSocketAddress addr = (InetSocketAddress) proxy.address();
+                        proxyHost = addr.getHostName();
+                        proxyPort = addr.getPort();
+                        // no way to get credentials from system proxy
+                        proxyUser = Settings.getProperty("davmail.proxyUser");
+                        proxyPassword = Settings.getProperty("davmail.proxyPassword");
+
+                        DavGatewayTray.debug("System proxy : " + proxyHost + ":" + proxyPort);
+                    }
+
+                }
+            } catch (URISyntaxException e) {
+                DavGatewayTray.error(e);
+            }
+
+        } else if (enableProxy) {
             proxyHost = Settings.getProperty("davmail.proxyHost");
             proxyPort = Settings.getIntProperty("davmail.proxyPort");
             proxyUser = Settings.getProperty("davmail.proxyUser");
@@ -153,5 +183,19 @@ public class DavGatewayHttpClientFacade {
         }
         // caller will need to release connection
         return method;
+    }
+
+    public static void stop() {
+        if (multiThreadedHttpConnectionManager != null) {
+            multiThreadedHttpConnectionManager.shutdown();
+            multiThreadedHttpConnectionManager = null;
+        }
+    }
+
+    public static void start() {
+        if (multiThreadedHttpConnectionManager == null) {
+            multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
+            multiThreadedHttpConnectionManager.setMaxConnectionsPerHost(10);
+        }
     }
 }

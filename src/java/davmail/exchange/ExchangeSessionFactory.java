@@ -69,7 +69,7 @@ public class ExchangeSessionFactory {
 
         public void clean() {
             while (!isEmpty()) {
-                pop().close();
+                pop();
             }
         }
     }
@@ -101,7 +101,6 @@ public class ExchangeSessionFactory {
 
             if (session != null && session.isExpired()) {
                 ExchangeSession.LOGGER.debug("Session " + session + " expired");
-                session.close();
                 session = null;
             }
 
@@ -134,8 +133,7 @@ public class ExchangeSessionFactory {
                     sessionStack = new ExchangeSessionStack();
                     poolMap.put(poolKey, sessionStack);
                 }
-                // keep httpClient, but close HTTP connection
-                session.close();
+                // keep httpClient
                 sessionStack.push(session);
                 ExchangeSession.LOGGER.debug("Pooled session: " + session);
             }
@@ -217,5 +215,9 @@ public class ExchangeSessionFactory {
             ExchangeSession.LOGGER.error("DavMail configuration exception: \n Error listing network interfaces " + exc.getMessage(), exc);
         }
         return up;
+    }
+
+    public static void reset() {
+        poolMap.clear();
     }
 }

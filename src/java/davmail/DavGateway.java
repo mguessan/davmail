@@ -7,6 +7,7 @@ import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
+import davmail.exchange.ExchangeSessionFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -33,6 +34,8 @@ public class DavGateway {
      * @param args command line parameter config file path
      */
     public static void main(String[] args) {
+        // enable system proxy setup
+        System.setProperty("java.net.useSystemProxies","true");
 
         if (args.length >= 1) {
             Settings.setConfigFilePath(args[0]);
@@ -45,10 +48,9 @@ public class DavGateway {
     }
 
     public static void start() {
-        // first stop existing servers
-        DavGateway.stop();
-
         try {
+            // prepare HTTP connection pool
+            DavGatewayHttpClientFacade.start();
             smtpServer = new SmtpServer(Settings.getIntProperty("davmail.smtpPort"));
             popServer = new PopServer(Settings.getIntProperty("davmail.popPort"));
             caldavServer = new CaldavServer(Settings.getIntProperty("davmail.caldavPort"));
@@ -94,6 +96,10 @@ public class DavGateway {
         stopServer(popServer);
         stopServer(caldavServer);
         stopServer(ldapServer);
+        // close pooled connections
+        DavGatewayHttpClientFacade.stop();
+        // clear session cache
+        ExchangeSessionFactory.reset();
     }
 
     public static String getCurrentVersion() {
