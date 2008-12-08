@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Handle a caldav connection.
@@ -100,8 +102,9 @@ public class LdapConnection extends AbstractConnection {
 
     // LDAP request operations
     static final int LDAP_REQ_BIND = 0x60;
-    static final int LDAP_REQ_SEARCH = 99;
+    static final int LDAP_REQ_SEARCH = 0x63;
     static final int LDAP_REQ_UNBIND = 0x42;
+    static final int LDAP_REQ_ABANDON = 0x50;
 
     // LDAP response operations
     static final int LDAP_REP_BIND = 0x61;
@@ -140,9 +143,22 @@ public class LdapConnection extends AbstractConnection {
     static final int SCOPE_SUBTREE = 2;
 
     /**
+     * For some unknow reaseon parseIntWithTag is private !
+     */
+    static Method parseIntWithTag;
+    static {
+        try {
+            parseIntWithTag = BerDecoder.class.getDeclaredMethod("parseIntWithTag", int.class);
+            parseIntWithTag.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            DavGatewayTray.error("Unable to get BerDecoder.parseIntWithTag method");
+        }
+    }
+
+    /**
      * raw connection inputStream
      */
-    protected InputStream is;
+    protected BufferedInputStream is;
 
     /**
      * reusable BER encoder
@@ -244,6 +260,7 @@ public class LdapConnection extends AbstractConnection {
                     bytesleft -= bytesread;
                 }
 
+                //Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
                 handleRequest(new BerDecoder(inbuf, 0, offset));
             }
 
@@ -264,17 +281,16 @@ public class LdapConnection extends AbstractConnection {
         try {
             reqBer.parseSeq(null);
             currentMessageId = reqBer.parseInt();
-            int requestOperation = reqBer.parseSeq(null);
-
-            //Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
+            int requestOperation = reqBer.peekByte();
 
             if (requestOperation == LDAP_REQ_BIND) {
+                reqBer.parseSeq(null);
                 int ldapVersion = reqBer.parseInt();
                 String userName = reqBer.parseString(ldapVersion == LDAP_VERSION3);
                 String password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, ldapVersion == LDAP_VERSION3, null);
 
                 if (userName.length() > 0 && password.length() > 0) {
-                    DavGatewayTray.debug("LDAP_REQ_BIND "+userName);
+                    DavGatewayTray.debug("LDAP_REQ_BIND "+currentMessageId+" "+userName);
                     try {
                         session = ExchangeSessionFactory.getInstance(userName, password);
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
@@ -282,18 +298,19 @@ public class LdapConnection extends AbstractConnection {
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
                     }
                 } else {
-                    DavGatewayTray.debug("LDAP_REQ_BIND anonymous"+userName);
+                    DavGatewayTray.debug("LDAP_REQ_BIND "+currentMessageId+" anonymous"+userName);
                     // anonymous bind
                     sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                 }
 
             } else if (requestOperation == LDAP_REQ_UNBIND) {
-                DavGatewayTray.debug("LDAP_REQ_UNBIND");
+                DavGatewayTray.debug("LDAP_REQ_UNBIND "+currentMessageId);
                 if (session != null) {
                     ExchangeSessionFactory.close(session);
                     session = null;
                 }
             } else if (requestOperation == LDAP_REQ_SEARCH) {
+                reqBer.parseSeq(null);
                 String dn = reqBer.parseString(isLdapV3());
                 int scope = reqBer.parseEnumeration();
                 int derefAliases = reqBer.parseEnumeration();
@@ -307,7 +324,7 @@ public class LdapConnection extends AbstractConnection {
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
 
                 int size = 0;
-                DavGatewayTray.debug("LDAP_REQ_SEARCH base="+dn+" scope: "+scope+" sizelimit: "+sizeLimit+
+                DavGatewayTray.debug("LDAP_REQ_SEARCH "+currentMessageId+" base="+dn+" scope: "+scope+" sizelimit: "+sizeLimit+" timelimit: "+timelimit+
                 " returning attributes: "+returningAttributes);
 
                 if (scope == SCOPE_BASE_OBJECT) {
@@ -362,9 +379,9 @@ public class LdapConnection extends AbstractConnection {
                     }
 
                     size = persons.size();
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH found "+size+" results");
+                    DavGatewayTray.debug("LDAP_REQ_SEARCH "+currentMessageId+" found "+size+" results");
                     sendPersons(currentMessageId, persons, returningAttributes);
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH end");
+                    DavGatewayTray.debug("LDAP_REQ_SEARCH "+currentMessageId+" end");
                 }
 
                 if (size == sizeLimit) {
@@ -372,6 +389,16 @@ public class LdapConnection extends AbstractConnection {
                 } else {
                     sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
                 }
+            } else if (requestOperation == LDAP_REQ_ABANDON) {
+                int canceledMessageId = 0;
+                try {
+                    canceledMessageId = (Integer) parseIntWithTag.invoke(reqBer, LDAP_REQ_ABANDON);
+                } catch (IllegalAccessException e) {
+                   DavGatewayTray.error(e);
+                } catch (InvocationTargetException e) {
+                    DavGatewayTray.error(e);
+                }
+                DavGatewayTray.debug("LDAP_REQ_ABANDON "+currentMessageId+" for search "+canceledMessageId+", too late !");
             } else {
                 DavGatewayTray.debug("Unsupported operation: "+requestOperation);
                 sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_OTHER, "Unsupported operation");
@@ -471,8 +498,8 @@ public class LdapConnection extends AbstractConnection {
                 }
             }
 
-            // add detailed information, only if few results
-            if (needDetails && persons.size() <= 10) {
+            // add detailed information
+            if (needDetails) {
                 session.galLookup(person);
             }
 
@@ -491,7 +518,7 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
-
+            //DavGatewayTray.debug("LDAP_REQ_SEARCH "+currentMessageId+" send uid="+ldapPerson.get("uid"));
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + "," + BASE_CONTEXT, ldapPerson);
         }
 
