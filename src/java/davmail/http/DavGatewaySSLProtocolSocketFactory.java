@@ -96,4 +96,20 @@ public class DavGatewaySSLProtocolSocketFactory extends SSLProtocolSocketFactory
             throw new IOException(e+" "+e.getMessage());
         }
     }
+
+    /**
+     * All instances of SSLProtocolSocketFactory are the same.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        return ((obj != null) && obj.getClass().equals(this.getClass()));
+    }
+
+    /**
+     * All instances of SSLProtocolSocketFactory have the same hash code.
+     */
+    @Override
+    public int hashCode() {
+        return this.getClass().hashCode();
+    }
 }
