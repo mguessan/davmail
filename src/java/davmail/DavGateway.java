@@ -10,6 +10,7 @@ import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSessionFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.HttpConnection;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.BufferedReader;
@@ -34,8 +35,6 @@ public class DavGateway {
      * @param args command line parameter config file path
      */
     public static void main(String[] args) {
-        // enable system proxy setup
-        System.setProperty("java.net.useSystemProxies","true");
 
         if (args.length >= 1) {
             Settings.setConfigFilePath(args[0]);
@@ -113,7 +112,7 @@ public class DavGateway {
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
         GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
         try {
-            httpClient.setConnectionTimeout(5000);
+            httpClient.setConnectionTimeout(1000);
             int status = httpClient.executeMethod(getMethod);
             if (status == HttpStatus.SC_OK) {
                 versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));

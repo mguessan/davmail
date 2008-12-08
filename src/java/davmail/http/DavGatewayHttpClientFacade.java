@@ -6,9 +6,6 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
-import java.net.*;
-import java.net.URI;
-import java.util.List;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -49,39 +46,12 @@ public class DavGatewayHttpClientFacade {
         httpClient.getState().setAuthenticationPreemptive(false);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
-        boolean systemProxy = Settings.getBooleanProperty("davmail.systemProxy");
         String proxyHost = null;
         int proxyPort = 0;
         String proxyUser = null;
         String proxyPassword = null;
 
-        if (systemProxy) {
-            String url = Settings.getProperty("davmail.url");
-            try {
-                List<Proxy> proxyList = ProxySelector.getDefault().select(
-                        new URI(url));
-                // get first returned proxy
-                if (proxyList.size() > 0) {
-                    Proxy proxy = proxyList.get(0);
-                    if (proxy.equals(Proxy.NO_PROXY)) {
-                        DavGatewayTray.debug("System proxy : direct connection");
-                    } else {
-                        InetSocketAddress addr = (InetSocketAddress) proxy.address();
-                        proxyHost = addr.getHostName();
-                        proxyPort = addr.getPort();
-                        // no way to get credentials from system proxy
-                        proxyUser = Settings.getProperty("davmail.proxyUser");
-                        proxyPassword = Settings.getProperty("davmail.proxyPassword");
-
-                        DavGatewayTray.debug("System proxy : " + proxyHost + ":" + proxyPort);
-                    }
-
-                }
-            } catch (URISyntaxException e) {
-                DavGatewayTray.error(e);
-            }
-
-        } else if (enableProxy) {
+        if (enableProxy) {
             proxyHost = Settings.getProperty("davmail.proxyHost");
             proxyPort = Settings.getIntProperty("davmail.proxyPort");
             proxyUser = Settings.getProperty("davmail.proxyUser");
