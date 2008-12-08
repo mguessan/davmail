@@ -374,19 +374,6 @@ public class ExchangeSession {
     }
 
     /**
-     * Close session.
-     * This will only close http client, not the actual Exchange session
-     */
-    void close() {
-        try {
-            wdr.close();
-            LOGGER.debug("Session " + this + " closed");
-        } catch (IOException e) {
-            LOGGER.warn("Exception closing session", e);
-        }
-    }
-
-    /**
      * Create message in current folder
      *
      * @param subject     message subject line

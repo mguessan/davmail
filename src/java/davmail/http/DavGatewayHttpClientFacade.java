@@ -2,13 +2,7 @@ package davmail.http;
 
 import davmail.Settings;
 import davmail.tray.DavGatewayTray;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.NTCredentials;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -17,7 +11,10 @@ import java.io.IOException;
  * Create HttpClient instance according to DavGateway Settings
  */
 public class DavGatewayHttpClientFacade {
+    static final MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
+
     static {
+        multiThreadedHttpConnectionManager.setMaxConnectionsPerHost(10);
         // force XML response with Internet Explorer header
         System.getProperties().setProperty("httpclient.useragent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
     }
@@ -43,6 +40,7 @@ public class DavGatewayHttpClientFacade {
      * @param httpClient current Http client
      */
     public static void configureClient(HttpClient httpClient) {
+        httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
 
         // do not send basic auth automatically
         httpClient.getState().setAuthenticationPreemptive(false);
@@ -131,7 +129,7 @@ public class DavGatewayHttpClientFacade {
 
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
         try {
-            DavGatewayTray.debug("executeFollowRedirects: "+method.getURI());
+            DavGatewayTray.debug("executeFollowRedirects: " + method.getURI());
             httpClient.executeMethod(method);
             Header location = method.getResponseHeader("Location");
             int redirectCount = 0;
@@ -141,7 +139,7 @@ public class DavGatewayHttpClientFacade {
                 method.releaseConnection();
                 method = new GetMethod(location.getValue());
                 method.setFollowRedirects(false);
-                DavGatewayTray.debug("executeFollowRedirects: "+method.getURI()+" redirectCount:"+redirectCount);
+                DavGatewayTray.debug("executeFollowRedirects: " + method.getURI() + " redirectCount:" + redirectCount);
                 httpClient.executeMethod(method);
                 location = method.getResponseHeader("Location");
             }
