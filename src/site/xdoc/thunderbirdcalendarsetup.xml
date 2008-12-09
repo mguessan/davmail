@@ -48,6 +48,11 @@
                     <img src="images/thunderbirdCalendar5.png"/>
                 </div>
 
+                <p>You may want to enable the (experimental) Lightning calendar cach feature to avoid
+                    the possibly long calendar load task delay on Thunderbird startup: double click
+                    on the calendar in Lightning left pane and activate cache. Restart Thunderbird. 
+                </p>
+
                 <p>Proceeed to <a href="thunderbirddirectorysetup.html">Thunderbird directory setup</a></p>
             </section>
         </section>
