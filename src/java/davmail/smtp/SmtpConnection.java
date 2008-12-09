@@ -4,11 +4,15 @@ import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.AddressException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Date;
 import java.util.StringTokenizer;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Dav Gateway smtp connection implementation
@@ -30,6 +34,7 @@ public class SmtpConnection extends AbstractConnection {
     public void run() {
         String line;
         StringTokenizer tokens;
+        List<String> recipients = new ArrayList<String>();
 
         try {
             ExchangeSessionFactory.checkConfig();
@@ -83,6 +88,7 @@ public class SmtpConnection extends AbstractConnection {
                     } else if ("MAIL".equals(command)) {
                         if (state == AUTHENTICATED) {
                             state = STARTMAIL;
+                            recipients.clear();
                             sendClient("250 Sender OK");
                         } else {
                             state = INITIAL;
@@ -90,8 +96,19 @@ public class SmtpConnection extends AbstractConnection {
                         }
                     } else if ("RCPT".equals(command)) {
                         if (state == STARTMAIL || state == RECIPIENT) {
-                            state = RECIPIENT;
-                            sendClient("250 Recipient OK");
+                            if (line.startsWith("RCPT TO:")) {
+                                state = RECIPIENT;
+                                try {
+                                    InternetAddress internetAddress = new InternetAddress(line.substring("RCPT TO:".length()));
+                                    recipients.add(internetAddress.getAddress());
+                                } catch (AddressException e) {
+                                    throw new IOException("Invalid recipient: "+line);
+                                }
+                                sendClient("250 Recipient OK");
+                            } else {
+                                sendClient("500 Unrecognized command");
+                            }
+
                         } else {
                             state = AUTHENTICATED;
                             sendClient("503 Bad sequence of commands");
@@ -102,7 +119,7 @@ public class SmtpConnection extends AbstractConnection {
                             sendClient("354 Start mail input; end with <CRLF>.<CRLF>");
 
                             try {
-                                session.sendMessage(in);
+                                session.sendMessage(recipients, in);
                                 state = AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
                             } catch (Exception e) {

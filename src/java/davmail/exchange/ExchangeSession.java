@@ -13,6 +13,7 @@ import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
@@ -384,11 +385,12 @@ public class ExchangeSession {
      * Create message in current folder
      *
      * @param subject     message subject line
+     * @param bcc         blind carbon copy header
      * @param messageBody mail body
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String subject, String messageBody) throws IOException {
-        createMessage(currentFolderUrl, subject, messageBody);
+    public void createMessage(String subject, String bcc, String messageBody) throws IOException {
+        createMessage(currentFolderUrl, subject, bcc, messageBody);
     }
 
     /**
@@ -397,14 +399,14 @@ public class ExchangeSession {
      *
      * @param folderUrl   Exchange folder URL
      * @param subject     message subject line
+     * @param bcc         blind carbon copy header
      * @param messageBody mail body
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String folderUrl, String subject, String messageBody) throws IOException {
+    public void createMessage(String folderUrl, String subject, String bcc, String messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + subject + ".EML");
 
         PutMethod putmethod = new PutMethod(messageUrl);
-        // TODO : test, bcc ?
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
         InputStream bodyStream = null;
@@ -428,6 +430,28 @@ public class ExchangeSession {
                 }
             }
             putmethod.releaseConnection();
+        }
+        // update message with blind carbon copy
+        if (bcc != null && bcc.length() > 0) {
+            PropPatchMethod patchMethod = new PropPatchMethod(messageUrl);
+            try {
+                patchMethod.addPropertyToSet("bcc", bcc, "b", "urn:schemas:mailheader:");
+                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                    throw new IOException("Unable to add bcc recipients: " + bcc);
+                }
+                Enumeration responseEntityEnum = patchMethod.getResponses();
+
+                if (responseEntityEnum.hasMoreElements()) {
+                    ResponseEntity entity = (ResponseEntity) responseEntityEnum.nextElement();
+                    if (entity.getStatusCode() != HttpStatus.SC_OK) {
+                        throw new IOException("Unable to add bcc recipients: " + bcc);
+                    }
+                }
+
+            } finally {
+                patchMethod.releaseConnection();
+            }
         }
     }
 
@@ -555,31 +579,64 @@ public class ExchangeSession {
         }
     }
 
-    public void sendMessage(BufferedReader reader) throws IOException {
+    public void sendMessage(List<String> recipients, BufferedReader reader) throws IOException {
         String subject = "davmailtemp";
         String line = reader.readLine();
-        StringBuffer mailBuffer = new StringBuffer();
-        while (line != null && !".".equals(line)) {
+        StringBuilder mailBuffer = new StringBuilder();
+        StringBuilder recipientBuffer = new StringBuilder();
+        boolean inHeader = true;
+        boolean inRecipientHeader = false;
+        while (!".".equals(line)) {
             mailBuffer.append(line);
             mailBuffer.append("\n");
             line = reader.readLine();
 
-            if (line != null) {
-                // patch thunderbird html in reply for correct outlook display
-                if (line.startsWith("<head>")) {
-                    line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
-                } else if (line.startsWith("Subject")) {
-                    subject = MimeUtility.decodeText(line.substring(8).trim());
-                    // '/' is invalid as message URL
-                    subject = subject.replaceAll("/", "_xF8FF_");
-                    // '?' is also invalid
-                    subject = subject.replaceAll("\\?", "");
-                    // TODO : test & in subject
+            if (inHeader && line.length() == 0) {
+                inHeader = false;
+            }
+
+            inRecipientHeader = inRecipientHeader && line.startsWith(" ");
+
+            if ((inHeader && line.length() >= 3) || inRecipientHeader) {
+                String prefix = line.substring(0, 3).toLowerCase();
+                if ("to:".equals(prefix) || "cc:".equals(prefix) || inRecipientHeader) {
+                    inRecipientHeader = true;
+                    recipientBuffer.append(line);
                 }
             }
+            // patch thunderbird html in reply for correct outlook display
+            if (line.startsWith("<head>")) {
+                line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
+            } else if (line.startsWith("Subject")) {
+                subject = MimeUtility.decodeText(line.substring(8).trim());
+                // '/' is invalid as message URL
+                subject = subject.replaceAll("/", "_xF8FF_");
+                // '?' is also invalid
+                subject = subject.replaceAll("\\?", "");
+            }
+        }
+        // remove visible recipients from list
+        List<String> visibleRecipients = new ArrayList<String>();
+        for (String recipient : recipients) {
+            if (recipientBuffer.indexOf(recipient) >= 0) {
+                visibleRecipients.add(recipient);
+            }
+        }
+        recipients.removeAll(visibleRecipients);
+
+        StringBuffer bccBuffer = new StringBuffer();
+        for (String recipient : recipients) {
+            if (bccBuffer.length() > 0) {
+                bccBuffer.append(',');
+            }
+            bccBuffer.append("&lt;");
+            bccBuffer.append(recipient);
+            bccBuffer.append("&gt;");
         }
 
-        createMessage(draftsUrl, subject, mailBuffer.toString());
+        createMessage(draftsUrl, subject,
+                bccBuffer.toString()
+                , mailBuffer.toString());
 
         // warning : slide library expects *unencoded* urls
         String tempUrl = draftsUrl + "/" + subject + ".eml";
