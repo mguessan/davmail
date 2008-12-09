@@ -840,7 +840,7 @@ public class ExchangeSession {
                 }
                 method.releaseConnection();
             }
-            return buffer.toString();
+            return fixICS(buffer.toString());
         }
 
         public String getPath() throws URIException {
@@ -930,10 +930,11 @@ public class ExchangeSession {
         return event;
     }
 
-    protected String fixICSToExchange(String icsBody) throws IOException {
+    protected String fixICS(String icsBody) throws IOException {
         // first pass : detect
         boolean isAllDay = false;
         boolean hasCdoAllDay = false;
+        boolean isCdoAllDay = false;
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new StringReader(icsBody));
@@ -947,6 +948,7 @@ public class ExchangeSession {
                         isAllDay = true;
                     } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
                         hasCdoAllDay = true;
+                        isCdoAllDay = "TRUE".equals(value);
                     }
                 }
             }
@@ -967,6 +969,10 @@ public class ExchangeSession {
                     result.append("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE").append((char) 13).append((char) 10);
                 } else if (!isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
+                } else if (isCdoAllDay && line.startsWith("DTSTART;TZID")) {
+                    line = getAllDayLine(line);
+                } else if (isCdoAllDay && line.startsWith("DTEND;TZID")) {
+                    line = getAllDayLine(line);
                 }
                 result.append(line).append((char) 13).append((char) 10);
             }
@@ -975,6 +981,29 @@ public class ExchangeSession {
         }
 
         return result.toString();
+    }
+
+    protected String getAllDayLine(String line) throws IOException {
+        int keyIndex = line.indexOf(';');
+        int valueIndex = line.lastIndexOf(':');
+        int valueEndIndex = line.lastIndexOf('T');
+        if (keyIndex < 0 || valueIndex < 0|| valueEndIndex < 0) {
+            throw new IOException("Invalid ICS line: " + line);
+        }
+        String dateValue = line.substring(valueIndex + 1);
+        String key = line.substring(0, keyIndex);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Date date;
+        try {
+            date = dateFormat.parse(dateValue);
+        } catch (ParseException e) {
+            throw new IOException("Invalid ICS line: " + line);
+        }
+        if ("DTEND".equals(key)) {
+            date.setTime(date.getTime() - 1);
+        }
+        return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex+1, valueEndIndex);
     }
 
     public int createOrUpdateEvent(String path, String icsBody, String etag) throws IOException {
@@ -1002,7 +1031,7 @@ public class ExchangeSession {
                 "\tmethod=REQUEST;\n" +
                 "\tcharset=\"utf-8\"\n" +
                 "Content-Transfer-Encoding: 8bit\n\n");
-        body.append(new String(fixICSToExchange(icsBody).getBytes("UTF-8"), "ISO-8859-1"));
+        body.append(new String(fixICS(icsBody).getBytes("UTF-8"), "ISO-8859-1"));
         body.append("------=_NextPart_").append(uid).append("--\n");
         putmethod.setRequestBody(body.toString());
         int status;
