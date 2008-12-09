@@ -42,6 +42,12 @@ public class ExchangeSession {
         MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
     }
 
+    protected static final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
+
+    static {
+        EVENT_REQUEST_PROPERTIES.add("DAV:getetag");
+    }
+
     protected static final Vector<String> WELL_KNOWN_FOLDERS = new Vector<String>();
 
     static {
@@ -903,11 +909,9 @@ public class ExchangeSession {
     public Event getEvent(String path) throws IOException {
         // TODO : refactor with getAllEvents
         Event event = new Event();
-        final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
-        EVENT_REQUEST_PROPERTIES.add("DAV:getetag");
 
         //wdr.setDebug(4);
-        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl + "/" + path, 0, EVENT_REQUEST_PROPERTIES);
+        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl + "/" + URIUtil.decode(path), 0, EVENT_REQUEST_PROPERTIES);
         //wdr.setDebug(0);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar event");
@@ -924,6 +928,53 @@ public class ExchangeSession {
             }
         }
         return event;
+    }
+
+    protected String fixICSToExchange(String icsBody) throws IOException {
+        // first pass : detect
+        boolean isAllDay = false;
+        boolean hasCdoAllDay = false;
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new StringReader(icsBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int index = line.indexOf(':');
+                if (index >= 0) {
+                    String key = line.substring(0, index);
+                    String value = line.substring(index + 1);
+                    if ("DTSTART;VALUE=DATE".equals(key)) {
+                        isAllDay = true;
+                    } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
+                        hasCdoAllDay = true;
+                    }
+                }
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        // second pass : fix
+        StringBuilder result = new StringBuilder();
+        try {
+            reader = new BufferedReader(new StringReader(icsBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
+                    line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
+                } else if ("END:VEVENT".equals(line) && isAllDay && !hasCdoAllDay) {
+                    result.append("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE").append((char) 13).append((char) 10);
+                } else if (!isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
+                    line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
+                }
+                result.append(line).append((char) 13).append((char) 10);
+            }
+        } finally {
+            reader.close();
+        }
+
+        return result.toString();
     }
 
     public int createOrUpdateEvent(String path, String icsBody, String etag) throws IOException {
@@ -951,7 +1002,7 @@ public class ExchangeSession {
                 "\tmethod=REQUEST;\n" +
                 "\tcharset=\"utf-8\"\n" +
                 "Content-Transfer-Encoding: 8bit\n\n");
-        body.append(new String(icsBody.getBytes("UTF-8"), "ISO-8859-1"));
+        body.append(new String(fixICSToExchange(icsBody).getBytes("UTF-8"), "ISO-8859-1"));
         body.append("------=_NextPart_").append(uid).append("--\n");
         putmethod.setRequestBody(body.toString());
         int status;
