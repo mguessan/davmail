@@ -840,7 +840,7 @@ public class ExchangeSession {
                 }
                 method.releaseConnection();
             }
-            return fixICS(buffer.toString());
+            return fixICS(buffer.toString(), true);
         }
 
         public String getPath() throws URIException {
@@ -864,16 +864,17 @@ public class ExchangeSession {
         List<Event> events = new ArrayList<Event>();
         String searchRequest = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql> Select \"DAV:getetag\"" +
+                "        <d:sql> Select \"DAV:getetag\", \"urn:schemas:calendar:instancetype\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
-                "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 1\n" +
+                "                WHERE NOT\"urn:schemas:calendar:instancetype\" = 2\n" +
+                "                AND NOT\"urn:schemas:calendar:instancetype\" = 3\n" +
                 "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
                 dateCondition +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(calendarUrl), searchRequest);
-        //searchMethod.setDebug(4);
+        searchMethod.setDebug(4);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
@@ -930,11 +931,15 @@ public class ExchangeSession {
         return event;
     }
 
-    protected String fixICS(String icsBody) throws IOException {
+    protected String fixICS(String icsBody, boolean fromServer) throws IOException {
         // first pass : detect
+        class AllDayState {
         boolean isAllDay = false;
         boolean hasCdoAllDay = false;
         boolean isCdoAllDay = false;
+        }
+        List<AllDayState> allDayStates = new ArrayList<AllDayState>();
+        AllDayState currentAllDayState = new AllDayState();
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new StringReader(icsBody));
@@ -945,10 +950,13 @@ public class ExchangeSession {
                     String key = line.substring(0, index);
                     String value = line.substring(index + 1);
                     if ("DTSTART;VALUE=DATE".equals(key)) {
-                        isAllDay = true;
+                        currentAllDayState.isAllDay = true;
                     } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
-                        hasCdoAllDay = true;
-                        isCdoAllDay = "TRUE".equals(value);
+                        currentAllDayState.hasCdoAllDay = true;
+                        currentAllDayState.isCdoAllDay = "TRUE".equals(value);
+                    } else if ("END:VEVENT".equals(line)) {
+                        allDayStates.add(currentAllDayState);
+                        currentAllDayState = new AllDayState();
                     }
                 }
             }
@@ -958,21 +966,24 @@ public class ExchangeSession {
             }
         }
         // second pass : fix
+        int count = 0;
         StringBuilder result = new StringBuilder();
         try {
             reader = new BufferedReader(new StringReader(icsBody));
             String line;
             while ((line = reader.readLine()) != null) {
-                if (isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
+                if (currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
-                } else if ("END:VEVENT".equals(line) && isAllDay && !hasCdoAllDay) {
+                } else if ("END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
                     result.append("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE").append((char) 13).append((char) 10);
-                } else if (!isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
+                } else if (!currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
-                } else if (isCdoAllDay && line.startsWith("DTSTART;TZID")) {
+                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART;TZID")) {
                     line = getAllDayLine(line);
-                } else if (isCdoAllDay && line.startsWith("DTEND;TZID")) {
+                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND;TZID")) {
                     line = getAllDayLine(line);
+                } else if ("BEGIN:VEVENT".equals(line)) {
+                    currentAllDayState = allDayStates.get(count++);
                 }
                 result.append(line).append((char) 13).append((char) 10);
             }
@@ -1031,7 +1042,7 @@ public class ExchangeSession {
                 "\tmethod=REQUEST;\n" +
                 "\tcharset=\"utf-8\"\n" +
                 "Content-Transfer-Encoding: 8bit\n\n");
-        body.append(new String(fixICS(icsBody).getBytes("UTF-8"), "ISO-8859-1"));
+        body.append(new String(fixICS(icsBody, false).getBytes("UTF-8"), "ISO-8859-1"));
         body.append("------=_NextPart_").append(uid).append("--\n");
         putmethod.setRequestBody(body.toString());
         int status;
