@@ -41,6 +41,17 @@ public class ExchangeSession {
         MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
     }
 
+    protected static final Vector<String> WELL_KNOWN_FOLDERS = new Vector<String>();
+
+    static {
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:inbox");
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:deleteditems");
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:sentitems");
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:sendmsg");
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:drafts");
+        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:calendar");
+    }
+
     /**
      * Date parser from Exchange format
      */
@@ -300,56 +311,10 @@ public class ExchangeSession {
 
             // got base http mailbox http url
             wdr.setPath(mailPath);
-
-            // Retrieve inbox and trash URLs
-            Vector<String> reqProps = new Vector<String>();
-            reqProps.add("urn:schemas:httpmail:inbox");
-            reqProps.add("urn:schemas:httpmail:deleteditems");
-            reqProps.add("urn:schemas:httpmail:sentitems");
-            reqProps.add("urn:schemas:httpmail:sendmsg");
-            reqProps.add("urn:schemas:httpmail:drafts");
-            reqProps.add("urn:schemas:httpmail:calendar");
-
-            Enumeration foldersEnum = wdr.propfindMethod(0, reqProps);
-            if (!foldersEnum.hasMoreElements()) {
-                throw new IOException("Unable to get mail folders");
-            }
-            ResponseEntity inboxResponse = (ResponseEntity) foldersEnum.
-                    nextElement();
-            Enumeration inboxPropsEnum = inboxResponse.getProperties();
-            if (!inboxPropsEnum.hasMoreElements()) {
-                throw new IOException("Unable to get mail folders");
-            }
-            while (inboxPropsEnum.hasMoreElements()) {
-                Property inboxProp = (Property) inboxPropsEnum.nextElement();
-                if ("inbox".equals(inboxProp.getLocalName())) {
-                    inboxUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-                if ("deleteditems".equals(inboxProp.getLocalName())) {
-                    deleteditemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-                if ("sentitems".equals(inboxProp.getLocalName())) {
-                    sentitemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-                if ("sendmsg".equals(inboxProp.getLocalName())) {
-                    sendmsgUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-                if ("drafts".equals(inboxProp.getLocalName())) {
-                    draftsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-                if ("calendar".equals(inboxProp.getLocalName())) {
-                    calendarUrl = URIUtil.decode(inboxProp.getPropertyAsString());
-                }
-            }
-
+            getWellKnownFolders();
             // set current folder to Inbox
             currentFolderUrl = inboxUrl;
 
-            LOGGER.debug("Inbox URL : " + inboxUrl);
-            LOGGER.debug("Trash URL : " + deleteditemsUrl);
-            LOGGER.debug("Sent URL : " + sentitemsUrl);
-            LOGGER.debug("Send URL : " + sendmsgUrl);
-            LOGGER.debug("Drafts URL : " + draftsUrl);
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
         } catch (Exception exc) {
@@ -371,6 +336,48 @@ public class ExchangeSession {
             LOGGER.error(message.toString());
             throw new IOException(message.toString());
         }
+    }
+
+    protected void getWellKnownFolders() throws IOException {
+        // Retrieve well known URLs
+        Enumeration foldersEnum = wdr.propfindMethod(0, WELL_KNOWN_FOLDERS);
+        if (!foldersEnum.hasMoreElements()) {
+            throw new IOException("Unable to get mail folders");
+        }
+        ResponseEntity inboxResponse = (ResponseEntity) foldersEnum.
+                nextElement();
+        Enumeration inboxPropsEnum = inboxResponse.getProperties();
+        if (!inboxPropsEnum.hasMoreElements()) {
+            throw new IOException("Unable to get mail folders");
+        }
+        while (inboxPropsEnum.hasMoreElements()) {
+            Property inboxProp = (Property) inboxPropsEnum.nextElement();
+            if ("inbox".equals(inboxProp.getLocalName())) {
+                inboxUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+            if ("deleteditems".equals(inboxProp.getLocalName())) {
+                deleteditemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+            if ("sentitems".equals(inboxProp.getLocalName())) {
+                sentitemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+            if ("sendmsg".equals(inboxProp.getLocalName())) {
+                sendmsgUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+            if ("drafts".equals(inboxProp.getLocalName())) {
+                draftsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+            if ("calendar".equals(inboxProp.getLocalName())) {
+                calendarUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            }
+        }
+        LOGGER.debug("Inbox URL : " + inboxUrl +
+                " Trash URL : " + deleteditemsUrl +
+                " Sent URL : " + sentitemsUrl +
+                " Send URL : " + sendmsgUrl +
+                " Drafts URL : " + draftsUrl +
+                " Calendar URL : " + calendarUrl
+        );
     }
 
     /**
@@ -802,7 +809,7 @@ public class ExchangeSession {
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(calendarUrl, searchRequest);
+        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(calendarUrl), searchRequest);
         //searchMethod.setDebug(4);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
