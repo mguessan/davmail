@@ -10,12 +10,14 @@
     <body>
 
         <section name="About">
-            <p>Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP exchange gateway allowing
-                users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
-                through Outlook Web Access. DavMail gateway is implemented in java and should run on
-                any platform. Releases are tested on Windows and Linux (Ubuntu). MacOS support is currently
-                limited to server (headless) mode. Tested successfully with the Iphone (gateway running on a
-                server).
+            <p>Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP/Caldav/LDAP exchange gateway allowing
+                users to use any mail/calendar client (e.g. Thunderbird with Lightning) with an Exchange server,
+                even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
+                LDAP gateway to Exchange global address book to allow recipient address completion in mail compoze
+                window and full calendar support with attendees free/busy display.
+                DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows
+                and Linux (Ubuntu). MacOS support is currently limited to server (headless) mode.
+                Tested successfully with the Iphone (gateway running on a server).
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/ubuntutray.png"/>
