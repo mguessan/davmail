@@ -6,7 +6,7 @@
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
     <version>2.0.0</version>
-    <name>davmail</name>
+    <name>DavMail POP/SMTP/Caldav/LDAP Exchange Gateway</name>
     <url>http://www.sourceforge.net/projects/davmail</url>
     <description>
         Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP/Caldav/LDAP exchange gateway allowing

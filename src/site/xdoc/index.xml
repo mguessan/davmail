@@ -3,13 +3,13 @@
 <document>
 
     <properties>
-        <title>DavMail Gateway</title>
+        <title>DavMail POP/SMTP/Caldav Exchange Gateway</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
     <body>
 
-        <section name="About">
+        <section name="About DavMail POP/SMTP/Caldav Exchange Gateway">
             <p>Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP/Caldav/LDAP exchange gateway allowing
                 users to use any mail/calendar client (e.g. Thunderbird with Lightning) with an Exchange server,
                 even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
