@@ -260,7 +260,7 @@ public class PopConnection extends AbstractConnection {
         protected static final int BODY = 4;
 
         protected int maxLines;
-        protected int STATE = START;
+        protected int state = START;
 
         public TopOutputStream(OutputStream os, int maxLines) {
             super(os);
@@ -269,34 +269,34 @@ public class PopConnection extends AbstractConnection {
 
         @Override
         public void write(int b) throws IOException {
-            if (STATE != BODY || maxLines > 0) {
+            if (state != BODY || maxLines > 0) {
                 super.write(b);
             }
-            if (STATE == BODY) {
+            if (state == BODY) {
                 if (b == '\n') {
                     maxLines--;
                 }
-            } else if (STATE == START) {
+            } else if (state == START) {
                 if (b == '\r') {
-                    STATE = CR;
+                    state = CR;
                 }
-            } else if (STATE == CR) {
+            } else if (state == CR) {
                 if (b == '\n') {
-                    STATE = CRLF;
+                    state = CRLF;
                 } else {
-                    STATE = START;
+                    state = START;
                 }
-            } else if (STATE == CRLF) {
+            } else if (state == CRLF) {
                 if (b == '\r') {
-                    STATE = CRLFCR;
+                    state = CRLFCR;
                 } else {
-                    STATE = START;
+                    state = START;
                 }
-            } else if (STATE == CRLFCR) {
+            } else if (state == CRLFCR) {
                 if (b == '\n') {
-                    STATE = BODY;
+                    state = BODY;
                 } else {
-                    STATE = START;
+                    state = START;
                 }
             }
         }

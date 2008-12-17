@@ -33,6 +33,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private boolean isActive = true;
     private boolean isReady = false;
 
+    private final Thread mainThread = Thread.currentThread();
+
     public java.awt.Image getFrameIcon() {
         return awtImage;
     }
@@ -84,15 +86,14 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     } else if (priority == Priority.ERROR) {
                         messageType = SWT.ICON_ERROR;
                     }
-                    if (messageType == 0) {
-                        trayItem.setToolTipText("DavMail gateway \n" + message);
-                    } else {
+                    if (messageType != 0) {
                         final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
                         toolTip.setText("DavMail gateway");
                         toolTip.setMessage(message);
                         trayItem.setToolTip(toolTip);
                         toolTip.setVisible(true);
                     }
+                    trayItem.setToolTipText("DavMail gateway \n" + message);
                 }
             });
         }
@@ -128,8 +129,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         } catch (Exception e) {
             DavGatewayTray.warn("Unable to set look and feel");
         }
-
-        final Thread mainThread = Thread.currentThread();
 
         new Thread("SWT") {
             public void run() {

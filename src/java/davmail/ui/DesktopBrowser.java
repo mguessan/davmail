@@ -9,7 +9,10 @@ import java.net.URISyntaxException;
 /**
  * Open default browser.
  */
-public class DesktopBrowser {
+public final class DesktopBrowser {
+    private DesktopBrowser() {
+    }
+
     public static void browse(URI location) {
         try {
             // trigger ClassNotFoundException

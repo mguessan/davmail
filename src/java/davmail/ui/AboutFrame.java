@@ -20,7 +20,7 @@ import java.net.URISyntaxException;
  * About frame
  */
 public class AboutFrame extends JFrame {
-    protected JEditorPane jEditorPane;
+    private final JEditorPane jEditorPane;
 
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -86,7 +86,7 @@ public class AboutFrame extends JFrame {
                         getSize().height / 2);
     }
 
-    public String getContent() {
+    String getContent() {
         Package davmailPackage = DavGateway.class.getPackage();
         StringBuilder buffer = new StringBuilder();
         buffer.append("<html><b>DavMail Gateway</b><br>");

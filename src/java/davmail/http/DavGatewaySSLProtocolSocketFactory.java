@@ -2,6 +2,7 @@ package davmail.http;
 
 import org.apache.commons.httpclient.protocol.SSLProtocolSocketFactory;
 import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.commons.httpclient.HttpsURL;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -33,7 +34,7 @@ public class DavGatewaySSLProtocolSocketFactory extends SSLProtocolSocketFactory
             if ("https".equals(protocol)) {
                 int port = url.getPort();
                 if (port < 0) {
-                    port = 443;
+                    port = HttpsURL.DEFAULT_PORT;
                 }
                 Protocol.registerProtocol(url.getProtocol(),
                         new Protocol(protocol, new DavGatewaySSLProtocolSocketFactory(), port));

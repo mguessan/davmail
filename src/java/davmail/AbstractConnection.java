@@ -150,7 +150,7 @@ public class AbstractConnection extends Thread {
         return new String(Base64.encode(value.getBytes()));
     }
 
-    protected String base64Decode(String value) throws IOException {
+    protected String base64Decode(String value) {
         return new String(Base64.decode(value.getBytes()));
     }
 }

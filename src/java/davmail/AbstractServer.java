@@ -11,7 +11,7 @@ import java.net.Socket;
  * Generic abstract server common to SMTP and POP3 implementations
  */
 public abstract class AbstractServer extends Thread {
-    private int port;
+    private final int port;
     private ServerSocket serverSocket;
 
     /**

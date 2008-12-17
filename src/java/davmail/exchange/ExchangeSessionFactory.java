@@ -16,14 +16,14 @@ import java.util.*;
 /**
  * Create ExchangeSession instances.
  */
-public class ExchangeSessionFactory {
+public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
     private static final Map<PoolKey, ExchangeSessionStack> poolMap = new HashMap<PoolKey, ExchangeSessionStack>();
 
     static class PoolKey {
-        public String url;
-        public String userName;
-        public String password;
+        public final String url;
+        public final String userName;
+        public final String password;
 
         public PoolKey(String url, String userName, String password) {
             this.url = url;
@@ -177,8 +177,8 @@ public class ExchangeSessionFactory {
                 ExchangeSession.LOGGER.error(message, exc);
                 throw new IOException(message);
             } else {
-                message += "All network interfaces down !";
-                ExchangeSession.LOGGER.error(message, exc);
+                message = "All network interfaces down !";
+                ExchangeSession.LOGGER.error(message);
                 throw new NetworkDownException(message);
             }
 

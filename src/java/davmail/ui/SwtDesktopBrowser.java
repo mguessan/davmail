@@ -8,11 +8,11 @@ import java.net.URI;
 /**
  *  Wrapper class to call SWT Program class to launch default browser.
  */
-public class SwtDesktopBrowser {
+public final class SwtDesktopBrowser {
     private SwtDesktopBrowser() {
     }
 
-    public static void browse(URI location) throws IOException {
+    public static void browse(URI location) {
         Program.launch(location.toString());
     }
 

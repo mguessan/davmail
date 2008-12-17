@@ -7,7 +7,9 @@ import java.awt.*;
 /**
  * Wrapper class to call Java6 Desktop class to launch default browser.
  */
-public class AwtDesktopBrowser {
+public final class AwtDesktopBrowser {
+    private AwtDesktopBrowser() {
+    }
 
     public static void browse(URI location) throws IOException {
         Desktop desktop = Desktop.getDesktop();
