@@ -2,7 +2,6 @@ package davmail.exchange;
 
 import davmail.Settings;
 import davmail.http.DavGatewayHttpClientFacade;
-import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -62,7 +61,6 @@ public class ExchangeSession {
     /**
      * Date parser from Exchange format
      */
-    private final SimpleDateFormat dateParser;
     private final SimpleDateFormat dateFormatter;
 
     /**
@@ -82,7 +80,7 @@ public class ExchangeSession {
     private String currentFolderUrl;
     private WebdavResource wdr = null;
 
-    private ExchangeSessionFactory.PoolKey poolKey;
+    private final ExchangeSessionFactory.PoolKey poolKey;
 
     ExchangeSessionFactory.PoolKey getPoolKey() {
         return poolKey;
@@ -98,9 +96,6 @@ public class ExchangeSession {
         this.poolKey = poolKey;
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
-        dateParser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-        dateParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
-
         dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         LOGGER.debug("Session " + this + " created");
     }
@@ -158,9 +153,9 @@ public class ExchangeSession {
 
         try {
             TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
-            List<TagNode> forms = (List<TagNode>) node.getElementListByName("form", true);
+            List forms = node.getElementListByName("form", true);
             if (forms.size() == 1) {
-                TagNode form = forms.get(0);
+                TagNode form = (TagNode) forms.get(0);
                 String logonMethodPath = form.getAttributeByName("action");
 
                 // allow relative URLs
@@ -173,19 +168,19 @@ public class ExchangeSession {
                 }
                 logonMethod = new PostMethod(logonMethodPath);
 
-                List<TagNode> inputList = form.getElementListByName("input", true);
-                for (TagNode input : inputList) {
-                    String type = input.getAttributeByName("type");
-                    String name = input.getAttributeByName("name");
-                    String value = input.getAttributeByName("value");
+                List inputList = form.getElementListByName("input", true);
+                for (Object input : inputList) {
+                    String type = ((TagNode) input).getAttributeByName("type");
+                    String name = ((TagNode) input).getAttributeByName("name");
+                    String value = ((TagNode) input).getAttributeByName("value");
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
                         logonMethod.addParameter(name, value);
                     }
                 }
             } else {
-                List<TagNode> frameList = node.getElementListByName("frame", true);
+                List frameList = node.getElementListByName("frame", true);
                 if (frameList.size() == 1) {
-                    String src = frameList.get(0).getAttributeByName("src");
+                    String src = ((TagNode) frameList.get(0)).getAttributeByName("src");
                     if (src != null) {
                         LOGGER.debug("Frames detected in form page, try frame content");
                         initmethod.releaseConnection();
@@ -271,9 +266,6 @@ public class ExchangeSession {
             }
             wdr = new WebdavResource(httpURL, WebdavResource.NOACTION, 0);
 
-            // set httpclient timeout to 30 seconds
-            //wdr.retrieveSessionInstance().setTimeout(30000);
-
             // get the internal HttpClient instance
             HttpClient httpClient = wdr.retrieveSessionInstance();
 
@@ -286,8 +278,6 @@ public class ExchangeSession {
 
             if (!isBasicAuthentication) {
                 method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
-                // reexecute method with new base URL
-//                method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, baseUrl);
             }
             int status = method.getStatusCode();
 
@@ -320,11 +310,11 @@ public class ExchangeSession {
             wdr.setPath(mailPath);
             getWellKnownFolders();
             // set current folder to Inbox
-            currentFolderUrl = inboxUrl;
+            selectFolder("INBOX");
 
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
-        } catch (Exception exc) {
+        } catch (IOException exc) {
             StringBuffer message = new StringBuffer();
             message.append("DavMail login exception: ");
             if (exc.getMessage() != null) {
@@ -496,34 +486,17 @@ public class ExchangeSession {
 
     public List<Message> getAllMessages() throws IOException {
         List<Message> messages = new ArrayList<Message>();
-        String searchRequest = "<?xml version=\"1.0\"?>\n" +
-                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+        String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + currentFolderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
-                "                ORDER BY \"urn:schemas:httpmail:date\" ASC" +
-                "         </d:sql>\n" +
-                "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(currentFolderUrl), searchRequest);
-        try {
-            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
-            // Also accept OK sent by buggy servers.
-            if (status != HttpStatus.SC_MULTI_STATUS
-                    && status != HttpStatus.SC_OK) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                throw ex;
-            }
-            Enumeration folderEnum = searchMethod.getResponses();
+                "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), currentFolderUrl, searchRequest);
 
-            while (folderEnum.hasMoreElements()) {
-                ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+        while (folderEnum.hasMoreElements()) {
+            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
 
-                Message message = buildMessage(entity);
-                messages.add(message);
-            }
-        } finally {
-            searchMethod.releaseConnection();
+            Message message = buildMessage(entity);
+            messages.add(message);
         }
         return messages;
     }
@@ -551,37 +524,18 @@ public class ExchangeSession {
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
         LOGGER.debug("Delete messages in " + folderUrl + " since " + cal.getTime());
 
-        String searchRequest = "<?xml version=\"1.0\"?>\n" +
-                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>Select \"DAV:uid\"" +
+        String searchRequest = "Select \"DAV:uid\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
-                "                   AND \"DAV:getlastmodified\" &lt; '" + dateFormatter.format(cal.getTime()) + "'\n" +
-                "         </d:sql>\n" +
-                "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(currentFolderUrl), searchRequest);
-        //searchMethod.setDebug(4);
-        try {
-            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
-            // Also accept OK sent by buggy servers.
-            if (status != HttpStatus.SC_MULTI_STATUS
-                    && status != HttpStatus.SC_OK) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                throw ex;
-            }
+                "                   AND \"DAV:getlastmodified\" &lt; '" + dateFormatter.format(cal.getTime()) + "'\n";
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
-            Enumeration folderEnum = searchMethod.getResponses();
+        while (folderEnum.hasMoreElements()) {
+            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+            String messageUrl = URIUtil.decode(entity.getHref());
 
-            while (folderEnum.hasMoreElements()) {
-                ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-                String messageUrl = URIUtil.decode(entity.getHref());
-
-                LOGGER.debug("Delete " + messageUrl);
-                wdr.deleteMethod(messageUrl);
-            }
-        } finally {
-            searchMethod.releaseConnection();
+            LOGGER.debug("Delete " + messageUrl);
+            wdr.deleteMethod(messageUrl);
         }
     }
 
@@ -593,8 +547,7 @@ public class ExchangeSession {
         boolean inHeader = true;
         boolean inRecipientHeader = false;
         while (!".".equals(line)) {
-            mailBuffer.append(line);
-            mailBuffer.append("\n");
+            mailBuffer.append(line).append("\n");
             line = reader.readLine();
 
             if (inHeader && line.length() == 0) {
@@ -612,7 +565,8 @@ public class ExchangeSession {
             }
             // patch thunderbird html in reply for correct outlook display
             if (line.startsWith("<head>")) {
-                line += "\n  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
+                mailBuffer.append(line).append("\n");
+                line = "  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
             } else if (line.startsWith("Subject")) {
                 subject = MimeUtility.decodeText(line.substring(8).trim());
                 // '/' is invalid as message URL
@@ -793,7 +747,7 @@ public class ExchangeSession {
 
     }
 
-    public WebdavResource getWebDavResource() throws IOException {
+    public WebdavResource getWebDavResource() {
         return wdr;
     }
 
@@ -802,7 +756,7 @@ public class ExchangeSession {
         protected String etag;
 
         public String getICS() throws IOException {
-            DavGatewayTray.debug("Get event: " + href);
+            LOGGER.debug("Get event: " + href);
             StringBuilder buffer = new StringBuilder();
             GetMethod method = new GetMethod(URIUtil.encodePath(href));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
@@ -811,7 +765,7 @@ public class ExchangeSession {
             try {
                 int status = wdr.retrieveSessionInstance().executeMethod(method);
                 if (status != HttpStatus.SC_OK) {
-                    DavGatewayTray.warn("Unable to get event at " + href + " status: " + status);
+                    LOGGER.warn("Unable to get event at " + href + " status: " + status);
                 }
                 eventReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
                 String line;
@@ -843,7 +797,7 @@ public class ExchangeSession {
             return fixICS(buffer.toString(), true);
         }
 
-        public String getPath() throws URIException {
+        public String getPath() {
             return href.substring(calendarUrl.length());
         }
 
@@ -887,19 +841,7 @@ public class ExchangeSession {
 
             Enumeration calendarEnum = searchMethod.getResponses();
             while (calendarEnum.hasMoreElements()) {
-                ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
-                        nextElement();
-                String href = calendarResponse.getHref();
-                Event event = new Event();
-                event.href = URIUtil.decode(href);
-                Enumeration propertiesEnumeration = calendarResponse.getProperties();
-                while (propertiesEnumeration.hasMoreElements()) {
-                    Property property = (Property) propertiesEnumeration.nextElement();
-                    if ("getetag".equals(property.getLocalName())) {
-                        event.etag = property.getPropertyAsString();
-                    }
-                }
-                events.add(event);
+                events.add(buildEvent((ResponseEntity) calendarEnum.nextElement()));
             }
         } finally {
             searchMethod.releaseConnection();
@@ -908,17 +850,16 @@ public class ExchangeSession {
     }
 
     public Event getEvent(String path) throws IOException {
-        // TODO : refactor with getAllEvents
-        Event event = new Event();
-
-        //wdr.setDebug(4);
         Enumeration calendarEnum = wdr.propfindMethod(calendarUrl + "/" + URIUtil.decode(path), 0, EVENT_REQUEST_PROPERTIES);
-        //wdr.setDebug(0);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar event");
         }
-        ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
-                nextElement();
+        return buildEvent((ResponseEntity) calendarEnum.
+                nextElement());
+    }
+
+    protected Event buildEvent(ResponseEntity calendarResponse) throws URIException {
+        Event event = new Event();
         String href = calendarResponse.getHref();
         event.href = URIUtil.decode(href);
         Enumeration propertiesEnumeration = calendarResponse.getProperties();
@@ -934,9 +875,9 @@ public class ExchangeSession {
     protected String fixICS(String icsBody, boolean fromServer) throws IOException {
         // first pass : detect
         class AllDayState {
-        boolean isAllDay = false;
-        boolean hasCdoAllDay = false;
-        boolean isCdoAllDay = false;
+            boolean isAllDay = false;
+            boolean hasCdoAllDay = false;
+            boolean isCdoAllDay = false;
         }
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
         AllDayState currentAllDayState = new AllDayState();
@@ -998,7 +939,7 @@ public class ExchangeSession {
         int keyIndex = line.indexOf(';');
         int valueIndex = line.lastIndexOf(':');
         int valueEndIndex = line.lastIndexOf('T');
-        if (keyIndex < 0 || valueIndex < 0|| valueEndIndex < 0) {
+        if (keyIndex < 0 || valueIndex < 0 || valueEndIndex < 0) {
             throw new IOException("Invalid ICS line: " + line);
         }
         String dateValue = line.substring(valueIndex + 1);
@@ -1014,7 +955,7 @@ public class ExchangeSession {
         if ("DTEND".equals(key)) {
             date.setTime(date.getTime() - 1);
         }
-        return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex+1, valueEndIndex);
+        return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex + 1, valueEndIndex);
     }
 
     public int createOrUpdateEvent(String path, String icsBody, String etag) throws IOException {
@@ -1231,7 +1172,6 @@ public class ExchangeSession {
             if (status != HttpStatus.SC_OK) {
                 throw new IOException("Unable to get free-busy from: " + getMethod.getPath());
             }
-            // TODO : parse
             String body = getMethod.getResponseBodyAsString();
             int startIndex = body.lastIndexOf("<a:fbdata>");
             int endIndex = body.lastIndexOf("</a:fbdata>");
@@ -1265,7 +1205,7 @@ public class ExchangeSession {
             getMethod.releaseConnection();
         }
         if (result == null) {
-            throw new IOException("Unable to get user email from: " + getMethod.getPath());
+            throw new IOException("Unable to get user free-busy data from: " + getMethod.getPath());
         }
 
         return result;

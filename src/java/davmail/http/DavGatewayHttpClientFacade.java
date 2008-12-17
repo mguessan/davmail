@@ -3,14 +3,20 @@ package davmail.http;
 import davmail.Settings;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.ResponseEntity;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Enumeration;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
  */
-public class DavGatewayHttpClientFacade {
+public final class DavGatewayHttpClientFacade {
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
     static {
@@ -153,6 +159,38 @@ public class DavGatewayHttpClientFacade {
         }
         // caller will need to release connection
         return method;
+    }
+
+    /**
+     * Execute webdav search method
+     * @param httpClient http client instance
+     * @param folderUrl searched folder
+     * @param searchRequest (SQL like) search request
+     * @return Responses
+     * @throws IOException on error
+     */
+    public static Enumeration executeSearchMethod(HttpClient httpClient, String folderUrl, String searchRequest) throws IOException {
+        Enumeration folderEnum = null;
+        String searchBody = "<?xml version=\"1.0\"?>\n" +
+                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
+                "        <d:sql>" + searchRequest + "</d:sql>\n" +
+                "</d:searchrequest>";
+        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(folderUrl), searchBody);
+        try {
+            int status = httpClient.executeMethod(searchMethod);
+            // Also accept OK sent by buggy servers.
+            if (status != HttpStatus.SC_MULTI_STATUS
+                    && status != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                throw ex;
+            }
+            folderEnum = searchMethod.getResponses();
+
+        } finally {
+            searchMethod.releaseConnection();
+        }
+        return folderEnum;
     }
 
     public static void stop() {
