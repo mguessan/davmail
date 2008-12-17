@@ -1,16 +1,16 @@
 package davmail;
 
 import davmail.caldav.CaldavServer;
+import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.NetworkDownException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
-import davmail.exchange.ExchangeSessionFactory;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.HttpConnection;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.BufferedReader;
@@ -77,6 +77,13 @@ public class DavGateway {
 
         // register custom SSL Socket factory
         DavGatewaySSLProtocolSocketFactory.register();
+        // check config
+        try {
+            ExchangeSessionFactory.checkConfig();
+        } catch (IOException e) {
+            DavGatewayTray.error(e);
+        }
+
     }
 
     protected static void stopServer(AbstractServer server) {
@@ -119,7 +126,7 @@ public class DavGateway {
                 version = versionReader.readLine();
             }
         } catch (IOException e) {
-            DavGatewayTray.debug("Exception getting released version",e);
+            DavGatewayTray.debug("Exception getting released version");
         } finally {
             if (versionReader != null) {
                 try {
