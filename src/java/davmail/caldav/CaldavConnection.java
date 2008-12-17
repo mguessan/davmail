@@ -7,7 +7,6 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -17,8 +16,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -61,10 +60,7 @@ public class CaldavConnection extends AbstractConnection {
             if (actualSize < 0) {
                 throw new IOException("End of stream reached reading content");
             }
-            String result = new String(buffer, 0, actualSize);
-            // TODO : create a wire debug level
-            // DavGatewayTray.debug("< " + result);
-            return result;
+            return new String(buffer, 0, actualSize);
         }
     }
 
@@ -111,6 +107,8 @@ public class CaldavConnection extends AbstractConnection {
                             decodeCredentials(headers.get("authorization"));
                             // authenticate only once
                             if (session == null) {
+                                // first check network connectivity
+                                ExchangeSessionFactory.checkConfig();
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                             }
                             handleRequest(command, path, headers, content);
@@ -157,6 +155,7 @@ public class CaldavConnection extends AbstractConnection {
         if ("OPTIONS".equals(command)) {
             sendOptions();
         } else if ("PROPFIND".equals(command) && "/user/".equals(path)) {
+            CaldavRequest request = new CaldavRequest(body);
             StringBuilder buffer = new StringBuilder();
             buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n");
@@ -164,21 +163,29 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("        <D:href>/user</D:href>\n");
             buffer.append("        <D:propstat>\n");
             buffer.append("            <D:prop>\n");
-            buffer.append("                <C:calendar-home-set>\n");
-            buffer.append("                    <D:href>/calendar</D:href>\n");
-            buffer.append("                </C:calendar-home-set>");
+            if (request.hasProperty("calendar-home-set")) {
+                buffer.append("                <C:calendar-home-set>\n");
+                buffer.append("                    <D:href>/calendar</D:href>\n");
+                buffer.append("                </C:calendar-home-set>");
+            }
 
-            buffer.append("                <C:calendar-user-address-set>\n");
-            buffer.append("                    <D:href>mailto:").append(session.getEmail()).append("</D:href>\n");
-            buffer.append("                </C:calendar-user-address-set>");
+            if (request.hasProperty("calendar-user-address-set")) {
+                buffer.append("                <C:calendar-user-address-set>\n");
+                buffer.append("                    <D:href>mailto:").append(session.getEmail()).append("</D:href>\n");
+                buffer.append("                </C:calendar-user-address-set>");
+            }
 
-            buffer.append("                <C:schedule-inbox-URL>\n");
-            buffer.append("                    <D:href>/inbox</D:href>\n");
-            buffer.append("                </C:schedule-inbox-URL>");
+            if (request.hasProperty("schedule-inbox-URL")) {
+                buffer.append("                <C:schedule-inbox-URL>\n");
+                buffer.append("                    <D:href>/inbox</D:href>\n");
+                buffer.append("                </C:schedule-inbox-URL>");
+            }
 
-            buffer.append("                <C:schedule-outbox-URL>\n");
-            buffer.append("                    <D:href>/outbox</D:href>\n");
-            buffer.append("                </C:schedule-outbox-URL>");
+            if (request.hasProperty("schedule-outbox-URL")) {
+                buffer.append("                <C:schedule-outbox-URL>\n");
+                buffer.append("                    <D:href>/outbox</D:href>\n");
+                buffer.append("                </C:schedule-outbox-URL>");
+            }
 
             buffer.append("            </D:prop>\n");
             buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
@@ -186,87 +193,56 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("      </D:response>\n");
             buffer.append("</D:multistatus>\n");
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
-        } else if ("PROPFIND".equals(command) && "/calendar/".equals(path)) {
-            if (depth != 0 || body == null) {
-                throw new IOException("Unsupported operation: " + command + " " + path);
-            }
-            try {
-                StringBuilder buffer = new StringBuilder();
-                buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-                buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:CS=\"http://calendarserver.org/ns/\">\n");
-                buffer.append("    <D:response>\n");
-                buffer.append("        <D:href>/calendar</D:href>\n");
-                buffer.append("        <D:propstat>\n");
-                buffer.append("            <D:prop>\n");
-                // TODO : parse request
-                if (body.indexOf("resourcetype") >= 0) {
-                    buffer.append("                <D:resourcetype>\n");
-                    buffer.append("                    <D:collection/>\n");
-                    buffer.append("                    <C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>\n");
-                    buffer.append("                </D:resourcetype>\n");
-                }
-                if (body.indexOf("owner") >= 0) {
-                    buffer.append("                <D:owner>\n");
-                    buffer.append("                    <D:href>/user</D:href>\n");
-                    buffer.append("                </D:owner>\n");
-                }
-                if (body.indexOf("getctag") >= 0) {
-                    buffer.append("                <CS:getctag>")
-                            .append(base64Encode(session.getCalendarEtag()))
-                            .append("</CS:getctag>\n");
-                }
-                buffer.append("            </D:prop>\n");
-                buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
-                buffer.append("        </D:propstat>\n");
-                buffer.append("    </D:response>\n");
-                buffer.append("</D:multistatus>\n");
 
-                HashMap<String, String> responseHeaders = new HashMap<String, String>();
-                sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
+        } else if ("PROPFIND".equals(command) && "/calendar/".equals(path) && depth == 0 && body != null) {
+            CaldavRequest request = new CaldavRequest(body);
 
-            } catch (IOException e) {
-                sendUnauthorized();
-            }
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:CS=\"http://calendarserver.org/ns/\">\n");
+            buffer.append("    <D:response>\n");
+            buffer.append("        <D:href>/calendar</D:href>\n");
+            buffer.append("        <D:propstat>\n");
+            buffer.append("            <D:prop>\n");
 
-        } else if ("REPORT".equals(command)) {
-            if (!"/calendar/".equals(path) || depth != 1 || body == null) {
-                throw new IOException("Unsupported operation: " + command + " " + path);
+            if (request.hasProperty("resourcetype")) {
+                buffer.append("                <D:resourcetype>\n");
+                buffer.append("                    <D:collection/>\n");
+                buffer.append("                    <C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>\n");
+                buffer.append("                </D:resourcetype>\n");
             }
-            HashSet<String> properties = new HashSet<String>();
-            // TODO : parse body
-            if (body.indexOf("D:getetag") >= 0) {
-                properties.add("getetag");
+            if (request.hasProperty("owner")) {
+                buffer.append("                <D:owner>\n");
+                buffer.append("                    <D:href>/user</D:href>\n");
+                buffer.append("                </D:owner>\n");
             }
-            if (body.indexOf("calendar-data") >= 0) {
-                properties.add("calendar-data");
+            if (request.hasProperty("getctag")) {
+                buffer.append("                <CS:getctag>")
+                        .append(base64Encode(session.getCalendarEtag()))
+                        .append("</CS:getctag>\n");
             }
+            buffer.append("            </D:prop>\n");
+            buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
+            buffer.append("        </D:propstat>\n");
+            buffer.append("    </D:response>\n");
+            buffer.append("</D:multistatus>\n");
+
+            HashMap<String, String> responseHeaders = new HashMap<String, String>();
+            sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
+
+        } else if ("REPORT".equals(command) && "/calendar/".equals(path) && depth == 1 && body != null) {
+            CaldavRequest request = new CaldavRequest(body);
+
             List<ExchangeSession.Event> events;
             List<String> notFound = new ArrayList<String>();
-            if (body.indexOf("calendar-multiget") >= 0) {
+            if (request.isMultiGet()) {
                 events = new ArrayList<ExchangeSession.Event>();
-                try {
-                    XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-                    inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
-                    inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
-
-                    XMLStreamReader reader = inputFactory.createXMLStreamReader(new StringReader(body));
-                    boolean inHref = false;
-                    while (reader.hasNext()) {
-                        int event = reader.next();
-                        if (event == XMLStreamConstants.START_ELEMENT && "href".equals(reader.getLocalName())) {
-                            inHref = true;
-                        } else if (event == XMLStreamConstants.CHARACTERS && inHref) {
-                            try {
-                                events.add(session.getEvent(reader.getText().substring("/calendar/".length())));
-                            } catch (HttpException e) {
-                                String href = reader.getText();
-                                notFound.add(href);
-                            }
-                            inHref = false;
-                        }
+                for (String href : request.getHrefs()) {
+                    try {
+                        events.add(session.getEvent(href.substring("/calendar/".length())));
+                    } catch (HttpException e) {
+                        notFound.add(href);
                     }
-                } catch (XMLStreamException e) {
-                    throw new IOException(e.getMessage());
                 }
             } else {
                 events = session.getAllEvents();
@@ -282,7 +258,7 @@ public class CaldavConnection extends AbstractConnection {
                 buffer.append("        <D:href>/calendar").append(eventPath).append("</D:href>\n");
                 buffer.append("        <D:propstat>\n");
                 buffer.append("            <D:prop>\n");
-                if (properties.contains("calendar-data")) {
+                if (request.hasProperty("calendar-data")) {
                     String ics = event.getICS();
                     if (ics != null && ics.length() > 0) {
                         ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -292,7 +268,7 @@ public class CaldavConnection extends AbstractConnection {
                         buffer.append("</C:calendar-data>\n");
                     }
                 }
-                if (properties.contains("getetag")) {
+                if (request.hasProperty("getetag")) {
                     buffer.append("                <D:getetag>").append(event.getEtag()).append("</D:getetag>\n");
                 }
                 buffer.append("            </D:prop>\n");
@@ -301,7 +277,7 @@ public class CaldavConnection extends AbstractConnection {
                 buffer.append("    </D:response>\n");
 
             }
-            // TODO : handle not found
+            // send not found events errors
             for (String href : notFound) {
                 buffer.append("<D:response>\n");
                 buffer.append("        <D:href>").append(href).append("</D:href>\n");
@@ -319,21 +295,21 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(status, true);
 
         } else if ("POST".equals(command) && path.startsWith("/outbox")) {
-            Map<String,String> valueMap = new HashMap<String,String>();
-            Map<String,String> keyMap = new HashMap<String,String>();
+            Map<String, String> valueMap = new HashMap<String, String>();
+            Map<String, String> keyMap = new HashMap<String, String>();
             BufferedReader reader = new BufferedReader(new StringReader(body));
             String line;
             String key = null;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith(" ") && "ATTENDEE".equals(key)) {
-                    valueMap.put(key, valueMap.get(key)+line.substring(1));
+                    valueMap.put(key, valueMap.get(key) + line.substring(1));
                 } else {
                     int index = line.indexOf(':');
                     if (index <= 0) {
                         throw new IOException("Invalid request: " + body);
                     }
                     String fullkey = line.substring(0, index);
-                    String value = line.substring(index+1);
+                    String value = line.substring(index + 1);
                     int semicolonIndex = fullkey.indexOf(";");
                     if (semicolonIndex > 0) {
                         key = fullkey.substring(0, semicolonIndex);
@@ -349,7 +325,7 @@ public class CaldavConnection extends AbstractConnection {
                     "                xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
                     "   <C:response>\n" +
                     "     <C:recipient>\n" +
-                    "       <D:href>"+valueMap.get("ATTENDEE")+"</D:href>\n" +
+                    "       <D:href>" + valueMap.get("ATTENDEE") + "</D:href>\n" +
                     "     </C:recipient>\n" +
                     "     <C:request-status>2.0;Success</C:request-status>\n" +
                     "     <C:calendar-data>BEGIN:VCALENDAR\n" +
@@ -362,7 +338,7 @@ public class CaldavConnection extends AbstractConnection {
                     "DTSTART:" + valueMap.get("DTSTART") + "\n" +
                     "DTEND:" + valueMap.get("DTEND") + "\n" +
                     "UID:" + valueMap.get("UID") + "\n" +
-                    keyMap.get("ATTENDEE")+";" + valueMap.get("ATTENDEE") + "\n" +
+                    keyMap.get("ATTENDEE") + ";" + valueMap.get("ATTENDEE") + "\n" +
                     "FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:" + session.getFreebusy(valueMap) + "\n" +
                     "END:VFREEBUSY\n" +
                     "END:VCALENDAR" +
@@ -375,6 +351,7 @@ public class CaldavConnection extends AbstractConnection {
             int status = session.deleteEvent(path.substring("/calendar/".length()));
             sendHttpResponse(status, true);
         } else {
+            DavGatewayTray.error("Unsupported command: " + command + " " + path + "\n" + body);
             sendErr(HttpStatus.SC_BAD_REQUEST, "Unsupported command: " + command);
         }
 
@@ -416,7 +393,7 @@ public class CaldavConnection extends AbstractConnection {
         SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         sendClient("Date: " + formatter.format(new java.util.Date()));
         if (headers != null) {
-            for (Map.Entry<String,String> header : headers.entrySet()) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
                 sendClient(header.getKey() + ": " + header.getValue());
             }
         }
@@ -464,5 +441,73 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
+    protected class CaldavRequest {
+        protected HashSet<String> properties = new HashSet<String>();
+        protected HashSet<String> hrefs;
+        protected boolean isMultiGet;
+
+        public CaldavRequest(String body) throws IOException {
+            // parse body
+            XMLStreamReader streamReader = null;
+            try {
+                XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+                inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
+                inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
+
+                streamReader = inputFactory.createXMLStreamReader(new StringReader(body));
+                boolean inElement = false;
+                boolean inProperties = false;
+                String currentElement = null;
+                while (streamReader.hasNext()) {
+                    int event = streamReader.next();
+                    if (event == XMLStreamConstants.START_ELEMENT) {
+                        inElement = true;
+                        currentElement = streamReader.getLocalName();
+                        if ("prop".equals(currentElement)) {
+                            inProperties = true;
+                        } else if ("calendar-multiget".equals(currentElement)) {
+                            isMultiGet = true;
+                        } else if (inProperties) {
+                            properties.add(currentElement);
+                        }
+                    } else if (event == XMLStreamConstants.END_ELEMENT) {
+                        if ("prop".equals(currentElement)) {
+                            inProperties = false;
+                        }
+                    } else if (event == XMLStreamConstants.CHARACTERS && inElement) {
+                        if ("href".equals(currentElement)) {
+                            if (hrefs == null) {
+                                hrefs = new HashSet<String>();
+                            }
+                            hrefs.add(streamReader.getText());
+                        }
+                        inElement = false;
+                    }
+                }
+            } catch (XMLStreamException e) {
+                throw new IOException(e.getMessage());
+            } finally {
+                try {
+                    if (streamReader != null) {
+                        streamReader.close();
+                    }
+                } catch (XMLStreamException e) {
+                    DavGatewayTray.error(e);
+                }
+            }
+        }
+
+        public boolean hasProperty(String propertyName) {
+            return properties.contains(propertyName);
+        }
+
+        public boolean isMultiGet() {
+            return isMultiGet && hrefs != null;
+        }
+
+        public Set<String> getHrefs() {
+            return hrefs;
+        }
+    }
 }
 
