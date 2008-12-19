@@ -77,13 +77,6 @@ public class DavGateway {
 
         // register custom SSL Socket factory
         DavGatewaySSLProtocolSocketFactory.register();
-        // check config
-        try {
-            ExchangeSessionFactory.checkConfig();
-        } catch (IOException e) {
-            DavGatewayTray.error(e);
-        }
-
     }
 
     protected static void stopServer(AbstractServer server) {
