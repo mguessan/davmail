@@ -3,6 +3,7 @@ package davmail.exchange;
 import davmail.Settings;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
@@ -316,8 +317,9 @@ public class ExchangeSession {
             }
             int status = method.getStatusCode();
 
-            // User may be authenticated, get various session information
-            if (status != HttpStatus.SC_OK) {
+            if (status == HttpStatus.SC_UNAUTHORIZED) {
+                throw new AuthenticationException("Authentication failed: invalid user or password");
+            } else if (status != HttpStatus.SC_OK) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
                 ex.setReason(method.getStatusText());
@@ -328,9 +330,9 @@ public class ExchangeSession {
             if (queryString != null && queryString.contains("reason=2")) {
                 method.releaseConnection();
                 if (poolKey.userName != null && poolKey.userName.contains("\\")) {
-                    throw new HttpException("Authentication failed: invalid user or password");
+                    throw new AuthenticationException("Authentication failed: invalid user or password");
                 } else {
-                    throw new HttpException("Authentication failed: invalid user or password, " +
+                    throw new AuthenticationException("Authentication failed: invalid user or password, " +
                             "retry with domain\\user");
                 }
             }
@@ -349,6 +351,9 @@ public class ExchangeSession {
 
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
+        } catch (AuthenticationException exc) {
+            LOGGER.error(exc.toString());
+            throw exc;
         } catch (IOException exc) {
             StringBuffer message = new StringBuffer();
             message.append("DavMail login exception: ");

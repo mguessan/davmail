@@ -7,6 +7,7 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.auth.AuthenticationException;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -109,7 +110,11 @@ public class CaldavConnection extends AbstractConnection {
                             if (session == null) {
                                 // first check network connectivity
                                 ExchangeSessionFactory.checkConfig();
+                                try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
+                                } catch (AuthenticationException e) {
+                                     sendErr(HttpStatus.SC_UNAUTHORIZED, e.getMessage());
+                                }
                             }
                             handleRequest(command, path, headers, content);
                         }
