@@ -15,6 +15,7 @@ import org.apache.webdav.lib.methods.SearchMethod;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
+import org.htmlcleaner.CommentToken;
 
 import javax.mail.internet.MimeUtility;
 import java.io.*;
@@ -136,6 +137,19 @@ public class ExchangeSession {
         return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
+    protected String getAbsolutePath(HttpMethod method, String path) {
+        String absolutePath = path;
+        // allow relative path
+        if (!absolutePath.startsWith("/")) {
+            String currentPath = method.getPath();
+            int end = currentPath.lastIndexOf('/');
+            if (end >= 0) {
+                absolutePath = currentPath.substring(0, end + 1) + absolutePath;
+            }
+        }
+        return absolutePath;
+    }
+
     /**
      * Try to find logon method path from logon form body.
      *
@@ -158,15 +172,7 @@ public class ExchangeSession {
                 TagNode form = (TagNode) forms.get(0);
                 String logonMethodPath = form.getAttributeByName("action");
 
-                // allow relative URLs
-                if (!logonMethodPath.startsWith("/")) {
-                    String path = initmethod.getPath();
-                    int end = path.lastIndexOf('/');
-                    if (end >= 0) {
-                        logonMethodPath = path.substring(0, end + 1) + logonMethodPath;
-                    }
-                }
-                logonMethod = new PostMethod(logonMethodPath);
+                logonMethod = new PostMethod(getAbsolutePath(initmethod, logonMethodPath));
 
                 List inputList = form.getElementListByName("input", true);
                 for (Object input : inputList) {
@@ -187,6 +193,35 @@ public class ExchangeSession {
                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
                     }
+                } else {
+                    // another failover for script based logon forms (Exchange 2007)
+                    List scriptList = node.getElementListByName("script", true);
+                    for (Object script : scriptList) {
+                        List contents = ((TagNode) script).getChildren();
+                        for (Object content : contents) {
+                            if (content instanceof CommentToken) {
+                                String scriptValue = ((CommentToken) content).getCommentedContent();
+                                int a_sUrlIndex = scriptValue.indexOf("var a_sUrl = \"");
+                                int a_sLgnIndex = scriptValue.indexOf("var a_sLgn = \"");
+                                if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
+                                    a_sUrlIndex += "var a_sUrl = \"".length();
+                                    a_sLgnIndex += "var a_sLgn = \"".length();
+                                    int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
+                                    int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
+                                    if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
+                                        LOGGER.debug("Detected script based logon, redirect to form");
+                                        String src = getAbsolutePath(initmethod,
+                                                scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
+                                                        scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
+                                        HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
+                                        logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                                    }
+                                }
+                            }
+                        }
+
+
+                    }
                 }
             }
         } catch (IOException e) {
@@ -196,7 +231,7 @@ public class ExchangeSession {
         }
 
         if (logonMethod == null) {
-            throw new IOException("Authentication form not found at " + initmethod.getURI() + ", retry with " + initmethod.getURI() + "exchange");
+            throw new IOException("Authentication form not found at " + initmethod.getURI());
         }
         return logonMethod;
     }
@@ -380,27 +415,29 @@ public class ExchangeSession {
     /**
      * Create message in current folder
      *
-     * @param subject     message subject line
-     * @param bcc         blind carbon copy header
-     * @param messageBody mail body
+     * @param messageName        message name
+     * @param bcc            blind carbon copy header
+     * @param messageBody    mail body
+     * @param allowOverwrite allow existing message overwrite
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String subject, String bcc, String messageBody) throws IOException {
-        createMessage(currentFolderUrl, subject, bcc, messageBody);
+    public void createMessage(String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
+        createMessage(currentFolderUrl, messageName, bcc, messageBody, allowOverwrite);
     }
 
     /**
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
-     * @param folderUrl   Exchange folder URL
-     * @param subject     message subject line
-     * @param bcc         blind carbon copy header
-     * @param messageBody mail body
+     * @param folderUrl      Exchange folder URL
+     * @param messageName        message name
+     * @param bcc            blind carbon copy header
+     * @param messageBody    mail body
+     * @param allowOverwrite allow existing message overwrite
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String folderUrl, String subject, String bcc, String messageBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + subject + ".EML");
+    public void createMessage(String folderUrl, String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
+        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
 
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
@@ -413,7 +450,11 @@ public class ExchangeSession {
             int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
             if (code == HttpURLConnection.HTTP_OK) {
-                LOGGER.warn("Overwritten message " + messageUrl);
+                if (allowOverwrite) {
+                    LOGGER.warn("Overwritten message " + messageUrl);
+                } else {
+                    throw new IOException("Overwritten message " + messageUrl);
+                }
             } else if (code != HttpURLConnection.HTTP_CREATED) {
                 throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
             }
@@ -540,7 +581,6 @@ public class ExchangeSession {
     }
 
     public void sendMessage(List<String> recipients, BufferedReader reader) throws IOException {
-        String subject = "davmailtemp";
         String line = reader.readLine();
         StringBuilder mailBuffer = new StringBuilder();
         StringBuilder recipientBuffer = new StringBuilder();
@@ -567,12 +607,6 @@ public class ExchangeSession {
             if (line.startsWith("<head>")) {
                 mailBuffer.append(line).append("\n");
                 line = "  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
-            } else if (line.startsWith("Subject")) {
-                subject = MimeUtility.decodeText(line.substring(8).trim());
-                // '/' is invalid as message URL
-                subject = subject.replaceAll("/", "_xF8FF_");
-                // '?' is also invalid
-                subject = subject.replaceAll("\\?", "");
             }
         }
         // remove visible recipients from list
@@ -594,12 +628,14 @@ public class ExchangeSession {
             bccBuffer.append("&gt;");
         }
 
-        createMessage(draftsUrl, subject,
+        String messageName = UUID.randomUUID().toString();
+
+        createMessage(draftsUrl, messageName,
                 bccBuffer.toString()
-                , mailBuffer.toString());
+                , mailBuffer.toString(), false);
 
         // warning : slide library expects *unencoded* urls
-        String tempUrl = draftsUrl + "/" + subject + ".eml";
+        String tempUrl = draftsUrl + "/" + messageName + ".eml";
         boolean sent = wdr.moveMethod(tempUrl, sendmsgUrl);
         if (!sent) {
             throw new IOException("Unable to send message: " + wdr.getStatusCode()
