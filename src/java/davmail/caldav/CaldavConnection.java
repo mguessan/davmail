@@ -111,9 +111,9 @@ public class CaldavConnection extends AbstractConnection {
                                 // first check network connectivity
                                 ExchangeSessionFactory.checkConfig();
                                 try {
-                                session = ExchangeSessionFactory.getInstance(userName, password);
+                                    session = ExchangeSessionFactory.getInstance(userName, password);
                                 } catch (AuthenticationException e) {
-                                     sendErr(HttpStatus.SC_UNAUTHORIZED, e.getMessage());
+                                    sendErr(HttpStatus.SC_UNAUTHORIZED, e.getMessage());
                                 }
                             }
                             handleRequest(command, path, headers, content);
@@ -202,7 +202,7 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
 
         } else if ("PROPFIND".equals(command)
-                && ("/calendar/".equals(path) || "/calendar".equals(path)) 
+                && ("/calendar/".equals(path) || "/calendar".equals(path))
                 && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
@@ -239,8 +239,39 @@ public class CaldavConnection extends AbstractConnection {
             HashMap<String, String> responseHeaders = new HashMap<String, String>();
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
 
+            // inbox is always empty
+        } else if ("PROPFIND".equals(command)
+                && ("/inbox/".equals(path) || "/inbox".equals(path))
+                && body != null) {
+            CaldavRequest request = new CaldavRequest(body);
+
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:CS=\"http://calendarserver.org/ns/\">\n");
+            buffer.append("    <D:response>\n");
+            buffer.append("        <D:href>/inbox</D:href>\n");
+            buffer.append("        <D:propstat>\n");
+            buffer.append("            <D:prop>\n");
+
+            if (request.hasProperty("resourcetype")) {
+                buffer.append("                <D:resourcetype>\n");
+                buffer.append("                    <D:collection/>\n");
+                buffer.append("                    <C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>\n");
+                buffer.append("                </D:resourcetype>\n");
+            }
+            if (request.hasProperty("getctag")) {
+                buffer.append("                <CS:getctag>0</CS:getctag>\n");
+            }
+            buffer.append("            </D:prop>\n");
+            buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
+            buffer.append("        </D:propstat>\n");
+            buffer.append("    </D:response>\n");
+            buffer.append("</D:multistatus>\n");
+
+            HashMap<String, String> responseHeaders = new HashMap<String, String>();
+            sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
         } else if ("REPORT".equals(command)
-                && ("/calendar/".equals(path) || "/calendar".equals(path)) 
+                && ("/calendar/".equals(path) || "/calendar".equals(path))
                 && depth == 1 && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
@@ -300,6 +331,17 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("</D:multistatus>");
 
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+
+        } else if ("REPORT".equals(command)
+                && ("/inbox/".equals(path) || "/inbox".equals(path))) {
+            // inbox is always empty
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<D:multistatus xmlns:D=\"DAV:\">\n");
+            buffer.append("</D:multistatus>");
+
+            sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+
         } else if ("PUT".equals(command) && path.startsWith("/calendar/")) {
             String etag = headers.get("if-match");
             int status = session.createOrUpdateEvent(path.substring("/calendar/".length()), body, etag);
@@ -362,7 +404,7 @@ public class CaldavConnection extends AbstractConnection {
             int status = session.deleteEvent(path.substring("/calendar/".length()));
             sendHttpResponse(status, true);
         } else {
-            DavGatewayTray.error("Unsupported command: " + command + " " + path + " Depth: "+depth+"\n" + body);
+            DavGatewayTray.error("Unsupported command: " + command + " " + path + " Depth: " + depth + "\n" + body);
             sendErr(HttpStatus.SC_BAD_REQUEST, "Unsupported command: " + command);
         }
 
