@@ -160,7 +160,8 @@ public class CaldavConnection extends AbstractConnection {
         if ("OPTIONS".equals(command)) {
             sendOptions();
         } else if ("PROPFIND".equals(command)
-                && ("/user/".equals(path) || "/user".equals(path))) {
+                && ("/user/".equals(path) || "/user".equals(path))
+                && body != null) {
             CaldavRequest request = new CaldavRequest(body);
             StringBuilder buffer = new StringBuilder();
             buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -202,7 +203,7 @@ public class CaldavConnection extends AbstractConnection {
 
         } else if ("PROPFIND".equals(command)
                 && ("/calendar/".equals(path) || "/calendar".equals(path)) 
-                && depth == 0 && body != null) {
+                && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
             StringBuilder buffer = new StringBuilder();
@@ -238,7 +239,9 @@ public class CaldavConnection extends AbstractConnection {
             HashMap<String, String> responseHeaders = new HashMap<String, String>();
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
 
-        } else if ("REPORT".equals(command) && "/calendar/".equals(path) && depth == 1 && body != null) {
+        } else if ("REPORT".equals(command)
+                && ("/calendar/".equals(path) || "/calendar".equals(path)) 
+                && depth == 1 && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
             List<ExchangeSession.Event> events;
@@ -359,7 +362,7 @@ public class CaldavConnection extends AbstractConnection {
             int status = session.deleteEvent(path.substring("/calendar/".length()));
             sendHttpResponse(status, true);
         } else {
-            DavGatewayTray.error("Unsupported command: " + command + " " + path + "\n" + body);
+            DavGatewayTray.error("Unsupported command: " + command + " " + path + " Depth: "+depth+"\n" + body);
             sendErr(HttpStatus.SC_BAD_REQUEST, "Unsupported command: " + command);
         }
 
