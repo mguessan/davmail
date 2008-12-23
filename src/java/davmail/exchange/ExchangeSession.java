@@ -105,24 +105,16 @@ public class ExchangeSession {
 
     public boolean isExpired() {
         boolean isExpired = false;
-        HttpMethod testMethod = null;
         try {
-            testMethod = DavGatewayHttpClientFacade.executeFollowRedirects(wdr.retrieveSessionInstance(),
-                    URIUtil.encodePath(currentFolderUrl));
-            String queryString = testMethod.getQueryString();
+            wdr.propfindMethod(0);
+            int status = wdr.getStatusCode();
 
-            if (testMethod.getStatusCode() != HttpStatus.SC_OK) {
-                isExpired = true;
-            } else if (queryString != null && queryString.contains("reason=")) {
+            if (status != HttpStatus.SC_MULTI_STATUS) {
                 isExpired = true;
             }
 
         } catch (IOException e) {
             isExpired = true;
-        } finally {
-            if (testMethod != null) {
-                testMethod.releaseConnection();
-            }
         }
 
         return isExpired;
