@@ -159,7 +159,8 @@ public class CaldavConnection extends AbstractConnection {
         int depth = getDepth(headers);
         if ("OPTIONS".equals(command)) {
             sendOptions();
-        } else if ("PROPFIND".equals(command) && "/user/".equals(path)) {
+        } else if ("PROPFIND".equals(command)
+                && ("/user/".equals(path) || "/user".equals(path))) {
             CaldavRequest request = new CaldavRequest(body);
             StringBuilder buffer = new StringBuilder();
             buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -199,7 +200,9 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("</D:multistatus>\n");
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
 
-        } else if ("PROPFIND".equals(command) && "/calendar/".equals(path) && depth == 0 && body != null) {
+        } else if ("PROPFIND".equals(command)
+                && ("/calendar/".equals(path) || "/calendar".equals(path)) 
+                && depth == 0 && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
             StringBuilder buffer = new StringBuilder();
