@@ -1,6 +1,7 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import org.apache.commons.httpclient.util.URIUtil;
 
 /**
@@ -12,9 +13,12 @@ public class TestExchangeSession {
     }
 
     public static void main(String[] argv) {
+        // register custom SSL Socket factory
         int currentArg = 0;
         Settings.setConfigFilePath(argv[currentArg++]);
         Settings.load();
+
+        DavGatewaySSLProtocolSocketFactory.register();
 
         ExchangeSession session;
         // test auth
