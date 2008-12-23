@@ -317,7 +317,7 @@ public class ExchangeSession {
             if (line != null) {
                 int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf("<", start);
-                result = "/exchange/"+line.substring(start, end);
+                result = "/exchange/"+line.substring(start, end)+"/";
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
