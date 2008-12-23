@@ -165,7 +165,7 @@ public final class ExchangeSessionFactory {
             int status = httpClient.executeMethod(testMethod);
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
-                    && status != HttpStatus.SC_MOVED_TEMPORARILY) {
+                    && status != HttpStatus.SC_MOVED_TEMPORARILY && status != HttpStatus.SC_MOVED_PERMANENTLY) {
                 throw new IOException("Unable to connect to OWA at " + url + ", status code " +
                         status + ", check configuration");
             }

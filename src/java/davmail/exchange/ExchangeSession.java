@@ -210,12 +210,28 @@ public class ExchangeSession {
                                     int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
                                     int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        LOGGER.debug("Detected script based logon, redirect to form");
                                         String src = getAbsolutePath(initmethod,
                                                 scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
                                                         scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
+                                        LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                                    }
+                                } else {
+                                    a_sLgnIndex = scriptValue.indexOf("var a_sLgnQS = \"");
+                                    if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
+                                        a_sUrlIndex += "var a_sUrl = \"".length();
+                                        a_sLgnIndex += "var a_sLgnQS = \"".length();
+                                        int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
+                                        int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
+                                        if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
+                                            String src = initmethod.getPath() +
+                                                    scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
+                                                    scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                            LOGGER.debug("Detected script based logon, redirect to form at " + src);
+                                            HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
+                                            logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                                        }
                                     }
                                 }
                             }
@@ -265,6 +281,9 @@ public class ExchangeSession {
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
                 result = baseURL.getPath();
+            } else {
+                // failover for Exchange 2007 : try to get mailbox from options
+                result = getMailPathFromOptions(method.getPath());
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing main page at " + method.getPath());
@@ -277,6 +296,41 @@ public class ExchangeSession {
                 }
             }
             method.releaseConnection();
+        }
+
+        return result;
+    }
+
+    protected String getMailPathFromOptions(String path) {
+        String result = null;
+        // get user mail URL from html body
+        BufferedReader optionsPageReader = null;
+        GetMethod optionsMethod = new GetMethod(path+"?ae=Options&t=About");
+        try {
+            wdr.retrieveSessionInstance().executeMethod(optionsMethod);
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+            String line;
+            // find mailbox full name
+            final String MAILBOX_BASE = "cn=recipients/cn=";
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                int end = line.indexOf("<", start);
+                result = "/exchange/"+line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+        } finally {
+            if (optionsPageReader != null) {
+                try {
+                    optionsPageReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                }
+            }
+            optionsMethod.releaseConnection();
         }
 
         return result;
@@ -420,7 +474,7 @@ public class ExchangeSession {
     /**
      * Create message in current folder
      *
-     * @param messageName        message name
+     * @param messageName    message name
      * @param bcc            blind carbon copy header
      * @param messageBody    mail body
      * @param allowOverwrite allow existing message overwrite
@@ -435,7 +489,7 @@ public class ExchangeSession {
      * Will overwrite an existing message with same subject in the same folder
      *
      * @param folderUrl      Exchange folder URL
-     * @param messageName        message name
+     * @param messageName    message name
      * @param bcc            blind carbon copy header
      * @param messageBody    mail body
      * @param allowOverwrite allow existing message overwrite
