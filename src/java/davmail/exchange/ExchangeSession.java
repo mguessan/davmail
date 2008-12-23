@@ -12,13 +12,12 @@ import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
-import org.apache.webdav.lib.methods.SearchMethod;
 import org.apache.webdav.lib.methods.PropPatchMethod;
+import org.apache.webdav.lib.methods.SearchMethod;
+import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
-import org.htmlcleaner.CommentToken;
 
-import javax.mail.internet.MimeUtility;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -662,6 +661,13 @@ public class ExchangeSession {
                     recipientBuffer.append(line);
                 }
             }
+            // Exchange 2007 : skip From: header
+            if ((inHeader && line.length() >= 5)) {
+                String prefix = line.substring(0, 5).toLowerCase();
+                if ("from:".equals(prefix)) {
+                    line = reader.readLine();
+                }
+            }
             // patch thunderbird html in reply for correct outlook display
             if (line.startsWith("<head>")) {
                 mailBuffer.append(line).append("\n");
@@ -694,7 +700,7 @@ public class ExchangeSession {
                 , mailBuffer.toString(), false);
 
         // warning : slide library expects *unencoded* urls
-        String tempUrl = draftsUrl + "/" + messageName + ".eml";
+        String tempUrl = draftsUrl + "/" + messageName + ".EML";
         boolean sent = wdr.moveMethod(tempUrl, sendmsgUrl);
         if (!sent) {
             throw new IOException("Unable to send message: " + wdr.getStatusCode()
@@ -705,7 +711,7 @@ public class ExchangeSession {
 
     /**
      * Select current folder.
-     * Folder name can be logical names INBOX or TRASH (translated to local names),
+     * Folder name can be logical names INBOX, DRAFTS or TRASH (translated to local names),
      * relative path to user base folder or absolute path.
      *
      * @param folderName folder name
@@ -719,6 +725,8 @@ public class ExchangeSession {
             folder.folderUrl = inboxUrl;
         } else if ("TRASH".equals(folderName)) {
             folder.folderUrl = deleteditemsUrl;
+        } else if ("DRAFTS".equals(folderName)) {
+            folder.folderUrl = draftsUrl;
             // absolute folder path
         } else if (folderName != null && folderName.startsWith("/")) {
             folder.folderUrl = folderName;
