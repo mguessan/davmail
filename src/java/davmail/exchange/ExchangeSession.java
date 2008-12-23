@@ -83,6 +83,8 @@ public class ExchangeSession {
 
     private final ExchangeSessionFactory.PoolKey poolKey;
 
+    private boolean disableGalLookup = false;
+
     ExchangeSessionFactory.PoolKey getPoolKey() {
         return poolKey;
     }
@@ -304,7 +306,7 @@ public class ExchangeSession {
         String result = null;
         // get user mail URL from html body
         BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod(path+"?ae=Options&t=About");
+        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
             wdr.retrieveSessionInstance().executeMethod(optionsMethod);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
@@ -317,7 +319,7 @@ public class ExchangeSession {
             if (line != null) {
                 int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf("<", start);
-                result = "/exchange/"+line.substring(start, end)+"/";
+                result = "/exchange/" + line.substring(start, end) + "/";
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
@@ -1200,26 +1202,29 @@ public class ExchangeSession {
     }
 
     public void galLookup(Map<String, String> person) {
-        GetMethod getMethod = null;
-        try {
-            getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=gallookup&ADDR=" + person.get("EM")));
-            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
-            if (status != HttpStatus.SC_OK) {
-                throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
-            }
-            Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
-            // add detailed information
-            if (results.size() > 0) {
-                Map<String, String> fullperson = results.get(person.get("AN"));
-                for (Map.Entry<String, String> entry : fullperson.entrySet()) {
-                    person.put(entry.getKey(), entry.getValue());
+        if (!disableGalLookup) {
+            GetMethod getMethod = null;
+            try {
+                getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=gallookup&ADDR=" + person.get("EM")));
+                int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+                if (status != HttpStatus.SC_OK) {
+                    throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
                 }
-            }
-        } catch (IOException e) {
-            LOGGER.warn("Unable to gallookup person: " + person);
-        } finally {
-            if (getMethod != null) {
-                getMethod.releaseConnection();
+                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
+                // add detailed information
+                if (results.size() > 0) {
+                    Map<String, String> fullperson = results.get(person.get("AN"));
+                    for (Map.Entry<String, String> entry : fullperson.entrySet()) {
+                        person.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Unable to gallookup person: " + person + ", disable GalLookup");
+                disableGalLookup = true;
+            } finally {
+                if (getMethod != null) {
+                    getMethod.releaseConnection();
+                }
             }
         }
     }
