@@ -14,6 +14,9 @@
     </target>
 
     <target name="init">
+        <condition property="is.windows">
+            <os family="windows"/>
+        </condition>
         <mkdir dir="target/classes"/>
     </target>
 
@@ -32,10 +35,16 @@
         </copy>
     </target>
 
-    <target name="dist" depends="compile">
+    <target name="dist-nsis" if="is.windows">
         <taskdef name="nsis" classname="net.sf.nsisant.Task">
             <classpath location="lib/nsisant-1.2.jar"/>
         </taskdef>
+        <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
+            <define name="VERSION" value="${version}"/>
+        </nsis>
+    </target>
+
+    <target name="dist" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
         <echo file="dist/version.txt" message="${version}"/>
@@ -118,9 +127,7 @@
                 <exclude name="lib/swt-*-win32-x86.jar"/>
             </tarfileset>
         </tar>
-        <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
-            <define name="VERSION" value="${version}"/>
-        </nsis>
+        <antcall target="dist-nsis"/>
         <!-- source package -->
         <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${version}" dir=".">
