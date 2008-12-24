@@ -279,7 +279,7 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(HttpStatus.SC_MULTI_STATUS, responseHeaders, "text/xml;charset=UTF-8", buffer.toString(), true);
         } else if ("REPORT".equals(command)
                 && ("/calendar/".equals(path) || "/calendar".equals(path))
-                && depth == 1 && body != null) {
+                && body != null) {
             CaldavRequest request = new CaldavRequest(body);
 
             List<ExchangeSession.Event> events;
