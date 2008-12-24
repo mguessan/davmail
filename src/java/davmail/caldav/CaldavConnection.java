@@ -256,7 +256,7 @@ public class CaldavConnection extends AbstractConnection {
             if (request.hasProperty("resourcetype")) {
                 buffer.append("                <D:resourcetype>\n");
                 buffer.append("                    <D:collection/>\n");
-                buffer.append("                    <C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>\n");
+                buffer.append("                    <C:schedule-inbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>\n");
                 buffer.append("                </D:resourcetype>\n");
             }
             if (request.hasProperty("getctag")) {
