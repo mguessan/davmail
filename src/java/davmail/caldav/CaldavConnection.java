@@ -234,6 +234,10 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
             buffer.append("        </D:propstat>\n");
             buffer.append("    </D:response>\n");
+            // if depth is 1, also send events
+            if (depth > 0) {
+                appendEventsResponses(buffer, request, session.getAllEvents());
+            }
             buffer.append("</D:multistatus>\n");
 
             HashMap<String, String> responseHeaders = new HashMap<String, String>();
@@ -293,35 +297,11 @@ public class CaldavConnection extends AbstractConnection {
             StringBuilder buffer = new StringBuilder();
             buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<D:multistatus xmlns:D=\"DAV:\">\n");
-            for (ExchangeSession.Event event : events) {
+            appendEventsResponses(buffer, request, events);
 
-                String eventPath = event.getPath().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                buffer.append("<D:response>\n");
-                buffer.append("        <D:href>/calendar").append(eventPath).append("</D:href>\n");
-                buffer.append("        <D:propstat>\n");
-                buffer.append("            <D:prop>\n");
-                if (request.hasProperty("calendar-data")) {
-                    String ics = event.getICS();
-                    if (ics != null && ics.length() > 0) {
-                        ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                        buffer.append("                <C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"\n");
-                        buffer.append("                    C:content-type=\"text/calendar\" C:version=\"2.0\">");
-                        buffer.append(ics);
-                        buffer.append("</C:calendar-data>\n");
-                    }
-                }
-                if (request.hasProperty("getetag")) {
-                    buffer.append("                <D:getetag>").append(event.getEtag()).append("</D:getetag>\n");
-                }
-                buffer.append("            </D:prop>\n");
-                buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
-                buffer.append("        </D:propstat>\n");
-                buffer.append("    </D:response>\n");
-
-            }
             // send not found events errors
             for (String href : notFound) {
-                buffer.append("<D:response>\n");
+                buffer.append("    <D:response>\n");
                 buffer.append("        <D:href>").append(href).append("</D:href>\n");
                 buffer.append("        <D:propstat>\n");
                 buffer.append("            <D:status>HTTP/1.1 404 Not Found</D:status>\n");
@@ -410,6 +390,36 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
+    protected void appendEventsResponses(StringBuilder buffer, CaldavRequest request, List<ExchangeSession.Event> events) throws IOException {
+        int size = events.size();
+        int count = 0;
+        for (ExchangeSession.Event event : events) {
+            DavGatewayTray.debug("Retrieving event "+(++count)+"/"+size);
+            String eventPath = event.getPath().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+            buffer.append("<D:response>\n");
+            buffer.append("        <D:href>/calendar").append(eventPath).append("</D:href>\n");
+            buffer.append("        <D:propstat>\n");
+            buffer.append("            <D:prop>\n");
+            if (request.hasProperty("calendar-data")) {
+                String ics = event.getICS();
+                if (ics != null && ics.length() > 0) {
+                    ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+                    buffer.append("                <C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"\n");
+                    buffer.append("                    C:content-type=\"text/calendar\" C:version=\"2.0\">");
+                    buffer.append(ics);
+                    buffer.append("</C:calendar-data>\n");
+                }
+            }
+            if (request.hasProperty("getetag")) {
+                buffer.append("                <D:getetag>").append(event.getEtag()).append("</D:getetag>\n");
+            }
+            buffer.append("            </D:prop>\n");
+            buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
+            buffer.append("        </D:propstat>\n");
+            buffer.append("    </D:response>\n");
+
+        }
+    }
 
     public void sendErr(int status, Exception e) throws IOException {
         String message = e.getMessage();
