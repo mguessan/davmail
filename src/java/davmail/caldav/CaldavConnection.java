@@ -157,6 +157,9 @@ public class CaldavConnection extends AbstractConnection {
 
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         int depth = getDepth(headers);
+        // full debug trace
+        DavGatewayTray.debug("command: " + command + " " + path + " Depth: " + depth + "\n" + body);
+
         if ("OPTIONS".equals(command)) {
             sendOptions();
         } else if ("PROPFIND".equals(command)
@@ -417,7 +420,6 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
             buffer.append("        </D:propstat>\n");
             buffer.append("    </D:response>\n");
-
         }
     }
 
@@ -472,6 +474,8 @@ public class CaldavConnection extends AbstractConnection {
         }
         sendClient("");
         if (content != null && content.length() > 0) {
+            // full debug trace
+            DavGatewayTray.debug("> "+content);
             sendClient(content.getBytes("UTF-8"));
         }
     }
