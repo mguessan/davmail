@@ -158,7 +158,7 @@ public class CaldavConnection extends AbstractConnection {
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         int depth = getDepth(headers);
         // full debug trace
-        DavGatewayTray.debug("command: " + command + " " + path + " Depth: " + depth + "\n" + body);
+        // DavGatewayTray.debug("command: " + command + " " + path + " Depth: " + depth + "\n" + body);
 
         if ("OPTIONS".equals(command)) {
             sendOptions();
@@ -488,7 +488,7 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("");
         if (content != null && content.length() > 0) {
             // full debug trace
-            DavGatewayTray.debug("> " + content);
+            // DavGatewayTray.debug("> " + content);
             sendClient(content.getBytes("UTF-8"));
         }
     }
