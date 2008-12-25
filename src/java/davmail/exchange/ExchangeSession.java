@@ -1259,31 +1259,36 @@ public class ExchangeSession {
                 currentCal.setTime(startDate);
 
                 StringBuilder busyBuffer = new StringBuilder();
-                boolean isBusy = fbdata.charAt(0) != '0';
+                boolean isBusy = fbdata.charAt(0) != '0' && fbdata.charAt(0) != '4';
                 if (isBusy) {
                     busyBuffer.append(icalParser.format(currentCal.getTime()));
                 }
+                boolean knownAttendee = fbdata.charAt(0) != '4';
                 for (int i = 1; i < fbdata.length(); i++) {
+                    knownAttendee = knownAttendee || fbdata.charAt(i) != '4';
                     currentCal.add(Calendar.MINUTE, interval);
                     if (isBusy && fbdata.charAt(i) == '0') {
                         // busy -> non busy
                         busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
-                    } else if (!isBusy && fbdata.charAt(i) != '0') {
+                    } else if (!isBusy && (fbdata.charAt(i) != '0') && fbdata.charAt(0) != '4') {
                         // non busy -> busy
                         if (busyBuffer.length() > 0) {
                             busyBuffer.append(',');
                         }
                         busyBuffer.append(icalParser.format(currentCal.getTime()));
                     }
-                    isBusy = fbdata.charAt(i) != '0';
+                    isBusy = fbdata.charAt(i) != '0' && fbdata.charAt(0) != '4';
                 }
-                result = busyBuffer.toString();
+                // still busy at end
+                if (isBusy) {
+                    busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
+                }
+                if (knownAttendee) {
+                    result = busyBuffer.toString();
+                }
             }
         } finally {
             getMethod.releaseConnection();
-        }
-        if (result == null) {
-            throw new IOException("Unable to get user free-busy data from: " + getMethod.getPath());
         }
 
         return result;

@@ -360,32 +360,37 @@ public class CaldavConnection extends AbstractConnection {
                     keyMap.put(key, fullkey);
                 }
             }
-            String response = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
-                    "   <C:schedule-response xmlns:D=\"DAV:\"\n" +
-                    "                xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
-                    "   <C:response>\n" +
-                    "     <C:recipient>\n" +
-                    "       <D:href>" + valueMap.get("ATTENDEE") + "</D:href>\n" +
-                    "     </C:recipient>\n" +
-                    "     <C:request-status>2.0;Success</C:request-status>\n" +
-                    "     <C:calendar-data>BEGIN:VCALENDAR\n" +
-                    "VERSION:2.0\n" +
-                    "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
-                    "METHOD:REPLY\n" +
-                    "BEGIN:VFREEBUSY\n" +
-                    "DTSTAMP:" + valueMap.get("DTSTAMP") + "\n" +
-                    "ORGANIZER:" + valueMap.get("ORGANIZER") + "\n" +
-                    "DTSTART:" + valueMap.get("DTSTART") + "\n" +
-                    "DTEND:" + valueMap.get("DTEND") + "\n" +
-                    "UID:" + valueMap.get("UID") + "\n" +
-                    keyMap.get("ATTENDEE") + ";" + valueMap.get("ATTENDEE") + "\n" +
-                    "FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:" + session.getFreebusy(valueMap) + "\n" +
-                    "END:VFREEBUSY\n" +
-                    "END:VCALENDAR" +
-                    "</C:calendar-data>\n" +
-                    "   </C:response>\n" +
-                    "   </C:schedule-response>";
-            sendHttpResponse(HttpStatus.SC_OK, null, "text/xml;charset=UTF-8", response, true);
+            String freeBusy = session.getFreebusy(valueMap);
+            if (freeBusy != null) {
+                String response = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
+                        "   <C:schedule-response xmlns:D=\"DAV:\"\n" +
+                        "                xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
+                        "   <C:response>\n" +
+                        "     <C:recipient>\n" +
+                        "       <D:href>" + valueMap.get("ATTENDEE") + "</D:href>\n" +
+                        "     </C:recipient>\n" +
+                        "     <C:request-status>2.0;Success</C:request-status>\n" +
+                        "     <C:calendar-data>BEGIN:VCALENDAR\n" +
+                        "VERSION:2.0\n" +
+                        "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
+                        "METHOD:REPLY\n" +
+                        "BEGIN:VFREEBUSY\n" +
+                        "DTSTAMP:" + valueMap.get("DTSTAMP") + "\n" +
+                        "ORGANIZER:" + valueMap.get("ORGANIZER") + "\n" +
+                        "DTSTART:" + valueMap.get("DTSTART") + "\n" +
+                        "DTEND:" + valueMap.get("DTEND") + "\n" +
+                        "UID:" + valueMap.get("UID") + "\n" +
+                        keyMap.get("ATTENDEE") + ";" + valueMap.get("ATTENDEE") + "\n" +
+                        "FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:" + freeBusy + "\n" +
+                        "END:VFREEBUSY\n" +
+                        "END:VCALENDAR" +
+                        "</C:calendar-data>\n" +
+                        "   </C:response>\n" +
+                        "   </C:schedule-response>";
+                sendHttpResponse(HttpStatus.SC_OK, null, "text/xml;charset=UTF-8", response, true);
+            } else {
+                sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", "Unknown recipient: " + valueMap.get("ATTENDEE"), true);
+            }
 
         } else if ("DELETE".equals(command) && path.startsWith("/calendar/")) {
             int status = session.deleteEvent(path.substring("/calendar/".length()));
@@ -401,7 +406,7 @@ public class CaldavConnection extends AbstractConnection {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
-            DavGatewayTray.debug("Retrieving event "+(++count)+"/"+size);
+            DavGatewayTray.debug("Retrieving event " + (++count) + "/" + size);
             appendEventResponse(buffer, request, event);
         }
     }
@@ -483,7 +488,7 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("");
         if (content != null && content.length() > 0) {
             // full debug trace
-            DavGatewayTray.debug("> "+content);
+            DavGatewayTray.debug("> " + content);
             sendClient(content.getBytes("UTF-8"));
         }
     }
