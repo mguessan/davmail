@@ -78,6 +78,7 @@ public class ExchangeSession {
      * Base user mailboxes path (used to select folder)
      */
     private String mailPath;
+    private String email;
     private String currentFolderUrl;
     private WebdavResource wdr = null;
 
@@ -256,8 +257,7 @@ public class ExchangeSession {
         return logonMethod;
     }
 
-    protected String getMailPath(HttpMethod method) {
-        String result = null;
+    protected void buildMailPath(HttpMethod method) throws HttpException {
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         try {
@@ -273,10 +273,13 @@ public class ExchangeSession {
                 int end = line.indexOf("\"", start);
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
-                result = baseURL.getPath();
+                mailPath = baseURL.getPath();
+                // get user name from mailPath and build Email
+                buildEmail(getUserName());
             } else {
-                // failover for Exchange 2007 : try to get mailbox from options
-                result = getMailPathFromOptions(method.getPath());
+                // failover for Exchange 2007 : build standard mailbox link with email
+                buildEmail(getUserName());
+                mailPath = "/exchange/" + email + "/";
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing main page at " + method.getPath());
@@ -291,42 +294,9 @@ public class ExchangeSession {
             method.releaseConnection();
         }
 
-        return result;
-    }
-
-    protected String getMailPathFromOptions(String path) {
-        String result = null;
-        // get user mail URL from html body
-        BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
-        try {
-            wdr.retrieveSessionInstance().executeMethod(optionsMethod);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
-            String line;
-            // find mailbox full name
-            final String MAILBOX_BASE = "cn=recipients/cn=";
-            //noinspection StatementWithEmptyBody
-            while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
-            }
-            if (line != null) {
-                int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
-                int end = line.indexOf("<", start);
-                result = "/exchange/" + line.substring(start, end) + "/";
-            }
-        } catch (IOException e) {
-            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-        } finally {
-            if (optionsPageReader != null) {
-                try {
-                    optionsPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-                }
-            }
-            optionsMethod.releaseConnection();
+        if (mailPath == null) {
+            throw new AuthenticationException(poolKey.url + " not found in body, authentication failed: password expired ?");
         }
-
-        return result;
     }
 
     void login() throws IOException {
@@ -384,11 +354,7 @@ public class ExchangeSession {
                 }
             }
 
-            mailPath = getMailPath(method);
-
-            if (mailPath == null) {
-                throw new HttpException(poolKey.url + " not found in body, authentication failed: password expired ?");
-            }
+            buildMailPath(method);
 
             // got base http mailbox http url
             wdr.setPath(mailPath);
@@ -1135,24 +1101,27 @@ public class ExchangeSession {
      * @return user name
      * @throws java.io.IOException on error
      */
-    public String getUserName() throws IOException {
-        int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
-        if (index >= 0 && mailPath.endsWith("/")) {
-            return mailPath.substring(index + 1, mailPath.length() - 1);
+    protected String getUserName() throws IOException {
+        if (mailPath == null) {
+            // Exchange 2007 : userName is login without domain
+            String userName = poolKey.userName;
+            int index = userName.indexOf('\\');
+            if (index >= 0) {
+                userName = userName.substring(index + 1);
+            }
+            return userName;
         } else {
-            throw new IOException("Invalid mail path: " + mailPath);
+            int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+            if (index >= 0 && mailPath.endsWith("/")) {
+                return mailPath.substring(index + 1, mailPath.length() - 1);
+            } else {
+                throw new IOException("Invalid mail path: " + mailPath);
+            }
         }
     }
 
-    /**
-     * Get current user email
-     *
-     * @return user email
-     * @throws java.io.IOException on error
-     */
-    public String getEmail() throws IOException {
-        String email = null;
-        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + getUserName());
+    public void buildEmail(String userName) throws IOException {
+        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + userName);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
@@ -1163,9 +1132,18 @@ public class ExchangeSession {
             getMethod.releaseConnection();
         }
         if (email == null) {
-            throw new IOException("Unable to get user email from: " + getMethod.getPath());
+            throw new IOException("Unable to get user email for " + userName + " at " + getMethod.getPath());
         }
 
+    }
+
+    /**
+     * Get current user email
+     *
+     * @return user email
+     * @throws java.io.IOException on error
+     */
+    public String getEmail() throws IOException {
         return email;
     }
 
