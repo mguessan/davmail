@@ -24,6 +24,9 @@
                 <p>Choose CalDav format and specify location (adjust port to your settings):
                     <code>http://localhost:1080/calendar</code>
                 </p>
+                <p>Note for iCal users, use /user instead of /calendar:
+                    <code>http://localhost:1080/user</code>
+                </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar2.png"/>
                 </div>
