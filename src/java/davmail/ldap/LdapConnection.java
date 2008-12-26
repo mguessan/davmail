@@ -167,7 +167,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * Current LDAP version (used for String encoding)
      */
-    final int ldapVersion = LDAP_VERSION3;
+    int ldapVersion = LDAP_VERSION3;
 
     // Initialize the streams and start the thread
     public LdapConnection(Socket clientSocket) {
@@ -293,9 +293,9 @@ public class LdapConnection extends AbstractConnection {
 
             if (requestOperation == LDAP_REQ_BIND) {
                 reqBer.parseSeq(null);
-                int ldapVersion = reqBer.parseInt();
-                String userName = reqBer.parseString(ldapVersion == LDAP_VERSION3);
-                String password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, ldapVersion == LDAP_VERSION3, null);
+                ldapVersion = reqBer.parseInt();
+                String userName = reqBer.parseString(isLdapV3());
+                String password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
 
                 if (userName.length() > 0 && password.length() > 0) {
                     DavGatewayTray.debug("LDAP_REQ_BIND " + currentMessageId + " " + userName);
