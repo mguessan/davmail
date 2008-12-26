@@ -274,12 +274,15 @@ public class ExchangeSession {
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
+                LOGGER.debug("Base href found in body, mailPath is " + mailPath);
                 // get user name from mailPath and build Email
                 buildEmail(getUserName());
+                LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
                 buildEmail(getUserName());
                 mailPath = "/exchange/" + email + "/";
+                LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing main page at " + method.getPath());
@@ -295,7 +298,7 @@ public class ExchangeSession {
         }
 
         if (mailPath == null) {
-            throw new AuthenticationException(poolKey.url + " not found in body, authentication failed: password expired ?");
+            throw new AuthenticationException("Unable to build mail path, authentication failed: password expired ?");
         }
     }
 
@@ -883,15 +886,14 @@ public class ExchangeSession {
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql> Select \"DAV:getetag\", \"urn:schemas:calendar:instancetype\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
-                "                WHERE NOT\"urn:schemas:calendar:instancetype\" = 2\n" +
-                "                AND NOT\"urn:schemas:calendar:instancetype\" = 3\n" +
+                "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 2\n" +
+                "                AND NOT \"urn:schemas:calendar:instancetype\" = 3\n" +
                 "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
                 dateCondition +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(calendarUrl), searchRequest);
-        searchMethod.setDebug(4);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
@@ -1071,9 +1073,7 @@ public class ExchangeSession {
 
     public String getCalendarEtag() throws IOException {
         String etag = null;
-        //wdr.setDebug(4);
         Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0);
-        //wdr.setDebug(0);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar object");
         }

@@ -340,6 +340,13 @@ public class CaldavConnection extends AbstractConnection {
             ExchangeSession.Event event = session.getEvent(path.substring("/calendar/".length()));
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
+        } else if ("GET".equals(command) && path.equals("/")) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("Connected to DavMail<br/>");
+            buffer.append("UserName :").append(userName).append("<br/>");
+            buffer.append("Email :").append(session.getEmail()).append("<br/>");
+            sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
+
         } else if ("POST".equals(command) && path.startsWith("/outbox")) {
             Map<String, String> valueMap = new HashMap<String, String>();
             Map<String, String> keyMap = new HashMap<String, String>();
