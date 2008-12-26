@@ -24,6 +24,6 @@ public class LdapServer extends AbstractServer {
     }
 
     public AbstractConnection createConnectionHandler(Socket clientSocket) {
-        return new LdapConnection("LdapServer", clientSocket);
+        return new LdapConnection(clientSocket);
     }
 }

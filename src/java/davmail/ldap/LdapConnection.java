@@ -170,8 +170,8 @@ public class LdapConnection extends AbstractConnection {
     final int ldapVersion = LDAP_VERSION3;
 
     // Initialize the streams and start the thread
-    public LdapConnection(String name, Socket clientSocket) {
-        super(name + "-" + clientSocket.getPort(), clientSocket);
+    public LdapConnection(Socket clientSocket) {
+        super("LdapConnection-" + clientSocket.getPort(), clientSocket);
         try {
             is = new BufferedInputStream(client.getInputStream());
             os = new BufferedOutputStream(client.getOutputStream());
