@@ -8,6 +8,7 @@ import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.auth.AuthenticationException;
+import org.apache.log4j.Logger;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -26,11 +27,14 @@ import java.util.*;
  * Handle a caldav connection.
  */
 public class CaldavConnection extends AbstractConnection {
+    protected Logger wireLogger = Logger.getLogger(this.getClass());
+
     protected boolean closed = false;
 
     // Initialize the streams and start the thread
     public CaldavConnection(Socket clientSocket) {
         super("CaldavConnection", clientSocket, "UTF-8");
+        wireLogger.setLevel(Settings.getLoggingLevel("httpclient.wire"));
     }
 
     protected Map<String, String> parseHeaders() throws IOException {
@@ -158,7 +162,9 @@ public class CaldavConnection extends AbstractConnection {
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         int depth = getDepth(headers);
         // full debug trace
-        // DavGatewayTray.debug("command: " + command + " " + path + " Depth: " + depth + "\n" + body);
+        if (wireLogger.isDebugEnabled()) {
+            wireLogger.debug("Caldav command: " + command + " " + path + " depth: " + depth + "\n" + body);
+        }
 
         if ("OPTIONS".equals(command)) {
             sendOptions();
@@ -488,7 +494,9 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("");
         if (content != null && content.length() > 0) {
             // full debug trace
-            // DavGatewayTray.debug("> " + content);
+            if (wireLogger.isDebugEnabled()) {
+                wireLogger.debug("> " + content);
+            }
             sendClient(content.getBytes("UTF-8"));
         }
     }
