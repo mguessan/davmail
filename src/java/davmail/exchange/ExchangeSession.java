@@ -1127,7 +1127,12 @@ public class ExchangeSession {
             if (status != HttpStatus.SC_OK) {
                 throw new IOException("Unable to get user email from: " + getMethod.getPath());
             }
-            email = XMLStreamUtil.getElementContentByLocalName(getMethod.getResponseBodyAsStream(), "EM");
+            Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+            Map<String, String> result = results.get(userName);
+            if (result != null) {
+                email = result.get("EM");
+            }
+            
         } finally {
             getMethod.releaseConnection();
         }
