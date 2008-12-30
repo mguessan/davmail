@@ -271,6 +271,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getetag")) {
             buffer.append("                <D:getetag>").append(event.getEtag()).append("</D:getetag>\n");
         }
+        if (request.hasProperty("resourcetype")) {
+            buffer.append("                <D:resourcetype/>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
