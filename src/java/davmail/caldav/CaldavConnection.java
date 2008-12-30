@@ -274,6 +274,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("resourcetype")) {
             buffer.append("                <D:resourcetype/>");
         }
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>").append(eventPath).append("</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -302,6 +305,9 @@ public class CaldavConnection extends AbstractConnection {
                     .append(base64Encode(session.getCalendarEtag()))
                     .append("</CS:getctag>\n");
         }
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>").append(principal).append(" calendar</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -323,7 +329,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getctag")) {
             buffer.append("                <CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">0</CS:getctag>\n");
         }
-
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>inbox</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -345,19 +353,13 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getctag")) {
             buffer.append("                <CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">0</CS:getctag>\n");
         }
-
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>outbox</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
         buffer.append("    </D:response>\n");
-    }
-
-    public void sendErr(int status, Exception e) throws IOException {
-        String message = e.getMessage();
-        if (message == null) {
-            message = e.toString();
-        }
-        sendErr(status, message);
     }
 
     public void sendGetRoot() throws IOException {
@@ -470,7 +472,9 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("                    <D:collection/>\n");
             buffer.append("                </D:resourcetype>\n");
         }
-
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>").append(principal).append("</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -497,7 +501,9 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("                    <D:href>/principals/users/").append(session.getEmail()).append("</D:href>\n");
             buffer.append("                </D:principal-collection-set>");
         }
-
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>ROOT</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -511,7 +517,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n");
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/principals/users/").append(principal).append("</D:href>\n");
+        buffer.append("        <D:href>/principals/users/").append(principal).append("/</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
         if (request.hasProperty("calendar-home-set")) {
@@ -528,16 +534,19 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("schedule-inbox-URL")) {
             buffer.append("                <C:schedule-inbox-URL>\n");
-            buffer.append("                    <D:href>/users/").append(principal).append("/inbox</D:href>\n");
+            buffer.append("                    <D:href>/users/").append(principal).append("/inbox/</D:href>\n");
             buffer.append("                </C:schedule-inbox-URL>");
         }
 
         if (request.hasProperty("schedule-outbox-URL")) {
             buffer.append("                <C:schedule-outbox-URL>\n");
-            buffer.append("                    <D:href>/users/").append(principal).append("/outbox</D:href>\n");
+            buffer.append("                    <D:href>/users/").append(principal).append("/outbox/</D:href>\n");
             buffer.append("                </C:schedule-outbox-URL>");
         }
 
+        if (request.hasProperty("displayname")) {
+            buffer.append("                <D:displayname>").append(principal).append("</D:displayname>");
+        }
         buffer.append("            </D:prop>\n");
         buffer.append("            <D:status>HTTP/1.1 200 OK</D:status>\n");
         buffer.append("        </D:propstat>\n");
@@ -616,6 +625,14 @@ public class CaldavConnection extends AbstractConnection {
         Map<String, String> responseHeaders = new HashMap<String, String>();
         responseHeaders.put("Location", buffer.toString());
         sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders, null, null, true);
+    }
+
+    public void sendErr(int status, Exception e) throws IOException {
+        String message = e.getMessage();
+        if (message == null) {
+            message = e.toString();
+        }
+        sendErr(status, message);
     }
 
     public void sendErr(int status, String message) throws IOException {
