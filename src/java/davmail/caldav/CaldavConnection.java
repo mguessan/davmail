@@ -189,7 +189,7 @@ public class CaldavConnection extends AbstractConnection {
             DavGatewayTray.error(message.toString());
             sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
         } else if ("user".equals(paths[1])) {
-            sendRedirect(headers, "/principals/users/" + session.getEmail() + "/");
+            sendRedirect(headers, "/principals/users/" + session.getEmail());
             // principal namespace
         } else if ("PROPFIND".equals(command) && "principals".equals(paths[1]) && paths.length == 4 &&
                 "users".equals(paths[2])) {
@@ -491,7 +491,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("            <D:prop>\n");
         if (request.hasProperty("principal-collection-set")) {
             buffer.append("                <D:principal-collection-set>\n");
-            buffer.append("                    <D:href>/principals/users/</D:href>\n");
+            buffer.append("                    <D:href>/principals/users/").append(session.getEmail()).append("</D:href>\n");
             buffer.append("                </D:principal-collection-set>");
         }
 
