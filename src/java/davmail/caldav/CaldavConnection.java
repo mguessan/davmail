@@ -285,7 +285,7 @@ public class CaldavConnection extends AbstractConnection {
 
     public void appendCalendar(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/users/").append(principal).append("/calendar/</D:href>\n");
+        buffer.append("        <D:href>/users/").append(principal).append("/calendar</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
 
@@ -316,7 +316,7 @@ public class CaldavConnection extends AbstractConnection {
 
     public void appendInbox(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/users/").append(principal).append("/inbox/</D:href>\n");
+        buffer.append("        <D:href>/users/").append(principal).append("/inbox</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
 
@@ -340,7 +340,7 @@ public class CaldavConnection extends AbstractConnection {
 
     public void appendOutbox(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/users/").append(principal).append("/outbox/</D:href>\n");
+        buffer.append("        <D:href>/users/").append(principal).append("/outbox</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
 
@@ -463,7 +463,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n");
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/users/").append(principal).append("/</D:href>\n");
+        buffer.append("        <D:href>/users/").append(principal).append("</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
 
@@ -517,7 +517,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n");
         buffer.append("    <D:response>\n");
-        buffer.append("        <D:href>/principals/users/").append(principal).append("/</D:href>\n");
+        buffer.append("        <D:href>/principals/users/").append(principal).append("</D:href>\n");
         buffer.append("        <D:propstat>\n");
         buffer.append("            <D:prop>\n");
         if (request.hasProperty("calendar-home-set")) {
@@ -534,13 +534,13 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("schedule-inbox-URL")) {
             buffer.append("                <C:schedule-inbox-URL>\n");
-            buffer.append("                    <D:href>/users/").append(principal).append("/inbox/</D:href>\n");
+            buffer.append("                    <D:href>/users/").append(principal).append("/inbox</D:href>\n");
             buffer.append("                </C:schedule-inbox-URL>");
         }
 
         if (request.hasProperty("schedule-outbox-URL")) {
             buffer.append("                <C:schedule-outbox-URL>\n");
-            buffer.append("                    <D:href>/users/").append(principal).append("/outbox/</D:href>\n");
+            buffer.append("                    <D:href>/users/").append(principal).append("/outbox</D:href>\n");
             buffer.append("                </C:schedule-outbox-URL>");
         }
 
