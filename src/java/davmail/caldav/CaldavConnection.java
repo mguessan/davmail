@@ -300,9 +300,14 @@ public class CaldavConnection extends AbstractConnection {
             buffer.append("                    <D:href>/principals/users/").append(principal).append("</D:href>\n");
             buffer.append("                </D:owner>\n");
         }
+        if (request.hasProperty("getetag")) {
+            buffer.append("                <D:getetag>")
+                    .append(base64Encode(session.getCalendarCtag()))
+                    .append("</D:getetag>\n");
+        }
         if (request.hasProperty("getctag")) {
             buffer.append("                <CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">")
-                    .append(base64Encode(session.getCalendarEtag()))
+                    .append(base64Encode(session.getCalendarCtag()))
                     .append("</CS:getctag>\n");
         }
         if (request.hasProperty("displayname")) {
