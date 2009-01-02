@@ -1071,7 +1071,7 @@ public class ExchangeSession {
         return wdr.getStatusCode();
     }
 
-    public String getCalendarEtag() throws IOException {
+    public String getCalendarCtag() throws IOException {
         String etag = null;
         Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0);
         if (!calendarEnum.hasMoreElements()) {
