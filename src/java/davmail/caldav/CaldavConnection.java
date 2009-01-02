@@ -302,7 +302,7 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("getetag")) {
             buffer.append("                <D:getetag>")
-                    .append(base64Encode(session.getCalendarCtag()))
+                    .append(session.getCalendarEtag())
                     .append("</D:getetag>\n");
         }
         if (request.hasProperty("getctag")) {

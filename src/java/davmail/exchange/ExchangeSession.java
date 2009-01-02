@@ -1072,7 +1072,7 @@ public class ExchangeSession {
     }
 
     public String getCalendarCtag() throws IOException {
-        String etag = null;
+        String ctag = null;
         Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar object");
@@ -1085,6 +1085,29 @@ public class ExchangeSession {
                 Property property = (Property) propertiesEnumeration.nextElement();
                 if ("http://schemas.microsoft.com/repl/".equals(property.getNamespaceURI())
                         && "contenttag".equals(property.getLocalName())) {
+                    ctag = property.getPropertyAsString();
+                }
+            }
+        }
+        if (ctag == null) {
+            throw new IOException("Unable to get calendar ctag");
+        }
+        return ctag;
+    }
+
+    public String getCalendarEtag() throws IOException {
+        String etag = null;
+        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0, EVENT_REQUEST_PROPERTIES);
+        if (!calendarEnum.hasMoreElements()) {
+            throw new IOException("Unable to get calendar object");
+        }
+        while (calendarEnum.hasMoreElements()) {
+            ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
+                    nextElement();
+            Enumeration propertiesEnumeration = calendarResponse.getProperties();
+            while (propertiesEnumeration.hasMoreElements()) {
+                Property property = (Property) propertiesEnumeration.nextElement();
+                if ("getetag".equals(property.getLocalName())) {
                     etag = property.getPropertyAsString();
                 }
             }
