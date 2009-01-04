@@ -948,7 +948,7 @@ public class ExchangeSession {
         AllDayState currentAllDayState = new AllDayState();
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new StringReader(icsBody));
+            reader = new ICSBufferedReader(new StringReader(icsBody));
             String line;
             while ((line = reader.readLine()) != null) {
                 int index = line.indexOf(':');
@@ -973,15 +973,15 @@ public class ExchangeSession {
         }
         // second pass : fix
         int count = 0;
-        StringBuilder result = new StringBuilder();
+        ICSBufferedWriter result = new ICSBufferedWriter();
         try {
-            reader = new BufferedReader(new StringReader(icsBody));
+            reader = new ICSBufferedReader(new StringReader(icsBody));
             String line;
             while ((line = reader.readLine()) != null) {
                 if (currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
                 } else if ("END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
-                    result.append("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE").append((char) 13).append((char) 10);
+                    result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
                 } else if (!currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
                 } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART;TZID")) {
@@ -991,7 +991,7 @@ public class ExchangeSession {
                 } else if ("BEGIN:VEVENT".equals(line)) {
                     currentAllDayState = allDayStates.get(count++);
                 }
-                result.append(line).append((char) 13).append((char) 10);
+                result.writeLine(line);
             }
         } finally {
             reader.close();
