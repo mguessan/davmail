@@ -16,16 +16,16 @@
 
             <section name="Create a new network calendar">
                 <p>Obviously, you need to install the Thunderbird Lightning extension. You can
-                then create a new network calendar:</p>
+                    then create a new network calendar:
+                </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar1.png"/>
                 </div>
 
-                <p>Choose CalDav format and specify location (adjust port to your settings):
-                    <code>http://localhost:1080/calendar</code>
-                </p>
-                <p>Note for iCal users, use /user instead of /calendar:
-                    <code>http://localhost:1080/user</code>
+                <p>Choose CalDav format and specify location (adjust port to your settings):</p>
+                <code>http://localhost:1080/users/mail@company.com/calendar
+                </code>
+                <p>Replace mail@company.com with actual user email address.
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar2.png"/>
@@ -53,10 +53,12 @@
 
                 <p>You may want to enable the (experimental) Lightning calendar cach feature to avoid
                     the possibly long calendar load task delay on Thunderbird startup: double click
-                    on the calendar in Lightning left pane and activate cache. Restart Thunderbird. 
+                    on the calendar in Lightning left pane and activate cache. Restart Thunderbird.
                 </p>
 
-                <p>Proceeed to <a href="thunderbirddirectorysetup.html">Thunderbird directory setup</a></p>
+                <p>Proceeed to
+                    <a href="thunderbirddirectorysetup.html">Thunderbird directory setup</a>
+                </p>
             </section>
         </section>
     </body>
