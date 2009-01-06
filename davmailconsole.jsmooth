@@ -7,6 +7,7 @@
 <JVMSearchPath>exepath</JVMSearchPath>
 <JVMSearchPath>jview</JVMSearchPath>
 <arguments></arguments>
+<classPath>dist\davmail.jar</classPath>
 <classPath>dist\lib\activation-1.0.2.jar</classPath>
 <classPath>dist\lib\commons-httpclient-2.0.2.jar</classPath>
 <classPath>dist\lib\commons-logging-1.0.4.jar</classPath>
@@ -21,7 +22,6 @@
 <classPath>dist\lib\htmlcleaner-2.1.jar</classPath>
 <classPath>dist\lib\stax-api-1.0.1.jar</classPath>
 <classPath>dist\lib\wstx-asl-3.2.7.jar</classPath>
-<classPath>dist\davmail.jar</classPath>
 <embeddedJar>false</embeddedJar>
 <executableName>dist\davmailconsole.exe</executableName>
 <iconLocation>src\java\tray32.png</iconLocation>
