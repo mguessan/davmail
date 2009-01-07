@@ -3,14 +3,11 @@ package davmail.http;
 import davmail.Settings;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.webdav.lib.methods.SearchMethod;
-import org.apache.webdav.lib.ResponseEntity;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Enumeration;
 
 /**
@@ -47,9 +44,6 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void configureClient(HttpClient httpClient) {
         httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
-
-        // do not send basic auth automatically
-        httpClient.getState().setAuthenticationPreemptive(false);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
