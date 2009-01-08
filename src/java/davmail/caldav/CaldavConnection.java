@@ -431,7 +431,10 @@ public class CaldavConnection extends AbstractConnection {
         List<String> notFound = new ArrayList<String>();
         if (request.isMultiGet()) {
             events = new ArrayList<ExchangeSession.Event>();
+            int count = 0;
+            int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {
+                DavGatewayTray.debug("Report event "+(++count)+"/"+total);
                 try {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
