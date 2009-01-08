@@ -213,24 +213,24 @@ public class CaldavConnection extends AbstractConnection {
             sendCalendar(request, depth, paths[2]);
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])
                 // only current user for now
-                && session.getEmail().equals(paths[2])) {
+                && session.getEmail().equalsIgnoreCase(paths[2])) {
             reportCalendar(request);
 
         } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
-                && session.getEmail().equals(paths[2])) {
+                && session.getEmail().equalsIgnoreCase(paths[2])) {
             String etag = headers.get("if-match");
             int status = session.createOrUpdateEvent(paths[4], body, etag);
             sendHttpResponse(status, true);
 
         } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
-                && session.getEmail().equals(paths[2])) {
+                && session.getEmail().equalsIgnoreCase(paths[2])) {
             int status = session.deleteEvent(paths[4]);
             sendHttpResponse(status, true);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
-                && session.getEmail().equals(paths[2])) {
+                && session.getEmail().equalsIgnoreCase(paths[2])) {
             ExchangeSession.Event event = session.getEvent(paths[4]);
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
@@ -408,7 +408,10 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n");
         appendCalendar(buffer, principal, request);
         if (depth == 1) {
-            appendEventsResponses(buffer, request, session.getAllEvents());
+            DavGatewayTray.debug("Searching calendar events...");
+            List<ExchangeSession.Event> events = session.getAllEvents();
+            DavGatewayTray.debug("Found "+events.size()+" calendar events");
+            appendEventsResponses(buffer, request, events);
         }
         buffer.append("</D:multistatus>\n");
         sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);

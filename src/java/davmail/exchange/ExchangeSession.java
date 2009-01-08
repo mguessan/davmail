@@ -275,17 +275,16 @@ public class ExchangeSession {
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
                 LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                // get user name from mailPath and build Email
-                buildEmail(getUserName());
+                buildEmail();
                 LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(getUserName());
+                buildEmail();
                 mailPath = "/exchange/" + email + "/";
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
         } catch (IOException e) {
-            LOGGER.error("Error parsing main page at " + method.getPath());
+            LOGGER.error("Error parsing main page at " + method.getPath(), e);
         } finally {
             if (mainPageReader != null) {
                 try {
@@ -299,6 +298,9 @@ public class ExchangeSession {
 
         if (mailPath == null) {
             throw new AuthenticationException("Unable to build mail path, authentication failed: password expired ?");
+        }
+        if (email == null) {
+            throw new AuthenticationException("Unable to get email, authentication failed: password expired ?");
         }
     }
 
@@ -1119,50 +1121,71 @@ public class ExchangeSession {
     }
 
     /**
-     * Get current Exchange user name
+     * Get current Exchange alias name from login name
      *
      * @return user name
      * @throws java.io.IOException on error
      */
-    protected String getUserName() throws IOException {
+    protected String getAliasFromLogin() throws IOException {
+        // Exchange 2007 : userName is login without domain
+        String userName = poolKey.userName;
+        int index = userName.indexOf('\\');
+        if (index >= 0) {
+            userName = userName.substring(index + 1);
+        }
+        return userName;
+    }
+
+    /**
+     * Get current Exchange alias name from mailbox name
+     *
+     * @return user name
+     * @throws java.io.IOException on error
+     */
+    protected String getAliasFromMailPath() throws IOException {
         if (mailPath == null) {
-            // Exchange 2007 : userName is login without domain
-            String userName = poolKey.userName;
-            int index = userName.indexOf('\\');
-            if (index >= 0) {
-                userName = userName.substring(index + 1);
-            }
-            return userName;
+            throw new IOException("Empty mail path");
+        }
+        int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+        if (index >= 0 && mailPath.endsWith("/")) {
+            return mailPath.substring(index + 1, mailPath.length() - 1);
         } else {
-            int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
-            if (index >= 0 && mailPath.endsWith("/")) {
-                return mailPath.substring(index + 1, mailPath.length() - 1);
-            } else {
-                throw new IOException("Invalid mail path: " + mailPath);
-            }
+            throw new IOException("Invalid mail path: " + mailPath);
         }
     }
 
-    public void buildEmail(String userName) throws IOException {
-        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + userName);
+    public String getEmail(String alias) throws IOException {
+        String emailResult = null;
+        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + alias);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
                 throw new IOException("Unable to get user email from: " + getMethod.getPath());
             }
             Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-            Map<String, String> result = results.get(userName);
+            Map<String, String> result = results.get(alias.toLowerCase());
             if (result != null) {
-                email = result.get("EM");
+                emailResult = result.get("EM");
             }
-            
+
         } finally {
             getMethod.releaseConnection();
         }
-        if (email == null) {
-            throw new IOException("Unable to get user email for " + userName + " at " + getMethod.getPath());
-        }
+        return emailResult;
+    }
 
+    public void buildEmail() throws IOException {
+        // first try to get email from login name
+        email = getEmail(getAliasFromLogin());
+        // failover: use mailbox name as alias
+        if (email == null) {
+            email = getEmail(getAliasFromMailPath());
+        }
+        if (email == null) {
+            throw new IOException("Unable to get user email with alias " + getAliasFromLogin() + " or " + getAliasFromMailPath());
+        }
+        // normalize email
+        email = email.toLowerCase();
     }
 
     /**

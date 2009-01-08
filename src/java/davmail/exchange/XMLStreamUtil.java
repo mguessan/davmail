@@ -67,7 +67,7 @@ public final class XMLStreamUtil {
                 if (event == XMLStreamConstants.START_ELEMENT && rowName.equals(reader.getLocalName())) {
                     item = new HashMap<String, String>();
                 } else if (event == XMLStreamConstants.END_ELEMENT && rowName.equals(reader.getLocalName())) {
-                    results.put(item.get(idName),item);
+                    results.put(item.get(idName).toLowerCase(),item);
                     item = null;
                 } else if (event == XMLStreamConstants.START_ELEMENT && item != null) {
                     currentElement = reader.getLocalName();
