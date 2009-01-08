@@ -888,10 +888,10 @@ public class ExchangeSession {
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql> Select \"DAV:getetag\", \"urn:schemas:calendar:instancetype\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
-                "                WHERE NOT \"urn:schemas:calendar:instancetype\" = 2\n" +
-                "                AND NOT \"urn:schemas:calendar:instancetype\" = 3\n" +
-                "                AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
+                "                WHERE (\"urn:schemas:calendar:instancetype\" = 1\n" +
+                "                OR (\"urn:schemas:calendar:instancetype\" = 0\n" +
                 dateCondition +
+                "                )) AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
