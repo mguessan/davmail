@@ -16,6 +16,9 @@ public class ImapServer extends AbstractServer {
     /**
      * Create a ServerSocket to listen for connections.
      * Start the thread.
+     *
+     * @param port imap listen port, 143 if not defined (0)
+     * @throws java.io.IOException on error
      */
     public ImapServer(int port) throws IOException {
         super("ImapServer", port, ImapServer.DEFAULT_PORT);

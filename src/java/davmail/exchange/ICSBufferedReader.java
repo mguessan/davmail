@@ -10,6 +10,7 @@ import java.io.IOException;
  */
 public class ICSBufferedReader extends BufferedReader {
     protected String nextLine;
+    protected StringBuilder currentLine = new StringBuilder(75);
 
     public ICSBufferedReader(Reader in, int sz) throws IOException {
         super(in, sz);
@@ -23,12 +24,17 @@ public class ICSBufferedReader extends BufferedReader {
 
     @Override
     public String readLine() throws IOException {
-        String currentLine = nextLine;
-        nextLine = super.readLine();
-        while (nextLine != null && nextLine.charAt(0) == ' ') {
-            currentLine += nextLine.substring(1);
+        if (nextLine == null) {
+            return null;
+        } else {
+            currentLine.setLength(0);
+            currentLine.append(nextLine);
             nextLine = super.readLine();
+            while (nextLine != null && nextLine.charAt(0) == ' ') {
+                currentLine.append(nextLine.substring(1));
+                nextLine = super.readLine();
+            }
+            return currentLine.toString();
         }
-        return currentLine;
     }
 }

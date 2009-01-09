@@ -135,7 +135,9 @@ public class ImapConnection extends AbstractConnection {
     }
 
     /**
-     * Decode SMTP credentials
+     * Decode IMAP credentials
+     * @param tokens tokens
+     * @throws java.io.IOException on error
      */
     protected void parseCredentials(StringTokenizer tokens) throws IOException {
         if (tokens.hasMoreTokens()) {

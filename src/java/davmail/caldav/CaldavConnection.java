@@ -731,7 +731,7 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-    protected class CaldavRequest {
+    protected static class CaldavRequest {
         protected HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
