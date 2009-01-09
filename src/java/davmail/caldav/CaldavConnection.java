@@ -117,7 +117,7 @@ public class CaldavConnection extends AbstractConnection {
                                 try {
                                     session = ExchangeSessionFactory.getInstance(userName, password);
                                 } catch (AuthenticationException e) {
-                                    sendErr(HttpStatus.SC_UNAUTHORIZED, e.getMessage());
+                                    sendUnauthorized();
                                 }
                             }
                             if (session != null) {
