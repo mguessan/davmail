@@ -11,13 +11,16 @@
 
         <section name="DavMail Setup on linux">
             <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
-                Java 1.5. You may use DavMail with an older version, but the gateway will run as a
-                command line application.
+                Java 1.5.
             </p>
 
-            <p>You should first download and install Java, e.g. by running the following command on
-                Ubuntu :
+            <p>You should first download and install Java, with the graphical package manager or through
+                command line.
             </p>
+            <p>Under Ubuntu, launch System/Administration/Synaptic Package Manager, quick search
+                sun-java6-bin, mark for installation and click Apply
+            </p>
+            <p>Or use the following command:</p>
             <code>sudo apt-get install sun-java6-bin</code>
 
             <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
