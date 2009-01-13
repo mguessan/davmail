@@ -2,7 +2,6 @@ package davmail;
 
 import davmail.caldav.CaldavServer;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.NetworkDownException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.ldap.LdapServer;

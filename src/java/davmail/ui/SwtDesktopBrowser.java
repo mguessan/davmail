@@ -2,7 +2,6 @@ package davmail.ui;
 
 import org.eclipse.swt.program.Program;
 
-import java.io.IOException;
 import java.net.URI;
 
 /**
