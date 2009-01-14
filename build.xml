@@ -89,9 +89,6 @@
             <tarfileset dir="dist" prefix="usr/share/applications">
                 <include name="davmail.desktop"/>
             </tarfileset>
-            <tarfileset dir="dist" prefix="usr/share/autostart">
-                <include name="davmail.desktop"/>
-            </tarfileset>
         </deb>
     </target>
 
