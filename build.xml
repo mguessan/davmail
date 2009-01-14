@@ -22,7 +22,7 @@
 
     <target name="compile" depends="init">
         <mkdir dir="target/classes"/>
-        <javac srcdir="src/java" destdir="target/classes" source="1.5" target="1.5">
+        <javac srcdir="src/java" destdir="target/classes" source="1.5" target="1.5" debug="on">
             <classpath>
                 <path refid="classpath"/>
             </classpath>
@@ -44,6 +44,57 @@
         </nsis>
     </target>
 
+    <target name="dist-deb">
+        <taskdef resource="ant_deb_task.properties">
+            <classpath location="lib/ant-deb-0.0.1.jar"/>
+        </taskdef>
+        <desktopentry
+            toFile="dist/davmail.desktop"
+            name="DavMail"
+            comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
+            exec="davmail"
+            icon="/usr/share/davmail/davmail.png"
+            categories="Office;Email;Network;Calendar;ContactManagement"
+        />
+        <deb todir="dist"
+             package="davmail"
+             section="mail"
+             depends="sun-java6-jre,libswt-gtk-3.4-java">
+            <version upstream="${version}"/>
+            <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
+            <description synopsis="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway">
+                Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP/Caldav/LDAP exchange gateway allowing
+                users to use any mail/calendar client (e.g. Thunderbird with Lightning) with an Exchange server,
+                even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
+                LDAP gateway to Exchange global address book to allow recipient address completion in mail compoze
+                window and full calendar support with attendees free/busy display.
+                DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows
+                and Linux (Ubuntu). MacOS support is currently limited to server (headless) mode.
+                Tested successfully with the Iphone (gateway running on a server).
+
+                http://davmail.sourceforge.net
+            </description>
+            <tarfileset dir="dist" prefix="usr/share/davmail">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <!-- exclude swt jars from debian package -->
+                <exclude name="lib/swt*.jar"/>
+            </tarfileset>
+            <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
+                <include name="davmail"/>
+            </tarfileset>
+            <tarfileset dir="dist" prefix="usr/share/davmail">
+                <include name="davmail.png"/>
+            </tarfileset>
+            <tarfileset dir="dist" prefix="usr/share/applications">
+                <include name="davmail.desktop"/>
+            </tarfileset>
+            <tarfileset dir="dist" prefix="usr/share/autostart">
+                <include name="davmail.desktop"/>
+            </tarfileset>
+        </deb>
+    </target>
+
     <target name="dist" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
@@ -63,10 +114,11 @@
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant.jar"/>
                 <exclude name="servlet-api.jar"/>
+                <exclude name="ant-deb-*.jar"/>
             </fileset>
         </copy>
+        <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
         <copy file="davmail.sh" todir="dist"/>
-        <copy file="davmail.desktop" todir="dist"/>
         <taskdef name="jsmoothgen"
                  classname="net.charabia.jsmoothgen.ant.JSmoothGen"
                  classpathref="classpath"/>
@@ -128,6 +180,7 @@
             </tarfileset>
         </tar>
         <antcall target="dist-nsis"/>
+        <antcall target="dist-deb"/>
         <!-- source package -->
         <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${version}" dir=".">
