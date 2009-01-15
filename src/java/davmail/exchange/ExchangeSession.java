@@ -31,6 +31,8 @@ import java.util.*;
 public class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
+    protected static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
+
     /**
      * exchange message properties needed to rebuild mime message
      */
@@ -1259,16 +1261,16 @@ public class ExchangeSession {
         if (attendee.startsWith("mailto:")) {
             attendee = attendee.substring("mailto:".length());
         }
-        int interval = 30;
+        int interval = 15;
 
         SimpleDateFormat icalParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-        icalParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        icalParser.setTimeZone(GMT_TIMEZONE);
 
         SimpleDateFormat shortIcalParser = new SimpleDateFormat("yyyyMMdd");
-        shortIcalParser.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        shortIcalParser.setTimeZone(GMT_TIMEZONE);
 
         SimpleDateFormat owaFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        owaFormatter.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        owaFormatter.setTimeZone(GMT_TIMEZONE);
 
         String url;
         Date startDate;
