@@ -11,10 +11,9 @@
         <section name="Frequently asked questions">
             <p>Frequently asked questions on DavMail forums, mailing list or direct email.
             </p>
-
-            <section name="POP (receive messages)">
+            <section name="General">
                 <p>
-                    <strong>Authentication fails</strong>
+                    <strong>Authentication fails with invalid user or password message</strong>
                 </p>
                 <p>Authentication fails with the following message:
                     <code>Authentication failed: invalid user or password, retry with domain\user</code>
@@ -24,21 +23,35 @@
                     but DavMail can not execute javascript. Thus you need to prefix your user name
                     with the Active Directory domain followed by \
                 </p>
-            </section>
-            <section name="Caldav (calendar)">
-                 <p>
-                    <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
+
+                <p>
+                    <strong>Authentication fails with error in parsing the status line</strong>
                 </p>
-                <p>Unfortunately, Lightning does not provide much feedback of what is going
-                    on. To detect errors at this level, you may activate calendar log settings
-                    under Tools/Options/Advanced:
+                <p>Authentication fails with the following message:
+                    <code>error in parsing the status line from the response: unable to find line starting with "HTTP"
+                    </code>
                 </p>
-                <source>
-calendar.debug.log=true
-calendar.debug.log.verbose=true
-                </source>
-                
+                <p>Your Exchange server expects HTTPS (secured) connections, use https instead of http in
+                    OWA url.
+                </p>
             </section>
+
+
         </section>
-    </body>
-</document>
+        <section name="Caldav (calendar)">
+            <p>
+                <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
+            </p>
+            <p>Unfortunately, Lightning does not provide much feedback of what is going
+                on. To detect errors at this level, you may activate calendar log settings
+                under Tools/Options/Advanced:
+            </p>
+            <source>
+                calendar.debug.log=true
+                calendar.debug.log.verbose=true
+            </source>
+
+        </section>
+    </section>
+</body>
+        </document>
