@@ -19,6 +19,7 @@
             <item name="Home" href="/index.html"/>
             <item name="Download" href="http://sourceforge.net/project/platformdownload.php?group_id=184600"/>
             <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
+            <item name="FAQ" href="/faq.html"/>
         </menu>
 
         <menu name="DavMail Setup">

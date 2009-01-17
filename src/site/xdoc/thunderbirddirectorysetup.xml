@@ -10,7 +10,7 @@
     <body>
 
         <section name="Thunderbird directory setup">
-            <p>DavMail Directory support is now available to access Exchange address book through LDAPS.
+            <p>DavMail Directory support is now available to access Exchange address book through LDAP.
             </p>
 
             <section name="Create a new LDAP directory">
