@@ -106,7 +106,7 @@ public class PopConnection extends AbstractConnection {
                             sendERR("invalid syntax");
                         } else {
                             // bug 2194492 : allow space in password
-                            password = line.substring("PASS".length()+1);
+                            password = line.substring("PASS".length() + 1);
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                                 messages = session.getAllMessages();
@@ -148,15 +148,26 @@ public class PopConnection extends AbstractConnection {
                                 printList();
                             }
                         } else if ("UIDL".equalsIgnoreCase(command)) {
-                            sendOK(messages.size() +
-                                    " messages (" + getTotalMessagesLength() +
-                                    " octets)");
-                            printUidList();
+                            if (tokens.hasMoreTokens()) {
+                                String token = tokens.nextToken();
+                                try {
+                                    int messageNumber = Integer.valueOf(token);
+                                    sendOK(messageNumber + " " + messages.get(messageNumber - 1).uid);
+                                } catch (NumberFormatException e) {
+                                    sendERR("Invalid message index: " + token);
+                                } catch (IndexOutOfBoundsException e) {
+                                    sendERR("Invalid message index: " + token);
+                                }
+                            } else {
+                                sendOK(messages.size() +
+                                        " messages (" + getTotalMessagesLength() +
+                                        " octets)");
+                                printUidList();
+                            }
                         } else if ("RETR".equalsIgnoreCase(command)) {
                             if (tokens.hasMoreTokens()) {
                                 try {
-                                    int messageNumber = Integer.valueOf(tokens.
-                                            nextToken()) - 1;
+                                    int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
                                     sendOK("");
                                     messages.get(messageNumber).write(os);
                                     sendClient("");
