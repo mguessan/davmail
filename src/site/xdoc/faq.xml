@@ -36,22 +36,33 @@
                 </p>
             </section>
 
+            <section name="Caldav (calendar)">
+                <p>
+                    <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
+                </p>
+                <p>Unfortunately, Lightning does not provide much feedback of what is going
+                    on. To detect errors at this level, you may activate calendar log settings
+                    under Tools/Options/Advanced:
+                </p>
+                <source>
+                    calendar.debug.log=true
+                    calendar.debug.log.verbose=true
+                </source>
 
-        </section>
-        <section name="Caldav (calendar)">
-            <p>
-                <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
-            </p>
-            <p>Unfortunately, Lightning does not provide much feedback of what is going
-                on. To detect errors at this level, you may activate calendar log settings
-                under Tools/Options/Advanced:
-            </p>
-            <source>
-                calendar.debug.log=true
-                calendar.debug.log.verbose=true
-            </source>
+                <p>
+                    <strong>Unable to send appointment notifications</strong>
+                </p>
+                <p>Lightning tries to send Caldav notifications to outbox instead
+                    of Mail notifications and trigger an invalid request error.
+                </p>
+                <p>Check the following parameter in Thunderbird, it should be set
+                    to false
+                </p>
+                <source>
+                    calendar.caldav.sched.enabled=false
+                </source>
 
+            </section>
         </section>
-    </section>
-</body>
-        </document>
+    </body>
+</document>
