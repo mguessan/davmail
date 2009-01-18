@@ -481,7 +481,7 @@ public class ExchangeSession {
                     throw new IOException("Overwritten message " + messageUrl);
                 }
             } else if (code != HttpURLConnection.HTTP_CREATED) {
-                throw new IOException("Unable to create message " + code + " " + putmethod.getStatusLine());
+                throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
             }
         } finally {
             if (bodyStream != null) {
@@ -1308,36 +1308,38 @@ public class ExchangeSession {
             int endIndex = body.lastIndexOf("</a:fbdata>");
             if (startIndex >= 0 && endIndex >= 0) {
                 String fbdata = body.substring(startIndex + "<a:fbdata>".length(), endIndex);
-                Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                currentCal.setTime(startDate);
+                if (fbdata.length() > 0) {
+                    Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                    currentCal.setTime(startDate);
 
-                StringBuilder busyBuffer = new StringBuilder();
-                boolean isBusy = fbdata.charAt(0) != '0' && fbdata.charAt(0) != '4';
-                if (isBusy) {
-                    busyBuffer.append(icalParser.format(currentCal.getTime()));
-                }
-                boolean knownAttendee = fbdata.charAt(0) != '4';
-                for (int i = 1; i < fbdata.length(); i++) {
-                    knownAttendee = knownAttendee || fbdata.charAt(i) != '4';
-                    currentCal.add(Calendar.MINUTE, interval);
-                    if (isBusy && fbdata.charAt(i) == '0') {
-                        // busy -> non busy
-                        busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
-                    } else if (!isBusy && (fbdata.charAt(i) != '0') && fbdata.charAt(0) != '4') {
-                        // non busy -> busy
-                        if (busyBuffer.length() > 0) {
-                            busyBuffer.append(',');
-                        }
+                    StringBuilder busyBuffer = new StringBuilder();
+                    boolean isBusy = fbdata.charAt(0) != '0' && fbdata.charAt(0) != '4';
+                    if (isBusy) {
                         busyBuffer.append(icalParser.format(currentCal.getTime()));
                     }
-                    isBusy = fbdata.charAt(i) != '0' && fbdata.charAt(0) != '4';
-                }
-                // still busy at end
-                if (isBusy) {
-                    busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
-                }
-                if (knownAttendee) {
-                    result = busyBuffer.toString();
+                    boolean knownAttendee = fbdata.charAt(0) != '4';
+                    for (int i = 1; i < fbdata.length(); i++) {
+                        knownAttendee = knownAttendee || fbdata.charAt(i) != '4';
+                        currentCal.add(Calendar.MINUTE, interval);
+                        if (isBusy && fbdata.charAt(i) == '0') {
+                            // busy -> non busy
+                            busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
+                        } else if (!isBusy && (fbdata.charAt(i) != '0') && fbdata.charAt(0) != '4') {
+                            // non busy -> busy
+                            if (busyBuffer.length() > 0) {
+                                busyBuffer.append(',');
+                            }
+                            busyBuffer.append(icalParser.format(currentCal.getTime()));
+                        }
+                        isBusy = fbdata.charAt(i) != '0' && fbdata.charAt(0) != '4';
+                    }
+                    // still busy at end
+                    if (isBusy) {
+                        busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
+                    }
+                    if (knownAttendee) {
+                        result = busyBuffer.toString();
+                    }
                 }
             }
         } finally {
