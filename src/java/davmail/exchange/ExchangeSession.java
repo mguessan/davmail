@@ -1027,7 +1027,7 @@ public class ExchangeSession {
         return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex + 1, valueEndIndex);
     }
 
-    public int createOrUpdateEvent(String path, String icsBody, String etag) throws IOException {
+    public int createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
         String uid = path.substring(0, path.lastIndexOf("."));
         PutMethod putmethod = new PutMethod(messageUrl);
@@ -1035,6 +1035,9 @@ public class ExchangeSession {
         putmethod.setRequestHeader("Overwrite", "f");
         if (etag != null) {
             putmethod.setRequestHeader("If-Match", etag);
+        }
+        if (noneMatch != null) {
+            putmethod.setRequestHeader("If-None-Match", noneMatch);
         }
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
         StringBuilder body = new StringBuilder();

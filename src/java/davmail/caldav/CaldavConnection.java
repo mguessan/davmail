@@ -220,7 +220,8 @@ public class CaldavConnection extends AbstractConnection {
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
             String etag = headers.get("if-match");
-            int status = session.createOrUpdateEvent(paths[4], body, etag);
+            String noneMatch = headers.get("if-none-match"); 
+            int status = session.createOrUpdateEvent(paths[4], body, etag, noneMatch);
             sendHttpResponse(status, true);
 
         } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
