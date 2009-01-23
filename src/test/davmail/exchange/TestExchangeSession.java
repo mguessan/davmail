@@ -26,7 +26,7 @@ public class TestExchangeSession {
             ExchangeSessionFactory.checkConfig();
             session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg++]);
 
-            ExchangeSession.Folder folder = session.selectFolder(argv[currentArg++]);
+            ExchangeSession.Folder folder = session.getFolder(argv[currentArg++]);
             String messageName;
             messageName = URIUtil.decode(argv[currentArg]);
 

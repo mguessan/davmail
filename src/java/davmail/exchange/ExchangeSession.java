@@ -81,7 +81,6 @@ public class ExchangeSession {
      */
     private String mailPath;
     private String email;
-    private String currentFolderUrl;
     private WebdavResource wdr = null;
 
     private final ExchangeSessionFactory.PoolKey poolKey;
@@ -367,8 +366,6 @@ public class ExchangeSession {
             wdr.setPath(mailPath);
             getWellKnownFolders();
             // set current folder to Inbox
-            selectFolder("INBOX");
-
             wdr.setPath(URIUtil.getPath(inboxUrl));
 
         } catch (AuthenticationException exc) {
@@ -435,19 +432,6 @@ public class ExchangeSession {
                 " Drafts URL : " + draftsUrl +
                 " Calendar URL : " + calendarUrl
         );
-    }
-
-    /**
-     * Create message in current folder
-     *
-     * @param messageName    message name
-     * @param bcc            blind carbon copy header
-     * @param messageBody    mail body
-     * @param allowOverwrite allow existing message overwrite
-     * @throws java.io.IOException when unable to create message
-     */
-    public void createMessage(String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
-        createMessage(currentFolderUrl, messageName, bcc, messageBody, allowOverwrite);
     }
 
     /**
@@ -550,13 +534,14 @@ public class ExchangeSession {
 
     }
 
-    public List<Message> getAllMessages() throws IOException {
+    public List<Message> getAllMessages(String folderName) throws IOException {
+        String folderUrl = getFolderPath(folderName);
         List<Message> messages = new ArrayList<Message>();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + currentFolderUrl + "\"')\n" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), currentFolderUrl, searchRequest);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
@@ -565,6 +550,65 @@ public class ExchangeSession {
             messages.add(message);
         }
         return messages;
+    }
+
+    public List<Folder> getSubFolders(String folderName) throws IOException {
+        List<Folder> folders = new ArrayList<Folder>();
+        String searchRequest = "Select \"DAV:nosubs\", \"DAV:hassubs\"," +
+                "                \"DAV:hassubs\",\"urn:schemas:httpmail:unreadcount\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
+                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n";
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), mailPath, searchRequest);
+
+        while (folderEnum.hasMoreElements()) {
+            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
+            folders.add(buildFolder(entity));
+        }
+        return folders;
+    }
+
+    protected Folder buildFolder(ResponseEntity entity) throws URIException {
+        String href = URIUtil.decode(entity.getHref());
+        Folder folder = new Folder();
+        Enumeration enumeration = entity.getProperties();
+        while (enumeration.hasMoreElements()) {
+            Property property = (Property) enumeration.nextElement();
+            if ("hassubs".equals(property.getLocalName())) {
+                folder.hasChildren = "1".equals(property.getPropertyAsString());
+            }
+            if ("nosubs".equals(property.getLocalName())) {
+                folder.noInferiors = "1".equals(property.getPropertyAsString());
+            }
+            if ("objectcount".equals(property.getLocalName())) {
+                folder.objectCount = Integer.parseInt(property.getPropertyAsString());
+            }
+            if ("unreadcount".equals(property.getLocalName())) {
+                folder.unreadCount = Integer.parseInt(property.getPropertyAsString());
+            }
+
+        }
+        if (href.endsWith("/")) {
+            href = href.substring(0, href.length()-1);
+        }
+
+        // replace well known folder names
+        if (href.startsWith(inboxUrl)) {
+            folder.folderUrl = href.replaceFirst(inboxUrl, "INBOX");
+        } else if (href.startsWith(sentitemsUrl)) {
+            folder.folderUrl = href.replaceFirst(sentitemsUrl, "Sent");
+        } else if (href.startsWith(draftsUrl)) {
+            folder.folderUrl = href.replaceFirst(draftsUrl, "Drafts");
+        } else if (href.startsWith(deleteditemsUrl)) {
+            folder.folderUrl = href.replaceFirst(deleteditemsUrl, "Trash");
+        } else {
+            int index = href.indexOf(mailPath.substring(0, mailPath.length()-1));
+            if (index >= 0) {
+                folder.folderUrl = href.substring(index + mailPath.length());
+            } else {
+                throw new URIException("Invalid folder url: " + folder.folderUrl);
+            }
+        }
+        return folder;
     }
 
     /**
@@ -676,6 +720,25 @@ public class ExchangeSession {
 
     }
 
+    public String getFolderPath(String folderName) {
+        String folderPath;
+        if (folderName.startsWith("INBOX")) {
+            folderPath = folderName.replaceFirst("INBOX", inboxUrl);
+        } else if (folderName.startsWith("Trash")) {
+            folderPath = folderName.replaceFirst("Trash", deleteditemsUrl);
+        } else if (folderName.startsWith("Drafts")) {
+            folderPath = folderName.replaceFirst("Drafts", draftsUrl);
+        } else if (folderName.startsWith("Sent")) {
+            folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
+        // absolute folder path
+        } else if (folderName != null && folderName.startsWith("/")) {
+            folderPath = folderName;
+        } else {
+            folderPath = mailPath + folderName;
+        }
+        return folderPath;
+    }
+
     /**
      * Select current folder.
      * Folder name can be logical names INBOX, DRAFTS or TRASH (translated to local names),
@@ -685,51 +748,40 @@ public class ExchangeSession {
      * @return Folder object
      * @throws IOException when unable to change folder
      */
-    public Folder selectFolder(String folderName) throws IOException {
+    public Folder getFolder(String folderName) throws IOException {
         Folder folder = new Folder();
-        folder.folderUrl = null;
-        if ("INBOX".equals(folderName)) {
-            folder.folderUrl = inboxUrl;
-        } else if ("TRASH".equals(folderName)) {
-            folder.folderUrl = deleteditemsUrl;
-        } else if ("DRAFTS".equals(folderName)) {
-            folder.folderUrl = draftsUrl;
-            // absolute folder path
-        } else if (folderName != null && folderName.startsWith("/")) {
-            folder.folderUrl = folderName;
-        } else {
-            folder.folderUrl = mailPath + folderName;
-        }
+        folder.folderUrl = getFolderPath(folderName);
 
         Vector<String> reqProps = new Vector<String>();
+        reqProps.add("DAV:hassubs");
+        reqProps.add("DAV:nosubs");
+        reqProps.add("DAV:objectcount");
         reqProps.add("urn:schemas:httpmail:unreadcount");
-        reqProps.add("DAV:childcount");
         Enumeration folderEnum = wdr.propfindMethod(folder.folderUrl, 0, reqProps);
 
         if (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            Enumeration propertiesEnum = entity.getProperties();
-            while (propertiesEnum.hasMoreElements()) {
-                Property prop = (Property) propertiesEnum.nextElement();
-                if ("unreadcount".equals(prop.getLocalName())) {
-                    folder.unreadCount = Integer.parseInt(prop.getPropertyAsString());
-                }
-                if ("childcount".equals(prop.getLocalName())) {
-                    folder.childCount = Integer.parseInt(prop.getPropertyAsString());
-                }
-            }
-
-        } else {
-            throw new IOException("Folder not found: " + folder.folderUrl);
-        }
-        currentFolderUrl = folder.folderUrl;
+            folder = buildFolder(entity);
+        } 
         return folder;
     }
 
     public static class Folder {
         public String folderUrl;
-        public int childCount;
+        public int objectCount;
         public int unreadCount;
+        public boolean hasChildren;
+        public boolean noInferiors;
+
+        public String getFlags() {
+            if (noInferiors) {
+                return "\\NoInferiors";
+            } else if (hasChildren) {
+                return "\\HasChildren";
+            } else {
+                return "\\HasNoChildren";
+            }
+        }
     }
 
     public class Message {

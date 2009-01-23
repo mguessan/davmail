@@ -109,7 +109,7 @@ public class PopConnection extends AbstractConnection {
                             password = line.substring("PASS".length() + 1);
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
-                                messages = session.getAllMessages();
+                                messages = session.getAllMessages("INBOX");
                                 sendOK("PASS");
                                 state = AUTHENTICATED;
                             } catch (SocketException e) {
