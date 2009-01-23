@@ -14,6 +14,7 @@ import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.MkcolMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -116,7 +117,7 @@ public class ExchangeSession {
 
         dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(GMT_TIMEZONE);
-        
+
         LOGGER.debug("Session " + this + " created");
     }
 
@@ -570,7 +571,7 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         List<Message> messages = new ArrayList<Message>();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
-                "                ,\"urn:schemas:mailheader:from\",\"urn:schemas:mailheader:to\",\"urn:schemas:mailheader:cc\",\"urn:schemas:httpmail:subject\",\"urn:schemas:mailheader:date\",\"urn:schemas:mailheader:message-id\",\"urn:schemas:httpmail:priority\""+
+                "                ,\"urn:schemas:mailheader:from\",\"urn:schemas:mailheader:to\",\"urn:schemas:mailheader:cc\",\"urn:schemas:httpmail:subject\",\"urn:schemas:mailheader:date\",\"urn:schemas:mailheader:message-id\",\"urn:schemas:httpmail:priority\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
@@ -585,12 +586,12 @@ public class ExchangeSession {
         return messages;
     }
 
-    public List<Folder> getSubFolders(String folderName,boolean recursive) throws IOException {
-        String mode = recursive?"DEEP":"SHALLOW";
+    public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
+        String mode = recursive ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
         String searchRequest = "Select \"DAV:nosubs\", \"DAV:hassubs\"," +
                 "                \"DAV:hassubs\",\"urn:schemas:httpmail:unreadcount\"" +
-                "                FROM Scope('"+mode+" TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
+                "                FROM Scope('" + mode + " TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), mailPath, searchRequest);
 
@@ -623,12 +624,12 @@ public class ExchangeSession {
                 try {
                     folder.lastModified = dateParser.parse(property.getPropertyAsString()).getTime();
                 } catch (ParseException e) {
-                    LOGGER.error("Unable to parse date: "+e);
+                    LOGGER.error("Unable to parse date: " + e);
                 }
             }
         }
         if (href.endsWith("/")) {
-            href = href.substring(0, href.length()-1);
+            href = href.substring(0, href.length() - 1);
         }
 
         // replace well known folder names
@@ -641,7 +642,7 @@ public class ExchangeSession {
         } else if (href.startsWith(deleteditemsUrl)) {
             folder.folderUrl = href.replaceFirst(deleteditemsUrl, "Trash");
         } else {
-            int index = href.indexOf(mailPath.substring(0, mailPath.length()-1));
+            int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
             if (index >= 0) {
                 folder.folderUrl = href.substring(index + mailPath.length());
             } else {
@@ -770,7 +771,7 @@ public class ExchangeSession {
             folderPath = folderName.replaceFirst("Drafts", draftsUrl);
         } else if (folderName.startsWith("Sent")) {
             folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
-        // absolute folder path
+            // absolute folder path
         } else if (folderName != null && folderName.startsWith("/")) {
             folderPath = folderName;
         } else {
@@ -801,8 +802,43 @@ public class ExchangeSession {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
             folder = buildFolder(entity);
             folder.folderName = folderName;
-        } 
+        }
         return folder;
+    }
+
+    public void createFolder(String folderName) throws IOException {
+        String folderPath = getFolderPath(folderName);
+        int index = folderPath.lastIndexOf("/");
+
+        PropPatchMethod method = new PropPatchMethod(folderPath) {
+            public String getName() {
+                return "MKCOL";
+            }
+        };
+        method.setDebug(4);
+        method.addPropertyToSet("outlookfolderclass","IPF.Note","ex","http://schemas.microsoft.com/exchange/");
+        wdr.retrieveSessionInstance().executeMethod(method);
+        // ok or alredy exists
+        if (method.getStatusCode() != HttpStatus.SC_MULTI_STATUS && method.getStatusCode() != HttpStatus.SC_METHOD_NOT_ALLOWED) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(method.getStatusCode());
+            ex.setReason(method.getStatusText());
+            throw ex;
+        }
+/*
+        PostMethod postMethod = new PostMethod(folderPath.substring(0, index));
+        postMethod.addParameter("Cmd", "createfolder");
+        postMethod.addParameter("Action", "Create");
+        postMethod.addParameter("FolderName", folderPath.substring(index + 1));
+        postMethod.addParameter("FolderType", "IPF.Note");
+        wdr.retrieveSessionInstance().executeMethod(postMethod);
+        if (postMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(postMethod.getStatusCode());
+            ex.setReason(postMethod.getStatusText());
+            throw ex;
+        }
+        */
     }
 
     public static class Folder {

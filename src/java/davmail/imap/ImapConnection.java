@@ -161,12 +161,8 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
-                                        if (session.getFolder(folderName) != null) {
-                                            sendClient(commandId + " OK folder already exists");
-                                        } else {
-                                            // TODO
-                                            sendClient(commandId + " NO unsupported");
-                                        }
+                                        session.createFolder(folderName);
+                                        sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
@@ -254,7 +250,7 @@ public class ImapConnection extends AbstractConnection {
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
                                             // TODO
-                                           sendClient(commandId + " OK STORE completed");
+                                            sendClient(commandId + " OK STORE completed");
                                         }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
@@ -281,7 +277,14 @@ public class ImapConnection extends AbstractConnection {
                                     int size = Integer.parseInt(removeQuotes(tokens.nextToken()));
                                     sendClient("+ send literal data");
                                     char[] buffer = new char[size];
-                                    in.read(buffer);
+                                    int index = 0;
+                                    int count = 0;
+                                    while (count >= 0 && index < size) {
+                                        count = in.read(buffer, index, size - index);
+                                        if (count >= 0) {
+                                            index += count;
+                                        }
+                                    }
                                     // empty line
                                     readClient();
                                     session.createMessage(session.getFolderPath(folderName), "test", null, new String(buffer), true);
