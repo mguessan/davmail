@@ -8,6 +8,7 @@ import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.tray.DavGatewayTray;
+import davmail.imap.ImapServer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -25,6 +26,7 @@ public class DavGateway {
 
     private static SmtpServer smtpServer;
     private static PopServer popServer;
+    private static ImapServer imapServer;
     private static CaldavServer caldavServer;
     private static LdapServer ldapServer;
 
@@ -49,19 +51,39 @@ public class DavGateway {
         try {
             // prepare HTTP connection pool
             DavGatewayHttpClientFacade.start();
-            smtpServer = new SmtpServer(Settings.getIntProperty("davmail.smtpPort"));
-            popServer = new PopServer(Settings.getIntProperty("davmail.popPort"));
-            caldavServer = new CaldavServer(Settings.getIntProperty("davmail.caldavPort"));
-            ldapServer = new LdapServer(Settings.getIntProperty("davmail.ldapPort"));
-            smtpServer.start();
-            popServer.start();
-            caldavServer.start();
-            ldapServer.start();
 
-            String message = "DavMail gateway listening on SMTP port " + smtpServer.getPort() +
-                    ", Caldav port " + caldavServer.getPort() +
-                    ", LDAP port " + ldapServer.getPort() +
-                    " and POP port " + popServer.getPort();
+            String message = "DavMail gateway listening on";
+            int smtpPort = Settings.getIntProperty("davmail.smtpPort");
+            if (smtpPort != 0) {
+                smtpServer = new SmtpServer(smtpPort);
+                smtpServer.start();
+                message += " SMTP port " + smtpServer.getPort();
+            }
+            int popPort = Settings.getIntProperty("davmail.popPort");
+            if (popPort != 0) {
+                popServer = new PopServer(Settings.getIntProperty("davmail.popPort"));
+                popServer.start();
+                message += " POP port " + popServer.getPort();
+            }
+            int imapPort = Settings.getIntProperty("davmail.imapPort");
+            if (imapPort != 0) {
+                imapServer = new ImapServer(Settings.getIntProperty("davmail.imapPort"));
+                imapServer.start();
+                message += " IMAP port " + imapServer.getPort();
+            }
+            int caldavPort = Settings.getIntProperty("davmail.caldavPort");
+            if (caldavPort != 0) {
+                caldavServer = new CaldavServer(Settings.getIntProperty("davmail.caldavPort"));
+                caldavServer.start();
+                message += " Caldav port " + caldavServer.getPort();
+            }
+            int ldapPort = Settings.getIntProperty("davmail.ldapPort");
+            if (ldapPort != 0) {
+                ldapServer = new LdapServer(Settings.getIntProperty("davmail.ldapPort"));
+                ldapServer.start();
+                message += " LDAP port " + ldapServer.getPort();
+            }
+
             DavGatewayTray.info(message);
 
             // check for new version
@@ -92,6 +114,7 @@ public class DavGateway {
     public static void stop() {
         stopServer(smtpServer);
         stopServer(popServer);
+        stopServer(imapServer);
         stopServer(caldavServer);
         stopServer(ldapServer);
         // close pooled connections
