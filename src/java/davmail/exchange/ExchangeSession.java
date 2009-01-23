@@ -14,7 +14,6 @@ import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
-import org.apache.webdav.lib.methods.MkcolMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -772,7 +771,7 @@ public class ExchangeSession {
         } else if (folderName.startsWith("Sent")) {
             folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
             // absolute folder path
-        } else if (folderName != null && folderName.startsWith("/")) {
+        } else if (folderName.startsWith("/")) {
             folderPath = folderName;
         } else {
             folderPath = mailPath + folderName;
@@ -808,15 +807,12 @@ public class ExchangeSession {
 
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
-        int index = folderPath.lastIndexOf("/");
-
         PropPatchMethod method = new PropPatchMethod(folderPath) {
             public String getName() {
                 return "MKCOL";
             }
         };
-        method.setDebug(4);
-        method.addPropertyToSet("outlookfolderclass","IPF.Note","ex","http://schemas.microsoft.com/exchange/");
+        method.addPropertyToSet("outlookfolderclass", "IPF.Note", "ex", "http://schemas.microsoft.com/exchange/");
         wdr.retrieveSessionInstance().executeMethod(method);
         // ok or alredy exists
         if (method.getStatusCode() != HttpStatus.SC_MULTI_STATUS && method.getStatusCode() != HttpStatus.SC_METHOD_NOT_ALLOWED) {
@@ -825,20 +821,6 @@ public class ExchangeSession {
             ex.setReason(method.getStatusText());
             throw ex;
         }
-/*
-        PostMethod postMethod = new PostMethod(folderPath.substring(0, index));
-        postMethod.addParameter("Cmd", "createfolder");
-        postMethod.addParameter("Action", "Create");
-        postMethod.addParameter("FolderName", folderPath.substring(index + 1));
-        postMethod.addParameter("FolderType", "IPF.Note");
-        wdr.retrieveSessionInstance().executeMethod(postMethod);
-        if (postMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY) {
-            HttpException ex = new HttpException();
-            ex.setReasonCode(postMethod.getStatusCode());
-            ex.setReason(postMethod.getStatusText());
-            throw ex;
-        }
-        */
     }
 
     public static class Folder {
