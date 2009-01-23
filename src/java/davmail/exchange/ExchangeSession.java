@@ -789,20 +789,18 @@ public class ExchangeSession {
      * @throws IOException when unable to change folder
      */
     public Folder getFolder(String folderName) throws IOException {
-        Folder folder = new Folder();
-        folder.folderUrl = getFolderPath(folderName);
-
         Vector<String> reqProps = new Vector<String>();
         reqProps.add("DAV:hassubs");
         reqProps.add("DAV:nosubs");
         reqProps.add("DAV:objectcount");
         reqProps.add("urn:schemas:httpmail:unreadcount");
         reqProps.add("DAV:getlastmodified");
-        Enumeration folderEnum = wdr.propfindMethod(folder.folderUrl, 0, reqProps);
-
+        Enumeration folderEnum = wdr.propfindMethod(getFolderPath(folderName), 0, reqProps);
+        Folder folder = null;
         if (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
             folder = buildFolder(entity);
+            folder.folderName = folderName;
         } 
         return folder;
     }
@@ -814,6 +812,7 @@ public class ExchangeSession {
         public boolean hasChildren;
         public boolean noInferiors;
         public long lastModified;
+        public String folderName;
 
         public String getFlags() {
             if (noInferiors) {

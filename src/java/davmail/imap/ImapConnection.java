@@ -171,65 +171,90 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("uid".equalsIgnoreCase(command)) {
-                                    if (tokens.hasMoreTokens() && "fetch".equalsIgnoreCase(tokens.nextToken())) {
-                                        if (tokens.hasMoreTokens()) {
-                                            String messageParameter = tokens.nextToken();
-                                            if (currentFolder == null) {
-                                                sendClient(commandId + " NO no folder selected");
-                                            }
-                                            int startIndex;
-                                            int endIndex;
-                                            int colonIndex = messageParameter.indexOf(":");
-                                            if (colonIndex < 0) {
-                                                startIndex = endIndex = Integer.parseInt(messageParameter);
-                                            } else {
-                                                startIndex = Integer.parseInt(messageParameter.substring(0, colonIndex));
-                                                if (messageParameter.endsWith("*")) {
-                                                    endIndex = messages.size();
+                                    if (tokens.hasMoreTokens()) {
+                                        String subcommand = tokens.nextToken();
+                                        if ("fetch".equalsIgnoreCase(subcommand)) {
+                                            if (tokens.hasMoreTokens()) {
+                                                String messageParameter = tokens.nextToken();
+                                                if (currentFolder == null) {
+                                                    sendClient(commandId + " NO no folder selected");
+                                                }
+                                                int startIndex;
+                                                int endIndex;
+                                                int colonIndex = messageParameter.indexOf(":");
+                                                if (colonIndex < 0) {
+                                                    startIndex = endIndex = Integer.parseInt(messageParameter);
                                                 } else {
-                                                    endIndex = Integer.parseInt(messageParameter.substring(colonIndex + 1));
-                                                }
-                                            }
-                                            if ("1:*".equals(messageParameter)) {
-                                                int count = 0;
-                                                for (ExchangeSession.Message message : messages) {
-                                                    count++;
-                                                    sendClient("* " + count + " FETCH (UID " + count + " FLAGS (\\Seen))");
-                                                }
-                                                sendClient(commandId + " OK UID FETCH completed");
-                                            } else {
-                                                if (tokens.hasMoreTokens()) {
-                                                    String parameters = tokens.nextToken();
-                                                    for (int messageIndex = startIndex; messageIndex <= endIndex; messageIndex++) {
-                                                        ExchangeSession.Message message = messages.get(messageIndex - 1);
-
-                                                        if ("(BODYSTRUCTURE)".equals(parameters)) {
-                                                            sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
-                                                        } else if (parameters.indexOf("BODY[]") >= 0) {
-                                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                            message.write(baos);
-                                                            baos.close();
-
-                                                            sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
-                                                                    " {" + baos.size() + "}");
-                                                            message.write(os);
-                                                            sendClient(")");
-                                                        } else {
-                                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                            message.write(baos);
-                                                            baos.close();
-                                                            sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID PRIORITY X-PRIORITY REFERENCES NEWSGROUPS IN-REPLY-TO CONTENT-TYPE)" +
-                                                                    "] {" + baos.size() + "}");
-                                                            message.write(os);
-                                                            sendClient(" FLAGS (\\Seen))");
-                                                        }
+                                                    startIndex = Integer.parseInt(messageParameter.substring(0, colonIndex));
+                                                    if (messageParameter.endsWith("*")) {
+                                                        endIndex = messages.size();
+                                                    } else {
+                                                        endIndex = Integer.parseInt(messageParameter.substring(colonIndex + 1));
                                                     }
-                                                    sendClient(commandId + " OK FETCH completed");
+                                                }
+                                                if ("1:*".equals(messageParameter)) {
+                                                    int count = 0;
+                                                    for (ExchangeSession.Message message : messages) {
+                                                        count++;
+                                                        sendClient("* " + count + " FETCH (UID " + count + " FLAGS (\\Seen))");
+                                                    }
+                                                    sendClient(commandId + " OK UID FETCH completed");
+                                                } else {
+                                                    if (tokens.hasMoreTokens()) {
+                                                        String parameters = tokens.nextToken();
+                                                        for (int messageIndex = startIndex; messageIndex <= endIndex; messageIndex++) {
+                                                            ExchangeSession.Message message = messages.get(messageIndex - 1);
 
+                                                            if ("(BODYSTRUCTURE)".equals(parameters)) {
+                                                                sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
+                                                            } else if (parameters.indexOf("BODY[]") >= 0) {
+                                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                                message.write(baos);
+                                                                baos.close();
+
+                                                                sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
+                                                                        " {" + baos.size() + "}");
+                                                                message.write(os);
+                                                                sendClient(")");
+                                                            } else {
+                                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                                message.write(baos);
+                                                                baos.close();
+                                                                sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID PRIORITY X-PRIORITY REFERENCES NEWSGROUPS IN-REPLY-TO CONTENT-TYPE)" +
+                                                                        "] {" + baos.size() + "}");
+                                                                message.write(os);
+                                                                sendClient(" FLAGS (\\Seen))");
+                                                            }
+                                                        }
+                                                        sendClient(commandId + " OK FETCH completed");
+
+                                                    }
+                                                }
+                                            } else {
+                                                sendClient(commandId + " BAD command unrecognized");
+                                            }
+                                        } else if ("search".equalsIgnoreCase(subcommand)) {
+                                            // only create check search
+                                            String messageId = null;
+                                            int messageIndex = 0;
+                                            while (tokens.hasMoreTokens()) {
+                                                messageId = tokens.nextToken();
+                                            }
+                                            // reload messages
+                                            messages = session.getAllMessages(currentFolder.folderName);
+                                            for (int i = 0; i < messages.size(); i++) {
+                                                if (messageId.equals(messages.get(i).messageId)) {
+                                                    messageIndex = i + 1;
                                                 }
                                             }
-                                        } else {
-                                            sendClient(commandId + " BAD command unrecognized");
+                                            if (messageIndex > 0) {
+                                                sendClient("* SEARCH " + messageIndex);
+                                            }
+                                            sendClient(commandId + " OK SEARCH completed");
+
+                                        } else if ("store".equalsIgnoreCase(subcommand)) {
+                                            // TODO
+                                           sendClient(commandId + " OK STORE completed");
                                         }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
@@ -262,6 +287,11 @@ public class ImapConnection extends AbstractConnection {
                                     session.createMessage(session.getFolderPath(folderName), "test", null, new String(buffer), true);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command)) {
+                                    if (currentFolder != null) {
+                                        currentFolder = session.getFolder(currentFolder.folderName);
+                                        sendClient("* " + currentFolder.objectCount + " EXISTS");
+                                        sendClient("* " + currentFolder.objectCount + " RECENT");
+                                    }
                                     sendClient(commandId + " OK NOOP completed");
                                 } else {
                                     sendClient(commandId + " BAD command unrecognized");
