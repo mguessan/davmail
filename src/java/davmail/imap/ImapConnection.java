@@ -250,6 +250,17 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                         }
                                     }
+                                } else if ("append".equalsIgnoreCase(command)) {
+                                    String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                    String parameters = tokens.nextToken();
+                                    int size = Integer.parseInt(removeQuotes(tokens.nextToken()));
+                                    sendClient("+ send literal data");
+                                    char[] buffer = new char[size];
+                                    in.read(buffer);
+                                    // empty line
+                                    readClient();
+                                    session.createMessage(session.getFolderPath(folderName), "test", null, new String(buffer), true);
+                                    sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command)) {
                                     sendClient(commandId + " OK NOOP completed");
                                 } else {
@@ -309,10 +320,10 @@ public class ImapConnection extends AbstractConnection {
 
     protected String removeQuotes(String value) {
         String result = value;
-        if (result.startsWith("\"")) {
+        if (result.startsWith("\"") || result.startsWith("{")) {
             result = result.substring(1);
         }
-        if (result.endsWith("\"")) {
+        if (result.endsWith("\"") || result.endsWith("}")) {
             result = result.substring(0, result.length() - 1);
         }
         return result;
