@@ -61,10 +61,21 @@ public class ExchangeSession {
         WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:calendar");
     }
 
+    public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
+
+    static {
+        PRIORITIES.put("-2", "5 (Lowest)");
+        PRIORITIES.put("-1", "4 (Low)");
+        PRIORITIES.put("1", "2 (High)");
+        PRIORITIES.put("2", "1 (Highest)");
+    }
+
     /**
-     * Date parser from Exchange format
+     * Date parser/formatter from Exchange format
      */
     private final SimpleDateFormat dateFormatter;
+    private final SimpleDateFormat dateParser;
+
 
     /**
      * Various standard mail boxes Urls
@@ -102,6 +113,10 @@ public class ExchangeSession {
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
         dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+        dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        dateParser.setTimeZone(GMT_TIMEZONE);
+        
         LOGGER.debug("Session " + this + " created");
     }
 
@@ -513,6 +528,23 @@ public class ExchangeSession {
                 message.size = Integer.parseInt(prop.getPropertyAsString());
             } else if ("uid".equals(localName)) {
                 message.uid = prop.getPropertyAsString();
+            } else if ("date".equals(prop.getLocalName())) {
+                message.date = prop.getPropertyAsString();
+            } else if ("message-id".equals(prop.getLocalName())) {
+                message.messageId = prop.getPropertyAsString();
+            } else if ("from".equals(prop.getLocalName())) {
+                message.from = prop.getPropertyAsString();
+            } else if ("to".equals(prop.getLocalName())) {
+                message.to = prop.getPropertyAsString();
+            } else if ("cc".equals(prop.getLocalName())) {
+                message.cc = prop.getPropertyAsString();
+            } else if ("subject".equals(prop.getLocalName())) {
+                message.subject = prop.getPropertyAsString();
+            } else if ("priority".equals(prop.getLocalName())) {
+                String priorityLabel = PRIORITIES.get(prop.getPropertyAsString());
+                if (priorityLabel != null) {
+                    message.priority = priorityLabel;
+                }
             }
         }
 
@@ -538,6 +570,7 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         List<Message> messages = new ArrayList<Message>();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+                "                ,\"urn:schemas:mailheader:from\",\"urn:schemas:mailheader:to\",\"urn:schemas:mailheader:cc\",\"urn:schemas:httpmail:subject\",\"urn:schemas:mailheader:date\",\"urn:schemas:mailheader:message-id\",\"urn:schemas:httpmail:priority\""+
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
@@ -552,11 +585,12 @@ public class ExchangeSession {
         return messages;
     }
 
-    public List<Folder> getSubFolders(String folderName) throws IOException {
+    public List<Folder> getSubFolders(String folderName,boolean recursive) throws IOException {
+        String mode = recursive?"DEEP":"SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
         String searchRequest = "Select \"DAV:nosubs\", \"DAV:hassubs\"," +
                 "                \"DAV:hassubs\",\"urn:schemas:httpmail:unreadcount\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
+                "                FROM Scope('"+mode+" TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), mailPath, searchRequest);
 
@@ -585,7 +619,13 @@ public class ExchangeSession {
             if ("unreadcount".equals(property.getLocalName())) {
                 folder.unreadCount = Integer.parseInt(property.getPropertyAsString());
             }
-
+            if ("getlastmodified".equals(property.getLocalName())) {
+                try {
+                    folder.lastModified = dateParser.parse(property.getPropertyAsString()).getTime();
+                } catch (ParseException e) {
+                    LOGGER.error("Unable to parse date: "+e);
+                }
+            }
         }
         if (href.endsWith("/")) {
             href = href.substring(0, href.length()-1);
@@ -757,6 +797,7 @@ public class ExchangeSession {
         reqProps.add("DAV:nosubs");
         reqProps.add("DAV:objectcount");
         reqProps.add("urn:schemas:httpmail:unreadcount");
+        reqProps.add("DAV:getlastmodified");
         Enumeration folderEnum = wdr.propfindMethod(folder.folderUrl, 0, reqProps);
 
         if (folderEnum.hasMoreElements()) {
@@ -772,6 +813,7 @@ public class ExchangeSession {
         public int unreadCount;
         public boolean hasChildren;
         public boolean noInferiors;
+        public long lastModified;
 
         public String getFlags() {
             if (noInferiors) {
@@ -788,6 +830,13 @@ public class ExchangeSession {
         public String messageUrl;
         public String uid;
         public int size;
+        public String from;
+        public String date;
+        public String messageId;
+        public String subject;
+        public String priority;
+        public String cc;
+        public String to;
 
         public void write(OutputStream os) throws IOException {
             HttpMethod method = null;
