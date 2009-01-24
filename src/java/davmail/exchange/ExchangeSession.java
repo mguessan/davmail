@@ -450,6 +450,15 @@ public class ExchangeSession {
     }
 
     /**
+     * Replace invalid url chars
+     * @param subject
+     * @return
+     */
+    protected String encodeSubject(String subject) {
+        return subject.replaceAll("/", "_xF8FF_").replaceAll("\\?", "");
+    }
+
+    /**
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
@@ -461,7 +470,7 @@ public class ExchangeSession {
      * @throws java.io.IOException when unable to create message
      */
     public void createMessage(String folderUrl, String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
+        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + encodeSubject(messageName) + ".EML");
 
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");

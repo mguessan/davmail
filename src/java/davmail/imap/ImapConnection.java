@@ -287,7 +287,19 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                     // empty line
                                     readClient();
-                                    session.createMessage(session.getFolderPath(folderName), "test", null, new String(buffer), true);
+                                    String messageBody = new String(buffer);
+                                    String subject = null;
+                                    int subjectStartIndex = messageBody.indexOf("Subject: ");
+                                    if (subjectStartIndex >= 0) {
+                                        int subjectEndIndex = messageBody.indexOf("\r", subjectStartIndex);
+                                        if (subjectEndIndex >= 0) {
+                                            subject = messageBody.substring(subjectStartIndex+"Subject: ".length(), subjectEndIndex);
+                                        }
+                                    }
+                                    if (subject == null) {
+                                        subject = "mail"+System.currentTimeMillis();
+                                    }
+                                    session.createMessage(session.getFolderPath(folderName), subject, null, new String(buffer), true);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
