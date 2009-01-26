@@ -14,6 +14,7 @@ import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.MoveMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -537,23 +538,10 @@ public class ExchangeSession {
                 message.size = Integer.parseInt(prop.getPropertyAsString());
             } else if ("uid".equals(localName)) {
                 message.uid = prop.getPropertyAsString();
-            } else if ("date".equals(prop.getLocalName())) {
-                message.date = prop.getPropertyAsString();
+            } else if ("read".equals(localName)) {
+                message.read = "1".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
-            } else if ("from".equals(prop.getLocalName())) {
-                message.from = prop.getPropertyAsString();
-            } else if ("to".equals(prop.getLocalName())) {
-                message.to = prop.getPropertyAsString();
-            } else if ("cc".equals(prop.getLocalName())) {
-                message.cc = prop.getPropertyAsString();
-            } else if ("subject".equals(prop.getLocalName())) {
-                message.subject = prop.getPropertyAsString();
-            } else if ("priority".equals(prop.getLocalName())) {
-                String priorityLabel = PRIORITIES.get(prop.getPropertyAsString());
-                if (priorityLabel != null) {
-                    message.priority = priorityLabel;
-                }
             }
         }
 
@@ -575,11 +563,29 @@ public class ExchangeSession {
 
     }
 
+    public void updateMessage(Message message, Map<String, String> properties) throws IOException {
+        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl));
+            try {
+                for (Map.Entry<String,String> entry:properties.entrySet()) {
+                    if ("read".equals(entry.getKey())) {
+                        patchMethod.addPropertyToSet("read", entry.getValue(), "e", "urn:schemas:httpmail:");
+                    }
+                }
+                patchMethod.setDebug(4);
+                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                    throw new IOException("Unable to update message properties");
+                }
+
+            } finally {
+                patchMethod.releaseConnection();
+            }
+    }
     public List<Message> getAllMessages(String folderName) throws IOException {
         String folderUrl = getFolderPath(folderName);
         List<Message> messages = new ArrayList<Message>();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
-                "                ,\"urn:schemas:mailheader:from\",\"urn:schemas:mailheader:to\",\"urn:schemas:mailheader:cc\",\"urn:schemas:httpmail:subject\",\"urn:schemas:mailheader:date\",\"urn:schemas:mailheader:message-id\",\"urn:schemas:httpmail:priority\"" +
+                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\""+
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
@@ -600,7 +606,8 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:nosubs\", \"DAV:hassubs\"," +
                 "                \"DAV:hassubs\",\"urn:schemas:httpmail:unreadcount\"" +
                 "                FROM Scope('" + mode + " TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
-                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n";
+                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n"+
+                "                      AND (\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), mailPath, searchRequest);
 
         while (folderEnum.hasMoreElements()) {
@@ -822,6 +829,7 @@ public class ExchangeSession {
             }
         };
         method.addPropertyToSet("outlookfolderclass", "IPF.Note", "ex", "http://schemas.microsoft.com/exchange/");
+        try {
         wdr.retrieveSessionInstance().executeMethod(method);
         // ok or alredy exists
         if (method.getStatusCode() != HttpStatus.SC_MULTI_STATUS && method.getStatusCode() != HttpStatus.SC_METHOD_NOT_ALLOWED) {
@@ -829,6 +837,31 @@ public class ExchangeSession {
             ex.setReasonCode(method.getStatusCode());
             ex.setReason(method.getStatusText());
             throw ex;
+        }
+        } finally {
+            method.releaseConnection();
+        }
+    }
+
+    public void moveFolder(String folderName, String targetName) throws IOException {
+        String folderPath = getFolderPath(folderName);
+        String targetPath = getFolderPath(targetName);
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath),
+                                           URIUtil.encodePath(targetPath));
+        method.setOverwrite(false);
+        //method.addRequestHeader("Allow-Rename", "t");
+        try  {
+        int statusCode = wdr.retrieveSessionInstance().executeMethod(method);
+        if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+            throw new HttpException("Unable to move folder, target already exists");
+        } else if (statusCode != HttpStatus.SC_CREATED) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(method.getStatusCode());
+            ex.setReason(method.getStatusText());
+            throw ex;
+        }
+        } finally {
+            method.releaseConnection();
         }
     }
 
@@ -856,13 +889,8 @@ public class ExchangeSession {
         public String messageUrl;
         public String uid;
         public int size;
-        public String from;
-        public String date;
         public String messageId;
-        public String subject;
-        public String priority;
-        public String cc;
-        public String to;
+        public boolean read;
 
         public void write(OutputStream os) throws IOException {
             HttpMethod method = null;

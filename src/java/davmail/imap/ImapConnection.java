@@ -5,8 +5,11 @@ import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.util.StringTokenizer;
 import java.util.List;
+import java.util.HashMap;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
+import java.io.OutputStream;
 
 import davmail.AbstractConnection;
 import davmail.tray.DavGatewayTray;
@@ -14,6 +17,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
+import org.apache.commons.httpclient.HttpException;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -55,7 +59,7 @@ public class ImapConnection extends AbstractConnection {
                                 && nextToken.charAt(nextToken.length() - 1) != ')') {
                             nextToken.append(' ').append(super.nextToken());
                         }
-                        return nextToken.toString();
+                        return removeQuotes(nextToken.toString());
                     }
                 };
                 if (tokens.hasMoreTokens()) {
@@ -157,7 +161,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("close".equalsIgnoreCase(command)) {
                                     currentFolder = null;
                                     messages = null;
-                                    sendClient(commandId + " OK CLOSE unrecognized");
+                                    sendClient(commandId + " OK CLOSE completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
@@ -165,6 +169,15 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
+                                    }
+                                } else if ("rename".equalsIgnoreCase(command)) {
+                                    String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                    String targetName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                    try {
+                                        session.moveFolder(folderName, targetName);
+                                        sendClient(commandId + " OK rename completed");
+                                    } catch (HttpException e) {
+                                        sendClient(commandId + " NO " + e.getReason());
                                     }
                                 } else if ("uid".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
@@ -192,7 +205,7 @@ public class ImapConnection extends AbstractConnection {
                                                     int count = 0;
                                                     for (ExchangeSession.Message message : messages) {
                                                         count++;
-                                                        sendClient("* " + count + " FETCH (UID " + count + " FLAGS (\\Seen))");
+                                                        sendClient("* " + count + " FETCH (UID " + count + " FLAGS ("+(message.read?"\\Seen":"")+"))");
                                                     }
                                                     sendClient(commandId + " OK UID FETCH completed");
                                                 } else {
@@ -208,18 +221,22 @@ public class ImapConnection extends AbstractConnection {
                                                                 message.write(baos);
                                                                 baos.close();
 
+                                                                DavGatewayTray.debug("Messagee size: "+message.size+" actual size:"+baos.size()+" message+headers: "+(message.size+baos.size()));
                                                                 sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
                                                                         " {" + baos.size() + "}");
                                                                 message.write(os);
                                                                 sendClient(")");
                                                             } else {
+                                                                // write headers to byte array
                                                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                                message.write(baos);
+                                                                HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
+                                                                message.write(headerOutputStream);
                                                                 baos.close();
-                                                                sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + baos.size() + " BODY[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID PRIORITY X-PRIORITY REFERENCES NEWSGROUPS IN-REPLY-TO CONTENT-TYPE)" +
+                                                                sendClient("* " + messageIndex + " FETCH (UID " + messageIndex + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
                                                                         "] {" + baos.size() + "}");
-                                                                message.write(os);
-                                                                sendClient(" FLAGS (\\Seen))");
+                                                                os.write(baos.toByteArray());
+                                                                os.flush();
+                                                                sendClient(" FLAGS ("+(message.read?"\\Seen":"")+"))");
                                                             }
                                                         }
                                                         sendClient(commandId + " OK FETCH completed");
@@ -249,7 +266,29 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
+                                            int uid = Integer.parseInt(tokens.nextToken());
+                                            String action = tokens.nextToken();
+                                            String flags = tokens.nextToken();
+                                            HashMap<String, String> properties = new HashMap<String, String>();
+                                            if ("-Flags".equalsIgnoreCase(action)) {
+                                                StringTokenizer flagtokenizer = new StringTokenizer(flags);
+                                                while (flagtokenizer.hasMoreTokens()) {
+                                                    String flag  = flagtokenizer.nextToken();
+                                                    if ("\\Seen".equals(flag)) {
+                                                        properties.put("read", "0");
+                                                    }
+                                                }
+                                            } else if ("+Flags".equalsIgnoreCase(action)) {
+                                                StringTokenizer flagtokenizer = new StringTokenizer(flags);
+                                                while (flagtokenizer.hasMoreTokens()) {
+                                                    String flag  = flagtokenizer.nextToken();
+                                                    if ("\\Seen".equals(flag)) {
+                                                        properties.put("read", "1");
+                                                    }
+                                                }
+                                            }
                                             // TODO
+                                            session.updateMessage(messages.get(uid-1), properties);
                                             sendClient(commandId + " OK STORE completed");
                                         }
                                     } else {
@@ -293,11 +332,11 @@ public class ImapConnection extends AbstractConnection {
                                     if (subjectStartIndex >= 0) {
                                         int subjectEndIndex = messageBody.indexOf("\r", subjectStartIndex);
                                         if (subjectEndIndex >= 0) {
-                                            subject = messageBody.substring(subjectStartIndex+"Subject: ".length(), subjectEndIndex);
+                                            subject = messageBody.substring(subjectStartIndex + "Subject: ".length(), subjectEndIndex);
                                         }
                                     }
                                     if (subject == null) {
-                                        subject = "mail"+System.currentTimeMillis();
+                                        subject = "mail" + System.currentTimeMillis();
                                     }
                                     session.createMessage(session.getFolderPath(folderName), subject, null, new String(buffer), true);
                                     sendClient(commandId + " OK APPEND completed");
@@ -365,13 +404,66 @@ public class ImapConnection extends AbstractConnection {
 
     protected String removeQuotes(String value) {
         String result = value;
-        if (result.startsWith("\"") || result.startsWith("{")) {
+        if (result.startsWith("\"") || result.startsWith("{") || result.startsWith("(")) {
             result = result.substring(1);
         }
-        if (result.endsWith("\"") || result.endsWith("}")) {
+        if (result.endsWith("\"") || result.endsWith("}") || result.endsWith(")")) {
             result = result.substring(0, result.length() - 1);
         }
         return result;
+    }
+
+    /**
+     * Filter to limit output lines to max body lines after header
+     */
+    private static class HeaderOutputStream extends FilterOutputStream {
+        protected static final int START = 0;
+        protected static final int CR = 1;
+        protected static final int CRLF = 2;
+        protected static final int CRLFCR = 3;
+        protected static final int BODY = 4;
+
+        protected int state = START;
+        protected int size = 0;
+
+        public HeaderOutputStream(OutputStream os) {
+            super(os);
+        }
+
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            size++;
+            if (state != BODY) {
+                super.write(b);
+            }
+            if (state == START) {
+                if (b == '\r') {
+                    state = CR;
+                }
+            } else if (state == CR) {
+                if (b == '\n') {
+                    state = CRLF;
+                } else {
+                    state = START;
+                }
+            } else if (state == CRLF) {
+                if (b == '\r') {
+                    state = CRLFCR;
+                } else {
+                    state = START;
+                }
+            } else if (state == CRLFCR) {
+                if (b == '\n') {
+                    state = BODY;
+                } else {
+                    state = START;
+                }
+            }
+        }
     }
 
 }
