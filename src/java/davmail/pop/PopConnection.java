@@ -18,9 +18,6 @@ import java.util.StringTokenizer;
  * Dav Gateway pop connection implementation
  */
 public class PopConnection extends AbstractConnection {
-    protected static final int INITIAL = 0;
-    protected static final int USER = 1;
-    protected static final int AUTHENTICATED = 2;
     private List<ExchangeSession.Message> messages;
 
     // Initialize the streams and start the thread
@@ -93,15 +90,15 @@ public class PopConnection extends AbstractConnection {
                         if (tokens.hasMoreTokens()) {
                             userName = tokens.nextToken();
                             sendOK("USER : " + userName);
-                            state = USER;
+                            state = State.USER;
                         } else {
                             sendERR("invalid syntax");
-                            state = INITIAL;
+                            state = State.INITIAL;
                         }
                     } else if ("PASS".equalsIgnoreCase(command)) {
-                        if (state != USER) {
+                        if (state != State.USER) {
                             sendERR("invalid state");
-                            state = INITIAL;
+                            state = State.INITIAL;
                         } else if (!tokens.hasMoreTokens()) {
                             sendERR("invalid syntax");
                         } else {
@@ -111,7 +108,7 @@ public class PopConnection extends AbstractConnection {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                                 messages = session.getAllMessages("INBOX");
                                 sendOK("PASS");
-                                state = AUTHENTICATED;
+                                state = State.AUTHENTICATED;
                             } catch (SocketException e) {
                                 // can not send error to client after a socket exception
                                 DavGatewayTray.warn("Client closed connection ", e);
@@ -123,7 +120,7 @@ public class PopConnection extends AbstractConnection {
                     } else if ("CAPA".equalsIgnoreCase(command)) {
                         sendOK("Capability list follows");
                         printCapabilities();
-                    } else if (state != AUTHENTICATED) {
+                    } else if (state != State.AUTHENTICATED) {
                         sendERR("Invalid state not authenticated");
                     } else {
                         if ("STAT".equalsIgnoreCase(command)) {

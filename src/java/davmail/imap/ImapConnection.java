@@ -1,23 +1,22 @@
 package davmail.imap;
 
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.net.SocketException;
-import java.util.StringTokenizer;
-import java.util.List;
-import java.util.HashMap;
-import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.io.FilterOutputStream;
-import java.io.OutputStream;
-
+import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
+import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
-import davmail.tray.DavGatewayTray;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
-import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
+import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -25,7 +24,7 @@ import org.apache.commons.httpclient.HttpException;
  */
 public class ImapConnection extends AbstractConnection {
     protected static final int INITIAL = 0;
-    protected static final int AUTHENTICATED = 1;
+    protected static final int AUTHENTICATED = 2;
 
     ExchangeSession.Folder currentFolder;
     List<ExchangeSession.Message> messages;
@@ -79,11 +78,11 @@ public class ImapConnection extends AbstractConnection {
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                                 sendClient(commandId + " OK Authenticated");
-                                state = AUTHENTICATED;
+                                state = State.AUTHENTICATED;
                             } catch (Exception e) {
                                 DavGatewayTray.error(e);
                                 sendClient(commandId + " NO LOGIN failed");
-                                state = INITIAL;
+                                state = State.INITIAL;
                             }
                         } else if ("AUTHENTICATE".equalsIgnoreCase(command)) {
                             if (tokens.hasMoreTokens()) {
@@ -96,11 +95,11 @@ public class ImapConnection extends AbstractConnection {
                                     try {
                                         session = ExchangeSessionFactory.getInstance(userName, password);
                                         sendClient(commandId + " OK Authenticated");
-                                        state = AUTHENTICATED;
+                                        state = State.AUTHENTICATED;
                                     } catch (Exception e) {
                                         DavGatewayTray.error(e);
                                         sendClient(commandId + " NO LOGIN failed");
-                                        state = INITIAL;
+                                        state = State.INITIAL;
                                     }
                                 } else {
                                     sendClient(commandId + " NO unsupported authentication method");
@@ -109,14 +108,14 @@ public class ImapConnection extends AbstractConnection {
                                 sendClient(commandId + " BAD authentication method required");
                             }
                         } else {
-                            if (state != AUTHENTICATED) {
+                            if (state != State.AUTHENTICATED) {
                                 sendClient(commandId + " BAD command authentication required");
                             } else {
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderContext = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                        String folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
-                                            String folderQuery = folderContext + BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                            String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%")) {
                                                 folderQuery = folderQuery.substring(0, folderQuery.length() - 2);
                                             }
@@ -144,7 +143,7 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                        String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         currentFolder = session.getFolder(folderName);
                                         messages = session.getAllMessages(currentFolder.folderUrl);
                                         sendClient("* " + currentFolder.objectCount + " EXISTS");
@@ -164,15 +163,15 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK CLOSE completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                        String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         session.createFolder(folderName);
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("rename".equalsIgnoreCase(command)) {
-                                    String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
-                                    String targetName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                    String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                    String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                     try {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
@@ -214,7 +213,7 @@ public class ImapConnection extends AbstractConnection {
                                                         for (int messageIndex = startIndex; messageIndex <= endIndex; messageIndex++) {
                                                             ExchangeSession.Message message = messages.get(messageIndex - 1);
 
-                                                            if ("(BODYSTRUCTURE)".equals(parameters)) {
+                                                            if ("BODYSTRUCTURE".equals(parameters)) {
                                                                 sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
                                                             } else if (parameters.indexOf("BODY[]") >= 0) {
                                                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -295,12 +294,13 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
                                 } else if ("fetch".equalsIgnoreCase(command)) {
+                                    // TODO : refactor with uid fetch
                                     if (tokens.hasMoreTokens()) {
                                         int messageIndex = Integer.parseInt(tokens.nextToken());
                                         ExchangeSession.Message message = messages.get(messageIndex - 1);
                                         if (tokens.hasMoreTokens()) {
                                             String parameters = tokens.nextToken();
-                                            if ("(BODYSTRUCTURE)".equals(parameters)) {
+                                            if ("BODYSTRUCTURE".equals(parameters)) {
                                                 sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
                                                 sendClient(commandId + " OK FETCH completed");
                                             } else {
@@ -311,9 +311,9 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
-                                    String folderName = BASE64MailboxDecoder.decode(removeQuotes(tokens.nextToken()));
+                                    String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                     String parameters = tokens.nextToken();
-                                    int size = Integer.parseInt(removeQuotes(tokens.nextToken()));
+                                    int size = Integer.parseInt(tokens.nextToken());
                                     sendClient("+ send literal data");
                                     char[] buffer = new char[size];
                                     int index = 0;
@@ -386,13 +386,13 @@ public class ImapConnection extends AbstractConnection {
      */
     protected void parseCredentials(StringTokenizer tokens) throws IOException {
         if (tokens.hasMoreTokens()) {
-            userName = removeQuotes(tokens.nextToken());
+            userName = tokens.nextToken();
         } else {
             throw new IOException("Invalid credentials");
         }
 
         if (tokens.hasMoreTokens()) {
-            password = removeQuotes(tokens.nextToken());
+            password = tokens.nextToken();
         } else {
             throw new IOException("Invalid credentials");
         }

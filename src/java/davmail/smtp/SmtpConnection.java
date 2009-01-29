@@ -18,13 +18,6 @@ import java.util.ArrayList;
  * Dav Gateway smtp connection implementation
  */
 public class SmtpConnection extends AbstractConnection {
-    protected static final int INITIAL = 0;
-    protected static final int AUTHENTICATED = 1;
-    protected static final int STARTMAIL = 2;
-    protected static final int RECIPIENT = 3;
-    protected static final int MAILDATA = 4;
-    protected static final int LOGIN = 5;
-    public static final int PASSWORD = 6;
 
     // Initialize the streams and start the thread
     public SmtpConnection(Socket clientSocket) {
@@ -50,12 +43,12 @@ public class SmtpConnection extends AbstractConnection {
                 if (tokens.hasMoreTokens()) {
                     String command = tokens.nextToken();
 
-                    if (state == LOGIN) {
+                    if (state == State.LOGIN) {
                         // AUTH LOGIN, read userName
                         userName = base64Decode(line);
                         sendClient("334 " + base64Encode("Password:"));
-                        state = PASSWORD;
-                    } else if (state == PASSWORD) {
+                        state = State.PASSWORD;
+                    } else if (state == State.PASSWORD) {
                         // AUTH LOGIN, read password
                         password = base64Decode(line);
                         authenticate();
@@ -78,7 +71,7 @@ public class SmtpConnection extends AbstractConnection {
                                 authenticate();
                             } else if ("LOGIN".equals(authType)) {
                                 sendClient("334 " + base64Encode("Username:"));
-                                state = LOGIN;
+                                state = State.LOGIN;
                             } else {
                                 sendClient("451 Error : unknown authentication type");
                             }
@@ -86,23 +79,23 @@ public class SmtpConnection extends AbstractConnection {
                             sendClient("451 Error : authentication type not specified");
                         }
                     } else if ("MAIL".equals(command)) {
-                        if (state == AUTHENTICATED) {
-                            state = STARTMAIL;
+                        if (state == State.AUTHENTICATED) {
+                            state = State.STARTMAIL;
                             recipients.clear();
                             sendClient("250 Sender OK");
                         } else {
-                            state = INITIAL;
+                            state = State.INITIAL;
                             sendClient("503 Bad sequence of commands");
                         }
                     } else if ("RCPT".equals(command)) {
-                        if (state == STARTMAIL || state == RECIPIENT) {
+                        if (state == State.STARTMAIL || state == State.RECIPIENT) {
                             if (line.startsWith("RCPT TO:")) {
-                                state = RECIPIENT;
+                                state = State.RECIPIENT;
                                 try {
                                     InternetAddress internetAddress = new InternetAddress(line.substring("RCPT TO:".length()));
                                     recipients.add(internetAddress.getAddress());
                                 } catch (AddressException e) {
-                                    throw new IOException("Invalid recipient: "+line);
+                                    throw new IOException("Invalid recipient: " + line);
                                 }
                                 sendClient("250 Recipient OK");
                             } else {
@@ -110,26 +103,26 @@ public class SmtpConnection extends AbstractConnection {
                             }
 
                         } else {
-                            state = AUTHENTICATED;
+                            state = State.AUTHENTICATED;
                             sendClient("503 Bad sequence of commands");
                         }
                     } else if ("DATA".equals(command)) {
-                        if (state == RECIPIENT) {
-                            state = MAILDATA;
+                        if (state == State.RECIPIENT) {
+                            state = State.MAILDATA;
                             sendClient("354 Start mail input; end with <CRLF>.<CRLF>");
 
                             try {
                                 session.sendMessage(recipients, in);
-                                state = AUTHENTICATED;
+                                state = State.AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
                             } catch (Exception e) {
                                 DavGatewayTray.error("Authentication failed", e);
-                                state = AUTHENTICATED;
+                                state = State.AUTHENTICATED;
                                 sendClient("451 Error : " + e + " " + e.getMessage());
                             }
 
                         } else {
-                            state = AUTHENTICATED;
+                            state = State.AUTHENTICATED;
                             sendClient("503 Bad sequence of commands");
                         }
                     }
@@ -165,7 +158,7 @@ public class SmtpConnection extends AbstractConnection {
         try {
             session = ExchangeSessionFactory.getInstance(userName, password);
             sendClient("235 OK Authenticated");
-            state = AUTHENTICATED;
+            state = State.AUTHENTICATED;
         } catch (Exception e) {
             DavGatewayTray.error(e);
             String message = e.getMessage();
@@ -174,7 +167,7 @@ public class SmtpConnection extends AbstractConnection {
             }
             message = message.replaceAll("\\n", " ");
             sendClient("554 Authenticated failed " + message);
-            state = INITIAL;
+            state = State.INITIAL;
         }
 
     }

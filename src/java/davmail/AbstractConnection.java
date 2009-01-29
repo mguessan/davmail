@@ -2,17 +2,25 @@ package davmail;
 
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.smtp.SmtpConnection;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.util.Base64;
 
 import java.io.*;
 import java.net.Socket;
 
+
 /**
  * Generic connection common to pop3 and smtp implementations
  */
 public class AbstractConnection extends Thread {
+
+    protected enum State {INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA}
+
+    /**
+     * read password state
+     */
+    public static final int PASSWORD = 1;
+
     protected final Socket client;
 
     protected BufferedReader in;
@@ -21,7 +29,7 @@ public class AbstractConnection extends Thread {
     protected String userName = null;
     protected String password = null;
     // connection state
-    protected int state = 0;
+    protected State state = State.INITIAL;
     // Exchange session proxy
     protected ExchangeSession session;
 
@@ -102,12 +110,15 @@ public class AbstractConnection extends Thread {
      */
     public String readClient() throws IOException {
         String line = in.readLine();
-        // TODO : add basic authorization check
         if (line != null) {
             if (line.startsWith("PASS")) {
                 DavGatewayTray.debug("< PASS ********");
-            } else if (state == SmtpConnection.PASSWORD) {
+                // IMAP LOGIN
+            } else if (line.startsWith("LOGIN")) {
+                DavGatewayTray.debug("< LOGIN ********");
+            } else if (state == State.PASSWORD) {
                 DavGatewayTray.debug("< ********");
+                // HTTP Basic Authentication
             } else if (line.startsWith("Authorization:")) {
                 DavGatewayTray.debug("< Authorization: ********");
             } else {
