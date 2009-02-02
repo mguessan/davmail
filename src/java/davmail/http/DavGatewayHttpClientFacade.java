@@ -170,6 +170,7 @@ public final class DavGatewayHttpClientFacade {
                 "        <d:sql>" + searchRequest + "</d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(folderUrl), searchBody);
+        //searchMethod.setDebug(4);
         try {
             int status = httpClient.executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
