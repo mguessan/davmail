@@ -16,6 +16,7 @@ import org.apache.webdav.lib.WebdavResource;
 import org.apache.webdav.lib.methods.MoveMethod;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.CopyMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -545,7 +546,7 @@ public class ExchangeSession {
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
-                    message.messageId = message.messageId.substring(1, message.messageId.length()-1);
+                    message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
                 }
             }
         }
@@ -849,6 +850,27 @@ public class ExchangeSession {
         }
     }
 
+    public void copyMessage(String messageUrl, String targetName) throws IOException {
+        String targetPath = getFolderPath(targetName) + messageUrl.substring(messageUrl.lastIndexOf('/'));
+        CopyMethod method = new CopyMethod(URIUtil.encodePath(messageUrl),
+                URIUtil.encodePath(targetPath));
+        method.setOverwrite(false);
+        method.addRequestHeader("Allow-Rename", "t");
+        try {
+            int statusCode = wdr.retrieveSessionInstance().executeMethod(method);
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+                throw new HttpException("Unable to move message, target already exists");
+            } else if (statusCode != HttpStatus.SC_CREATED) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(method.getStatusCode());
+                ex.setReason(method.getStatusText());
+                throw ex;
+            }
+        } finally {
+            method.releaseConnection();
+        }
+    }
+
     public void moveFolder(String folderName, String targetName) throws IOException {
         String folderPath = getFolderPath(folderName);
         String targetPath = getFolderPath(targetName);
@@ -897,6 +919,7 @@ public class ExchangeSession {
         public int size;
         public String messageId;
         public boolean read;
+        public boolean deleted;
 
         public long getUidAsLong() {
             byte[] decodedValue = Base64.decode(uid.getBytes());
@@ -908,6 +931,17 @@ public class ExchangeSession {
             }
 
             return result;
+        }
+
+        public String getImapFlags() {
+            StringBuilder buffer = new StringBuilder();
+            if (read) {
+                buffer.append("\\Seen ");
+            }
+            if (deleted) {
+                buffer.append("\\Deleted");
+            }
+            return buffer.toString();
         }
 
         public void write(OutputStream os) throws IOException {
@@ -989,7 +1023,7 @@ public class ExchangeSession {
         }
 
         public int compareTo(Object message) {
-            return (int)(getUidAsLong()-((Message)message).getUidAsLong());
+            return (int) (getUidAsLong() - ((Message) message).getUidAsLong());
         }
     }
 
@@ -1261,6 +1295,23 @@ public class ExchangeSession {
             putmethod.releaseConnection();
         }
         return status;
+    }
+
+
+    public void deleteFolder(String path) throws IOException {
+        wdr.deleteMethod(getFolderPath(path));
+        int status = wdr.getStatusCode();
+        if (status != HttpStatus.SC_OK) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(status);
+            ex.setReason(wdr.getStatusMessage());
+            throw ex;
+        }
+    }
+
+    public int deleteMessage(String path) throws IOException {
+        wdr.deleteMethod(path);
+        return wdr.getStatusCode();
     }
 
     public int deleteEvent(String path) throws IOException {
