@@ -150,11 +150,10 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient("* " + currentFolder.objectCount + " RECENT");
                                         sendClient("* OK [UIDVALIDITY 1]");
                                         if (messages.size() == 0) {
-                                           sendClient("* OK [UIDNEXT " + 1 + "]");
+                                            sendClient("* OK [UIDNEXT " + 1 + "]");
                                         } else {
-                                           sendClient("* OK [UIDNEXT " + (messages.get(messages.size()-1).getUidAsLong()+1) + "]"); 
+                                            sendClient("* OK [UIDNEXT " + (messages.get(messages.size() - 1).getUidAsLong() + 1) + "]");
                                         }
-                                        //sendClient("* OK [UIDNEXT " + (currentFolder.objectCount + 1) + "]");
                                         sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded $MDNSent Forwarded $Junk $NotJunk Junk JunkRecorded NonJunk NotJunk)");
                                         sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded $MDNSent Forwarded \\*)] junk-related flags are not permanent");
                                         //sendClient("* [UNSEEN 1] first unseen message in inbox");
@@ -209,9 +208,9 @@ public class ImapConnection extends AbstractConnection {
                                                         if (messages.size() > 0) {
                                                             endIndex = messages.get(messages.size() - 1).getUidAsLong();
                                                             // fix according to spec
-                                                            if (startIndex > endIndex) {
-                                                                startIndex = endIndex;
-                                                            }
+                                                            //if (startIndex > endIndex) {
+                                                            //    startIndex = endIndex;
+                                                            //}
                                                         } else {
                                                             endIndex = 1;
                                                         }
@@ -288,6 +287,7 @@ public class ImapConnection extends AbstractConnection {
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
                                             long uid = Long.parseLong(tokens.nextToken());
+                                            ExchangeSession.Message message = messages.getByUid(uid);
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
                                             HashMap<String, String> properties = new HashMap<String, String>();
@@ -297,6 +297,7 @@ public class ImapConnection extends AbstractConnection {
                                                     String flag = flagtokenizer.nextToken();
                                                     if ("\\Seen".equals(flag)) {
                                                         properties.put("read", "0");
+                                                        message.read = false;
                                                     }
                                                 }
                                             } else if ("+Flags".equalsIgnoreCase(action)) {
@@ -305,11 +306,18 @@ public class ImapConnection extends AbstractConnection {
                                                     String flag = flagtokenizer.nextToken();
                                                     if ("\\Seen".equals(flag)) {
                                                         properties.put("read", "1");
+                                                        message.read = true;
                                                     }
                                                 }
                                             }
-                                            // TODO
                                             session.updateMessage(messages.getByUid(uid), properties);
+                                            int index = 0;
+                                            for (ExchangeSession.Message currentMessage : messages) {
+                                                index++;
+                                                if (currentMessage == message) {
+                                                    sendClient("* " + index + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.read ? "\\Seen" : "") + "))");
+                                                }
+                                            }
                                             sendClient(commandId + " OK STORE completed");
                                         }
                                     } else {
