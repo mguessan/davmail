@@ -48,6 +48,8 @@ public class DavGateway {
     }
 
     public static void start() {
+        // register custom SSL Socket factory
+        DavGatewaySSLProtocolSocketFactory.register();
         try {
             // prepare HTTP connection pool
             DavGatewayHttpClientFacade.start();
@@ -96,8 +98,6 @@ public class DavGateway {
             DavGatewayTray.error("Exception creating server socket", e);
         }
 
-        // register custom SSL Socket factory
-        DavGatewaySSLProtocolSocketFactory.register();
     }
 
     protected static void stopServer(AbstractServer server) {
