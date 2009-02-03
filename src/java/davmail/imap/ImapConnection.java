@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -37,6 +38,7 @@ public class ImapConnection extends AbstractConnection {
 
     public void run() {
         String line;
+        String commandId = null;
         StringTokenizer tokens;
         try {
             sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN] IMAP4rev1 DavMail server ready");
@@ -63,7 +65,7 @@ public class ImapConnection extends AbstractConnection {
                     }
                 };
                 if (tokens.hasMoreTokens()) {
-                    String commandId = tokens.nextToken();
+                    commandId = tokens.nextToken();
                     if (tokens.hasMoreTokens()) {
                         String command = tokens.nextToken();
 
@@ -383,8 +385,14 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                    String parameters = tokens.nextToken();
-                                    int size = Integer.parseInt(tokens.nextToken());
+                                    // TODO handle flags
+                                    String flags = tokens.nextToken();
+                                    // skip optional date
+                                    String dateOrSize = tokens.nextToken();
+                                    if (tokens.hasMoreTokens()) {
+                                        dateOrSize = tokens.nextToken();
+                                    }
+                                    int size = Integer.parseInt(dateOrSize);
                                     sendClient("+ send literal data");
                                     char[] buffer = new char[size];
                                     int index = 0;
@@ -433,7 +441,18 @@ public class ImapConnection extends AbstractConnection {
             } catch (IOException e1) {
                 DavGatewayTray.debug("Exception closing connection on timeout");
             }
-        } catch (IOException e) {
+        } catch (SocketException e) {
+            DavGatewayTray.debug("Connection closed");
+        } catch (Exception e) {
+            try {
+                if (commandId != null) {
+                    sendClient(commandId + " BAD unable to handle request: " + e.getMessage());
+                } else {
+                    sendClient("* BAD unable to handle request: " + e.getMessage());
+                }
+            } catch (IOException e2) {
+                DavGatewayTray.warn("Exception sending error to client", e2);
+            }
             DavGatewayTray.error("Exception handling client", e);
         } finally {
             close();
