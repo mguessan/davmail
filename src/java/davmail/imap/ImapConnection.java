@@ -228,7 +228,7 @@ public class ImapConnection extends AbstractConnection {
                                                             endIndex = 1;
                                                         }
                                                     } else {
-                                                        endIndex = Long.parseLong(messageParameter.substring(colonIndex + 1));
+                                                        endIndex = Long.parseLong(messageParameter.substring(Math.max(colonIndex, messageParameter.lastIndexOf(",") + 1)));
                                                     }
                                                 }
                                                 if ("1:*".equals(messageParameter)) {
