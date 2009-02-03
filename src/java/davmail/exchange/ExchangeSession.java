@@ -479,6 +479,10 @@ public class ExchangeSession {
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        if (!allowOverwrite) {
+            putmethod.setRequestHeader("Allow-Rename", "t");
+            putmethod.setRequestHeader("If-None-Match", "*");
+        }
         InputStream bodyStream = null;
         try {
             // use same encoding as client socket reader
@@ -543,6 +547,10 @@ public class ExchangeSession {
                 message.uid = prop.getPropertyAsString();
             } else if ("read".equals(localName)) {
                 message.read = "1".equals(prop.getPropertyAsString());
+            } else if ("x10830003".equals(localName)) {
+                message.junk = "1".equals(prop.getPropertyAsString());
+            } else if ("x10900003".equals(localName)) {
+                message.flagged = "2".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
@@ -575,6 +583,10 @@ public class ExchangeSession {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if ("read".equals(entry.getKey())) {
                     patchMethod.addPropertyToSet("read", entry.getValue(), "e", "urn:schemas:httpmail:");
+                } else if ("junk".equals(entry.getKey())) {
+                    patchMethod.addPropertyToSet("x10830003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                } else if ("flagged".equals(entry.getKey())) {
+                    patchMethod.addPropertyToSet("x10900003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
                 }
             }
             int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
@@ -591,6 +603,7 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+                "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
@@ -877,7 +890,6 @@ public class ExchangeSession {
         MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath),
                 URIUtil.encodePath(targetPath));
         method.setOverwrite(false);
-        //method.addRequestHeader("Allow-Rename", "t");
         try {
             int statusCode = wdr.retrieveSessionInstance().executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -920,6 +932,8 @@ public class ExchangeSession {
         public String messageId;
         public boolean read;
         public boolean deleted;
+        public boolean junk;
+        public boolean flagged;
 
         public long getUidAsLong() {
             byte[] decodedValue = Base64.decode(uid.getBytes());
@@ -939,9 +953,15 @@ public class ExchangeSession {
                 buffer.append("\\Seen ");
             }
             if (deleted) {
-                buffer.append("\\Deleted");
+                buffer.append("\\Deleted ");
             }
-            return buffer.toString();
+            if (flagged) {
+                buffer.append("\\Flagged ");
+            }
+            if (junk) {
+                buffer.append("Junk ");
+            }
+            return buffer.toString().trim();
         }
 
         public void write(OutputStream os) throws IOException {

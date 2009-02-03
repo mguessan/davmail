@@ -17,6 +17,7 @@ import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.Random;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -25,6 +26,8 @@ import java.util.StringTokenizer;
 public class ImapConnection extends AbstractConnection {
     protected static final int INITIAL = 0;
     protected static final int AUTHENTICATED = 2;
+
+    protected Random random = new Random();
 
     ExchangeSession.Folder currentFolder;
     ExchangeSession.MessageList messages;
@@ -156,8 +159,8 @@ public class ImapConnection extends AbstractConnection {
                                         } else {
                                             sendClient("* OK [UIDNEXT " + (messages.get(messages.size() - 1).getUidAsLong() + 1) + "]");
                                         }
-                                        sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded $MDNSent Forwarded $Junk $NotJunk Junk JunkRecorded NonJunk NotJunk)");
-                                        sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded $MDNSent Forwarded \\*)] junk-related flags are not permanent");
+                                        sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Forwarded Junk)");
+                                        sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Forwarded Junk \\*)]");
                                         //sendClient("* [UNSEEN 1] first unseen message in inbox");
                                         sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
                                     } else {
@@ -308,6 +311,12 @@ public class ImapConnection extends AbstractConnection {
                                                     if ("\\Seen".equals(flag)) {
                                                         properties.put("read", "0");
                                                         message.read = false;
+                                                    } else if ("\\Flagged".equals(flag)) {
+                                                        properties.put("flagged", "0");
+                                                        message.flagged = false;
+                                                    } else if ("Junk".equals(flag)) {
+                                                        properties.put("junk", "0");
+                                                        message.junk = false;
                                                     }
                                                 }
                                             } else if ("+Flags".equalsIgnoreCase(action)) {
@@ -319,10 +328,18 @@ public class ImapConnection extends AbstractConnection {
                                                         message.read = true;
                                                     } else if ("\\Deleted".equals(flag)) {
                                                         message.deleted = true;
+                                                    } else if ("\\Flagged".equals(flag)) {
+                                                        properties.put("flagged", "2");
+                                                        message.flagged = true;
+                                                    } else if ("Junk".equals(flag)) {
+                                                        properties.put("junk", "1");
+                                                        message.junk = true;
                                                     }
                                                 }
                                             }
-                                            session.updateMessage(messages.getByUid(uid), properties);
+                                            if (properties.size() > 0) {
+                                                session.updateMessage(messages.getByUid(uid), properties);
+                                            }
                                             int index = 0;
                                             for (ExchangeSession.Message currentMessage : messages) {
                                                 index++;
@@ -378,19 +395,9 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                     // empty line
                                     readClient();
-                                    String messageBody = new String(buffer);
-                                    String subject = null;
-                                    int subjectStartIndex = messageBody.indexOf("Subject: ");
-                                    if (subjectStartIndex >= 0) {
-                                        int subjectEndIndex = messageBody.indexOf("\r", subjectStartIndex);
-                                        if (subjectEndIndex >= 0) {
-                                            subject = messageBody.substring(subjectStartIndex + "Subject: ".length(), subjectEndIndex);
-                                        }
-                                    }
-                                    if (subject == null) {
-                                        subject = "mail" + System.currentTimeMillis();
-                                    }
-                                    session.createMessage(session.getFolderPath(folderName), subject, null, new String(buffer), true);
+
+                                    String mailName = Long.toHexString(System.currentTimeMillis()) + Long.toHexString(random.nextLong());
+                                    session.createMessage(session.getFolderPath(folderName), mailName, null, new String(buffer), false);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
@@ -439,7 +446,7 @@ public class ImapConnection extends AbstractConnection {
                 index++;
                 if (message.deleted) {
                     session.deleteMessage(message.messageUrl);
-                    sendClient("* "+index+" EXPUNGE");
+                    sendClient("* " + index + " EXPUNGE");
                 }
             }
         }
