@@ -17,7 +17,7 @@ import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.Random;
+import java.util.UUID;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -26,8 +26,6 @@ import java.util.Random;
 public class ImapConnection extends AbstractConnection {
     protected static final int INITIAL = 0;
     protected static final int AUTHENTICATED = 2;
-
-    protected Random random = new Random();
 
     ExchangeSession.Folder currentFolder;
     ExchangeSession.MessageList messages;
@@ -400,8 +398,8 @@ public class ImapConnection extends AbstractConnection {
                                     // empty line
                                     readClient();
 
-                                    String mailName = Long.toHexString(System.currentTimeMillis()) + Long.toHexString(random.nextLong());
-                                    session.createMessage(session.getFolderPath(folderName), mailName, null, new String(buffer), false);
+                                    String messageName = UUID.randomUUID().toString();
+                                    session.createMessage(session.getFolderPath(folderName), messageName, null, new String(buffer), false);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
