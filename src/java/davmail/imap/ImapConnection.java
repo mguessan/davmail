@@ -349,14 +349,18 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
-                                            long uid = Long.parseLong(tokens.nextToken());
-                                            ExchangeSession.Message message = messages.getByUid(uid);
-                                            String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                             try {
-                                                session.copyMessage(message.messageUrl, targetName);
-                                                sendClient(commandId + " OK rename completed");
-                                            } catch (HttpException e) {
-                                                sendClient(commandId + " NO " + e.getReason());
+                                                long uid = Long.parseLong(tokens.nextToken());
+                                                ExchangeSession.Message message = messages.getByUid(uid);
+                                                String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                                try {
+                                                    session.copyMessage(message.messageUrl, targetName);
+                                                    sendClient(commandId + " OK copy completed");
+                                                } catch (HttpException e) {
+                                                    sendClient(commandId + " NO " + e.getReason());
+                                                }
+                                            } catch (NumberFormatException nfe) {
+                                                sendClient(commandId + " NO unable to copy multiple messages");
                                             }
                                         }
                                     } else {
