@@ -303,43 +303,7 @@ public class ImapConnection extends AbstractConnection {
                                             ExchangeSession.Message message = messages.getByUid(uid);
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
-                                            HashMap<String, String> properties = new HashMap<String, String>();
-                                            if ("-Flags".equalsIgnoreCase(action)) {
-                                                StringTokenizer flagtokenizer = new StringTokenizer(flags);
-                                                while (flagtokenizer.hasMoreTokens()) {
-                                                    String flag = flagtokenizer.nextToken();
-                                                    if ("\\Seen".equals(flag)) {
-                                                        properties.put("read", "0");
-                                                        message.read = false;
-                                                    } else if ("\\Flagged".equals(flag)) {
-                                                        properties.put("flagged", "0");
-                                                        message.flagged = false;
-                                                    } else if ("Junk".equals(flag)) {
-                                                        properties.put("junk", "0");
-                                                        message.junk = false;
-                                                    }
-                                                }
-                                            } else if ("+Flags".equalsIgnoreCase(action)) {
-                                                StringTokenizer flagtokenizer = new StringTokenizer(flags);
-                                                while (flagtokenizer.hasMoreTokens()) {
-                                                    String flag = flagtokenizer.nextToken();
-                                                    if ("\\Seen".equals(flag)) {
-                                                        properties.put("read", "1");
-                                                        message.read = true;
-                                                    } else if ("\\Deleted".equals(flag)) {
-                                                        message.deleted = true;
-                                                    } else if ("\\Flagged".equals(flag)) {
-                                                        properties.put("flagged", "2");
-                                                        message.flagged = true;
-                                                    } else if ("Junk".equals(flag)) {
-                                                        properties.put("junk", "1");
-                                                        message.junk = true;
-                                                    }
-                                                }
-                                            }
-                                            if (properties.size() > 0) {
-                                                session.updateMessage(messages.getByUid(uid), properties);
-                                            }
+                                            updateFlags(message, action, flags);
                                             int index = 0;
                                             for (ExchangeSession.Message currentMessage : messages) {
                                                 index++;
@@ -387,6 +351,22 @@ public class ImapConnection extends AbstractConnection {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                     // TODO handle flags
                                     String flags = tokens.nextToken();
+                                    HashMap<String, String> properties = new HashMap<String, String>();
+                                    StringTokenizer flagtokenizer = new StringTokenizer(flags);
+                                    while (flagtokenizer.hasMoreTokens()) {
+                                        String flag = flagtokenizer.nextToken();
+                                        if ("\\Seen".equals(flag)) {
+                                            properties.put("read", "1");
+                                        } else if ("\\Flagged".equals(flag)) {
+                                            properties.put("flagged", "2");
+                                        } else if ("\\Answered".equals(flag)) {
+                                            properties.put("answered", "103");
+                                        } else if ("\\Draft".equals(flag)) {
+                                            properties.put("draft", "9");
+                                        } else if ("Junk".equals(flag)) {
+                                            properties.put("junk", "1");
+                                        }
+                                    }
                                     // skip optional date
                                     String dateOrSize = tokens.nextToken();
                                     if (tokens.hasMoreTokens()) {
@@ -407,7 +387,7 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
 
                                     String messageName = UUID.randomUUID().toString();
-                                    session.createMessage(session.getFolderPath(folderName), messageName, null, new String(buffer), false);
+                                    session.createMessage(session.getFolderPath(folderName), messageName, properties, new String(buffer), false);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
@@ -470,6 +450,49 @@ public class ImapConnection extends AbstractConnection {
                     sendClient("* " + index + " EXPUNGE");
                 }
             }
+        }
+    }
+
+    protected void updateFlags(ExchangeSession.Message message, String action, String flags) throws IOException {
+        HashMap<String, String> properties = new HashMap<String, String>();
+        if ("-Flags".equalsIgnoreCase(action)) {
+            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            while (flagtokenizer.hasMoreTokens()) {
+                String flag = flagtokenizer.nextToken();
+                if ("\\Seen".equals(flag)) {
+                    properties.put("read", "0");
+                    message.read = false;
+                } else if ("\\Flagged".equals(flag)) {
+                    properties.put("flagged", "0");
+                    message.flagged = false;
+                } else if ("Junk".equals(flag)) {
+                    properties.put("junk", "0");
+                    message.junk = false;
+                }
+            }
+        } else if ("+Flags".equalsIgnoreCase(action)) {
+            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            while (flagtokenizer.hasMoreTokens()) {
+                String flag = flagtokenizer.nextToken();
+                if ("\\Seen".equals(flag)) {
+                    properties.put("read", "1");
+                    message.read = true;
+                } else if ("\\Deleted".equals(flag)) {
+                    message.deleted = true;
+                } else if ("\\Flagged".equals(flag)) {
+                    properties.put("flagged", "2");
+                    message.flagged = true;
+                } else if ("\\Answered".equals(flag)) {
+                    properties.put("answered", "103");
+                    message.answered = true;
+                } else if ("Junk".equals(flag)) {
+                    properties.put("junk", "1");
+                    message.junk = true;
+                }
+            }
+        }
+        if (properties.size() > 0) {
+            session.updateMessage(message, properties);
         }
     }
 

@@ -458,40 +458,28 @@ public class ExchangeSession {
      *
      * @param folderUrl      Exchange folder URL
      * @param messageName    message name
-     * @param bcc            blind carbon copy header
+     * @param properties     message properties (flags)
      * @param messageBody    mail body
      * @param allowOverwrite allow existing message overwrite
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String folderUrl, String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
+    public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody, boolean allowOverwrite) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
-
+        PropPatchMethod patchMethod;
         // create the message first as draft
-        PropPatchMethod patchMethod = new PropPatchMethod(messageUrl);
-        if (!allowOverwrite) {
-            patchMethod.setRequestHeader("If-None-Match", "*");
-        }
-        try {
-            // update message with blind carbon copy
-            if (bcc != null && bcc.length() > 0) {
-                patchMethod.addPropertyToSet("bcc", bcc, "b", "urn:schemas:mailheader:");
-            }
-            patchMethod.addPropertyToSet("x0E070003", "9", "d", "http://schemas.microsoft.com/mapi/proptag/");
-            int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
-            if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                throw new IOException("Unable to add bcc recipients: " + bcc);
-            }
-            Enumeration responseEntityEnum = patchMethod.getResponses();
-
-            if (responseEntityEnum.hasMoreElements()) {
-                ResponseEntity entity = (ResponseEntity) responseEntityEnum.nextElement();
-                if (entity.getStatusCode() != HttpStatus.SC_OK) {
-                    throw new IOException("Unable to add bcc recipients: " + bcc);
+        if (properties.containsKey("draft")) {
+            patchMethod = new PropPatchMethod(messageUrl);
+            try {
+                // update message with blind carbon copy and other flags
+                addProperties(patchMethod, properties);
+                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                    throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
                 }
-            }
 
-        } finally {
-            patchMethod.releaseConnection();
+            } finally {
+                patchMethod.releaseConnection();
+            }
         }
 
         PutMethod putmethod = new PutMethod(messageUrl);
@@ -504,7 +492,7 @@ public class ExchangeSession {
             putmethod.setRequestBody(bodyStream);
             int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
-            if (code != HttpURLConnection.HTTP_OK) {
+            if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
                 throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
             }
         } finally {
@@ -518,6 +506,19 @@ public class ExchangeSession {
             putmethod.releaseConnection();
         }
 
+        // add bcc and other properties
+        patchMethod = new PropPatchMethod(messageUrl);
+        try {
+            // update message with blind carbon copy and other flags
+            addProperties(patchMethod, properties);
+            int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+            if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
+            }
+
+        } finally {
+            patchMethod.releaseConnection();
+        }
     }
 
     protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
@@ -540,6 +541,8 @@ public class ExchangeSession {
                 message.flagged = "2".equals(prop.getPropertyAsString());
             } else if ("x0E070003".equals(localName)) {
                 message.draft = "9".equals(prop.getPropertyAsString());
+            } else if ("x10810003".equals(localName)) {
+                message.answered = prop.getPropertyAsString().length() > 0;
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
@@ -566,18 +569,28 @@ public class ExchangeSession {
 
     }
 
+    protected void addProperties(PropPatchMethod patchMethod, Map<String, String> properties) {
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if ("read".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("read", entry.getValue(), "e", "urn:schemas:httpmail:");
+            } else if ("junk".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("x10830003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+            } else if ("flagged".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("x10900003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+            } else if ("answered".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("x10810003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+            } else if ("bcc".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("bcc", entry.getValue(), "b", "urn:schemas:mailheader:");
+            } else if ("draft".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("x0E070003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+            }
+        }
+    }
+
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
         PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl));
         try {
-            for (Map.Entry<String, String> entry : properties.entrySet()) {
-                if ("read".equals(entry.getKey())) {
-                    patchMethod.addPropertyToSet("read", entry.getValue(), "e", "urn:schemas:httpmail:");
-                } else if ("junk".equals(entry.getKey())) {
-                    patchMethod.addPropertyToSet("x10830003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
-                } else if ("flagged".equals(entry.getKey())) {
-                    patchMethod.addPropertyToSet("x10900003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
-                }
-            }
+            addProperties(patchMethod, properties);
             int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                 throw new IOException("Unable to update message properties");
@@ -593,7 +606,7 @@ public class ExchangeSession {
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
-                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\"" +
+                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
@@ -770,11 +783,15 @@ public class ExchangeSession {
             bccBuffer.append("&gt;");
         }
 
+        String bcc = bccBuffer.toString();
+        HashMap<String, String> properties = new HashMap<String, String>();
+        if (bcc.length() > 0) {
+            properties.put("bcc", bcc);
+        }
+
         String messageName = UUID.randomUUID().toString();
 
-        createMessage(draftsUrl, messageName,
-                bccBuffer.toString()
-                , mailBuffer.toString(), false);
+        createMessage(draftsUrl, messageName, properties, mailBuffer.toString(), false);
 
         // warning : slide library expects *unencoded* urls
         String tempUrl = draftsUrl + "/" + messageName + ".EML";
@@ -925,6 +942,7 @@ public class ExchangeSession {
         public boolean junk;
         public boolean flagged;
         public boolean draft;
+        public boolean answered;
 
         public long getUidAsLong() {
             byte[] decodedValue = Base64.decode(uid.getBytes());
@@ -954,6 +972,9 @@ public class ExchangeSession {
             }
             if (draft) {
                 buffer.append("\\Draft ");
+            }
+            if (answered) {
+                buffer.append("\\Answered ");
             }
             return buffer.toString().trim();
         }
