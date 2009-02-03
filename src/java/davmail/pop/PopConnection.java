@@ -184,7 +184,7 @@ public class PopConnection extends AbstractConnection {
                                 try {
                                     int messageNumber = Integer.valueOf(tokens.
                                             nextToken()) - 1;
-                                    messages.get(messageNumber).delete();
+                                    messages.get(messageNumber).moveToTrash();
                                     sendOK("DELETE");
                                 } catch (SocketException e) {
                                     // can not send error to client after a socket exception

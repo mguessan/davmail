@@ -466,7 +466,7 @@ public class ImapConnection extends AbstractConnection {
             for (ExchangeSession.Message message : messages) {
                 index++;
                 if (message.deleted) {
-                    session.deleteMessage(message.messageUrl);
+                    message.delete();
                     sendClient("* " + index + " EXPUNGE");
                 }
             }

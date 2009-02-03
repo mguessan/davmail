@@ -453,16 +453,6 @@ public class ExchangeSession {
     }
 
     /**
-     * Replace invalid url chars
-     *
-     * @param subject
-     * @return
-     */
-    protected String encodeSubject(String subject) {
-        return subject.replaceAll("/", "_xF8FF_").replaceAll("\\?", "");
-    }
-
-    /**
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
@@ -474,7 +464,7 @@ public class ExchangeSession {
      * @throws java.io.IOException when unable to create message
      */
     public void createMessage(String folderUrl, String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + encodeSubject(messageName) + ".EML");
+        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
 
         // create the message first as draft
         PropPatchMethod patchMethod = new PropPatchMethod(messageUrl);
@@ -1031,6 +1021,16 @@ public class ExchangeSession {
         }
 
         public void delete() throws IOException {
+            wdr.deleteMethod(messageUrl);
+            if (wdr.getStatusCode() != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(wdr.getStatusCode());
+                ex.setReason(wdr.getStatusMessage());
+                throw ex;
+            }
+        }
+
+        public void moveToTrash() throws IOException {
             String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
             LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
 
