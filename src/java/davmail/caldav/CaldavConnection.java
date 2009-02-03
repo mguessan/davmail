@@ -7,6 +7,7 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.log4j.Logger;
 
@@ -256,7 +257,7 @@ public class CaldavConnection extends AbstractConnection {
     protected void appendEventResponse(StringBuilder buffer, CaldavRequest request, ExchangeSession.Event event) throws IOException {
         String eventPath = event.getPath().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
         buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(session.getEmail()).append("/calendar").append(eventPath).append("</D:href>");
+        buffer.append("<D:href>/users/").append(session.getEmail()).append("/calendar").append(URIUtil.encodePath(eventPath)).append("</D:href>");
         buffer.append("<D:propstat>");
         buffer.append("<D:prop>");
         if (request.hasProperty("calendar-data")) {
@@ -459,7 +460,7 @@ public class CaldavConnection extends AbstractConnection {
         // send not found events errors
         for (String href : notFound) {
             buffer.append("<D:response>");
-            buffer.append("<D:href>").append(href).append("</D:href>");
+            buffer.append("<D:href>").append(URIUtil.encodePath(href)).append("</D:href>");
             buffer.append("<D:propstat>");
             buffer.append("<D:status>HTTP/1.1 404 Not Found</D:status>");
             buffer.append("</D:propstat>");
@@ -769,7 +770,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
-                            hrefs.add(streamReader.getText());
+                            hrefs.add(URIUtil.decode(streamReader.getText()));
                         }
                         inElement = false;
                     }
