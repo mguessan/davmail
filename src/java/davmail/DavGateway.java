@@ -16,6 +16,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.BindException;
 
 /**
  * DavGateway main class
@@ -94,6 +95,8 @@ public class DavGateway {
             if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
                 DavGatewayTray.info("A new version (" + releasedVersion + ") of DavMail Gateway is available !");
             }
+        } catch (BindException e) {
+            DavGatewayTray.error("Unable to create server socket: the specified port is in use by another process");
         } catch (IOException e) {
             DavGatewayTray.error("Exception creating server socket", e);
         }
