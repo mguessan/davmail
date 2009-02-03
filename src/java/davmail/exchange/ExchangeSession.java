@@ -476,13 +476,37 @@ public class ExchangeSession {
     public void createMessage(String folderUrl, String messageName, String bcc, String messageBody, boolean allowOverwrite) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + encodeSubject(messageName) + ".EML");
 
+        // create the message first as draft
+        PropPatchMethod patchMethod = new PropPatchMethod(messageUrl);
+        if (!allowOverwrite) {
+            patchMethod.setRequestHeader("If-None-Match", "*");
+        }
+        try {
+            // update message with blind carbon copy
+            if (bcc != null && bcc.length() > 0) {
+                patchMethod.addPropertyToSet("bcc", bcc, "b", "urn:schemas:mailheader:");
+            }
+            patchMethod.addPropertyToSet("x0E070003", "9", "d", "http://schemas.microsoft.com/mapi/proptag/");
+            int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+            if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                throw new IOException("Unable to add bcc recipients: " + bcc);
+            }
+            Enumeration responseEntityEnum = patchMethod.getResponses();
+
+            if (responseEntityEnum.hasMoreElements()) {
+                ResponseEntity entity = (ResponseEntity) responseEntityEnum.nextElement();
+                if (entity.getStatusCode() != HttpStatus.SC_OK) {
+                    throw new IOException("Unable to add bcc recipients: " + bcc);
+                }
+            }
+
+        } finally {
+            patchMethod.releaseConnection();
+        }
+
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
-        if (!allowOverwrite) {
-            putmethod.setRequestHeader("Allow-Rename", "t");
-            putmethod.setRequestHeader("If-None-Match", "*");
-        }
         InputStream bodyStream = null;
         try {
             // use same encoding as client socket reader
@@ -490,13 +514,7 @@ public class ExchangeSession {
             putmethod.setRequestBody(bodyStream);
             int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
 
-            if (code == HttpURLConnection.HTTP_OK) {
-                if (allowOverwrite) {
-                    LOGGER.warn("Overwritten message " + messageUrl);
-                } else {
-                    throw new IOException("Overwritten message " + messageUrl);
-                }
-            } else if (code != HttpURLConnection.HTTP_CREATED) {
+            if (code != HttpURLConnection.HTTP_OK) {
                 throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
             }
         } finally {
@@ -509,28 +527,7 @@ public class ExchangeSession {
             }
             putmethod.releaseConnection();
         }
-        // update message with blind carbon copy
-        if (bcc != null && bcc.length() > 0) {
-            PropPatchMethod patchMethod = new PropPatchMethod(messageUrl);
-            try {
-                patchMethod.addPropertyToSet("bcc", bcc, "b", "urn:schemas:mailheader:");
-                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
-                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new IOException("Unable to add bcc recipients: " + bcc);
-                }
-                Enumeration responseEntityEnum = patchMethod.getResponses();
 
-                if (responseEntityEnum.hasMoreElements()) {
-                    ResponseEntity entity = (ResponseEntity) responseEntityEnum.nextElement();
-                    if (entity.getStatusCode() != HttpStatus.SC_OK) {
-                        throw new IOException("Unable to add bcc recipients: " + bcc);
-                    }
-                }
-
-            } finally {
-                patchMethod.releaseConnection();
-            }
-        }
     }
 
     protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
@@ -551,6 +548,8 @@ public class ExchangeSession {
                 message.junk = "1".equals(prop.getPropertyAsString());
             } else if ("x10900003".equals(localName)) {
                 message.flagged = "2".equals(prop.getPropertyAsString());
+            } else if ("x0E070003".equals(localName)) {
+                message.draft = "9".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
@@ -604,6 +603,7 @@ public class ExchangeSession {
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
+                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
@@ -934,6 +934,7 @@ public class ExchangeSession {
         public boolean deleted;
         public boolean junk;
         public boolean flagged;
+        public boolean draft;
 
         public long getUidAsLong() {
             byte[] decodedValue = Base64.decode(uid.getBytes());
@@ -960,6 +961,9 @@ public class ExchangeSession {
             }
             if (junk) {
                 buffer.append("Junk ");
+            }
+            if (draft) {
+                buffer.append("\\Draft ");
             }
             return buffer.toString().trim();
         }
