@@ -15,10 +15,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.SocketException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.StringTokenizer;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -300,32 +297,26 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
-                                            long uid = Long.parseLong(tokens.nextToken());
-                                            ExchangeSession.Message message = messages.getByUid(uid);
+                                            RangeIterator rangeIterator = new RangeIterator(tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
-                                            updateFlags(message, action, flags);
-                                            int index = 0;
-                                            for (ExchangeSession.Message currentMessage : messages) {
-                                                index++;
-                                                if (currentMessage == message) {
-                                                    sendClient("* " + index + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
-                                                }
+                                            while (rangeIterator.hasNext()) {
+                                                ExchangeSession.Message message = rangeIterator.next();
+                                                updateFlags(message, action, flags);
+                                                sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
                                             }
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
-                                                long uid = Long.parseLong(tokens.nextToken());
-                                                ExchangeSession.Message message = messages.getByUid(uid);
+                                                RangeIterator rangeIterator = new RangeIterator(tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                                try {
+                                                while (rangeIterator.hasNext()) {
+                                                    ExchangeSession.Message message = rangeIterator.next();
                                                     session.copyMessage(message.messageUrl, targetName);
-                                                    sendClient(commandId + " OK copy completed");
-                                                } catch (HttpException e) {
-                                                    sendClient(commandId + " NO " + e.getReason());
                                                 }
-                                            } catch (NumberFormatException nfe) {
-                                                sendClient(commandId + " NO unable to copy multiple messages");
+                                                sendClient(commandId + " OK copy completed");
+                                            } catch (HttpException e) {
+                                                sendClient(commandId + " NO " + e.getReason());
                                             }
                                         }
                                     } else {
@@ -586,5 +577,56 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-}
+    protected class RangeIterator implements Iterator<ExchangeSession.Message> {
+        String[] ranges;
+        int currentIndex = 0;
+        int currentRangeIndex = 0;
+        long startUid;
+        long endUid;
 
+        protected RangeIterator(String value) {
+            ranges = value.split(",");
+        }
+
+        protected long convertToLong(String value) {
+            if ("*".equals(value)) {
+                return Long.MAX_VALUE;
+            } else {
+                return Long.parseLong(value);
+            }
+        }
+
+        protected void skipToStartUid() {
+            if (currentRangeIndex < ranges.length) {
+                String currentRange = ranges[currentRangeIndex++];
+                int colonIndex = currentRange.indexOf(':');
+                if (colonIndex > 0) {
+                    startUid = convertToLong(currentRange.substring(0, colonIndex));
+                    endUid = convertToLong(currentRange.substring(colonIndex + 1));
+                } else {
+                    startUid = endUid = convertToLong(currentRange);
+                }
+                while (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() < startUid) {
+                    currentIndex++;
+                }
+            } else {
+                currentIndex = messages.size();
+            }
+        }
+
+        public boolean hasNext() {
+            if (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() > endUid) {
+                skipToStartUid();
+            }
+            return currentIndex < messages.size();
+        }
+
+        public ExchangeSession.Message next() {
+            return messages.get(currentIndex++);
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+}
