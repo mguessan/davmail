@@ -197,86 +197,49 @@ public class ImapConnection extends AbstractConnection {
                                     if (tokens.hasMoreTokens()) {
                                         String subcommand = tokens.nextToken();
                                         if ("fetch".equalsIgnoreCase(subcommand)) {
-                                            if (tokens.hasMoreTokens()) {
-                                                String messageParameter = tokens.nextToken();
-                                                if (currentFolder == null) {
-                                                    sendClient(commandId + " NO no folder selected");
-                                                }
-                                                long startIndex;
-                                                long endIndex;
-                                                int colonIndex = messageParameter.lastIndexOf(":");
-                                                if (colonIndex < 0) {
-                                                    startIndex = endIndex = Long.parseLong(messageParameter);
-                                                } else {
-                                                    int commaIndex = messageParameter.indexOf(",");
-                                                    if (commaIndex > 0) {
-                                                        // workaround for multiple scopes : start at first and end at last
-                                                        startIndex = Long.parseLong(messageParameter.substring(0, Math.min(commaIndex, messageParameter.indexOf(":"))));
-                                                    } else {
-                                                        startIndex = Long.parseLong(messageParameter.substring(0, colonIndex));
-                                                    }
-                                                    if (messageParameter.endsWith("*")) {
-                                                        if (messages.size() > 0) {
-                                                            endIndex = messages.get(messages.size() - 1).getUidAsLong();
-                                                            // fix according to spec
-                                                            //if (startIndex > endIndex) {
-                                                            //    startIndex = endIndex;
-                                                            //}
-                                                        } else {
-                                                            endIndex = 1;
-                                                        }
-                                                    } else {
-                                                        endIndex = Long.parseLong(messageParameter.substring(Math.max(colonIndex, messageParameter.lastIndexOf(",")) + 1));
-                                                    }
-                                                }
-                                                if ("1:*".equals(messageParameter)) {
-                                                    int count = 0;
-                                                    for (ExchangeSession.Message message : messages) {
-                                                        count++;
-                                                        sendClient("* " + count + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
-                                                    }
-                                                    sendClient(commandId + " OK UID FETCH completed");
-                                                } else {
-                                                    if (tokens.hasMoreTokens()) {
-                                                        String parameters = tokens.nextToken();
-                                                        for (int messageIndex = 1; messageIndex <= messages.size(); messageIndex++) {
-                                                            ExchangeSession.Message message = messages.get(messageIndex - 1);
-                                                            long uid = message.getUidAsLong();
-                                                            if (uid >= startIndex && uid <= endIndex) {
-
-                                                                if ("BODYSTRUCTURE".equals(parameters)) {
-                                                                    sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
-                                                                } else if (parameters.indexOf("BODY[]") >= 0) {
-                                                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                                    message.write(baos);
-                                                                    baos.close();
-
-                                                                    DavGatewayTray.debug("Messagee size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
-                                                                    sendClient("* " + messageIndex + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
-                                                                            " {" + baos.size() + "}");
-                                                                    message.write(os);
-                                                                    sendClient(")");
-                                                                } else {
-                                                                    // write headers to byte array
-                                                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                                    HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
-                                                                    message.write(headerOutputStream);
-                                                                    baos.close();
-                                                                    sendClient("* " + messageIndex + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
-                                                                            "] {" + baos.size() + "}");
-                                                                    os.write(baos.toByteArray());
-                                                                    os.flush();
-                                                                    sendClient(" FLAGS (" + (message.getImapFlags()) + "))");
-                                                                }
-                                                            }
-                                                        }
-                                                        sendClient(commandId + " OK FETCH completed");
-
-                                                    }
-                                                }
+                                            if (currentFolder == null) {
+                                                sendClient(commandId + " NO no folder selected");
                                             } else {
-                                                sendClient(commandId + " BAD command unrecognized");
+                                                RangeIterator rangeIterator = new RangeIterator(tokens.nextToken());
+                                                String parameters = null;
+                                                if (tokens.hasMoreTokens()) {
+                                                    parameters = tokens.nextToken();
+                                                }
+                                                while (rangeIterator.hasNext()) {
+                                                    ExchangeSession.Message message = rangeIterator.next();
+                                                    if (parameters == null) {
+                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
+                                                    } else if ("BODYSTRUCTURE".equals(parameters)) {
+                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
+                                                    // send full message
+                                                    } else if (parameters.indexOf("BODY[]") >= 0) {
+                                                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                        message.write(baos);
+                                                        baos.close();
+
+                                                        DavGatewayTray.debug("Messagee size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
+                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
+                                                                " {" + baos.size() + "}");
+                                                        os.write(baos.toByteArray());
+                                                        os.flush();
+                                                        sendClient(")");
+                                                    } else {
+                                                        // write headers to byte array
+                                                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                        HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
+                                                        message.write(headerOutputStream);
+                                                        baos.close();
+                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
+                                                                "] {" + baos.size() + "}");
+                                                        os.write(baos.toByteArray());
+                                                        os.flush();
+                                                        sendClient(" FLAGS (" + (message.getImapFlags()) + "))");
+                                                    }
+
+                                                }
+                                                sendClient(commandId + " OK UID FETCH completed");
                                             }
+
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
                                             // only create check search
                                             String messageId = null;
