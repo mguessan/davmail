@@ -41,6 +41,7 @@ public class ImapConnection extends AbstractConnection {
         String commandId = null;
         StringTokenizer tokens;
         try {
+            ExchangeSessionFactory.checkConfig();
             sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN] IMAP4rev1 DavMail server ready");
             for (; ;) {
                 line = readClient();
@@ -368,6 +369,7 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                     }
                                     // skip optional date
+                                    // TODO : replace datereceived
                                     String dateOrSize = tokens.nextToken();
                                     if (tokens.hasMoreTokens()) {
                                         dateOrSize = tokens.nextToken();
@@ -428,7 +430,7 @@ public class ImapConnection extends AbstractConnection {
                 if (commandId != null) {
                     sendClient(commandId + " BAD unable to handle request: " + e.getMessage());
                 } else {
-                    sendClient("* BAD unable to handle request: " + e.getMessage());
+                    sendClient("* BYE unable to handle request: " + e.getMessage());
                 }
             } catch (IOException e2) {
                 DavGatewayTray.warn("Exception sending error to client", e2);

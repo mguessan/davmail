@@ -507,17 +507,19 @@ public class ExchangeSession {
         }
 
         // add bcc and other properties
-        patchMethod = new PropPatchMethod(messageUrl);
-        try {
-            // update message with blind carbon copy and other flags
-            addProperties(patchMethod, properties);
-            int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
-            if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
-            }
+        if (properties.size() > 0) {
+            patchMethod = new PropPatchMethod(messageUrl);
+            try {
+                // update message with blind carbon copy and other flags
+                addProperties(patchMethod, properties);
+                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                    throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
+                }
 
-        } finally {
-            patchMethod.releaseConnection();
+            } finally {
+                patchMethod.releaseConnection();
+            }
         }
     }
 
