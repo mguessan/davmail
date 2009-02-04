@@ -206,7 +206,7 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                                 while (rangeIterator.hasNext()) {
                                                     ExchangeSession.Message message = rangeIterator.next();
-                                                    if (parameters == null) {
+                                                    if (parameters == null || "FLAGS".equals(parameters)) {
                                                         sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
                                                     } else if ("BODYSTRUCTURE".equals(parameters)) {
                                                         sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
