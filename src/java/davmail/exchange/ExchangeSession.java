@@ -545,6 +545,8 @@ public class ExchangeSession {
                 message.draft = "9".equals(prop.getPropertyAsString());
             } else if ("x10810003".equals(localName)) {
                 message.answered = prop.getPropertyAsString().length() > 0;
+            } else if ("ishidden".equals(localName)) {
+                message.deleted = "1".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
                 message.messageId = prop.getPropertyAsString();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
@@ -585,6 +587,8 @@ public class ExchangeSession {
                 patchMethod.addPropertyToSet("bcc", entry.getValue(), "b", "urn:schemas:mailheader:");
             } else if ("draft".equals(entry.getKey())) {
                 patchMethod.addPropertyToSet("x0E070003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+            } else if ("deleted".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("ishidden", entry.getValue(), "d", "DAV:");
             }
         }
     }
@@ -609,9 +613,9 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\"" +
+                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:ishidden\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
-                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
+                "                WHERE \"DAV:isfolder\" = False\n" +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 

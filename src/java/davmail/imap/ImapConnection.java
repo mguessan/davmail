@@ -143,8 +143,6 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD missing folder argument");
                                     }
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
-                                    // first purge previous folder
-                                    expunge();
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         currentFolder = session.getFolder(folderName);
@@ -164,10 +162,11 @@ public class ImapConnection extends AbstractConnection {
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
-                                } else if ("close".equalsIgnoreCase(command)) {
+                                } else if ("close".equalsIgnoreCase(command) || "expunge".equalsIgnoreCase(command)) {
+                                    expunge();
                                     currentFolder = null;
                                     messages = null;
-                                    sendClient(commandId + " OK CLOSE completed");
+                                    sendClient(commandId + " OK "+command+" completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
@@ -208,9 +207,9 @@ public class ImapConnection extends AbstractConnection {
                                                 while (rangeIterator.hasNext()) {
                                                     ExchangeSession.Message message = rangeIterator.next();
                                                     if (parameters == null) {
-                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
+                                                        sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
                                                     } else if ("BODYSTRUCTURE".equals(parameters)) {
-                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
+                                                        sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
                                                     // send full message
                                                     } else if (parameters.indexOf("BODY[]") >= 0) {
                                                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -218,7 +217,7 @@ public class ImapConnection extends AbstractConnection {
                                                         baos.close();
 
                                                         DavGatewayTray.debug("Messagee size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
-                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
+                                                        sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
                                                                 " {" + baos.size() + "}");
                                                         os.write(baos.toByteArray());
                                                         os.flush();
@@ -229,7 +228,7 @@ public class ImapConnection extends AbstractConnection {
                                                         HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
                                                         message.write(headerOutputStream);
                                                         baos.close();
-                                                        sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
+                                                        sendClient("* " + (rangeIterator.currentIndex ) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
                                                                 "] {" + baos.size() + "}");
                                                         os.write(baos.toByteArray());
                                                         os.flush();
@@ -266,7 +265,7 @@ public class ImapConnection extends AbstractConnection {
                                             while (rangeIterator.hasNext()) {
                                                 ExchangeSession.Message message = rangeIterator.next();
                                                 updateFlags(message, action, flags);
-                                                sendClient("* " + (rangeIterator.currentIndex + 1) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
+                                                sendClient("* " + (rangeIterator.currentIndex) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
                                             }
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
@@ -285,26 +284,8 @@ public class ImapConnection extends AbstractConnection {
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
-                                } else if ("fetch".equalsIgnoreCase(command)) {
-                                    // TODO : refactor with uid fetch
-                                    if (tokens.hasMoreTokens()) {
-                                        int messageIndex = Integer.parseInt(tokens.nextToken());
-                                        ExchangeSession.Message message = messages.get(messageIndex - 1);
-                                        if (tokens.hasMoreTokens()) {
-                                            String parameters = tokens.nextToken();
-                                            if ("BODYSTRUCTURE".equals(parameters)) {
-                                                sendClient("* " + messageIndex + " FETCH (BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
-                                                sendClient(commandId + " OK FETCH completed");
-                                            } else {
-                                                sendClient("* " + messageIndex + " 1 FETCH (BODY[TEXT]<0> {" + message.size + "}");
-                                                message.write(os);
-                                                sendClient(commandId + " OK FETCH completed");
-                                            }
-                                        }
-                                    }
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                    // TODO handle flags
                                     String flags = tokens.nextToken();
                                     HashMap<String, String> properties = new HashMap<String, String>();
                                     StringTokenizer flagtokenizer = new StringTokenizer(flags);
@@ -347,7 +328,6 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
-                                        expunge();
                                         currentFolder = session.getFolder(currentFolder.folderName);
                                         messages = session.getAllMessages(currentFolder.folderUrl);
                                         sendClient("* " + currentFolder.objectCount + " EXISTS");
@@ -435,6 +415,7 @@ public class ImapConnection extends AbstractConnection {
                     message.read = true;
                 } else if ("\\Deleted".equals(flag)) {
                     message.deleted = true;
+                    properties.put("deleted", "1");
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "2");
                     message.flagged = true;
