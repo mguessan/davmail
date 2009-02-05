@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -305,10 +306,15 @@ public class ImapConnection extends AbstractConnection {
                                             properties.put("junk", "1");
                                         }
                                     }
-                                    // skip optional date
-                                    // TODO : replace datereceived
+                                    // handle optional date
                                     String dateOrSize = tokens.nextToken();
                                     if (tokens.hasMoreTokens()) {
+                                        SimpleDateFormat dateParser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
+                                        Date dateReceived = dateParser.parse(dateOrSize);
+                                        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                                        dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+
+                                        properties.put("datereceived", dateFormatter.format(dateReceived));
                                         dateOrSize = tokens.nextToken();
                                     }
                                     int size = Integer.parseInt(dateOrSize);

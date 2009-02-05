@@ -34,7 +34,7 @@ import java.util.*;
 public class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
-    protected static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
+    public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
 
     /**
      * exchange message properties needed to rebuild mime message
@@ -116,6 +116,7 @@ public class ExchangeSession {
         // SimpleDateFormat are not thread safe, need to create one instance for
         // each session
         dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
 
         dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         dateParser.setTimeZone(GMT_TIMEZONE);
@@ -597,6 +598,8 @@ public class ExchangeSession {
                 patchMethod.addPropertyToSet("x0E070003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
             } else if ("deleted".equals(entry.getKey())) {
                 patchMethod.addPropertyToSet("isdeleted", entry.getValue(), "d", "DAV:");
+            } else if ("datereceived".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("datereceived", entry.getValue(), "e", "urn:schemas:httpmail:");
             }
         }
     }
