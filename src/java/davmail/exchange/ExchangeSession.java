@@ -460,10 +460,9 @@ public class ExchangeSession {
      * @param messageName    message name
      * @param properties     message properties (flags)
      * @param messageBody    mail body
-     * @param allowOverwrite allow existing message overwrite
      * @throws java.io.IOException when unable to create message
      */
-    public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody, boolean allowOverwrite) throws IOException {
+    public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
         PropPatchMethod patchMethod;
         // create the message first as draft
@@ -806,7 +805,7 @@ public class ExchangeSession {
 
         String messageName = UUID.randomUUID().toString();
 
-        createMessage(draftsUrl, messageName, properties, mailBuffer.toString(), false);
+        createMessage(draftsUrl, messageName, properties, mailBuffer.toString());
 
         // warning : slide library expects *unencoded* urls
         String tempUrl = draftsUrl + "/" + messageName + ".EML";

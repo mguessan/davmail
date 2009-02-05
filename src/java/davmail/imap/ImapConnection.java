@@ -326,7 +326,7 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
 
                                     String messageName = UUID.randomUUID().toString();
-                                    session.createMessage(session.getFolderPath(folderName), messageName, properties, new String(buffer), false);
+                                    session.createMessage(session.getFolderPath(folderName), messageName, properties, new String(buffer));
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
@@ -335,6 +335,8 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient("* " + currentFolder.objectCount + " EXISTS");
                                         sendClient("* " + currentFolder.objectCount + " RECENT");
                                     }
+                                    sendClient(commandId + " OK " + command + " completed");
+                                } else if ("subscribe".equalsIgnoreCase(command) || "unsubscribe".equalsIgnoreCase(command)) {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else {
                                     sendClient(commandId + " BAD command unrecognized");
