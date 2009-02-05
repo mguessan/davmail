@@ -62,7 +62,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             // if user already accepted a certificate,
             if (acceptedCertificateHash != null && acceptedCertificateHash.length() > 0
                     && acceptedCertificateHash.equals(certificateHash)) {
-                DavGatewayTray.debug("Found permanently accepted cerfificate, hash " + acceptedCertificateHash);
+                DavGatewayTray.debug("Found permanently accepted certificate, hash " + acceptedCertificateHash);
             } else {
 
                 if (!AcceptCertificateDialog.isCertificateTrusted(x509Certificates[0])) {
