@@ -1072,14 +1072,25 @@ public class ExchangeSession {
         public void moveToTrash() throws IOException {
             String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
             LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
+            // mark message as read
+            HashMap<String,String> properties = new HashMap<String,String>();
+            properties.put("read", "1");
+            updateMessage(this, properties);
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl),
+                                           URIUtil.encodePath(destination));
+            method.addRequestHeader("Overwrite", "f");
+            method.addRequestHeader("Allow-rename", "t");
+            method.setDebug(4);
 
-            wdr.moveMethod(messageUrl, destination);
-            if (wdr.getStatusCode() == HttpURLConnection.HTTP_PRECON_FAILED) {
-                int count = 2;
-                // name conflict, try another name
-                while (wdr.getStatusCode() == HttpURLConnection.HTTP_PRECON_FAILED) {
-                    wdr.moveMethod(messageUrl, destination.substring(0, destination.lastIndexOf('.')) + "-" + count++ + ".eml");
-                }
+            int status = wdr.retrieveSessionInstance().executeMethod(method);
+            if (status != HttpStatus.SC_CREATED) {
+                 HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                ex.setReason(method.getStatusText());
+                throw ex;
+            }
+            if (method.getResponseHeader("Location")!= null) {
+                destination = method.getResponseHeader("Location").getValue();
             }
 
             LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
