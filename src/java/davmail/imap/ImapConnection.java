@@ -155,8 +155,8 @@ public class ImapConnection extends AbstractConnection {
                                         } else {
                                             sendClient("* OK [UIDNEXT " + (messages.get(messages.size() - 1).getUidAsLong() + 1) + "]");
                                         }
-                                        sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Forwarded Junk)");
-                                        sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Forwarded Junk \\*)]");
+                                        sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
+                                        sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
                                         //sendClient("* [UNSEEN 1] first unseen message in inbox");
                                         sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
                                     } else {
@@ -296,7 +296,9 @@ public class ImapConnection extends AbstractConnection {
                                         } else if ("\\Flagged".equals(flag)) {
                                             properties.put("flagged", "2");
                                         } else if ("\\Answered".equals(flag)) {
-                                            properties.put("answered", "103");
+                                            properties.put("answered", "102");
+                                        } else if ("$Forwarded".equals(flag)) {
+                                            properties.put("forwarded", "104");
                                         } else if ("\\Draft".equals(flag)) {
                                             properties.put("draft", "9");
                                         } else if ("Junk".equals(flag)) {
@@ -420,8 +422,11 @@ public class ImapConnection extends AbstractConnection {
                     properties.put("flagged", "2");
                     message.flagged = true;
                 } else if ("\\Answered".equals(flag)) {
-                    properties.put("answered", "103");
+                    properties.put("answered", "102");
                     message.answered = true;
+                } else if ("$Forwarded".equals(flag)) {
+                    properties.put("forwarded", "104");
+                    message.forwarded = true;
                 } else if ("Junk".equals(flag)) {
                     properties.put("junk", "1");
                     message.junk = true;

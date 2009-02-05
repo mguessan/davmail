@@ -544,7 +544,8 @@ public class ExchangeSession {
             } else if ("x0E070003".equals(localName)) {
                 message.draft = "9".equals(prop.getPropertyAsString());
             } else if ("x10810003".equals(localName)) {
-                message.answered = prop.getPropertyAsString().length() > 0;
+                message.answered = "102".equals(prop.getPropertyAsString()) || "103".equals(prop.getPropertyAsString());
+                message.forwarded = "104".equals(prop.getPropertyAsString());
             } else if ("isdeleted".equals(localName)) {
                 message.deleted = "1".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
@@ -583,6 +584,14 @@ public class ExchangeSession {
                 patchMethod.addPropertyToSet("x10900003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
             } else if ("answered".equals(entry.getKey())) {
                 patchMethod.addPropertyToSet("x10810003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                if ("102".equals(entry.getValue())) {
+                    patchMethod.addPropertyToSet("x10800003", "261", "f", "http://schemas.microsoft.com/mapi/proptag/");
+                }
+            } else if ("forwarded".equals(entry.getKey())) {
+                patchMethod.addPropertyToSet("x10810003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                if ("104".equals(entry.getValue())) {
+                    patchMethod.addPropertyToSet("x10800003", "262", "f", "http://schemas.microsoft.com/mapi/proptag/");
+                }
             } else if ("bcc".equals(entry.getKey())) {
                 patchMethod.addPropertyToSet("bcc", entry.getValue(), "b", "urn:schemas:mailheader:");
             } else if ("draft".equals(entry.getKey())) {
@@ -949,6 +958,7 @@ public class ExchangeSession {
         public boolean flagged;
         public boolean draft;
         public boolean answered;
+        public boolean forwarded;
 
         public long getUidAsLong() {
             byte[] decodedValue = Base64.decode(uid.getBytes());
@@ -981,6 +991,9 @@ public class ExchangeSession {
             }
             if (answered) {
                 buffer.append("\\Answered ");
+            }
+            if (forwarded) {
+                buffer.append("$Forwarded ");
             }
             return buffer.toString().trim();
         }
