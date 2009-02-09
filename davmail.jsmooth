@@ -18,7 +18,7 @@
 <classPath>dist\lib\mail-1.3.2.jar</classPath>
 <classPath>dist\lib\saxpath-1.0-FCS.jar</classPath>
 <classPath>dist\lib\slide-webdavlib-2.1.jar</classPath>
-<classPath>dist\lib\swt-3.3-win32-x86.jar</classPath>
+<classPath>dist\lib\swt-3.4-win32-x86.jar</classPath>
 <classPath>dist\lib\htmlcleaner-2.1.jar</classPath>
 <classPath>dist\lib\stax-api-1.0.1.jar</classPath>
 <classPath>dist\lib\wstx-asl-3.2.7.jar</classPath>

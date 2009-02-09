@@ -94,7 +94,7 @@ Section "MainSection" SEC01
   File "dist\lib\htmlcleaner-2.1.jar"
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\wstx-asl-3.2.7.jar"
-  File "dist\lib\swt-3.3-win32-x86.jar"
+  File "dist\lib\swt-3.4-win32-x86.jar"
   WriteRegStr HKEY_CURRENT_USER "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail" "$INSTDIR\davmail.exe"
 SectionEnd
 
@@ -147,7 +147,7 @@ BailOut:
 no_quest:
   Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\lib\swt-3.3-win32-x86.jar"
+  Delete "$INSTDIR\lib\swt-3.4-win32-x86.jar"
   Delete "$INSTDIR\lib\wstx-asl-3.2.7.jar"
   Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\htmlcleaner-2.1.jar"
