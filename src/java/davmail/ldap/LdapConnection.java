@@ -83,6 +83,7 @@ public class LdapConnection extends AbstractConnection {
 
     static {
         // assume mail starts with firstname
+        CRITERIA_MAP.put("uid", "AN");
         CRITERIA_MAP.put("mail", "FN");
         CRITERIA_MAP.put("displayname", "DN");
         CRITERIA_MAP.put("cn", "DN");
@@ -124,6 +125,7 @@ public class LdapConnection extends AbstractConnection {
     static final int LDAP_FILTER_LE = 0xa6;
     static final int LDAP_FILTER_PRESENT = 0x87;
     static final int LDAP_FILTER_APPROX = 0xa8;
+    static final int LDAP_FILTER_EQUALITY = 0xa3;
 
     // LDAP filter mode (only startsWith supported by galfind)
     static final int LDAP_SUBSTRING_INITIAL = 0x80;
@@ -330,7 +332,7 @@ public class LdapConnection extends AbstractConnection {
                 int timelimit = reqBer.parseInt();
                 /*boolean typesOnly =*/
                 reqBer.parseBoolean();
-                Map<String, String> criteria = parseFilter(reqBer);
+                Map<String, SimpleFilter> criteria = parseFilter(reqBer);
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
 
                 int size = 0;
@@ -357,7 +359,7 @@ public class LdapConnection extends AbstractConnection {
                 } else if (BASE_CONTEXT.equalsIgnoreCase(dn) && session != null) {
 
                     Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
-                    if ("*".equals(criteria.get("objectclass"))) {
+                    if (criteria.get("objectclass") != null && "*".equals(criteria.get("objectclass").value)) {
                         // full search
                         for (char c = 'A'; c < 'Z'; c++) {
                             if (persons.size() < sizeLimit) {
@@ -373,10 +375,14 @@ public class LdapConnection extends AbstractConnection {
                             }
                         }
                     } else {
-                        for (Map.Entry<String, String> entry : criteria.entrySet()) {
+                        for (Map.Entry<String, SimpleFilter> entry : criteria.entrySet()) {
                             if (persons.size() < sizeLimit) {
-                                for (Map<String, String> person : session.galFind(entry.getKey(), entry.getValue()).values()) {
-                                    persons.put(person.get("AN"), person);
+                                for (Map<String, String> person : session.galFind(entry.getKey(), entry.getValue().value).values()) {
+                                    if ((entry.getValue().operator == LDAP_FILTER_SUBSTRINGS)
+                                        || (entry.getValue().operator == LDAP_FILTER_EQUALITY &&
+                                            entry.getValue().value.equalsIgnoreCase(person.get(entry.getKey())))) {
+                                        persons.put(person.get("AN"), person);
+                                    }
                                     if (persons.size() == sizeLimit) {
                                         break;
                                     }
@@ -423,12 +429,12 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    protected Map<String, String> parseFilter(BerDecoder reqBer) throws IOException {
-        Map<String, String> criteria = new HashMap<String, String>();
+    protected Map<String, SimpleFilter> parseFilter(BerDecoder reqBer) throws IOException {
+        Map<String, SimpleFilter> criteria = new HashMap<String, SimpleFilter>();
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
             if ("objectclass".equals(attributeName)) {
-                criteria.put(attributeName, "*");
+                criteria.put(attributeName, new SimpleFilter("*"));
             } else {
                 DavGatewayTray.warn("Unsupported filter");
             }
@@ -439,39 +445,41 @@ public class LdapConnection extends AbstractConnection {
             if (ldapFilterType == LDAP_FILTER_OR) {
                 while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
                     int ldapFilterOperator = reqBer.parseSeq(null);
-                    if (ldapFilterOperator == LDAP_FILTER_SUBSTRINGS) {
-                        parseSimpleFilter(reqBer, criteria);
-                    }
+                    parseSimpleFilter(reqBer, criteria, ldapFilterOperator);
                 }
                 // simple filter
-            } else if (ldapFilterType == LDAP_FILTER_SUBSTRINGS) {
-                parseSimpleFilter(reqBer, criteria);
             } else {
-                DavGatewayTray.warn("Unsupported filter");
+                parseSimpleFilter(reqBer, criteria, ldapFilterType);
             }
         }
         return criteria;
     }
 
-    protected void parseSimpleFilter(BerDecoder reqBer, Map<String, String> criteria) throws IOException {
+    protected void parseSimpleFilter(BerDecoder reqBer, Map<String, SimpleFilter> criteria, int ldapFilterOperator) throws IOException {
         String attributeName = reqBer.parseString(isLdapV3()).toLowerCase();
         String exchangeAttributeName = CRITERIA_MAP.get(attributeName);
 
-        // Thunderbird sends values with space as separate strings, rebuild value
         StringBuilder value = new StringBuilder();
-        int[] seqSize = new int[1];
-        /*LBER_SEQUENCE*/
-        reqBer.parseSeq(seqSize);
-        int end = reqBer.getParsePosition() + seqSize[0];
-        while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-            int ldapFilterMode = reqBer.peekByte();
-            if (value.length() > 0) {
-                value.append(' ');
+        if (ldapFilterOperator == LDAP_FILTER_SUBSTRINGS) {
+            // Thunderbird sends values with space as separate strings, rebuild value
+            int[] seqSize = new int[1];
+            /*LBER_SEQUENCE*/
+            reqBer.parseSeq(seqSize);
+            int end = reqBer.getParsePosition() + seqSize[0];
+            while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+                int ldapFilterMode = reqBer.peekByte();
+                if (value.length() > 0) {
+                    value.append(' ');
+                }
+                value.append(reqBer.parseStringWithTag(ldapFilterMode, isLdapV3(), null));
             }
-            value.append(reqBer.parseStringWithTag(ldapFilterMode, isLdapV3(), null));
+        } else if (ldapFilterOperator == LDAP_FILTER_EQUALITY) {
+            value.append(reqBer.parseString(isLdapV3()));
+        } else {
+            DavGatewayTray.warn("Unsupported filter value");
         }
         if (exchangeAttributeName != null) {
-            criteria.put(exchangeAttributeName, value.toString());
+            criteria.put(exchangeAttributeName, new SimpleFilter(value.toString(), ldapFilterOperator));
         } else {
             DavGatewayTray.warn("Unsupported filter attribute: " + attributeName);
         }
@@ -568,29 +576,29 @@ public class LdapConnection extends AbstractConnection {
     protected void sendEntry(int currentMessageId, String dn, Map<String, Object> attributes) throws IOException {
         responseBer.reset();
         responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-            responseBer.encodeInt(currentMessageId);
-            responseBer.beginSeq(LDAP_REP_SEARCH);
-                responseBer.encodeString(dn, isLdapV3());
-                responseBer.beginSeq(LBER_SEQUENCE);
-                    for (Map.Entry<String,Object> entry:attributes.entrySet()) {
-                        responseBer.beginSeq(LBER_SEQUENCE);
-                            responseBer.encodeString(entry.getKey(), isLdapV3());
-                            responseBer.beginSeq(LBER_SET);
-                                Object values = entry.getValue();
-                                if (values instanceof String) {
-                                    responseBer.encodeString((String)values, isLdapV3());
-                                } else if (values instanceof List) {
-                                    for (Object value: (List)values) {
-                                        responseBer.encodeString((String) value, isLdapV3());
-                                    }
-                                } else {
-                                    throw new IllegalArgumentException();
-                                }
-                            responseBer.endSeq();
-                        responseBer.endSeq();
-                    }
-                responseBer.endSeq();
+        responseBer.encodeInt(currentMessageId);
+        responseBer.beginSeq(LDAP_REP_SEARCH);
+        responseBer.encodeString(dn, isLdapV3());
+        responseBer.beginSeq(LBER_SEQUENCE);
+        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+            responseBer.beginSeq(LBER_SEQUENCE);
+            responseBer.encodeString(entry.getKey(), isLdapV3());
+            responseBer.beginSeq(LBER_SET);
+            Object values = entry.getValue();
+            if (values instanceof String) {
+                responseBer.encodeString((String) values, isLdapV3());
+            } else if (values instanceof List) {
+                for (Object value : (List) values) {
+                    responseBer.encodeString((String) value, isLdapV3());
+                }
+            } else {
+                throw new IllegalArgumentException();
+            }
             responseBer.endSeq();
+            responseBer.endSeq();
+        }
+        responseBer.endSeq();
+        responseBer.endSeq();
         responseBer.endSeq();
         sendResponse();
     }
@@ -623,6 +631,21 @@ public class LdapConnection extends AbstractConnection {
         //Ber.dumpBER(System.out, ">\n", responseBer.getBuf(), 0, responseBer.getDataLen());
         os.write(responseBer.getBuf(), 0, responseBer.getDataLen());
         os.flush();
+    }
+
+    class SimpleFilter {
+        String value;
+        int operator;
+
+        SimpleFilter(String value) {
+            this.value = value;
+            this.operator = LDAP_FILTER_SUBSTRINGS;
+        }
+
+        SimpleFilter(String value, int ldapFilterOperator) {
+            this.value = value;
+            this.operator = ldapFilterOperator;
+        }
     }
 
 }
