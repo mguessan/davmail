@@ -18,9 +18,15 @@ public class SettingsFrame extends JFrame {
 
     protected JTextField urlField;
     protected JTextField popPortField;
+    protected JCheckBox popPortCheckBox;
+    protected JTextField imapPortField;
+    protected JCheckBox imapPortCheckBox;
     protected JTextField smtpPortField;
+    protected JCheckBox smtpPortCheckBox;
     protected JTextField caldavPortField;
+    protected JCheckBox caldavPortCheckBox;
     protected JTextField ldapPortField;
+    protected JCheckBox ldapPortCheckBox;
     protected JTextField keepDelayField;
     protected JTextField sentKeepDelayField;
     protected JTextField caldavPastDelayField;
@@ -61,24 +67,88 @@ public class SettingsFrame extends JFrame {
         }
     }
 
+    protected void addPortSettingComponent(JPanel panel, String label, JComponent component, JComponent checkboxComponent, String toolTipText) {
+        JLabel fieldLabel = new JLabel(label);
+        fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        fieldLabel.setVerticalAlignment(SwingConstants.CENTER);
+        panel.add(fieldLabel);
+        component.setMaximumSize(component.getPreferredSize());
+        JPanel innerPanel = new JPanel();
+        innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.X_AXIS));
+        innerPanel.add(checkboxComponent);
+        innerPanel.add(component);
+        panel.add(innerPanel);
+        if (toolTipText != null) {
+            fieldLabel.setToolTipText(toolTipText);
+            component.setToolTipText(toolTipText);
+        }
+    }
+
     protected JPanel getSettingsPanel() {
-        JPanel settingsPanel = new JPanel(new GridLayout(5, 2));
+        JPanel settingsPanel = new JPanel(new GridLayout(6, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
+        popPortCheckBox = new JCheckBox();
+        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && Settings.getProperty("davmail.popPort").length() > 0);
+        popPortField.setEnabled(popPortCheckBox.isSelected());
+        popPortCheckBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                popPortField.setEnabled(popPortCheckBox.isSelected());
+            }
+        });
+
+        imapPortField = new JTextField(Settings.getProperty("davmail.imapPort"), 4);
+        imapPortCheckBox = new JCheckBox();
+        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && Settings.getProperty("davmail.imapPort").length() > 0);
+        imapPortField.setEnabled(imapPortCheckBox.isSelected());
+        imapPortCheckBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                imapPortField.setEnabled(imapPortCheckBox.isSelected());
+            }
+        });
+
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
+        smtpPortCheckBox = new JCheckBox();
+        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && Settings.getProperty("davmail.smtpPort").length() > 0);
+        smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
+        smtpPortCheckBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
+            }
+        });
+
         caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
+        caldavPortCheckBox = new JCheckBox();
+        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && Settings.getProperty("davmail.caldavPort").length() > 0);
+        caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
+        caldavPortCheckBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
+            }
+        });
+
         ldapPortField = new JTextField(Settings.getProperty("davmail.ldapPort"), 4);
+        ldapPortCheckBox = new JCheckBox();
+        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && Settings.getProperty("davmail.ldapPort").length() > 0);
+        ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
+        ldapPortCheckBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
+            }
+        });
 
         addSettingComponent(settingsPanel, "OWA url: ", urlField, "Base outlook web access URL");
-        addSettingComponent(settingsPanel, "Local POP port: ", popPortField,
+        addPortSettingComponent(settingsPanel, "Local POP port: ", popPortField, popPortCheckBox,
                 "Local POP server port to configure in POP client");
-        addSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField,
+        addPortSettingComponent(settingsPanel, "Local IMAP port: ", imapPortField, imapPortCheckBox,
+                "Local IMAP server port to configure in IMAP client");
+        addPortSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField, smtpPortCheckBox,
                 "Local SMTP server port to configure in POP client");
-        addSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField,
+        addPortSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField, caldavPortCheckBox,
                 "Local Caldav server port to configure in Caldav (calendar) client");
-        addSettingComponent(settingsPanel, "Local LDAP port: ", ldapPortField,
+        addPortSettingComponent(settingsPanel, "Local LDAP port: ", ldapPortField, ldapPortCheckBox,
                 "Local LDAP server port to configure in add directory (addresse book) client");
         return settingsPanel;
     }
@@ -181,9 +251,15 @@ public class SettingsFrame extends JFrame {
         // reload settings in form
         urlField.setText(Settings.getProperty("davmail.url"));
         popPortField.setText(Settings.getProperty("davmail.popPort"));
+        popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && Settings.getProperty("davmail.popPort").length() > 0);
+        imapPortField.setText(Settings.getProperty("davmail.imapPort"));
+        imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && Settings.getProperty("davmail.imapPort").length() > 0);
         smtpPortField.setText(Settings.getProperty("davmail.smtpPort"));
+        smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && Settings.getProperty("davmail.smtpPort").length() > 0);
         caldavPortField.setText(Settings.getProperty("davmail.caldavPort"));
+        caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && Settings.getProperty("davmail.caldavPort").length() > 0);
         ldapPortField.setText(Settings.getProperty("davmail.ldapPort"));
+        ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && Settings.getProperty("davmail.ldapPort").length() > 0);
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
         sentKeepDelayField.setText(Settings.getProperty("davmail.sentKeepDelay"));
         caldavPastDelayField.setText(Settings.getProperty("davmail.caldavPastDelay"));
@@ -256,10 +332,11 @@ public class SettingsFrame extends JFrame {
             public void actionPerformed(ActionEvent evt) {
                 // save options
                 Settings.setProperty("davmail.url", urlField.getText());
-                Settings.setProperty("davmail.popPort", popPortField.getText());
-                Settings.setProperty("davmail.smtpPort", smtpPortField.getText());
-                Settings.setProperty("davmail.caldavPort", caldavPortField.getText());
-                Settings.setProperty("davmail.ldapPort", ldapPortField.getText());
+                Settings.setProperty("davmail.popPort", popPortCheckBox.isSelected()?popPortField.getText():"");
+                Settings.setProperty("davmail.imapPort", imapPortCheckBox.isSelected()?imapPortField.getText():"");
+                Settings.setProperty("davmail.smtpPort", smtpPortCheckBox.isSelected()?smtpPortField.getText():"");
+                Settings.setProperty("davmail.caldavPort", caldavPortCheckBox.isSelected()?caldavPortField.getText():"");
+                Settings.setProperty("davmail.ldapPort", ldapPortCheckBox.isSelected()?ldapPortField.getText():"");
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
                 Settings.setProperty("davmail.sentKeepDelay", sentKeepDelayField.getText());
                 Settings.setProperty("davmail.caldavPastDelay", caldavPastDelayField.getText());

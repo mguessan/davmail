@@ -48,6 +48,7 @@ public class Settings {
                 // first start : set default values, ports above 1024 for linux
                 SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
                 SETTINGS.put("davmail.popPort", "1110");
+                SETTINGS.put("davmail.imapPort", "1143");
                 SETTINGS.put("davmail.smtpPort", "1025");
                 SETTINGS.put("davmail.caldavPort", "1080");
                 SETTINGS.put("davmail.ldapPort", "1389");
