@@ -1577,7 +1577,7 @@ public class ExchangeSession {
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
                 // add detailed information
                 if (results.size() > 0) {
-                    Map<String, String> fullperson = results.get(person.get("AN"));
+                    Map<String, String> fullperson = results.get(person.get("AN").toLowerCase());
                     for (Map.Entry<String, String> entry : fullperson.entrySet()) {
                         person.put(entry.getKey(), entry.getValue());
                     }
