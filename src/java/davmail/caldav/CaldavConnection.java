@@ -4,18 +4,18 @@ import davmail.AbstractConnection;
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.ICSBufferedReader;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.auth.AuthenticationException;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.Socket;
@@ -209,7 +209,12 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
             sendOutbox(request, paths[2]);
         } else if ("POST".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
-            sendFreeBusy(body);
+            if (body.indexOf("VFREEBUSY") >=0) {
+               sendFreeBusy(body);
+            } else {
+                int status = session.sendEvent(body);
+                sendHttpResponse(status, true);
+            }
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
             sendCalendar(request, depth, paths[2]);
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])
@@ -577,13 +582,10 @@ public class CaldavConnection extends AbstractConnection {
     public void sendFreeBusy(String body) throws IOException {
         Map<String, String> valueMap = new HashMap<String, String>();
         Map<String, String> keyMap = new HashMap<String, String>();
-        BufferedReader reader = new BufferedReader(new StringReader(body));
+        ICSBufferedReader reader = new ICSBufferedReader(new StringReader(body));
         String line;
-        String key = null;
+        String key;
         while ((line = reader.readLine()) != null) {
-            if (line.startsWith(" ") && "ATTENDEE".equals(key)) {
-                valueMap.put(key, valueMap.get(key) + line.substring(1));
-            } else {
                 int index = line.indexOf(':');
                 if (index <= 0) {
                     throw new IOException("Invalid request: " + body);
@@ -598,35 +600,36 @@ public class CaldavConnection extends AbstractConnection {
                 }
                 valueMap.put(key, value);
                 keyMap.put(key, fullkey);
-            }
         }
         String freeBusy = session.getFreebusy(valueMap);
         if (freeBusy != null) {
-            String response = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
-                    "<C:schedule-response xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">" +
-                    "<C:response>" +
-                    "<C:recipient>" +
-                    "<D:href>" + valueMap.get("ATTENDEE") + "</D:href>" +
-                    "</C:recipient>" +
-                    "<C:request-status>2.0;Success</C:request-status>" +
-                    "<C:calendar-data>BEGIN:VCALENDAR\n" +
-                    "VERSION:2.0\n" +
-                    "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
-                    "METHOD:REPLY\n" +
-                    "BEGIN:VFREEBUSY\n" +
-                    "DTSTAMP:" + valueMap.get("DTSTAMP") + "\n" +
-                    "ORGANIZER:" + valueMap.get("ORGANIZER") + "\n" +
-                    "DTSTART:" + valueMap.get("DTSTART") + "\n" +
-                    "DTEND:" + valueMap.get("DTEND") + "\n" +
-                    "UID:" + valueMap.get("UID") + "\n" +
-                    keyMap.get("ATTENDEE") + ";" + valueMap.get("ATTENDEE") + "\n" +
-                    "FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:" + freeBusy + "\n" +
-                    "END:VFREEBUSY\n" +
-                    "END:VCALENDAR" +
-                    "</C:calendar-data>" +
-                    "</C:response>" +
-                    "</C:schedule-response>";
-            sendHttpResponse(HttpStatus.SC_OK, null, "text/xml;charset=UTF-8", response, true);
+            StringBuilder response = new StringBuilder();
+
+            response.append("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
+                    .append("<C:schedule-response xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">")
+                    .append("<C:response>")
+                    .append("<C:recipient>")
+                    .append("<D:href>").append(valueMap.get("ATTENDEE")).append("</D:href>")
+                    .append("</C:recipient>")
+                    .append("<C:request-status>2.0;Success</C:request-status>")
+                    .append("<C:calendar-data>BEGIN:VCALENDAR\n")
+                    .append("VERSION:2.0\n")
+                    .append("PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n")
+                    .append("METHOD:REPLY\n")
+                    .append("BEGIN:VFREEBUSY\n")
+                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("\n")
+                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append("\n")
+                    .append("DTSTART:").append(valueMap.get("DTSTART")).append("\n")
+                    .append("DTEND:").append(valueMap.get("DTEND")).append("\n")
+                    .append("UID:").append(valueMap.get("UID")).append("\n")
+                    .append(keyMap.get("ATTENDEE")).append(";").append(valueMap.get("ATTENDEE")).append("\n")
+                    .append("FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:").append(freeBusy).append("\n")
+                    .append("END:VFREEBUSY\n")
+                    .append("END:VCALENDAR")
+                    .append("</C:calendar-data>")
+                    .append("</C:response>")
+                    .append("</C:schedule-response>");
+            sendHttpResponse(HttpStatus.SC_OK, null, "text/xml;charset=UTF-8", response.toString(), true);
         } else {
             sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", "Unknown recipient: " + valueMap.get("ATTENDEE"), true);
         }

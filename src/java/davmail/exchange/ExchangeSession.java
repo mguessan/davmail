@@ -457,10 +457,10 @@ public class ExchangeSession {
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
-     * @param folderUrl      Exchange folder URL
-     * @param messageName    message name
-     * @param properties     message properties (flags)
-     * @param messageBody    mail body
+     * @param folderUrl   Exchange folder URL
+     * @param messageName message name
+     * @param properties  message properties (flags)
+     * @param messageBody mail body
      * @throws java.io.IOException when unable to create message
      */
     public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
@@ -1076,23 +1076,23 @@ public class ExchangeSession {
             String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
             LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
             // mark message as read
-            HashMap<String,String> properties = new HashMap<String,String>();
+            HashMap<String, String> properties = new HashMap<String, String>();
             properties.put("read", "1");
             updateMessage(this, properties);
             MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl),
-                                           URIUtil.encodePath(destination));
+                    URIUtil.encodePath(destination));
             method.addRequestHeader("Overwrite", "f");
             method.addRequestHeader("Allow-rename", "t");
             method.setDebug(4);
 
             int status = wdr.retrieveSessionInstance().executeMethod(method);
             if (status != HttpStatus.SC_CREATED) {
-                 HttpException ex = new HttpException();
+                HttpException ex = new HttpException();
                 ex.setReasonCode(status);
                 ex.setReason(method.getStatusText());
                 throw ex;
             }
-            if (method.getResponseHeader("Location")!= null) {
+            if (method.getResponseHeader("Location") != null) {
                 destination = method.getResponseHeader("Location").getValue();
             }
 
@@ -1328,9 +1328,29 @@ public class ExchangeSession {
         return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex + 1, valueEndIndex);
     }
 
+
+    public int sendEvent(String icsBody) throws IOException {
+        String messageUrl = URIUtil.encodePathQuery(draftsUrl + "/" + UUID.randomUUID().toString() + ".EML");
+        int status = internalCreateOrUpdateEvent(messageUrl, icsBody, null, null);
+        if (status != HttpStatus.SC_CREATED) {
+            return status;
+        } else {
+            boolean sent = wdr.moveMethod(messageUrl, sendmsgUrl);
+            if (!sent) {
+                throw new IOException("Unable to send message: " + wdr.getStatusCode()
+                        + " " + wdr.getStatusMessage());
+            }
+            return wdr.getStatusCode();
+        }
+    }
+
     public int createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
-        String uid = path.substring(0, path.lastIndexOf("."));
+        return internalCreateOrUpdateEvent(messageUrl, icsBody, etag, noneMatch);
+    }
+
+    protected int internalCreateOrUpdateEvent(String messageUrl, String icsBody, String etag, String noneMatch) throws IOException {
+        String uid = UUID.randomUUID().toString();
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Overwrite", "f");
