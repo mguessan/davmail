@@ -752,7 +752,7 @@ public class ExchangeSession {
         boolean inHeader = true;
         boolean inRecipientHeader = false;
         while (!".".equals(line)) {
-            mailBuffer.append(line).append("\n");
+            mailBuffer.append(line).append((char)13).append((char)10);
             line = reader.readLine();
 
             if (inHeader && line.length() == 0) {
@@ -777,7 +777,7 @@ public class ExchangeSession {
             }
             // patch thunderbird html in reply for correct outlook display
             if (line != null && line.startsWith("<head>")) {
-                mailBuffer.append(line).append("\n");
+                mailBuffer.append(line).append((char)13).append((char)10);
                 line = "  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
             }
         }
