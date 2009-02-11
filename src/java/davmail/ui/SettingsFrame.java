@@ -328,6 +328,7 @@ public class SettingsFrame extends JFrame {
         JPanel buttonPanel = new JPanel();
         JButton cancel = new JButton("Cancel");
         JButton ok = new JButton("Save");
+        JButton help = new JButton("Help");
         ActionListener save = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 // save options
@@ -372,8 +373,15 @@ public class SettingsFrame extends JFrame {
             }
         });
 
+        help.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                   DesktopBrowser.browse("http://davmail.sourceforge.net");
+               }
+        });
+
         buttonPanel.add(ok);
         buttonPanel.add(cancel);
+        buttonPanel.add(help);
 
         add("South", buttonPanel);
 
