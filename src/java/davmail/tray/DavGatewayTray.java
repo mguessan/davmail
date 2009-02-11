@@ -1,6 +1,7 @@
 package davmail.tray;
 
 import davmail.Settings;
+import davmail.ui.OSXFrameGatewayTray;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -140,7 +141,12 @@ public class DavGatewayTray {
                 }
             }
             if (davGatewayTray == null) {
-                davGatewayTray = new FrameGatewayTray();
+                if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+                    // MacOS
+                    davGatewayTray = new OSXFrameGatewayTray();
+                } else {
+                    davGatewayTray = new FrameGatewayTray();
+                }
                 davGatewayTray.init();
             }
         }

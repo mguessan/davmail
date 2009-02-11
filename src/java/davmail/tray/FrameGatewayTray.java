@@ -21,7 +21,9 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     protected FrameGatewayTray() {
     }
 
-    private static JFrame mainFrame = null;
+    protected static JFrame mainFrame = null;
+    protected static AboutFrame aboutFrame;
+    protected static SettingsFrame settingsFrame;
     private static JEditorPane errorArea = null;
     private static JLabel errorLabel = null;
     private static JEditorPane messageArea = null;
@@ -89,6 +91,39 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    public void about() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                aboutFrame.update();
+                aboutFrame.setVisible(true);
+            }
+        });
+    }
+
+    public void preferences() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                settingsFrame.reload();
+                settingsFrame.setVisible(true);
+            }
+        });
+    }
+
+    public void showLogs() {
+        Logger rootLogger = Logger.getRootLogger();
+        LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
+        if (lf5Appender == null) {
+            lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                protected void closeAfterConfirm() {
+                    hide();
+                }
+            });
+            lf5Appender.setName("LF5Appender");
+            rootLogger.addAppender(lf5Appender);
+        }
+        lf5Appender.getLogBrokerMonitor().show();
+    }
+
     public void init() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -97,6 +132,56 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    protected void buildMenu() {
+        // create a popup menu
+        JMenu menu = new JMenu("DavMail");
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(menu);
+        mainFrame.setJMenuBar(menuBar);
+
+        // create an action settingsListener to listen for settings action executed on the tray icon
+        ActionListener aboutListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                about();
+            }
+        };
+        // create menu item for the default action
+        JMenuItem aboutItem = new JMenuItem("About...");
+        aboutItem.addActionListener(aboutListener);
+        menu.add(aboutItem);
+
+
+        // create an action settingsListener to listen for settings action executed on the tray icon
+        ActionListener settingsListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                preferences();
+            }
+        };
+        // create menu item for the default action
+        JMenuItem defaultItem = new JMenuItem("Settings...");
+        defaultItem.addActionListener(settingsListener);
+        menu.add(defaultItem);
+
+        JMenuItem logItem = new JMenuItem("Show logs...");
+        logItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showLogs();
+            }
+        });
+        menu.add(logItem);
+
+        // create an action exitListener to listen for exit action executed on the tray icon
+        ActionListener exitListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                //noinspection CallToSystemExit
+                System.exit(0);
+            }
+        };
+        // create menu item for the exit action
+        JMenuItem exitItem = new JMenuItem("Quit");
+        exitItem.addActionListener(exitListener);
+        menu.add(exitItem);
+    }
 
     protected void createAndShowGUI() {
         // set native look and feel
@@ -105,11 +190,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         } catch (Exception e) {
             DavGatewayTray.warn("Unable to set system look and feel", e);
         }
-        // MacOS
-        if (System.getProperty("mrj.version") != null) {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-        }
-
 
         image = DavGatewayTray.loadImage("tray.png");
         image2 = DavGatewayTray.loadImage("tray2.png");
@@ -119,12 +199,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setTitle("DavMail Gateway");
         mainFrame.setIconImage(image);
-
-        // create a popup menu
-        JMenu menu = new JMenu("DavMail");
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(menu);
-        mainFrame.setJMenuBar(menuBar);
 
         JPanel errorPanel = new JPanel();
         errorPanel.setBorder(BorderFactory.createTitledBorder("Last message"));
@@ -152,62 +226,9 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         mainPanel.add(messagePanel);
         mainFrame.add(mainPanel);
 
-        final AboutFrame aboutFrame = new AboutFrame();
-        // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener aboutListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                aboutFrame.update();
-                aboutFrame.setVisible(true);
-            }
-        };
-        // create menu item for the default action
-        JMenuItem aboutItem = new JMenuItem("About...");
-        aboutItem.addActionListener(aboutListener);
-        menu.add(aboutItem);
-
-        final SettingsFrame settingsFrame = new SettingsFrame();
-        // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener settingsListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                settingsFrame.reload();
-                settingsFrame.setVisible(true);
-            }
-        };
-        // create menu item for the default action
-        JMenuItem defaultItem = new JMenuItem("Settings...");
-        defaultItem.addActionListener(settingsListener);
-        menu.add(defaultItem);
-
-        JMenuItem logItem = new JMenuItem("Show logs...");
-        logItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                Logger rootLogger = Logger.getRootLogger();
-                LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-                if (lf5Appender == null) {
-                    lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                        protected void closeAfterConfirm() {
-                            hide();
-                        }
-                    });
-                    lf5Appender.setName("LF5Appender");
-                    rootLogger.addAppender(lf5Appender);
-                }
-                lf5Appender.getLogBrokerMonitor().show();
-            }
-        });
-        menu.add(logItem);
-
-        // create an action exitListener to listen for exit action executed on the tray icon
-        ActionListener exitListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                //noinspection CallToSystemExit
-                System.exit(0);
-            }
-        };
-        // create menu item for the exit action
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(exitListener);
-        menu.add(exitItem);
+        aboutFrame = new AboutFrame();
+        settingsFrame = new SettingsFrame();
+        buildMenu();
 
         mainFrame.setMinimumSize(new Dimension(400, 180));
         mainFrame.pack();
