@@ -121,6 +121,8 @@ public class AbstractConnection extends Thread {
                 // HTTP Basic Authentication
             } else if (line.startsWith("Authorization:")) {
                 DavGatewayTray.debug("< Authorization: ********");
+            } else if (line.startsWith("AUTH PLAIN")) {
+                DavGatewayTray.debug("< AUTH PLAIN ********");
             } else {
                 DavGatewayTray.debug("< " + line);
             }
