@@ -166,7 +166,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     final AboutFrame aboutFrame = new AboutFrame();
                     aboutItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
-                            display.asyncExec(
+                            SwingUtilities.invokeLater(
                                     new Runnable() {
                                         public void run() {
                                             aboutFrame.update();
@@ -179,7 +179,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     final SettingsFrame settingsFrame = new SettingsFrame();
                     trayItem.addListener(SWT.DefaultSelection, new Listener() {
                         public void handleEvent(Event event) {
-                            display.asyncExec(
+                            SwingUtilities.invokeLater(
                                     new Runnable() {
                                         public void run() {
                                             settingsFrame.reload();
@@ -196,7 +196,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     defaultItem.setText("Settings...");
                     defaultItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
-                            display.asyncExec(
+                            SwingUtilities.invokeLater(
                                     new Runnable() {
                                         public void run() {
                                             settingsFrame.reload();
@@ -212,7 +212,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     logItem.setText("Show logs...");
                     logItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
-                            display.asyncExec(
+                            SwingUtilities.invokeLater(
                                     new Runnable() {
                                         public void run() {
 
