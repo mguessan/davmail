@@ -1,19 +1,18 @@
 package davmail.tray;
 
-import org.apache.log4j.Priority;
+import davmail.Settings;
+import davmail.ui.AboutFrame;
+import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-
-import davmail.ui.AboutFrame;
-import davmail.ui.SettingsFrame;
-import davmail.Settings;
+import java.awt.event.ActionListener;
 
 /**
  * Failover GUI for Java 1.5 without SWT
@@ -73,26 +72,14 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 if (mainFrame != null) {
-                    TrayIcon.MessageType messageType = null;
                     if (priority == Priority.INFO) {
-                        messageType = TrayIcon.MessageType.INFO;
+                        errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
+                        errorArea.setText(message);
                     } else if (priority == Priority.WARN) {
-                        messageType = TrayIcon.MessageType.WARNING;
+                        errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
+                        errorArea.setText(message);
                     } else if (priority == Priority.ERROR) {
-                        messageType = TrayIcon.MessageType.ERROR;
-                    }
-                    if (messageType != null) {
-                        switch (messageType) {
-                            case ERROR:
-                                errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
-                                break;
-                            case INFO:
-                                errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
-                                break;
-                            case WARNING:
-                                errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
-                                break;
-                        }
+                        errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
                         errorArea.setText(message);
                     } else {
                         messageArea.setText(message);
@@ -118,6 +105,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         } catch (Exception e) {
             DavGatewayTray.warn("Unable to set system look and feel", e);
         }
+        // MacOS
+        if (System.getProperty("mrj.version") != null) {
+            System.setProperty("apple.laf.useScreenMenuBar", "true");
+        }
+
 
         image = DavGatewayTray.loadImage("tray.png");
         image2 = DavGatewayTray.loadImage("tray2.png");
@@ -137,7 +129,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         JPanel errorPanel = new JPanel();
         errorPanel.setBorder(BorderFactory.createTitledBorder("Last message"));
         errorPanel.setLayout(new BoxLayout(errorPanel, BoxLayout.X_AXIS));
-        mainFrame.setMinimumSize(new Dimension(400, 180));
         errorArea = new JTextPane();
         errorArea.setEditable(false);
         errorArea.setBackground(mainFrame.getBackground());
@@ -218,16 +209,23 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         exitItem.addActionListener(exitListener);
         menu.add(exitItem);
 
-        // display settings frame on first start
-        if (Settings.isFirstStart()) {
-            settingsFrame.setVisible(true);
-        }
+        mainFrame.setMinimumSize(new Dimension(400, 180));
         mainFrame.pack();
+        // workaround MacOSX
+        if (mainFrame.getSize().width < 400 || mainFrame.getSize().height < 180) {
+           mainFrame.setSize(Math.max(mainFrame.getSize().width, 400),
+                   Math.max(mainFrame.getSize().height, 180)); 
+        }
         // center frame
         mainFrame.setLocation(mainFrame.getToolkit().getScreenSize().width / 2 -
                 mainFrame.getSize().width / 2,
                 mainFrame.getToolkit().getScreenSize().height / 2 -
                         mainFrame.getSize().height / 2);
         mainFrame.setVisible(true);
+
+        // display settings frame on first start
+        if (Settings.isFirstStart()) {
+            settingsFrame.setVisible(true);
+        }
     }
 }
