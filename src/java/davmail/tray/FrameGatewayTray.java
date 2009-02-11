@@ -1,27 +1,31 @@
 package davmail.tray;
 
-import davmail.Settings;
-import davmail.ui.AboutFrame;
-import davmail.ui.SettingsFrame;
-import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
+import org.apache.log4j.Logger;
 import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
+import davmail.ui.AboutFrame;
+import davmail.ui.SettingsFrame;
+import davmail.Settings;
 
 /**
- * Tray icon handler based on java 1.6
+ * Failover GUI for Java 1.5 without SWT
  */
-public class AwtGatewayTray implements DavGatewayTrayInterface {
-    protected AwtGatewayTray() {
+public class FrameGatewayTray implements DavGatewayTrayInterface {
+    protected FrameGatewayTray() {
     }
 
-    private static TrayIcon trayIcon = null;
+    private static JFrame mainFrame = null;
+    private static JEditorPane errorArea = null;
+    private static JLabel errorLabel = null;
+    private static JEditorPane messageArea = null;
     private static Image image = null;
     private static Image image2 = null;
     private static Image inactiveImage = null;
@@ -35,10 +39,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                if (trayIcon.getImage() == image) {
-                    trayIcon.setImage(image2);
+                if (mainFrame.getIconImage() == image) {
+                    mainFrame.setIconImage(image2);
                 } else {
-                    trayIcon.setImage(image);
+                    mainFrame.setIconImage(image);
                 }
             }
         });
@@ -47,7 +51,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     public void resetIcon() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                trayIcon.setImage(image);
+                mainFrame.setIconImage(image);
             }
         });
     }
@@ -56,7 +60,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         isActive = false;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                trayIcon.setImage(inactiveImage);
+                mainFrame.setIconImage(inactiveImage);
             }
         });
     }
@@ -68,20 +72,32 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     public void displayMessage(final String message, final Priority priority) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-            if (trayIcon != null) {
-                TrayIcon.MessageType messageType = null;
-                if (priority == Priority.INFO) {
-                    messageType = TrayIcon.MessageType.INFO;
-                } else if (priority == Priority.WARN) {
-                    messageType = TrayIcon.MessageType.WARNING;
-                } else if (priority == Priority.ERROR) {
-                    messageType = TrayIcon.MessageType.ERROR;
+                if (mainFrame != null) {
+                    TrayIcon.MessageType messageType = null;
+                    if (priority == Priority.INFO) {
+                        messageType = TrayIcon.MessageType.INFO;
+                    } else if (priority == Priority.WARN) {
+                        messageType = TrayIcon.MessageType.WARNING;
+                    } else if (priority == Priority.ERROR) {
+                        messageType = TrayIcon.MessageType.ERROR;
+                    }
+                    if (messageType != null) {
+                        switch (messageType) {
+                            case ERROR:
+                                errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
+                                break;
+                            case INFO:
+                                errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
+                                break;
+                            case WARNING:
+                                errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
+                                break;
+                        }
+                        errorArea.setText(message);
+                    } else {
+                        messageArea.setText(message);
+                    }
                 }
-                if (messageType != null) {
-                    trayIcon.displayMessage("DavMail gateway", message, messageType);
-                }
-                trayIcon.setToolTip("DavMail gateway \n" + message);
-            }
             }
         });
     }
@@ -94,7 +110,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
-    
 
     protected void createAndShowGUI() {
         // set native look and feel
@@ -104,14 +119,47 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             DavGatewayTray.warn("Unable to set system look and feel", e);
         }
 
-        // get the SystemTray instance
-        SystemTray tray = SystemTray.getSystemTray();
         image = DavGatewayTray.loadImage("tray.png");
         image2 = DavGatewayTray.loadImage("tray2.png");
         inactiveImage = DavGatewayTray.loadImage("trayinactive.png");
 
+        mainFrame = new JFrame();
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setTitle("DavMail Gateway");
+        mainFrame.setIconImage(image);
+
         // create a popup menu
-        PopupMenu popup = new PopupMenu();
+        JMenu menu = new JMenu("DavMail");
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(menu);
+        mainFrame.setJMenuBar(menuBar);
+
+        JPanel errorPanel = new JPanel();
+        errorPanel.setBorder(BorderFactory.createTitledBorder("Last message"));
+        errorPanel.setLayout(new BoxLayout(errorPanel, BoxLayout.X_AXIS));
+        mainFrame.setMinimumSize(new Dimension(400, 180));
+        errorArea = new JTextPane();
+        errorArea.setEditable(false);
+        errorArea.setBackground(mainFrame.getBackground());
+        errorLabel = new JLabel();
+        errorPanel.add(errorLabel);
+        errorPanel.add(errorArea);
+
+        JPanel messagePanel = new JPanel();
+        messagePanel.setBorder(BorderFactory.createTitledBorder("Last log"));
+        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.X_AXIS));
+
+        messageArea = new JTextPane();
+        messageArea.setText("Starting DavMail Gateway...");
+        messageArea.setEditable(false);
+        messageArea.setBackground(mainFrame.getBackground());
+        messagePanel.add(messageArea);
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.add(errorPanel);
+        mainPanel.add(messagePanel);
+        mainFrame.add(mainPanel);
 
         final AboutFrame aboutFrame = new AboutFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
@@ -122,9 +170,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        MenuItem aboutItem = new MenuItem("About...");
+        JMenuItem aboutItem = new JMenuItem("About...");
         aboutItem.addActionListener(aboutListener);
-        popup.add(aboutItem);
+        menu.add(aboutItem);
 
         final SettingsFrame settingsFrame = new SettingsFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
@@ -135,11 +183,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        MenuItem defaultItem = new MenuItem("Settings...");
+        JMenuItem defaultItem = new JMenuItem("Settings...");
         defaultItem.addActionListener(settingsListener);
-        popup.add(defaultItem);
+        menu.add(defaultItem);
 
-        MenuItem logItem = new MenuItem("Show logs...");
+        JMenuItem logItem = new JMenuItem("Show logs...");
         logItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 Logger rootLogger = Logger.getRootLogger();
@@ -156,37 +204,30 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 lf5Appender.getLogBrokerMonitor().show();
             }
         });
-        popup.add(logItem);
+        menu.add(logItem);
 
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                SystemTray.getSystemTray().remove(trayIcon);
                 //noinspection CallToSystemExit
                 System.exit(0);
             }
         };
         // create menu item for the exit action
-        MenuItem exitItem = new MenuItem("Exit");
+        JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(exitListener);
-        popup.add(exitItem);
-
-        /// ... add other items
-        // construct a TrayIcon
-        trayIcon = new TrayIcon(image, "DavMail Gateway", popup);
-        // set the TrayIcon properties
-        trayIcon.addActionListener(settingsListener);
-        // ...
-        // add the tray image
-        try {
-            tray.add(trayIcon);
-        } catch (AWTException e) {
-            DavGatewayTray.warn("Unable to create tray", e);
-        }
+        menu.add(exitItem);
 
         // display settings frame on first start
         if (Settings.isFirstStart()) {
             settingsFrame.setVisible(true);
         }
+        mainFrame.pack();
+        // center frame
+        mainFrame.setLocation(mainFrame.getToolkit().getScreenSize().width / 2 -
+                mainFrame.getSize().width / 2,
+                mainFrame.getToolkit().getScreenSize().height / 2 -
+                        mainFrame.getSize().height / 2);
+        mainFrame.setVisible(true);
     }
 }

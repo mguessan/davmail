@@ -140,7 +140,8 @@ public class DavGatewayTray {
                 }
             }
             if (davGatewayTray == null) {
-                DavGatewayTray.warn("No system tray support found (tried SWT and native java)");
+                davGatewayTray = new FrameGatewayTray();
+                davGatewayTray.init();
             }
         }
     }
