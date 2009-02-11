@@ -1,7 +1,7 @@
 package davmail.ui;
 
-import davmail.tray.DavGatewayTray;
 import davmail.DavGateway;
+import davmail.tray.DavGatewayTray;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -13,8 +13,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.URL;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
  * About frame
@@ -40,9 +40,13 @@ public class AboutFrame extends JFrame {
             DavGatewayTray.error("Unable to create icon", e);
         }
 
-        jEditorPane = new JEditorPane("text/html", getContent());
-        StyleSheet stylesheet = ((HTMLEditorKit) jEditorPane.getEditorKit()).getStyleSheet();
+        jEditorPane = new JEditorPane();
+        HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
+        StyleSheet stylesheet = htmlEditorKit.getStyleSheet();
         stylesheet.addRule("body { font-size:small;font-family: " + jEditorPane.getFont().getFamily() + "}");
+        jEditorPane.setEditorKit(htmlEditorKit);
+        jEditorPane.setContentType("text/html");
+	    jEditorPane.setText(getContent());
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
