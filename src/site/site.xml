@@ -7,6 +7,10 @@
         <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=2</src>
         <href>http://sf.net</href>
     </bannerLeft>
+    <poweredBy>
+        <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"
+              img="https://sourceforge.net/images/project-support.jpg"/>
+    </poweredBy>
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-default-skin</artifactId>
