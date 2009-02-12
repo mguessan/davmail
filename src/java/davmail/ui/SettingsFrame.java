@@ -239,6 +239,11 @@ public class SettingsFrame extends JFrame {
         httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
         wireLoggingLevelField = new JComboBox(LOG_LEVELS);
 
+        rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
+        davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
+        httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
+
         addSettingComponent(loggingSettingsPanel, "Default: ", rootLoggingLevelField);
         addSettingComponent(loggingSettingsPanel, "DavMail: ", davmailLoggingLevelField);
         addSettingComponent(loggingSettingsPanel, "HttpClient: ", httpclientLoggingLevelField);
