@@ -1329,9 +1329,14 @@ public class ExchangeSession {
     }
 
 
+    public class EventResult {
+        public int status;
+        public String etag;
+    }
+
     public int sendEvent(String icsBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(draftsUrl + "/" + UUID.randomUUID().toString() + ".EML");
-        int status = internalCreateOrUpdateEvent(messageUrl, icsBody, null, null);
+        int status = internalCreateOrUpdateEvent(messageUrl, icsBody, null, null).status;
         if (status != HttpStatus.SC_CREATED) {
             return status;
         } else {
@@ -1344,12 +1349,12 @@ public class ExchangeSession {
         }
     }
 
-    public int createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
+    public EventResult createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
         return internalCreateOrUpdateEvent(messageUrl, icsBody, etag, noneMatch);
     }
 
-    protected int internalCreateOrUpdateEvent(String messageUrl, String icsBody, String etag, String noneMatch) throws IOException {
+    protected EventResult internalCreateOrUpdateEvent(String messageUrl, String icsBody, String etag, String noneMatch) throws IOException {
         String uid = UUID.randomUUID().toString();
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
@@ -1391,7 +1396,12 @@ public class ExchangeSession {
         } finally {
             putmethod.releaseConnection();
         }
-        return status;
+        EventResult eventResult = new EventResult();
+        eventResult.status = status;
+        if (putmethod.getResponseHeader("GetETag") != null) {
+        eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+        }
+        return eventResult;
     }
 
 

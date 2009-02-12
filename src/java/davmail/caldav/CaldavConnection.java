@@ -62,11 +62,20 @@ public class CaldavConnection extends AbstractConnection {
                 throw new IOException("Invalid content length: " + contentLength);
             }
             char[] buffer = new char[size];
-            int actualSize = in.read(buffer);
-            if (actualSize < 0) {
-                throw new IOException("End of stream reached reading content");
+            StringBuilder builder = new StringBuilder();
+                int actualSize = in.read(buffer);
+                builder.append(buffer, 0, actualSize);
+                if (actualSize < 0) {
+                    throw new IOException("End of stream reached reading content");
+                }
+            // dirty hack to ensure full content read
+            // TODO : replace with a dedicated reader
+            while (builder.toString().getBytes("UTF-8").length < size) {
+                actualSize = in.read(buffer);
+                builder.append(buffer, 0, actualSize);
             }
-            return new String(buffer, 0, actualSize);
+                    
+            return builder.toString();
         }
     }
 
@@ -105,6 +114,8 @@ public class CaldavConnection extends AbstractConnection {
                         String path = tokens.nextToken();
                         String content = getContent(headers.get("content-length"));
                         setSocketTimeout(headers.get("keep-alive"));
+                        // client requested connection close
+                        closed = "close".equals(headers.get("connection"));
                         if ("OPTIONS".equals(command)) {
                             sendOptions();
                         } else if (!headers.containsKey("authorization")) {
@@ -209,8 +220,8 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
             sendOutbox(request, paths[2]);
         } else if ("POST".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
-            if (body.indexOf("VFREEBUSY") >=0) {
-               sendFreeBusy(body);
+            if (body.indexOf("VFREEBUSY") >= 0) {
+                sendFreeBusy(body);
             } else {
                 int status = session.sendEvent(body);
                 sendHttpResponse(status, true);
@@ -226,9 +237,15 @@ public class CaldavConnection extends AbstractConnection {
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
             String etag = headers.get("if-match");
-            String noneMatch = headers.get("if-none-match"); 
-            int status = session.createOrUpdateEvent(paths[4], body, etag, noneMatch);
-            sendHttpResponse(status, true);
+            String noneMatch = headers.get("if-none-match");
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[4], body, etag, noneMatch);
+            if (eventResult.etag != null) {
+                HashMap<String, String> responseHeaders = new HashMap<String, String>();
+                responseHeaders.put("GetETag", eventResult.etag);
+                sendHttpResponse(eventResult.status, responseHeaders, "text/html", "", true);
+            } else {
+                sendHttpResponse(eventResult.status, true);
+            }
 
         } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
@@ -417,7 +434,7 @@ public class CaldavConnection extends AbstractConnection {
         if (depth == 1) {
             DavGatewayTray.debug("Searching calendar events...");
             List<ExchangeSession.Event> events = session.getAllEvents();
-            DavGatewayTray.debug("Found "+events.size()+" calendar events");
+            DavGatewayTray.debug("Found " + events.size() + " calendar events");
             appendEventsResponses(buffer, request, events);
         }
         buffer.append("</D:multistatus>");
@@ -441,7 +458,7 @@ public class CaldavConnection extends AbstractConnection {
             int count = 0;
             int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {
-                DavGatewayTray.debug("Report event "+(++count)+"/"+total);
+                DavGatewayTray.debug("Report event " + (++count) + "/" + total);
                 try {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
@@ -586,20 +603,20 @@ public class CaldavConnection extends AbstractConnection {
         String line;
         String key;
         while ((line = reader.readLine()) != null) {
-                int index = line.indexOf(':');
-                if (index <= 0) {
-                    throw new IOException("Invalid request: " + body);
-                }
-                String fullkey = line.substring(0, index);
-                String value = line.substring(index + 1);
-                int semicolonIndex = fullkey.indexOf(";");
-                if (semicolonIndex > 0) {
-                    key = fullkey.substring(0, semicolonIndex);
-                } else {
-                    key = fullkey;
-                }
-                valueMap.put(key, value);
-                keyMap.put(key, fullkey);
+            int index = line.indexOf(':');
+            if (index <= 0) {
+                throw new IOException("Invalid request: " + body);
+            }
+            String fullkey = line.substring(0, index);
+            String value = line.substring(index + 1);
+            int semicolonIndex = fullkey.indexOf(";");
+            if (semicolonIndex > 0) {
+                key = fullkey.substring(0, semicolonIndex);
+            } else {
+                key = fullkey;
+            }
+            valueMap.put(key, value);
+            keyMap.put(key, fullkey);
         }
         String freeBusy = session.getFreebusy(valueMap);
         if (freeBusy != null) {
@@ -690,8 +707,8 @@ public class CaldavConnection extends AbstractConnection {
         if (contentType != null) {
             sendClient("Content-Type: " + contentType);
         }
-        sendClient("Connection: " + (keepAlive ? "keep-alive" : "close"));
-        closed = !keepAlive;
+        closed = closed || !keepAlive;
+        sendClient("Connection: " + (closed ? "close" : "keep-alive"));
         if (content != null && content.length() > 0) {
             sendClient("Content-Length: " + content.getBytes("UTF-8").length);
         } else {
