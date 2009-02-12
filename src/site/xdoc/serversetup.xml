@@ -3,7 +3,7 @@
 <document>
 
     <properties>
-        <title>DavMail POP/SMTP/Caldav Exchange Gateway - Server setup</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - Server setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
@@ -19,7 +19,7 @@
                 currently the only way to run DavMail on MacOS X due to poor Java support
                 (no Java 6 yet).
                 This mode was tested successfully with the Iphone and should work with
-                any phone with POP/SMTP client.
+                any phone with POP/IMAP/SMTP/LDAP/Caldav client.
             </p>
 
             <p>Download the generic DavMail package from Sourceforge and uncompress it with
