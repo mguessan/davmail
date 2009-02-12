@@ -697,7 +697,6 @@ public class CaldavConnection extends AbstractConnection {
     public void sendOptions() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Allow", "OPTIONS, GET, PROPFIND, PUT, POST");
-        headers.put("DAV", "1, 2, 3, access-control, calendar-access, ticket, calendar-schedule");
         sendHttpResponse(HttpStatus.SC_OK, headers, null, null, true);
     }
 
@@ -714,6 +713,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + " " + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
+        sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         sendClient("Date: " + formatter.format(new java.util.Date()));
         if (headers != null) {
