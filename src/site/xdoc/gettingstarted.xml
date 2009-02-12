@@ -36,6 +36,11 @@
                         <td>110</td>
                     </tr>
                     <tr>
+                        <td>Local IMAP port</td>
+                        <td>Local IMAP server port to configure in IMAP client</td>
+                        <td>143</td>
+                    </tr>
+                    <tr>
                         <td>Local SMTP port</td>
                         <td>Local SMTP server port to configure in POP client</td>
                         <td>25</td>
@@ -73,7 +78,7 @@
                      <tr>
                         <td>Bind Address</td>
                         <td>Bind only to the specified network address</td>
-                        <td>false</td>
+                        <td>10.0.1.2</td>
                     </tr>
                     <tr>
                         <td>Server certificate hash</td>
@@ -93,7 +98,8 @@
                     </tr>
                 </table>
             </p>
-            <p>The bottom panel can be activated to set an HTTP proxy and associated credentials if needed</p>
+            <p>Uncheck a port to disable matching service.</p>
+            <p>Activate panel under Proxy tab to set an HTTP proxy and associated credentials if needed</p>
             <p>Proceeed to <a href="thunderbirdmailsetup.html">Thunderbird mail setup</a></p>
         </section>
 

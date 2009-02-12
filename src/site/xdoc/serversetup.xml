@@ -30,6 +30,7 @@
             <source>
 davmail.url=http://exchangeServer/exchange/
 davmail.popPort=1110
+davmail.imapPort=1143
 davmail.smtpPort=1025
 davmail.keepDelay=30
 davmail.sentKeepDelay=90
@@ -55,6 +56,7 @@ log4j.logger.httpclient.wire=WARN
                 the options. Make sure davmail.server is set to true (no icon tray) and allow
                 remote connections: davmail.allowRemote=true.
             </p>
+            <p>To disable a service, set an empty port value.</p>
             <p>Launch Davmail with the following command:
                 <source>nohup davmail.sh davmail.properties &amp;</source>.
             </p>

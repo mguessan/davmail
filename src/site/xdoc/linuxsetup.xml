@@ -10,36 +10,48 @@
     <body>
 
         <section name="DavMail Setup on linux">
-            <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
-                Java 1.5.
-            </p>
+            <section name="Debian package">
+                <p>Download current debian package from Sourceforge, double click on it
+                    to launch package installer.
+                </p>
+                <p>
+                    Select Install Package, installer will automatically download and
+                    install sun-java6-bin and the appropriate swt package. After installation,
+                    DavMail is available in the Applications menu.
+                </p>
+            </section>
+            <section name="Manual setup">
+                <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
+                    Java 1.5.
+                </p>
 
-            <p>You should first download and install Java, with the graphical package manager or through
-                command line.
-            </p>
-            <p>Under Ubuntu, launch System/Administration/Synaptic Package Manager, quick search
-                sun-java6-bin, mark for installation and click Apply
-            </p>
-            <p>Or use the following command:</p>
-            <code>sudo apt-get install sun-java6-bin</code>
+                <p>You should first download and install Java, with the graphical package manager or through
+                    command line.
+                </p>
+                <p>Under Ubuntu, launch System/Administration/Synaptic Package Manager, quick search
+                    sun-java6-bin, mark for installation and click Apply
+                </p>
+                <p>Or use the following command:</p>
+                <code>sudo apt-get install sun-java6-bin</code>
 
-            <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
-                your favorite tool. The standard package will run natively on x86, to use DavMail
-                on any other hardware platform, replace the SWT with the right one from
-                <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>
-                or use the platform independent package. Sorry, no deb or rpm package yet !
-            </p>
-            <p>On Ubuntu and other Gnome or Kde distributions, just use the desktop launcher.
-                On other distributions, try
-                <code>davmail.sh</code>.
-                You should now see the DavMail gateway icon in the tray :
-            </p>
-            <div style="width: 100%;text-align: center">
-                <img align="center" src="images/ubuntutray.png"/>
-            </div>
-            <p>Adjust DavMail settings :
-                <a href="gettingstarted.html">Getting started</a>
-            </p>
+                <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
+                    your favorite tool. The standard package will run natively on x86, to use DavMail
+                    on any other hardware platform, replace the SWT with the right one from
+                    <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>
+                    or use the platform independent package.
+                </p>
+                <p>On Ubuntu and other Gnome or Kde distributions, just use the desktop launcher.
+                    On other distributions, try
+                    <code>davmail.sh</code>.
+                    You should now see the DavMail gateway icon in the tray :
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img align="center" src="images/ubuntutray.png"/>
+                </div>
+                <p>Adjust DavMail settings :
+                    <a href="gettingstarted.html">Getting started</a>
+                </p>
+            </section>
         </section>
 
     </body>
