@@ -1102,6 +1102,11 @@ public class ExchangeSession {
         public int compareTo(Object message) {
             return (int) (getUidAsLong() - ((Message) message).getUidAsLong());
         }
+
+        @Override
+        public boolean equals(Object message) {
+            return message instanceof Message && getUidAsLong() == ((Message) message).getUidAsLong();
+        }
     }
 
     public class MessageList extends ArrayList<Message> {
