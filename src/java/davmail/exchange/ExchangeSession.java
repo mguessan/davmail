@@ -752,7 +752,7 @@ public class ExchangeSession {
         boolean inHeader = true;
         boolean inRecipientHeader = false;
         while (!".".equals(line)) {
-            mailBuffer.append(line).append((char)13).append((char)10);
+            mailBuffer.append(line).append((char) 13).append((char) 10);
             line = reader.readLine();
 
             if (inHeader && line.length() == 0) {
@@ -777,7 +777,7 @@ public class ExchangeSession {
             }
             // patch thunderbird html in reply for correct outlook display
             if (line != null && line.startsWith("<head>")) {
-                mailBuffer.append(line).append((char)13).append((char)10);
+                mailBuffer.append(line).append((char) 13).append((char) 10);
                 line = "  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
             }
         }
@@ -1336,7 +1336,7 @@ public class ExchangeSession {
 
     public int sendEvent(String icsBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(draftsUrl + "/" + UUID.randomUUID().toString() + ".EML");
-        int status = internalCreateOrUpdateEvent(messageUrl, icsBody, null, null).status;
+        int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
         if (status != HttpStatus.SC_CREATED) {
             return status;
         } else {
@@ -1351,10 +1351,61 @@ public class ExchangeSession {
 
     public EventResult createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
-        return internalCreateOrUpdateEvent(messageUrl, icsBody, etag, noneMatch);
+        return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
-    protected EventResult internalCreateOrUpdateEvent(String messageUrl, String icsBody, String etag, String noneMatch) throws IOException {
+    protected String getICSMethod(String icsBody) throws IOException {
+        int methodIndex = icsBody.indexOf("METHOD:");
+        if (methodIndex < 0) {
+            return "REQUEST";
+        }
+        int startIndex = methodIndex + "METHOD:".length();
+        int endIndex = icsBody.indexOf("\r", startIndex);
+        if (endIndex < 0) {
+            return "REQUEST";
+        }
+        return icsBody.substring(startIndex, endIndex);
+    }
+
+    protected String getRecipients(String icsBody) throws IOException {
+        StringBuilder recipients = new StringBuilder();
+        BufferedReader reader = null;
+        try {
+            reader = new ICSBufferedReader(new StringReader(icsBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int index = line.indexOf(':');
+                if (index >= 0) {
+                    String key = line.substring(0, index);
+                    String value = line.substring(index + 1);
+                    int semiColon = key.indexOf(';');
+                    if (semiColon >= 0) {
+                        key = key.substring(0, semiColon);
+                    }
+                    if ("ATTENDEE".equals(key)) {
+                        int colonIndex = value.indexOf(':');
+                        if (colonIndex >= 0) {
+                            value = value.substring(colonIndex + 1);
+                        }
+                        // exclude current user from recipients
+                        if (!email.equalsIgnoreCase(value)) {
+                            if (recipients.length() > 0) {
+                                recipients.append(", ");
+                            }
+                            recipients.append(value);
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return recipients.toString();
+    }
+
+    protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         String uid = UUID.randomUUID().toString();
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
@@ -1366,23 +1417,28 @@ public class ExchangeSession {
             putmethod.setRequestHeader("If-None-Match", noneMatch);
         }
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        String method = getICSMethod(icsBody);
         StringBuilder body = new StringBuilder();
-        body.append("Content-Transfer-Encoding: 7bit\n" +
-                "Content-class: urn:content-classes:appointment\n" +
-                "MIME-Version: 1.0\n" +
-                "Content-Type: multipart/alternative;\n" +
-                "\tboundary=\"----=_NextPart_").append(uid).append("\"\n" +
-                "\n" +
-                "This is a multi-part message in MIME format.\n" +
-                "\n" +
-                "------=_NextPart_").append(uid).append("\n" +
-                "Content-class: urn:content-classes:appointment\n" +
-                "Content-Type: text/calendar;\n" +
-                "\tmethod=REQUEST;\n" +
-                "\tcharset=\"utf-8\"\n" +
-                "Content-Transfer-Encoding: 8bit\n\n");
+        body.append("Content-Transfer-Encoding: 7bit\r\n" +
+                "Content-class: ").append(contentClass).append("\r\n");
+        if ("urn:content-classes:calendarmessage".equals(contentClass)) {
+            // need to parse attendees to build recipients
+            body.append("To: ").append(getRecipients(icsBody)).append("\r\n");
+        }
+        body.append("MIME-Version: 1.0\r\n" +
+                "Content-Type: multipart/alternative;\r\n" +
+                "\tboundary=\"----=_NextPart_").append(uid).append("\"\r\n" +
+                "\r\n" +
+                "This is a multi-part message in MIME format.\r\n" +
+                "\r\n" +
+                "------=_NextPart_").append(uid).append("\r\n" +
+                "Content-class: ").append(contentClass).append("\r\n" +
+                "Content-Type: text/calendar;\r\n" +
+                "\tmethod=").append(method).append(";\r\n" +
+                "\tcharset=\"utf-8\"\r\n" +
+                "Content-Transfer-Encoding: 8bit\r\n\r\n");
         body.append(new String(fixICS(icsBody, false).getBytes("UTF-8"), "ISO-8859-1"));
-        body.append("------=_NextPart_").append(uid).append("--\n");
+        body.append("------=_NextPart_").append(uid).append("--\r\n");
         putmethod.setRequestBody(body.toString());
         int status;
         try {
@@ -1399,7 +1455,7 @@ public class ExchangeSession {
         EventResult eventResult = new EventResult();
         eventResult.status = status;
         if (putmethod.getResponseHeader("GetETag") != null) {
-        eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+            eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
         }
         return eventResult;
     }
@@ -1603,12 +1659,11 @@ public class ExchangeSession {
         }
     }
 
-    public String getFreebusy(Map<String, String> valueMap) throws IOException {
+    public String getFreebusy(String attendee, Map<String, String> valueMap) throws IOException {
         String result = null;
 
         String startDateValue = valueMap.get("DTSTART");
         String endDateValue = valueMap.get("DTEND");
-        String attendee = valueMap.get("ATTENDEE");
         if (attendee.startsWith("mailto:")) {
             attendee = attendee.substring("mailto:".length());
         }
