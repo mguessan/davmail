@@ -1254,6 +1254,11 @@ public class ExchangeSession {
             boolean hasCdoAllDay = false;
             boolean isCdoAllDay = false;
         }
+        // Convert event class from and to iCal
+        // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
+        boolean isAppleiCal = false;
+        String eventClass = null;
+
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
         AllDayState currentAllDayState = new AllDayState();
         BufferedReader reader = null;
@@ -1273,6 +1278,12 @@ public class ExchangeSession {
                     } else if ("END:VEVENT".equals(line)) {
                         allDayStates.add(currentAllDayState);
                         currentAllDayState = new AllDayState();
+                    } else if ("PRODID".equals(key) && line.contains("iCal")) {
+                        isAppleiCal = true;
+                    } else if (isAppleiCal && "X-CALENDARSERVER-ACCESS".equals(key)) {
+                        eventClass = value;
+                    } else if (!isAppleiCal && "CLASS".equals(key)) {
+                        eventClass = value;
                     }
                 }
             }
@@ -1287,6 +1298,7 @@ public class ExchangeSession {
         try {
             reader = new ICSBufferedReader(new StringReader(icsBody));
             String line;
+
             while ((line = reader.readLine()) != null) {
                 if (currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
@@ -1300,6 +1312,18 @@ public class ExchangeSession {
                     line = getAllDayLine(line);
                 } else if ("BEGIN:VEVENT".equals(line)) {
                     currentAllDayState = allDayStates.get(count++);
+                } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
+                    if (!isAppleiCal) {
+                        continue;
+                    } else {
+                        result.writeLine("CLASS:" + eventClass);
+                    }
+                } else if (line.startsWith("CLASS:")) {
+                    if (isAppleiCal) {
+                        continue;
+                    } else {
+                        result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
+                    }
                 }
                 result.writeLine(line);
             }
@@ -1428,7 +1452,11 @@ public class ExchangeSession {
                 "Content-class: ").append(contentClass).append("\r\n");
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
             // need to parse attendees to build recipients
-            body.append("To: ").append(getRecipients(icsBody)).append("\r\n");
+            String recipients = getRecipients(icsBody);
+            if (recipients.length() == 0) {
+                throw new IOException("Invalid notification: no recipient found");
+            }
+            body.append("To: ").append(recipients).append("\r\n");
         }
         body.append("MIME-Version: 1.0\r\n" +
                 "Content-Type: multipart/alternative;\r\n" +
