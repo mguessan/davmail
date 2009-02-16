@@ -1397,7 +1397,8 @@ public class ExchangeSession {
     }
 
     protected String getRecipients(String icsBody) throws IOException {
-        StringBuilder recipients = new StringBuilder();
+        HashSet<String> recipients = new HashSet<String>();
+        String organizer = null;
         BufferedReader reader = null;
         try {
             reader = new ICSBufferedReader(new StringReader(icsBody));
@@ -1411,17 +1412,16 @@ public class ExchangeSession {
                     if (semiColon >= 0) {
                         key = key.substring(0, semiColon);
                     }
-                    if ("ATTENDEE".equals(key)) {
+                    if ("ORGANIZER".equals(key) || "ATTENDEE".equals(key)) {
                         int colonIndex = value.indexOf(':');
                         if (colonIndex >= 0) {
                             value = value.substring(colonIndex + 1);
                         }
-                        // exclude current user from recipients
-                        if (!email.equalsIgnoreCase(value)) {
-                            if (recipients.length() > 0) {
-                                recipients.append(", ");
-                            }
-                            recipients.append(value);
+                        if ("ORGANIZER".equals(key)) {
+                            organizer = value;
+                            // exclude current user from recipients
+                        } else if (!email.equalsIgnoreCase(value)) {
+                            recipients.add(value);
                         }
                     }
                 }
@@ -1431,7 +1431,21 @@ public class ExchangeSession {
                 reader.close();
             }
         }
-        return recipients.toString();
+        StringBuilder result = new StringBuilder();
+        if (email.equalsIgnoreCase(organizer)) {
+            // current user is organizer => notify all
+            for (String recipient : recipients) {
+                if (result.length() > 0) {
+                    result.append(", ");
+                }
+                result.append(recipient);
+            }
+        } else {
+            // notify only organizer
+            result.append(organizer);
+        }
+
+        return result.toString();
     }
 
     protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
