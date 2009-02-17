@@ -36,39 +36,9 @@ public class AcceptCertificateDialog extends JDialog {
         panel.add(fieldPanel);
     }
 
-    protected String getRDN(Principal principal) {
-        String dn = principal.getName();
-        int start = dn.indexOf('=');
-        int end = dn.indexOf(',');
-        if (start >= 0 && end >= 0) {
-            return dn.substring(start + 1, end);
-        } else {
-            return dn;
-        }
-    }
-
-    public String getFormattedSerial(X509Certificate certificate) {
-        StringBuilder builder = new StringBuilder();
-        String serial = certificate.getSerialNumber().toString(16);
-        for (int i = 0; i < serial.length(); i++) {
-            if (i > 0 && i % 2 == 0) {
-                builder.append(' ');
-            }
-            builder.append(serial.charAt(i));
-        }
-        return builder.toString().toUpperCase();
-    }
-
     public AcceptCertificateDialog(X509Certificate certificate) {
         setAlwaysOnTop(true);
-        String sha1Hash;
-        try {
-            sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
-        } catch (NoSuchAlgorithmException nsa) {
-            sha1Hash = nsa.getMessage();
-        } catch (CertificateEncodingException cee) {
-            sha1Hash = cee.getMessage();
-        }
+        String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
 
         setTitle("DavMail: Accept certificate ?");
@@ -81,8 +51,8 @@ public class AcceptCertificateDialog extends JDialog {
         JPanel subjectPanel = new JPanel();
         subjectPanel.setLayout(new BoxLayout(subjectPanel, BoxLayout.Y_AXIS));
         subjectPanel.setBorder(BorderFactory.createTitledBorder("Server Certificate"));
-        addFieldValue(subjectPanel, "Issued to", getRDN(certificate.getSubjectDN()));
-        addFieldValue(subjectPanel, "Issued by", getRDN(certificate.getIssuerDN()));
+        addFieldValue(subjectPanel, "Issued to", DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN()));
+        addFieldValue(subjectPanel, "Issued by", DavGatewayX509TrustManager.getRDN(certificate.getIssuerDN()));
         Date now = new Date();
         String notBefore = formatter.format(certificate.getNotBefore());
         if (now.before(certificate.getNotBefore())) {
@@ -94,7 +64,7 @@ public class AcceptCertificateDialog extends JDialog {
            notAfter = "<html><font color=\"#FF0000\">"+notAfter+"</font></html>";
         }
         addFieldValue(subjectPanel, "Valid until", notAfter);
-        addFieldValue(subjectPanel, "Serial", getFormattedSerial(certificate));
+        addFieldValue(subjectPanel, "Serial", DavGatewayX509TrustManager.getFormattedSerial(certificate));
         addFieldValue(subjectPanel, "FingerPrint", sha1Hash);
 
         JPanel warningPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
