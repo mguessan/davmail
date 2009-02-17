@@ -17,6 +17,7 @@ import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.util.*;
 import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -48,21 +49,7 @@ public class ImapConnection extends AbstractConnection {
                     break;
                 }
 
-                tokens = new StringTokenizer(line) {
-                    public String nextToken() {
-                        StringBuilder nextToken = new StringBuilder();
-                        nextToken.append(super.nextToken());
-                        while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '"'
-                                && nextToken.charAt(nextToken.length() - 1) != '"') {
-                            nextToken.append(' ').append(super.nextToken());
-                        }
-                        while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '('
-                                && nextToken.charAt(nextToken.length() - 1) != ')') {
-                            nextToken.append(' ').append(super.nextToken());
-                        }
-                        return removeQuotes(nextToken.toString());
-                    }
-                };
+                tokens = new IMAPTokenizer(line);
                 if (tokens.hasMoreTokens()) {
                     commandId = tokens.nextToken();
                     if (tokens.hasMoreTokens()) {
@@ -240,21 +227,38 @@ public class ImapConnection extends AbstractConnection {
                                             }
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
-                                            // only create check search
-                                            String messageId = null;
-                                            long messageUid = 0;
+                                            StringBuilder conditions = new StringBuilder();
+                                            boolean undeleted = true;
+
                                             while (tokens.hasMoreTokens()) {
-                                                messageId = tokens.nextToken();
-                                            }
-                                            // reload messages
-                                            messages = session.getAllMessages(currentFolder.folderName);
-                                            for (ExchangeSession.Message message : messages) {
-                                                if (messageId.equals(message.messageId)) {
-                                                    messageUid = message.getUidAsLong();
+                                                String token = tokens.nextToken();
+                                                if ("UNDELETED".equals(token)) {
+                                                    undeleted = true;
+                                                } else if (token.startsWith("OR ")) {
+                                                    conditions.append(" AND (");
+                                                    IMAPTokenizer innerTokens = new IMAPTokenizer(token);
+                                                    innerTokens.nextToken();
+                                                    boolean first = true;
+                                                    while (innerTokens.hasMoreTokens()) {
+                                                        String innerToken = innerTokens.nextToken();
+                                                        if (!first) {
+                                                            conditions.append(" OR ");
+                                                        }
+                                                        first = false;
+                                                        appendSearchParam(innerTokens, innerToken, conditions);
+                                                    }
+                                                    conditions.append(")");
+                                                } else {
+                                                    conditions.append(" AND ");
+                                                    appendSearchParam(tokens, token, conditions);
                                                 }
                                             }
-                                            if (messageUid > 0) {
-                                                sendClient("* SEARCH " + messageUid);
+
+                                            messages = session.searchMessages(currentFolder.folderName, conditions.toString());
+                                            for (ExchangeSession.Message message : messages) {
+                                                if ((undeleted && !message.deleted) || !undeleted) {
+                                                    sendClient("* SEARCH " + message.getUidAsLong());
+                                                }
                                             }
                                             sendClient(commandId + " OK SEARCH completed");
 
@@ -425,6 +429,45 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    private void appendSearchParam(StringTokenizer tokens, String token, StringBuilder conditions) throws IOException {
+        if ("NOT".equals(token)) {
+            conditions.append(" NOT ");
+            appendSearchParam(tokens, tokens.nextToken(), conditions);
+        } else if ("SUBJECT".equals(token)) {
+            conditions.append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("BODY".equals(token)) {
+            conditions.append("\"http://schemas.microsoft.com/mapi/proptag/x01000001E\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("FROM".equals(token)) {
+            conditions.append("\"urn:schemas:mailheader:from\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("SENTON".equals(token)) {
+            SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+            parser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+            try {
+                Date startDate = parser.parse(tokens.nextToken());
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(startDate);
+                calendar.add(Calendar.DAY_OF_MONTH, 1);
+                conditions.append("(\"urn:schemas:httpmail:date\" &gt; '")
+                        .append(dateFormatter.format(startDate))
+                        .append("' AND \"urn:schemas:httpmail:date\" &lt; '")
+                        .append(dateFormatter.format(calendar.getTime()))
+                        .append("')");
+            } catch (ParseException e) {
+                throw new IOException("Invalid search parameters");
+            }
+
+        } else if ("HEADER".equals(token)) {
+            String headerName = tokens.nextToken();
+            if ("Message-ID".equalsIgnoreCase(headerName)) {
+                conditions.append("\"urn:schemas:mailheader:message-id\"='").append(tokens.nextToken()).append("'");
+            }
+        } else {
+            throw new IOException("Invalid search parameters");
+        }
     }
 
     protected void expunge() throws IOException {
@@ -627,4 +670,26 @@ public class ImapConnection extends AbstractConnection {
             throw new UnsupportedOperationException();
         }
     }
+
+    class IMAPTokenizer extends StringTokenizer {
+        public IMAPTokenizer(String value) {
+            super(value);
+        }
+
+        @Override
+        public String nextToken() {
+            StringBuilder nextToken = new StringBuilder();
+            nextToken.append(super.nextToken());
+            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '"'
+                    && nextToken.charAt(nextToken.length() - 1) != '"') {
+                nextToken.append(' ').append(super.nextToken());
+            }
+            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '('
+                    && nextToken.charAt(nextToken.length() - 1) != ')') {
+                nextToken.append(' ').append(super.nextToken());
+            }
+            return removeQuotes(nextToken.toString());
+        }
+    }
+
 }

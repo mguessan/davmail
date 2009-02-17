@@ -619,6 +619,9 @@ public class ExchangeSession {
     }
 
     public MessageList getAllMessages(String folderName) throws IOException {
+        return searchMessages(folderName, "");
+    }
+    public MessageList searchMessages(String folderName, String conditions) throws IOException {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
@@ -627,6 +630,7 @@ public class ExchangeSession {
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
+                conditions+
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
