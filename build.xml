@@ -44,18 +44,61 @@
         </nsis>
     </target>
 
+    <target name="dist-osx">
+        <taskdef name="jarbundler"
+                 classname="net.sourceforge.jarbundler.JarBundler">
+            <classpath location="lib/jarbundler-2.1.0.jar"/>
+        </taskdef>
+        <!-- Fake JavaApplicationStub, replaced with a link to
+         /System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub-->
+        <touch file="dist/JavaApplicationStub"/>
+        <jarbundler dir="dist"
+                    shortname="DavMail"
+                    name="DavMail"
+                    mainclass="davmail.DavGateway"
+                    build="$(version)"
+                    icon="src/osx/tray.icns"
+                    infostring="DavMail Gateway $(version)"
+                    jvmversion="1.5+"
+                    version="$(version)"
+                    vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
+                    stubfile="dist/JavaApplicationStub">
+            <jarfileset dir="dist/lib">
+                <include name="*.jar"/>
+                <exclude name="swt*.jar"/>
+            </jarfileset>
+            <jarfileset dir="dist">
+                <include name="*.jar"/>
+            </jarfileset>
+        </jarbundler>
+        <delete file="dist/DavMail.app/Contents/MacOS/JavaApplicationStub"/>
+        <symlink link="dist/DavMail.app/Contents/MacOS/JavaApplicationStub"
+                 resource="/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub"/>
+        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+            <arg value="create"/>
+            <arg value="-srcfolder"/>
+            <arg value="dist/DavMail.app"/>
+            <arg value="SWTHello.dmg"/>
+        </exec>
+        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+            <arg value="internet-enable"/>
+            <arg value="-yes"/>
+            <arg value="SWTHello.dmg"/>
+        </exec>
+    </target>
+
     <target name="dist-deb">
         <taskdef resource="ant_deb_task.properties">
             <classpath location="lib/ant-deb-0.0.1.jar"/>
         </taskdef>
         <desktopentry
-            toFile="dist/davmail.desktop"
-            name="DavMail"
-            comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
-            exec="davmail"
-            icon="/usr/share/davmail/davmail.png"
-            categories="Office;Email;Network;Calendar;ContactManagement"
-        />
+                toFile="dist/davmail.desktop"
+                name="DavMail"
+                comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
+                exec="davmail"
+                icon="/usr/share/davmail/davmail.png"
+                categories="Office;Email;Network;Calendar;ContactManagement"
+                />
         <deb todir="dist"
              package="davmail"
              section="mail"
@@ -64,13 +107,14 @@
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/LDAP Exchange Gateway">
                 Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway allowing
-	        users to use any mail/calendar client (e.g. Thunderbird with Lightning or Apple iCal) with an Exchange server,
-	        even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
-	        LDAP gateway to Exchange global address book to allow recipient address completion in mail compoze
-	        window and full calendar support with attendees free/busy display.
-	        DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows,
-	        Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is replaced with a full frame.
-	        Tested successfully with the Iphone (gateway running on a server).
+                users to use any mail/calendar client (e.g. Thunderbird with Lightning or Apple iCal) with an Exchange
+                server,
+                even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
+                LDAP gateway to Exchange global address book to allow recipient address completion in mail compoze
+                window and full calendar support with attendees free/busy display.
+                DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows,
+                Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is replaced with a full frame.
+                Tested successfully with the Iphone (gateway running on a server).
 
 
                 http://davmail.sourceforge.net
@@ -179,6 +223,7 @@
         </tar>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
+        <antcall target="dist-osx"/>
         <!-- source package -->
         <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${version}" dir=".">
