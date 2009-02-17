@@ -277,9 +277,9 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void appendEventResponse(StringBuilder buffer, CaldavRequest request, ExchangeSession.Event event) throws IOException {
-        String eventPath = event.getPath().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        String eventPath = event.getPath().replaceAll("<", "&lt;").replaceAll(">", "&gt;");
         buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(session.getEmail()).append("/calendar").append(URIUtil.encodePath(eventPath)).append("</D:href>");
+        buffer.append("<D:href>/users/").append(session.getEmail()).append("/calendar").append(URIUtil.encodeWithinQuery(eventPath)).append("</D:href>");
         buffer.append("<D:propstat>");
         buffer.append("<D:prop>");
         if (request.hasProperty("calendar-data")) {
@@ -482,7 +482,7 @@ public class CaldavConnection extends AbstractConnection {
         // send not found events errors
         for (String href : notFound) {
             buffer.append("<D:response>");
-            buffer.append("<D:href>").append(URIUtil.encodePath(href)).append("</D:href>");
+            buffer.append("<D:href>").append(URIUtil.encodeWithinQuery(href)).append("</D:href>");
             buffer.append("<D:propstat>");
             buffer.append("<D:status>HTTP/1.1 404 Not Found</D:status>");
             buffer.append("</D:propstat>");
