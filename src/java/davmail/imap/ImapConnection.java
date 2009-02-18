@@ -227,7 +227,7 @@ public class ImapConnection extends AbstractConnection {
                                             }
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
-                                            StringBuilder conditions = new StringBuilder();
+                                            SearchConditions conditions = new SearchConditions();
                                             boolean undeleted = true;
 
                                             while (tokens.hasMoreTokens()) {
@@ -241,22 +241,25 @@ public class ImapConnection extends AbstractConnection {
                                                     boolean first = true;
                                                     while (innerTokens.hasMoreTokens()) {
                                                         String innerToken = innerTokens.nextToken();
+                                                        String operator = "";
                                                         if (!first) {
-                                                            conditions.append(" OR ");
+                                                            operator = " OR ";
                                                         }
                                                         first = false;
-                                                        appendSearchParam(innerTokens, innerToken, conditions);
+                                                        appendSearchParam(operator, innerTokens, innerToken, conditions);
                                                     }
                                                     conditions.append(")");
                                                 } else {
-                                                    conditions.append(" AND ");
-                                                    appendSearchParam(tokens, token, conditions);
+                                                    appendSearchParam(" AND ",tokens, token, conditions);
                                                 }
                                             }
-
-                                            messages = session.searchMessages(currentFolder.folderName, conditions.toString());
+                                            DavGatewayTray.debug("Search: " + conditions.query);
+                                            messages = session.searchMessages(currentFolder.folderName, conditions.query.toString());
                                             for (ExchangeSession.Message message : messages) {
-                                                if ((undeleted && !message.deleted) || !undeleted) {
+                                                if (((undeleted && !message.deleted) || !undeleted)
+                                                        && (conditions.flagged == null || message.flagged == conditions.flagged)
+                                                        && (conditions.answered == null || message.answered == conditions.answered)
+                                                        ) {
                                                     sendClient("* SEARCH " + message.getUidAsLong());
                                                 }
                                             }
@@ -431,43 +434,85 @@ public class ImapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    private void appendSearchParam(StringTokenizer tokens, String token, StringBuilder conditions) throws IOException {
-        if ("NOT".equals(token)) {
-            conditions.append(" NOT ");
-            appendSearchParam(tokens, tokens.nextToken(), conditions);
-        } else if ("SUBJECT".equals(token)) {
-            conditions.append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
-        } else if ("BODY".equals(token)) {
-            conditions.append("\"http://schemas.microsoft.com/mapi/proptag/x01000001E\" LIKE '%").append(tokens.nextToken()).append("%'");
-        } else if ("FROM".equals(token)) {
-            conditions.append("\"urn:schemas:mailheader:from\" LIKE '%").append(tokens.nextToken()).append("%'");
-        } else if ("SENTON".equals(token)) {
-            SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
-            parser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-            dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-            try {
-                Date startDate = parser.parse(tokens.nextToken());
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(startDate);
-                calendar.add(Calendar.DAY_OF_MONTH, 1);
-                conditions.append("(\"urn:schemas:httpmail:date\" &gt; '")
-                        .append(dateFormatter.format(startDate))
-                        .append("' AND \"urn:schemas:httpmail:date\" &lt; '")
-                        .append(dateFormatter.format(calendar.getTime()))
-                        .append("')");
-            } catch (ParseException e) {
-                throw new IOException("Invalid search parameters");
-            }
+    static final class SearchConditions {
+        Boolean flagged = null;
+        Boolean answered = null;
+        StringBuilder query = new StringBuilder();
 
+        public StringBuilder append(String value) {
+            return query.append(value);
+        }
+    }
+
+    protected void appendSearchParam(String operator, StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+        if ("NOT".equals(token)) {
+            conditions.append(operator).append(" NOT ");
+            appendSearchParam("", tokens, tokens.nextToken(), conditions);
+        } else if ("SUBJECT".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("BODY".equals(token)) {
+            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x01000001E\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("FROM".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:mailheader:from\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if (token.startsWith("SENT")) {
+            conditions.append(operator);
+            appendDateSearchParam(tokens, token, conditions);
+        } else if ("SEEN".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:httpmail:read\" = True");
+        } else if ("UNSEEN".equals(token) || "NEW".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:httpmail:read\" = False");
+        } else if ("FLAGGED".equals(token)) {
+            conditions.flagged = Boolean.TRUE;
+        } else if ("UNFLAGGED".equals(token) || "NEW".equals(token)) {
+            conditions.flagged = Boolean.FALSE;
+        } else if ("ANSWERED".equals(token)) {
+            conditions.answered = Boolean.TRUE;
+        } else if ("UNANSWERED".equals(token)) {
+            conditions.answered = Boolean.FALSE;
         } else if ("HEADER".equals(token)) {
             String headerName = tokens.nextToken();
             if ("Message-ID".equalsIgnoreCase(headerName)) {
-                conditions.append("\"urn:schemas:mailheader:message-id\"='").append(tokens.nextToken()).append("'");
+                conditions.append(operator).append("\"urn:schemas:mailheader:message-id\"='").append(tokens.nextToken()).append("'");
             }
+        } else if ("OLD".equals(token)) {
+            // ignore
         } else {
             throw new IOException("Invalid search parameters");
         }
+    }
+
+    protected void appendDateSearchParam(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+        Date startDate;
+        Date endDate;
+        SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+        parser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        try {
+            startDate = parser.parse(tokens.nextToken());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(startDate);
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            endDate = calendar.getTime();
+        } catch (ParseException e) {
+            throw new IOException("Invalid search parameters");
+        }
+        if ("SENTON".equals(token)) {
+            conditions.append("(\"urn:schemas:httpmail:date\" &gt; '")
+                    .append(dateFormatter.format(startDate))
+                    .append("' AND \"urn:schemas:httpmail:date\" &lt; '")
+                    .append(dateFormatter.format(endDate))
+                    .append("')");
+        } else if ("SENTBEFORE".equals(token)) {
+            conditions.append("\"urn:schemas:httpmail:date\" &lt; '")
+                    .append(dateFormatter.format(startDate))
+                    .append("'");
+        } else if ("SENTSINCE".equals(token)) {
+            conditions.append("\"urn:schemas:httpmail:date\" &gt;= '")
+                    .append(dateFormatter.format(startDate))
+                    .append("'");
+        }
+
     }
 
     protected void expunge() throws IOException {
