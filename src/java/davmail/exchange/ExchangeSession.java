@@ -703,7 +703,11 @@ public class ExchangeSession {
         } else {
             int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
             if (index >= 0) {
-                folder.folderUrl = href.substring(index + mailPath.length());
+                if (index + mailPath.length()>href.length()) {
+                    folder.folderUrl= "";
+                } else {
+                   folder.folderUrl = href.substring(index + mailPath.length());
+                }
             } else {
                 throw new URIException("Invalid folder url: " + folder.folderUrl);
             }
