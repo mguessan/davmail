@@ -39,6 +39,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
         try {
             OSXAdapter.setAboutHandler(this, FrameGatewayTray.class.getDeclaredMethod("about", (Class[]) null));
             OSXAdapter.setPreferencesHandler(this, FrameGatewayTray.class.getDeclaredMethod("preferences", (Class[]) null));
+            OSXAdapter.setQuitHandler(this, OSXFrameGatewayTray.class.getDeclaredMethod("quit", (Class[]) null));
         } catch (Exception e) {
             DavGatewayTray.error("Error while loading the OSXAdapter", e);
         }
