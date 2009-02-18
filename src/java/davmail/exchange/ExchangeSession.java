@@ -1648,8 +1648,6 @@ public class ExchangeSession {
         if (email == null) {
             throw new IOException("Unable to get user email with alias " + getAliasFromLogin() + " or " + getAliasFromMailPath());
         }
-        // normalize email
-        email = email.toLowerCase();
     }
 
     /**
