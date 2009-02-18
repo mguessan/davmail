@@ -114,7 +114,8 @@ public class AbstractConnection extends Thread {
             if (line.startsWith("PASS")) {
                 DavGatewayTray.debug("< PASS ********");
                 // IMAP LOGIN
-            } else if (line.startsWith("LOGIN")) {
+            } else if (state == State.INITIAL && line.indexOf(' ')>=0 &&
+                line.substring(line.indexOf(' ')+1).startsWith("LOGIN")) {
                 DavGatewayTray.debug("< LOGIN ********");
             } else if (state == State.PASSWORD) {
                 DavGatewayTray.debug("< ********");
