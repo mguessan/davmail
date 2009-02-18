@@ -228,31 +228,32 @@ public class ImapConnection extends AbstractConnection {
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
                                             SearchConditions conditions = new SearchConditions();
+                                            conditions.append("AND (");
                                             boolean undeleted = true;
+                                            boolean or = false;
 
                                             while (tokens.hasMoreTokens()) {
                                                 String token = tokens.nextToken();
                                                 if ("UNDELETED".equals(token)) {
                                                     undeleted = true;
+                                                } else if ("OR".equals(token)) {
+                                                    or = true;
                                                 } else if (token.startsWith("OR ")) {
-                                                    conditions.append(" AND (");
-                                                    IMAPTokenizer innerTokens = new IMAPTokenizer(token);
-                                                    innerTokens.nextToken();
-                                                    boolean first = true;
-                                                    while (innerTokens.hasMoreTokens()) {
-                                                        String innerToken = innerTokens.nextToken();
-                                                        String operator = "";
-                                                        if (!first) {
-                                                            operator = " OR ";
-                                                        }
-                                                        first = false;
-                                                        appendSearchParam(operator, innerTokens, innerToken, conditions);
-                                                    }
-                                                    conditions.append(")");
+                                                    or = true;
+                                                    appendOrSearchParams(tokens, token, conditions);
                                                 } else {
-                                                    appendSearchParam(" AND ",tokens, token, conditions);
+                                                    String operator;
+                                                    if (conditions.query.length() == 5) {
+                                                        operator = "";
+                                                    } else if (or) {
+                                                        operator = " OR ";
+                                                    } else {
+                                                        operator = " AND ";
+                                                    }
+                                                    appendSearchParam(operator, tokens, token, conditions);
                                                 }
                                             }
+                                            conditions.append(")");
                                             DavGatewayTray.debug("Search: " + conditions.query);
                                             messages = session.searchMessages(currentFolder.folderName, conditions.query.toString());
                                             for (ExchangeSession.Message message : messages) {
@@ -444,16 +445,42 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
+    protected void appendOrSearchParams(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+        IMAPTokenizer innerTokens = new IMAPTokenizer(token);
+        innerTokens.nextToken();
+        boolean first = true;
+        while (innerTokens.hasMoreTokens()) {
+            String innerToken = innerTokens.nextToken();
+            String operator = "";
+            if (!first) {
+                operator = " OR ";
+            }
+            first = false;
+            appendSearchParam(operator, innerTokens, innerToken, conditions);
+        }
+
+    }
+
     protected void appendSearchParam(String operator, StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
             conditions.append(operator).append(" NOT ");
             appendSearchParam("", tokens, tokens.nextToken(), conditions);
+        } else if (token.startsWith("OR ")) {
+            appendOrSearchParams(tokens, token, conditions);
         } else if ("SUBJECT".equals(token)) {
             conditions.append(operator).append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
         } else if ("BODY".equals(token)) {
             conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x01000001E\" LIKE '%").append(tokens.nextToken()).append("%'");
         } else if ("FROM".equals(token)) {
             conditions.append(operator).append("\"urn:schemas:mailheader:from\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("TO".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:mailheader:to\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("CC".equals(token)) {
+            conditions.append(operator).append("\"urn:schemas:mailheader:cc\" LIKE '%").append(tokens.nextToken()).append("%'");
+        } else if ("LARGER".equals(token)) {
+            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &gt;= ").append(Long.parseLong(tokens.nextToken())).append("");
+        } else if ("SMALLER".equals(token)) {
+            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &lt; ").append(Long.parseLong(tokens.nextToken())).append("");
         } else if (token.startsWith("SENT")) {
             conditions.append(operator);
             appendDateSearchParam(tokens, token, conditions);
@@ -470,10 +497,8 @@ public class ImapConnection extends AbstractConnection {
         } else if ("UNANSWERED".equals(token)) {
             conditions.answered = Boolean.FALSE;
         } else if ("HEADER".equals(token)) {
-            String headerName = tokens.nextToken();
-            if ("Message-ID".equalsIgnoreCase(headerName)) {
-                conditions.append(operator).append("\"urn:schemas:mailheader:message-id\"='").append(tokens.nextToken()).append("'");
-            }
+            String headerName = tokens.nextToken().toLowerCase();
+            conditions.append(operator).append("\"urn:schemas:mailheader:" + headerName + "\"='").append(tokens.nextToken()).append("'");
         } else if ("OLD".equals(token)) {
             // ignore
         } else {
