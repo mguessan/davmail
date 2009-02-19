@@ -621,6 +621,7 @@ public class ExchangeSession {
     public MessageList getAllMessages(String folderName) throws IOException {
         return searchMessages(folderName, "");
     }
+
     public MessageList searchMessages(String folderName, String conditions) throws IOException {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
@@ -630,7 +631,7 @@ public class ExchangeSession {
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
-                conditions+
+                conditions +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
@@ -703,10 +704,10 @@ public class ExchangeSession {
         } else {
             int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
             if (index >= 0) {
-                if (index + mailPath.length()>href.length()) {
-                    folder.folderUrl= "";
+                if (index + mailPath.length() > href.length()) {
+                    folder.folderUrl = "";
                 } else {
-                   folder.folderUrl = href.substring(index + mailPath.length());
+                    folder.folderUrl = href.substring(index + mailPath.length());
                 }
             } else {
                 throw new URIException("Invalid folder url: " + folder.folderUrl);
@@ -1324,13 +1325,25 @@ public class ExchangeSession {
                     if (!isAppleiCal) {
                         continue;
                     } else {
-                        result.writeLine("CLASS:" + eventClass);
+                        if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("CLASS:PRIVATE");
+                        } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("CLASS:CONFIDENTIAL");
+                        } else {
+                            result.writeLine("CLASS:" + eventClass);
+                        }
                     }
                 } else if (line.startsWith("CLASS:")) {
                     if (isAppleiCal) {
                         continue;
                     } else {
-                        result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
+                        if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
+                        } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
+                        } else {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
+                        }
                     }
                 }
                 result.writeLine(line);
