@@ -30,6 +30,40 @@
             </roles>
         </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>John Ahern</name>
+            <email>jahern2502@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/jahern2502</url>
+            <roles>
+                <role>Java Contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Henning Holtschneider</name>
+            <email>hehol@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/hehol</url>
+            <roles>
+                <role>Tester</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Shocker</name>
+            <email>gkwait@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/gkwait</url>
+            <roles>
+                <role>Tester</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Guido</name>
+            <email>guido2@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/guido2</url>
+            <roles>
+                <role>Tester</role>
+            </roles>
+        </contributor>
+    </contributors>
     <licenses>
         <license>
             <name>GNU General Public License</name>
