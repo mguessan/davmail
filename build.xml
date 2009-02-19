@@ -11,6 +11,7 @@
     <target name="clean">
         <delete dir="target"/>
         <delete dir="dist"/>
+        <delete file="build.log"/>
     </target>
 
     <target name="init">
