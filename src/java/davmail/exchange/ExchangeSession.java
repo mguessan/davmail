@@ -631,7 +631,7 @@ public class ExchangeSession {
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
-                conditions +
+                conditions.replaceAll("<", "&lt;").replaceAll(">", "&gt;") +
                 "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
@@ -1191,6 +1191,14 @@ public class ExchangeSession {
         }
     }
 
+    public List<Event> getEventMessages() throws IOException {
+        String searchQuery = "Select \"DAV:getetag\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + inboxUrl + "\"')\n" +
+                "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
+                "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
+        return getEvents(inboxUrl, searchQuery);
+    }
+
     public List<Event> getAllEvents() throws IOException {
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", Integer.MAX_VALUE);
         String dateCondition = "";
@@ -1200,19 +1208,25 @@ public class ExchangeSession {
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + dateFormatter.format(cal.getTime()) + "'\n";
         }
 
-        List<Event> events = new ArrayList<Event>();
-        String searchRequest = "<?xml version=\"1.0\"?>\n" +
-                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql> Select \"DAV:getetag\", \"urn:schemas:calendar:instancetype\"" +
+        String searchQuery = "Select \"DAV:getetag\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
                 "                WHERE (\"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                OR (\"urn:schemas:calendar:instancetype\" = 0\n" +
                 dateCondition +
                 "                )) AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
-                "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n" +
+                "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
+        return getEvents(calendarUrl, searchQuery);
+    }
+
+    public List<Event> getEvents(String path, String searchQuery) throws IOException {
+        List<Event> events = new ArrayList<Event>();
+        String searchRequest = "<?xml version=\"1.0\"?>\n" +
+                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
+                "         <d:sql>" + searchQuery +
                 "         </d:sql>\n" +
                 "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(calendarUrl), searchRequest);
+
+        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(path), searchRequest);
         try {
             int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.

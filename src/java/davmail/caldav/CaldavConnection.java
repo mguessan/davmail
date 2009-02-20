@@ -214,9 +214,9 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 3) {
             sendUserRoot(request, depth, paths[2]);
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
-            sendInbox(request, paths[2]);
+            sendInbox(request, depth, paths[2]);
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
-            reportInbox();
+            reportEvents(request);
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
             sendOutbox(request, paths[2]);
         } else if ("POST".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
@@ -231,7 +231,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
-            reportCalendar(request);
+            reportEvents(request);
 
         } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
@@ -399,20 +399,17 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
     }
 
-    public void sendInbox(CaldavRequest request, String principal) throws IOException {
+    public void sendInbox(CaldavRequest request, int depth, String principal) throws IOException {
         StringBuilder buffer = new StringBuilder();
         buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
         appendInbox(buffer, principal, request);
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
-    }
-
-    public void reportInbox() throws IOException {
-        // inbox is always empty
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                "<D:multistatus xmlns:D=\"DAV:\">");
+        if (depth == 1) {
+            DavGatewayTray.debug("Searching calendar messages...");
+            List<ExchangeSession.Event> events = session.getEventMessages();
+            DavGatewayTray.debug("Found " + events.size() + " calendar messages");
+            appendEventsResponses(buffer, request, events);
+        }
         buffer.append("</D:multistatus>");
         sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
     }
@@ -450,7 +447,7 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    public void reportCalendar(CaldavRequest request) throws IOException {
+    public void reportEvents(CaldavRequest request) throws IOException {
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
         if (request.isMultiGet()) {
@@ -471,7 +468,7 @@ public class CaldavConnection extends AbstractConnection {
                 }
             }
         } else {
-            events = session.getAllEvents();
+            events = new ArrayList<ExchangeSession.Event>();
         }
 
         StringBuilder buffer = new StringBuilder();
