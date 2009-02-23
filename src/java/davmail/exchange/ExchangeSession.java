@@ -1485,6 +1485,7 @@ public class ExchangeSession {
 
     protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         String uid = UUID.randomUUID().toString();
+        int status = 0;
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Overwrite", "f");
@@ -1502,10 +1503,11 @@ public class ExchangeSession {
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
             // need to parse attendees to build recipients
             String recipients = getRecipients(icsBody);
-            if (recipients.length() == 0) {
-                throw new IOException("Invalid notification: no recipient found");
-            }
             body.append("To: ").append(recipients).append("\r\n");
+            // do not send notification if no recipients found
+            if (recipients.length() == 0) {
+                status = HttpStatus.SC_NO_CONTENT;
+            }
         }
         body.append("MIME-Version: 1.0\r\n" +
                 "Content-Type: multipart/alternative;\r\n" +
@@ -1522,14 +1524,14 @@ public class ExchangeSession {
         body.append(new String(fixICS(icsBody, false).getBytes("UTF-8"), "ISO-8859-1"));
         body.append("------=_NextPart_").append(uid).append("--\r\n");
         putmethod.setRequestBody(body.toString());
-        int status;
         try {
-            status = wdr.retrieveSessionInstance().executeMethod(putmethod);
-
-            if (status == HttpURLConnection.HTTP_OK) {
-                LOGGER.warn("Overwritten event " + messageUrl);
-            } else if (status != HttpURLConnection.HTTP_CREATED) {
-                LOGGER.warn("Unable to create or update message " + status + " " + putmethod.getStatusLine());
+            if (status == 0) {
+                status = wdr.retrieveSessionInstance().executeMethod(putmethod);
+                if (status == HttpURLConnection.HTTP_OK) {
+                    LOGGER.warn("Overwritten event " + messageUrl);
+                } else if (status != HttpURLConnection.HTTP_CREATED) {
+                    LOGGER.warn("Unable to create or update message " + status + " " + putmethod.getStatusLine());
+                }
             }
         } finally {
             putmethod.releaseConnection();
