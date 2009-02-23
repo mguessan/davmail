@@ -1347,6 +1347,16 @@ public class ExchangeSession {
                             result.writeLine("CLASS:" + eventClass);
                         }
                     }
+                } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {
+                    // Apple iCal doesn't support EXDATE with multiple exceptions
+                    // on one line.  Split into multiple EXDATE entries (which is
+                    // also legal according to the caldav standard).
+                    splitExDate(result, line);
+                    continue;
+                } else if (line.startsWith("X-ENTOURAGE_UUID:")) {
+                    // Apple iCal doesn't understand this key, and it's entourage
+                    // specific (i.e. not needed by any caldav client): strip it out
+                    continue;
                 } else if (line.startsWith("CLASS:")) {
                     if (isAppleiCal) {
                         continue;
@@ -1367,6 +1377,20 @@ public class ExchangeSession {
         }
 
         return result.toString();
+    }
+
+    protected void splitExDate(ICSBufferedWriter result, String line) throws IOException {
+        int cur = line.lastIndexOf(':') + 1;
+        String start = line.substring(0, cur);
+
+        for (int next = line.indexOf(',', cur); next != -1; next = line.indexOf(',', cur)) {
+            String val = line.substring(cur, next);
+            result.writeLine(start + val);
+
+            cur = next + 1;
+        }
+
+        result.writeLine(start + line.substring(cur));
     }
 
     protected String getAllDayLine(String line) throws IOException {
