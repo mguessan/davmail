@@ -24,8 +24,6 @@ import java.text.ParseException;
  * Still alpha code : need to find a way to handle message ids
  */
 public class ImapConnection extends AbstractConnection {
-    protected static final int INITIAL = 0;
-    protected static final int AUTHENTICATED = 2;
 
     ExchangeSession.Folder currentFolder;
     ExchangeSession.MessageList messages;
@@ -214,7 +212,7 @@ public class ImapConnection extends AbstractConnection {
                                                     or = true;
                                                 } else if (token.startsWith("OR ")) {
                                                     or = true;
-                                                    appendOrSearchParams(tokens, token, conditions);
+                                                    appendOrSearchParams(token, conditions);
                                                 } else {
                                                     String operator;
                                                     if (conditions.query.length() == 5) {
@@ -229,8 +227,8 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                             conditions.append(")");
                                             DavGatewayTray.debug("Search: " + conditions.query);
-                                            messages = session.searchMessages(currentFolder.folderName, conditions.query.toString());
-                                            for (ExchangeSession.Message message : messages) {
+                                            ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, conditions.query.toString());
+                                            for (ExchangeSession.Message message : localMessages) {
                                                 if (((undeleted && !message.deleted) || !undeleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
                                                         && (conditions.answered == null || message.answered == conditions.answered)
@@ -467,7 +465,7 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected void appendOrSearchParams(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+    protected void appendOrSearchParams(String token, SearchConditions conditions) throws IOException {
         IMAPTokenizer innerTokens = new IMAPTokenizer(token);
         innerTokens.nextToken();
         boolean first = true;
@@ -488,7 +486,7 @@ public class ImapConnection extends AbstractConnection {
             conditions.append(operator).append(" NOT ");
             appendSearchParam("", tokens, tokens.nextToken(), conditions);
         } else if (token.startsWith("OR ")) {
-            appendOrSearchParams(tokens, token, conditions);
+            appendOrSearchParams(token, conditions);
         } else if ("SUBJECT".equals(token)) {
             conditions.append(operator).append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
         } else if ("BODY".equals(token)) {
@@ -520,7 +518,14 @@ public class ImapConnection extends AbstractConnection {
             conditions.answered = Boolean.FALSE;
         } else if ("HEADER".equals(token)) {
             String headerName = tokens.nextToken().toLowerCase();
-            conditions.append(operator).append("\"urn:schemas:mailheader:" + headerName + "\"='").append(tokens.nextToken()).append("'");
+            conditions.append(operator).append("\"urn:schemas:mailheader:").append(headerName).append("\"='").append(tokens.nextToken()).append("'");
+        } else if ("UID".equals(token)) {
+            String range = tokens.nextToken();
+            if ("1:*".equals(range)) {
+                // ignore: this is a noop filter
+            } else {
+                throw new IOException("Invalid search parameters");
+            }
         } else if ("OLD".equals(token)) {
             // ignore
         } else {
@@ -577,7 +582,7 @@ public class ImapConnection extends AbstractConnection {
 
     protected void updateFlags(ExchangeSession.Message message, String action, String flags) throws IOException {
         HashMap<String, String> properties = new HashMap<String, String>();
-        if ("-Flags".equalsIgnoreCase(action)) {
+        if ("-Flags".equalsIgnoreCase(action) || "-FLAGS.SILENT".equalsIgnoreCase(action)) {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
@@ -592,7 +597,7 @@ public class ImapConnection extends AbstractConnection {
                     message.junk = false;
                 }
             }
-        } else if ("+Flags".equalsIgnoreCase(action)) {
+        } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
