@@ -40,6 +40,14 @@
             </roles>
         </contributor>
         <contributor>
+            <name>Dfoody</name>
+            <email>dfoody@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/dfoody</url>
+            <roles>
+                <role>Java Contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
             <name>Henning Holtschneider</name>
             <email>hehol@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/hehol</url>
