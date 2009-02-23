@@ -73,6 +73,7 @@
                 <include name="*.jar"/>
             </jarfileset>
         </jarbundler>
+        <delete file="dist/JavaApplicationStub"/>
         <delete dir="dist/DavMail.app/Contents/MacOS"/>
         <copy file="src/osx/DavMail.JavaApplicationStub.app.zip"
               tofile="dist/DavMail-${version}.app.zip" overwrite="true"/>
