@@ -117,6 +117,7 @@ public class LdapConnection extends AbstractConnection {
     static final int LDAP_SIZE_LIMIT_EXCEEDED = 4;
     static final int LDAP_INVALID_CREDENTIALS = 49;
 
+    static final int LDAP_FILTER_AND = 0xa0;
     static final int LDAP_FILTER_OR = 0xa1;
 
     // LDAP filter operators (only LDAP_FILTER_SUBSTRINGS is supported)
@@ -447,7 +448,13 @@ public class LdapConnection extends AbstractConnection {
                     int ldapFilterOperator = reqBer.parseSeq(null);
                     parseSimpleFilter(reqBer, criteria, ldapFilterOperator);
                 }
-                // simple filter
+            } else if (ldapFilterType == LDAP_FILTER_AND) {
+                DavGatewayTray.warn("Unsupported filter");
+                while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+                    int ldapFilterOperator = reqBer.parseSeq(null);
+                    parseSimpleFilter(reqBer, criteria, ldapFilterOperator);
+                }
+            // simple filter
             } else {
                 parseSimpleFilter(reqBer, criteria, ldapFilterType);
             }
