@@ -150,7 +150,7 @@ public class CaldavConnection extends AbstractConnection {
         } catch (IOException e) {
             DavGatewayTray.error(e);
             try {
-                sendErr(HttpStatus.SC_INTERNAL_SERVER_ERROR, e);
+                sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, e);
             } catch (IOException e2) {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
@@ -468,7 +468,7 @@ public class CaldavConnection extends AbstractConnection {
                 }
             }
         } else {
-            events = new ArrayList<ExchangeSession.Event>();
+            events = session.getAllEvents();
         }
 
         StringBuilder buffer = new StringBuilder();
