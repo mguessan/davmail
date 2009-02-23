@@ -425,34 +425,51 @@ public class ImapConnection extends AbstractConnection {
     }
 
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException {
-        if (parameters == null || "FLAGS".equals(parameters) || "FLAGS UID".equals(parameters)) {
-            sendClient("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
-        } else if ("BODYSTRUCTURE".equals(parameters)) {
-            sendClient("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong() + " BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
-            // send full message
-        } else if (parameters.indexOf("BODY[]") >= 0 || parameters.indexOf("BODY.PEEK[]") >= 0 || "BODY.PEEK[TEXT]".equals(parameters)) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            message.write(baos);
-            baos.close();
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong());
 
-            DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
-            sendClient("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + baos.size() + " BODY[]<0>" +
-                    " {" + baos.size() + "}");
-            os.write(baos.toByteArray());
-            os.flush();
-            sendClient(")");
-        } else {
-            // write headers to byte array
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
-            message.write(headerOutputStream);
-            baos.close();
-            sendClient("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong() + " RFC822.SIZE " + headerOutputStream.size() + " BODY[HEADER.FIELDS ()" +
-                    "] {" + baos.size() + "}");
-            os.write(baos.toByteArray());
-            os.flush();
-            sendClient(" FLAGS (" + (message.getImapFlags()) + "))");
+        StringTokenizer paramTokens = new StringTokenizer(parameters);
+        while (paramTokens.hasMoreTokens()) {
+            String param = paramTokens.nextToken();
+            if ("FLAGS".equals(param)) {
+                buffer.append(" FLAGS (" + (message.getImapFlags()) + ")");
+            } else if ("BODYSTRUCTURE".equals(param)) {
+                buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
+            } else if ("INTERNALDATE".equals(param)) {
+                try {
+                    SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                    dateParser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+                    Date date = null;
+                    date = dateParser.parse(message.date);
+                    SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
+                    buffer.append(" INTERNALDATE \"" + dateFormatter.format(date) + "\"");
+                } catch (ParseException e) {
+                    throw new IOException("Invalid date: " + message.date);
+                }
+            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param)) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                message.write(baos);
+                baos.close();
+                DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
+                buffer.append(" RFC822.SIZE " + baos.size() + " " + param + "<0> {" + (baos.size()-4) + "}");
+                sendClient(buffer.toString());
+                os.write(baos.toByteArray(), 0, baos.toByteArray().length-4);
+                os.flush();
+                buffer.setLength(0);
+            } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
+                message.write(headerOutputStream);
+                baos.close();
+                buffer.append(" RFC822.SIZE " + baos.size() + " BODY[HEADER.FIELDS ()] {" + baos.size() + "}");
+                sendClient(buffer.toString());
+                os.write(baos.toByteArray());
+                os.flush();
+                buffer.setLength(0);
+            }
         }
+        buffer.append(")");
+        sendClient(buffer.toString());
     }
 
     static final class SearchConditions {

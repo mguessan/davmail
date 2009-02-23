@@ -546,6 +546,8 @@ public class ExchangeSession {
             } else if ("x10810003".equals(localName)) {
                 message.answered = "102".equals(prop.getPropertyAsString()) || "103".equals(prop.getPropertyAsString());
                 message.forwarded = "104".equals(prop.getPropertyAsString());
+            } else if ("date".equals(prop.getLocalName())) {
+                message.date = prop.getPropertyAsString();
             } else if ("isdeleted".equals(localName)) {
                 message.deleted = "1".equals(prop.getPropertyAsString());
             } else if ("message-id".equals(prop.getLocalName())) {
@@ -628,7 +630,7 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\"" +
+                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
                 conditions.replaceAll("<", "&lt;").replaceAll(">", "&gt;") +
@@ -963,6 +965,7 @@ public class ExchangeSession {
         public String uid;
         public int size;
         public String messageId;
+        public String date;
         public boolean read;
         public boolean deleted;
         public boolean junk;
