@@ -545,6 +545,12 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendPrincipal(CaldavRequest request, String principal) throws IOException {
+        // actual principal is email address
+        String actualPrincipal = principal;
+        if (userName.equals(principal)) {
+            actualPrincipal = session.getEmail();
+        }
+
         StringBuilder buffer = new StringBuilder();
         buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
@@ -554,30 +560,30 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("<D:prop>");
         if (request.hasProperty("calendar-home-set")) {
             buffer.append("<C:calendar-home-set>");
-            buffer.append("<D:href>/users/").append(principal).append("</D:href>");
+            buffer.append("<D:href>/users/").append(actualPrincipal).append("</D:href>");
             buffer.append("</C:calendar-home-set>");
         }
 
         if (request.hasProperty("calendar-user-address-set")) {
             buffer.append("<C:calendar-user-address-set>");
-            buffer.append("<D:href>mailto:").append(principal).append("</D:href>");
+            buffer.append("<D:href>mailto:").append(actualPrincipal).append("</D:href>");
             buffer.append("</C:calendar-user-address-set>");
         }
 
         if (request.hasProperty("schedule-inbox-URL")) {
             buffer.append("<C:schedule-inbox-URL>");
-            buffer.append("<D:href>/users/").append(principal).append("/inbox</D:href>");
+            buffer.append("<D:href>/users/").append(actualPrincipal).append("/inbox</D:href>");
             buffer.append("</C:schedule-inbox-URL>");
         }
 
         if (request.hasProperty("schedule-outbox-URL")) {
             buffer.append("<C:schedule-outbox-URL>");
-            buffer.append("<D:href>/users/").append(principal).append("/outbox</D:href>");
+            buffer.append("<D:href>/users/").append(actualPrincipal).append("/outbox</D:href>");
             buffer.append("</C:schedule-outbox-URL>");
         }
 
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>").append(principal).append("</D:displayname>");
+            buffer.append("<D:displayname>").append(actualPrincipal).append("</D:displayname>");
         }
         if (request.hasProperty("resourcetype")) {
             buffer.append("<D:resourcetype>");
