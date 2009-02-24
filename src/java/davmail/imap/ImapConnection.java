@@ -426,23 +426,22 @@ public class ImapConnection extends AbstractConnection {
 
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException {
         StringBuilder buffer = new StringBuilder();
-        buffer.append("* " + (currentIndex) + " FETCH (UID " + message.getUidAsLong());
+        buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getUidAsLong());
 
         StringTokenizer paramTokens = new StringTokenizer(parameters);
         while (paramTokens.hasMoreTokens()) {
             String param = paramTokens.nextToken();
             if ("FLAGS".equals(param)) {
-                buffer.append(" FLAGS (" + (message.getImapFlags()) + ")");
+                buffer.append(" FLAGS (").append(message.getImapFlags()).append(")");
             } else if ("BODYSTRUCTURE".equals(param)) {
-                buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" " + message.size + " 50 NIL NIL NIL NIL))");
+                buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" ").append(message.size).append(" 50 NIL NIL NIL NIL))");
             } else if ("INTERNALDATE".equals(param)) {
                 try {
                     SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                     dateParser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-                    Date date = null;
-                    date = dateParser.parse(message.date);
+                    Date date = dateParser.parse(message.date);
                     SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
-                    buffer.append(" INTERNALDATE \"" + dateFormatter.format(date) + "\"");
+                    buffer.append(" INTERNALDATE \"").append(dateFormatter.format(date)).append("\"");
                 } catch (ParseException e) {
                     throw new IOException("Invalid date: " + message.date);
                 }
@@ -451,9 +450,9 @@ public class ImapConnection extends AbstractConnection {
                 message.write(baos);
                 baos.close();
                 DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
-                buffer.append(" RFC822.SIZE " + baos.size() + " " + param + "<0> {" + (baos.size()-4) + "}");
+                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" ").append(param).append("<0> {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
-                os.write(baos.toByteArray(), 0, baos.toByteArray().length-4);
+                os.write(baos.toByteArray());
                 os.flush();
                 buffer.setLength(0);
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
@@ -461,7 +460,7 @@ public class ImapConnection extends AbstractConnection {
                 HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
                 message.write(headerOutputStream);
                 baos.close();
-                buffer.append(" RFC822.SIZE " + baos.size() + " BODY[HEADER.FIELDS ()] {" + baos.size() + "}");
+                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" BODY[HEADER.FIELDS ()] {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
                 os.write(baos.toByteArray());
                 os.flush();
@@ -475,7 +474,7 @@ public class ImapConnection extends AbstractConnection {
     static final class SearchConditions {
         Boolean flagged = null;
         Boolean answered = null;
-        StringBuilder query = new StringBuilder();
+        final StringBuilder query = new StringBuilder();
 
         public StringBuilder append(String value) {
             return query.append(value);
@@ -733,7 +732,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected class UIDRangeIterator implements Iterator<ExchangeSession.Message> {
-        String[] ranges;
+        final String[] ranges;
         int currentIndex = 0;
         int currentRangeIndex = 0;
         long startUid;
@@ -786,7 +785,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected class RangeIterator implements Iterator<ExchangeSession.Message> {
-        String[] ranges;
+        final String[] ranges;
         int currentIndex = 0;
         int currentRangeIndex = 0;
         long startUid;
