@@ -445,22 +445,28 @@ public class ImapConnection extends AbstractConnection {
                 } catch (ParseException e) {
                     throw new IOException("Invalid date: " + message.date);
                 }
-            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param)) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                message.write(baos);
-                baos.close();
-                DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
-                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" ").append(param).append("<0> {").append(baos.size()).append("}");
-                sendClient(buffer.toString());
-                os.write(baos.toByteArray());
-                os.flush();
-                buffer.setLength(0);
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
                 message.write(headerOutputStream);
                 baos.close();
-                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" BODY[HEADER.FIELDS ()] {").append(baos.size()).append("}");
+                buffer.append(" RFC822.SIZE ").append(headerOutputStream.size);
+                if ("BODY.PEEK[HEADER]".equals(param)) {
+                    buffer.append(" BODY[HEADER] {");
+                } else {
+                    buffer.append(" BODY[HEADER.FIELDS ()] {");
+                }
+                buffer.append(baos.size()).append("}");
+                sendClient(buffer.toString());
+                os.write(baos.toByteArray());
+                os.flush();
+                buffer.setLength(0);
+            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param)) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                message.write(baos);
+                baos.close();
+                DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
+                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
                 os.write(baos.toByteArray());
                 os.flush();
