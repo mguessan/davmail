@@ -13,10 +13,10 @@ import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
+import org.apache.webdav.lib.methods.CopyMethod;
 import org.apache.webdav.lib.methods.MoveMethod;
 import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
-import org.apache.webdav.lib.methods.CopyMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -35,17 +35,6 @@ public class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
     public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
-
-    /**
-     * exchange message properties needed to rebuild mime message
-     */
-    protected static final Vector<String> MESSAGE_REQUEST_PROPERTIES = new Vector<String>();
-
-    static {
-        MESSAGE_REQUEST_PROPERTIES.add("DAV:uid");
-        // size
-        MESSAGE_REQUEST_PROPERTIES.add("http://schemas.microsoft.com/mapi/proptag/x0e080003");
-    }
 
     protected static final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
 
@@ -559,21 +548,6 @@ public class ExchangeSession {
         }
 
         return message;
-    }
-
-    public Message getMessage(String messageUrl) throws IOException {
-
-        Enumeration messageEnum = wdr.propfindMethod(messageUrl, 0, MESSAGE_REQUEST_PROPERTIES);
-
-        if ((wdr.getStatusCode() != HttpURLConnection.HTTP_OK)
-                || !messageEnum.hasMoreElements()) {
-            throw new IOException("Unable to get message: " + wdr.getStatusCode()
-                    + " " + wdr.getStatusMessage());
-        }
-        ResponseEntity entity = (ResponseEntity) messageEnum.nextElement();
-
-        return buildMessage(entity);
-
     }
 
     protected void addProperties(PropPatchMethod patchMethod, Map<String, String> properties) {
@@ -1122,7 +1096,7 @@ public class ExchangeSession {
     }
 
     public class MessageList extends ArrayList<Message> {
-        HashMap<Long, Message> uidMessageMap = new HashMap<Long, Message>();
+        final HashMap<Long, Message> uidMessageMap = new HashMap<Long, Message>();
 
         @Override
         public boolean add(Message message) {
@@ -1382,7 +1356,7 @@ public class ExchangeSession {
         return result.toString();
     }
 
-    protected void splitExDate(ICSBufferedWriter result, String line) throws IOException {
+    protected void splitExDate(ICSBufferedWriter result, String line) {
         int cur = line.lastIndexOf(':') + 1;
         String start = line.substring(0, cur);
 
@@ -1445,7 +1419,7 @@ public class ExchangeSession {
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
-    protected String getICSMethod(String icsBody) throws IOException {
+    protected String getICSMethod(String icsBody) {
         int methodIndex = icsBody.indexOf("METHOD:");
         if (methodIndex < 0) {
             return "REQUEST";
@@ -1644,9 +1618,8 @@ public class ExchangeSession {
      * Get current Exchange alias name from login name
      *
      * @return user name
-     * @throws java.io.IOException on error
      */
-    protected String getAliasFromLogin() throws IOException {
+    protected String getAliasFromLogin() {
         // Exchange 2007 : userName is login without domain
         String userName = poolKey.userName;
         int index = userName.indexOf('\\');
@@ -1710,9 +1683,8 @@ public class ExchangeSession {
      * Get current user email
      *
      * @return user email
-     * @throws java.io.IOException on error
      */
-    public String getEmail() throws IOException {
+    public String getEmail() {
         return email;
     }
 

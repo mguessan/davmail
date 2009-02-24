@@ -16,11 +16,6 @@ public class AbstractConnection extends Thread {
 
     protected enum State {INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA}
 
-    /**
-     * read password state
-     */
-    public static final int PASSWORD = 1;
-
     protected final Socket client;
 
     protected BufferedReader in;

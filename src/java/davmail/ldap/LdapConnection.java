@@ -146,7 +146,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * For some unknow reaseon parseIntWithTag is private !
      */
-    static Method parseIntWithTag;
+    static final Method parseIntWithTag;
 
     static {
         try {
@@ -154,6 +154,7 @@ public class LdapConnection extends AbstractConnection {
             parseIntWithTag.setAccessible(true);
         } catch (NoSuchMethodException e) {
             DavGatewayTray.error("Unable to get BerDecoder.parseIntWithTag method");
+            throw new RuntimeException(e);
         }
     }
 
@@ -435,7 +436,7 @@ public class LdapConnection extends AbstractConnection {
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
             if ("objectclass".equals(attributeName)) {
-                criteria.put(attributeName, new SimpleFilter("*"));
+                criteria.put(attributeName, new SimpleFilter());
             } else {
                 DavGatewayTray.warn("Unsupported filter");
             }
@@ -641,11 +642,12 @@ public class LdapConnection extends AbstractConnection {
     }
 
     class SimpleFilter {
-        String value;
-        int operator;
+        static final String STAR = "*";
+        final String value;
+        final int operator;
 
-        SimpleFilter(String value) {
-            this.value = value;
+        SimpleFilter() {
+            this.value = SimpleFilter.STAR;
             this.operator = LDAP_FILTER_SUBSTRINGS;
         }
 

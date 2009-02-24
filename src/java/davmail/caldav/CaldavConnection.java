@@ -28,7 +28,7 @@ import java.util.*;
  * Handle a caldav connection.
  */
 public class CaldavConnection extends AbstractConnection {
-    protected Logger wireLogger = Logger.getLogger(this.getClass());
+    protected final Logger wireLogger = Logger.getLogger(this.getClass());
 
     protected boolean closed = false;
 
@@ -343,7 +343,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("</D:response>");
     }
 
-    public void appendInbox(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
+    public void appendInbox(StringBuilder buffer, String principal, CaldavRequest request) {
         buffer.append("<D:response>");
         buffer.append("<D:href>/users/").append(principal).append("/inbox</D:href>");
         buffer.append("<D:propstat>");
@@ -367,7 +367,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append("</D:response>");
     }
 
-    public void appendOutbox(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
+    public void appendOutbox(StringBuilder buffer, String principal, CaldavRequest request) {
         buffer.append("<D:response>");
         buffer.append("<D:href>/users/").append(principal).append("/outbox</D:href>");
         buffer.append("<D:propstat>");
@@ -773,7 +773,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected static class CaldavRequest {
-        protected HashSet<String> properties = new HashSet<String>();
+        protected final HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
 

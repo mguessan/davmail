@@ -5,7 +5,7 @@ package davmail.exchange;
  * split lines longer than 75 characters
  */
 public class ICSBufferedWriter {
-    StringBuilder buffer = new StringBuilder();
+    final StringBuilder buffer = new StringBuilder();
 
     public void writeLine(String line) {
         if (line.length() > 75) {

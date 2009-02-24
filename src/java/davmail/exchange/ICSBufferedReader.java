@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class ICSBufferedReader extends BufferedReader {
     protected String nextLine;
-    protected StringBuilder currentLine = new StringBuilder(75);
+    protected final StringBuilder currentLine = new StringBuilder(75);
 
     public ICSBufferedReader(Reader in, int sz) throws IOException {
         super(in, sz);
