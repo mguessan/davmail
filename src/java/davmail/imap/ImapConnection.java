@@ -435,7 +435,7 @@ public class ImapConnection extends AbstractConnection {
                 buffer.append(" FLAGS (").append(message.getImapFlags()).append(")");
             } else if ("BODYSTRUCTURE".equals(param)) {
                 buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"QUOTED-PRINTABLE\" ").append(message.size).append(" 50 NIL NIL NIL NIL))");
-            } else if ("INTERNALDATE".equals(param)) {
+            } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                 try {
                     SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                     dateParser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
@@ -620,6 +620,36 @@ public class ImapConnection extends AbstractConnection {
                 }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
+            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            while (flagtokenizer.hasMoreTokens()) {
+                String flag = flagtokenizer.nextToken();
+                if ("\\Seen".equals(flag)) {
+                    properties.put("read", "1");
+                    message.read = true;
+                } else if ("\\Deleted".equals(flag)) {
+                    message.deleted = true;
+                    properties.put("deleted", "1");
+                } else if ("\\Flagged".equals(flag)) {
+                    properties.put("flagged", "2");
+                    message.flagged = true;
+                } else if ("\\Answered".equals(flag)) {
+                    properties.put("answered", "102");
+                    message.answered = true;
+                } else if ("$Forwarded".equals(flag)) {
+                    properties.put("forwarded", "104");
+                    message.forwarded = true;
+                } else if ("Junk".equals(flag)) {
+                    properties.put("junk", "1");
+                    message.junk = true;
+                }
+            }
+        } else if ("FLAGS".equalsIgnoreCase(action)) {
+            properties.put("read", "0");
+            message.read = false;
+            properties.put("flagged", "0");
+            message.flagged = false;
+            properties.put("junk", "0");
+            message.junk = false;
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
