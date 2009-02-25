@@ -151,8 +151,6 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("close".equalsIgnoreCase(command) || "expunge".equalsIgnoreCase(command)) {
                                     expunge();
-                                    currentFolder = null;
-                                    messages = null;
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
@@ -427,14 +425,20 @@ public class ImapConnection extends AbstractConnection {
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException {
         StringBuilder buffer = new StringBuilder();
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getUidAsLong());
-
+        boolean bodystructure = false;
         StringTokenizer paramTokens = new StringTokenizer(parameters);
         while (paramTokens.hasMoreTokens()) {
             String param = paramTokens.nextToken();
             if ("FLAGS".equals(param)) {
                 buffer.append(" FLAGS (").append(message.getImapFlags()).append(")");
             } else if ("BODYSTRUCTURE".equals(param)) {
-                buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(message.size).append(" NIL))");
+                if (parameters.indexOf("BODY.") >= 0) {
+                    // Apple Mail: send structure with body, need exact RFC822.SIZE
+                    bodystructure = true;
+                } else {
+                    // thunderbird : send fake BODYSTRUCTURE
+                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(message.size).append(" NIL))");
+                }
             } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                 try {
                     SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -447,7 +451,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                HeaderOutputStream headerOutputStream = new HeaderOutputStream(baos);
+                PartOutputStream headerOutputStream = new PartOutputStream(baos, true, false);
                 message.write(headerOutputStream);
                 baos.close();
                 buffer.append(" RFC822.SIZE ").append(headerOutputStream.size);
@@ -461,11 +465,18 @@ public class ImapConnection extends AbstractConnection {
                 os.write(baos.toByteArray());
                 os.flush();
                 buffer.setLength(0);
-            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param)) {
+            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param) || "BODY.PEEK[TEXT]".equals(param)) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                message.write(baos);
+                if ("BODY.PEEK[TEXT]".equals(param)) {
+                    message.write(new PartOutputStream(baos, false, true));
+                } else {
+                    message.write(baos); 
+                }
                 baos.close();
                 DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
+                if (bodystructure) {
+                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(baos.size()).append(" NIL))");
+                }
                 buffer.append(" RFC822.SIZE ").append(baos.size()).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
                 os.write(baos.toByteArray());
@@ -715,9 +726,9 @@ public class ImapConnection extends AbstractConnection {
     }
 
     /**
-     * Filter to limit output lines to max body lines after header
+     * Filter to output only headers, also count full size
      */
-    private static class HeaderOutputStream extends FilterOutputStream {
+    private static class PartOutputStream extends FilterOutputStream {
         protected static final int START = 0;
         protected static final int CR = 1;
         protected static final int CRLF = 2;
@@ -726,9 +737,13 @@ public class ImapConnection extends AbstractConnection {
 
         protected int state = START;
         protected int size = 0;
+        protected boolean writeHeaders;
+        protected boolean writeBody;
 
-        public HeaderOutputStream(OutputStream os) {
+        public PartOutputStream(OutputStream os, boolean writeHeaders,  boolean writeBody) {
             super(os);
+            this.writeHeaders = writeHeaders;
+            this.writeBody = writeBody;
         }
 
         public int size() {
@@ -738,7 +753,7 @@ public class ImapConnection extends AbstractConnection {
         @Override
         public void write(int b) throws IOException {
             size++;
-            if (state != BODY) {
+            if ((state != BODY && writeHeaders)|| (state == BODY && writeBody)) {
                 super.write(b);
             }
             if (state == START) {
