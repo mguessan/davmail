@@ -21,6 +21,11 @@ import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
+import javax.mail.BodyPart;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimeBodyPart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -815,6 +820,8 @@ public class ExchangeSession {
             folderPath = folderName.replaceFirst("Drafts", draftsUrl);
         } else if (folderName.startsWith("Sent")) {
             folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
+        } else if (folderName.startsWith("calendar")) {
+            folderPath = folderName.replaceFirst("calendar", calendarUrl);
             // absolute folder path
         } else if (folderName.startsWith("/")) {
             folderPath = folderName;
@@ -1069,7 +1076,6 @@ public class ExchangeSession {
                     URIUtil.encodePath(destination));
             method.addRequestHeader("Overwrite", "f");
             method.addRequestHeader("Allow-rename", "t");
-            method.setDebug(4);
 
             int status = wdr.retrieveSessionInstance().executeMethod(method);
             if (status != HttpStatus.SC_CREATED) {
@@ -1118,49 +1124,50 @@ public class ExchangeSession {
         protected String etag;
 
         public String getICS() throws IOException {
+            String result = null;
             LOGGER.debug("Get event: " + href);
             StringBuilder buffer = new StringBuilder();
             GetMethod method = new GetMethod(URIUtil.encodePath(href));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
-            BufferedReader eventReader = null;
             try {
                 int status = wdr.retrieveSessionInstance().executeMethod(method);
                 if (status != HttpStatus.SC_OK) {
                     LOGGER.warn("Unable to get event at " + href + " status: " + status);
                 }
-                eventReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
-                String line;
-                boolean inbody = false;
-                while ((line = eventReader.readLine()) != null) {
-                    if ("BEGIN:VCALENDAR".equals(line)) {
-                        inbody = true;
-                    }
-                    if (inbody) {
-                        buffer.append(line);
-                        buffer.append((char) 13);
-                        buffer.append((char) 10);
-                    }
-                    if ("END:VCALENDAR".equals(line)) {
-                        inbody = false;
+                MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
+                MimeMultipart multiPart = (MimeMultipart) mimeMessage.getContent();
+                MimeBodyPart bodyPart = null;
+                for (int i = 0; i < multiPart.getCount(); i++) {
+                    String contentType = multiPart.getBodyPart(i).getContentType();
+                    if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics") ) {
+                        bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
                     }
                 }
 
-            } finally {
-                if (eventReader != null) {
-                    try {
-                        eventReader.close();
-                    } catch (IOException e) {
-                        LOGGER.error("Error parsing event at " + method.getPath());
-                    }
+                if (bodyPart == null) {
+                    throw new IOException("Invalid message content");
                 }
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.getDataHandler().writeTo(baos);
+                baos.close();
+                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+
+            } catch (MessagingException e) {
+                throw new IOException(e.getMessage());
+            } finally {
                 method.releaseConnection();
             }
-            return fixICS(buffer.toString(), true);
+            return result;
         }
 
         public String getPath() {
-            return href.substring(calendarUrl.length());
+            int index = href.lastIndexOf('/');
+            if (index >= 0) {
+                return href.substring(index + 1);
+            } else {
+                return href;
+            }
         }
 
         public String getEtag() {
@@ -1225,7 +1232,7 @@ public class ExchangeSession {
     }
 
     public Event getEvent(String path) throws IOException {
-        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl + "/" + URIUtil.decode(path), 0, EVENT_REQUEST_PROPERTIES);
+        Enumeration calendarEnum = wdr.propfindMethod(getFolderPath(URIUtil.decode(path)), 0, EVENT_REQUEST_PROPERTIES);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar event");
         }
@@ -1563,7 +1570,7 @@ public class ExchangeSession {
     }
 
     public int deleteEvent(String path) throws IOException {
-        wdr.deleteMethod(calendarUrl + "/" + URIUtil.decode(path));
+        wdr.deleteMethod(getFolderPath(URIUtil.decode(path)));
         return wdr.getStatusCode();
     }
 
