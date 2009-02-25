@@ -230,6 +230,7 @@ public class ImapConnection extends AbstractConnection {
                                                 if (((undeleted && !message.deleted) || !undeleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
                                                         && (conditions.answered == null || message.answered == conditions.answered)
+                                                        && (conditions.startUid == 0 || message.getUidAsLong() >= conditions.startUid)
                                                         ) {
                                                     sendClient("* SEARCH " + message.getUidAsLong());
                                                 }
@@ -491,6 +492,7 @@ public class ImapConnection extends AbstractConnection {
     static final class SearchConditions {
         Boolean flagged = null;
         Boolean answered = null;
+        long startUid = 0;
         final StringBuilder query = new StringBuilder();
 
         public StringBuilder append(String value) {
@@ -556,6 +558,8 @@ public class ImapConnection extends AbstractConnection {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {
                 // ignore: this is a noop filter
+            } else if (range.endsWith(":*")) {
+                 conditions.startUid = Long.parseLong(range.substring(0, range.indexOf(':')));
             } else {
                 throw new IOException("Invalid search parameters");
             }
