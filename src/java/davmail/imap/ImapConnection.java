@@ -433,6 +433,8 @@ public class ImapConnection extends AbstractConnection {
             String param = paramTokens.nextToken();
             if ("FLAGS".equals(param)) {
                 buffer.append(" FLAGS (").append(message.getImapFlags()).append(")");
+            } else if ("BODYSTRUCTURE".equals(param)) {
+                buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(message.size).append(" NIL))");
             } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                 try {
                     SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
