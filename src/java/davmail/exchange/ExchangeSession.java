@@ -146,9 +146,9 @@ public class ExchangeSession {
         return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
-    protected String getAbsolutePath(HttpMethod method, String path) {
+    protected String getAbsolutePath(HttpMethod method, String path) throws URIException {
         if (path == null) {
-            return method.getPath();
+            return method.getURI().getURI();
         } else if (path.startsWith("/")) {
             return path;
         } else {
