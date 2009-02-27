@@ -452,10 +452,10 @@ public class ImapConnection extends AbstractConnection {
                 }
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PartOutputStream headerOutputStream = new PartOutputStream(baos, true, false);
-                message.write(headerOutputStream);
+                PartOutputStream partOutputStream = new PartOutputStream(baos, true, false);
+                message.write(partOutputStream);
                 baos.close();
-                buffer.append(" RFC822.SIZE ").append(headerOutputStream.size);
+                buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                 if ("BODY.PEEK[HEADER]".equals(param)) {
                     buffer.append(" BODY[HEADER] {");
                 } else {
@@ -466,19 +466,23 @@ public class ImapConnection extends AbstractConnection {
                 os.write(baos.toByteArray());
                 os.flush();
                 buffer.setLength(0);
-            } else if ("BODY[]".equals(param) || "BODY.PEEK[]".equals(param) || "BODY.PEEK[TEXT]".equals(param)) {
+            } else if ("BODY[]".equals(param) || param.startsWith("BODY.PEEK[]") || "BODY.PEEK[TEXT]".equals(param)) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                int rfc822size;
                 if ("BODY.PEEK[TEXT]".equals(param)) {
-                    message.write(new PartOutputStream(baos, false, true));
+                    PartOutputStream bodyOutputStream = new PartOutputStream(baos, false, true);
+                    message.write(bodyOutputStream);
+                    rfc822size = bodyOutputStream.size; 
                 } else {
-                    message.write(baos); 
+                    message.write(baos);
+                    rfc822size = baos.size();
                 }
                 baos.close();
                 DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
                 if (bodystructure) {
                     buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(baos.size()).append(" NIL))");
                 }
-                buffer.append(" RFC822.SIZE ").append(baos.size()).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
+                buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
                 os.write(baos.toByteArray());
                 os.flush();
