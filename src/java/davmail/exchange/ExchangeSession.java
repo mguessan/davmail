@@ -147,16 +147,19 @@ public class ExchangeSession {
     }
 
     protected String getAbsolutePath(HttpMethod method, String path) {
-        String absolutePath = path;
-        // allow relative path
-        if (!absolutePath.startsWith("/")) {
+        if (path == null) {
+            return method.getPath();
+        } else if (path.startsWith("/")) {
+            return path;
+        } else {
             String currentPath = method.getPath();
             int end = currentPath.lastIndexOf('/');
             if (end >= 0) {
-                absolutePath = currentPath.substring(0, end + 1) + absolutePath;
+                return currentPath.substring(0, end + 1) + path;
+            } else {
+                return path;
             }
         }
-        return absolutePath;
     }
 
     /**
