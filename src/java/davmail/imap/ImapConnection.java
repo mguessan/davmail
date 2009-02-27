@@ -472,7 +472,7 @@ public class ImapConnection extends AbstractConnection {
                 if ("BODY.PEEK[TEXT]".equals(param)) {
                     PartOutputStream bodyOutputStream = new PartOutputStream(baos, false, true);
                     message.write(bodyOutputStream);
-                    rfc822size = bodyOutputStream.size; 
+                    rfc822size = bodyOutputStream.size;
                 } else {
                     message.write(baos);
                     rfc822size = baos.size();
@@ -480,7 +480,7 @@ public class ImapConnection extends AbstractConnection {
                 baos.close();
                 DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
                 if (bodystructure) {
-                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(baos.size()).append(" NIL))");
+                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(rfc822size).append(" NIL))");
                 }
                 buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
