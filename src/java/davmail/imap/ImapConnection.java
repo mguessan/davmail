@@ -152,7 +152,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
                                 } else if ("close".equalsIgnoreCase(command) || "expunge".equalsIgnoreCase(command)) {
-                                    expunge();
+                                    expunge("close".equalsIgnoreCase(command));
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
@@ -700,14 +700,16 @@ public class ImapConnection extends AbstractConnection {
 
     }
 
-    protected void expunge() throws IOException {
+    protected void expunge(boolean silent) throws IOException {
         if (messages != null) {
             int index = 0;
             for (ExchangeSession.Message message : messages) {
                 index++;
                 if (message.deleted) {
                     message.delete();
-                    sendClient("* " + index + " EXPUNGE");
+                    if (!silent) {
+                        sendClient("* " + index + " EXPUNGE");
+                    }
                 }
             }
         }
