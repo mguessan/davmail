@@ -57,11 +57,11 @@
                     shortname="DavMail"
                     name="DavMail"
                     mainclass="davmail.DavGateway"
-                    build="$(version)"
+                    build="${version}"
                     icon="src/osx/tray.icns"
-                    infostring="DavMail Gateway $(version)"
+                    infostring="DavMail Gateway ${version}"
                     jvmversion="1.5+"
-                    version="$(version)"
+                    version="${version}"
                     vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
                     workingdirectory="$APP_PACKAGE"
                     stubfile="dist/JavaApplicationStub">
@@ -76,7 +76,7 @@
         <delete file="dist/JavaApplicationStub"/>
         <delete dir="dist/DavMail.app/Contents/MacOS"/>
         <copy file="src/osx/DavMail.JavaApplicationStub.app.zip"
-              tofile="dist/DavMail-${version}.app.zip" overwrite="true"/>
+              tofile="dist/DavMail-MacOSX-${version}.app.zip" overwrite="true"/>
         <zip update="true" file="dist/DavMail-${version}.app.zip">
             <fileset dir="dist">
                 <include name="DavMail.app/**/*"/>
