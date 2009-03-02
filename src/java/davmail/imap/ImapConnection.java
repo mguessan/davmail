@@ -8,10 +8,12 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimePart;
+import javax.mail.MessagingException;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.SocketException;
@@ -437,8 +439,10 @@ public class ImapConnection extends AbstractConnection {
                     // Apple Mail: send structure with body, need exact RFC822.SIZE
                     bodystructure = true;
                 } else {
-                    // thunderbird : send fake BODYSTRUCTURE
-                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(message.size).append(" NIL))");
+                    // thunderbird : send BODYSTRUCTURE
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    message.write(baos);
+                    appendBodyStructure(buffer, baos);
                 }
             } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                 try {
@@ -480,7 +484,8 @@ public class ImapConnection extends AbstractConnection {
                 baos.close();
                 DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
                 if (bodystructure) {
-                    buffer.append(" BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"windows-1252\") NIL NIL \"8BIT\" ").append(rfc822size).append(" NIL))");
+                    // Apple Mail: need to build full bodystructure
+                    appendBodyStructure(buffer, baos);
                 }
                 buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
@@ -491,6 +496,93 @@ public class ImapConnection extends AbstractConnection {
         }
         buffer.append(")");
         sendClient(buffer.toString());
+    }
+
+    protected void appendBodyStructure(StringBuilder buffer, ByteArrayOutputStream baos) throws IOException {
+        buffer.append(" BODYSTRUCTURE ");
+        try {
+            MimeMessage mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
+            Object mimeBody = mimeMessage.getContent();
+            if (mimeBody instanceof MimeMultipart) {
+                buffer.append("(");
+                MimeMultipart multiPart = (MimeMultipart) mimeBody;
+
+                for (int i = 0; i < multiPart.getCount(); i++) {
+                    MimeBodyPart bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+                    appendBodyStructure(buffer, bodyPart);
+                }
+                int slashIndex = multiPart.getContentType().indexOf('/');
+                if (slashIndex < 0) {
+                    throw new IOException("Invalid content type: " + multiPart.getContentType());
+                }
+                int semiColonIndex = multiPart.getContentType().indexOf(';');
+                if (semiColonIndex < 0) {
+                    buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1).toUpperCase()).append("\")");
+                } else {
+                    buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append("\")");
+                }
+            } else {
+                // no multipart, single body
+                appendBodyStructure(buffer, mimeMessage);
+            }
+        } catch (MessagingException me) {
+            throw new IOException(me);
+        }
+    }
+
+    protected void appendBodyStructure(StringBuilder buffer, MimePart bodyPart) throws IOException, MessagingException {
+        String contentType = bodyPart.getContentType();
+        int slashIndex = contentType.indexOf('/');
+        if (slashIndex < 0) {
+            throw new IOException("Invalid content type: " + contentType);
+        }
+        buffer.append("(\"").append(contentType.substring(0, slashIndex).toUpperCase()).append("\" \"");
+        int semiColonIndex = contentType.indexOf(';');
+        if (semiColonIndex < 0) {
+            buffer.append(contentType.substring(slashIndex + 1).toUpperCase()).append("\" ()");
+        } else {
+            // extended content type
+            buffer.append(contentType.substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append("\"");
+            int charsetindex = contentType.indexOf("charset=");
+            if (charsetindex >= 0) {
+                buffer.append(" (\"CHARSET\" ");
+                int charsetEndIndex = Math.max(contentType.indexOf(' '), contentType.length());
+                String charSet = contentType.substring(charsetindex + "charset=".length(), charsetEndIndex);
+                if (!charSet.startsWith("\"")) {
+                    buffer.append('"');
+                }
+                buffer.append(charSet.toUpperCase());
+                if (!charSet.endsWith("\"")) {
+                    buffer.append('"');
+                }
+                buffer.append(")");
+            } else {
+                buffer.append(" ()");
+            }
+        }
+        // body id
+        if (bodyPart.getContentID() == null) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(" \"").append(bodyPart.getContentID()).append("\"");
+        }
+        if (bodyPart.getDescription() == null) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(" \"").append(bodyPart.getDescription()).append("\"");
+        }
+        if (bodyPart.getHeader("Content-Transfer-Encoding") == null) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(" \"").append(bodyPart.getEncoding().toUpperCase()).append("\"");
+        }
+        buffer.append(' ').append(bodyPart.getSize());
+        if (bodyPart.getLineCount() < 0) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(' ').append(bodyPart.getLineCount()).append('"');
+        }
+        buffer.append(')');
     }
 
     static final class SearchConditions {
@@ -563,7 +655,7 @@ public class ImapConnection extends AbstractConnection {
             if ("1:*".equals(range)) {
                 // ignore: this is a noop filter
             } else if (range.endsWith(":*")) {
-                 conditions.startUid = Long.parseLong(range.substring(0, range.indexOf(':')));
+                conditions.startUid = Long.parseLong(range.substring(0, range.indexOf(':')));
             } else {
                 throw new IOException("Invalid search parameters");
             }
@@ -748,7 +840,7 @@ public class ImapConnection extends AbstractConnection {
         protected boolean writeHeaders;
         protected boolean writeBody;
 
-        public PartOutputStream(OutputStream os, boolean writeHeaders,  boolean writeBody) {
+        public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
@@ -761,7 +853,7 @@ public class ImapConnection extends AbstractConnection {
         @Override
         public void write(int b) throws IOException {
             size++;
-            if ((state != BODY && writeHeaders)|| (state == BODY && writeBody)) {
+            if ((state != BODY && writeHeaders) || (state == BODY && writeBody)) {
                 super.write(b);
             }
             if (state == START) {
