@@ -21,7 +21,6 @@ import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
-import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
@@ -146,7 +145,7 @@ public class ExchangeSession {
         return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
-    protected String getAbsolutePath(HttpMethod method, String path) throws URIException {
+    protected String getAbsolutePathOrUri(HttpMethod method, String path) throws URIException {
         if (path == null) {
             return method.getURI().getURI();
         } else if (path.startsWith("/")) {
@@ -184,7 +183,7 @@ public class ExchangeSession {
                 TagNode form = (TagNode) forms.get(0);
                 String logonMethodPath = form.getAttributeByName("action");
 
-                logonMethod = new PostMethod(getAbsolutePath(initmethod, logonMethodPath));
+                logonMethod = new PostMethod(getAbsolutePathOrUri(initmethod, logonMethodPath));
 
                 List inputList = form.getElementListByName("input", true);
                 for (Object input : inputList) {
@@ -221,7 +220,7 @@ public class ExchangeSession {
                                     int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
                                     int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        String src = getAbsolutePath(initmethod,
+                                        String src = getAbsolutePathOrUri(initmethod,
                                                 scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
                                                         scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
                                         LOGGER.debug("Detected script based logon, redirect to form at " + src);
@@ -862,7 +861,7 @@ public class ExchangeSession {
 
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
-        PropPatchMethod method = new PropPatchMethod(folderPath) {
+        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath)) {
             public String getName() {
                 return "MKCOL";
             }
