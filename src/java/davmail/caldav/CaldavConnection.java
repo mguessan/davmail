@@ -16,8 +16,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -253,12 +252,12 @@ public class CaldavConnection extends AbstractConnection {
             if ("inbox".equals(paths[3])) {
                 paths[3] = "INBOX";
             }
-            int status = session.deleteEvent(paths[3]+"/"+paths[4]);
+            int status = session.deleteEvent(paths[3] + "/" + paths[4]);
             sendHttpResponse(status, true);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
-            ExchangeSession.Event event = session.getEvent(paths[3]+"/"+paths[4]);
+            ExchangeSession.Event event = session.getEvent(paths[3] + "/" + paths[4]);
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
         } else {
@@ -270,128 +269,96 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    protected void appendEventsResponses(StringBuilder buffer, CaldavRequest request, String path, List<ExchangeSession.Event> events) throws IOException {
+    protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, String path, List<ExchangeSession.Event> events) throws IOException {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
             DavGatewayTray.debug("Retrieving event " + (++count) + "/" + size);
-            appendEventResponse(buffer, request, path, event);
+            appendEventResponse(response, request, path, event);
         }
     }
 
-    protected void appendEventResponse(StringBuilder buffer, CaldavRequest request, String path, ExchangeSession.Event event) throws IOException {
+    protected void appendEventResponse(CaldavResponse response, CaldavRequest request, String path, ExchangeSession.Event event) throws IOException {
         String eventPath = event.getPath().replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(session.getEmail()).append("/").append(path).append("/").append(URIUtil.encodeWithinQuery(eventPath)).append("</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+        response.startResponse("/users/" + session.getEmail() + "/" + path + "/" + URIUtil.encodeWithinQuery(eventPath));
+        response.startPropstat();
         if (request.hasProperty("calendar-data")) {
-            String ics = event.getICS();
-            if (ics != null && ics.length() > 0) {
-                ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                buffer.append("<C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"");
-                buffer.append(" C:content-type=\"text/calendar\" C:version=\"2.0\">");
-                buffer.append(ics);
-                buffer.append("</C:calendar-data>");
-            }
+            response.appendCalendarData(event.getICS());
         }
         if (request.hasProperty("getetag")) {
-            buffer.append("<D:getetag>").append(event.getEtag()).append("</D:getetag>");
+            response.appendProperty("D:getetag", event.getEtag());
         }
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype/>");
+            response.appendProperty("D:resourcetype");
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>").append(eventPath).append("</D:displayname>");
+            response.appendProperty("D:displayname", eventPath);
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
+        response.endPropStatOK();
+        response.endResponse();
     }
 
-    public void appendCalendar(StringBuilder buffer, String principal, CaldavRequest request) throws IOException {
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(principal).append("/calendar</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+    public void appendCalendar(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
+        response.startResponse("/users/" + principal + "/calendar");
+        response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype>");
-            buffer.append("<D:collection/>");
-            buffer.append("<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
-            buffer.append("</D:resourcetype>");
+            response.appendProperty("D:resourcetype", "<D:collection/>" +
+                    "<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
         }
         if (request.hasProperty("owner")) {
-            buffer.append("<D:owner>");
-            buffer.append("<D:href>/principals/users/").append(principal).append("</D:href>");
-            buffer.append("</D:owner>");
+            response.appendProperty("D:owner", "<D:href>/principals/users/" + principal + "</D:href>");
         }
         if (request.hasProperty("getetag")) {
-            buffer.append("<D:getetag>")
-                    .append(session.getCalendarEtag())
-                    .append("</D:getetag>");
+            response.appendProperty("D:getetag", session.getCalendarEtag());
         }
         if (request.hasProperty("getctag")) {
-            buffer.append("<CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">")
-                    .append(base64Encode(session.getCalendarCtag()))
-                    .append("</CS:getctag>");
+            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
+                    base64Encode(session.getCalendarCtag()));
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>calendar</D:displayname>");
+            response.appendProperty("D:displayname", "calendar");
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
+        response.endPropStatOK();
+        response.endResponse();
     }
 
-    public void appendInbox(StringBuilder buffer, String principal, CaldavRequest request) {
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(principal).append("/inbox</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+    public void appendInbox(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
+        response.startResponse("/users/" + principal + "/inbox");
+        response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype>");
-            buffer.append("<D:collection/>");
-            buffer.append("<C:schedule-inbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
-            buffer.append("</D:resourcetype>");
+            response.appendProperty("D:resourcetype", "<D:collection/>" +
+                    "<C:schedule-inbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
         }
         if (request.hasProperty("getctag")) {
-            buffer.append("<CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">0</CS:getctag>");
+            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
+                    base64Encode(session.getInboxCtag()));
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>inbox</D:displayname>");
+            response.appendProperty("<D:displayname>", "inbox");
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
+        response.endPropStatOK();
+        response.endResponse();
     }
 
-    public void appendOutbox(StringBuilder buffer, String principal, CaldavRequest request) {
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(principal).append("/outbox</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+    public void appendOutbox(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
+        response.startResponse("/users/" + principal + "/outbox");
+        response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype>");
-            buffer.append("<D:collection/>");
-            buffer.append("<C:schedule-outbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
-            buffer.append("</D:resourcetype>");
+            response.appendProperty("D:resourcetype", "<D:collection/>" +
+                    "<C:schedule-outbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
         }
         if (request.hasProperty("getctag")) {
-            buffer.append("<CS:getctag xmlns:CS=\"http://calendarserver.org/ns/\">0</CS:getctag>");
+            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
+                    "0");
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>outbox</D:displayname>");
+            response.appendProperty("<D:displayname>", "outbox");
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
+        response.endPropStatOK();
+        response.endResponse();
     }
 
     public void sendGetRoot() throws IOException {
@@ -403,42 +370,39 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendInbox(CaldavRequest request, int depth, String principal) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        appendInbox(buffer, principal, request);
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        appendInbox(response, principal, request);
         if (depth == 1) {
             DavGatewayTray.debug("Searching calendar messages...");
             List<ExchangeSession.Event> events = session.getEventMessages();
             DavGatewayTray.debug("Found " + events.size() + " calendar messages");
-            appendEventsResponses(buffer, request, "inbox", events);
+            appendEventsResponses(response, request, "inbox", events);
         }
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendOutbox(CaldavRequest request, String principal) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        appendOutbox(buffer, principal, request);
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        appendOutbox(response, principal, request);
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendCalendar(CaldavRequest request, int depth, String principal) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        appendCalendar(buffer, principal, request);
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        appendCalendar(response, principal, request);
         if (depth == 1) {
             DavGatewayTray.debug("Searching calendar events...");
             List<ExchangeSession.Event> events = session.getAllEvents();
             DavGatewayTray.debug("Found " + events.size() + " calendar events");
-            appendEventsResponses(buffer, request, "calendar", events);
+            appendEventsResponses(response, request, "calendar", events);
         }
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     protected String getEventFileNameFromPath(String path) {
@@ -464,89 +428,73 @@ public class CaldavConnection extends AbstractConnection {
                     if (eventName == null) {
                         notFound.add(href);
                     } else {
-                        events.add(session.getEvent(path+"/"+eventName));
+                        events.add(session.getEvent(path + "/" + eventName));
                     }
                 } catch (HttpException e) {
                     notFound.add(href);
                 }
             }
-        } else if ("INBOX".equals(path)){
+        } else if ("INBOX".equals(path)) {
             events = session.getEventMessages();
         } else {
             events = session.getAllEvents();
         }
 
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                "<D:multistatus xmlns:D=\"DAV:\">");
-        appendEventsResponses(buffer, request, path, events);
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        appendEventsResponses(response, request, path, events);
 
         // send not found events errors
         for (String href : notFound) {
-            buffer.append("<D:response>");
-            buffer.append("<D:href>").append(URIUtil.encodeWithinQuery(href)).append("</D:href>");
-            buffer.append("<D:propstat>");
-            buffer.append("<D:status>HTTP/1.1 404 Not Found</D:status>");
-            buffer.append("</D:propstat>");
-            buffer.append("</D:response>");
+            response.startResponse(URIUtil.encodeWithinQuery(href));
+            response.appendPropstatNotFound();
+            response.endResponse();
         }
-        buffer.append("</D:multistatus>");
+        response.endMultistatus();
 
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendUserRoot(CaldavRequest request, int depth, String principal) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/users/").append(principal).append("</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        response.startResponse("/users/" + principal);
+        response.startPropstat();
+
 
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype>");
-            buffer.append("<D:collection/>");
-            buffer.append("</D:resourcetype>");
+            response.appendProperty("D:resourcetype", "<D:collection/>");
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>").append(principal).append("</D:displayname>");
+            response.appendProperty("D:displayname", principal);
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
+        response.endPropStatOK();
         if (depth == 1) {
-            appendInbox(buffer, principal, request);
-            appendOutbox(buffer, principal, request);
-            appendCalendar(buffer, principal, request);
+            appendInbox(response, principal, request);
+            appendOutbox(response, principal, request);
+            appendCalendar(response, principal, request);
         }
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        response.endResponse();
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendRoot(CaldavRequest request) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        response.startResponse("/");
+        response.startPropstat();
+
         if (request.hasProperty("principal-collection-set")) {
-            buffer.append("<D:principal-collection-set>");
-            buffer.append("<D:href>/principals/users/").append(session.getEmail()).append("</D:href>");
-            buffer.append("</D:principal-collection-set>");
+            response.appendProperty("D:principal-collection-set", "<D:href>/principals/users/" + session.getEmail() + "</D:href>");
         }
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>ROOT</D:displayname>");
+            response.appendProperty("D:displayname", "ROOT");
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        response.endPropStatOK();
+        response.endResponse();
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendPrincipal(CaldavRequest request, String principal) throws IOException {
@@ -556,52 +504,37 @@ public class CaldavConnection extends AbstractConnection {
             actualPrincipal = session.getEmail();
         }
 
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        buffer.append("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
-        buffer.append("<D:response>");
-        buffer.append("<D:href>/principals/users/").append(principal).append("</D:href>");
-        buffer.append("<D:propstat>");
-        buffer.append("<D:prop>");
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        response.startResponse("/principals/users/" + principal);
+        response.startPropstat();
+
         if (request.hasProperty("calendar-home-set")) {
-            buffer.append("<C:calendar-home-set>");
-            buffer.append("<D:href>/users/").append(actualPrincipal).append("</D:href>");
-            buffer.append("</C:calendar-home-set>");
+            response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "</D:href>");
         }
 
         if (request.hasProperty("calendar-user-address-set")) {
-            buffer.append("<C:calendar-user-address-set>");
-            buffer.append("<D:href>mailto:").append(actualPrincipal).append("</D:href>");
-            buffer.append("</C:calendar-user-address-set>");
+            response.appendProperty("C:calendar-user-address-set", "<D:href>mailto:" + actualPrincipal + "</D:href>");
         }
 
         if (request.hasProperty("schedule-inbox-URL")) {
-            buffer.append("<C:schedule-inbox-URL>");
-            buffer.append("<D:href>/users/").append(actualPrincipal).append("/inbox</D:href>");
-            buffer.append("</C:schedule-inbox-URL>");
+            response.appendProperty("C:schedule-inbox-URL", "<D:href>/users/" + actualPrincipal + "/inbox</D:href>");
         }
 
         if (request.hasProperty("schedule-outbox-URL")) {
-            buffer.append("<C:schedule-outbox-URL>");
-            buffer.append("<D:href>/users/").append(actualPrincipal).append("/outbox</D:href>");
-            buffer.append("</C:schedule-outbox-URL>");
+            response.appendProperty("C:schedule-outbox-URL", "<D:href>/users/" + actualPrincipal + "/outbox</D:href>");
         }
 
         if (request.hasProperty("displayname")) {
-            buffer.append("<D:displayname>").append(actualPrincipal).append("</D:displayname>");
+            response.appendProperty("D:displayname", actualPrincipal);
         }
         if (request.hasProperty("resourcetype")) {
-            buffer.append("<D:resourcetype>");
-            buffer.append("<D:collection/>");
-            buffer.append("<D:principal/>");
-            buffer.append("</D:resourcetype>");
+            response.appendProperty("D:resourcetype", "<D:collection/><D:principal/>");
         }
-        buffer.append("</D:prop>");
-        buffer.append("<D:status>HTTP/1.1 200 OK</D:status>");
-        buffer.append("</D:propstat>");
-        buffer.append("</D:response>");
-        buffer.append("</D:multistatus>");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, "text/xml;charset=UTF-8", buffer.toString(), true);
+        response.endPropStatOK();
+        response.endResponse();
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
 
     public void sendFreeBusy(String body) throws IOException {
@@ -640,18 +573,15 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
         if (!freeBusyMap.isEmpty()) {
-            StringBuilder response = new StringBuilder();
+            CaldavResponse response = new CaldavResponse();
+            response.startScheduleResponse();
 
-            response.append("<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
-                    .append("<C:schedule-response xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
             for (Map.Entry<String, String> entry : freeBusyMap.entrySet()) {
                 String attendee = entry.getKey();
-                response.append("<C:response>")
-                        .append("<C:recipient>")
-                        .append("<D:href>").append(attendee).append("</D:href>")
-                        .append("</C:recipient>")
-                        .append("<C:request-status>2.0;Success</C:request-status>")
-                        .append("<C:calendar-data>BEGIN:VCALENDAR").append((char) 13).append((char) 10)
+                response.startRecipientResponse(attendee);
+
+                StringBuilder ics = new StringBuilder();
+                ics.append("<C:calendar-data>BEGIN:VCALENDAR").append((char) 13).append((char) 10)
                         .append("VERSION:2.0").append((char) 13).append((char) 10)
                         .append("PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN").append((char) 13).append((char) 10)
                         .append("METHOD:REPLY").append((char) 13).append((char) 10)
@@ -663,15 +593,16 @@ public class CaldavConnection extends AbstractConnection {
                         .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
                         .append(attendeeKeyMap.get(attendee)).append(":").append(attendee).append("").append((char) 13).append((char) 10);
                 if (entry.getValue().length() > 0) {
-                    response.append("FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:").append(entry.getValue()).append("").append((char) 13).append((char) 10);
+                    ics.append("FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:").append(entry.getValue()).append("").append((char) 13).append((char) 10);
                 }
-                response.append("END:VFREEBUSY").append((char) 13).append((char) 10)
-                        .append("END:VCALENDAR")
-                        .append("</C:calendar-data>")
-                        .append("</C:response>");
+                ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
+                        .append("END:VCALENDAR");
+                response.appendCalendarData(ics.toString());
+                response.endRecipientResponse();
+
             }
-            response.append("</C:schedule-response>");
-            sendHttpResponse(HttpStatus.SC_OK, null, "text/xml;charset=UTF-8", response.toString(), true);
+            response.endScheduleResponse();
+            sendHttpResponse(HttpStatus.SC_OK, null, response, true);
         } else {
             sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", "Unknown recipient: " + valueMap.get("ATTENDEE"), true);
         }
@@ -687,7 +618,7 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append(path);
         Map<String, String> responseHeaders = new HashMap<String, String>();
         responseHeaders.put("Location", buffer.toString());
-        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders, null, null, true);
+        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders, true);
     }
 
     public void sendErr(int status, Exception e) throws IOException {
@@ -705,23 +636,35 @@ public class CaldavConnection extends AbstractConnection {
     public void sendOptions() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Allow", "OPTIONS, GET, PROPFIND, PUT, POST");
-        sendHttpResponse(HttpStatus.SC_OK, headers, null, null, true);
+        sendHttpResponse(HttpStatus.SC_OK, headers, true);
     }
 
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + Settings.getProperty("davmail.url") + "\"");
-        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, null, true);
+        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, true);
     }
 
     public void sendHttpResponse(int status, boolean keepAlive) throws IOException {
-        sendHttpResponse(status, null, null, null, keepAlive);
+        sendHttpResponse(status, null, null, (byte[]) null, keepAlive);
+    }
+
+    public void sendHttpResponse(int status, Map<String, String> headers, boolean keepAlive) throws IOException {
+        sendHttpResponse(status, headers, null, (byte[]) null, keepAlive);
+    }
+
+    public void sendHttpResponse(int status, Map<String, String> headers, CaldavResponse response, boolean keepAlive) throws IOException {
+        sendHttpResponse(status, headers, "text/xml;charset=UTF-8", response.getBytes(), keepAlive);
     }
 
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
+        sendHttpResponse(status, headers, contentType, content.getBytes("UTF-8"), keepAlive);
+    }
+
+    public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + " " + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
-        sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-schedule, calendarserver-private-events");
+        sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-auto-schedule, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         sendClient("Date: " + formatter.format(new java.util.Date()));
         if (headers != null) {
@@ -734,18 +677,18 @@ public class CaldavConnection extends AbstractConnection {
         }
         closed = closed || !keepAlive;
         sendClient("Connection: " + (closed ? "close" : "keep-alive"));
-        if (content != null && content.length() > 0) {
-            sendClient("Content-Length: " + content.getBytes("UTF-8").length);
+        if (content != null && content.length > 0) {
+            sendClient("Content-Length: " + content.length);
         } else {
             sendClient("Content-Length: 0");
         }
         sendClient("");
-        if (content != null && content.length() > 0) {
+        if (content != null && content.length > 0) {
             // full debug trace
             if (wireLogger.isDebugEnabled()) {
-                wireLogger.debug("> " + content);
+                wireLogger.debug("> " + new String(content, "UTF-8"));
             }
-            sendClient(content.getBytes("UTF-8"));
+            sendClient(content);
         }
     }
 
@@ -843,6 +786,125 @@ public class CaldavConnection extends AbstractConnection {
 
         public Set<String> getHrefs() {
             return hrefs;
+        }
+    }
+
+    protected static class CaldavResponse {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        OutputStreamWriter writer;
+
+        public CaldavResponse() throws IOException {
+            writer = new OutputStreamWriter(baos, "UTF-8");
+            writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        }
+
+        public void startMultistatus() throws IOException {
+            writer.write("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
+        }
+
+        public void startResponse(String href) throws IOException {
+            writer.write("<D:response>");
+            writer.write("<D:href>");
+            writer.write(href);
+            writer.write("</D:href>");
+        }
+
+        public void startPropstat() throws IOException {
+            writer.write("<D:propstat>");
+            writer.write("<D:prop>");
+        }
+
+        public void appendCalendarData(String ics) throws IOException {
+            if (ics != null && ics.length() > 0) {
+                ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+                writer.write("<C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"");
+                writer.write(" C:content-type=\"text/calendar\" C:version=\"2.0\">");
+                writer.write(ics);
+                writer.write("</C:calendar-data>");
+            }
+        }
+
+        public void appendProperty(String propertyName) throws IOException {
+            appendProperty(propertyName, null);
+        }
+
+        public void appendProperty(String propertyName, String propertyValue) throws IOException {
+            appendProperty(propertyName, null, propertyValue);
+        }
+
+        public void appendProperty(String propertyName, String namespace, String propertyValue) throws IOException {
+            if (propertyValue != null) {
+                writer.write('<');
+                writer.write(propertyName);
+                if (namespace != null) {
+                    writer.write("  xmlns:");
+                    writer.write(namespace);
+                }
+                writer.write('>');
+                writer.write(propertyValue);
+                writer.write("</");
+                writer.write(propertyName);
+                writer.write('>');
+            } else {
+                writer.write('<');
+                writer.write(propertyName);
+                writer.write("/>");
+            }
+        }
+
+        public void endPropStatOK() throws IOException {
+            writer.write("</D:prop>");
+            writer.write("<D:status>HTTP/1.1 200 OK</D:status>");
+            writer.write("</D:propstat>");
+        }
+
+        public void appendPropstatNotFound() throws IOException {
+            writer.write("<D:propstat>");
+            writer.write("<D:status>HTTP/1.1 404 Not Found</D:status>");
+            writer.write("</D:propstat>");
+        }
+
+        public void endResponse() throws IOException {
+            writer.write("</D:response>");
+        }
+
+        public void endMultistatus() throws IOException {
+            writer.write("</D:multistatus>");
+        }
+
+        public void startScheduleResponse() throws IOException {
+            writer.write("<C:schedule-response xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
+        }
+
+        public void startRecipientResponse(String recipient) throws IOException {
+            writer.write("<C:response>");
+            writer.write("<C:recipient>");
+            writer.write("<D:href>");
+            writer.write(recipient);
+            writer.write("</D:href>");
+            writer.write("</C:recipient>");
+            writer.write("<C:request-status>2.0;Success</C:request-status>");
+        }
+
+        public void endRecipientResponse() throws IOException {
+            writer.write("</C:response>");
+        }
+
+        public void endScheduleResponse() throws IOException {
+            writer.write("</C:schedule-response>");
+        }
+
+        public void close() throws IOException {
+            try {
+                writer.close();
+            } finally {
+                baos.close();
+            }
+        }
+
+        public byte[] getBytes() throws IOException {
+            close();
+            return baos.toByteArray();
         }
     }
 }

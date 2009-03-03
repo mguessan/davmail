@@ -1142,7 +1142,7 @@ public class ExchangeSession {
                 MimeBodyPart bodyPart = null;
                 for (int i = 0; i < multiPart.getCount(); i++) {
                     String contentType = multiPart.getBodyPart(i).getContentType();
-                    if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics") ) {
+                    if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
                         bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
                     }
                 }
@@ -1576,9 +1576,17 @@ public class ExchangeSession {
         return wdr.getStatusCode();
     }
 
+    public String getInboxCtag() throws IOException {
+        return getFolderCtag(inboxUrl);
+    }
+
     public String getCalendarCtag() throws IOException {
+        return getFolderCtag(calendarUrl);
+    }
+
+    public String getFolderCtag(String folderUrl) throws IOException {
         String ctag = null;
-        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0);
+        Enumeration calendarEnum = wdr.propfindMethod(folderUrl, 0);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar object");
         }
