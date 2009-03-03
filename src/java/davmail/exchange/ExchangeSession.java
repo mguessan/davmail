@@ -961,7 +961,7 @@ public class ExchangeSession {
             byte[] decodedValue = Base64.decode(uid.getBytes());
 
             long result = 0;
-            for (int i = 2; i < 9; i++) {
+            for (int i = 3; i < 9; i++) {
                 result = result << 8;
                 result |= decodedValue[i] & 0xff;
             }
@@ -1094,7 +1094,14 @@ public class ExchangeSession {
         }
 
         public int compareTo(Object message) {
-            return (int) (getUidAsLong() - ((Message) message).getUidAsLong());
+            long compareValue = (getUidAsLong() - ((Message) message).getUidAsLong());
+            if (compareValue > 0) {
+                return 1;
+            } else if (compareValue < 0) {
+                return -1;
+            } else {
+                return 0;
+            }
         }
 
         @Override
@@ -1309,15 +1316,15 @@ public class ExchangeSession {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                if (currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
+                if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
-                } else if ("END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
+                } else if (!fromServer && "END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
                     result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
-                } else if (!currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
+                } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
-                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART;TZID")) {
+                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART") && !line.startsWith("DTSTART;VALUE=DATE")) {
                     line = getAllDayLine(line);
-                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND;TZID")) {
+                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
                     line = getAllDayLine(line);
                 } else if ("BEGIN:VEVENT".equals(line)) {
                     currentAllDayState = allDayStates.get(count++);
@@ -1383,11 +1390,11 @@ public class ExchangeSession {
         int keyIndex = line.indexOf(';');
         int valueIndex = line.lastIndexOf(':');
         int valueEndIndex = line.lastIndexOf('T');
-        if (keyIndex < 0 || valueIndex < 0 || valueEndIndex < 0) {
+        if (valueIndex < 0 || valueEndIndex < 0) {
             throw new IOException("Invalid ICS line: " + line);
         }
-        String dateValue = line.substring(valueIndex + 1);
-        String key = line.substring(0, keyIndex);
+        String dateValue = line.substring(valueIndex + 1, valueEndIndex);
+        String key = line.substring(0, Math.max(keyIndex, valueIndex));
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date date;
@@ -1399,7 +1406,7 @@ public class ExchangeSession {
         if ("DTEND".equals(key)) {
             date.setTime(date.getTime() - 1);
         }
-        return line.substring(0, keyIndex) + ";VALUE=DATE:" + line.substring(valueIndex + 1, valueEndIndex);
+        return key + ";VALUE=DATE:" + dateValue;
     }
 
 
