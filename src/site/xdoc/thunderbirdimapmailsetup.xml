@@ -9,22 +9,22 @@
 
     <body>
 
-        <section name="POP Thunderbird mail setup">
+        <section name="IMAP Thunderbird mail setup">
             <p>There are two ways to access Exchange emails through DavMail Gateway: the good old
                 and efficient POP protocol, limited to Inbox access and the IMAP protocol that enables
                 full message folder tree access. IMAP support in DavMail is more recent and less optimised
                 than POP.
             </p>
 
-            <p>This page describes POP3 setup, if you need multiple folders access, proceed to
-                <a href="thunderbirdimapmailsetup.html">
-                    IMAP Thunderbird mail setup
+            <p>This page describes IMAP setup, if you don't need multiple folders access, proceed to
+                <a href="thunderbirdmailsetup.html">
+                    POP Thunderbird mail setup
                 </a>
                 instead.
             </p>
 
-            <p>DavMail can be used with any POP3/SMTP client by adjusting the following description designed for
-                Thunderbird
+            <p>DavMail can be used with any IMAP/SMTP client by adjusting the following description designed for
+                Thunderbird. DavMail IMAP support is tested with Thunderbird, Outlook and Apple Mail.
             </p>
 
             <section name="Create a new account">
@@ -38,10 +38,10 @@
                     <img src="images/thunderbirdAccount2.png"/>
                 </div>
 
-                <p>Choose POP as server type, located at localhost:
+                <p>Choose IMAP as server type, located at localhost:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount3.png"/>
+                    <img src="images/thunderbirdAccountImap3.png"/>
                 </div>
 
 
@@ -62,7 +62,7 @@
                 <p>Finish:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount6.png"/>
+                    <img src="images/thunderbirdAccountImap6.png"/>
                 </div>
 
             </section>

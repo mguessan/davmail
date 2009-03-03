@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - Mac OS X setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="DavMail Setup on windows">
+            <p>Java 1.5 is available in standard Mac OS X setup. This version does not support Tray icon,
+                and DavMail uses a dedicated frame instead.
+            </p>
+
+            <p>Download DavMail Mac OSX package from Sourceforge:
+            </p>
+            <div style="width: 100%;text-align: center">
+                <img src="images/osxdownload.png"/>
+            </div>
+            <p>Safari should automatically extract the application archive. If not, just
+                double click on the zip file to trigger decompression. The extracted
+                DavMail.app directory is then recognised as a valid OSX application.
+            </p>
+            <p>Just double click on the application icon to launch DavMail. On
+            first start the application displays the Settings (Preferences) frame.</p>
+            <div style="width: 100%;text-align: center">
+                <img src="images/osxsettings.png"/>
+            </div>
+            <p>Adjust DavMail settings:
+                <a href="gettingstarted.html">Getting started</a>
+            </p>
+        </section>
+
+    </body>
+</document>
