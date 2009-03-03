@@ -922,14 +922,19 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public boolean hasNext() {
-            if (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() > endUid) {
+            while (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() > endUid) {
                 skipToStartUid();
             }
             return currentIndex < messages.size();
         }
 
         public ExchangeSession.Message next() {
-            return messages.get(currentIndex++);
+            ExchangeSession.Message message =  messages.get(currentIndex++);
+            long uid = message.getUidAsLong();
+            if (uid < startUid || uid > endUid) {
+                throw new RuntimeException("Message uid "+uid+ " not in range "+startUid+":"+endUid);
+            }
+            return message;
         }
 
         public void remove() {
@@ -975,7 +980,7 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public boolean hasNext() {
-            if (currentIndex < messages.size() && (currentIndex + 1) > endUid) {
+            while (currentIndex < messages.size() && (currentIndex + 1) > endUid) {
                 skipToStartUid();
             }
             return currentIndex < messages.size();
