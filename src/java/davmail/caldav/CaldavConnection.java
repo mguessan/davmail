@@ -664,7 +664,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + " " + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
-        sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-auto-schedule, calendar-schedule, calendarserver-private-events");
+        sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         sendClient("Date: " + formatter.format(new java.util.Date()));
         if (headers != null) {
