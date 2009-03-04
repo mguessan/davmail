@@ -1133,6 +1133,24 @@ public class ExchangeSession {
         protected String href;
         protected String etag;
 
+        protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
+            MimePart bodyPart = null;
+            for (int i = 0; i < multiPart.getCount(); i++) {
+                String contentType = multiPart.getBodyPart(i).getContentType();
+                if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
+                    bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+                    break;
+                } else if (contentType.startsWith("multipart")) {
+                    Object content = multiPart.getBodyPart(i).getContent();
+                    if (content instanceof MimeMultipart) {
+                        bodyPart = getCalendarMimePart((MimeMultipart) content);
+                    }
+                }
+            }
+
+            return bodyPart;
+        }
+
         public String getICS() throws IOException {
             String result = null;
             LOGGER.debug("Get event: " + href);
@@ -1147,15 +1165,9 @@ public class ExchangeSession {
                 }
                 MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
                 Object mimeBody = mimeMessage.getContent();
-                MimePart bodyPart = null;
+                MimePart bodyPart;
                 if (mimeBody instanceof MimeMultipart) {
-                    MimeMultipart multiPart = (MimeMultipart) mimeBody;
-                    for (int i = 0; i < multiPart.getCount(); i++) {
-                        String contentType = multiPart.getBodyPart(i).getContentType();
-                        if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
-                            bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
-                        }
-                    }
+                    bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
                 } else {
                     // no multipart, single body
                     bodyPart = mimeMessage;
