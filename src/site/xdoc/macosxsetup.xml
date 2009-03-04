@@ -9,7 +9,7 @@
 
     <body>
 
-        <section name="DavMail Setup on windows">
+        <section name="DavMail Setup on Mac OS X">
             <p>Java 1.5 is available in standard Mac OS X setup. This version does not support Tray icon,
                 and DavMail uses a dedicated frame instead.
             </p>
