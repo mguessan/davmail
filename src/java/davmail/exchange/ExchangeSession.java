@@ -25,6 +25,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -1145,17 +1146,26 @@ public class ExchangeSession {
                     LOGGER.warn("Unable to get event at " + href + " status: " + status);
                 }
                 MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
-                MimeMultipart multiPart = (MimeMultipart) mimeMessage.getContent();
-                MimeBodyPart bodyPart = null;
-                for (int i = 0; i < multiPart.getCount(); i++) {
-                    String contentType = multiPart.getBodyPart(i).getContentType();
-                    if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
-                        bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+                Object mimeBody = mimeMessage.getContent();
+                MimePart bodyPart = null;
+                if (mimeBody instanceof MimeMultipart) {
+                    MimeMultipart multiPart = (MimeMultipart) mimeBody;
+                    for (int i = 0; i < multiPart.getCount(); i++) {
+                        String contentType = multiPart.getBodyPart(i).getContentType();
+                        if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
+                            bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+                        }
                     }
+                } else {
+                    // no multipart, single body
+                    bodyPart = mimeMessage;
                 }
 
                 if (bodyPart == null) {
-                    throw new IOException("Invalid message content");
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    mimeMessage.getDataHandler().writeTo(baos);
+                    baos.close();
+                    throw new IOException("Invalid calendar message content: " + new String(baos.toByteArray(), "UTF-8"));
                 }
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bodyPart.getDataHandler().writeTo(baos);
