@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
  */
 public class OSXFrameGatewayTray extends FrameGatewayTray {
 
+    @SuppressWarnings({"SameReturnValue"})
     public boolean quit() {
         return true;
     }

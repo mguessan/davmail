@@ -43,12 +43,6 @@ public class DavGatewayTray {
         }
     }
 
-    public static void inactiveIcon() {
-        if (davGatewayTray != null) {
-            davGatewayTray.inactiveIcon();
-        }
-    }
-
     public static boolean isActive() {
         return davGatewayTray == null || davGatewayTray.isActive();
     }

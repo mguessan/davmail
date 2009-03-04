@@ -790,7 +790,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected static class CaldavResponse {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         OutputStreamWriter writer;
 
         public CaldavResponse() throws IOException {

@@ -2,7 +2,6 @@ package davmail.ui;
 
 import davmail.tray.DavGatewayTray;
 
-import javax.swing.event.HyperlinkEvent;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -56,11 +55,4 @@ public final class DesktopBrowser {
         }
     }
 
-    public static void browse(HyperlinkEvent hle) {
-        try {
-            DesktopBrowser.browse(hle.getURL().toURI());
-        } catch (URISyntaxException e) {
-            DavGatewayTray.error("Unable to open link", e);
-        }
-    }
 }

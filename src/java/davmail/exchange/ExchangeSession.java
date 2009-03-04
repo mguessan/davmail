@@ -658,18 +658,8 @@ public class ExchangeSession {
             if ("nosubs".equals(property.getLocalName())) {
                 folder.noInferiors = "1".equals(property.getPropertyAsString());
             }
-            if ("objectcount".equals(property.getLocalName())) {
-                folder.objectCount = Integer.parseInt(property.getPropertyAsString());
-            }
             if ("unreadcount".equals(property.getLocalName())) {
                 folder.unreadCount = Integer.parseInt(property.getPropertyAsString());
-            }
-            if ("getlastmodified".equals(property.getLocalName())) {
-                try {
-                    folder.lastModified = dateParser.parse(property.getPropertyAsString()).getTime();
-                } catch (ParseException e) {
-                    LOGGER.error("Unable to parse date: " + e);
-                }
             }
         }
         if (href.endsWith("/")) {
@@ -847,9 +837,7 @@ public class ExchangeSession {
         Vector<String> reqProps = new Vector<String>();
         reqProps.add("DAV:hassubs");
         reqProps.add("DAV:nosubs");
-        reqProps.add("DAV:objectcount");
         reqProps.add("urn:schemas:httpmail:unreadcount");
-        reqProps.add("DAV:getlastmodified");
         Enumeration folderEnum = wdr.propfindMethod(getFolderPath(folderName), 0, reqProps);
         Folder folder = null;
         if (folderEnum.hasMoreElements()) {
@@ -926,11 +914,9 @@ public class ExchangeSession {
 
     public static class Folder {
         public String folderUrl;
-        public int objectCount;
         public int unreadCount;
         public boolean hasChildren;
         public boolean noInferiors;
-        public long lastModified;
         public String folderName;
 
         public String getFlags() {
@@ -1120,13 +1106,6 @@ public class ExchangeSession {
             return super.add(message);
         }
 
-        public Message getByUid(long uid) {
-            return uidMessageMap.get(uid);
-        }
-    }
-
-    public WebdavResource getWebDavResource() {
-        return wdr;
     }
 
     public class Event {
@@ -1154,7 +1133,6 @@ public class ExchangeSession {
         public String getICS() throws IOException {
             String result = null;
             LOGGER.debug("Get event: " + href);
-            StringBuilder buffer = new StringBuilder();
             GetMethod method = new GetMethod(URIUtil.encodePath(href));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");

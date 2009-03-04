@@ -360,7 +360,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("RECENT ").append(localMessages.size()).append(" ");
                                             }
                                             if ("UIDNEXT".equalsIgnoreCase(token)) {
-                                                if (folder.objectCount == 0) {
+                                                if (localMessages.size() == 0) {
                                                     answer.append("UIDNEXT 1 ");
                                                 } else {
                                                     if (localMessages.size() == 0) {
@@ -839,17 +839,13 @@ public class ImapConnection extends AbstractConnection {
 
         protected int state = START;
         protected int size = 0;
-        protected boolean writeHeaders;
-        protected boolean writeBody;
+        protected final boolean writeHeaders;
+        protected final boolean writeBody;
 
         public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
-        }
-
-        public int size() {
-            return size;
         }
 
         @Override

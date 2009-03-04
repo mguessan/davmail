@@ -12,11 +12,6 @@ public class ICSBufferedReader extends BufferedReader {
     protected String nextLine;
     protected final StringBuilder currentLine = new StringBuilder(75);
 
-    public ICSBufferedReader(Reader in, int sz) throws IOException {
-        super(in, sz);
-        nextLine = super.readLine();
-    }
-
     public ICSBufferedReader(Reader in) throws IOException {
         super(in);
         nextLine = super.readLine();
