@@ -279,7 +279,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, String path, ExchangeSession.Event event) throws IOException {
-        String eventPath = event.getPath().replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        String eventPath = event.getPath().replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("&", "&amp;");
         response.startResponse("/users/" + session.getEmail() + "/" + path + "/" + URIUtil.encodeWithinQuery(eventPath));
         response.startPropstat();
         if (request.hasProperty("calendar-data")) {
@@ -336,7 +336,7 @@ public class CaldavConnection extends AbstractConnection {
                     base64Encode(session.getInboxCtag()));
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("<D:displayname>", "inbox");
+            response.appendProperty("D:displayname", "inbox");
         }
         response.endPropStatOK();
         response.endResponse();
@@ -355,7 +355,7 @@ public class CaldavConnection extends AbstractConnection {
                     "0");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("<D:displayname>", "outbox");
+            response.appendProperty("D:displayname", "outbox");
         }
         response.endPropStatOK();
         response.endResponse();
@@ -510,7 +510,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startPropstat();
 
         if (request.hasProperty("calendar-home-set")) {
-            response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "</D:href>");
+            response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "/calendar</D:href>");
         }
 
         if (request.hasProperty("calendar-user-address-set")) {
