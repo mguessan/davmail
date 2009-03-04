@@ -285,6 +285,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("calendar-data")) {
             response.appendCalendarData(event.getICS());
         }
+        if (request.hasProperty("getcontenttype")) {
+            response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
+        }
         if (request.hasProperty("getetag")) {
             response.appendProperty("D:getetag", event.getEtag());
         }
@@ -308,6 +311,9 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("owner")) {
             response.appendProperty("D:owner", "<D:href>/principals/users/" + principal + "</D:href>");
+        }
+        if (request.hasProperty("getcontenttype")) {
+            response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
         }
         if (request.hasProperty("getetag")) {
             response.appendProperty("D:getetag", session.getCalendarEtag());
