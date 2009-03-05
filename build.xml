@@ -77,7 +77,7 @@
         <delete dir="dist/DavMail.app/Contents/MacOS"/>
         <copy file="src/osx/DavMail.JavaApplicationStub.app.zip"
               tofile="dist/DavMail-MacOSX-${version}.app.zip" overwrite="true"/>
-        <zip update="true" file="dist/DavMail-${version}.app.zip">
+        <zip update="true" file="dist/DavMail-MacOSX-${version}.app.zip">
             <fileset dir="dist">
                 <include name="DavMail.app/**/*"/>
             </fileset>
