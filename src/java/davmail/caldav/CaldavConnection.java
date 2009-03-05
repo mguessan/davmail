@@ -240,8 +240,8 @@ public class CaldavConnection extends AbstractConnection {
             ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[4], body, etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
-                responseHeaders.put("GetETag", eventResult.etag);
-                sendHttpResponse(eventResult.status, responseHeaders, "text/html", "", true);
+                responseHeaders.put("ETag", eventResult.etag);
+                sendHttpResponse(eventResult.status, responseHeaders, null, "", true);
             } else {
                 sendHttpResponse(eventResult.status, true);
             }

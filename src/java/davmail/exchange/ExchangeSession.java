@@ -1550,7 +1550,11 @@ public class ExchangeSession {
             if (status == 0) {
                 status = wdr.retrieveSessionInstance().executeMethod(putmethod);
                 if (status == HttpURLConnection.HTTP_OK) {
-                    LOGGER.warn("Overwritten event " + messageUrl);
+                    if (etag != null) {
+                        LOGGER.debug("Updated event " + messageUrl);
+                    } else {
+                        LOGGER.warn("Overwritten event " + messageUrl);
+                    }
                 } else if (status != HttpURLConnection.HTTP_CREATED) {
                     LOGGER.warn("Unable to create or update message " + status + " " + putmethod.getStatusLine());
                 }
