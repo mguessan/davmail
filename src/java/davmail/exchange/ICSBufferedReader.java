@@ -19,13 +19,14 @@ public class ICSBufferedReader extends BufferedReader {
 
     @Override
     public String readLine() throws IOException {
-        if (nextLine == null) {
+        // empty line means end of ICS
+        if (nextLine == null || nextLine.length() == 0) {
             return null;
         } else {
             currentLine.setLength(0);
             currentLine.append(nextLine);
             nextLine = super.readLine();
-            while (nextLine != null && nextLine.charAt(0) == ' ') {
+            while (nextLine != null && !(nextLine.length() == 0) && nextLine.charAt(0) == ' ') {
                 currentLine.append(nextLine.substring(1));
                 nextLine = super.readLine();
             }
