@@ -912,6 +912,28 @@ public class ExchangeSession {
         }
     }
 
+    public void moveToTrash(String messageUrl) throws IOException {
+        String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
+        LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl),
+                URIUtil.encodePath(destination));
+        method.addRequestHeader("Overwrite", "f");
+        method.addRequestHeader("Allow-rename", "t");
+
+        int status = wdr.retrieveSessionInstance().executeMethod(method);
+        if (status != HttpStatus.SC_CREATED) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(status);
+            ex.setReason(method.getStatusText());
+            throw ex;
+        }
+        if (method.getResponseHeader("Location") != null) {
+            destination = method.getResponseHeader("Location").getValue();
+        }
+
+        LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
+    }
+
     public static class Folder {
         public String folderUrl;
         public int unreadCount;
@@ -1055,29 +1077,12 @@ public class ExchangeSession {
         }
 
         public void moveToTrash() throws IOException {
-            String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
-            LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
             // mark message as read
             HashMap<String, String> properties = new HashMap<String, String>();
             properties.put("read", "1");
             updateMessage(this, properties);
-            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl),
-                    URIUtil.encodePath(destination));
-            method.addRequestHeader("Overwrite", "f");
-            method.addRequestHeader("Allow-rename", "t");
 
-            int status = wdr.retrieveSessionInstance().executeMethod(method);
-            if (status != HttpStatus.SC_CREATED) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                ex.setReason(method.getStatusText());
-                throw ex;
-            }
-            if (method.getResponseHeader("Location") != null) {
-                destination = method.getResponseHeader("Location").getValue();
-            }
-
-            LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
+            ExchangeSession.this.moveToTrash(messageUrl);
         }
 
         public int compareTo(Object message) {
@@ -1579,7 +1584,12 @@ public class ExchangeSession {
     }
 
     public int deleteEvent(String path) throws IOException {
-        wdr.deleteMethod(getFolderPath(URIUtil.decode(path)));
+        if (path.startsWith("INBOX")) {
+            // do not delete calendar messages, move to trash
+            moveToTrash(getFolderPath(URIUtil.decode(path)));
+        } else {
+            wdr.deleteMethod(getFolderPath(URIUtil.decode(path)));
+        }
         return wdr.getStatusCode();
     }
 
