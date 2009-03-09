@@ -1,5 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
-    <property name="version" value="3.0.1"/>
+    <property name="version" value="3.1.0"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -113,7 +113,6 @@
                 DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows,
                 Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is replaced with a full frame.
                 Tested successfully with the Iphone (gateway running on a server).
-
 
                 http://davmail.sourceforge.net
             </description>
