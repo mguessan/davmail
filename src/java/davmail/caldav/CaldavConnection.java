@@ -227,6 +227,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
             sendCalendar(request, depth, paths[2]);
+        } else if ("PROPPATCH".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
+            patchCalendar(request, depth, paths[2]);
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
@@ -407,6 +409,14 @@ public class CaldavConnection extends AbstractConnection {
             DavGatewayTray.debug("Found " + events.size() + " calendar events");
             appendEventsResponses(response, request, "calendar", events);
         }
+        response.endMultistatus();
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+    }
+
+    public void patchCalendar(CaldavRequest request, int depth, String principal) throws IOException {
+        CaldavResponse response = new CaldavResponse();
+        response.startMultistatus();
+        // just ignore calendar folder proppatch (color not supported in Exchange)
         response.endMultistatus();
         sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
     }
