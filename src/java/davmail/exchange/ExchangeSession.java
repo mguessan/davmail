@@ -614,9 +614,11 @@ public class ExchangeSession {
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
-                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n" +
-                conditions.replaceAll("<", "&lt;").replaceAll(">", "&gt;") +
-                "                ORDER BY \"urn:schemas:httpmail:date\" ASC";
+                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n";
+        if (conditions != null) {
+            searchRequest += conditions.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        }
+        searchRequest += "       ORDER BY \"urn:schemas:httpmail:date\" ASC";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
 
         while (folderEnum.hasMoreElements()) {

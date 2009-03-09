@@ -226,8 +226,12 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                             }
                                             conditions.append(")");
+                                            String query = conditions.query.toString();
                                             DavGatewayTray.debug("Search: " + conditions.query);
-                                            ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, conditions.query.toString());
+                                            if ("AND ()".equals(query)) {
+                                                query = null;
+                                            }
+                                            ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
                                             for (ExchangeSession.Message message : localMessages) {
                                                 if (((undeleted && !message.deleted) || !undeleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
@@ -659,6 +663,16 @@ public class ImapConnection extends AbstractConnection {
             } else {
                 throw new IOException("Invalid search parameters");
             }
+        } else if ("BEFORE".equals(token)) {
+            SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+            try {
+                Date date = parser.parse(tokens.nextToken());
+                conditions.append(operator).append("\"urn:schemas:httpmail:datereceived\"&lt;'").append(dateFormatter.format(date)).append("'");
+            } catch (ParseException e) {
+                throw new IOException("Invalid search parameters");
+            }
         } else if ("OLD".equals(token)) {
             // ignore
         } else {
@@ -925,10 +939,10 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public ExchangeSession.Message next() {
-            ExchangeSession.Message message =  messages.get(currentIndex++);
+            ExchangeSession.Message message = messages.get(currentIndex++);
             long uid = message.getUidAsLong();
             if (uid < startUid || uid > endUid) {
-                throw new RuntimeException("Message uid "+uid+ " not in range "+startUid+":"+endUid);
+                throw new RuntimeException("Message uid " + uid + " not in range " + startUid + ":" + endUid);
             }
             return message;
         }
