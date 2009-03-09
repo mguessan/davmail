@@ -292,11 +292,11 @@ public class ExchangeSession {
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
                 LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail();
+                buildEmail(method.getPath());
                 LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail();
+                buildEmail(method.getPath());
                 mailPath = "/exchange/" + email + "/";
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
@@ -1675,7 +1675,7 @@ public class ExchangeSession {
      */
     protected String getAliasFromMailPath() throws IOException {
         if (mailPath == null) {
-            throw new IOException("Empty mail path");
+            return null;
         }
         int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
         if (index >= 0 && mailPath.endsWith("/")) {
@@ -1687,25 +1687,27 @@ public class ExchangeSession {
 
     public String getEmail(String alias) throws IOException {
         String emailResult = null;
-        GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + alias);
-        try {
-            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
-            if (status != HttpStatus.SC_OK) {
-                throw new IOException("Unable to get user email from: " + getMethod.getPath());
-            }
-            Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-            Map<String, String> result = results.get(alias.toLowerCase());
-            if (result != null) {
-                emailResult = result.get("EM");
-            }
+        if (alias != null) {
+            GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + alias);
+            try {
+                int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+                if (status != HttpStatus.SC_OK) {
+                    throw new IOException("Unable to get user email from: " + getMethod.getPath());
+                }
+                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+                Map<String, String> result = results.get(alias.toLowerCase());
+                if (result != null) {
+                    emailResult = result.get("EM");
+                }
 
-        } finally {
-            getMethod.releaseConnection();
+            } finally {
+                getMethod.releaseConnection();
+            }
         }
         return emailResult;
     }
 
-    public void buildEmail() throws IOException {
+    public void buildEmail(String methodPath) throws IOException {
         // first try to get email from login name
         email = getEmail(getAliasFromLogin());
         // failover: use mailbox name as alias
@@ -1713,8 +1715,50 @@ public class ExchangeSession {
             email = getEmail(getAliasFromMailPath());
         }
         if (email == null) {
-            throw new IOException("Unable to get user email with alias " + getAliasFromLogin() + " or " + getAliasFromMailPath());
+            // failover : get email from Exchange 2007 Options page
+            email = getEmail(getAliasFromOptions(methodPath));
         }
+        if (email == null) {
+            throw new IOException("Unable to get user email with alias " + getAliasFromLogin()
+                    + " or " + getAliasFromMailPath()
+                    + " or " + getAliasFromOptions(methodPath)
+            );
+        }
+    }
+
+    protected String getAliasFromOptions(String path) {
+        String result = null;
+        // get user mail URL from html body
+        BufferedReader optionsPageReader = null;
+        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
+        try {
+            wdr.retrieveSessionInstance().executeMethod(optionsMethod);
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+            String line;
+            // find mailbox full name
+            final String MAILBOX_BASE = "cn=recipients/cn=";
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                int end = line.indexOf("<", start);
+                result = line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+        } finally {
+            if (optionsPageReader != null) {
+                try {
+                    optionsPageReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                }
+            }
+            optionsMethod.releaseConnection();
+        }
+
+        return result;
     }
 
     /**
