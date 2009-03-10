@@ -972,7 +972,7 @@ public class ExchangeSession {
             byte[] decodedValue = Base64.decode(uid.getBytes());
 
             long result = 0;
-            for (int i = 3; i < 9; i++) {
+            for (int i = 5; i < 9; i++) {
                 result = result << 8;
                 result |= decodedValue[i] & 0xff;
             }
