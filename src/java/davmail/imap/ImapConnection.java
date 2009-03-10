@@ -503,7 +503,7 @@ public class ImapConnection extends AbstractConnection {
                 }
                 buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]");
                 // partial
-                if (ltIndex >= 0) {
+                if (startIndex > 0) {
                     buffer.append('<').append(startIndex).append('>');
                 }
                 buffer.append(" {").append(baos.size()).append("}");
