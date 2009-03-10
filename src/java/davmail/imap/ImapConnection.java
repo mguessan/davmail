@@ -460,7 +460,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0, Integer.MAX_VALUE);
+                PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0);
                 message.write(partOutputStream);
                 baos.close();
                 buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
@@ -477,16 +477,12 @@ public class ImapConnection extends AbstractConnection {
             } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || "BODY.PEEK[TEXT]".equals(param)) {
                 // parse buffer size
                 int startIndex = 0;
-                int bufferSize = Integer.MAX_VALUE;
                 int ltIndex = param.indexOf('<');
                 if (ltIndex >= 0) {
                     int dotIndex = param.indexOf('.', ltIndex);
                     if (dotIndex >= 0) {
                         startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
-                        int gtIndex = param.indexOf('>', ltIndex);
-                        if (gtIndex >= 0) {
-                            bufferSize = Integer.parseInt(param.substring(dotIndex + 1, gtIndex));
-                        }
+                        // ignore buffer size
                     }
                 }
 
@@ -496,7 +492,7 @@ public class ImapConnection extends AbstractConnection {
                 if ("BODY.PEEK[TEXT]".equals(param)) {
                     writeHeaders = false;
                 } 
-                PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex, bufferSize);
+                PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex);
                 message.write(bodyOutputStream);
                 rfc822size = bodyOutputStream.size;
                 baos.close();
@@ -875,22 +871,20 @@ public class ImapConnection extends AbstractConnection {
         protected final boolean writeHeaders;
         protected final boolean writeBody;
         protected final int startIndex;
-        protected final int bufferSize;
 
         public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
-                                int startIndex, int bufferSize) {
+                                int startIndex) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
             this.startIndex = startIndex;
-            this.bufferSize = bufferSize;
         }
 
         @Override
         public void write(int b) throws IOException {
             size++;
             if (((state != BODY && writeHeaders) || (state == BODY && writeBody)) &&
-                    (size > startIndex) && ((size - startIndex) <= bufferSize)
+                    (size > startIndex)
             ) {
                 super.write(b);
             }
