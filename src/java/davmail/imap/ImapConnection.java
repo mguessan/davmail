@@ -460,7 +460,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PartOutputStream partOutputStream = new PartOutputStream(baos, true, false);
+                PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0, Integer.MAX_VALUE);
                 message.write(partOutputStream);
                 baos.close();
                 buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
@@ -474,24 +474,43 @@ public class ImapConnection extends AbstractConnection {
                 os.write(baos.toByteArray());
                 os.flush();
                 buffer.setLength(0);
-            } else if ("BODY[]".equals(param) || param.startsWith("BODY.PEEK[]") || "BODY.PEEK[TEXT]".equals(param)) {
+            } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || "BODY.PEEK[TEXT]".equals(param)) {
+                // parse buffer size
+                int startIndex = 0;
+                int bufferSize = Integer.MAX_VALUE;
+                int ltIndex = param.indexOf('<');
+                if (ltIndex >= 0) {
+                    int dotIndex = param.indexOf('.', ltIndex);
+                    if (dotIndex >= 0) {
+                        startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
+                        int gtIndex = param.indexOf('>', ltIndex);
+                        if (gtIndex >= 0) {
+                            bufferSize = Integer.parseInt(param.substring(dotIndex + 1, gtIndex));
+                        }
+                    }
+                }
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                boolean writeHeaders = true;
                 int rfc822size;
                 if ("BODY.PEEK[TEXT]".equals(param)) {
-                    PartOutputStream bodyOutputStream = new PartOutputStream(baos, false, true);
-                    message.write(bodyOutputStream);
-                    rfc822size = bodyOutputStream.size;
-                } else {
-                    message.write(baos);
-                    rfc822size = baos.size();
-                }
+                    writeHeaders = false;
+                } 
+                PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex, bufferSize);
+                message.write(bodyOutputStream);
+                rfc822size = bodyOutputStream.size;
                 baos.close();
-                DavGatewayTray.debug("Message size: " + message.size + " actual size:" + baos.size() + " message+headers: " + (message.size + baos.size()));
+                DavGatewayTray.debug("Message RFC822 size: " + rfc822size + " buffer size:" + baos.size());
                 if (bodystructure) {
                     // Apple Mail: need to build full bodystructure
                     appendBodyStructure(buffer, baos);
                 }
-                buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]").append(" {").append(baos.size()).append("}");
+                buffer.append(" RFC822.SIZE ").append(rfc822size).append(" ").append("BODY[]");
+                // partial
+                if (ltIndex >= 0) {
+                    buffer.append('<').append(startIndex).append('>');
+                }
+                buffer.append(" {").append(baos.size()).append("}");
                 sendClient(buffer.toString());
                 os.write(baos.toByteArray());
                 os.flush();
@@ -855,17 +874,24 @@ public class ImapConnection extends AbstractConnection {
         protected int size = 0;
         protected final boolean writeHeaders;
         protected final boolean writeBody;
+        protected final int startIndex;
+        protected final int bufferSize;
 
-        public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody) {
+        public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
+                                int startIndex, int bufferSize) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
+            this.startIndex = startIndex;
+            this.bufferSize = bufferSize;
         }
 
         @Override
         public void write(int b) throws IOException {
             size++;
-            if ((state != BODY && writeHeaders) || (state == BODY && writeBody)) {
+            if (((state != BODY && writeHeaders) || (state == BODY && writeBody)) &&
+                    (size > startIndex) && ((size - startIndex) <= bufferSize)
+            ) {
                 super.write(b);
             }
             if (state == START) {
