@@ -58,6 +58,13 @@ public class ExchangeSession {
         WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:calendar");
     }
 
+    protected static final Vector<String> DISPLAY_NAME = new Vector<String>();
+
+    static {
+        DISPLAY_NAME.add("DAV:displayname");
+    }
+
+
     public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
 
     static {
@@ -1687,6 +1694,31 @@ public class ExchangeSession {
         }
     }
 
+    public String getAliasFromMailboxDisplayName() throws IOException {
+        if (mailPath == null) {
+            return null;
+        }
+        String alias = null;
+        Enumeration folderEnum = wdr.propfindMethod(mailPath, 0, DISPLAY_NAME);
+        if (!folderEnum.hasMoreElements()) {
+            throw new IOException("Unable to get mail folder");
+        }
+        ResponseEntity mailboxResponse = (ResponseEntity) folderEnum.
+                nextElement();
+        Enumeration mailboxPropsEnum = mailboxResponse.getProperties();
+        if (!mailboxPropsEnum.hasMoreElements()) {
+            throw new IOException("Unable to get mail folder");
+        }
+        while (mailboxPropsEnum.hasMoreElements()) {
+            Property inboxProp = (Property) mailboxPropsEnum.nextElement();
+            if ("displayname".equals(inboxProp.getLocalName())) {
+                alias = inboxProp.getPropertyAsString();
+            }
+
+        }
+        return alias;
+    }
+
     public String getEmail(String alias) throws IOException {
         String emailResult = null;
         if (alias != null) {
@@ -1715,6 +1747,10 @@ public class ExchangeSession {
         // failover: use mailbox name as alias
         if (email == null) {
             email = getEmail(getAliasFromMailPath());
+        }
+        // another failover : get alias from mailPath display name
+        if (email == null) {
+            email = getEmail(getAliasFromMailboxDisplayName());
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
