@@ -334,19 +334,18 @@ public class LdapConnection extends AbstractConnection {
                 int timelimit = reqBer.parseInt();
                 /*boolean typesOnly =*/
                 reqBer.parseBoolean();
-                Map<String, SimpleFilter> criteria = parseFilter(reqBer);
+                LdapFilter ldapFilter = parseFilter(reqBer);
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
 
                 int size = 0;
                 DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " base=" + dn + " scope: " + scope + " sizelimit: " + sizeLimit + " timelimit: " + timelimit +
-                        " returning attributes: " + returningAttributes);
+                        " filter: " + ldapFilter.toString() + " returning attributes: " + returningAttributes);
 
                 if (scope == SCOPE_BASE_OBJECT) {
                     if ("".equals(dn)) {
                         size = 1;
                         sendRootDSE(currentMessageId);
-                    }
-                    if (BASE_CONTEXT.equals(dn)) {
+                    } else if (BASE_CONTEXT.equals(dn)) {
                         size = 1;
                         // root
                         sendBaseContext(currentMessageId);
@@ -354,14 +353,24 @@ public class LdapConnection extends AbstractConnection {
                         // single user request
                         String uid = dn.substring("uid=".length(), dn.indexOf(','));
                         Map<String, Map<String, String>> persons = session.galFind("AN", uid);
+                        Map<String, String> person = persons.get(uid.toLowerCase());
+                        // filter out non exact results
+                        if (persons.size() > 1 || person == null) {
+                            persons = new HashMap<String, Map<String, String>>();
+                            if (person != null) {
+                                persons.put(uid.toLowerCase(), person);
+                            }
+                        }
                         size = persons.size();
                         sendPersons(currentMessageId, persons, returningAttributes);
+                    } else {
+                        DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
                     }
 
                 } else if (BASE_CONTEXT.equalsIgnoreCase(dn) && session != null) {
 
                     Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
-                    if (criteria.get("objectclass") != null && "*".equals(criteria.get("objectclass").value)) {
+                    if (ldapFilter.isFullSearch()) {
                         // full search
                         for (char c = 'A'; c < 'Z'; c++) {
                             if (persons.size() < sizeLimit) {
@@ -377,11 +386,11 @@ public class LdapConnection extends AbstractConnection {
                             }
                         }
                     } else {
-                        for (Map.Entry<String, SimpleFilter> entry : criteria.entrySet()) {
+                        for (Map.Entry<String, SimpleFilter> entry : ldapFilter.getOrFilterEntrySet()) {
                             if (persons.size() < sizeLimit) {
                                 for (Map<String, String> person : session.galFind(entry.getKey(), entry.getValue().value).values()) {
                                     if ((entry.getValue().operator == LDAP_FILTER_SUBSTRINGS)
-                                        || (entry.getValue().operator == LDAP_FILTER_EQUALITY &&
+                                            || (entry.getValue().operator == LDAP_FILTER_EQUALITY &&
                                             entry.getValue().value.equalsIgnoreCase(person.get(entry.getKey())))) {
                                         persons.put(person.get("AN"), person);
                                     }
@@ -400,6 +409,8 @@ public class LdapConnection extends AbstractConnection {
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " found " + size + " results");
                     sendPersons(currentMessageId, persons, returningAttributes);
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " end");
+                } else {
+                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " invalid dn " + dn);
                 }
 
                 if (size == sizeLimit) {
@@ -431,12 +442,12 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    protected Map<String, SimpleFilter> parseFilter(BerDecoder reqBer) throws IOException {
-        Map<String, SimpleFilter> criteria = new HashMap<String, SimpleFilter>();
+    protected LdapFilter parseFilter(BerDecoder reqBer) throws IOException {
+        LdapFilter ldapFilter = new LdapFilter();
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
             if ("objectclass".equals(attributeName)) {
-                criteria.put(attributeName, new SimpleFilter());
+                ldapFilter.addFilter(attributeName, new SimpleFilter());
             } else {
                 DavGatewayTray.warn("Unsupported filter");
             }
@@ -444,28 +455,37 @@ public class LdapConnection extends AbstractConnection {
             int[] seqSize = new int[1];
             int ldapFilterType = reqBer.parseSeq(seqSize);
             int end = reqBer.getParsePosition() + seqSize[0];
-            if (ldapFilterType == LDAP_FILTER_OR) {
-                while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-                    int ldapFilterOperator = reqBer.parseSeq(null);
-                    parseSimpleFilter(reqBer, criteria, ldapFilterOperator);
-                }
-            } else if (ldapFilterType == LDAP_FILTER_AND) {
-                DavGatewayTray.warn("Unsupported filter");
-                while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-                    int ldapFilterOperator = reqBer.parseSeq(null);
-                    parseSimpleFilter(reqBer, criteria, ldapFilterOperator);
-                }
-            // simple filter
-            } else {
-                parseSimpleFilter(reqBer, criteria, ldapFilterType);
-            }
+
+            parseNestedFilter(reqBer, ldapFilter, ldapFilterType, end);
         }
-        return criteria;
+        return ldapFilter;
     }
 
-    protected void parseSimpleFilter(BerDecoder reqBer, Map<String, SimpleFilter> criteria, int ldapFilterOperator) throws IOException {
+    protected void parseNestedFilter(BerDecoder reqBer, LdapFilter ldapFilter, int ldapFilterType, int end) throws IOException {
+        if (ldapFilterType == LDAP_FILTER_OR) {
+            ldapFilter.startFilter(LDAP_FILTER_OR);
+            // OR filter
+            while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+                int ldapFilterOperator = reqBer.parseSeq(null);
+                parseNestedFilter(reqBer, ldapFilter, ldapFilterOperator, end);
+            }
+            ldapFilter.endFilter();
+        } else if (ldapFilterType == LDAP_FILTER_AND) {
+            ldapFilter.startFilter(LDAP_FILTER_AND);
+            // AND filter
+            while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+                int ldapFilterOperator = reqBer.parseSeq(null);
+                parseNestedFilter(reqBer, ldapFilter, ldapFilterOperator, end);
+            }
+            ldapFilter.endFilter();
+        } else {
+            // simple filter
+            parseSimpleFilter(reqBer, ldapFilter, ldapFilterType);
+        }
+    }
+
+    protected void parseSimpleFilter(BerDecoder reqBer, LdapFilter ldapFilter, int ldapFilterOperator) throws IOException {
         String attributeName = reqBer.parseString(isLdapV3()).toLowerCase();
-        String exchangeAttributeName = CRITERIA_MAP.get(attributeName);
 
         StringBuilder value = new StringBuilder();
         if (ldapFilterOperator == LDAP_FILTER_SUBSTRINGS) {
@@ -486,11 +506,8 @@ public class LdapConnection extends AbstractConnection {
         } else {
             DavGatewayTray.warn("Unsupported filter value");
         }
-        if (exchangeAttributeName != null) {
-            criteria.put(exchangeAttributeName, new SimpleFilter(value.toString(), ldapFilterOperator));
-        } else {
-            DavGatewayTray.warn("Unsupported filter attribute: " + attributeName);
-        }
+
+        ldapFilter.addFilter(attributeName, new SimpleFilter(value.toString(), ldapFilterOperator));
     }
 
     protected Set<String> parseReturningAttributes(BerDecoder reqBer) throws IOException {
@@ -513,7 +530,7 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendPersons(int currentMessageId, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
-        boolean needObjectClasses = returningAttributes.contains("objectclass");
+        boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.size() == 0;
         boolean returnAllAttributes = returningAttributes.size() == 0;
         for (Map<String, String> person : persons.values()) {
             boolean needDetails = returnAllAttributes;
@@ -534,6 +551,9 @@ public class LdapConnection extends AbstractConnection {
             returningAttributes.add("uid");
 
             Map<String, Object> ldapPerson = new HashMap<String, Object>();
+
+            // Process all attributes that are mapped from exchange
+
             for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
                 String ldapAttribute = entry.getKey();
                 String exchangeAttribute = entry.getValue();
@@ -546,7 +566,7 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
-            //DavGatewayTray.debug("LDAP_REQ_SEARCH "+currentMessageId+" send uid="+ldapPerson.get("uid"));
+            DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " send uid=" + ldapPerson.get("uid") + " " + ldapPerson);
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + "," + BASE_CONTEXT, ldapPerson);
         }
 
@@ -559,9 +579,12 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendRootDSE(int currentMessageId) throws IOException {
+        DavGatewayTray.debug("Sending root DSE");
+
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("objectClass", "top");
         attributes.put("namingContexts", BASE_CONTEXT);
+
         sendEntry(currentMessageId, "Root DSE", attributes);
     }
 
@@ -639,6 +662,60 @@ public class LdapConnection extends AbstractConnection {
         //Ber.dumpBER(System.out, ">\n", responseBer.getBuf(), 0, responseBer.getDataLen());
         os.write(responseBer.getBuf(), 0, responseBer.getDataLen());
         os.flush();
+    }
+
+    class LdapFilter {
+        StringBuilder filterString = new StringBuilder();
+        int ldapFilterType = 0;
+        boolean isFullSearch = true;
+        Map<String, SimpleFilter> orCriteria = new HashMap<String, SimpleFilter>();
+        Map<String, SimpleFilter> andCriteria = new HashMap<String, SimpleFilter>();
+
+        public void addFilter(String attributeName, SimpleFilter simpleFilter) {
+            filterString.append('(').append(attributeName).append('=').append(simpleFilter.value).append(')');
+
+            String exchangeAttributeName = CRITERIA_MAP.get(attributeName);
+            if (exchangeAttributeName != null) {
+                isFullSearch = false;
+                if (ldapFilterType == 0 || ldapFilterType == LDAP_FILTER_OR) {
+                    orCriteria.put(exchangeAttributeName, simpleFilter);
+                } else if (ldapFilterType == LDAP_FILTER_AND) {
+                    andCriteria.put(exchangeAttributeName, simpleFilter);
+                }
+            } else if ("objectclass".equals(attributeName) && SimpleFilter.STAR.equals(simpleFilter.value)) {
+                isFullSearch = true;
+            } else {
+                DavGatewayTray.warn("Unsupported filter attribute: " + attributeName + " = " + simpleFilter.value);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return filterString.toString();
+        }
+
+        public void startFilter(int ldapFilterType) {
+            this.ldapFilterType = ldapFilterType;
+            filterString.append('(');
+            if (ldapFilterType == LDAP_FILTER_OR) {
+                filterString.append('|');
+            } else if (ldapFilterType == LDAP_FILTER_AND) {
+                filterString.append('&');
+            }
+        }
+
+        public void endFilter() {
+            ldapFilterType = 0;
+            filterString.append(')');
+        }
+
+        public boolean isFullSearch() {
+            return isFullSearch;
+        }
+
+        public Set<Map.Entry<String, SimpleFilter>> getOrFilterEntrySet() {
+            return orCriteria.entrySet();
+        }
     }
 
     class SimpleFilter {
