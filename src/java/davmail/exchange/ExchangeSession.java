@@ -96,6 +96,7 @@ public class ExchangeSession {
      */
     private String mailPath;
     private String email;
+    private String alias;
     private WebdavResource wdr = null;
 
     private final ExchangeSessionFactory.PoolKey poolKey;
@@ -1743,18 +1744,22 @@ public class ExchangeSession {
 
     public void buildEmail(String methodPath) throws IOException {
         // first try to get email from login name
-        email = getEmail(getAliasFromLogin());
+        alias = getAliasFromLogin();
+        email = getEmail(alias);
         // failover: use mailbox name as alias
         if (email == null) {
-            email = getEmail(getAliasFromMailPath());
+            alias = getAliasFromMailPath();
+            email = getEmail(alias);
         }
         // another failover : get alias from mailPath display name
         if (email == null) {
-            email = getEmail(getAliasFromMailboxDisplayName());
+            alias = getAliasFromMailboxDisplayName();
+            email = getEmail(alias);
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
-            email = getEmail(getAliasFromOptions(methodPath));
+            alias = getAliasFromOptions(methodPath); 
+            email = getEmail(alias);
         }
         if (email == null) {
             throw new IOException("Unable to get user email with alias " + getAliasFromLogin()
@@ -1806,6 +1811,15 @@ public class ExchangeSession {
      */
     public String getEmail() {
         return email;
+    }
+
+     /**
+     * Get current user alias
+     *
+     * @return user email
+     */
+    public String getAlias() {
+        return alias;
     }
 
     /**
