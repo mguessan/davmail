@@ -45,18 +45,19 @@
                     under Tools/Options/Advanced:
                 </p>
                 <source>calendar.debug.log=true
-                    calendar.debug.log.verbose=true</source>
+calendar.debug.log.verbose=true
+                </source>
 
                 <p>
-                    <strong>Unable to send appointment notifications</strong>
+                    <strong>Invalid notifications</strong>
                 </p>
-                <p>Lightning tries to send Caldav notifications to outbox instead
-                    of Mail notifications and trigger an invalid request error.
+                <p>Lightning 0.9 mail notifications are broken, activate
+                    Caldav notifications to outbox instead:
                 </p>
                 <p>Check the following parameter in Thunderbird, it should be set
-                    to false
+                    to true
                 </p>
-                <source>calendar.caldav.sched.enabled=false</source>
+                <source>calendar.caldav.sched.enabled=true</source>
 
             </section>
         </section>
