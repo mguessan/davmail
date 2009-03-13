@@ -921,7 +921,7 @@ public class ExchangeSession {
 
     public void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
         String source = encodedPath+"/"+encodedMessageName;
-        String destination = URIUtil.encodePath(deleteditemsUrl) + encodedMessageName;
+        String destination = URIUtil.encodePath(deleteditemsUrl) + "/"+encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
         MoveMethod method = new MoveMethod(source, destination);
         method.addRequestHeader("Overwrite", "f");
