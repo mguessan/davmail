@@ -26,6 +26,8 @@ public class LdapConnection extends AbstractConnection {
      * Davmail base context
      */
     static final String BASE_CONTEXT = "ou=people";
+    static final String BASE_CONTEXT_2 = "cn=users, ou=people";
+    static final String COMPUTER_CONTEXT = "cn=computers, ou=people";
 
     static final List<String> PERSON_OBJECT_CLASSES = new ArrayList<String>();
 
@@ -34,6 +36,7 @@ public class LdapConnection extends AbstractConnection {
         PERSON_OBJECT_CLASSES.add("person");
         PERSON_OBJECT_CLASSES.add("organizationalPerson");
         PERSON_OBJECT_CLASSES.add("inetOrgPerson");
+        PERSON_OBJECT_CLASSES.add("apple-user");
     }
 
     /**
@@ -42,6 +45,7 @@ public class LdapConnection extends AbstractConnection {
     static final HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
+        ATTRIBUTE_MAP.put("apple-generateduid", "AN");
         ATTRIBUTE_MAP.put("uid", "AN");
         ATTRIBUTE_MAP.put("mail", "EM");
         ATTRIBUTE_MAP.put("cn", "DN");
@@ -60,6 +64,74 @@ public class LdapConnection extends AbstractConnection {
         ATTRIBUTE_MAP.put("c", "country");
         ATTRIBUTE_MAP.put("departement", "department");
         ATTRIBUTE_MAP.put("mobile", "mobile");
+    }
+
+    static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
+
+    static final String COMPUTER_GUID = "52486C30-F0AB-48E3-9C37-37E9B28CDD7B";
+
+    static final String SERVICEINFO =
+            "<?xml version='1.0' encoding='UTF-8'?>" +
+                    "<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>" +
+                    "<plist version='1.0'>" +
+                    "<dict>" +
+                    "<key>com.apple.macosxserver.host</key>" +
+                    "<array>" +
+                    "<string>localhost</string>" +        // NOTE: Will be replaced by real hostname
+                    "</array>" +
+                    "<key>com.apple.macosxserver.virtualhosts</key>" +
+                    "<dict>" +
+                    "<key>" + COMPUTER_GUID + "</key>" +
+                    "<dict>" +
+                    "<key>hostDetails</key>" +
+                    "<dict>" +
+                    "<key>http</key>" +
+                    "<dict>" +
+                    "<key>enabled</key>" +
+                    "<true/>" +
+                    "<key>port</key>" +
+                    "<integer>9999</integer>" +       // NOTE: Will be replaced by real port number
+                    "</dict>" +
+                    "<key>https</key>" +
+                    "<dict>" +
+                    "<key>enabled</key>" +
+                    "<false/>" +
+                    "<key>port</key>" +
+                    "<integer>0</integer>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "<key>hostname</key>" +
+                    "<string>localhost</string>" +        // NOTE: Will be replaced by real hostname
+                    "<key>serviceInfo</key>" +
+                    "<dict>" +
+                    "<key>calendar</key>" +
+                    "<dict>" +
+                    "<key>enabled</key>" +
+                    "<true/>" +
+                    "<key>templates</key>" +
+                    "<dict>" +
+                    "<key>calendarUserAddresses</key>" +
+                    "<array>" +
+                    "<string>%(principaluri)s</string>" +
+                    "<string>mailto:%(email)s</string>" +
+                    "<string>urn:uuid:%(guid)s</string>" +
+                    "</array>" +
+                    "<key>principalPath</key>" +
+                    "<string>/principals/users/%(email)s/</string>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "<key>serviceType</key>" +
+                    "<array>" +
+                    "<string>calendar</string>" +
+                    "</array>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</plist>";
+
+    static {
+        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ":4607DAE0-9FEA-46F1-B0BD-EC212D780CEF:calendar");
     }
 
     static final HashSet<String> EXTENDED_ATTRIBUTES = new HashSet<String>();
@@ -94,6 +166,20 @@ public class LdapConnection extends AbstractConnection {
         CRITERIA_MAP.put("o", "CP");
         CRITERIA_MAP.put("l", "OF");
         CRITERIA_MAP.put("department", "DP");
+        CRITERIA_MAP.put("apple-group-realname", "DP");
+    }
+
+    /**
+     * LDAP to Exchange Criteria Map
+     */
+    static final HashSet<String> IGNORE_MAP = new HashSet<String>();
+
+    static {
+        IGNORE_MAP.add("objectclass");
+        IGNORE_MAP.add("apple-generateduid");
+        IGNORE_MAP.add("augmentconfiguration");
+        IGNORE_MAP.add("ou");
+        IGNORE_MAP.add("apple-realname");
     }
 
     // LDAP version
@@ -298,8 +384,8 @@ public class LdapConnection extends AbstractConnection {
             if (requestOperation == LDAP_REQ_BIND) {
                 reqBer.parseSeq(null);
                 ldapVersion = reqBer.parseInt();
-                String userName = reqBer.parseString(isLdapV3());
-                String password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
+                userName = reqBer.parseString(isLdapV3());
+                password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
 
                 if (userName.length() > 0 && password.length() > 0) {
                     DavGatewayTray.debug("LDAP_REQ_BIND " + currentMessageId + " " + userName);
@@ -366,9 +452,11 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
                     }
-
-                } else if (BASE_CONTEXT.equalsIgnoreCase(dn) && session != null) {
-
+                } else if (COMPUTER_CONTEXT.equals(dn)) {
+                    size = 1;
+                    // computer context for iCal
+                    sendComputerContext(currentMessageId, returningAttributes);
+                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || BASE_CONTEXT_2.equalsIgnoreCase(dn)) && (session != null)) {
                     Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
                     if (ldapFilter.isFullSearch()) {
                         // full search
@@ -410,7 +498,7 @@ public class LdapConnection extends AbstractConnection {
                     sendPersons(currentMessageId, persons, returningAttributes);
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " end");
                 } else {
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " invalid dn " + dn);
+                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
                 }
 
                 if (size == sizeLimit) {
@@ -507,7 +595,18 @@ public class LdapConnection extends AbstractConnection {
             DavGatewayTray.warn("Unsupported filter value");
         }
 
-        ldapFilter.addFilter(attributeName, new SimpleFilter(value.toString(), ldapFilterOperator));
+        String sValue = value.toString();
+
+        DavGatewayTray.debug(attributeName + " = " + value);
+
+        if (attributeName.equalsIgnoreCase("uid") && sValue.equals(userName)) {
+            // replace with actual alias instead of login name search
+            if (sValue.equals(userName)) {
+                sValue = session.getAlias();
+            }
+        }
+
+        ldapFilter.addFilter(attributeName, new SimpleFilter(sValue, ldapFilterOperator));
     }
 
     protected Set<String> parseReturningAttributes(BerDecoder reqBer) throws IOException {
@@ -563,6 +662,18 @@ public class LdapConnection extends AbstractConnection {
                     ldapPerson.put(ldapAttribute, value);
                 }
             }
+
+            // Process all attributes which have static mappings
+            for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
+                String ldapAttribute = entry.getKey();
+                String value = entry.getValue();
+
+                if (value != null
+                        && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                    ldapPerson.put(ldapAttribute, value);
+                }
+            }
+
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
@@ -586,6 +697,56 @@ public class LdapConnection extends AbstractConnection {
         attributes.put("namingContexts", BASE_CONTEXT);
 
         sendEntry(currentMessageId, "Root DSE", attributes);
+    }
+
+    protected void addIf(Map<String, Object> attributes, Set<String> returningAttributes, String name, Object value) {
+        if ((returningAttributes.size() == 0) || returningAttributes.contains(name)) {
+            attributes.put(name, value);
+        }
+    }
+
+    protected String hostName() {
+        if (Settings.getBooleanProperty("davmail.allowRemote")) {
+            try {
+                return java.net.InetAddress.getLocalHost().getHostName();
+            } catch (java.net.UnknownHostException ex) {
+                DavGatewayTray.debug("Couldn't get hostname");
+            }
+        }
+
+        // When not allowing remote, we must return 'localhost' as the hostname.
+        // NOTE: When allowRemote is true, then the URL used to connect to DavMail
+        // must have the hostname match the name returned by 'hostname'.
+        // When allowRemote is false, then the URL used to connect to DavMail
+        // must have the hostname be 'localhost'
+
+        return "localhost";
+    }
+
+    /**
+     * Send ComputerContext
+     *
+     * @param currentMessageId    current message id
+     * @param returningAttributes attributes to return
+     * @throws IOException on error
+     */
+    protected void sendComputerContext(int currentMessageId, Set<String> returningAttributes) throws IOException {
+        DavGatewayTray.debug("Sending computer context");
+
+        String customServiceInfo = SERVICEINFO.replaceAll("localhost", hostName());
+        customServiceInfo = customServiceInfo.replaceAll("9999", Settings.getProperty("davmail.caldavPort"));
+
+        List<String> objectClasses = new ArrayList<String>();
+        objectClasses.add("top");
+        objectClasses.add("apple-computer");
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        addIf(attributes, returningAttributes, "objectClass", objectClasses);
+        addIf(attributes, returningAttributes, "apple-generateduid", COMPUTER_GUID);
+        addIf(attributes, returningAttributes, "apple-serviceinfo", customServiceInfo);
+        addIf(attributes, returningAttributes, "apple-serviceslocator", "::anyService");
+        addIf(attributes, returningAttributes, "cn", hostName());
+
+        sendEntry(currentMessageId, "cn=" + hostName() + ", " + COMPUTER_CONTEXT, attributes);
     }
 
     /**
@@ -685,7 +846,11 @@ public class LdapConnection extends AbstractConnection {
             } else if ("objectclass".equals(attributeName) && SimpleFilter.STAR.equals(simpleFilter.value)) {
                 isFullSearch = true;
             } else {
-                DavGatewayTray.warn("Unsupported filter attribute: " + attributeName + " = " + simpleFilter.value);
+                if (IGNORE_MAP.contains(attributeName)) {
+                    DavGatewayTray.debug("Ignoring filter attribute: " + attributeName + " = " + simpleFilter.value);
+                } else {
+                    DavGatewayTray.warn("Unsupported filter attribute: " + attributeName + " = " + simpleFilter.value);
+                }
             }
         }
 
