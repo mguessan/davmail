@@ -239,7 +239,7 @@ public class CaldavConnection extends AbstractConnection {
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
             String etag = headers.get("if-match");
             String noneMatch = headers.get("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[4], body, etag, noneMatch);
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[4].replaceAll("&amp;", "&"), body, etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
                 responseHeaders.put("ETag", eventResult.etag);
@@ -259,7 +259,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
-            ExchangeSession.Event event = session.getEvent(paths[3] + "/" + paths[4]);
+            ExchangeSession.Event event = session.getEvent(paths[3], paths[4]);
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
         } else {
@@ -426,7 +426,7 @@ public class CaldavConnection extends AbstractConnection {
         if (index < 0) {
             return null;
         } else {
-            return path.substring(index + 1);
+            return path.substring(index + 1).replaceAll("&amp;", "&");
         }
     }
 
@@ -444,7 +444,7 @@ public class CaldavConnection extends AbstractConnection {
                     if (eventName == null) {
                         notFound.add(href);
                     } else {
-                        events.add(session.getEvent(path + "/" + eventName));
+                        events.add(session.getEvent(path, eventName));
                     }
                 } catch (HttpException e) {
                     notFound.add(href);
@@ -462,7 +462,7 @@ public class CaldavConnection extends AbstractConnection {
 
         // send not found events errors
         for (String href : notFound) {
-            response.startResponse(URIUtil.encodeWithinQuery(href));
+            response.startResponse(URIUtil.encodePath(href));
             response.appendPropstatNotFound();
             response.endResponse();
         }

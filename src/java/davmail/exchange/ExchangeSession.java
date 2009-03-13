@@ -13,10 +13,7 @@ import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
 import org.apache.webdav.lib.WebdavResource;
-import org.apache.webdav.lib.methods.CopyMethod;
-import org.apache.webdav.lib.methods.MoveMethod;
-import org.apache.webdav.lib.methods.PropPatchMethod;
-import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.*;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -1078,7 +1075,8 @@ public class ExchangeSession {
 
         public void delete() throws IOException {
             wdr.deleteMethod(messageUrl);
-            if (wdr.getStatusCode() != HttpStatus.SC_OK) {
+            // do not send error on event not found
+            if (wdr.getStatusCode() != HttpStatus.SC_OK && wdr.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(wdr.getStatusCode());
                 ex.setReason(wdr.getStatusMessage());
@@ -1255,8 +1253,17 @@ public class ExchangeSession {
         return events;
     }
 
-    public Event getEvent(String path) throws IOException {
-        Enumeration calendarEnum = wdr.propfindMethod(getFolderPath(URIUtil.decode(path)), 0, EVENT_REQUEST_PROPERTIES);
+    public Event getEvent(String path, String eventName) throws IOException {
+        String eventPath = URIUtil.encodePath(getFolderPath(path))+"/"+URIUtil.encodeWithinQuery(eventName);
+        LOGGER.debug("getEvent("+eventPath+"/"+eventName+")");
+        PropFindMethod propFindMethod = new PropFindMethod(eventPath, 0, EVENT_REQUEST_PROPERTIES.elements());
+        int status = wdr.retrieveSessionInstance().executeMethod(propFindMethod);
+        if (status != HttpStatus.SC_MULTI_STATUS) {
+            HttpException ex = new HttpException();
+            ex.setReasonCode(status);
+            throw ex;
+        }
+        Enumeration calendarEnum = propFindMethod.getResponses();
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar event");
         }
