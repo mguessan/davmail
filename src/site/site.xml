@@ -4,8 +4,8 @@
     
     <bannerLeft>
         <name>SourceForge</name>
-        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=2</src>
-        <href>http://sf.net</href>
+        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=12</src>
+        <href>http://sourceforge.net/projects/davmail</href>
     </bannerLeft>
     <poweredBy>
         <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"
