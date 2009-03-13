@@ -147,7 +147,11 @@ public class CaldavConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug("Connection closed");
         } catch (IOException e) {
-            DavGatewayTray.error(e);
+            if (e instanceof HttpException) {
+            DavGatewayTray.error(((HttpException)e).getReasonCode()+" "+((HttpException)e).getReason(), e);
+            } else {
+                DavGatewayTray.error(e);
+            }
             try {
                 sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, e);
             } catch (IOException e2) {
@@ -254,7 +258,7 @@ public class CaldavConnection extends AbstractConnection {
             if ("inbox".equals(paths[3])) {
                 paths[3] = "INBOX";
             }
-            int status = session.deleteEvent(paths[3] + "/" + paths[4]);
+            int status = session.deleteEvent(paths[3], paths[4].replaceAll("&amp;", "&"));
             sendHttpResponse(status, true);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now

@@ -19,9 +19,9 @@ import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
 import javax.mail.MessagingException;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -919,16 +919,17 @@ public class ExchangeSession {
         }
     }
 
-    public void moveToTrash(String messageUrl) throws IOException {
-        String destination = deleteditemsUrl + messageUrl.substring(messageUrl.lastIndexOf("/"));
-        LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl),
-                URIUtil.encodePath(destination));
+    public void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
+        String source = encodedPath+"/"+encodedMessageName;
+        String destination = URIUtil.encodePath(deleteditemsUrl) + encodedMessageName;
+        LOGGER.debug("Deleting : " + source + " to " + destination);
+        MoveMethod method = new MoveMethod(source, destination);
         method.addRequestHeader("Overwrite", "f");
         method.addRequestHeader("Allow-rename", "t");
 
         int status = wdr.retrieveSessionInstance().executeMethod(method);
-        if (status != HttpStatus.SC_CREATED) {
+        // do not throw error if already deleted
+        if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
             HttpException ex = new HttpException();
             ex.setReasonCode(status);
             ex.setReason(method.getStatusText());
@@ -1090,7 +1091,13 @@ public class ExchangeSession {
             properties.put("read", "1");
             updateMessage(this, properties);
 
-            ExchangeSession.this.moveToTrash(messageUrl);
+            int index = messageUrl.lastIndexOf('/');
+            if (index < 0) {
+                throw new IOException("Invalid message url: "+messageUrl);
+            }
+            String encodedPath = URIUtil.encodePath(messageUrl.substring(0, index));
+            String encodedMessageName = URIUtil.encodePath(messageUrl.substring(index+1));
+            ExchangeSession.this.moveToTrash(encodedPath, encodedMessageName);
         }
 
         public int compareTo(Object message) {
@@ -1604,12 +1611,19 @@ public class ExchangeSession {
         return wdr.getStatusCode();
     }
 
-    public int deleteEvent(String path) throws IOException {
+    public int deleteEvent(String path, String eventName) throws IOException {
         if (path.startsWith("INBOX")) {
             // do not delete calendar messages, move to trash
-            moveToTrash(getFolderPath(URIUtil.decode(path)));
+            moveToTrash(URIUtil.encodePath(getFolderPath(URIUtil.decode(path))), eventName);
         } else {
-            wdr.deleteMethod(getFolderPath(URIUtil.decode(path)));
+            DeleteMethod method = new DeleteMethod(URIUtil.encodePath(getFolderPath(URIUtil.decode(path)))+"/"+eventName);
+            int status = wdr.retrieveSessionInstance().executeMethod(method);
+            if (status != HttpStatus.SC_OK) {
+                HttpException ex = new HttpException();
+                ex.setReasonCode(status);
+                ex.setReason(wdr.getStatusMessage());
+                throw ex;
+            }
         }
         return wdr.getStatusCode();
     }
