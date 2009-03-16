@@ -1612,20 +1612,23 @@ public class ExchangeSession {
     }
 
     public int deleteEvent(String path, String eventName) throws IOException {
+        int status;
         if (path.startsWith("INBOX")) {
             // do not delete calendar messages, move to trash
             moveToTrash(URIUtil.encodePath(getFolderPath(URIUtil.decode(path))), eventName);
+            status = HttpStatus.SC_OK;
         } else {
             DeleteMethod method = new DeleteMethod(URIUtil.encodePath(getFolderPath(URIUtil.decode(path)))+"/"+eventName);
-            int status = wdr.retrieveSessionInstance().executeMethod(method);
-            if (status != HttpStatus.SC_OK) {
+            status = wdr.retrieveSessionInstance().executeMethod(method);
+            // do not throw error if already deleted
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
                 HttpException ex = new HttpException();
                 ex.setReasonCode(status);
                 ex.setReason(wdr.getStatusMessage());
                 throw ex;
             }
         }
-        return wdr.getStatusCode();
+        return status;
     }
 
     public String getInboxCtag() throws IOException {
@@ -1640,7 +1643,7 @@ public class ExchangeSession {
         String ctag = null;
         Enumeration calendarEnum = wdr.propfindMethod(folderUrl, 0);
         if (!calendarEnum.hasMoreElements()) {
-            throw new IOException("Unable to get calendar object");
+            throw new IOException("Unable to get folder object");
         }
         while (calendarEnum.hasMoreElements()) {
             ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
