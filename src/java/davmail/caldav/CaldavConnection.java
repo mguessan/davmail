@@ -141,6 +141,7 @@ public class CaldavConnection extends AbstractConnection {
                 }
 
                 os.flush();
+                DavGatewayTray.resetIcon();
             }
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
