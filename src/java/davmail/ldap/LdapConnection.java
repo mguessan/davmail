@@ -69,6 +69,7 @@ public class LdapConnection extends AbstractConnection {
     static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static final String COMPUTER_GUID = "52486C30-F0AB-48E3-9C37-37E9B28CDD7B";
+    static final String VIRTUALHOST_GUID = "D6DD8A10-1098-11DE-8C30-0800200C9A66";
 
     static final String SERVICEINFO =
             "<?xml version='1.0' encoding='UTF-8'?>" +
@@ -81,7 +82,7 @@ public class LdapConnection extends AbstractConnection {
                     "</array>" +
                     "<key>com.apple.macosxserver.virtualhosts</key>" +
                     "<dict>" +
-                    "<key>" + COMPUTER_GUID + "</key>" +
+                    "<key>"+VIRTUALHOST_GUID+"</key>" +
                     "<dict>" +
                     "<key>hostDetails</key>" +
                     "<dict>" +
@@ -131,7 +132,7 @@ public class LdapConnection extends AbstractConnection {
                     "</plist>";
 
     static {
-        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ":4607DAE0-9FEA-46F1-B0BD-EC212D780CEF:calendar");
+        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID+":"+VIRTUALHOST_GUID+":calendar");
     }
 
     static final HashSet<String> EXTENDED_ATTRIBUTES = new HashSet<String>();
@@ -706,19 +707,13 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected String hostName() {
-        if (Settings.getBooleanProperty("davmail.allowRemote")) {
-            try {
-                return java.net.InetAddress.getLocalHost().getHostName();
-            } catch (java.net.UnknownHostException ex) {
-                DavGatewayTray.debug("Couldn't get hostname");
-            }
+        try {
+            return java.net.InetAddress.getLocalHost().getHostName();
+        } catch (java.net.UnknownHostException ex) {
+            DavGatewayTray.debug("Couldn't get hostname");
         }
 
-        // When not allowing remote, we must return 'localhost' as the hostname.
-        // NOTE: When allowRemote is true, then the URL used to connect to DavMail
-        // must have the hostname match the name returned by 'hostname'.
-        // When allowRemote is false, then the URL used to connect to DavMail
-        // must have the hostname be 'localhost'
+	// If we can't get the hostname, just return localhost.
 
         return "localhost";
     }
@@ -731,8 +726,6 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendComputerContext(int currentMessageId, Set<String> returningAttributes) throws IOException {
-        DavGatewayTray.debug("Sending computer context");
-
         String customServiceInfo = SERVICEINFO.replaceAll("localhost", hostName());
         customServiceInfo = customServiceInfo.replaceAll("9999", Settings.getProperty("davmail.caldavPort"));
 
@@ -746,7 +739,10 @@ public class LdapConnection extends AbstractConnection {
         addIf(attributes, returningAttributes, "apple-serviceslocator", "::anyService");
         addIf(attributes, returningAttributes, "cn", hostName());
 
-        sendEntry(currentMessageId, "cn=" + hostName() + ", " + COMPUTER_CONTEXT, attributes);
+	String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
+	DavGatewayTray.debug("Sending computer context " + dn);
+
+        sendEntry(currentMessageId, dn, attributes);
     }
 
     /**
@@ -900,4 +896,3 @@ public class LdapConnection extends AbstractConnection {
     }
 
 }
-
