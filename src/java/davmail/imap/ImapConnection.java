@@ -430,16 +430,23 @@ public class ImapConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug("Connection closed");
         } catch (Exception e) {
+            StringBuilder buffer = new StringBuilder();
+            if (e instanceof HttpException) {
+                buffer.append(((HttpException) e).getReasonCode()).append(" ").append(((HttpException) e).getReason());
+            } else {
+                buffer.append(e);
+            }
+            String message = buffer.toString();
             try {
                 if (commandId != null) {
-                    sendClient(commandId + " BAD unable to handle request: " + e.getMessage());
+                    sendClient(commandId + " BAD unable to handle request: "+message);
                 } else {
-                    sendClient("* BYE unable to handle request: " + e.getMessage());
+                    sendClient("* BYE unable to handle request: "+message);
                 }
             } catch (IOException e2) {
                 DavGatewayTray.warn("Exception sending error to client", e2);
             }
-            DavGatewayTray.error("Exception handling client", e);
+            DavGatewayTray.error("Exception handling client: "+message, e);
         } finally {
             close();
         }
