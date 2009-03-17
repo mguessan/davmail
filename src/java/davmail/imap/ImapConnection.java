@@ -38,7 +38,7 @@ public class ImapConnection extends AbstractConnection {
     public void run() {
         String line;
         String commandId = null;
-        StringTokenizer tokens;
+        IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
             sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN] IMAP4rev1 DavMail server ready");
@@ -288,37 +288,54 @@ public class ImapConnection extends AbstractConnection {
 
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                    String flags = tokens.nextToken();
                                     HashMap<String, String> properties = new HashMap<String, String>();
-                                    StringTokenizer flagtokenizer = new StringTokenizer(flags);
-                                    while (flagtokenizer.hasMoreTokens()) {
-                                        String flag = flagtokenizer.nextToken();
-                                        if ("\\Seen".equals(flag)) {
-                                            properties.put("read", "1");
-                                        } else if ("\\Flagged".equals(flag)) {
-                                            properties.put("flagged", "2");
-                                        } else if ("\\Answered".equals(flag)) {
-                                            properties.put("answered", "102");
-                                        } else if ("$Forwarded".equals(flag)) {
-                                            properties.put("forwarded", "104");
-                                        } else if ("\\Draft".equals(flag)) {
-                                            properties.put("draft", "9");
-                                        } else if ("Junk".equals(flag)) {
-                                            properties.put("junk", "1");
+                                    String flags = null;
+                                    String date = null;
+                                    // handle optional flags
+                                    String nextToken = tokens.nextQuotedToken();
+                                    if (nextToken.startsWith("(")) {
+                                        flags = removeQuotes(nextToken);
+                                        if (tokens.hasMoreTokens()) {
+                                            nextToken = tokens.nextToken();
+                                            if (tokens.hasMoreTokens()) {
+                                                date = nextToken;
+                                                nextToken = tokens.nextToken();
+                                            }
+                                        }
+                                    } else if (tokens.hasMoreTokens()) {
+                                        date = removeQuotes(nextToken);
+                                        nextToken = tokens.nextToken();
+                                    }
+
+                                    if (flags != null) {
+                                        StringTokenizer flagtokenizer = new StringTokenizer(flags);
+                                        while (flagtokenizer.hasMoreTokens()) {
+                                            String flag = flagtokenizer.nextToken();
+                                            if ("\\Seen".equals(flag)) {
+                                                properties.put("read", "1");
+                                            } else if ("\\Flagged".equals(flag)) {
+                                                properties.put("flagged", "2");
+                                            } else if ("\\Answered".equals(flag)) {
+                                                properties.put("answered", "102");
+                                            } else if ("$Forwarded".equals(flag)) {
+                                                properties.put("forwarded", "104");
+                                            } else if ("\\Draft".equals(flag)) {
+                                                properties.put("draft", "9");
+                                            } else if ("Junk".equals(flag)) {
+                                                properties.put("junk", "1");
+                                            }
                                         }
                                     }
                                     // handle optional date
-                                    String dateOrSize = tokens.nextToken();
-                                    if (tokens.hasMoreTokens()) {
+                                    if (date != null) {
                                         SimpleDateFormat dateParser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
-                                        Date dateReceived = dateParser.parse(dateOrSize);
+                                        Date dateReceived = dateParser.parse(date);
                                         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                                         dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
 
                                         properties.put("datereceived", dateFormatter.format(dateReceived));
-                                        dateOrSize = tokens.nextToken();
                                     }
-                                    int size = Integer.parseInt(dateOrSize);
+                                    int size = Integer.parseInt(nextToken);
                                     sendClient("+ send literal data");
                                     char[] buffer = new char[size];
                                     int index = 0;
@@ -491,7 +508,7 @@ public class ImapConnection extends AbstractConnection {
                 int rfc822size;
                 if ("BODY.PEEK[TEXT]".equals(param)) {
                     writeHeaders = false;
-                } 
+                }
                 PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex);
                 message.write(bodyOutputStream);
                 rfc822size = bodyOutputStream.size;
@@ -885,7 +902,7 @@ public class ImapConnection extends AbstractConnection {
             size++;
             if (((state != BODY && writeHeaders) || (state == BODY && writeBody)) &&
                     (size > startIndex)
-            ) {
+                    ) {
                 super.write(b);
             }
             if (state == START) {
@@ -1032,6 +1049,10 @@ public class ImapConnection extends AbstractConnection {
 
         @Override
         public String nextToken() {
+            return removeQuotes(nextQuotedToken());
+        }
+
+        public String nextQuotedToken() {
             StringBuilder nextToken = new StringBuilder();
             nextToken.append(super.nextToken());
             while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '"'
@@ -1042,7 +1063,7 @@ public class ImapConnection extends AbstractConnection {
                     && nextToken.charAt(nextToken.length() - 1) != ')') {
                 nextToken.append(' ').append(super.nextToken());
             }
-            return removeQuotes(nextToken.toString());
+            return nextToken.toString();
         }
     }
 
