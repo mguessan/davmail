@@ -26,8 +26,15 @@ public class LdapConnection extends AbstractConnection {
      * Davmail base context
      */
     static final String BASE_CONTEXT = "ou=people";
-    static final String BASE_CONTEXT_2 = "cn=users, ou=people";
-    static final String COMPUTER_CONTEXT = "cn=computers, ou=people";
+    static final String OD_BASE_CONTEXT = "o=od";
+    static final String OD_USER_CONTEXT = "cn=users, o=od";
+    static final String COMPUTER_CONTEXT = "cn=computers, o=od";
+
+    static final List<String> NAMING_CONTEXTS = new ArrayList<String>();
+    static {
+        NAMING_CONTEXTS.add(BASE_CONTEXT);
+        NAMING_CONTEXTS.add(OD_BASE_CONTEXT);
+    }
 
     static final List<String> PERSON_OBJECT_CLASSES = new ArrayList<String>();
 
@@ -36,6 +43,7 @@ public class LdapConnection extends AbstractConnection {
         PERSON_OBJECT_CLASSES.add("person");
         PERSON_OBJECT_CLASSES.add("organizationalPerson");
         PERSON_OBJECT_CLASSES.add("inetOrgPerson");
+        // OpenDirectory class for iCal
         PERSON_OBJECT_CLASSES.add("apple-user");
     }
 
@@ -82,7 +90,7 @@ public class LdapConnection extends AbstractConnection {
                     "</array>" +
                     "<key>com.apple.macosxserver.virtualhosts</key>" +
                     "<dict>" +
-                    "<key>"+VIRTUALHOST_GUID+"</key>" +
+                    "<key>" + VIRTUALHOST_GUID + "</key>" +
                     "<dict>" +
                     "<key>hostDetails</key>" +
                     "<dict>" +
@@ -132,7 +140,7 @@ public class LdapConnection extends AbstractConnection {
                     "</plist>";
 
     static {
-        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID+":"+VIRTUALHOST_GUID+":calendar");
+        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ":" + VIRTUALHOST_GUID + ":calendar");
     }
 
     static final HashSet<String> EXTENDED_ATTRIBUTES = new HashSet<String>();
@@ -449,7 +457,7 @@ public class LdapConnection extends AbstractConnection {
                             }
                         }
                         size = persons.size();
-                        sendPersons(currentMessageId, persons, returningAttributes);
+                        sendPersons(currentMessageId, dn.substring(dn.indexOf(',')), persons, returningAttributes);
                     } else {
                         DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
                     }
@@ -457,7 +465,7 @@ public class LdapConnection extends AbstractConnection {
                     size = 1;
                     // computer context for iCal
                     sendComputerContext(currentMessageId, returningAttributes);
-                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || BASE_CONTEXT_2.equalsIgnoreCase(dn)) && (session != null)) {
+                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) && (session != null)) {
                     Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
                     if (ldapFilter.isFullSearch()) {
                         // full search
@@ -496,7 +504,7 @@ public class LdapConnection extends AbstractConnection {
 
                     size = persons.size();
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " found " + size + " results");
-                    sendPersons(currentMessageId, persons, returningAttributes);
+                    sendPersons(currentMessageId, ", "+dn, persons, returningAttributes);
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " end");
                 } else {
                     DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
@@ -625,11 +633,12 @@ public class LdapConnection extends AbstractConnection {
      * Convert to LDAP attributes and send entry
      *
      * @param currentMessageId    current Message Id
+     * @param baseContext         request base context (BASE_CONTEXT or OD_BASE_CONTEXT)
      * @param persons             persons Map
      * @param returningAttributes returning attributes
      * @throws IOException on error
      */
-    protected void sendPersons(int currentMessageId, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
+    protected void sendPersons(int currentMessageId, String baseContext, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
         boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.size() == 0;
         boolean returnAllAttributes = returningAttributes.size() == 0;
         for (Map<String, String> person : persons.values()) {
@@ -678,8 +687,8 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
-            DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " send uid=" + ldapPerson.get("uid") + " " + ldapPerson);
-            sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + "," + BASE_CONTEXT, ldapPerson);
+            DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " send uid=" + ldapPerson.get("uid") + baseContext + " " + ldapPerson);
+            sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
         }
 
     }
@@ -695,7 +704,7 @@ public class LdapConnection extends AbstractConnection {
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("objectClass", "top");
-        attributes.put("namingContexts", BASE_CONTEXT);
+        attributes.put("namingContexts", NAMING_CONTEXTS);
 
         sendEntry(currentMessageId, "Root DSE", attributes);
     }
@@ -713,7 +722,7 @@ public class LdapConnection extends AbstractConnection {
             DavGatewayTray.debug("Couldn't get hostname");
         }
 
-	// If we can't get the hostname, just return localhost.
+        // If we can't get the hostname, just return localhost.
 
         return "localhost";
     }
@@ -739,8 +748,8 @@ public class LdapConnection extends AbstractConnection {
         addIf(attributes, returningAttributes, "apple-serviceslocator", "::anyService");
         addIf(attributes, returningAttributes, "cn", hostName());
 
-	String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
-	DavGatewayTray.debug("Sending computer context " + dn);
+        String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
+        DavGatewayTray.debug("Sending computer context " + dn);
 
         sendEntry(currentMessageId, dn, attributes);
     }
