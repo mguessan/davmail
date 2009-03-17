@@ -602,7 +602,7 @@ public class CaldavConnection extends AbstractConnection {
                 response.startRecipientResponse(attendee);
 
                 StringBuilder ics = new StringBuilder();
-                ics.append("<C:calendar-data>BEGIN:VCALENDAR").append((char) 13).append((char) 10)
+                ics.append("BEGIN:VCALENDAR").append((char) 13).append((char) 10)
                         .append("VERSION:2.0").append((char) 13).append((char) 10)
                         .append("PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN").append((char) 13).append((char) 10)
                         .append("METHOD:REPLY").append((char) 13).append((char) 10)
