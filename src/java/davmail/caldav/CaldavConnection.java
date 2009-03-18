@@ -344,6 +344,9 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:resourcetype", "<D:collection/>" +
                     "<C:schedule-inbox xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
         }
+        if (request.hasProperty("getcontenttype")) {
+            response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
+        }
         if (request.hasProperty("getctag")) {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
                     base64Encode(session.getInboxCtag()));
