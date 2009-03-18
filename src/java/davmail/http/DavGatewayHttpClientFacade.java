@@ -207,7 +207,7 @@ public final class DavGatewayHttpClientFacade {
         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
             throw DavGatewayHttpClientFacade.buildHttpException(deleteMethod);
         }
-        return status;
+        return HttpStatus.SC_OK;
     }
 
     /**
