@@ -4,11 +4,14 @@ import davmail.Settings;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.commons.httpclient.methods.DeleteMethod;
+import org.apache.webdav.lib.methods.PropFindMethod;
 import org.apache.webdav.lib.methods.SearchMethod;
+import org.apache.webdav.lib.methods.XMLResponseMethodBase;
 
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Vector;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -33,6 +36,14 @@ public final class DavGatewayHttpClientFacade {
     public static HttpClient getInstance() {
         // create an HttpClient instance
         HttpClient httpClient = new HttpClient();
+        configureClient(httpClient);
+        return httpClient;
+    }
+
+    public static HttpClient getInstance(HttpURL httpURL) {
+        HttpClient httpClient = new HttpClient();
+        HostConfiguration hostConfig = httpClient.getHostConfiguration();
+        hostConfig.setHost(httpURL);
         configureClient(httpClient);
         return httpClient;
     }
@@ -156,36 +167,94 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
-     * Execute webdav search method
-     * @param httpClient http client instance
-     * @param folderUrl searched folder
+     * Execute webdav search method.
+     *
+     * @param httpClient    http client instance
+     * @param path          <i>encoded</i> searched folder path
      * @param searchRequest (SQL like) search request
-     * @return Responses
+     * @return Responses enumeration
      * @throws IOException on error
      */
-    public static Enumeration executeSearchMethod(HttpClient httpClient, String folderUrl, String searchRequest) throws IOException {
-        Enumeration folderEnum = null;
+    public static Enumeration executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
         String searchBody = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>" + searchRequest + "</d:sql>\n" +
+                "        <d:sql>" + searchRequest.replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("&", "&amp;") + "</d:sql>\n" +
                 "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(folderUrl), searchBody);
-        //searchMethod.setDebug(4);
+        SearchMethod searchMethod = new SearchMethod(path, searchBody);
+        return executeMethod(httpClient, searchMethod);
+    }
+
+    /**
+     * Execute webdav propfind method.
+     *
+     * @param httpClient http client instance
+     * @param path       <i>encoded</i> searched folder path
+     * @param depth      propfind request depth
+     * @param properties propfind requested properties
+     * @return Responses enumeration
+     * @throws IOException on error
+     */
+    public static Enumeration executePropFindMethod(HttpClient httpClient, String path, int depth, Vector properties) throws IOException {
+        PropFindMethod propFindMethod = new PropFindMethod(path, depth, properties.elements());
+        return executeMethod(httpClient, propFindMethod);
+    }
+
+    public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
+        DeleteMethod deleteMethod = new DeleteMethod(path);
+
+        int status = executeHttpMethod(httpClient, deleteMethod);
+        // do not throw error if already deleted
+        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+            throw DavGatewayHttpClientFacade.buildHttpException(deleteMethod);
+        }
+        return status;
+    }
+
+    /**
+     * Execute webdav request.
+     *
+     * @param httpClient http client instance
+     * @param method     webdav method
+     * @return Responses enumeration
+     * @throws IOException on error
+     */
+    public static Enumeration executeMethod(HttpClient httpClient, XMLResponseMethodBase method) throws IOException {
+        Enumeration responseEnumeration = null;
         try {
-            int status = httpClient.executeMethod(searchMethod);
-            // Also accept OK sent by buggy servers.
-            if (status != HttpStatus.SC_MULTI_STATUS
-                    && status != HttpStatus.SC_OK) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                throw ex;
+            int status = httpClient.executeMethod(method);
+
+            if (status != HttpStatus.SC_MULTI_STATUS) {
+                throw buildHttpException(method);
             }
-            folderEnum = searchMethod.getResponses();
+            responseEnumeration = method.getResponses();
 
         } finally {
-            searchMethod.releaseConnection();
+            method.releaseConnection();
         }
-        return folderEnum;
+        return responseEnumeration;
+    }
+
+    public static int executeHttpMethod(HttpClient httpClient, HttpMethod method) throws IOException {
+        int status = 0;
+        try {
+            status = httpClient.executeMethod(method);
+        } finally {
+            method.releaseConnection();
+        }
+        return status;
+    }
+
+    /**
+     * Build Http Exception from methode status
+     *
+     * @param method Http Method
+     * @return Http Exception
+     */
+    public static HttpException buildHttpException(HttpMethod method) {
+        HttpException httpException = new HttpException();
+        httpException.setReasonCode(method.getStatusCode());
+        httpException.setReason(method.getStatusText());
+        return httpException;
     }
 
     public static void stop() {

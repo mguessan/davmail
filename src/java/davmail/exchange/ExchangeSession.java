@@ -61,6 +61,14 @@ public class ExchangeSession {
         DISPLAY_NAME.add("DAV:displayname");
     }
 
+    protected static final Vector<String> FOLDER_PROPERTIES = new Vector<String>();
+
+    static {
+        FOLDER_PROPERTIES.add("DAV:hassubs");
+        FOLDER_PROPERTIES.add("DAV:nosubs");
+        FOLDER_PROPERTIES.add("urn:schemas:httpmail:unreadcount");
+    }
+
     protected static final Vector<String> CONTENT_TAG = new Vector<String>();
 
     static {
@@ -100,7 +108,7 @@ public class ExchangeSession {
     private String mailPath;
     private String email;
     private String alias;
-    private WebdavResource wdr = null;
+    private HttpClient httpClient;
 
     private final ExchangeSessionFactory.PoolKey poolKey;
 
@@ -132,13 +140,8 @@ public class ExchangeSession {
     public boolean isExpired() {
         boolean isExpired = false;
         try {
-            wdr.propfindMethod(0);
-            int status = wdr.getStatusCode();
-
-            if (status != HttpStatus.SC_MULTI_STATUS) {
-                isExpired = true;
-            }
-
+            DavGatewayHttpClientFacade.executePropFindMethod(
+                    httpClient, URIUtil.encodePath(inboxUrl), 0, DISPLAY_NAME);
         } catch (IOException e) {
             isExpired = true;
         }
@@ -350,12 +353,9 @@ public class ExchangeSession {
             } else {
                 throw new IllegalArgumentException("Invalid URL: " + poolKey.url);
             }
-            wdr = new WebdavResource(httpURL, WebdavResource.NOACTION, 0);
 
-            // get the internal HttpClient instance
-            HttpClient httpClient = wdr.retrieveSessionInstance();
 
-            DavGatewayHttpClientFacade.configureClient(httpClient);
+            httpClient = DavGatewayHttpClientFacade.getInstance(httpURL);
 
             // get webmail root url
             // providing credentials
@@ -390,10 +390,7 @@ public class ExchangeSession {
             buildMailPath(method);
 
             // got base http mailbox http url
-            wdr.setPath(mailPath);
             getWellKnownFolders();
-            // set current folder to Inbox
-            wdr.setPath(URIUtil.getPath(inboxUrl));
 
         } catch (AuthenticationException exc) {
             LOGGER.error(exc.toString());
@@ -421,7 +418,8 @@ public class ExchangeSession {
 
     protected void getWellKnownFolders() throws IOException {
         // Retrieve well known URLs
-        Enumeration foldersEnum = wdr.propfindMethod(0, WELL_KNOWN_FOLDERS);
+        Enumeration foldersEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+                httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
         if (!foldersEnum.hasMoreElements()) {
             throw new IOException("Unable to get mail folders");
         }
@@ -480,7 +478,7 @@ public class ExchangeSession {
             try {
                 // update message with blind carbon copy and other flags
                 addProperties(patchMethod, properties);
-                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                     throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
                 }
@@ -498,7 +496,7 @@ public class ExchangeSession {
             // use same encoding as client socket reader
             bodyStream = new ByteArrayInputStream(messageBody.getBytes());
             putmethod.setRequestBody(bodyStream);
-            int code = wdr.retrieveSessionInstance().executeMethod(putmethod);
+            int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
                 throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
@@ -520,7 +518,7 @@ public class ExchangeSession {
             try {
                 // update message with blind carbon copy and other flags
                 addProperties(patchMethod, properties);
-                int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+                int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                     throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
                 }
@@ -603,7 +601,7 @@ public class ExchangeSession {
         PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl));
         try {
             addProperties(patchMethod, properties);
-            int statusCode = wdr.retrieveSessionInstance().executeMethod(patchMethod);
+            int statusCode = httpClient.executeMethod(patchMethod);
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                 throw new IOException("Unable to update message properties");
             }
@@ -627,10 +625,11 @@ public class ExchangeSession {
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n";
         if (conditions != null) {
-            searchRequest += conditions.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+            searchRequest += conditions;
         }
         searchRequest += "       ORDER BY \"urn:schemas:httpmail:date\" ASC";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+                httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
@@ -650,7 +649,8 @@ public class ExchangeSession {
                 "                FROM Scope('" + mode + " TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n" +
                 "                      AND (\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), mailPath, searchRequest);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+                httpClient, URIUtil.encodePath(mailPath), searchRequest);
 
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
@@ -730,14 +730,15 @@ public class ExchangeSession {
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
                 "                   AND \"DAV:getlastmodified\" &lt; '" + dateFormatter.format(cal.getTime()) + "'\n";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(wdr.retrieveSessionInstance(), folderUrl, searchRequest);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+                httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
         while (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            String messageUrl = URIUtil.decode(entity.getHref());
+            String messageUrl = entity.getHref();
 
             LOGGER.debug("Delete " + messageUrl);
-            wdr.deleteMethod(messageUrl);
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
         }
     }
 
@@ -808,12 +809,11 @@ public class ExchangeSession {
 
         // warning : slide library expects *unencoded* urls
         String tempUrl = draftsUrl + "/" + messageName + ".EML";
-        boolean sent = wdr.moveMethod(tempUrl, sendmsgUrl);
-        if (!sent) {
-            throw new IOException("Unable to send message: " + wdr.getStatusCode()
-                    + " " + wdr.getStatusMessage());
-        }
-
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl));
+        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
+            if (status != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
+            }
     }
 
     public String getFolderPath(String folderName) {
@@ -847,11 +847,8 @@ public class ExchangeSession {
      * @throws IOException when unable to change folder
      */
     public Folder getFolder(String folderName) throws IOException {
-        Vector<String> reqProps = new Vector<String>();
-        reqProps.add("DAV:hassubs");
-        reqProps.add("DAV:nosubs");
-        reqProps.add("urn:schemas:httpmail:unreadcount");
-        Enumeration folderEnum = wdr.propfindMethod(getFolderPath(folderName), 0, reqProps);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+                httpClient, URIUtil.encodePath(getFolderPath(folderName)), 0, FOLDER_PROPERTIES);
         Folder folder = null;
         if (folderEnum.hasMoreElements()) {
             ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
@@ -870,7 +867,7 @@ public class ExchangeSession {
         };
         method.addPropertyToSet("outlookfolderclass", "IPF.Note", "ex", "http://schemas.microsoft.com/exchange/");
         try {
-            wdr.retrieveSessionInstance().executeMethod(method);
+            httpClient.executeMethod(method);
             // ok or alredy exists
             if (method.getStatusCode() != HttpStatus.SC_MULTI_STATUS && method.getStatusCode() != HttpStatus.SC_METHOD_NOT_ALLOWED) {
                 HttpException ex = new HttpException();
@@ -890,14 +887,11 @@ public class ExchangeSession {
         method.setOverwrite(false);
         method.addRequestHeader("Allow-Rename", "t");
         try {
-            int statusCode = wdr.retrieveSessionInstance().executeMethod(method);
+            int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpException("Unable to move message, target already exists");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(method.getStatusCode());
-                ex.setReason(method.getStatusText());
-                throw ex;
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         } finally {
             method.releaseConnection();
@@ -911,14 +905,11 @@ public class ExchangeSession {
                 URIUtil.encodePath(targetPath));
         method.setOverwrite(false);
         try {
-            int statusCode = wdr.retrieveSessionInstance().executeMethod(method);
+            int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpException("Unable to move folder, target already exists");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(method.getStatusCode());
-                ex.setReason(method.getStatusText());
-                throw ex;
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         } finally {
             method.releaseConnection();
@@ -926,26 +917,23 @@ public class ExchangeSession {
     }
 
     public void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
-        String source = encodedPath+"/"+encodedMessageName;
-        String destination = URIUtil.encodePath(deleteditemsUrl) + "/"+encodedMessageName;
+        String source = encodedPath + "/" + encodedMessageName;
+        String destination = URIUtil.encodePath(deleteditemsUrl) + "/" + encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
         MoveMethod method = new MoveMethod(source, destination);
         method.addRequestHeader("Overwrite", "f");
         method.addRequestHeader("Allow-rename", "t");
 
-        int status = wdr.retrieveSessionInstance().executeMethod(method);
+        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         // do not throw error if already deleted
         if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
-            HttpException ex = new HttpException();
-            ex.setReasonCode(status);
-            ex.setReason(method.getStatusText());
-            throw ex;
+            throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
         if (method.getResponseHeader("Location") != null) {
             destination = method.getResponseHeader("Location").getValue();
         }
 
-        LOGGER.debug("Deleted to :" + destination + " " + wdr.getStatusCode() + " " + wdr.getStatusMessage());
+        LOGGER.debug("Deleted to :" + destination);
     }
 
     public static class Folder {
@@ -1025,7 +1013,7 @@ public class ExchangeSession {
                 method = new GetMethod(URIUtil.encodePath(messageUrl));
                 method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
                 method.setRequestHeader("Translate", "f");
-                wdr.retrieveSessionInstance().executeMethod(method);
+                httpClient.executeMethod(method);
 
                 boolean inHTML = false;
 
@@ -1081,14 +1069,7 @@ public class ExchangeSession {
         }
 
         public void delete() throws IOException {
-            wdr.deleteMethod(messageUrl);
-            // do not send error on event not found
-            if (wdr.getStatusCode() != HttpStatus.SC_OK && wdr.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(wdr.getStatusCode());
-                ex.setReason(wdr.getStatusMessage());
-                throw ex;
-            }
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(messageUrl));
         }
 
         public void moveToTrash() throws IOException {
@@ -1099,10 +1080,10 @@ public class ExchangeSession {
 
             int index = messageUrl.lastIndexOf('/');
             if (index < 0) {
-                throw new IOException("Invalid message url: "+messageUrl);
+                throw new IOException("Invalid message url: " + messageUrl);
             }
             String encodedPath = URIUtil.encodePath(messageUrl.substring(0, index));
-            String encodedMessageName = URIUtil.encodePath(messageUrl.substring(index+1));
+            String encodedMessageName = URIUtil.encodePath(messageUrl.substring(index + 1));
             ExchangeSession.this.moveToTrash(encodedPath, encodedMessageName);
         }
 
@@ -1163,7 +1144,7 @@ public class ExchangeSession {
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             try {
-                int status = wdr.retrieveSessionInstance().executeMethod(method);
+                int status = httpClient.executeMethod(method);
                 if (status != HttpStatus.SC_OK) {
                     LOGGER.warn("Unable to get event at " + href + " status: " + status);
                 }
@@ -1247,7 +1228,7 @@ public class ExchangeSession {
 
         SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(path), searchRequest);
         try {
-            int status = wdr.retrieveSessionInstance().executeMethod(searchMethod);
+            int status = httpClient.executeMethod(searchMethod);
             // Also accept OK sent by buggy servers.
             if (status != HttpStatus.SC_MULTI_STATUS
                     && status != HttpStatus.SC_OK) {
@@ -1267,16 +1248,9 @@ public class ExchangeSession {
     }
 
     public Event getEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(getFolderPath(path))+"/"+URIUtil.encodeWithinQuery(eventName);
-        LOGGER.debug("getEvent("+eventPath+"/"+eventName+")");
-        PropFindMethod propFindMethod = new PropFindMethod(eventPath, 0, EVENT_REQUEST_PROPERTIES.elements());
-        int status = wdr.retrieveSessionInstance().executeMethod(propFindMethod);
-        if (status != HttpStatus.SC_MULTI_STATUS) {
-            HttpException ex = new HttpException();
-            ex.setReasonCode(status);
-            throw ex;
-        }
-        Enumeration calendarEnum = propFindMethod.getResponses();
+        String eventPath = URIUtil.encodePath(getFolderPath(path)) + "/" + URIUtil.encodeWithinQuery(eventName);
+        LOGGER.debug("getEvent(" + eventPath + "/" + eventName + ")");
+        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar event");
         }
@@ -1456,12 +1430,12 @@ public class ExchangeSession {
         if (status != HttpStatus.SC_CREATED) {
             return status;
         } else {
-            boolean sent = wdr.moveMethod(messageUrl, sendmsgUrl);
-            if (!sent) {
-                throw new IOException("Unable to send message: " + wdr.getStatusCode()
-                        + " " + wdr.getStatusMessage());
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(sendmsgUrl));
+            status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
+            if (status != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
-            return wdr.getStatusCode();
+            return status;
         }
     }
 
@@ -1578,7 +1552,7 @@ public class ExchangeSession {
         putmethod.setRequestBody(body.toString());
         try {
             if (status == 0) {
-                status = wdr.retrieveSessionInstance().executeMethod(putmethod);
+                status = httpClient.executeMethod(putmethod);
                 if (status == HttpURLConnection.HTTP_OK) {
                     if (etag != null) {
                         LOGGER.debug("Updated event " + messageUrl);
@@ -1602,19 +1576,11 @@ public class ExchangeSession {
 
 
     public void deleteFolder(String path) throws IOException {
-        wdr.deleteMethod(getFolderPath(path));
-        int status = wdr.getStatusCode();
-        if (status != HttpStatus.SC_OK) {
-            HttpException ex = new HttpException();
-            ex.setReasonCode(status);
-            ex.setReason(wdr.getStatusMessage());
-            throw ex;
-        }
+        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(path)));
     }
 
     public int deleteMessage(String path) throws IOException {
-        wdr.deleteMethod(path);
-        return wdr.getStatusCode();
+        return DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(path));
     }
 
     public int deleteEvent(String path, String eventName) throws IOException {
@@ -1624,15 +1590,7 @@ public class ExchangeSession {
             moveToTrash(URIUtil.encodePath(getFolderPath(URIUtil.decode(path))), eventName);
             status = HttpStatus.SC_OK;
         } else {
-            DeleteMethod method = new DeleteMethod(URIUtil.encodePath(getFolderPath(URIUtil.decode(path)))+"/"+eventName);
-            status = wdr.retrieveSessionInstance().executeMethod(method);
-            // do not throw error if already deleted
-            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                ex.setReason(wdr.getStatusMessage());
-                throw ex;
-            }
+            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(URIUtil.decode(path))) + "/" + eventName);
         }
         return status;
     }
@@ -1647,7 +1605,8 @@ public class ExchangeSession {
 
     public String getFolderCtag(String folderUrl) throws IOException {
         String ctag = null;
-        Enumeration calendarEnum = wdr.propfindMethod(folderUrl, 0, CONTENT_TAG);
+        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+                httpClient, URIUtil.encodePath(folderUrl), 0, CONTENT_TAG);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get folder object");
         }
@@ -1671,7 +1630,8 @@ public class ExchangeSession {
 
     public String getCalendarEtag() throws IOException {
         String etag = null;
-        Enumeration calendarEnum = wdr.propfindMethod(calendarUrl, 0, EVENT_REQUEST_PROPERTIES);
+        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+                httpClient, URIUtil.encodePath(calendarUrl), 0, EVENT_REQUEST_PROPERTIES);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get calendar object");
         }
@@ -1730,7 +1690,8 @@ public class ExchangeSession {
             return null;
         }
         String alias = null;
-        Enumeration folderEnum = wdr.propfindMethod(mailPath, 0, DISPLAY_NAME);
+        Enumeration folderEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+                httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
         if (!folderEnum.hasMoreElements()) {
             throw new IOException("Unable to get mail folder");
         }
@@ -1755,7 +1716,7 @@ public class ExchangeSession {
         if (alias != null) {
             GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + alias);
             try {
-                int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+                int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
                     throw new IOException("Unable to get user email from: " + getMethod.getPath());
                 }
@@ -1788,7 +1749,7 @@ public class ExchangeSession {
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions(methodPath); 
+            alias = getAliasFromOptions(methodPath);
             email = getEmail(alias);
         }
         if (email == null) {
@@ -1805,7 +1766,7 @@ public class ExchangeSession {
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
-            wdr.retrieveSessionInstance().executeMethod(optionsMethod);
+            httpClient.executeMethod(optionsMethod);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find mailbox full name
@@ -1843,7 +1804,7 @@ public class ExchangeSession {
         return email;
     }
 
-     /**
+    /**
      * Get current user alias
      *
      * @return user email
@@ -1864,7 +1825,7 @@ public class ExchangeSession {
         Map<String, Map<String, String>> results;
         GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + "=" + searchValue));
         try {
-            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
                 throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
             }
@@ -1881,7 +1842,7 @@ public class ExchangeSession {
             GetMethod getMethod = null;
             try {
                 getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=gallookup&ADDR=" + person.get("EM")));
-                int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+                int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
                     throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
                 }
@@ -1950,7 +1911,7 @@ public class ExchangeSession {
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
         try {
-            int status = wdr.retrieveSessionInstance().executeMethod(getMethod);
+            int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
                 throw new IOException("Unable to get free-busy from: " + getMethod.getPath());
             }
