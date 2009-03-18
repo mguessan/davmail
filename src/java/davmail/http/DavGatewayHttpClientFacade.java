@@ -178,7 +178,7 @@ public final class DavGatewayHttpClientFacade {
     public static Enumeration executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
         String searchBody = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>" + searchRequest.replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("&", "&amp;") + "</d:sql>\n" +
+                "        <d:sql>" + searchRequest.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</d:sql>\n" +
                 "</d:searchrequest>";
         SearchMethod searchMethod = new SearchMethod(path, searchBody);
         return executeMethod(httpClient, searchMethod);

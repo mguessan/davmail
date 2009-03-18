@@ -12,8 +12,9 @@ import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
 import org.apache.webdav.lib.ResponseEntity;
-import org.apache.webdav.lib.WebdavResource;
-import org.apache.webdav.lib.methods.*;
+import org.apache.webdav.lib.methods.CopyMethod;
+import org.apache.webdav.lib.methods.MoveMethod;
+import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -370,10 +371,7 @@ public class ExchangeSession {
             if (status == HttpStatus.SC_UNAUTHORIZED) {
                 throw new AuthenticationException("Authentication failed: invalid user or password");
             } else if (status != HttpStatus.SC_OK) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                ex.setReason(method.getStatusText());
-                throw ex;
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
             // test form based authentication
             String queryString = method.getQueryString();
@@ -729,7 +727,7 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:uid\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
-                "                   AND \"DAV:getlastmodified\" &lt; '" + dateFormatter.format(cal.getTime()) + "'\n";
+                "                   AND \"DAV:getlastmodified\" < '" + dateFormatter.format(cal.getTime()) + "'\n";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
@@ -811,9 +809,9 @@ public class ExchangeSession {
         String tempUrl = draftsUrl + "/" + messageName + ".EML";
         MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl));
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-            if (status != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
-            }
+        if (status != HttpStatus.SC_OK) {
+            throw DavGatewayHttpClientFacade.buildHttpException(method);
+        }
     }
 
     public String getFolderPath(String folderName) {
@@ -866,17 +864,10 @@ public class ExchangeSession {
             }
         };
         method.addPropertyToSet("outlookfolderclass", "IPF.Note", "ex", "http://schemas.microsoft.com/exchange/");
-        try {
-            httpClient.executeMethod(method);
-            // ok or alredy exists
-            if (method.getStatusCode() != HttpStatus.SC_MULTI_STATUS && method.getStatusCode() != HttpStatus.SC_METHOD_NOT_ALLOWED) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(method.getStatusCode());
-                ex.setReason(method.getStatusText());
-                throw ex;
-            }
-        } finally {
-            method.releaseConnection();
+        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
+        // ok or alredy exists
+        if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
+            throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
     }
 
@@ -1220,29 +1211,9 @@ public class ExchangeSession {
 
     public List<Event> getEvents(String path, String searchQuery) throws IOException {
         List<Event> events = new ArrayList<Event>();
-        String searchRequest = "<?xml version=\"1.0\"?>\n" +
-                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "         <d:sql>" + searchQuery +
-                "         </d:sql>\n" +
-                "</d:searchrequest>";
-
-        SearchMethod searchMethod = new SearchMethod(URIUtil.encodePath(path), searchRequest);
-        try {
-            int status = httpClient.executeMethod(searchMethod);
-            // Also accept OK sent by buggy servers.
-            if (status != HttpStatus.SC_MULTI_STATUS
-                    && status != HttpStatus.SC_OK) {
-                HttpException ex = new HttpException();
-                ex.setReasonCode(status);
-                throw ex;
-            }
-
-            Enumeration calendarEnum = searchMethod.getResponses();
-            while (calendarEnum.hasMoreElements()) {
-                events.add(buildEvent((ResponseEntity) calendarEnum.nextElement()));
-            }
-        } finally {
-            searchMethod.releaseConnection();
+        Enumeration calendarEnum = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(path), searchQuery);
+        while (calendarEnum.hasMoreElements()) {
+            events.add(buildEvent((ResponseEntity) calendarEnum.nextElement()));
         }
         return events;
     }
