@@ -61,6 +61,12 @@ public class ExchangeSession {
         DISPLAY_NAME.add("DAV:displayname");
     }
 
+    protected static final Vector<String> CONTENT_TAG = new Vector<String>();
+
+    static {
+        CONTENT_TAG.add("http://schemas.microsoft.com/repl/contenttag");
+    }
+
 
     public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
 
@@ -1641,7 +1647,7 @@ public class ExchangeSession {
 
     public String getFolderCtag(String folderUrl) throws IOException {
         String ctag = null;
-        Enumeration calendarEnum = wdr.propfindMethod(folderUrl, 0);
+        Enumeration calendarEnum = wdr.propfindMethod(folderUrl, 0, CONTENT_TAG);
         if (!calendarEnum.hasMoreElements()) {
             throw new IOException("Unable to get folder object");
         }
