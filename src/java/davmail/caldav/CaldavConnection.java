@@ -451,6 +451,8 @@ public class CaldavConnection extends AbstractConnection {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
                         notFound.add(href);
+                    } else if ("inbox".equals(eventName)){
+                        // Sunbird: just ignore
                     } else {
                         events.add(session.getEvent(path, eventName));
                     }
