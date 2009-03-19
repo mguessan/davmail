@@ -143,7 +143,7 @@ public class ImapConnection extends AbstractConnection {
                                         if (messages.size() == 0) {
                                             sendClient("* OK [UIDNEXT " + 1 + "]");
                                         } else {
-                                            sendClient("* OK [UIDNEXT " + (messages.get(messages.size() - 1).getUidAsLong() + 1) + "]");
+                                            sendClient("* OK [UIDNEXT " + (messages.get(messages.size() - 1).getImapUid() + 1) + "]");
                                         }
                                         sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
                                         sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
@@ -236,9 +236,9 @@ public class ImapConnection extends AbstractConnection {
                                                 if (((undeleted && !message.deleted) || !undeleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
                                                         && (conditions.answered == null || message.answered == conditions.answered)
-                                                        && (conditions.startUid == 0 || message.getUidAsLong() >= conditions.startUid)
+                                                        && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
                                                         ) {
-                                                    sendClient("* SEARCH " + message.getUidAsLong());
+                                                    sendClient("* SEARCH " + message.getImapUid());
                                                 }
                                             }
                                             sendClient(commandId + " OK SEARCH completed");
@@ -250,7 +250,7 @@ public class ImapConnection extends AbstractConnection {
                                             while (UIDRangeIterator.hasNext()) {
                                                 ExchangeSession.Message message = UIDRangeIterator.next();
                                                 updateFlags(message, action, flags);
-                                                sendClient("* " + (UIDRangeIterator.currentIndex) + " FETCH (UID " + message.getUidAsLong() + " FLAGS (" + (message.getImapFlags()) + "))");
+                                                sendClient("* " + (UIDRangeIterator.currentIndex) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
                                             }
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
@@ -387,7 +387,7 @@ public class ImapConnection extends AbstractConnection {
                                                     if (localMessages.size() == 0) {
                                                         answer.append("UIDNEXT 1 ");
                                                     } else {
-                                                        answer.append("UIDNEXT ").append((localMessages.get(localMessages.size() - 1).getUidAsLong() + 1)).append(" ");
+                                                        answer.append("UIDNEXT ").append((localMessages.get(localMessages.size() - 1).getImapUid() + 1)).append(" ");
                                                     }
                                                 }
 
@@ -456,7 +456,7 @@ public class ImapConnection extends AbstractConnection {
 
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException {
         StringBuilder buffer = new StringBuilder();
-        buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getUidAsLong());
+        buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         boolean bodystructure = false;
         StringTokenizer paramTokens = new StringTokenizer(parameters);
         while (paramTokens.hasMoreTokens()) {
@@ -693,7 +693,11 @@ public class ImapConnection extends AbstractConnection {
             conditions.answered = Boolean.FALSE;
         } else if ("HEADER".equals(token)) {
             String headerName = tokens.nextToken().toLowerCase();
-            conditions.append(operator).append("\"urn:schemas:mailheader:").append(headerName).append("\"='").append(tokens.nextToken()).append("'");
+            String value = tokens.nextToken();
+            if ("message-id".equals(headerName)) {
+                value = "<"+value+">";
+            }
+            conditions.append(operator).append("\"urn:schemas:mailheader:").append(headerName).append("\"='").append(value).append("'");
         } else if ("UID".equals(token)) {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {
@@ -968,7 +972,7 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
-                while (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() < startUid) {
+                while (currentIndex < messages.size() && messages.get(currentIndex).getImapUid() < startUid) {
                     currentIndex++;
                 }
             } else {
@@ -977,7 +981,7 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public boolean hasNext() {
-            while (currentIndex < messages.size() && messages.get(currentIndex).getUidAsLong() > endUid) {
+            while (currentIndex < messages.size() && messages.get(currentIndex).getImapUid() > endUid) {
                 skipToStartUid();
             }
             return currentIndex < messages.size();
@@ -985,7 +989,7 @@ public class ImapConnection extends AbstractConnection {
 
         public ExchangeSession.Message next() {
             ExchangeSession.Message message = messages.get(currentIndex++);
-            long uid = message.getUidAsLong();
+            long uid = message.getImapUid();
             if (uid < startUid || uid > endUid) {
                 throw new RuntimeException("Message uid " + uid + " not in range " + startUid + ":" + endUid);
             }

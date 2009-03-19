@@ -7,7 +7,6 @@ import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
-import org.apache.commons.httpclient.util.Base64;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 import org.apache.webdav.lib.Property;
@@ -530,6 +529,8 @@ public class ExchangeSession {
                 message.size = Integer.parseInt(prop.getPropertyAsString());
             } else if ("uid".equals(localName)) {
                 message.uid = prop.getPropertyAsString();
+            } else if ("x0e230003".equals(localName)) {
+                message.imapUid = Long.parseLong(prop.getPropertyAsString());
             } else if ("read".equals(localName)) {
                 message.read = "1".equals(prop.getPropertyAsString());
             } else if ("x10830003".equals(localName)) {
@@ -608,6 +609,7 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\""+
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"" +
@@ -939,6 +941,7 @@ public class ExchangeSession {
     public class Message implements Comparable {
         public String messageUrl;
         public String uid;
+        public long imapUid;
         public int size;
         public String messageId;
         public String date;
@@ -950,16 +953,8 @@ public class ExchangeSession {
         public boolean answered;
         public boolean forwarded;
 
-        public long getUidAsLong() {
-            byte[] decodedValue = Base64.decode(uid.getBytes());
-
-            long result = 0;
-            for (int i = 5; i < 9; i++) {
-                result = result << 8;
-                result |= decodedValue[i] & 0xff;
-            }
-
-            return result;
+        public long getImapUid() {
+            return imapUid;
         }
 
         public String getImapFlags() {
@@ -1070,7 +1065,7 @@ public class ExchangeSession {
         }
 
         public int compareTo(Object message) {
-            long compareValue = (getUidAsLong() - ((Message) message).getUidAsLong());
+            long compareValue = (getImapUid() - ((Message) message).getImapUid());
             if (compareValue > 0) {
                 return 1;
             } else if (compareValue < 0) {
@@ -1082,7 +1077,7 @@ public class ExchangeSession {
 
         @Override
         public boolean equals(Object message) {
-            return message instanceof Message && getUidAsLong() == ((Message) message).getUidAsLong();
+            return message instanceof Message && getImapUid() == ((Message) message).getImapUid();
         }
     }
 
@@ -1091,7 +1086,7 @@ public class ExchangeSession {
 
         @Override
         public boolean add(Message message) {
-            uidMessageMap.put(message.getUidAsLong(), message);
+            uidMessageMap.put(message.getImapUid(), message);
             return super.add(message);
         }
 
