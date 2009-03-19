@@ -675,7 +675,7 @@ public class ImapConnection extends AbstractConnection {
         } else if ("LARGER".equals(token)) {
             conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &gt;= ").append(Long.parseLong(tokens.nextToken())).append("");
         } else if ("SMALLER".equals(token)) {
-            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &lt; ").append(Long.parseLong(tokens.nextToken())).append("");
+            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" < ").append(Long.parseLong(tokens.nextToken())).append("");
         } else if (token.startsWith("SENT")) {
             conditions.append(operator);
             appendDateSearchParam(tokens, token, conditions);
@@ -713,7 +713,7 @@ public class ImapConnection extends AbstractConnection {
             dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
             try {
                 Date date = parser.parse(tokens.nextToken());
-                conditions.append(operator).append("\"urn:schemas:httpmail:datereceived\"&lt;'").append(dateFormatter.format(date)).append("'");
+                conditions.append(operator).append("\"urn:schemas:httpmail:datereceived\"<'").append(dateFormatter.format(date)).append("'");
             } catch (ParseException e) {
                 throw new IOException("Invalid search parameters");
             }
@@ -741,17 +741,17 @@ public class ImapConnection extends AbstractConnection {
             throw new IOException("Invalid search parameters");
         }
         if ("SENTON".equals(token)) {
-            conditions.append("(\"urn:schemas:httpmail:date\" &gt; '")
+            conditions.append("(\"urn:schemas:httpmail:date\" > '")
                     .append(dateFormatter.format(startDate))
-                    .append("' AND \"urn:schemas:httpmail:date\" &lt; '")
+                    .append("' AND \"urn:schemas:httpmail:date\" < '")
                     .append(dateFormatter.format(endDate))
                     .append("')");
         } else if ("SENTBEFORE".equals(token)) {
-            conditions.append("\"urn:schemas:httpmail:date\" &lt; '")
+            conditions.append("\"urn:schemas:httpmail:date\" < '")
                     .append(dateFormatter.format(startDate))
                     .append("'");
         } else if ("SENTSINCE".equals(token)) {
-            conditions.append("\"urn:schemas:httpmail:date\" &gt;= '")
+            conditions.append("\"urn:schemas:httpmail:date\" >= '")
                     .append(dateFormatter.format(startDate))
                     .append("'");
         }
