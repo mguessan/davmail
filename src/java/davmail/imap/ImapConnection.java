@@ -420,6 +420,7 @@ public class ImapConnection extends AbstractConnection {
 
 
             os.flush();
+            DavGatewayTray.resetIcon();
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
             try {
