@@ -22,9 +22,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 
 /**
  * Handle a caldav connection.
@@ -399,7 +396,7 @@ public class CaldavConnection extends AbstractConnection {
             appendEventsResponses(response, request, "inbox", events);
         }
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendOutbox(CaldavRequest request, String principal) throws IOException {
@@ -407,7 +404,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendOutbox(response, principal, request);
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendCalendar(CaldavRequest request, int depth, String principal) throws IOException {
@@ -421,7 +418,7 @@ public class CaldavConnection extends AbstractConnection {
             appendEventsResponses(response, request, "calendar", events);
         }
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void patchCalendar(CaldavRequest request, int depth, String principal) throws IOException {
@@ -429,7 +426,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         // just ignore calendar folder proppatch (color not supported in Exchange)
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     protected String getEventFileNameFromPath(String path) {
@@ -469,11 +466,7 @@ public class CaldavConnection extends AbstractConnection {
             events = session.getAllEvents();
         }
 
-        HashMap<String, String> headers = new HashMap<String, String>();
-        headers.put("Transfer-Encoding", "chunked");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, headers, false);
-
-        CaldavResponse response = new CaldavResponse(true);
+        CaldavResponse response = new CaldavResponse();
         response.startMultistatus();
         appendEventsResponses(response, request, path, events);
 
@@ -508,7 +501,7 @@ public class CaldavConnection extends AbstractConnection {
         }
         response.endResponse();
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendRoot(CaldavRequest request) throws IOException {
@@ -526,7 +519,7 @@ public class CaldavConnection extends AbstractConnection {
         response.endPropStatOK();
         response.endResponse();
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendPrincipal(CaldavRequest request, String principal) throws IOException {
@@ -566,7 +559,7 @@ public class CaldavConnection extends AbstractConnection {
         response.endPropStatOK();
         response.endResponse();
         response.endMultistatus();
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendFreeBusy(String body) throws IOException {
@@ -634,7 +627,7 @@ public class CaldavConnection extends AbstractConnection {
 
             }
             response.endScheduleResponse();
-            sendHttpResponse(HttpStatus.SC_OK, null, response, true);
+            response.close();
         } else {
             sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", "Unknown recipient: " + valueMap.get("ATTENDEE"), true);
         }
@@ -685,8 +678,10 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(status, headers, null, (byte[]) null, keepAlive);
     }
 
-    public void sendHttpResponse(int status, Map<String, String> headers, CaldavResponse response, boolean keepAlive) throws IOException {
-        sendHttpResponse(status, headers, "text/xml;charset=UTF-8", response.getBytes(), keepAlive);
+    public void sendChunkedHttpResponse() throws IOException {
+        HashMap<String, String> headers = new HashMap<String, String>();
+        headers.put("Transfer-Encoding", "chunked");
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, headers, "text/xml;charset=UTF-8", (byte[]) null, true);
     }
 
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
@@ -822,48 +817,28 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected class CaldavResponse {
-        ByteArrayOutputStream outputStream;
         Writer writer;
 
         public CaldavResponse() throws IOException {
-            outputStream = new ByteArrayOutputStream();
-            writer = new OutputStreamWriter(outputStream, "UTF-8");
-            writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        }
+            writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
+                @Override
+                public void write(byte[] data, int offset, int length) throws IOException {
+                    sendClient(Integer.toHexString(length));
+                    sendClient(data, offset, length);
+                    sendClient("");
+                }
 
-        public CaldavResponse(boolean chunked) throws IOException {
-            if (chunked) {
-                writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
-                    public void write(byte[] data, int offset, int length) throws IOException {
-                        sendClient(Integer.toHexString(length));
-                        sendClient(data, offset, length);
-                        sendClient("");
-                    }
-                    public void write(int b) throws IOException {
-                        throw new UnsupportedOperationException();
-                    }
-                }), "UTF-8");
-                /*
-                writer = new BufferedWriter(new Writer() {
-                    public void write(char[] cbuf, int off, int len) throws IOException {
-                        byte[] data = new String(cbuf, off, len).getBytes("UTF-8");
-                        sendClient(Integer.toHexString(data.length));
-                        sendClient(data);
-                        sendClient("");
-                    }
-
-                    public void flush() throws IOException {
-                        // ignore
-                    }
-
-                    public void close() throws IOException {
-                        sendClient("0");
-                    }
-                });*/
-            } else {
-                outputStream = new ByteArrayOutputStream();
-                writer = new OutputStreamWriter(outputStream, "UTF-8");
-            }
+                @Override
+                public void write(int b) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public void close() throws IOException{
+                    sendClient("0");
+                    sendClient("");
+                }
+            }), "UTF-8");
+            sendChunkedHttpResponse();
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         }
 
@@ -965,19 +940,9 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void close() throws IOException {
-            try {
-                writer.close();
-            } finally {
-                if (outputStream != null) {
-                    outputStream.close();
-                }
-            }
+            writer.close();
         }
 
-        public byte[] getBytes() throws IOException {
-            close();
-            return outputStream.toByteArray();
-        }
     }
 }
 
