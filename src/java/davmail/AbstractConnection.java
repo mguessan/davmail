@@ -163,7 +163,6 @@ public class AbstractConnection extends Thread {
         } catch (IOException e2) {
             DavGatewayTray.warn("Exception closing client socket", e2);
         }
-        ExchangeSessionFactory.close(session);
     }
 
     protected String base64Encode(String value) {

@@ -87,13 +87,6 @@ public class ExchangeSession {
     }
 
     /**
-     * Date parser/formatter from Exchange format
-     */
-    private final SimpleDateFormat dateFormatter;
-    private final SimpleDateFormat dateParser;
-
-
-    /**
      * Various standard mail boxes Urls
      */
     private String inboxUrl;
@@ -127,15 +120,13 @@ public class ExchangeSession {
      */
     ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) {
         this.poolKey = poolKey;
-        // SimpleDateFormat are not thread safe, need to create one instance for
-        // each session
-        dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        dateFormatter.setTimeZone(GMT_TIMEZONE);
-
-        dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-        dateParser.setTimeZone(GMT_TIMEZONE);
-
         LOGGER.debug("Session " + this + " created");
+    }
+
+    protected String formatDate(Date date) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
+        return dateFormatter.format(date);
     }
 
     public boolean isExpired() {
@@ -727,7 +718,7 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:uid\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
-                "                   AND \"DAV:getlastmodified\" < '" + dateFormatter.format(cal.getTime()) + "'\n";
+                "                   AND \"DAV:getlastmodified\" < '" + formatDate(cal.getTime()) + "'\n";
         Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
@@ -1196,7 +1187,7 @@ public class ExchangeSession {
         if (caldavPastDelay != Integer.MAX_VALUE) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
-            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + dateFormatter.format(cal.getTime()) + "'\n";
+            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatDate(cal.getTime()) + "'\n";
         }
 
         String searchQuery = "Select \"DAV:getetag\"" +

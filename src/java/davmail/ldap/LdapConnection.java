@@ -413,7 +413,6 @@ public class LdapConnection extends AbstractConnection {
             } else if (requestOperation == LDAP_REQ_UNBIND) {
                 DavGatewayTray.debug("LDAP_REQ_UNBIND " + currentMessageId);
                 if (session != null) {
-                    ExchangeSessionFactory.close(session);
                     session = null;
                 }
             } else if (requestOperation == LDAP_REQ_SEARCH) {

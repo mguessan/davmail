@@ -18,7 +18,7 @@ import java.util.*;
  */
 public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
-    private static final Map<PoolKey, ExchangeSessionStack> poolMap = new HashMap<PoolKey, ExchangeSessionStack>();
+    private static final Map<PoolKey, ExchangeSession> poolMap = new HashMap<PoolKey, ExchangeSession>();
 
     static class PoolKey {
         public final String url;
@@ -46,34 +46,6 @@ public final class ExchangeSessionFactory {
         }
     }
 
-    static class ExchangeSessionStack extends Stack<ExchangeSession> {
-        // 15 minutes expire delay
-        protected static final long EXPIRE_DELAY = 1000 * 60 * 15;
-        protected long timestamp = System.currentTimeMillis();
-
-        @Override
-        public ExchangeSession pop() throws EmptyStackException {
-            timestamp = System.currentTimeMillis();
-            return super.pop();
-        }
-
-        @Override
-        public ExchangeSession push(ExchangeSession session) {
-            timestamp = System.currentTimeMillis();
-            return super.push(session);
-        }
-
-        public boolean isExpired() {
-            return (System.currentTimeMillis() - timestamp) > EXPIRE_DELAY;
-        }
-
-        public void clean() {
-            while (!isEmpty()) {
-                pop();
-            }
-        }
-    }
-
     private ExchangeSessionFactory() {
     }
 
@@ -90,24 +62,31 @@ public final class ExchangeSessionFactory {
             String baseUrl = Settings.getProperty("davmail.url");
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
-            ExchangeSession session = null;
+            ExchangeSession session;
             synchronized (LOCK) {
-                Stack<ExchangeSession> sessionStack = poolMap.get(poolKey);
-                if (sessionStack != null && !sessionStack.isEmpty()) {
-                    session = sessionStack.pop();
-                    ExchangeSession.LOGGER.debug("Got session " + session + " from pool");
-                }
+                session = poolMap.get(poolKey);
+            }
+            if (session != null) {
+                ExchangeSession.LOGGER.debug("Got session " + session + " from cache");
             }
 
             if (session != null && session.isExpired()) {
                 ExchangeSession.LOGGER.debug("Session " + session + " expired");
                 session = null;
+                // expired session, remove from cache
+                synchronized (LOCK) {
+                    poolMap.remove(poolKey);
+                }
             }
 
             if (session == null) {
                 session = new ExchangeSession(poolKey);
                 session.login();
                 ExchangeSession.LOGGER.debug("Created new session: " + session);
+            }
+            // successfull login, put session in cache
+            synchronized (LOCK) {
+                poolMap.put(poolKey, session);
             }
             return session;
         } catch (IOException e) {
@@ -118,41 +97,6 @@ public final class ExchangeSessionFactory {
             }
         }
     }
-
-    /**
-     * Close (or pool) session.
-     *
-     * @param session exchange session
-     */
-    public static void close(ExchangeSession session) {
-        synchronized (LOCK) {
-            if (session != null) {
-                PoolKey poolKey = session.getPoolKey();
-                ExchangeSessionStack sessionStack = poolMap.get(poolKey);
-                if (sessionStack == null) {
-                    sessionStack = new ExchangeSessionStack();
-                    poolMap.put(poolKey, sessionStack);
-                }
-                // keep httpClient
-                sessionStack.push(session);
-                ExchangeSession.LOGGER.debug("Pooled session: " + session);
-            }
-
-            // clean pool
-            List<PoolKey> toDeleteKeys = new ArrayList<PoolKey>();
-            for (Map.Entry<PoolKey, ExchangeSessionStack> entry : poolMap.entrySet()) {
-                if (entry.getValue().isExpired()) {
-                    ExchangeSession.LOGGER.debug("Session pool for " + entry.getKey().userName + " expired");
-                    entry.getValue().clean();
-                    toDeleteKeys.add(entry.getKey());
-                }
-            }
-            for (PoolKey toDeleteKey : toDeleteKeys) {
-                poolMap.remove(toDeleteKey);
-            }
-        }
-    }
-
 
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
