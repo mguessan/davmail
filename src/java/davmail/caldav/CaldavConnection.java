@@ -529,37 +529,43 @@ public class CaldavConnection extends AbstractConnection {
             actualPrincipal = session.getEmail();
         }
 
-        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
-        response.startMultistatus();
-        response.startResponse("/principals/users/" + principal);
-        response.startPropstat();
+        if (!session.getEmail().equals(principal)) {
+            String message = "Invalid principal path, try /principals/users/" + session.getEmail();
+            DavGatewayTray.error(message);
+            sendErr(HttpStatus.SC_NOT_FOUND, message);
+        } else {
+            CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
+            response.startMultistatus();
+            response.startResponse("/principals/users/" + principal);
+            response.startPropstat();
 
-        if (request.hasProperty("calendar-home-set")) {
-            response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "/calendar</D:href>");
-        }
+            if (request.hasProperty("calendar-home-set")) {
+                response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "/calendar</D:href>");
+            }
 
-        if (request.hasProperty("calendar-user-address-set")) {
-            response.appendProperty("C:calendar-user-address-set", "<D:href>mailto:" + actualPrincipal + "</D:href>");
-        }
+            if (request.hasProperty("calendar-user-address-set")) {
+                response.appendProperty("C:calendar-user-address-set", "<D:href>mailto:" + actualPrincipal + "</D:href>");
+            }
 
-        if (request.hasProperty("schedule-inbox-URL")) {
-            response.appendProperty("C:schedule-inbox-URL", "<D:href>/users/" + actualPrincipal + "/inbox</D:href>");
-        }
+            if (request.hasProperty("schedule-inbox-URL")) {
+                response.appendProperty("C:schedule-inbox-URL", "<D:href>/users/" + actualPrincipal + "/inbox</D:href>");
+            }
 
-        if (request.hasProperty("schedule-outbox-URL")) {
-            response.appendProperty("C:schedule-outbox-URL", "<D:href>/users/" + actualPrincipal + "/outbox</D:href>");
-        }
+            if (request.hasProperty("schedule-outbox-URL")) {
+                response.appendProperty("C:schedule-outbox-URL", "<D:href>/users/" + actualPrincipal + "/outbox</D:href>");
+            }
 
-        if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", actualPrincipal);
+            if (request.hasProperty("displayname")) {
+                response.appendProperty("D:displayname", actualPrincipal);
+            }
+            if (request.hasProperty("resourcetype")) {
+                response.appendProperty("D:resourcetype", "<D:collection/><D:principal/>");
+            }
+            response.endPropStatOK();
+            response.endResponse();
+            response.endMultistatus();
+            response.close();
         }
-        if (request.hasProperty("resourcetype")) {
-            response.appendProperty("D:resourcetype", "<D:collection/><D:principal/>");
-        }
-        response.endPropStatOK();
-        response.endResponse();
-        response.endMultistatus();
-        response.close();
     }
 
     public void sendFreeBusy(String body) throws IOException {
@@ -832,8 +838,9 @@ public class CaldavConnection extends AbstractConnection {
                 public void write(int b) throws IOException {
                     throw new UnsupportedOperationException();
                 }
+
                 @Override
-                public void close() throws IOException{
+                public void close() throws IOException {
                     sendClient("0");
                     sendClient("");
                 }
