@@ -189,6 +189,7 @@ public class LdapConnection extends AbstractConnection {
         IGNORE_MAP.add("augmentconfiguration");
         IGNORE_MAP.add("ou");
         IGNORE_MAP.add("apple-realname");
+        IGNORE_MAP.add("apple-group-nestedgroup");        
     }
 
     // LDAP version
@@ -605,12 +606,11 @@ public class LdapConnection extends AbstractConnection {
 
         String sValue = value.toString();
 
-        DavGatewayTray.debug(attributeName + " = " + value);
-
         if (attributeName.equalsIgnoreCase("uid") && sValue.equals(userName)) {
             // replace with actual alias instead of login name search
             if (sValue.equals(userName)) {
                 sValue = session.getAlias();
+                DavGatewayTray.debug("Replaced " +userName+ " with " + sValue+" in uid filter");
             }
         }
 
