@@ -22,6 +22,9 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 
 /**
  * Handle a caldav connection.
@@ -149,7 +152,7 @@ public class CaldavConnection extends AbstractConnection {
             DavGatewayTray.debug("Connection closed");
         } catch (IOException e) {
             if (e instanceof HttpException) {
-            DavGatewayTray.error(((HttpException)e).getReasonCode()+" "+((HttpException)e).getReason(), e);
+                DavGatewayTray.error(((HttpException) e).getReasonCode() + " " + ((HttpException) e).getReason(), e);
             } else {
                 DavGatewayTray.error(e);
             }
@@ -451,7 +454,7 @@ public class CaldavConnection extends AbstractConnection {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
                         notFound.add(href);
-                    } else if ("inbox".equals(eventName)){
+                    } else if ("inbox".equals(eventName)) {
                         // Sunbird: just ignore
                     } else {
                         events.add(session.getEvent(path, eventName));
@@ -466,7 +469,11 @@ public class CaldavConnection extends AbstractConnection {
             events = session.getAllEvents();
         }
 
-        CaldavResponse response = new CaldavResponse();
+        HashMap<String, String> headers = new HashMap<String, String>();
+        headers.put("Transfer-Encoding", "chunked");
+        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, headers, false);
+
+        CaldavResponse response = new CaldavResponse(true);
         response.startMultistatus();
         appendEventsResponses(response, request, path, events);
 
@@ -477,8 +484,7 @@ public class CaldavConnection extends AbstractConnection {
             response.endResponse();
         }
         response.endMultistatus();
-
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, null, response, true);
+        response.close();
     }
 
     public void sendUserRoot(CaldavRequest request, int depth, String principal) throws IOException {
@@ -705,7 +711,7 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("Connection: " + (closed ? "close" : "keep-alive"));
         if (content != null && content.length > 0) {
             sendClient("Content-Length: " + content.length);
-        } else {
+        } else if (headers == null || !"chunked".equals(headers.get("Transfer-Encoding"))) {
             sendClient("Content-Length: 0");
         }
         sendClient("");
@@ -815,14 +821,52 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    protected static class CaldavResponse {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStreamWriter writer;
+    protected class CaldavResponse {
+        ByteArrayOutputStream outputStream;
+        Writer writer;
 
         public CaldavResponse() throws IOException {
-            writer = new OutputStreamWriter(baos, "UTF-8");
+            outputStream = new ByteArrayOutputStream();
+            writer = new OutputStreamWriter(outputStream, "UTF-8");
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         }
+
+        public CaldavResponse(boolean chunked) throws IOException {
+            if (chunked) {
+                writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
+                    public void write(byte[] data, int offset, int length) throws IOException {
+                        sendClient(Integer.toHexString(length));
+                        sendClient(data, offset, length);
+                        sendClient("");
+                    }
+                    public void write(int b) throws IOException {
+                        throw new UnsupportedOperationException();
+                    }
+                }), "UTF-8");
+                /*
+                writer = new BufferedWriter(new Writer() {
+                    public void write(char[] cbuf, int off, int len) throws IOException {
+                        byte[] data = new String(cbuf, off, len).getBytes("UTF-8");
+                        sendClient(Integer.toHexString(data.length));
+                        sendClient(data);
+                        sendClient("");
+                    }
+
+                    public void flush() throws IOException {
+                        // ignore
+                    }
+
+                    public void close() throws IOException {
+                        sendClient("0");
+                    }
+                });*/
+            } else {
+                outputStream = new ByteArrayOutputStream();
+                writer = new OutputStreamWriter(outputStream, "UTF-8");
+            }
+            writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        }
+
 
         public void startMultistatus() throws IOException {
             writer.write("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
@@ -924,13 +968,15 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 writer.close();
             } finally {
-                baos.close();
+                if (outputStream != null) {
+                    outputStream.close();
+                }
             }
         }
 
         public byte[] getBytes() throws IOException {
             close();
-            return baos.toByteArray();
+            return outputStream.toByteArray();
         }
     }
 }

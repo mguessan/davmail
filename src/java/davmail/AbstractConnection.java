@@ -90,9 +90,22 @@ public class AbstractConnection extends Thread {
      * @throws IOException on error
      */
     public void sendClient(byte[] messageBytes) throws IOException {
-        StringBuffer logBuffer = new StringBuffer("> ");
-        logBuffer.append(new String(messageBytes));
-        os.write(messageBytes);
+        sendClient(messageBytes, 0, messageBytes.length);
+    }
+
+    /**
+     * Send only bytes to client.
+     *
+     * @param messageBytes content
+     * @param      offset   the start offset in the data.
+     * @param      length   the number of bytes to write.
+     * @throws IOException on error
+     */
+    public void sendClient(byte[] messageBytes, int offset, int length) throws IOException {
+        //StringBuffer logBuffer = new StringBuffer("> ");
+        //logBuffer.append(new String(messageBytes));
+        //DavGatewayTray.debug(logBuffer.toString());
+        os.write(messageBytes, offset, length);
         os.flush();
     }
 
