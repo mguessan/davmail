@@ -40,10 +40,15 @@ public final class DavGatewayHttpClientFacade {
         return httpClient;
     }
 
-    public static HttpClient getInstance(HttpURL httpURL) {
+    public static HttpClient getInstance(HttpURL httpURL) throws URIException {
         HttpClient httpClient = new HttpClient();
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
         hostConfig.setHost(httpURL);
+        UsernamePasswordCredentials hostCredentials =
+                new UsernamePasswordCredentials(httpURL.getUser(),
+                        httpURL.getPassword());
+        httpClient.getState().setCredentials(null, httpURL.getHost(),
+                hostCredentials);
         configureClient(httpClient);
         return httpClient;
     }
