@@ -386,7 +386,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendInbox(CaldavRequest request, int depth, String principal) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendInbox(response, principal, request);
         if (depth == 1) {
@@ -400,7 +400,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendOutbox(CaldavRequest request, String principal) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendOutbox(response, principal, request);
         response.endMultistatus();
@@ -408,7 +408,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendCalendar(CaldavRequest request, int depth, String principal) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendCalendar(response, principal, request);
         if (depth == 1) {
@@ -422,7 +422,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void patchCalendar(CaldavRequest request, int depth, String principal) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         // just ignore calendar folder proppatch (color not supported in Exchange)
         response.endMultistatus();
@@ -466,7 +466,7 @@ public class CaldavConnection extends AbstractConnection {
             events = session.getAllEvents();
         }
 
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendEventsResponses(response, request, path, events);
 
@@ -481,7 +481,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendUserRoot(CaldavRequest request, int depth, String principal) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         response.startResponse("/users/" + principal);
         response.startPropstat();
@@ -505,7 +505,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendRoot(CaldavRequest request) throws IOException {
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         response.startResponse("/");
         response.startPropstat();
@@ -529,7 +529,7 @@ public class CaldavConnection extends AbstractConnection {
             actualPrincipal = session.getEmail();
         }
 
-        CaldavResponse response = new CaldavResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         response.startResponse("/principals/users/" + principal);
         response.startPropstat();
@@ -598,7 +598,7 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
         if (!freeBusyMap.isEmpty()) {
-            CaldavResponse response = new CaldavResponse();
+            CaldavResponse response = new CaldavResponse(HttpStatus.SC_OK);
             response.startScheduleResponse();
 
             for (Map.Entry<String, String> entry : freeBusyMap.entrySet()) {
@@ -678,10 +678,10 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(status, headers, null, (byte[]) null, keepAlive);
     }
 
-    public void sendChunkedHttpResponse() throws IOException {
+    public void sendChunkedHttpResponse(int status) throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Transfer-Encoding", "chunked");
-        sendHttpResponse(HttpStatus.SC_MULTI_STATUS, headers, "text/xml;charset=UTF-8", (byte[]) null, true);
+        sendHttpResponse(status, headers, "text/xml;charset=UTF-8", (byte[]) null, true);
     }
 
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
@@ -819,7 +819,7 @@ public class CaldavConnection extends AbstractConnection {
     protected class CaldavResponse {
         Writer writer;
 
-        public CaldavResponse() throws IOException {
+        public CaldavResponse(int status) throws IOException {
             writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
                 @Override
                 public void write(byte[] data, int offset, int length) throws IOException {
@@ -838,7 +838,7 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient("");
                 }
             }), "UTF-8");
-            sendChunkedHttpResponse();
+            sendChunkedHttpResponse(status);
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         }
 
