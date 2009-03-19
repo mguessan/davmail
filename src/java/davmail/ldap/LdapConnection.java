@@ -103,7 +103,7 @@ public class LdapConnection extends AbstractConnection {
                     "</dict>" +
                     "<key>https</key>" +
                     "<dict>" +
-                    "<key>enabled</key>" +
+                    "<key>disabled</key>" +
                     "<false/>" +
                     "<key>port</key>" +
                     "<integer>0</integer>" +
@@ -686,6 +686,15 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
+            if (session.getAlias().equals(ldapPerson.get("uid"))) {
+                if (returningAttributes.contains("uidnumber")) {
+                    ldapPerson.put("uidnumber", userName);
+                }
+                if (returningAttributes.contains("apple-generateduid")) {
+                    ldapPerson.put("apple-generateduid", userName);
+                    ldapPerson.put("uid", userName);
+                }
+            }
             DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " send uid=" + ldapPerson.get("uid") + baseContext + " " + ldapPerson);
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
         }
@@ -716,7 +725,7 @@ public class LdapConnection extends AbstractConnection {
 
     protected String hostName() {
         try {
-            return java.net.InetAddress.getLocalHost().getHostName();
+            return java.net.InetAddress.getLocalHost().getCanonicalHostName();
         } catch (java.net.UnknownHostException ex) {
             DavGatewayTray.debug("Couldn't get hostname");
         }
@@ -748,7 +757,7 @@ public class LdapConnection extends AbstractConnection {
         addIf(attributes, returningAttributes, "cn", hostName());
 
         String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
-        DavGatewayTray.debug("Sending computer context " + dn);
+        DavGatewayTray.debug("Sending computer context " + dn+" "+attributes);
 
         sendEntry(currentMessageId, dn, attributes);
     }
