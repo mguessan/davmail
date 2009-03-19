@@ -639,6 +639,7 @@ public class LdapConnection extends AbstractConnection {
      */
     protected void sendPersons(int currentMessageId, String baseContext, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
         boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.size() == 0;
+        boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
         boolean returnAllAttributes = returningAttributes.size() == 0;
         for (Map<String, String> person : persons.values()) {
             boolean needDetails = returnAllAttributes;
@@ -649,6 +650,10 @@ public class LdapConnection extends AbstractConnection {
                         break;
                     }
                 }
+            }
+            // iCal search, do not lookup details
+            if (iCalSearch) {
+                needDetails = false;
             }
 
             // add detailed information
@@ -671,6 +676,11 @@ public class LdapConnection extends AbstractConnection {
                     ldapPerson.put(ldapAttribute, value);
                 }
             }
+            // iCal: copy cn to sn
+            if (iCalSearch && ldapPerson.get("cn") != null) {
+                ldapPerson.put("sn", ldapPerson.get("cn"));
+            }
+
 
             // Process all attributes which have static mappings
             for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
