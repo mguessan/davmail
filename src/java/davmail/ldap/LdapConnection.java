@@ -696,6 +696,7 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
+            // iCal: replace current user alias with login name
             if (session.getAlias().equals(ldapPerson.get("uid"))) {
                 if (returningAttributes.contains("uidnumber")) {
                     ldapPerson.put("uidnumber", userName);
