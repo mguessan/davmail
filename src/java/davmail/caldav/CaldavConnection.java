@@ -596,9 +596,9 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
         // get freebusy for each attendee
-        HashMap<String, String> freeBusyMap = new HashMap<String, String>();
+        HashMap<String, ExchangeSession.FreeBusy> freeBusyMap = new HashMap<String, ExchangeSession.FreeBusy>();
         for (String attendee : attendees) {
-            String freeBusy = session.getFreebusy(attendee, valueMap);
+            ExchangeSession.FreeBusy freeBusy = session.getFreebusy(attendee, valueMap);
             if (freeBusy != null) {
                 freeBusyMap.put(attendee, freeBusy);
             }
@@ -607,14 +607,14 @@ public class CaldavConnection extends AbstractConnection {
             CaldavResponse response = new CaldavResponse(HttpStatus.SC_OK);
             response.startScheduleResponse();
 
-            for (Map.Entry<String, String> entry : freeBusyMap.entrySet()) {
+            for (Map.Entry<String, ExchangeSession.FreeBusy> entry : freeBusyMap.entrySet()) {
                 String attendee = entry.getKey();
                 response.startRecipientResponse(attendee);
 
                 StringBuilder ics = new StringBuilder();
                 ics.append("BEGIN:VCALENDAR").append((char) 13).append((char) 10)
                         .append("VERSION:2.0").append((char) 13).append((char) 10)
-                        .append("PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN").append((char) 13).append((char) 10)
+                        .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN").append((char) 13).append((char) 10)
                         .append("METHOD:REPLY").append((char) 13).append((char) 10)
                         .append("BEGIN:VFREEBUSY").append((char) 13).append((char) 10)
                         .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("").append((char) 13).append((char) 10)
@@ -623,9 +623,7 @@ public class CaldavConnection extends AbstractConnection {
                         .append("DTEND:").append(valueMap.get("DTEND")).append("").append((char) 13).append((char) 10)
                         .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
                         .append(attendeeKeyMap.get(attendee)).append(":").append(attendee).append("").append((char) 13).append((char) 10);
-                if (entry.getValue().length() > 0) {
-                    ics.append("FREEBUSY;FBTYPE=BUSY-UNAVAILABLE:").append(entry.getValue()).append("").append((char) 13).append((char) 10);
-                }
+                entry.getValue().appendTo(ics);
                 ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
                         .append("END:VCALENDAR");
                 response.appendCalendarData(ics.toString());

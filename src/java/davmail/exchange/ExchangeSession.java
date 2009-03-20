@@ -38,6 +38,8 @@ public class ExchangeSession {
 
     public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
 
+    protected static final int FREE_BUSY_INTERVAL = 15;
+
     protected static final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
 
     static {
@@ -609,7 +611,7 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
         String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
-                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\""+
+                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"" +
@@ -1822,15 +1824,13 @@ public class ExchangeSession {
         }
     }
 
-    public String getFreebusy(String attendee, Map<String, String> valueMap) throws IOException {
-        String result = null;
+    public FreeBusy getFreebusy(String attendee, Map<String, String> valueMap) throws IOException {
 
         String startDateValue = valueMap.get("DTSTART");
         String endDateValue = valueMap.get("DTEND");
         if (attendee.startsWith("mailto:")) {
             attendee = attendee.substring("mailto:".length());
         }
-        int interval = 15;
 
         SimpleDateFormat icalParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
         icalParser.setTimeZone(GMT_TIMEZONE);
@@ -1858,12 +1858,13 @@ public class ExchangeSession {
             url = "/public/?cmd=freebusy" +
                     "&start=" + owaFormatter.format(startDate) +
                     "&end=" + owaFormatter.format(endDate) +
-                    "&interval=" + interval +
+                    "&interval=" + FREE_BUSY_INTERVAL +
                     "&u=SMTP:" + attendee;
         } catch (ParseException e) {
             throw new IOException(e.getMessage());
         }
 
+        FreeBusy freeBusy = null;
         GetMethod getMethod = new GetMethod(url);
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
@@ -1877,45 +1878,87 @@ public class ExchangeSession {
             int endIndex = body.lastIndexOf("</a:fbdata>");
             if (startIndex >= 0 && endIndex >= 0) {
                 String fbdata = body.substring(startIndex + "<a:fbdata>".length(), endIndex);
-                if (fbdata.length() > 0) {
-                    Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                    currentCal.setTime(startDate);
-
-                    StringBuilder busyBuffer = new StringBuilder();
-                    boolean isBusy = fbdata.charAt(0) != '0' && fbdata.charAt(0) != '4';
-                    if (isBusy) {
-                        busyBuffer.append(icalParser.format(currentCal.getTime()));
-                    }
-                    boolean knownAttendee = fbdata.charAt(0) != '4';
-                    for (int i = 1; i < fbdata.length(); i++) {
-                        knownAttendee = knownAttendee || fbdata.charAt(i) != '4';
-                        currentCal.add(Calendar.MINUTE, interval);
-                        if (isBusy && fbdata.charAt(i) == '0') {
-                            // busy -> non busy
-                            busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
-                        } else if (!isBusy && (fbdata.charAt(i) != '0') && fbdata.charAt(0) != '4') {
-                            // non busy -> busy
-                            if (busyBuffer.length() > 0) {
-                                busyBuffer.append(',');
-                            }
-                            busyBuffer.append(icalParser.format(currentCal.getTime()));
-                        }
-                        isBusy = fbdata.charAt(i) != '0' && fbdata.charAt(0) != '4';
-                    }
-                    // still busy at end
-                    if (isBusy) {
-                        busyBuffer.append('/').append(icalParser.format(currentCal.getTime()));
-                    }
-                    if (knownAttendee) {
-                        result = busyBuffer.toString();
-                    }
-                }
+                freeBusy = new FreeBusy(icalParser, startDate, fbdata);
             }
         } finally {
             getMethod.releaseConnection();
         }
 
-        return result;
+        return freeBusy;
+    }
+
+    /**
+     * Exchange to iCalendar Free/Busy parser.
+     * Free time returns 0, Tentative returns 1, Busy returns 2, and Out of Office (OOF) returns 3
+     */
+    public static final class FreeBusy {
+        SimpleDateFormat icalParser;
+        boolean knownAttendee = true;
+        static final HashMap<Character, String> FBTYPES = new HashMap<Character, String>();
+
+        static {
+            FBTYPES.put('1', "BUSY-TENTATIVE");
+            FBTYPES.put('2', "BUSY");
+            FBTYPES.put('3', "BUSY-UNAVAILABLE");
+        }
+
+        HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
+
+        protected StringBuilder getBusyBuffer(char type) {
+            String fbType = FBTYPES.get(Character.valueOf(type));
+            StringBuilder buffer = busyMap.get(fbType);
+            if (buffer == null) {
+                buffer = new StringBuilder();
+                busyMap.put(fbType, buffer);
+            }
+            return buffer;
+        }
+
+        protected void startBusy(char type, Calendar currentCal) {
+            if (type == '4') {
+                knownAttendee = false;
+            } else if (type != '0') {
+                StringBuilder busyBuffer = getBusyBuffer(type);
+                if (busyBuffer.length() > 0) {
+                    busyBuffer.append(',');
+                }
+                busyBuffer.append(icalParser.format(currentCal.getTime()));
+            }
+        }
+
+        protected void endBusy(char type, Calendar currentCal) {
+            if (type != '0' && type != '4') {
+                getBusyBuffer(type).append('/').append(icalParser.format(currentCal.getTime()));
+            }
+        }
+
+        public FreeBusy(SimpleDateFormat icalParser, Date startDate, String fbdata) {
+            this.icalParser = icalParser;
+            if (fbdata.length() > 0) {
+                Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                currentCal.setTime(startDate);
+
+                startBusy(fbdata.charAt(0), currentCal);
+                for (int i = 1; i < fbdata.length() && knownAttendee; i++) {
+                    currentCal.add(Calendar.MINUTE, FREE_BUSY_INTERVAL);
+                    char previousState = fbdata.charAt(i - 1);
+                    char currentState = fbdata.charAt(i);
+                    if (previousState != currentState) {
+                        endBusy(previousState, currentCal);
+                        startBusy(currentState, currentCal);
+                    }
+                }
+                currentCal.add(Calendar.MINUTE, FREE_BUSY_INTERVAL);
+                endBusy(fbdata.charAt(fbdata.length() - 1), currentCal);
+            }
+        }
+
+        public void appendTo(StringBuilder buffer) {
+            for (Map.Entry<String, StringBuilder> entry : busyMap.entrySet()) {
+                buffer.append("FREEBUSY;FBTYPE=").append(entry.getKey())
+                        .append(":").append(entry.getValue()).append((char) 13).append((char) 10);
+            }
+        }
     }
 
 }
