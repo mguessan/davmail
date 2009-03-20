@@ -103,7 +103,7 @@ public class AbstractConnection extends Thread {
      */
     public void sendClient(byte[] messageBytes, int offset, int length) throws IOException {
         //StringBuffer logBuffer = new StringBuffer("> ");
-        //logBuffer.append(new String(messageBytes));
+        //logBuffer.append(new String(messageBytes, offset, length));
         //DavGatewayTray.debug(logBuffer.toString());
         os.write(messageBytes, offset, length);
         os.flush();
