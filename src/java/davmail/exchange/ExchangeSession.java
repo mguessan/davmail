@@ -1508,7 +1508,7 @@ public class ExchangeSession {
             body.append("To: ").append(participants.attendees).append("\r\n");
             body.append("From: ").append(participants.organizer).append("\r\n");
             // if not organizer, set REPLYTIME to force Outlook in attendee mode 
-            if (!email.equalsIgnoreCase(participants.organizer)) {
+            if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
                 if (icsBody.indexOf("METHOD:") < 0) {
                     icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
                 }
