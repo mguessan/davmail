@@ -1508,12 +1508,17 @@ public class ExchangeSession {
             body.append("To: ").append(participants.attendees).append("\r\n");
             body.append("From: ").append(participants.organizer).append("\r\n");
             // if not organizer, set REPLYTIME to force Outlook in attendee mode 
-            if (!email.equalsIgnoreCase(participants.organizer) && icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") <0) {
-                SimpleDateFormat icalFormatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                icalFormatter.setTimeZone(GMT_TIMEZONE);
+            if (!email.equalsIgnoreCase(participants.organizer)) {
+                if (icsBody.indexOf("METHOD:") < 0) {
+                    icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
+                }
+                if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
+                    SimpleDateFormat icalFormatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                    icalFormatter.setTimeZone(GMT_TIMEZONE);
 
-                icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:"+
-                icalFormatter.format(new Date())+"\r\nEND:VEVENT");
+                    icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
+                            icalFormatter.format(new Date()) + "\r\nEND:VEVENT");
+                }
             }
         }
         body.append("MIME-Version: 1.0\r\n" +
