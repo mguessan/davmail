@@ -1416,8 +1416,13 @@ public class ExchangeSession {
         return icsBody.substring(startIndex, endIndex);
     }
 
-    protected String getRecipients(String icsBody) throws IOException {
-        HashSet<String> recipients = new HashSet<String>();
+    class Participants {
+        String attendees;
+        String organizer;
+    }
+
+    protected Participants getParticipants(String icsBody) throws IOException {
+        HashSet<String> attendees = new HashSet<String>();
         String organizer = null;
         BufferedReader reader = null;
         try {
@@ -1441,7 +1446,7 @@ public class ExchangeSession {
                             organizer = value;
                             // exclude current user from recipients
                         } else if (!email.equalsIgnoreCase(value)) {
-                            recipients.add(value);
+                            attendees.add(value);
                         }
                     }
                 }
@@ -1451,21 +1456,17 @@ public class ExchangeSession {
                 reader.close();
             }
         }
+        Participants participants = new Participants();
         StringBuilder result = new StringBuilder();
-        if (email.equalsIgnoreCase(organizer)) {
-            // current user is organizer => notify all
-            for (String recipient : recipients) {
-                if (result.length() > 0) {
-                    result.append(", ");
-                }
-                result.append(recipient);
+        for (String recipient : attendees) {
+            if (result.length() > 0) {
+                result.append(", ");
             }
-        } else {
-            // notify only organizer
-            result.append(organizer);
+            result.append(recipient);
         }
-
-        return result.toString();
+        participants.attendees = result.toString();
+        participants.organizer = organizer;
+        return participants;
     }
 
     protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
@@ -1485,13 +1486,34 @@ public class ExchangeSession {
         StringBuilder body = new StringBuilder();
         body.append("Content-Transfer-Encoding: 7bit\r\n" +
                 "Content-class: ").append(contentClass).append("\r\n");
+        // need to parse attendees and organizer to build recipients
+        Participants participants = getParticipants(icsBody);
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
-            // need to parse attendees to build recipients
-            String recipients = getRecipients(icsBody);
+            String recipients;
+            if (email.equalsIgnoreCase(participants.organizer)) {
+                // current user is organizer => notify all
+                recipients = participants.attendees;
+            } else {
+                // notify only organizer
+                recipients = participants.organizer;
+            }
+
             body.append("To: ").append(recipients).append("\r\n");
             // do not send notification if no recipients found
             if (recipients.length() == 0) {
                 status = HttpStatus.SC_NO_CONTENT;
+            }
+        } else {
+            // storing appointment, full recipients header
+            body.append("To: ").append(participants.attendees).append("\r\n");
+            body.append("From: ").append(participants.organizer).append("\r\n");
+            // if not organizer, set REPLYTIME to force Outlook in attendee mode 
+            if (!email.equalsIgnoreCase(participants.organizer) && icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") <0) {
+                SimpleDateFormat icalFormatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                icalFormatter.setTimeZone(GMT_TIMEZONE);
+
+                icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:"+
+                icalFormatter.format(new Date())+"\r\nEND:VEVENT");
             }
         }
         body.append("MIME-Version: 1.0\r\n" +
