@@ -109,10 +109,6 @@ public class ExchangeSession {
 
     private boolean disableGalLookup = false;
 
-    ExchangeSessionFactory.PoolKey getPoolKey() {
-        return poolKey;
-    }
-
     /**
      * Create an exchange session for the given URL.
      * The session is not actually established until a call to login()
@@ -1170,15 +1166,17 @@ public class ExchangeSession {
         }
     }
 
-    public List<Event> getEventMessages() throws IOException {
+    public List<Event> getEventMessages(String principal) throws IOException {
+        String folderUrl = replacePrincipal(inboxUrl, principal);
         String searchQuery = "Select \"DAV:getetag\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + inboxUrl + "\"')\n" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
-        return getEvents(inboxUrl, searchQuery);
+        return getEvents(folderUrl, searchQuery);
     }
 
-    public List<Event> getAllEvents() throws IOException {
+    public List<Event> getAllEvents(String principal) throws IOException {
+        String folderUrl = replacePrincipal(calendarUrl, principal);
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", Integer.MAX_VALUE);
         String dateCondition = "";
         if (caldavPastDelay != Integer.MAX_VALUE) {
@@ -1188,7 +1186,7 @@ public class ExchangeSession {
         }
 
         String searchQuery = "Select \"DAV:getetag\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + calendarUrl + "\"')\n" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE (" +
                 "                       \"urn:schemas:calendar:instancetype\" is null OR" +
                 "                       \"urn:schemas:calendar:instancetype\" = 1\n" +
@@ -1196,7 +1194,7 @@ public class ExchangeSession {
                 dateCondition +
                 "                )) AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
-        return getEvents(calendarUrl, searchQuery);
+        return getEvents(folderUrl, searchQuery);
     }
 
     public List<Event> getEvents(String path, String searchQuery) throws IOException {
@@ -1208,8 +1206,8 @@ public class ExchangeSession {
         return events;
     }
 
-    public Event getEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(getFolderPath(path)) + "/" + URIUtil.encodeWithinQuery(eventName);
+    public Event getEvent(String principal, String path, String eventName) throws IOException {
+        String eventPath = URIUtil.encodePath(replacePrincipal(getFolderPath(path), principal)) + "/" + URIUtil.encodeWithinQuery(eventName);
         LOGGER.debug("getEvent(" + eventPath + "/" + eventName + ")");
         Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (!calendarEnum.hasMoreElements()) {
@@ -1400,8 +1398,8 @@ public class ExchangeSession {
         }
     }
 
-    public EventResult createOrUpdateEvent(String path, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(calendarUrl + "/" + URIUtil.decode(path));
+    public EventResult createOrUpdateEvent(String principal, String path, String icsBody, String etag, String noneMatch) throws IOException {
+        String messageUrl = URIUtil.encodePathQuery(replacePrincipal(calendarUrl, principal) + "/" + URIUtil.decode(path));
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
@@ -1567,18 +1565,15 @@ public class ExchangeSession {
         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(path)));
     }
 
-    public int deleteMessage(String path) throws IOException {
-        return DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(path));
-    }
-
-    public int deleteEvent(String path, String eventName) throws IOException {
+    public int deleteEvent(String principal, String path, String eventName) throws IOException {
         int status;
         if (path.startsWith("INBOX")) {
             // do not delete calendar messages, move to trash
-            moveToTrash(URIUtil.encodePath(getFolderPath(URIUtil.decode(path))), eventName);
+            moveToTrash(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)), eventName);
             status = HttpStatus.SC_OK;
         } else {
-            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(URIUtil.decode(path))) + "/" + eventName);
+            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient,
+                    URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName);
         }
         return status;
     }
@@ -1697,6 +1692,19 @@ public class ExchangeSession {
 
         }
         return alias;
+    }
+
+    public String replacePrincipal(String folderUrl, String principal) throws IOException {
+        if (!alias.equals(principal) && !email.equals(principal)) {
+            int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+            if (index >= 0 && mailPath.endsWith("/")) {
+                return mailPath.substring(0, index) + "/" + principal + "/" + folderUrl.substring(inboxUrl.lastIndexOf("/"));
+            } else {
+                throw new IOException("Invalid mail path: " + mailPath);
+            }
+        } else {
+            return folderUrl;
+        }
     }
 
     public String getEmail(String alias) throws IOException {
@@ -1921,7 +1929,7 @@ public class ExchangeSession {
      * Free time returns 0, Tentative returns 1, Busy returns 2, and Out of Office (OOF) returns 3
      */
     public static final class FreeBusy {
-        SimpleDateFormat icalParser;
+        final SimpleDateFormat icalParser;
         boolean knownAttendee = true;
         static final HashMap<Character, String> FBTYPES = new HashMap<Character, String>();
 
@@ -1931,7 +1939,7 @@ public class ExchangeSession {
             FBTYPES.put('3', "BUSY-UNAVAILABLE");
         }
 
-        HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
+        final HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
 
         protected StringBuilder getBusyBuffer(char type) {
             String fbType = FBTYPES.get(Character.valueOf(type));

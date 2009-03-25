@@ -154,7 +154,7 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.error(e);
             }
             try {
-                sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, e);
+                sendErr(e);
             } catch (IOException e2) {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
@@ -220,7 +220,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
             sendInbox(request, depth, paths[2]);
         } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
-            reportEvents(request, "INBOX");
+            reportEvents(request, paths[2], "INBOX");
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
             sendOutbox(request, paths[2]);
         } else if ("POST".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
@@ -228,43 +228,37 @@ public class CaldavConnection extends AbstractConnection {
                 sendFreeBusy(body);
             } else {
                 int status = session.sendEvent(body);
-                sendHttpResponse(status, true);
+                sendHttpResponse(status);
             }
         } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
             sendCalendar(request, depth, paths[2]);
         } else if ("PROPPATCH".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
-            patchCalendar(request, depth, paths[2]);
-        } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])
-                // only current user for now
-                && session.getEmail().equalsIgnoreCase(paths[2])) {
-            reportEvents(request, "calendar");
+            patchCalendar();
+        } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
+            reportEvents(request, paths[2], "calendar");
 
-        } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
-                // only current user for now
-                && session.getEmail().equalsIgnoreCase(paths[2])) {
+        } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])) {
             String etag = headers.get("if-match");
             String noneMatch = headers.get("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[4].replaceAll("&amp;", "&"), body, etag, noneMatch);
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], paths[4].replaceAll("&amp;", "&"), body, etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
                 responseHeaders.put("ETag", eventResult.etag);
                 sendHttpResponse(eventResult.status, responseHeaders, null, "", true);
             } else {
-                sendHttpResponse(eventResult.status, true);
+                sendHttpResponse(eventResult.status);
             }
 
-        } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5
-                // only current user for now
-                && session.getEmail().equalsIgnoreCase(paths[2])) {
+        } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5) {
             if ("inbox".equals(paths[3])) {
                 paths[3] = "INBOX";
             }
-            int status = session.deleteEvent(paths[3], paths[4].replaceAll("&amp;", "&"));
-            sendHttpResponse(status, true);
+            int status = session.deleteEvent(paths[2], paths[3], paths[4].replaceAll("&amp;", "&"));
+            sendHttpResponse(status);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
-            ExchangeSession.Event event = session.getEvent(paths[3], paths[4]);
+            ExchangeSession.Event event = session.getEvent(paths[2], paths[3], paths[4]);
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
         } else {
@@ -281,6 +275,7 @@ public class CaldavConnection extends AbstractConnection {
         int count = 0;
         for (ExchangeSession.Event event : events) {
             DavGatewayTray.debug("Retrieving event " + (++count) + "/" + size);
+            DavGatewayTray.switchIcon();
             appendEventResponse(response, request, path, event);
         }
     }
@@ -391,7 +386,7 @@ public class CaldavConnection extends AbstractConnection {
         appendInbox(response, principal, request);
         if (depth == 1) {
             DavGatewayTray.debug("Searching calendar messages...");
-            List<ExchangeSession.Event> events = session.getEventMessages();
+            List<ExchangeSession.Event> events = session.getEventMessages(principal);
             DavGatewayTray.debug("Found " + events.size() + " calendar messages");
             appendEventsResponses(response, request, "inbox", events);
         }
@@ -413,7 +408,7 @@ public class CaldavConnection extends AbstractConnection {
         appendCalendar(response, principal, request);
         if (depth == 1) {
             DavGatewayTray.debug("Searching calendar events...");
-            List<ExchangeSession.Event> events = session.getAllEvents();
+            List<ExchangeSession.Event> events = session.getAllEvents(principal);
             DavGatewayTray.debug("Found " + events.size() + " calendar events");
             appendEventsResponses(response, request, "calendar", events);
         }
@@ -421,7 +416,7 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
-    public void patchCalendar(CaldavRequest request, int depth, String principal) throws IOException {
+    public void patchCalendar() throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         // just ignore calendar folder proppatch (color not supported in Exchange)
@@ -438,7 +433,7 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    public void reportEvents(CaldavRequest request, String path) throws IOException {
+    public void reportEvents(CaldavRequest request, String principal, String path) throws IOException {
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
         if (request.isMultiGet()) {
@@ -451,19 +446,19 @@ public class CaldavConnection extends AbstractConnection {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
                         notFound.add(href);
-                    } else if ("inbox".equals(eventName)) {
+                    } else if ("inbox".equals(eventName)|| "calendar".equals(eventName)) {
                         // Sunbird: just ignore
                     } else {
-                        events.add(session.getEvent(path, eventName));
+                        events.add(session.getEvent(principal, path, eventName));
                     }
                 } catch (HttpException e) {
                     notFound.add(href);
                 }
             }
         } else if ("INBOX".equals(path)) {
-            events = session.getEventMessages();
+            events = session.getEventMessages(principal);
         } else {
-            events = session.getAllEvents();
+            events = session.getAllEvents(principal);
         }
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
@@ -529,11 +524,11 @@ public class CaldavConnection extends AbstractConnection {
             actualPrincipal = session.getEmail();
         }
 
-        if (!session.getEmail().equals(principal)) {
-            String message = "Invalid principal path, try /principals/users/" + session.getEmail();
-            DavGatewayTray.error(message);
-            sendErr(HttpStatus.SC_NOT_FOUND, message);
-        } else {
+        //if (!session.getEmail().equals(principal)) {
+        //    String message = "Invalid principal path, try /principals/users/" + session.getEmail();
+        //    DavGatewayTray.error(message);
+        //    sendErr(HttpStatus.SC_NOT_FOUND, message);
+        //} else {
             CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
             response.startMultistatus();
             response.startResponse("/principals/users/" + principal);
@@ -565,7 +560,7 @@ public class CaldavConnection extends AbstractConnection {
             response.endResponse();
             response.endMultistatus();
             response.close();
-        }
+        //}
     }
 
     public void sendFreeBusy(String body) throws IOException {
@@ -647,15 +642,15 @@ public class CaldavConnection extends AbstractConnection {
         buffer.append(path);
         Map<String, String> responseHeaders = new HashMap<String, String>();
         responseHeaders.put("Location", buffer.toString());
-        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders, true);
+        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders);
     }
 
-    public void sendErr(int status, Exception e) throws IOException {
+    public void sendErr(Exception e) throws IOException {
         String message = e.getMessage();
         if (message == null) {
             message = e.toString();
         }
-        sendErr(status, message);
+        sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
     }
 
     public void sendErr(int status, String message) throws IOException {
@@ -665,21 +660,21 @@ public class CaldavConnection extends AbstractConnection {
     public void sendOptions() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Allow", "OPTIONS, GET, PROPFIND, PUT, POST");
-        sendHttpResponse(HttpStatus.SC_OK, headers, true);
+        sendHttpResponse(HttpStatus.SC_OK, headers);
     }
 
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + Settings.getProperty("davmail.url") + "\"");
-        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, true);
+        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers);
     }
 
-    public void sendHttpResponse(int status, boolean keepAlive) throws IOException {
-        sendHttpResponse(status, null, null, (byte[]) null, keepAlive);
+    public void sendHttpResponse(int status) throws IOException {
+        sendHttpResponse(status, null, null, (byte[]) null, true);
     }
 
-    public void sendHttpResponse(int status, Map<String, String> headers, boolean keepAlive) throws IOException {
-        sendHttpResponse(status, headers, null, (byte[]) null, keepAlive);
+    public void sendHttpResponse(int status, Map<String, String> headers) throws IOException {
+        sendHttpResponse(status, headers, null, (byte[]) null, true);
     }
 
     public void sendChunkedHttpResponse(int status) throws IOException {
