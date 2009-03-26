@@ -147,7 +147,11 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                         sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
                                         sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
-                                        sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
+                                        if ("select".equalsIgnoreCase(command)) {
+                                            sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
+                                        } else {
+                                            sendClient(commandId + " OK [READ-ONLY] " + command + " completed");
+                                        }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
@@ -354,6 +358,7 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
+                                        DavGatewayTray.debug(command + " on " + currentFolder.folderName);
                                         currentFolder = session.getFolder(currentFolder.folderName);
                                         messages = session.getAllMessages(currentFolder.folderUrl);
                                         sendClient("* " + messages.size() + " EXISTS");
@@ -440,14 +445,14 @@ public class ImapConnection extends AbstractConnection {
             String message = buffer.toString();
             try {
                 if (commandId != null) {
-                    sendClient(commandId + " BAD unable to handle request: "+message);
+                    sendClient(commandId + " BAD unable to handle request: " + message);
                 } else {
-                    sendClient("* BYE unable to handle request: "+message);
+                    sendClient("* BYE unable to handle request: " + message);
                 }
             } catch (IOException e2) {
                 DavGatewayTray.warn("Exception sending error to client", e2);
             }
-            DavGatewayTray.error("Exception handling client: "+message, e);
+            DavGatewayTray.error("Exception handling client: " + message, e);
         } finally {
             close();
         }
@@ -695,7 +700,7 @@ public class ImapConnection extends AbstractConnection {
             String headerName = tokens.nextToken().toLowerCase();
             String value = tokens.nextToken();
             if ("message-id".equals(headerName)) {
-                value = "<"+value+">";
+                value = "<" + value + ">";
             }
             conditions.append(operator).append("\"urn:schemas:mailheader:").append(headerName).append("\"='").append(value).append("'");
         } else if ("UID".equals(token)) {
