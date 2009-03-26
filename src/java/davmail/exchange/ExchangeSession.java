@@ -115,8 +115,82 @@ public class ExchangeSession {
      *
      * @param poolKey session pool key
      */
-    ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) {
+    ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) throws IOException {
         this.poolKey = poolKey;
+        try {
+            boolean isBasicAuthentication = isBasicAuthentication(poolKey.url);
+
+            // get proxy configuration from setttings properties
+            URL urlObject = new URL(poolKey.url);
+            // webdavresource is unable to create the correct url type
+            HttpURL httpURL;
+            if (poolKey.url.startsWith("http://")) {
+                httpURL = new HttpURL(poolKey.userName, poolKey.password,
+                        urlObject.getHost(), urlObject.getPort());
+            } else if (poolKey.url.startsWith("https://")) {
+                httpURL = new HttpsURL(poolKey.userName, poolKey.password,
+                        urlObject.getHost(), urlObject.getPort());
+            } else {
+                throw new IllegalArgumentException("Invalid URL: " + poolKey.url);
+            }
+
+
+            httpClient = DavGatewayHttpClientFacade.getInstance(httpURL);
+
+            // get webmail root url
+            // providing credentials
+            // manually follow redirect
+            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, poolKey.url);
+
+            if (!isBasicAuthentication) {
+                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
+            }
+            int status = method.getStatusCode();
+
+            if (status == HttpStatus.SC_UNAUTHORIZED) {
+                throw new AuthenticationException("Authentication failed: invalid user or password");
+            } else if (status != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
+            }
+            // test form based authentication
+            String queryString = method.getQueryString();
+            if (queryString != null && queryString.contains("reason=2")) {
+                method.releaseConnection();
+                if (poolKey.userName != null && poolKey.userName.contains("\\")) {
+                    throw new AuthenticationException("Authentication failed: invalid user or password");
+                } else {
+                    throw new AuthenticationException("Authentication failed: invalid user or password, " +
+                            "retry with domain\\user");
+                }
+            }
+
+            buildMailPath(method);
+
+            // got base http mailbox http url
+            getWellKnownFolders();
+
+        } catch (AuthenticationException exc) {
+            LOGGER.error(exc.toString());
+            throw exc;
+        } catch (IOException exc) {
+            StringBuffer message = new StringBuffer();
+            message.append("DavMail login exception: ");
+            if (exc.getMessage() != null) {
+                message.append(exc.getMessage());
+            } else if (exc instanceof HttpException) {
+                message.append(((HttpException) exc).getReasonCode());
+                String httpReason = ((HttpException) exc).getReason();
+                if (httpReason != null) {
+                    message.append(" ");
+                    message.append(httpReason);
+                }
+            } else {
+                message.append(exc);
+            }
+
+            LOGGER.error(message.toString());
+            throw new IOException(message.toString());
+        }
         LOGGER.debug("Session " + this + " created");
     }
 
@@ -321,84 +395,6 @@ public class ExchangeSession {
         }
         if (email == null) {
             throw new AuthenticationException("Unable to get email, authentication failed: password expired ?");
-        }
-    }
-
-    void login() throws IOException {
-        LOGGER.debug("Session " + this + " login");
-        try {
-            boolean isBasicAuthentication = isBasicAuthentication(poolKey.url);
-
-            // get proxy configuration from setttings properties
-            URL urlObject = new URL(poolKey.url);
-            // webdavresource is unable to create the correct url type
-            HttpURL httpURL;
-            if (poolKey.url.startsWith("http://")) {
-                httpURL = new HttpURL(poolKey.userName, poolKey.password,
-                        urlObject.getHost(), urlObject.getPort());
-            } else if (poolKey.url.startsWith("https://")) {
-                httpURL = new HttpsURL(poolKey.userName, poolKey.password,
-                        urlObject.getHost(), urlObject.getPort());
-            } else {
-                throw new IllegalArgumentException("Invalid URL: " + poolKey.url);
-            }
-
-
-            httpClient = DavGatewayHttpClientFacade.getInstance(httpURL);
-
-            // get webmail root url
-            // providing credentials
-            // manually follow redirect
-            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, poolKey.url);
-
-            if (!isBasicAuthentication) {
-                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
-            }
-            int status = method.getStatusCode();
-
-            if (status == HttpStatus.SC_UNAUTHORIZED) {
-                throw new AuthenticationException("Authentication failed: invalid user or password");
-            } else if (status != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
-            }
-            // test form based authentication
-            String queryString = method.getQueryString();
-            if (queryString != null && queryString.contains("reason=2")) {
-                method.releaseConnection();
-                if (poolKey.userName != null && poolKey.userName.contains("\\")) {
-                    throw new AuthenticationException("Authentication failed: invalid user or password");
-                } else {
-                    throw new AuthenticationException("Authentication failed: invalid user or password, " +
-                            "retry with domain\\user");
-                }
-            }
-
-            buildMailPath(method);
-
-            // got base http mailbox http url
-            getWellKnownFolders();
-
-        } catch (AuthenticationException exc) {
-            LOGGER.error(exc.toString());
-            throw exc;
-        } catch (IOException exc) {
-            StringBuffer message = new StringBuffer();
-            message.append("DavMail login exception: ");
-            if (exc.getMessage() != null) {
-                message.append(exc.getMessage());
-            } else if (exc instanceof HttpException) {
-                message.append(((HttpException) exc).getReasonCode());
-                String httpReason = ((HttpException) exc).getReason();
-                if (httpReason != null) {
-                    message.append(" ");
-                    message.append(httpReason);
-                }
-            } else {
-                message.append(exc);
-            }
-
-            LOGGER.error(message.toString());
-            throw new IOException(message.toString());
         }
     }
 
@@ -1171,6 +1167,7 @@ public class ExchangeSession {
         String searchQuery = "Select \"DAV:getetag\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
+                "                AND (NOT \"CALDAV:schedule-state\" = 'CALDAV:schedule-processed')\n" +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
         return getEvents(folderUrl, searchQuery);
     }
@@ -1568,8 +1565,11 @@ public class ExchangeSession {
     public int deleteEvent(String principal, String path, String eventName) throws IOException {
         int status;
         if (path.startsWith("INBOX")) {
-            // do not delete calendar messages, move to trash
-            moveToTrash(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)), eventName);
+            // do not delete calendar messages, mark read and processed
+            PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName);
+            patchMethod.addPropertyToSet("schedule-state", "CALDAV:schedule-processed", "C", "CALDAV:");
+            patchMethod.addPropertyToSet("read", "1", "e", "urn:schemas:httpmail:");
+            DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
             status = HttpStatus.SC_OK;
         } else {
             status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient,

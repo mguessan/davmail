@@ -81,7 +81,6 @@ public final class ExchangeSessionFactory {
 
             if (session == null) {
                 session = new ExchangeSession(poolKey);
-                session.login();
                 ExchangeSession.LOGGER.debug("Created new session: " + session);
             }
             // successfull login, put session in cache
