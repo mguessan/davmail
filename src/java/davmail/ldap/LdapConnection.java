@@ -850,11 +850,11 @@ public class LdapConnection extends AbstractConnection {
     }
 
     class LdapFilter {
-        StringBuilder filterString = new StringBuilder();
+        final StringBuilder filterString = new StringBuilder();
         int ldapFilterType = 0;
         boolean isFullSearch = true;
-        Map<String, SimpleFilter> orCriteria = new HashMap<String, SimpleFilter>();
-        Map<String, SimpleFilter> andCriteria = new HashMap<String, SimpleFilter>();
+        final Map<String, SimpleFilter> orCriteria = new HashMap<String, SimpleFilter>();
+        final Map<String, SimpleFilter> andCriteria = new HashMap<String, SimpleFilter>();
 
         public void addFilter(String attributeName, SimpleFilter simpleFilter) {
             filterString.append('(').append(attributeName).append('=').append(simpleFilter.value).append(')');

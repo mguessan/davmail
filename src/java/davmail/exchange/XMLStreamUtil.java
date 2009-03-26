@@ -23,37 +23,6 @@ public final class XMLStreamUtil {
         return inputFactory;
     }
 
-    public static String getElementContentByLocalName(InputStream inputStream, String localName) throws IOException {
-        String elementContent = null;
-        XMLStreamReader reader = null;
-        try {
-            XMLInputFactory inputFactory = getXmlInputFactory();
-
-            reader = inputFactory.createXMLStreamReader(inputStream);
-            boolean inElement = false;
-            while (reader.hasNext()) {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT && localName.equals(reader.getLocalName())) {
-                    inElement = true;
-                } else if (event == XMLStreamConstants.CHARACTERS && inElement) {
-                    elementContent = reader.getText();
-                    inElement = false;
-                }
-            }
-        } catch (XMLStreamException e) {
-            throw new IOException(e.getMessage());
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (XMLStreamException e) {
-                ExchangeSession.LOGGER.error(e);
-            }
-        }
-        return elementContent;
-    }
-
     public static Map<String,Map<String,String>> getElementContentsAsMap(InputStream inputStream, String rowName, String idName) throws IOException {
         Map<String,Map<String,String>> results = new HashMap<String,Map<String,String>>();
         Map<String, String> item = null;
