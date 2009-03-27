@@ -10,7 +10,7 @@
     <body>
 
         <section name="Thunderbird calendar setup">
-            <p>DavMail Calendar support is now available, tested with Thunderbird with Lightning.
+            <p>DavMail Calendar support is now available, tested with Thunderbird/Lightning and Apple iCal.
                 This should also work with other Caldav clients.
             </p>
 
@@ -27,9 +27,6 @@
                 </code>
                 <p>Replace mail@company.com with actual user email address.
                 </p>
-                <p>Note for iCal users: use the following URL instead:</p>
-                <code>http://localhost:1080/principals/users/mail@company.com
-                </code>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar2.png"/>
                 </div>

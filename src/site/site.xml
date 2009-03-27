@@ -40,6 +40,11 @@
             <item name="Calendar setup" href="/thunderbirdcalendarsetup.html"/>
             <item name="Directory setup" href="/thunderbirddirectorysetup.html"/>
         </menu>
+        <menu name="OSX Setup">
+            <item name="iCal setup" href="/osxicalsetup.html"/>
+            <item name="Directory setup" href="/osxdirectorysetup.html"/>
+            <item name="IMAP Mail setup" href="/osximapmailsetup.html"/>
+        </menu>
         <menu ref="reports"/>
     </body>
 </project>

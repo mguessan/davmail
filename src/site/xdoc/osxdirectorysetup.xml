@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - OSX directory setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="OSX directory setup">
+            <p>DavMail Directory support is now available to access Exchange address book through LDAP.
+                A special OpenDirectory naming context was implemented to enable iCal attendee completion.
+            </p>
+
+            <section name="Open Directory Utility">
+                <p>In OSX Finder, go to Utilities and launch Directory Utility:</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility1.png"/>
+                </div>
+
+                <p>Choose Show Advanced Settings, switch to Services tab, select LDAPv3 and click
+                    the pencil icon (you may need to unlock settings with your admin password first):
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility2.png"/>
+                </div>
+
+                <p>Click New...:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility3.png"/>
+                </div>
+
+                <p>Enter DavMail server name (localhost) and click Manual:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility4.png"/>
+                </div>
+
+                <p>Enter Configuration Name and choose OpenDirectory in LDAP Mappings:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility5.png"/>
+                </div>
+
+                <p>Enter o=od as Search Base Suffix:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility6.png"/>
+                </div>
+
+                <p>Enter o=od as Search Base Suffix:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility7.png"/>
+                </div>
+
+                <p>If DavMail LDAP listen port is not 389, edit the new configuration,
+                    check Use custom port and enter actual port:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility8.png"/>
+                </div>
+
+                <p>Proceeed to
+                    <a href="osximapmailsetup.html">OSX IMAP Mail setup</a>
+                </p>
+            </section>
+        </section>
+    </body>
+</document>

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<document>
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - OSX iCal setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="OSX iCal setup">
+            <p>DavMail Calendar support is now available, tested with Thunderbird/Lightning and Apple iCal.
+                This should also work with other Caldav clients.
+            </p>
+
+            <section name="Open iCal Preferences">
+                <p>Open iCal Preferences, go to th Accounts tab and click the plus button:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxIcal1.png"/>
+                </div>
+
+                <p>Choose a name, enter you Exchange username and password. Open the server options section
+                    to enter the full calendar URL (adjust port to your settings):</p>
+                <code>http://localhost:1080/principals/users/mail@company.com
+                </code>
+                <p>Replace mail@company.com with actual user email address.
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxIcal2.png"/>
+                </div>
+
+                <p>Click Add, choose Connect Anyway in warning Dialog:</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxIcal3.png"/>
+                </div>
+
+                <p>Proceeed to
+                    <a href="osxdirectorysetup.html">OSX directory setup</a> to enable attendee completion.
+                </p>
+            </section>
+        </section>
+    </body>
+</document>
