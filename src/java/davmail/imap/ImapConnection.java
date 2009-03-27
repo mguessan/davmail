@@ -609,29 +609,28 @@ public class ImapConnection extends AbstractConnection {
                 buffer.append(" ()");
             }
         }
-        // body id
-        if (bodyPart.getContentID() == null) {
-            buffer.append(" NIL");
-        } else {
-            buffer.append(" \"").append(bodyPart.getContentID()).append("\"");
-        }
-        if (bodyPart.getDescription() == null) {
-            buffer.append(" NIL");
-        } else {
-            buffer.append(" \"").append(bodyPart.getDescription()).append("\"");
-        }
-        if (bodyPart.getHeader("Content-Transfer-Encoding") == null) {
-            buffer.append(" NIL");
-        } else {
-            buffer.append(" \"").append(bodyPart.getEncoding().toUpperCase()).append("\"");
-        }
-        buffer.append(' ').append(bodyPart.getSize());
-        if (bodyPart.getLineCount() < 0) {
-            buffer.append(" NIL");
-        } else {
-            buffer.append(' ').append(bodyPart.getLineCount()).append('"');
-        }
+        appendBodyStructureValue(buffer, bodyPart.getContentID());
+        appendBodyStructureValue(buffer, bodyPart.getDescription());
+        appendBodyStructureValue(buffer, bodyPart.getEncoding());
+        appendBodyStructureValue(buffer, bodyPart.getSize());
+        appendBodyStructureValue(buffer, bodyPart.getLineCount());
         buffer.append(')');
+    }
+
+    protected void appendBodyStructureValue(StringBuilder buffer, String value) throws IOException, MessagingException {
+        if (value == null) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(" \"").append(value.toUpperCase()).append("\"");
+        }
+    }
+
+    protected void appendBodyStructureValue(StringBuilder buffer, int value) throws IOException, MessagingException {
+        if (value < 0) {
+            buffer.append(" NIL");
+        } else {
+            buffer.append(' ').append(value);
+        }
     }
 
     static final class SearchConditions {
