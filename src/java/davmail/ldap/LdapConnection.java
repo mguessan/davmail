@@ -849,7 +849,7 @@ public class LdapConnection extends AbstractConnection {
         os.flush();
     }
 
-    class LdapFilter {
+    static class LdapFilter {
         final StringBuilder filterString = new StringBuilder();
         int ldapFilterType = 0;
         boolean isFullSearch = true;
@@ -907,7 +907,7 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    class SimpleFilter {
+    static class SimpleFilter {
         static final String STAR = "*";
         final String value;
         final int operator;

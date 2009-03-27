@@ -1121,9 +1121,14 @@ public class ExchangeSession {
         public boolean equals(Object message) {
             return message instanceof Message && getImapUid() == ((Message) message).getImapUid();
         }
+
+        @Override
+        public int hashCode() {
+            return (int)(imapUid ^ (imapUid >>> 32));
+        }
     }
 
-    public class MessageList extends ArrayList<Message> {
+    public static class MessageList extends ArrayList<Message> {
         final HashMap<Long, Message> uidMessageMap = new HashMap<Long, Message>();
 
         @Override
@@ -1423,7 +1428,7 @@ public class ExchangeSession {
     }
 
 
-    public class EventResult {
+    public static class EventResult {
         public int status;
         public String etag;
     }
@@ -1461,7 +1466,7 @@ public class ExchangeSession {
         return icsBody.substring(startIndex, endIndex);
     }
 
-    class Participants {
+    static class Participants {
         String attendees;
         String organizer;
     }
