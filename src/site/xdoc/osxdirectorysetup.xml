@@ -51,14 +51,15 @@
                     <img src="images/osxDirectoryUtility6.png"/>
                 </div>
 
-                <p>Enter o=od as Search Base Suffix:
+                <p>If DavMail LDAP listen port is not 389, edit the new configuration,
+                    check Use custom port and enter actual port:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxDirectoryUtility7.png"/>
                 </div>
 
-                <p>If DavMail LDAP listen port is not 389, edit the new configuration,
-                    check Use custom port and enter actual port:
+                <p>Under the Search Policy tab, choose Contacts, set Search to Custom Path
+                    and /LDAPV3/localhost to the list of Directory Domains:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxDirectoryUtility8.png"/>

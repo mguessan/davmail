@@ -15,7 +15,7 @@
             </p>
 
             <section name="Open iCal Preferences">
-                <p>Open iCal Preferences, go to th Accounts tab and click the plus button:
+                <p>Open iCal Preferences, go to the Accounts tab and click the plus button:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxIcal1.png"/>
@@ -31,7 +31,7 @@
                     <img src="images/osxIcal2.png"/>
                 </div>
 
-                <p>Click Add, choose Connect Anyway in warning Dialog:</p>
+                <p>Click Add, choose Connect Anyway in warning dialog:</p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxIcal3.png"/>
                 </div>

@@ -100,7 +100,9 @@
             </p>
             <p>Uncheck a port to disable matching service.</p>
             <p>Activate panel under Proxy tab to set an HTTP proxy and associated credentials if needed</p>
-            <p>Proceeed to <a href="thunderbirdmailsetup.html">Thunderbird mail setup</a></p>
+            <p>Proceeed to <a href="thunderbirdmailsetup.html">Thunderbird mail setup</a>
+                or <a href="osxicalsetup.html">OSX iCal setup</a> 
+            </p>
         </section>
 
     </body>
