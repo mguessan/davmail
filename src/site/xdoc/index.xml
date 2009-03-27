@@ -8,6 +8,9 @@
     </properties>
 
     <body>
+        <style>
+            .externalLink img {vertical-align: middle;}
+        </style>
 
         <section name="About DavMail POP/IMAP/SMTP/Caldav Exchange Gateway">
             <p>Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway allowing
@@ -29,8 +32,7 @@
                     SourceForge DavMail Gateway Files
                 </a>
                 and support this project
-                <a href="https://sourceforge.net/donate/index.php?group_id=184600" title="Donate"
-                   style="vertical-align: middle">
+                <a href="https://sourceforge.net/donate/index.php?group_id=184600" title="Donate">
                     <img alt="Donate" src="https://sourceforge.net/images/project-support.jpg"/>
                 </a>
             </p>
