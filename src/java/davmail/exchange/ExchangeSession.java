@@ -69,6 +69,7 @@ public class ExchangeSession {
         FOLDER_PROPERTIES.add("DAV:hassubs");
         FOLDER_PROPERTIES.add("DAV:nosubs");
         FOLDER_PROPERTIES.add("urn:schemas:httpmail:unreadcount");
+        FOLDER_PROPERTIES.add("http://schemas.microsoft.com/repl/contenttag");
     }
 
     protected static final Vector<String> CONTENT_TAG = new Vector<String>();
@@ -114,6 +115,7 @@ public class ExchangeSession {
      * The session is not actually established until a call to login()
      *
      * @param poolKey session pool key
+     * @throws java.io.IOException on error
      */
     ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) throws IOException {
         this.poolKey = poolKey;
@@ -659,6 +661,9 @@ public class ExchangeSession {
             if ("unreadcount".equals(property.getLocalName())) {
                 folder.unreadCount = Integer.parseInt(property.getPropertyAsString());
             }
+            if ("contenttag".equals(property.getLocalName())) {
+                folder.contenttag = property.getPropertyAsString();
+            }
         }
         if (href.endsWith("/")) {
             href = href.substring(0, href.length() - 1);
@@ -843,6 +848,27 @@ public class ExchangeSession {
         return folder;
     }
 
+    /**
+     * Check folder ctag and reload messages as needed
+     *
+     * @param currentFolder current folder
+     * @return current folder or new refreshed folder
+     * @throws IOException on error
+     */
+    public Folder refreshFolder(Folder currentFolder) throws IOException {
+        Folder newFolder = getFolder(currentFolder.folderName);
+        if (currentFolder.contenttag == null || !currentFolder.contenttag.equals(newFolder.contenttag)) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Contenttag changed on " + currentFolder.folderName + " "
+                        + currentFolder.contenttag + " => " + newFolder.contenttag + ", reloading messages");
+            }
+            newFolder.loadMessages();
+            return newFolder;
+        } else {
+            return currentFolder;
+        }
+    }
+
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath)) {
@@ -914,12 +940,14 @@ public class ExchangeSession {
         LOGGER.debug("Deleted to :" + destination);
     }
 
-    public static class Folder {
+    public class Folder {
         public String folderUrl;
         public int unreadCount;
         public boolean hasChildren;
         public boolean noInferiors;
         public String folderName;
+        public String contenttag;
+        public ExchangeSession.MessageList messages;
 
         public String getFlags() {
             if (noInferiors) {
@@ -929,6 +957,26 @@ public class ExchangeSession {
             } else {
                 return "\\HasNoChildren";
             }
+        }
+
+        public void loadMessages() throws IOException {
+            messages = getAllMessages(folderUrl);
+        }
+
+        public int size() {
+            return messages.size();
+        }
+
+        public long getUidNext() {
+            return messages.get(messages.size() - 1).getImapUid() + 1;
+        }
+
+        public long getImapUid(int index) {
+            return messages.get(index).getImapUid();
+        }
+
+        public Message get(int index) {
+            return messages.get(index);
         }
     }
 
