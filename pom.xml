@@ -125,15 +125,34 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>slide</groupId>
-            <artifactId>slide-webdavlib</artifactId>
-            <version>2.1</version>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-webdav</artifactId>
+            <version>1.4</version>
             <exclusions>
                 <exclusion>
-                    <groupId>de.zeigermann.xml</groupId>
-                    <artifactId>xml-im-exporter</artifactId>
+                    <groupId>org.apache.jackrabbit</groupId>
+                    <artifactId>jackrabbit-jcr-commons</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.3</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>

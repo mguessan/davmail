@@ -151,7 +151,8 @@
             <fileset dir="lib">
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
-                <exclude name="jsmoothgen-ant.jar"/>
+                <exclude name="jsmoothgen-ant-*.jar"/>
+                <exclude name="jarbundler-*.jar"/>
                 <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
             </fileset>
