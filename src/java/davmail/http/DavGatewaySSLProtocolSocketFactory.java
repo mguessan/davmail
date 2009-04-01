@@ -2,6 +2,7 @@ package davmail.http;
 
 import org.apache.commons.httpclient.protocol.SSLProtocolSocketFactory;
 import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.httpclient.HttpsURL;
 
 import javax.net.ssl.SSLContext;
@@ -37,7 +38,7 @@ public class DavGatewaySSLProtocolSocketFactory extends SSLProtocolSocketFactory
                     port = HttpsURL.DEFAULT_PORT;
                 }
                 Protocol.registerProtocol(url.getProtocol(),
-                        new Protocol(protocol, new DavGatewaySSLProtocolSocketFactory(), port));
+                        new Protocol(protocol, (ProtocolSocketFactory)new DavGatewaySSLProtocolSocketFactory(), port));
             }
         } catch (MalformedURLException e) {
             DavGatewayTray.error("Exception handling url: " + urlString);

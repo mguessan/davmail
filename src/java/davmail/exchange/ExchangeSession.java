@@ -4,9 +4,7 @@ import davmail.Settings;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthenticationException;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
@@ -497,8 +495,7 @@ public class ExchangeSession {
         InputStream bodyStream = null;
         try {
             // use same encoding as client socket reader
-            bodyStream = new ByteArrayInputStream(messageBody.getBytes());
-            putmethod.setRequestBody(bodyStream);
+            putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody.getBytes()));
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
@@ -654,10 +651,10 @@ public class ExchangeSession {
         while (enumeration.hasNext()) {
             DavProperty property = (DavProperty) enumeration.next();
             if ("hassubs".equals(property.getName().getName())) {
-                folder.hasChildren = "1".equals((String) property.getValue());
+                folder.hasChildren = "1".equals(property.getValue());
             }
             if ("nosubs".equals(property.getName().getName())) {
-                folder.noInferiors = "1".equals((String) property.getValue());
+                folder.noInferiors = "1".equals(property.getValue());
             }
             if ("unreadcount".equals(property.getName().getName())) {
                 folder.unreadCount = Integer.parseInt((String) property.getValue());
@@ -1505,6 +1502,8 @@ public class ExchangeSession {
 
     protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         String uid = UUID.randomUUID().toString();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        OutputStreamWriter writer = new OutputStreamWriter(baos, "ASCII");
         int status = 0;
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
@@ -1517,9 +1516,11 @@ public class ExchangeSession {
         }
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
         String method = getICSMethod(icsBody);
-        StringBuilder body = new StringBuilder();
-        body.append("Content-Transfer-Encoding: 7bit\r\n" +
-                "Content-class: ").append(contentClass).append("\r\n");
+
+        writer.write("Content-Transfer-Encoding: 7bit\r\n" +
+                "Content-class: ");
+        writer.write(contentClass);
+        writer.write("\r\n");
         // need to parse attendees and organizer to build recipients
         Participants participants = getParticipants(icsBody);
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
@@ -1532,15 +1533,25 @@ public class ExchangeSession {
                 recipients = participants.organizer;
             }
 
-            body.append("To: ").append(recipients).append("\r\n");
+            writer.write("To: ");
+            writer.write(recipients);
+            writer.write("\r\n");
             // do not send notification if no recipients found
             if (recipients.length() == 0) {
                 status = HttpStatus.SC_NO_CONTENT;
             }
         } else {
             // storing appointment, full recipients header
-            body.append("To: ").append(participants.attendees).append("\r\n");
-            body.append("From: ").append(participants.organizer).append("\r\n");
+            if (participants.attendees != null) {
+                writer.write("To: ");
+                writer.write(participants.attendees);
+                writer.write("\r\n");
+            }
+            if (participants.organizer != null) {
+                writer.write("From: ");
+                writer.write(participants.organizer);
+                writer.write("\r\n");
+            }
             // if not organizer, set REPLYTIME to force Outlook in attendee mode 
             if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
                 if (icsBody.indexOf("METHOD:") < 0) {
@@ -1555,21 +1566,33 @@ public class ExchangeSession {
                 }
             }
         }
-        body.append("MIME-Version: 1.0\r\n" +
+        writer.write("MIME-Version: 1.0\r\n" +
                 "Content-Type: multipart/alternative;\r\n" +
-                "\tboundary=\"----=_NextPart_").append(uid).append("\"\r\n" +
+                "\tboundary=\"----=_NextPart_");
+        writer.write(uid);
+        writer.write("\"\r\n" +
                 "\r\n" +
                 "This is a multi-part message in MIME format.\r\n" +
                 "\r\n" +
-                "------=_NextPart_").append(uid).append("\r\n" +
-                "Content-class: ").append(contentClass).append("\r\n" +
+                "------=_NextPart_");
+        writer.write(uid);
+        writer.write("\r\n" +
+                "Content-class: ");
+        writer.write(contentClass);
+        writer.write("\r\n" +
                 "Content-Type: text/calendar;\r\n" +
-                "\tmethod=").append(method).append(";\r\n" +
+                "\tmethod=");
+        writer.write(method);
+        writer.write(";\r\n" +
                 "\tcharset=\"utf-8\"\r\n" +
                 "Content-Transfer-Encoding: 8bit\r\n\r\n");
-        body.append(new String(fixICS(icsBody, false).getBytes("UTF-8"), "ISO-8859-1"));
-        body.append("------=_NextPart_").append(uid).append("--\r\n");
-        putmethod.setRequestBody(body.toString());
+        writer.flush();
+        baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
+        writer.write("------=_NextPart_");
+        writer.write(uid);
+        writer.write("--\r\n");
+        writer.close();
+        putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
         try {
             if (status == 0) {
                 status = httpClient.executeMethod(putmethod);
