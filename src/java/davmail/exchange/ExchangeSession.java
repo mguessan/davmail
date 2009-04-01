@@ -8,12 +8,16 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
+import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
+import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
+import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
+import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.apache.log4j.Logger;
-import org.apache.webdav.lib.Property;
-import org.apache.webdav.lib.ResponseEntity;
-import org.apache.webdav.lib.methods.CopyMethod;
-import org.apache.webdav.lib.methods.MoveMethod;
-import org.apache.webdav.lib.methods.PropPatchMethod;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -40,42 +44,43 @@ public class ExchangeSession {
 
     protected static final int FREE_BUSY_INTERVAL = 15;
 
-    protected static final Vector<String> EVENT_REQUEST_PROPERTIES = new Vector<String>();
+    protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
 
     static {
-        EVENT_REQUEST_PROPERTIES.add("DAV:getetag");
+        EVENT_REQUEST_PROPERTIES.add(DavPropertyName.GETETAG);
     }
 
-    protected static final Vector<String> WELL_KNOWN_FOLDERS = new Vector<String>();
+    protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
 
     static {
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:inbox");
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:deleteditems");
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:sentitems");
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:sendmsg");
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:drafts");
-        WELL_KNOWN_FOLDERS.add("urn:schemas:httpmail:calendar");
+        Namespace httpmailNameSpace = Namespace.getNamespace("urn:schemas:httpmail:");
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("inbox", httpmailNameSpace));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("deleteditems", httpmailNameSpace));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("sentitems", httpmailNameSpace));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("sendmsg", httpmailNameSpace));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("drafts", httpmailNameSpace));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("calendar", httpmailNameSpace));
     }
 
-    protected static final Vector<String> DISPLAY_NAME = new Vector<String>();
+    protected static final DavPropertyNameSet DISPLAY_NAME = new DavPropertyNameSet();
 
     static {
-        DISPLAY_NAME.add("DAV:displayname");
+        DISPLAY_NAME.add(DavPropertyName.DISPLAYNAME);
     }
 
-    protected static final Vector<String> FOLDER_PROPERTIES = new Vector<String>();
+    protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
 
     static {
-        FOLDER_PROPERTIES.add("DAV:hassubs");
-        FOLDER_PROPERTIES.add("DAV:nosubs");
-        FOLDER_PROPERTIES.add("urn:schemas:httpmail:unreadcount");
-        FOLDER_PROPERTIES.add("http://schemas.microsoft.com/repl/contenttag");
+        FOLDER_PROPERTIES.add(DavPropertyName.create("hassubs"));
+        FOLDER_PROPERTIES.add(DavPropertyName.create("nosubs"));
+        FOLDER_PROPERTIES.add(DavPropertyName.create("unreadcount", Namespace.getNamespace("urn:schemas:httpmail:")));
+        FOLDER_PROPERTIES.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
-    protected static final Vector<String> CONTENT_TAG = new Vector<String>();
+    protected static final DavPropertyNameSet CONTENT_TAG = new DavPropertyNameSet();
 
     static {
-        CONTENT_TAG.add("http://schemas.microsoft.com/repl/contenttag");
+        CONTENT_TAG.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
 
@@ -402,36 +407,34 @@ public class ExchangeSession {
 
     protected void getWellKnownFolders() throws IOException {
         // Retrieve well known URLs
-        Enumeration foldersEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
-        if (!foldersEnum.hasMoreElements()) {
+        if (responses.length == 0) {
             throw new IOException("Unable to get mail folders");
         }
-        ResponseEntity inboxResponse = (ResponseEntity) foldersEnum.
-                nextElement();
-        Enumeration inboxPropsEnum = inboxResponse.getProperties();
-        if (!inboxPropsEnum.hasMoreElements()) {
+        Iterator inboxPropsEnum = responses[0].getProperties(HttpStatus.SC_OK).iterator();
+        if (!inboxPropsEnum.hasNext()) {
             throw new IOException("Unable to get mail folders");
         }
-        while (inboxPropsEnum.hasMoreElements()) {
-            Property inboxProp = (Property) inboxPropsEnum.nextElement();
-            if ("inbox".equals(inboxProp.getLocalName())) {
-                inboxUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+        while (inboxPropsEnum.hasNext()) {
+            DavProperty inboxProp = (DavProperty) inboxPropsEnum.next();
+            if ("inbox".equals(inboxProp.getName().getName())) {
+                inboxUrl = URIUtil.decode((String) inboxProp.getValue());
             }
-            if ("deleteditems".equals(inboxProp.getLocalName())) {
-                deleteditemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            if ("deleteditems".equals(inboxProp.getName().getName())) {
+                deleteditemsUrl = URIUtil.decode((String) inboxProp.getValue());
             }
-            if ("sentitems".equals(inboxProp.getLocalName())) {
-                sentitemsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            if ("sentitems".equals(inboxProp.getName().getName())) {
+                sentitemsUrl = URIUtil.decode((String) inboxProp.getValue());
             }
-            if ("sendmsg".equals(inboxProp.getLocalName())) {
-                sendmsgUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            if ("sendmsg".equals(inboxProp.getName().getName())) {
+                sendmsgUrl = URIUtil.decode((String) inboxProp.getValue());
             }
-            if ("drafts".equals(inboxProp.getLocalName())) {
-                draftsUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            if ("drafts".equals(inboxProp.getName().getName())) {
+                draftsUrl = URIUtil.decode((String) inboxProp.getValue());
             }
-            if ("calendar".equals(inboxProp.getLocalName())) {
-                calendarUrl = URIUtil.decode(inboxProp.getPropertyAsString());
+            if ("calendar".equals(inboxProp.getName().getName())) {
+                calendarUrl = URIUtil.decode((String) inboxProp.getValue());
             }
         }
         LOGGER.debug("Inbox URL : " + inboxUrl +
@@ -458,10 +461,9 @@ public class ExchangeSession {
         PropPatchMethod patchMethod;
         // create the message first as draft
         if (properties.containsKey("draft")) {
-            patchMethod = new PropPatchMethod(messageUrl);
+            patchMethod = new PropPatchMethod(messageUrl, buildProperties(properties));
             try {
                 // update message with blind carbon copy and other flags
-                addProperties(patchMethod, properties);
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                     throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
@@ -498,10 +500,9 @@ public class ExchangeSession {
 
         // add bcc and other properties
         if (properties.size() > 0) {
-            patchMethod = new PropPatchMethod(messageUrl);
+            patchMethod = new PropPatchMethod(messageUrl, buildProperties(properties));
             try {
                 // update message with blind carbon copy and other flags
-                addProperties(patchMethod, properties);
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                     throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
@@ -513,37 +514,37 @@ public class ExchangeSession {
         }
     }
 
-    protected Message buildMessage(ResponseEntity responseEntity) throws URIException {
+    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
-        Enumeration propertiesEnum = responseEntity.getProperties();
-        while (propertiesEnum.hasMoreElements()) {
-            Property prop = (Property) propertiesEnum.nextElement();
-            String localName = prop.getLocalName();
+        Iterator propertiesEnum = responseEntity.getProperties(HttpStatus.SC_OK).iterator();
+        while (propertiesEnum.hasNext()) {
+            DavProperty prop = (DavProperty) propertiesEnum.next();
+            String localName = prop.getName().getName();
 
             if ("x0e080003".equals(localName)) {
-                message.size = Integer.parseInt(prop.getPropertyAsString());
+                message.size = Integer.parseInt((String) prop.getValue());
             } else if ("uid".equals(localName)) {
-                message.uid = prop.getPropertyAsString();
+                message.uid = (String) prop.getValue();
             } else if ("x0e230003".equals(localName)) {
-                message.imapUid = Long.parseLong(prop.getPropertyAsString());
+                message.imapUid = Long.parseLong((String) prop.getValue());
             } else if ("read".equals(localName)) {
-                message.read = "1".equals(prop.getPropertyAsString());
+                message.read = "1".equals(prop.getValue());
             } else if ("x10830003".equals(localName)) {
-                message.junk = "1".equals(prop.getPropertyAsString());
+                message.junk = "1".equals(prop.getValue());
             } else if ("x10900003".equals(localName)) {
-                message.flagged = "2".equals(prop.getPropertyAsString());
+                message.flagged = "2".equals(prop.getValue());
             } else if ("x0E070003".equals(localName)) {
-                message.draft = "9".equals(prop.getPropertyAsString());
+                message.draft = "9".equals(prop.getValue());
             } else if ("x10810003".equals(localName)) {
-                message.answered = "102".equals(prop.getPropertyAsString()) || "103".equals(prop.getPropertyAsString());
-                message.forwarded = "104".equals(prop.getPropertyAsString());
-            } else if ("date".equals(prop.getLocalName())) {
-                message.date = prop.getPropertyAsString();
+                message.answered = "102".equals(prop.getValue()) || "103".equals(prop.getValue());
+                message.forwarded = "104".equals(prop.getValue());
+            } else if ("date".equals(localName)) {
+                message.date = (String) prop.getValue();
             } else if ("isdeleted".equals(localName)) {
-                message.deleted = "1".equals(prop.getPropertyAsString());
-            } else if ("message-id".equals(prop.getLocalName())) {
-                message.messageId = prop.getPropertyAsString();
+                message.deleted = "1".equals(prop.getValue());
+            } else if ("message-id".equals(localName)) {
+                message.messageId = (String) prop.getValue();
                 if (message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
                     message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
                 }
@@ -553,40 +554,41 @@ public class ExchangeSession {
         return message;
     }
 
-    protected void addProperties(PropPatchMethod patchMethod, Map<String, String> properties) {
+    protected List<DavProperty> buildProperties(Map<String, String> properties) {
+        ArrayList<DavProperty> list = new ArrayList<DavProperty>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("read", entry.getValue(), "e", "urn:schemas:httpmail:");
+                list.add(new DefaultDavProperty(DavPropertyName.create("read", Namespace.getNamespace("urn:schemas:httpmail:")), entry.getValue()));
             } else if ("junk".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("x10830003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                list.add(new DefaultDavProperty(DavPropertyName.create("x10830003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), entry.getValue()));
             } else if ("flagged".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("x10900003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                list.add(new DefaultDavProperty(DavPropertyName.create("x10900003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), entry.getValue()));
             } else if ("answered".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("x10810003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                list.add(new DefaultDavProperty(DavPropertyName.create("x10810003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), entry.getValue()));
                 if ("102".equals(entry.getValue())) {
-                    patchMethod.addPropertyToSet("x10800003", "261", "f", "http://schemas.microsoft.com/mapi/proptag/");
+                    list.add(new DefaultDavProperty(DavPropertyName.create("x10800003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), "261"));
                 }
             } else if ("forwarded".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("x10810003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                list.add(new DefaultDavProperty(DavPropertyName.create("x10810003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), entry.getValue()));
                 if ("104".equals(entry.getValue())) {
-                    patchMethod.addPropertyToSet("x10800003", "262", "f", "http://schemas.microsoft.com/mapi/proptag/");
+                    list.add(new DefaultDavProperty(DavPropertyName.create("x10800003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), "262"));
                 }
             } else if ("bcc".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("bcc", entry.getValue(), "b", "urn:schemas:mailheader:");
+                list.add(new DefaultDavProperty(DavPropertyName.create("bcc", Namespace.getNamespace("urn:schemas:mailheader:")), entry.getValue()));
             } else if ("draft".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("x0E070003", entry.getValue(), "f", "http://schemas.microsoft.com/mapi/proptag/");
+                list.add(new DefaultDavProperty(DavPropertyName.create("x0E070003", Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/")), entry.getValue()));
             } else if ("deleted".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("isdeleted", entry.getValue(), "d", "DAV:");
+                list.add(new DefaultDavProperty(DavPropertyName.create("isdeleted"), entry.getValue()));
             } else if ("datereceived".equals(entry.getKey())) {
-                patchMethod.addPropertyToSet("datereceived", entry.getValue(), "e", "urn:schemas:httpmail:");
+                list.add(new DefaultDavProperty(DavPropertyName.create("datereceived", Namespace.getNamespace("urn:schemas:httpmail:")), entry.getValue()));
             }
         }
+        return list;
     }
 
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
-        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl));
+        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties));
         try {
-            addProperties(patchMethod, properties);
             int statusCode = httpClient.executeMethod(patchMethod);
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                 throw new IOException("Unable to update message properties");
@@ -615,13 +617,11 @@ public class ExchangeSession {
             searchRequest += conditions;
         }
         searchRequest += "       ORDER BY \"urn:schemas:httpmail:date\" ASC";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
-        while (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-
-            Message message = buildMessage(entity);
+        for (MultiStatusResponse response : responses) {
+            Message message = buildMessage(response);
             messages.add(message);
         }
         Collections.sort(messages);
@@ -636,33 +636,32 @@ public class ExchangeSession {
                 "                FROM Scope('" + mode + " TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n" +
                 "                      AND (\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(mailPath), searchRequest);
 
-        while (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            folders.add(buildFolder(entity));
+        for (MultiStatusResponse response : responses) {
+            folders.add(buildFolder(response));
         }
         return folders;
     }
 
-    protected Folder buildFolder(ResponseEntity entity) throws URIException {
+    protected Folder buildFolder(MultiStatusResponse entity) throws URIException {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
-        Enumeration enumeration = entity.getProperties();
-        while (enumeration.hasMoreElements()) {
-            Property property = (Property) enumeration.nextElement();
-            if ("hassubs".equals(property.getLocalName())) {
-                folder.hasChildren = "1".equals(property.getPropertyAsString());
+        Iterator enumeration = entity.getProperties(HttpStatus.SC_OK).iterator();
+        while (enumeration.hasNext()) {
+            DavProperty property = (DavProperty) enumeration.next();
+            if ("hassubs".equals(property.getName().getName())) {
+                folder.hasChildren = "1".equals((String) property.getValue());
             }
-            if ("nosubs".equals(property.getLocalName())) {
-                folder.noInferiors = "1".equals(property.getPropertyAsString());
+            if ("nosubs".equals(property.getName().getName())) {
+                folder.noInferiors = "1".equals((String) property.getValue());
             }
-            if ("unreadcount".equals(property.getLocalName())) {
-                folder.unreadCount = Integer.parseInt(property.getPropertyAsString());
+            if ("unreadcount".equals(property.getName().getName())) {
+                folder.unreadCount = Integer.parseInt((String) property.getValue());
             }
-            if ("contenttag".equals(property.getLocalName())) {
-                folder.contenttag = property.getPropertyAsString();
+            if ("contenttag".equals(property.getName().getName())) {
+                folder.contenttag = (String) property.getValue();
             }
         }
         if (href.endsWith("/")) {
@@ -720,12 +719,11 @@ public class ExchangeSession {
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
                 "                   AND \"DAV:getlastmodified\" < '" + formatDate(cal.getTime()) + "'\n";
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executeSearchMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
-        while (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            String messageUrl = entity.getHref();
+        for (MultiStatusResponse response : responses) {
+            String messageUrl = response.getHref();
 
             LOGGER.debug("Delete " + messageUrl);
             DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
@@ -799,7 +797,7 @@ public class ExchangeSession {
 
         // warning : slide library expects *unencoded* urls
         String tempUrl = draftsUrl + "/" + messageName + ".EML";
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl));
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         if (status != HttpStatus.SC_OK) {
             throw DavGatewayHttpClientFacade.buildHttpException(method);
@@ -837,12 +835,11 @@ public class ExchangeSession {
      * @throws IOException when unable to change folder
      */
     public Folder getFolder(String folderName) throws IOException {
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(getFolderPath(folderName)), 0, FOLDER_PROPERTIES);
         Folder folder = null;
-        if (folderEnum.hasMoreElements()) {
-            ResponseEntity entity = (ResponseEntity) folderEnum.nextElement();
-            folder = buildFolder(entity);
+        if (responses.length > 0) {
+            folder = buildFolder(responses[0]);
             folder.folderName = folderName;
         }
         return folder;
@@ -871,12 +868,13 @@ public class ExchangeSession {
 
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
-        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath)) {
+        ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+        list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPF.Note"));
+        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
             public String getName() {
                 return "MKCOL";
             }
         };
-        method.addPropertyToSet("outlookfolderclass", "IPF.Note", "ex", "http://schemas.microsoft.com/exchange/");
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         // ok or alredy exists
         if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
@@ -887,8 +885,7 @@ public class ExchangeSession {
     public void copyMessage(String messageUrl, String targetName) throws IOException {
         String targetPath = getFolderPath(targetName) + messageUrl.substring(messageUrl.lastIndexOf('/'));
         CopyMethod method = new CopyMethod(URIUtil.encodePath(messageUrl),
-                URIUtil.encodePath(targetPath));
-        method.setOverwrite(false);
+                URIUtil.encodePath(targetPath), false);
         method.addRequestHeader("Allow-Rename", "t");
         try {
             int statusCode = httpClient.executeMethod(method);
@@ -906,8 +903,7 @@ public class ExchangeSession {
         String folderPath = getFolderPath(folderName);
         String targetPath = getFolderPath(targetName);
         MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath),
-                URIUtil.encodePath(targetPath));
-        method.setOverwrite(false);
+                URIUtil.encodePath(targetPath), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -924,8 +920,7 @@ public class ExchangeSession {
         String source = encodedPath + "/" + encodedMessageName;
         String destination = URIUtil.encodePath(deleteditemsUrl) + "/" + encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
-        MoveMethod method = new MoveMethod(source, destination);
-        method.addRequestHeader("Overwrite", "f");
+        MoveMethod method = new MoveMethod(source, destination, false);
         method.addRequestHeader("Allow-rename", "t");
 
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
@@ -1124,7 +1119,7 @@ public class ExchangeSession {
 
         @Override
         public int hashCode() {
-            return (int)(imapUid ^ (imapUid >>> 32));
+            return (int) (imapUid ^ (imapUid >>> 32));
         }
     }
 
@@ -1249,9 +1244,9 @@ public class ExchangeSession {
 
     public List<Event> getEvents(String path, String searchQuery) throws IOException {
         List<Event> events = new ArrayList<Event>();
-        Enumeration calendarEnum = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(path), searchQuery);
-        while (calendarEnum.hasMoreElements()) {
-            events.add(buildEvent((ResponseEntity) calendarEnum.nextElement()));
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(path), searchQuery);
+        for (MultiStatusResponse response : responses) {
+            events.add(buildEvent(response));
         }
         return events;
     }
@@ -1259,23 +1254,22 @@ public class ExchangeSession {
     public Event getEvent(String principal, String path, String eventName) throws IOException {
         String eventPath = URIUtil.encodePath(replacePrincipal(getFolderPath(path), principal)) + "/" + URIUtil.encodeWithinQuery(eventName);
         LOGGER.debug("getEvent(" + eventPath + "/" + eventName + ")");
-        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
-        if (!calendarEnum.hasMoreElements()) {
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
+        if (responses.length == 0) {
             throw new IOException("Unable to get calendar event");
         }
-        return buildEvent((ResponseEntity) calendarEnum.
-                nextElement());
+        return buildEvent(responses[0]);
     }
 
-    protected Event buildEvent(ResponseEntity calendarResponse) throws URIException {
+    protected Event buildEvent(MultiStatusResponse calendarResponse) throws URIException {
         Event event = new Event();
         String href = calendarResponse.getHref();
         event.href = URIUtil.decode(href);
-        Enumeration propertiesEnumeration = calendarResponse.getProperties();
-        while (propertiesEnumeration.hasMoreElements()) {
-            Property property = (Property) propertiesEnumeration.nextElement();
-            if ("getetag".equals(property.getLocalName())) {
-                event.etag = property.getPropertyAsString();
+        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
+        while (propertiesEnumeration.hasNext()) {
+            DavProperty property = (DavProperty) propertiesEnumeration.next();
+            if ("getetag".equals(property.getName().getName())) {
+                event.etag = (String) property.getValue();
             }
         }
         return event;
@@ -1413,17 +1407,6 @@ public class ExchangeSession {
         }
         String dateValue = line.substring(valueIndex + 1, valueEndIndex);
         String key = line.substring(0, Math.max(keyIndex, valueIndex));
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Date date;
-        try {
-            date = dateFormat.parse(dateValue);
-        } catch (ParseException e) {
-            throw new IOException("Invalid ICS line: " + line);
-        }
-        if ("DTEND".equals(key)) {
-            date.setTime(date.getTime() - 1);
-        }
         return key + ";VALUE=DATE:" + dateValue;
     }
 
@@ -1439,7 +1422,7 @@ public class ExchangeSession {
         if (status != HttpStatus.SC_CREATED) {
             return status;
         } else {
-            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(sendmsgUrl));
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(sendmsgUrl), true);
             status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
             if (status != HttpStatus.SC_OK) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
@@ -1619,9 +1602,10 @@ public class ExchangeSession {
         int status;
         if (path.startsWith("INBOX")) {
             // do not delete calendar messages, mark read and processed
-            PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName);
-            patchMethod.addPropertyToSet("schedule-state", "CALDAV:schedule-processed", "C", "CALDAV:");
-            patchMethod.addPropertyToSet("read", "1", "e", "urn:schemas:httpmail:");
+            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+            list.add(new DefaultDavProperty(DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:")), "CALDAV:schedule-processed"));
+            list.add(new DefaultDavProperty(DavPropertyName.create("read", Namespace.getNamespace("urn:schemas:httpmail:")), "1"));
+            PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName, list);
             DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
             status = HttpStatus.SC_OK;
         } else {
@@ -1641,21 +1625,17 @@ public class ExchangeSession {
 
     public String getFolderCtag(String folderUrl) throws IOException {
         String ctag = null;
-        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(folderUrl), 0, CONTENT_TAG);
-        if (!calendarEnum.hasMoreElements()) {
+        if (responses.length == 0) {
             throw new IOException("Unable to get folder object");
         }
-        while (calendarEnum.hasMoreElements()) {
-            ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
-                    nextElement();
-            Enumeration propertiesEnumeration = calendarResponse.getProperties();
-            while (propertiesEnumeration.hasMoreElements()) {
-                Property property = (Property) propertiesEnumeration.nextElement();
-                if ("http://schemas.microsoft.com/repl/".equals(property.getNamespaceURI())
-                        && "contenttag".equals(property.getLocalName())) {
-                    ctag = property.getPropertyAsString();
-                }
+        MultiStatusResponse calendarResponse = responses[0];
+        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
+        while (propertiesEnumeration.hasNext()) {
+            DavProperty property = (DavProperty) propertiesEnumeration.next();
+            if ("contenttag".equals(property.getName().getName())) {
+                ctag = (String) property.getValue();
             }
         }
         if (ctag == null) {
@@ -1666,22 +1646,19 @@ public class ExchangeSession {
 
     public String getCalendarEtag() throws IOException {
         String etag = null;
-        Enumeration calendarEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(calendarUrl), 0, EVENT_REQUEST_PROPERTIES);
-        if (!calendarEnum.hasMoreElements()) {
+        if (responses.length == 0) {
             throw new IOException("Unable to get calendar object");
         }
-        while (calendarEnum.hasMoreElements()) {
-            ResponseEntity calendarResponse = (ResponseEntity) calendarEnum.
-                    nextElement();
-            Enumeration propertiesEnumeration = calendarResponse.getProperties();
-            while (propertiesEnumeration.hasMoreElements()) {
-                Property property = (Property) propertiesEnumeration.nextElement();
-                if ("getetag".equals(property.getLocalName())) {
-                    etag = property.getPropertyAsString();
+            MultiStatusResponse calendarResponse = responses[0];
+        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
+        while (propertiesEnumeration.hasNext()) {
+            DavProperty property = (DavProperty) propertiesEnumeration.next();
+                if ("getetag".equals(property.getName().getName())) {
+                    etag = (String) property.getValue();
                 }
             }
-        }
         if (etag == null) {
             throw new IOException("Unable to get calendar etag");
         }
@@ -1726,21 +1703,19 @@ public class ExchangeSession {
             return null;
         }
         String alias = null;
-        Enumeration folderEnum = DavGatewayHttpClientFacade.executePropFindMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
-        if (!folderEnum.hasMoreElements()) {
+        if (responses.length == 0) {
             throw new IOException("Unable to get mail folder");
         }
-        ResponseEntity mailboxResponse = (ResponseEntity) folderEnum.
-                nextElement();
-        Enumeration mailboxPropsEnum = mailboxResponse.getProperties();
-        if (!mailboxPropsEnum.hasMoreElements()) {
+        Iterator mailboxPropsEnum = responses[0].getProperties(HttpStatus.SC_OK).iterator();
+        if (!mailboxPropsEnum.hasNext()) {
             throw new IOException("Unable to get mail folder");
         }
-        while (mailboxPropsEnum.hasMoreElements()) {
-            Property inboxProp = (Property) mailboxPropsEnum.nextElement();
-            if ("displayname".equals(inboxProp.getLocalName())) {
-                alias = inboxProp.getPropertyAsString();
+        while (mailboxPropsEnum.hasNext()) {
+            DavProperty inboxProp = (DavProperty) mailboxPropsEnum.next();
+            if ("displayname".equals(inboxProp.getName().getName())) {
+                alias = (String) inboxProp.getValue();
             }
 
         }

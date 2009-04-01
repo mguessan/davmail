@@ -3,20 +3,26 @@ package davmail.http;
 import davmail.Settings;
 import davmail.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.auth.AuthPolicy;
+import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
-import org.apache.webdav.lib.methods.PropFindMethod;
-import org.apache.webdav.lib.methods.SearchMethod;
-import org.apache.webdav.lib.methods.XMLResponseMethodBase;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.jackrabbit.webdav.DavException;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
+import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
  */
 public final class DavGatewayHttpClientFacade {
+    final static String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
     static {
@@ -36,18 +42,20 @@ public final class DavGatewayHttpClientFacade {
     public static HttpClient getInstance() {
         // create an HttpClient instance
         HttpClient httpClient = new HttpClient();
+        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         configureClient(httpClient);
         return httpClient;
     }
 
     public static HttpClient getInstance(HttpURL httpURL) throws URIException {
         HttpClient httpClient = new HttpClient();
+        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
         hostConfig.setHost(httpURL);
         UsernamePasswordCredentials hostCredentials =
                 new UsernamePasswordCredentials(httpURL.getUser(),
                         httpURL.getPassword());
-        httpClient.getState().setCredentials(null, httpURL.getHost(),
+        httpClient.getState().setCredentials(new AuthScope(httpURL.getHost(), httpURL.getPort(), AuthScope.ANY_REALM),
                 hostCredentials);
         configureClient(httpClient);
         return httpClient;
@@ -79,20 +87,24 @@ public final class DavGatewayHttpClientFacade {
             httpClient.getHostConfiguration().setProxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyUser.length() > 0) {
 
-/*              // Only available in newer HttpClient releases, not compatible with slide library
-                List authPrefs = new ArrayList();
+                // Only available in newer HttpClient releases, not compatible with slide library
+                ArrayList<String> authPrefs = new ArrayList<String>();
+                authPrefs.add(AuthPolicy.DIGEST);
                 authPrefs.add(AuthPolicy.BASIC);
-                httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY,authPrefs);
-*/
+                // exclude the NTLM authentication scheme
+                httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
+
+                AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
+
                 // instead detect ntlm authentication (windows domain name in user name)
                 int backslashindex = proxyUser.indexOf("\\");
                 if (backslashindex > 0) {
-                    httpClient.getState().setProxyCredentials(null, proxyHost,
+                    httpClient.getState().setProxyCredentials(authScope,
                             new NTCredentials(proxyUser.substring(backslashindex + 1),
                                     proxyPassword, null,
                                     proxyUser.substring(0, backslashindex)));
                 } else {
-                    httpClient.getState().setProxyCredentials(null, proxyHost,
+                    httpClient.getState().setProxyCredentials(authScope,
                             new UsernamePasswordCredentials(proxyUser, proxyPassword));
                 }
             }
@@ -180,12 +192,22 @@ public final class DavGatewayHttpClientFacade {
      * @return Responses enumeration
      * @throws IOException on error
      */
-    public static Enumeration executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
+    public static MultiStatusResponse[] executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
         String searchBody = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql>" + searchRequest.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</d:sql>\n" +
                 "</d:searchrequest>";
-        SearchMethod searchMethod = new SearchMethod(path, searchBody);
+        DavMethodBase searchMethod = new DavMethodBase(path) {
+
+            public String getName() {
+                return "SEARCH";
+            }
+
+            protected boolean isSuccess(int statusCode) {
+                return statusCode == 207;
+            }
+        };
+        searchMethod.setRequestEntity(new StringRequestEntity(searchBody, "text/xml", "UTF-8"));
         return executeMethod(httpClient, searchMethod);
     }
 
@@ -199,8 +221,8 @@ public final class DavGatewayHttpClientFacade {
      * @return Responses enumeration
      * @throws IOException on error
      */
-    public static Enumeration executePropFindMethod(HttpClient httpClient, String path, int depth, Vector properties) throws IOException {
-        PropFindMethod propFindMethod = new PropFindMethod(path, depth, properties.elements());
+    public static MultiStatusResponse[] executePropFindMethod(HttpClient httpClient, String path, int depth, DavPropertyNameSet properties) throws IOException {
+        PropFindMethod propFindMethod = new PropFindMethod(path, properties, depth);
         return executeMethod(httpClient, propFindMethod);
     }
 
@@ -223,20 +245,22 @@ public final class DavGatewayHttpClientFacade {
      * @return Responses enumeration
      * @throws IOException on error
      */
-    public static Enumeration executeMethod(HttpClient httpClient, XMLResponseMethodBase method) throws IOException {
-        Enumeration responseEnumeration = null;
+    public static MultiStatusResponse[] executeMethod(HttpClient httpClient, DavMethodBase method) throws IOException {
+        MultiStatusResponse[] responses = null;
         try {
             int status = httpClient.executeMethod(method);
 
             if (status != HttpStatus.SC_MULTI_STATUS) {
                 throw buildHttpException(method);
             }
-            responseEnumeration = method.getResponses();
+            responses = method.getResponseBodyAsMultiStatus().getResponses();
 
+        } catch (DavException e) {
+            throw new IOException(e.getMessage());
         } finally {
             method.releaseConnection();
         }
-        return responseEnumeration;
+        return responses;
     }
 
     public static int executeHttpMethod(HttpClient httpClient, HttpMethod method) throws IOException {

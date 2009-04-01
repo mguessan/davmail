@@ -1,9 +1,8 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
-import davmail.exchange.ExchangeSessionFactory;
 import davmail.tray.DavGatewayTray;
-import org.apache.commons.httpclient.util.Base64;
+import org.apache.commons.codec.binary.Base64;
 
 import java.io.*;
 import java.net.Socket;
@@ -166,10 +165,10 @@ public class AbstractConnection extends Thread {
     }
 
     protected String base64Encode(String value) {
-        return new String(Base64.encode(value.getBytes()));
+        return new String(new Base64().encode(value.getBytes()));
     }
 
     protected String base64Decode(String value) {
-        return new String(Base64.decode(value.getBytes()));
+        return new String(new Base64().decode(value.getBytes()));
     }
 }
