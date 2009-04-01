@@ -25,6 +25,10 @@ public final class DavGatewayHttpClientFacade {
     final static String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
+    final static long ONE_MINUTE = 60000;
+
+    static Thread httpConnectionManagerThread = null;
+
     static {
         DavGatewayHttpClientFacade.start();
         // force XML response with Internet Explorer header
@@ -279,14 +283,14 @@ public final class DavGatewayHttpClientFacade {
      * @return Http Exception
      */
     public static HttpException buildHttpException(HttpMethod method) {
-        HttpException httpException = new HttpException();
-        httpException.setReasonCode(method.getStatusCode());
-        httpException.setReason(method.getStatusText());
-        return httpException;
+        return new HttpException(method.getStatusCode() + " " + method.getStatusText());
     }
 
     public static void stop() {
         if (multiThreadedHttpConnectionManager != null) {
+            if (httpConnectionManagerThread != null) {
+                httpConnectionManagerThread.interrupt();
+            }
             multiThreadedHttpConnectionManager.shutdown();
             multiThreadedHttpConnectionManager = null;
         }
@@ -295,7 +299,23 @@ public final class DavGatewayHttpClientFacade {
     public static void start() {
         if (multiThreadedHttpConnectionManager == null) {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
-            multiThreadedHttpConnectionManager.setMaxConnectionsPerHost(10);
+            multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
+            httpConnectionManagerThread = new Thread("HttpConnectionManager") {
+                public void run() {
+                    boolean terminated = false;
+                    while (!terminated) {
+                        try {
+                            sleep(ONE_MINUTE);
+                        } catch (InterruptedException e) {
+                            terminated = true;
+                        }
+                        if (multiThreadedHttpConnectionManager != null) {
+                            multiThreadedHttpConnectionManager.closeIdleConnections(ONE_MINUTE);
+                        }
+                    }
+                }
+            };
+            httpConnectionManagerThread.start();
         }
     }
 }
