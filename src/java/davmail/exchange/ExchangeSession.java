@@ -4,7 +4,10 @@ import davmail.Settings;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthenticationException;
-import org.apache.commons.httpclient.methods.*;
+import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
@@ -640,22 +643,12 @@ public class ExchangeSession {
     protected Folder buildFolder(MultiStatusResponse entity) throws URIException {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
-        Iterator enumeration = entity.getProperties(HttpStatus.SC_OK).iterator();
-        while (enumeration.hasNext()) {
-            DavProperty property = (DavProperty) enumeration.next();
-            if ("hassubs".equals(property.getName().getName())) {
-                folder.hasChildren = "1".equals(property.getValue());
-            }
-            if ("nosubs".equals(property.getName().getName())) {
-                folder.noInferiors = "1".equals(property.getValue());
-            }
-            if ("unreadcount".equals(property.getName().getName())) {
-                folder.unreadCount = Integer.parseInt((String) property.getValue());
-            }
-            if ("contenttag".equals(property.getName().getName())) {
-                folder.contenttag = (String) property.getValue();
-            }
-        }
+        DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
+        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", Namespace.getNamespace("DAV:")));
+        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", Namespace.getNamespace("DAV:")));
+        folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
+        folder.contenttag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
+
         if (href.endsWith("/")) {
             href = href.substring(0, href.length() - 1);
         }
@@ -1256,13 +1249,7 @@ public class ExchangeSession {
         Event event = new Event();
         String href = calendarResponse.getHref();
         event.href = URIUtil.decode(href);
-        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
-        while (propertiesEnumeration.hasNext()) {
-            DavProperty property = (DavProperty) propertiesEnumeration.next();
-            if ("getetag".equals(property.getName().getName())) {
-                event.etag = (String) property.getValue();
-            }
-        }
+        event.etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
         return event;
     }
 
@@ -1641,20 +1628,14 @@ public class ExchangeSession {
     }
 
     public String getFolderCtag(String folderUrl) throws IOException {
-        String ctag = null;
+        String ctag;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(folderUrl), 0, CONTENT_TAG);
         if (responses.length == 0) {
             throw new IOException("Unable to get folder object");
         }
-        MultiStatusResponse calendarResponse = responses[0];
-        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
-        while (propertiesEnumeration.hasNext()) {
-            DavProperty property = (DavProperty) propertiesEnumeration.next();
-            if ("contenttag".equals(property.getName().getName())) {
-                ctag = (String) property.getValue();
-            }
-        }
+        DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
+        ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
         if (ctag == null) {
             throw new IOException("Unable to get calendar ctag");
         }
@@ -1662,20 +1643,14 @@ public class ExchangeSession {
     }
 
     public String getCalendarEtag() throws IOException {
-        String etag = null;
+        String etag;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(calendarUrl), 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new IOException("Unable to get calendar object");
         }
         MultiStatusResponse calendarResponse = responses[0];
-        Iterator propertiesEnumeration = calendarResponse.getProperties(HttpStatus.SC_OK).iterator();
-        while (propertiesEnumeration.hasNext()) {
-            DavProperty property = (DavProperty) propertiesEnumeration.next();
-            if ("getetag".equals(property.getName().getName())) {
-                etag = (String) property.getValue();
-            }
-        }
+        etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
         if (etag == null) {
             throw new IOException("Unable to get calendar etag");
         }
@@ -1719,23 +1694,13 @@ public class ExchangeSession {
         if (mailPath == null) {
             return null;
         }
-        String alias = null;
+        String alias;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
         if (responses.length == 0) {
             throw new IOException("Unable to get mail folder");
         }
-        Iterator mailboxPropsEnum = responses[0].getProperties(HttpStatus.SC_OK).iterator();
-        if (!mailboxPropsEnum.hasNext()) {
-            throw new IOException("Unable to get mail folder");
-        }
-        while (mailboxPropsEnum.hasNext()) {
-            DavProperty inboxProp = (DavProperty) mailboxPropsEnum.next();
-            if ("displayname".equals(inboxProp.getName().getName())) {
-                alias = (String) inboxProp.getValue();
-            }
-
-        }
+        alias = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
         return alias;
     }
 
