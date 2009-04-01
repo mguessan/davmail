@@ -1237,7 +1237,6 @@ public class ExchangeSession {
 
     public Event getEvent(String principal, String path, String eventName) throws IOException {
         String eventPath = URIUtil.encodePath(replacePrincipal(getFolderPath(path), principal)) + "/" + URIUtil.encodeWithinQuery(eventName);
-        LOGGER.debug("getEvent(" + eventPath + "/" + eventName + ")");
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new IOException("Unable to get calendar event");

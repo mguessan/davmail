@@ -436,6 +436,9 @@ public class CaldavConnection extends AbstractConnection {
     public void reportEvents(CaldavRequest request, String principal, String path) throws IOException {
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
+
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
+        response.startMultistatus();
         if (request.isMultiGet()) {
             events = new ArrayList<ExchangeSession.Event>();
             int count = 0;
@@ -449,7 +452,7 @@ public class CaldavConnection extends AbstractConnection {
                     } else if ("inbox".equals(eventName) || "calendar".equals(eventName)) {
                         // Sunbird: just ignore
                     } else {
-                        events.add(session.getEvent(principal, path, eventName));
+                        appendEventResponse(response, request, path, session.getEvent(principal, path, eventName));
                     }
                 } catch (HttpException e) {
                     notFound.add(href);
@@ -457,13 +460,11 @@ public class CaldavConnection extends AbstractConnection {
             }
         } else if ("INBOX".equals(path)) {
             events = session.getEventMessages(principal);
+            appendEventsResponses(response, request, path, events);
         } else {
             events = session.getAllEvents(principal);
+            appendEventsResponses(response, request, path, events);
         }
-
-        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
-        response.startMultistatus();
-        appendEventsResponses(response, request, path, events);
 
         // send not found events errors
         for (String href : notFound) {
