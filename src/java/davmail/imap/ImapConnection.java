@@ -172,7 +172,7 @@ public class ImapConnection extends AbstractConnection {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
                                     } catch (HttpException e) {
-                                        sendClient(commandId + " NO " + e.getReason());
+                                        sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
@@ -180,7 +180,7 @@ public class ImapConnection extends AbstractConnection {
                                         session.deleteFolder(folderName);
                                         sendClient(commandId + " OK delete completed");
                                     } catch (HttpException e) {
-                                        sendClient(commandId + " NO " + e.getReason());
+                                        sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("uid".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
@@ -269,7 +269,7 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                                 sendClient(commandId + " OK copy completed");
                                             } catch (HttpException e) {
-                                                sendClient(commandId + " NO " + e.getReason());
+                                                sendClient(commandId + " NO " + e.getMessage());
                                             }
                                         }
                                     } else {
@@ -439,8 +439,8 @@ public class ImapConnection extends AbstractConnection {
             DavGatewayTray.debug("Connection closed");
         } catch (Exception e) {
             StringBuilder buffer = new StringBuilder();
-            if (e instanceof HttpException) {
-                buffer.append(((HttpException) e).getReasonCode()).append(" ").append(((HttpException) e).getReason());
+            if (e.getMessage() != null) {
+                buffer.append(e.getMessage());
             } else {
                 buffer.append(e);
             }

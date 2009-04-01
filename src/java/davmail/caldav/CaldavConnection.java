@@ -148,8 +148,8 @@ public class CaldavConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug("Connection closed");
         } catch (IOException e) {
-            if (e instanceof HttpException) {
-                DavGatewayTray.error(((HttpException) e).getReasonCode() + " " + ((HttpException) e).getReason(), e);
+            if (e.getMessage() != null) {
+                DavGatewayTray.error(e.getMessage(), e);
             } else {
                 DavGatewayTray.error(e);
             }

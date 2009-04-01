@@ -181,13 +181,6 @@ public class ExchangeSession {
             message.append("DavMail login exception: ");
             if (exc.getMessage() != null) {
                 message.append(exc.getMessage());
-            } else if (exc instanceof HttpException) {
-                message.append(((HttpException) exc).getReasonCode());
-                String httpReason = ((HttpException) exc).getReason();
-                if (httpReason != null) {
-                    message.append(" ");
-                    message.append(httpReason);
-                }
             } else {
                 message.append(exc);
             }
