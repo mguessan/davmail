@@ -87,7 +87,6 @@ public final class DavGatewayHttpClientFacade {
             httpClient.getHostConfiguration().setProxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyUser.length() > 0) {
 
-                // Only available in newer HttpClient releases, not compatible with slide library
                 ArrayList<String> authPrefs = new ArrayList<String>();
                 authPrefs.add(AuthPolicy.DIGEST);
                 authPrefs.add(AuthPolicy.BASIC);
@@ -96,7 +95,7 @@ public final class DavGatewayHttpClientFacade {
 
                 AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
 
-                // instead detect ntlm authentication (windows domain name in user name)
+                // detect ntlm authentication (windows domain name in user name)
                 int backslashindex = proxyUser.indexOf("\\");
                 if (backslashindex > 0) {
                     httpClient.getState().setProxyCredentials(authScope,
