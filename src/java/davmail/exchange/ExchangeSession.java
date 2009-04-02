@@ -83,6 +83,11 @@ public class ExchangeSession {
         CONTENT_TAG.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
+    protected static final DavPropertyNameSet RESOURCE_TAG = new DavPropertyNameSet();
+
+    static {
+        RESOURCE_TAG.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
+    }
 
     public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
 
@@ -1644,12 +1649,12 @@ public class ExchangeSession {
     public String getCalendarEtag() throws IOException {
         String etag;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(calendarUrl), 0, EVENT_REQUEST_PROPERTIES);
+                httpClient, URIUtil.encodePath(calendarUrl), 0, RESOURCE_TAG);
         if (responses.length == 0) {
             throw new IOException("Unable to get calendar object");
         }
         MultiStatusResponse calendarResponse = responses[0];
-        etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
+        etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
         if (etag == null) {
             throw new IOException("Unable to get calendar etag");
         }
