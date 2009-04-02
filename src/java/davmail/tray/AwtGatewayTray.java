@@ -21,6 +21,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected AwtGatewayTray() {
     }
 
+    protected static AboutFrame aboutFrame;
+    protected static SettingsFrame settingsFrame;
+
     private static TrayIcon trayIcon = null;
     private static Image image = null;
     private static Image image2 = null;
@@ -68,20 +71,38 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     public void displayMessage(final String message, final Priority priority) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-            if (trayIcon != null) {
-                TrayIcon.MessageType messageType = null;
-                if (priority == Priority.INFO) {
-                    messageType = TrayIcon.MessageType.INFO;
-                } else if (priority == Priority.WARN) {
-                    messageType = TrayIcon.MessageType.WARNING;
-                } else if (priority == Priority.ERROR) {
-                    messageType = TrayIcon.MessageType.ERROR;
+                if (trayIcon != null) {
+                    TrayIcon.MessageType messageType = null;
+                    if (priority == Priority.INFO) {
+                        messageType = TrayIcon.MessageType.INFO;
+                    } else if (priority == Priority.WARN) {
+                        messageType = TrayIcon.MessageType.WARNING;
+                    } else if (priority == Priority.ERROR) {
+                        messageType = TrayIcon.MessageType.ERROR;
+                    }
+                    if (messageType != null) {
+                        trayIcon.displayMessage("DavMail gateway", message, messageType);
+                    }
+                    trayIcon.setToolTip("DavMail gateway \n" + message);
                 }
-                if (messageType != null) {
-                    trayIcon.displayMessage("DavMail gateway", message, messageType);
-                }
-                trayIcon.setToolTip("DavMail gateway \n" + message);
             }
+        });
+    }
+
+    public void about() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                aboutFrame.update();
+                aboutFrame.setVisible(true);
+            }
+        });
+    }
+
+    public void preferences() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                settingsFrame.reload();
+                settingsFrame.setVisible(true);
             }
         });
     }
@@ -94,7 +115,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
-    
 
     protected void createAndShowGUI() {
         // set native look and feel
@@ -113,12 +133,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // create a popup menu
         PopupMenu popup = new PopupMenu();
 
-        final AboutFrame aboutFrame = new AboutFrame();
+        aboutFrame = new AboutFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
         ActionListener aboutListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                aboutFrame.update();
-                aboutFrame.setVisible(true);
+                about();
             }
         };
         // create menu item for the default action
@@ -126,12 +145,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         aboutItem.addActionListener(aboutListener);
         popup.add(aboutItem);
 
-        final SettingsFrame settingsFrame = new SettingsFrame();
+        settingsFrame = new SettingsFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
         ActionListener settingsListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                settingsFrame.reload();
-                settingsFrame.setVisible(true);
+                preferences();
             }
         };
         // create menu item for the default action

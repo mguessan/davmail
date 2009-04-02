@@ -127,7 +127,11 @@ public class DavGatewayTray {
             if (davGatewayTray == null) {
                 try {
                     if (SystemTray.isSupported()) {
-                        davGatewayTray = new AwtGatewayTray();
+                        if (isOSX()) {
+                            davGatewayTray = new OSXAwtGatewayTray();
+                        } else {
+                            davGatewayTray = new AwtGatewayTray();
+                        }
                         davGatewayTray.init();
                     }
                 } catch (NoClassDefFoundError e) {
@@ -135,7 +139,7 @@ public class DavGatewayTray {
                 }
             }
             if (davGatewayTray == null) {
-                if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+                if (isOSX()) {
                     // MacOS
                     davGatewayTray = new OSXFrameGatewayTray();
                 } else {
@@ -144,6 +148,15 @@ public class DavGatewayTray {
                 davGatewayTray.init();
             }
         }
+    }
+
+    /**
+     * Test if running on OSX
+     *
+     * @return true on Mac OS X
+     */
+    protected static boolean isOSX() {
+        return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
     }
 
     /**
