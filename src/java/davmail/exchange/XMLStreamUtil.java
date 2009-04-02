@@ -23,8 +23,8 @@ public final class XMLStreamUtil {
         return inputFactory;
     }
 
-    public static Map<String,Map<String,String>> getElementContentsAsMap(InputStream inputStream, String rowName, String idName) throws IOException {
-        Map<String,Map<String,String>> results = new HashMap<String,Map<String,String>>();
+    public static Map<String, Map<String, String>> getElementContentsAsMap(InputStream inputStream, String rowName, String idName) throws IOException {
+        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
         Map<String, String> item = null;
         String currentElement = null;
         XMLStreamReader reader = null;
@@ -36,7 +36,9 @@ public final class XMLStreamUtil {
                 if (event == XMLStreamConstants.START_ELEMENT && rowName.equals(reader.getLocalName())) {
                     item = new HashMap<String, String>();
                 } else if (event == XMLStreamConstants.END_ELEMENT && rowName.equals(reader.getLocalName())) {
-                    results.put(item.get(idName).toLowerCase(),item);
+                    if (item.containsKey(idName)) {
+                        results.put(item.get(idName).toLowerCase(), item);
+                    }
                     item = null;
                 } else if (event == XMLStreamConstants.START_ELEMENT && item != null) {
                     currentElement = reader.getLocalName();
