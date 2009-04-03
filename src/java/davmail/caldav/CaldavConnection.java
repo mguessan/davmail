@@ -8,6 +8,7 @@ import davmail.exchange.ICSBufferedReader;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
@@ -177,6 +178,11 @@ public class CaldavConnection extends AbstractConnection {
         return result;
     }
 
+    protected boolean isIcal(Map<String, String> headers) {
+        String userAgent = headers.get("user-agent");
+        return userAgent != null &&  userAgent.indexOf("DAVKit")>=0;
+    }
+
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         int depth = getDepth(headers);
         String[] paths = path.replaceAll("//", "/").split("/");
@@ -188,7 +194,7 @@ public class CaldavConnection extends AbstractConnection {
 
         CaldavRequest request = null;
         if ("PROPFIND".equals(command) || "REPORT".equals(command)) {
-            request = new CaldavRequest(body);
+            request = new CaldavRequest(isIcal(headers), body);
         }
         if ("OPTIONS".equals(command)) {
             sendOptions();
@@ -240,7 +246,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])) {
             String etag = headers.get("if-match");
             String noneMatch = headers.get("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], paths[4].replaceAll("&amp;", "&"), body, etag, noneMatch);
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], xmlDecodeName(paths[4]), body, etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
                 responseHeaders.put("ETag", eventResult.etag);
@@ -253,7 +259,7 @@ public class CaldavConnection extends AbstractConnection {
             if ("inbox".equals(paths[3])) {
                 paths[3] = "INBOX";
             }
-            int status = session.deleteEvent(paths[2], paths[3], paths[4].replaceAll("&amp;", "&"));
+            int status = session.deleteEvent(paths[2], paths[3], xmlEncodeName(paths[4]));
             sendHttpResponse(status);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
@@ -281,7 +287,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, String path, ExchangeSession.Event event) throws IOException {
-        String eventPath = event.getPath().replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("&", "&amp;");
+        String eventPath = xmlEncodeName(event.getPath());
         response.startResponse("/users/" + session.getEmail() + "/" + path + "/" + URIUtil.encodeWithinQuery(eventPath));
         response.startPropstat();
         if (request.hasProperty("calendar-data")) {
@@ -429,7 +435,7 @@ public class CaldavConnection extends AbstractConnection {
         if (index < 0) {
             return null;
         } else {
-            return path.substring(index + 1).replaceAll("&amp;", "&");
+            return xmlDecodeName(path.substring(index + 1));
         }
     }
 
@@ -743,12 +749,52 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
+    /**
+     * Need to encode xml for iCal
+     *
+     * @param name decoded name
+     * @return name encoded name
+     */
+    protected String xmlEncodeName(String name) {
+        String result = name;
+        if (name.indexOf('&') >= 0) {
+            result = result.replaceAll("&", "&amp;");
+        }
+        if (name.indexOf('<') >= 0) {
+            result = result.replaceAll("<", "#lt#");
+        }
+        if (name.indexOf('>') >= 0) {
+            result = result.replaceAll(">", "#gt#");
+        }
+        return result;
+    }
+
+    /**
+     * Need to decode xml for iCal
+     *
+     * @param name encoded name
+     * @return name decoded name
+     */
+    protected String xmlDecodeName(String name) {
+        String result = name;
+        if (name.indexOf("&amp;") >= 0) {
+            result = result.replaceAll("&amp;", "&");
+        }
+        if (name.indexOf("#gt#") >= 0) {
+            result = result.replaceAll("#gt#", ">");
+        }
+        if (name.indexOf("#lt#") >= 0) {
+            result = result.replaceAll("#lt#", "<");
+        }
+        return result;
+    }
+
     protected static class CaldavRequest {
         protected final HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
 
-        public CaldavRequest(String body) throws IOException {
+        public CaldavRequest(boolean isIcal, String body) throws IOException {
             // parse body
             XMLStreamReader streamReader = null;
             try {
@@ -781,7 +827,11 @@ public class CaldavConnection extends AbstractConnection {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
-                            hrefs.add(URIUtil.decode(streamReader.getText()));
+                            if (isIcal) {
+                                hrefs.add(streamReader.getText());
+                            } else {
+                                hrefs.add(URIUtil.decode(streamReader.getText()));
+                            }
                         }
                         inElement = false;
                     }
