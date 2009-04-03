@@ -1414,7 +1414,7 @@ public class ExchangeSession {
     }
 
     public EventResult createOrUpdateEvent(String principal, String path, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(replacePrincipal(calendarUrl, principal) + "/" + URIUtil.decode(path));
+        String messageUrl = URIUtil.encodePathQuery(replacePrincipal(calendarUrl, principal) + "/" + path);
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
@@ -1613,12 +1613,12 @@ public class ExchangeSession {
             ArrayList<DavProperty> list = new ArrayList<DavProperty>();
             list.add(new DefaultDavProperty(DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:")), "CALDAV:schedule-processed"));
             list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
-            PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName, list);
+            PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal) + "/" + eventName), list);
             DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
             status = HttpStatus.SC_OK;
         } else {
             status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient,
-                    URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal)) + "/" + eventName);
+                    URIUtil.encodePath(replacePrincipal(getFolderPath(URIUtil.decode(path)), principal) + "/" + eventName));
         }
         return status;
     }

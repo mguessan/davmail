@@ -246,7 +246,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])) {
             String etag = headers.get("if-match");
             String noneMatch = headers.get("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], xmlDecodeName(paths[4]), body, etag, noneMatch);
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], xmlDecodeName(URIUtil.decode(paths[4])), body, etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
                 responseHeaders.put("ETag", eventResult.etag);
@@ -259,12 +259,12 @@ public class CaldavConnection extends AbstractConnection {
             if ("inbox".equals(paths[3])) {
                 paths[3] = "INBOX";
             }
-            int status = session.deleteEvent(paths[2], paths[3], xmlEncodeName(paths[4]));
+            int status = session.deleteEvent(paths[2], paths[3], xmlDecodeName(URIUtil.decode(paths[4])));
             sendHttpResponse(status);
         } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
                 // only current user for now
                 && session.getEmail().equalsIgnoreCase(paths[2])) {
-            ExchangeSession.Event event = session.getEvent(paths[2], paths[3], paths[4]);
+            ExchangeSession.Event event = session.getEvent(paths[2], paths[3],  xmlDecodeName(URIUtil.decode(paths[4])));
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
 
         } else {
@@ -460,6 +460,7 @@ public class CaldavConnection extends AbstractConnection {
                         appendEventResponse(response, request, path, session.getEvent(principal, path, eventName));
                     }
                 } catch (HttpException e) {
+                    DavGatewayTray.warn("Event not found:"+href);
                     notFound.add(href);
                 }
             }
@@ -761,10 +762,10 @@ public class CaldavConnection extends AbstractConnection {
             result = result.replaceAll("&", "&amp;");
         }
         if (name.indexOf('<') >= 0) {
-            result = result.replaceAll("<", "#lt#");
+            result = result.replaceAll("<", "&lt;");
         }
         if (name.indexOf('>') >= 0) {
-            result = result.replaceAll(">", "#gt#");
+            result = result.replaceAll(">", "&gt;");
         }
         return result;
     }
@@ -780,11 +781,11 @@ public class CaldavConnection extends AbstractConnection {
         if (name.indexOf("&amp;") >= 0) {
             result = result.replaceAll("&amp;", "&");
         }
-        if (name.indexOf("#gt#") >= 0) {
-            result = result.replaceAll("#gt#", ">");
+        if (name.indexOf("&gt;") >= 0) {
+            result = result.replaceAll("&gt;", ">");
         }
-        if (name.indexOf("#lt#") >= 0) {
-            result = result.replaceAll("#lt#", "<");
+        if (name.indexOf("&lt;") >= 0) {
+            result = result.replaceAll("&lt;", "<");
         }
         return result;
     }
