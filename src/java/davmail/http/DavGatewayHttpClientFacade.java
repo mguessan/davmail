@@ -1,7 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
@@ -73,6 +73,12 @@ public final class DavGatewayHttpClientFacade {
     public static void configureClient(HttpClient httpClient) {
         httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
 
+        ArrayList<String> authPrefs = new ArrayList<String>();
+        authPrefs.add(AuthPolicy.DIGEST);
+        authPrefs.add(AuthPolicy.BASIC);
+        // exclude the NTLM authentication scheme
+        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
+
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
         int proxyPort = 0;
@@ -90,12 +96,6 @@ public final class DavGatewayHttpClientFacade {
         if (proxyHost != null && proxyHost.length() > 0) {
             httpClient.getHostConfiguration().setProxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyUser.length() > 0) {
-
-                ArrayList<String> authPrefs = new ArrayList<String>();
-                authPrefs.add(AuthPolicy.DIGEST);
-                authPrefs.add(AuthPolicy.BASIC);
-                // exclude the NTLM authentication scheme
-                httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
                 AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
 
