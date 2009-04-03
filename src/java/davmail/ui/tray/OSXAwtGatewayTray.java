@@ -1,4 +1,4 @@
-package davmail.tray;
+package davmail.ui.tray;
 
 import davmail.ui.OSXAdapter;
 

@@ -17,7 +17,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 import davmail.Settings;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 /**
  * Manual Socket Factory.

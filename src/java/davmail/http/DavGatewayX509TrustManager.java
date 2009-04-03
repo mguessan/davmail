@@ -1,7 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import davmail.ui.AcceptCertificateDialog;
 
 import javax.net.ssl.TrustManager;

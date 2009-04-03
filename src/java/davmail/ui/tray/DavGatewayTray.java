@@ -1,7 +1,7 @@
-package davmail.tray;
+package davmail.ui.tray;
 
 import davmail.Settings;
-import davmail.ui.OSXFrameGatewayTray;
+import davmail.ui.tray.OSXFrameGatewayTray;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;

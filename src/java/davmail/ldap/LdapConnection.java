@@ -6,7 +6,7 @@ import com.sun.jndi.ldap.BerEncoder;
 import davmail.AbstractConnection;
 import davmail.Settings;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

@@ -1,7 +1,7 @@
 package davmail;
 
 import davmail.exchange.ExchangeSession;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.*;

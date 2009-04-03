@@ -1,7 +1,7 @@
 package davmail.ui;
 
 import davmail.http.DavGatewayX509TrustManager;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.*;

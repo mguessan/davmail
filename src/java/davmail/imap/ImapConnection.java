@@ -5,7 +5,7 @@ import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 
 import javax.mail.internet.MimeMessage;
@@ -621,7 +621,7 @@ public class ImapConnection extends AbstractConnection {
         buffer.append(')');
     }
 
-    protected void appendBodyStructureValue(StringBuilder buffer, String value) throws IOException, MessagingException {
+    protected void appendBodyStructureValue(StringBuilder buffer, String value) {
         if (value == null) {
             buffer.append(" NIL");
         } else {
@@ -629,7 +629,7 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected void appendBodyStructureValue(StringBuilder buffer, int value) throws IOException, MessagingException {
+    protected void appendBodyStructureValue(StringBuilder buffer, int value) {
         if (value < 0) {
             buffer.append(" NIL");
         } else {

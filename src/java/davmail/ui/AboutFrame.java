@@ -1,7 +1,7 @@
 package davmail.ui;
 
 import davmail.DavGateway;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

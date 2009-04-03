@@ -5,7 +5,7 @@ import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.auth.AuthenticationException;
@@ -440,7 +440,6 @@ public class CaldavConnection extends AbstractConnection {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         if (request.isMultiGet()) {
-            events = new ArrayList<ExchangeSession.Event>();
             int count = 0;
             int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {

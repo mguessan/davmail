@@ -1,6 +1,6 @@
 package davmail.ui;
 
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.net.URI;
 import java.net.URISyntaxException;

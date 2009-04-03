@@ -7,7 +7,7 @@ import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import davmail.imap.ImapServer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;

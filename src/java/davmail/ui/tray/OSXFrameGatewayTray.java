@@ -1,7 +1,8 @@
-package davmail.ui;
+package davmail.ui.tray;
 
-import davmail.tray.DavGatewayTray;
-import davmail.tray.FrameGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
+import davmail.ui.tray.FrameGatewayTray;
+import davmail.ui.OSXAdapter;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

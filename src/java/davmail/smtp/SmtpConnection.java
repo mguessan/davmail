@@ -2,7 +2,7 @@ package davmail.smtp;
 
 import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.AddressException;

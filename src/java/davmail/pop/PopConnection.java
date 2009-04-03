@@ -3,7 +3,7 @@ package davmail.pop;
 import davmail.AbstractConnection;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;

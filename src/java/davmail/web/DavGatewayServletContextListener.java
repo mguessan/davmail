@@ -2,7 +2,7 @@ package davmail.web;
 
 import davmail.Settings;
 import davmail.DavGateway;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletContextEvent;

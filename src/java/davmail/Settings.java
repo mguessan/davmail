@@ -1,6 +1,6 @@
 package davmail;
 
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.util.Properties;
 import java.io.*;

@@ -2,7 +2,7 @@ package davmail.ui;
 
 import davmail.DavGateway;
 import davmail.Settings;
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Level;
 
 import javax.swing.*;

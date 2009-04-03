@@ -1,6 +1,6 @@
 package davmail;
 
-import davmail.tray.DavGatewayTray;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.io.IOException;
 import java.net.Inet4Address;
