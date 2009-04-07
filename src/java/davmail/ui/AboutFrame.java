@@ -35,7 +35,7 @@ public class AboutFrame extends JFrame {
             imageLabel.setIcon(icon);
             JPanel imagePanel = new JPanel();
             imagePanel.add(imageLabel);
-            add("West", imagePanel);
+            add(BorderLayout.WEST, imagePanel);
         } catch (IOException e) {
             DavGatewayTray.error("Unable to create icon", e);
         }
@@ -66,7 +66,7 @@ public class AboutFrame extends JFrame {
 
         JPanel mainPanel = new JPanel();
         mainPanel.add(jEditorPane);
-        add("Center", mainPanel);
+        add(BorderLayout.CENTER, mainPanel);
 
         JPanel buttonPanel = new JPanel();
         JButton ok = new JButton("OK");
@@ -79,7 +79,7 @@ public class AboutFrame extends JFrame {
 
         buttonPanel.add(ok);
 
-        add("South", buttonPanel);
+        add(BorderLayout.SOUTH, buttonPanel);
 
         pack();
         setResizable(false);

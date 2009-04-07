@@ -143,8 +143,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                     awtImage = DavGatewayTray.loadImage("tray.png");
                     image = loadSwtImage("tray.png");
-                    image2 = loadSwtImage("tray2.png");
-                    inactiveImage = loadSwtImage("trayinactive.png");
+                    image2 = loadSwtImage(AwtGatewayTray.TRAY2_PNG);
+                    inactiveImage = loadSwtImage(AwtGatewayTray.TRAYINACTIVE_PNG);
 
                     trayItem.setImage(image);
 

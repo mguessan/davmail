@@ -18,6 +18,10 @@ import java.awt.event.ActionListener;
  * Tray icon handler based on java 1.6
  */
 public class AwtGatewayTray implements DavGatewayTrayInterface {
+    protected static final String TRAY2_PNG = "tray2.png";
+    protected static final String TRAY_PNG = "tray.png";
+    protected static final String TRAYINACTIVE_PNG = "trayinactive.png";
+
     protected AwtGatewayTray() {
     }
 
@@ -126,9 +130,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();
-        image = DavGatewayTray.loadImage("tray.png");
-        image2 = DavGatewayTray.loadImage("tray2.png");
-        inactiveImage = DavGatewayTray.loadImage("trayinactive.png");
+        image = DavGatewayTray.loadImage(TRAY_PNG);
+        image2 = DavGatewayTray.loadImage(TRAY2_PNG);
+        inactiveImage = DavGatewayTray.loadImage(TRAYINACTIVE_PNG);
 
         // create a popup menu
         PopupMenu popup = new PopupMenu();

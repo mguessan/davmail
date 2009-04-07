@@ -328,7 +328,7 @@ public class SettingsFrame extends JFrame {
 
         tabbedPane.add("Advanced", advancedPanel);
 
-        add("Center", tabbedPane);
+        add(BorderLayout.CENTER, tabbedPane);
 
         JPanel buttonPanel = new JPanel();
         JButton cancel = new JButton("Cancel");
@@ -388,7 +388,7 @@ public class SettingsFrame extends JFrame {
         buttonPanel.add(cancel);
         buttonPanel.add(help);
 
-        add("South", buttonPanel);
+        add(BorderLayout.SOUTH, buttonPanel);
 
         pack();
         //setResizable(false);

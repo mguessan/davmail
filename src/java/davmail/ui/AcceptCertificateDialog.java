@@ -10,7 +10,9 @@ import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Accept certificate dialog
@@ -36,7 +38,7 @@ public class AcceptCertificateDialog extends JDialog {
     public AcceptCertificateDialog(X509Certificate certificate) {
         setAlwaysOnTop(true);
         String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
-        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+        DateFormat formatter = DateFormat.getDateInstance(DateFormat.MEDIUM);
 
         setTitle("DavMail: Accept certificate ?");
         try {
