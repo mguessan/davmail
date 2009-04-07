@@ -119,6 +119,8 @@ public class ExchangeSession {
     private final ExchangeSessionFactory.PoolKey poolKey;
 
     private boolean disableGalLookup = false;
+    private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
+    private static final String YYYY_MMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
 
     /**
      * Create an exchange session for the given URL.
@@ -199,11 +201,32 @@ public class ExchangeSession {
         LOGGER.debug("Session " + this + " created");
     }
 
-    protected String formatDate(Date date) {
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    protected String formatSearchDate(Date date) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
         dateFormatter.setTimeZone(GMT_TIMEZONE);
         return dateFormatter.format(date);
     }
+
+    protected SimpleDateFormat getZuluDateFormat() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MMDD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormat.setTimeZone(GMT_TIMEZONE);
+        return dateFormat;
+    }
+
+    protected String formatZuluDate(Date date) {
+        return getZuluDateFormat().format(date);
+    }
+
+    protected Date parseZuluDate(String dateString) throws ParseException {
+        return getZuluDateFormat().parse(dateString);
+    }
+
+    protected Date parseDate(String dateString) throws ParseException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        dateFormat.setTimeZone(GMT_TIMEZONE);
+        return dateFormat.parse(dateString);
+    }
+
 
     public boolean isExpired() {
         boolean isExpired = false;
@@ -708,7 +731,7 @@ public class ExchangeSession {
         String searchRequest = "Select \"DAV:uid\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:isfolder\" = False\n" +
-                "                   AND \"DAV:getlastmodified\" < '" + formatDate(cal.getTime()) + "'\n";
+                "                   AND \"DAV:getlastmodified\" < '" + formatSearchDate(cal.getTime()) + "'\n";
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
@@ -1216,7 +1239,7 @@ public class ExchangeSession {
         if (caldavPastDelay != Integer.MAX_VALUE) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
-            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatDate(cal.getTime()) + "'\n";
+            dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatSearchDate(cal.getTime()) + "'\n";
         }
 
         String searchQuery = "Select \"DAV:getetag\"" +
@@ -1542,11 +1565,8 @@ public class ExchangeSession {
                     icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
                 }
                 if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
-                    SimpleDateFormat icalFormatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-                    icalFormatter.setTimeZone(GMT_TIMEZONE);
-
                     icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
-                            icalFormatter.format(new Date()) + "\r\nEND:VEVENT");
+                            formatZuluDate(new Date()) + "\r\nEND:VEVENT");
                 }
             }
         }
@@ -1709,7 +1729,7 @@ public class ExchangeSession {
     }
 
     public String replacePrincipal(String folderUrl, String principal) throws IOException {
-        if (!alias.equals(principal) && !email.equals(principal)) {
+        if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
             int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
                 return mailPath.substring(0, index) + "/" + principal + "/" + folderUrl.substring(inboxUrl.lastIndexOf("/"));
@@ -1883,32 +1903,25 @@ public class ExchangeSession {
             attendee = attendee.substring("mailto:".length());
         }
 
-        SimpleDateFormat icalParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-        icalParser.setTimeZone(GMT_TIMEZONE);
-
-        SimpleDateFormat shortIcalParser = new SimpleDateFormat("yyyyMMdd");
-        shortIcalParser.setTimeZone(GMT_TIMEZONE);
-
-        SimpleDateFormat owaFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        owaFormatter.setTimeZone(GMT_TIMEZONE);
+        SimpleDateFormat icalDateFormat = getZuluDateFormat();
 
         String url;
         Date startDate;
         Date endDate;
         try {
             if (startDateValue.length() == 8) {
-                startDate = shortIcalParser.parse(startDateValue);
+                startDate = parseDate(startDateValue);
             } else {
-                startDate = icalParser.parse(startDateValue);
+                startDate = icalDateFormat.parse(startDateValue);
             }
             if (endDateValue.length() == 8) {
-                endDate = shortIcalParser.parse(endDateValue);
+                endDate = parseDate(endDateValue);
             } else {
-                endDate = icalParser.parse(endDateValue);
+                endDate = icalDateFormat.parse(endDateValue);
             }
             url = "/public/?cmd=freebusy" +
-                    "&start=" + owaFormatter.format(startDate) +
-                    "&end=" + owaFormatter.format(endDate) +
+                    "&start=" + icalDateFormat.format(startDate) +
+                    "&end=" + icalDateFormat.format(endDate) +
                     "&interval=" + FREE_BUSY_INTERVAL +
                     "&u=SMTP:" + attendee;
         } catch (ParseException e) {
@@ -1929,7 +1942,7 @@ public class ExchangeSession {
             int endIndex = body.lastIndexOf("</a:fbdata>");
             if (startIndex >= 0 && endIndex >= 0) {
                 String fbdata = body.substring(startIndex + "<a:fbdata>".length(), endIndex);
-                freeBusy = new FreeBusy(icalParser, startDate, fbdata);
+                freeBusy = new FreeBusy(icalDateFormat, startDate, fbdata);
             }
         } finally {
             getMethod.releaseConnection();
