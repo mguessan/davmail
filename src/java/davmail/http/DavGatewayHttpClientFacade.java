@@ -9,6 +9,7 @@ import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
  */
 public final class DavGatewayHttpClientFacade {
     final static String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
+    final static int MAX_REDIRECTS = 10;
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
     final static long ONE_MINUTE = 60000;
@@ -47,6 +49,7 @@ public final class DavGatewayHttpClientFacade {
         // create an HttpClient instance
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
+        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
         configureClient(httpClient);
         return httpClient;
     }
@@ -54,6 +57,7 @@ public final class DavGatewayHttpClientFacade {
     public static HttpClient getInstance(HttpURL httpURL) throws URIException {
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
+        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
         hostConfig.setHost(httpURL);
         UsernamePasswordCredentials hostCredentials =
