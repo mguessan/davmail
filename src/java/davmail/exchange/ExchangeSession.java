@@ -1744,7 +1744,8 @@ public class ExchangeSession {
     public String getEmail(String alias) throws IOException {
         String emailResult = null;
         if (alias != null) {
-            GetMethod getMethod = new GetMethod("/public/?Cmd=galfind&AN=" + alias);
+            String path = "/public/?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
+            GetMethod getMethod = new GetMethod(path);
             try {
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
@@ -1755,7 +1756,8 @@ public class ExchangeSession {
                 if (result != null) {
                     emailResult = result.get("EM");
                 }
-
+            } catch (HttpException e) {
+                LOGGER.debug("GET " + path+" failed: "+e);
             } finally {
                 getMethod.releaseConnection();
             }
