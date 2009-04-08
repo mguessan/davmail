@@ -397,11 +397,11 @@ public class ExchangeSession {
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
                 LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail(method.getPath());
+                buildEmail(method);
                 LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(method.getPath());
+                buildEmail(method);
                 mailPath = "/exchange/" + email + "/";
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
@@ -1757,7 +1757,7 @@ public class ExchangeSession {
                     emailResult = result.get("EM");
                 }
             } catch (HttpException e) {
-                LOGGER.debug("GET " + path+" failed: "+e);
+                LOGGER.debug("GET " + path + " failed: " + e);
             } finally {
                 getMethod.releaseConnection();
             }
@@ -1765,7 +1765,7 @@ public class ExchangeSession {
         return emailResult;
     }
 
-    public void buildEmail(String methodPath) throws IOException {
+    public void buildEmail(HttpMethod method) throws IOException {
         // first try to get email from login name
         alias = getAliasFromLogin();
         email = getEmail(alias);
@@ -1781,14 +1781,31 @@ public class ExchangeSession {
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions(methodPath);
+            alias = getAliasFromOptions(method.getPath());
             email = getEmail(alias);
         }
         if (email == null) {
-            throw new IOException("Unable to get user email with alias " + getAliasFromLogin()
+            LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
                     + " or " + getAliasFromMailPath()
-                    + " or " + getAliasFromOptions(methodPath)
+                    + " or " + getAliasFromOptions(method.getPath())
             );
+            // last failover: build email from domain name and mailbox display name
+            StringBuilder buffer = new StringBuilder();
+            // most reliable alias
+            alias = getAliasFromMailboxDisplayName();
+            if (alias == null) {
+                alias = getAliasFromLogin();
+            }
+            if (alias != null) {
+                buffer.append(alias);
+                buffer.append('@');
+                String hostName = method.getURI().getHost();
+                int dotIndex = hostName.indexOf('.');
+                if (dotIndex >= 0) {
+                    buffer.append(hostName.substring(dotIndex + 1));
+                }
+            }
+            email = buffer.toString();
         }
     }
 
