@@ -857,7 +857,7 @@ public class LdapConnection extends AbstractConnection {
         final Map<String, SimpleFilter> andCriteria = new HashMap<String, SimpleFilter>();
 
         public void addFilter(String attributeName, SimpleFilter simpleFilter) {
-            filterString.append('(').append(attributeName).append('=').append(simpleFilter.value).append(')');
+            filterString.append('(').append(attributeName).append('=').append(simpleFilter.toString()).append(')');
 
             String exchangeAttributeName = CRITERIA_MAP.get(attributeName);
             if (exchangeAttributeName != null) {
@@ -920,6 +920,17 @@ public class LdapConnection extends AbstractConnection {
         SimpleFilter(String value, int ldapFilterOperator) {
             this.value = value;
             this.operator = ldapFilterOperator;
+        }
+
+        @Override
+        public String toString() {
+            if (SimpleFilter.STAR.equals(value)) {
+                return SimpleFilter.STAR;
+            } else if (operator == LDAP_FILTER_SUBSTRINGS) {
+                return SimpleFilter.STAR + value + SimpleFilter.STAR;
+            } else {
+                return value;
+            }
         }
     }
 

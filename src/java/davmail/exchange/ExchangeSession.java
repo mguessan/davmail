@@ -1882,7 +1882,7 @@ public class ExchangeSession {
         } finally {
             getMethod.releaseConnection();
         }
-
+        LOGGER.debug("galfind "+searchAttribute+"="+searchValue+": "+results.size()+" result(s)");
         return results;
     }
 
