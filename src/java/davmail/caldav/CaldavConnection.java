@@ -435,6 +435,7 @@ public class CaldavConnection extends AbstractConnection {
             int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {
                 DavGatewayTray.debug("Report event " + (++count) + "/" + total);
+                DavGatewayTray.switchIcon();
                 try {
                     String eventName = getEventFileNameFromPath(href);
                     if (eventName == null) {
