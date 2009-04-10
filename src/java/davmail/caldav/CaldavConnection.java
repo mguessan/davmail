@@ -8,7 +8,6 @@ import davmail.exchange.ICSBufferedReader;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
@@ -165,88 +164,79 @@ public class CaldavConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    protected int getDepth(Map<String, String> headers) {
-        int result = 0;
-        String depthValue = headers.get("depth");
-        if (depthValue != null) {
-            try {
-                result = Integer.valueOf(depthValue);
-            } catch (NumberFormatException e) {
-                DavGatewayTray.warn("Invalid depth value: " + depthValue);
-            }
-        }
-        return result;
-    }
-
-    protected boolean isIcal(Map<String, String> headers) {
-        String userAgent = headers.get("user-agent");
-        return userAgent != null &&  userAgent.indexOf("DAVKit")>=0;
-    }
-
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
-        int depth = getDepth(headers);
-        String[] paths = path.replaceAll("//", "/").split("/");
-
+        CaldavRequest request = new CaldavRequest(command, path, headers, body);
         // full debug trace
         if (wireLogger.isDebugEnabled()) {
-            wireLogger.debug("Caldav command: " + command + " " + path + " depth: " + depth + "\n" + body);
+            wireLogger.debug("Caldav command: " + request.toString());
         }
-
-        CaldavRequest request = null;
-        if ("PROPFIND".equals(command) || "REPORT".equals(command)) {
-            request = new CaldavRequest(isIcal(headers), body);
-        }
-        if ("OPTIONS".equals(command)) {
+        if (request.isOptions()) {
             sendOptions();
-            // redirect PROPFIND on / to current user principal
-        } else if ("PROPFIND".equals(command) && (paths.length == 0 || paths.length == 1)) {
+        } else if (request.isPropFind() && request.isRoot()) {
             sendRoot(request);
-        } else if ("GET".equals(command) && (paths.length == 0 || paths.length == 1)) {
+        } else if (request.isGet() && request.isRoot()) {
             sendGetRoot();
-            // return current user calendar
-        } else if ("calendar".equals(paths[1])) {
+            // deprecated url, will be removed
+        } else if (request.isPath(1, "calendar")) {
             StringBuilder message = new StringBuilder();
             message.append("/calendar no longer supported, recreate calendar with /users/")
                     .append(session.getEmail()).append("/calendar");
             DavGatewayTray.error(message.toString());
             sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
-        } else if ("user".equals(paths[1])) {
-            sendRedirect(headers, "/principals/users/" + session.getEmail());
-            // principal namespace
-        } else if ("PROPFIND".equals(command) && "principals".equals(paths[1]) && paths.length == 4 &&
-                "users".equals(paths[2])) {
-            sendPrincipal(request, paths[3]);
+            // /principals/users namespace
+        } else if (request.isPath(1, "principals") && request.isPath(2, "users")) {
+            handleUserPrincipals(request);
+            // users root
+        } else if (request.isPath(1, "users") && request.getPathLength() >= 3) {
+            handleUsers(request);
+        } else {
+            sendUnsupported(request);
+        }
+    }
+
+    protected void handleUserPrincipals(CaldavRequest request) throws IOException {
+        if (request.isPropFind() && request.isPathLength(4)) {
+            sendPrincipal(request, request.getPathElement(3));
+        } else if (request.isPropFind() && request.isPathLength(4)) {
+            sendPrincipal(request, request.getPathElement(3));
             // send back principal on search
-        } else if ("REPORT".equals(command) && "principals".equals(paths[1]) && paths.length == 3 &&
-                "users".equals(paths[2])) {
+        } else if (request.isReport() && request.isPathLength(3)) {
             sendPrincipal(request, session.getEmail());
-            // user root
-        } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 3) {
-            sendUserRoot(request, depth, paths[2]);
-        } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
-            sendInbox(request, depth, paths[2]);
-        } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "inbox".equals(paths[3])) {
-            reportEvents(request, paths[2], "INBOX");
-        } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
-            sendOutbox(request, paths[2]);
-        } else if ("POST".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "outbox".equals(paths[3])) {
-            if (body.indexOf("VFREEBUSY") >= 0) {
-                sendFreeBusy(body);
+        } else {
+            sendUnsupported(request);
+        }
+    }
+
+    protected void handleUsers(CaldavRequest request) throws IOException {
+        String principal = request.getPathElement(2);
+        String folderName = request.getPathElement(3);
+        if (request.isPropFind() && request.isPathLength(3)) {
+            sendUserRoot(request, principal);
+        } else if (request.isPropFind() && request.isPathLength(4) && "inbox".equals(folderName)) {
+            sendInbox(request, principal);
+        } else if (request.isReport() && request.isPathLength(4) && "inbox".equals(folderName)) {
+            reportEvents(request, principal, "INBOX");
+        } else if (request.isPropFind() && request.isPathLength(4) && "outbox".equals(folderName)) {
+            sendOutbox(request, principal);
+        } else if (request.isPost() && request.isPathLength(4) && "outbox".equals(folderName)) {
+            if (request.isFreeBusy()) {
+                sendFreeBusy(request.getBody());
             } else {
-                int status = session.sendEvent(body);
+                int status = session.sendEvent(request.getBody());
                 sendHttpResponse(status);
             }
-        } else if ("PROPFIND".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
-            sendCalendar(request, depth, paths[2]);
-        } else if ("PROPPATCH".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
+        } else if (request.isPropFind() && request.isPathLength(4) && "calendar".equals(folderName)) {
+            sendCalendar(request, principal);
+        } else if (request.isPropPatch() && request.isPathLength(4) && "calendar".equals(folderName)) {
             patchCalendar();
-        } else if ("REPORT".equals(command) && "users".equals(paths[1]) && paths.length == 4 && "calendar".equals(paths[3])) {
-            reportEvents(request, paths[2], "calendar");
+        } else if (request.isReport() && request.isPathLength(4) && "calendar".equals(folderName)) {
+            reportEvents(request, principal, "calendar");
 
-        } else if ("PUT".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])) {
-            String etag = headers.get("if-match");
-            String noneMatch = headers.get("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(paths[2], xmlDecodeName(URIUtil.decode(paths[4])), body, etag, noneMatch);
+        } else if (request.isPut() && request.isPathLength(5) && "calendar".equals(folderName)) {
+            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
+            String etag = request.getHeader("if-match");
+            String noneMatch = request.getHeader("if-none-match");
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(principal, eventName, request.getBody(), etag, noneMatch);
             if (eventResult.etag != null) {
                 HashMap<String, String> responseHeaders = new HashMap<String, String>();
                 responseHeaders.put("ETag", eventResult.etag);
@@ -255,24 +245,19 @@ public class CaldavConnection extends AbstractConnection {
                 sendHttpResponse(eventResult.status);
             }
 
-        } else if ("DELETE".equals(command) && "users".equals(paths[1]) && paths.length == 5) {
-            if ("inbox".equals(paths[3])) {
-                paths[3] = "INBOX";
+        } else if (request.isDelete() && request.isPathLength(5)) {
+            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
+            if ("inbox".equals(folderName)) {
+                folderName = "INBOX";
             }
-            int status = session.deleteEvent(paths[2], paths[3], xmlDecodeName(URIUtil.decode(paths[4])));
+            int status = session.deleteEvent(principal, folderName, eventName);
             sendHttpResponse(status);
-        } else if ("GET".equals(command) && "users".equals(paths[1]) && paths.length == 5 && "calendar".equals(paths[3])
-                // only current user for now
-                && session.getEmail().equalsIgnoreCase(paths[2])) {
-            ExchangeSession.Event event = session.getEvent(paths[2], paths[3],  xmlDecodeName(URIUtil.decode(paths[4])));
+        } else if (request.isGet() && request.isPathLength(5) && "calendar".equals(folderName)) {
+            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
+            ExchangeSession.Event event = session.getEvent(principal, folderName, eventName);
             sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
-
         } else {
-            StringBuilder message = new StringBuilder();
-            message.append("Unsupported request: ").append(command).append(" ").append(path);
-            message.append(" Depth: ").append(depth).append("\n").append(body);
-            DavGatewayTray.error(message.toString());
-            sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
+            sendUnsupported(request);
         }
     }
 
@@ -386,11 +371,11 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
     }
 
-    public void sendInbox(CaldavRequest request, int depth, String principal) throws IOException {
+    public void sendInbox(CaldavRequest request, String principal) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendInbox(response, principal, request);
-        if (depth == 1) {
+        if (request.getDepth() == 1) {
             DavGatewayTray.debug("Searching calendar messages...");
             List<ExchangeSession.Event> events = session.getEventMessages(principal);
             DavGatewayTray.debug("Found " + events.size() + " calendar messages");
@@ -408,11 +393,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
-    public void sendCalendar(CaldavRequest request, int depth, String principal) throws IOException {
+    public void sendCalendar(CaldavRequest request, String principal) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendCalendar(response, principal, request);
-        if (depth == 1) {
+        if (request.getDepth() == 1) {
             DavGatewayTray.debug("Searching calendar events...");
             List<ExchangeSession.Event> events = session.getAllEvents(principal);
             DavGatewayTray.debug("Found " + events.size() + " calendar events");
@@ -460,7 +445,7 @@ public class CaldavConnection extends AbstractConnection {
                         appendEventResponse(response, request, path, session.getEvent(principal, path, eventName));
                     }
                 } catch (HttpException e) {
-                    DavGatewayTray.warn("Event not found:"+href);
+                    DavGatewayTray.warn("Event not found:" + href);
                     notFound.add(href);
                 }
             }
@@ -482,12 +467,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
-    public void sendUserRoot(CaldavRequest request, int depth, String principal) throws IOException {
+    public void sendUserRoot(CaldavRequest request, String principal) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         response.startResponse("/users/" + principal);
         response.startPropstat();
-
 
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype", "<D:collection/>");
@@ -496,7 +480,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:displayname", principal);
         }
         response.endPropStatOK();
-        if (depth == 1) {
+        if (request.getDepth() == 1) {
             appendInbox(response, principal, request);
             appendOutbox(response, principal, request);
             appendCalendar(response, principal, request);
@@ -657,6 +641,13 @@ public class CaldavConnection extends AbstractConnection {
         sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
     }
 
+    public void sendUnsupported(CaldavRequest request) throws IOException {
+        StringBuilder message = new StringBuilder();
+        message.append("Unsupported request: ").append(request.toString());
+        DavGatewayTray.error(message.toString());
+        sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
+    }
+
     public void sendErr(int status, String message) throws IOException {
         sendHttpResponse(status, null, "text/plain;charset=UTF-8", message, false);
     }
@@ -791,12 +782,125 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected static class CaldavRequest {
+        protected String command;
+        protected String path;
+        protected String[] pathElements;
+        protected Map<String, String> headers;
+        protected int depth;
+        protected String body;
         protected final HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
 
-        public CaldavRequest(boolean isIcal, String body) throws IOException {
-            // parse body
+        public CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
+            this.command = command;
+            this.path = path.replaceAll("//", "/");
+            pathElements = this.path.split("/");
+            this.headers = headers;
+            buildDepth();
+            this.body = body;
+
+            if (isPropFind() || isReport()) {
+                parseXmlBody();
+            }
+        }
+
+        public boolean isOptions() {
+            return "OPTIONS".equals(command);
+        }
+
+        public boolean isPropFind() {
+            return "PROPFIND".equals(command);
+        }
+
+        public boolean isPropPatch() {
+            return "PROPFIND".equals(command);
+        }
+
+        public boolean isReport() {
+            return "REPORT".equals(command);
+        }
+
+        public boolean isGet() {
+            return "GET".equals(command);
+        }
+
+        public boolean isPut() {
+            return "PUT".equals(command);
+        }
+
+        public boolean isPost() {
+            return "POST".equals(command);
+        }
+
+        public boolean isDelete() {
+            return "DELETE".equals(command);
+        }
+
+        public boolean isRoot() {
+            return (pathElements.length == 0 || pathElements.length == 1);
+        }
+
+        public boolean isPathLength(int length) {
+            return pathElements.length == length;
+        }
+
+        public int getPathLength() {
+            return pathElements.length;
+        }
+
+        /**
+         * Check if path element at index is value
+         *
+         * @param index path element index
+         * @param value path value
+         * @return true if path element at index is value
+         */
+        public boolean isPath(int index, String value) {
+            return value != null && value.equals(getPathElement(index));
+        }
+
+        protected String getPathElement(int index) {
+            if (index < pathElements.length) {
+                return pathElements[index];
+            } else {
+                return null;
+            }
+        }
+
+        protected boolean isIcal() {
+            String userAgent = headers.get("user-agent");
+            return userAgent != null && userAgent.indexOf("DAVKit") >= 0;
+        }
+
+        public boolean isFreeBusy() {
+            return body != null && body.indexOf("VFREEBUSY") >= 0;
+        }
+
+        protected void buildDepth() {
+            String depthValue = headers.get("depth");
+            if (depthValue != null) {
+                try {
+                    depth = Integer.valueOf(depthValue);
+                } catch (NumberFormatException e) {
+                    DavGatewayTray.warn("Invalid depth value: " + depthValue);
+                }
+            }
+        }
+
+        public int getDepth() {
+            return depth;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public String getHeader(String headerName) {
+            return headers.get(headerName);
+        }
+
+        protected void parseXmlBody() throws IOException {
             XMLStreamReader streamReader = null;
             try {
                 XMLInputFactory inputFactory = XMLInputFactory.newInstance();
@@ -828,7 +932,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
-                            if (isIcal) {
+                            if (isIcal()) {
                                 hrefs.add(streamReader.getText());
                             } else {
                                 hrefs.add(URIUtil.decode(streamReader.getText()));
@@ -860,6 +964,11 @@ public class CaldavConnection extends AbstractConnection {
 
         public Set<String> getHrefs() {
             return hrefs;
+        }
+
+        @Override
+        public String toString() {
+            return command + " " + path + " Depth: " + depth + "\n" + body;
         }
     }
 
@@ -946,15 +1055,11 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void endPropStatOK() throws IOException {
-            writer.write("</D:prop>");
-            writer.write("<D:status>HTTP/1.1 200 OK</D:status>");
-            writer.write("</D:propstat>");
+            writer.write("</D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat>");
         }
 
         public void appendPropstatNotFound() throws IOException {
-            writer.write("<D:propstat>");
-            writer.write("<D:status>HTTP/1.1 404 Not Found</D:status>");
-            writer.write("</D:propstat>");
+            writer.write("<D:propstat><D:status>HTTP/1.1 404 Not Found</D:status></D:propstat>");
         }
 
         public void endResponse() throws IOException {
@@ -970,13 +1075,9 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void startRecipientResponse(String recipient) throws IOException {
-            writer.write("<C:response>");
-            writer.write("<C:recipient>");
-            writer.write("<D:href>");
+            writer.write("<C:response><C:recipient><D:href>");
             writer.write(recipient);
-            writer.write("</D:href>");
-            writer.write("</C:recipient>");
-            writer.write("<C:request-status>2.0;Success</C:request-status>");
+            writer.write("</D:href></C:recipient><C:request-status>2.0;Success</C:request-status>");
         }
 
         public void endRecipientResponse() throws IOException {
