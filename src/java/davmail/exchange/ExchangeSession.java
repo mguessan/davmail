@@ -751,6 +751,13 @@ public class ExchangeSession {
         while (!".".equals(line)) {
             mailBuffer.append(line).append((char) 13).append((char) 10);
             line = reader.readLine();
+            // Exchange 2007 : skip From: header
+            if ((inHeader && line.length() >= 5)) {
+                String prefix = line.substring(0, 5).toLowerCase();
+                if ("from:".equals(prefix)) {
+                    line = reader.readLine();
+                }
+            }
 
             if (inHeader && line.length() == 0) {
                 inHeader = false;
@@ -763,13 +770,6 @@ public class ExchangeSession {
                 if ("to:".equals(prefix) || "cc:".equals(prefix) || inRecipientHeader) {
                     inRecipientHeader = true;
                     recipientBuffer.append(line);
-                }
-            }
-            // Exchange 2007 : skip From: header
-            if ((inHeader && line.length() >= 5)) {
-                String prefix = line.substring(0, 5).toLowerCase();
-                if ("from:".equals(prefix)) {
-                    line = reader.readLine();
                 }
             }
             // patch thunderbird html in reply for correct outlook display
@@ -792,9 +792,9 @@ public class ExchangeSession {
             if (bccBuffer.length() > 0) {
                 bccBuffer.append(',');
             }
-            bccBuffer.append("&lt;");
+            bccBuffer.append("<");
             bccBuffer.append(recipient);
-            bccBuffer.append("&gt;");
+            bccBuffer.append(">");
         }
 
         String bcc = bccBuffer.toString();
