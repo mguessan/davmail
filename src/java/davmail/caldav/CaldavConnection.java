@@ -265,7 +265,7 @@ public class CaldavConnection extends AbstractConnection {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
-            DavGatewayTray.debug("Retrieving event " + (++count) + "/" + size);
+            DavGatewayTray.debug("Listing event " + (++count) + "/" + size);
             DavGatewayTray.switchIcon();
             appendEventResponse(response, request, path, event);
         }

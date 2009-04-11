@@ -120,7 +120,8 @@ public class ExchangeSession {
 
     private boolean disableGalLookup = false;
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
-    private static final String YYYY_MMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
+    private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
+    private static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     /**
      * Create an exchange session for the given URL.
@@ -208,17 +209,15 @@ public class ExchangeSession {
     }
 
     protected SimpleDateFormat getZuluDateFormat() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MMDD_T_HHMMSS_Z, Locale.ENGLISH);
+        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYYMMDD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
 
-    protected String formatZuluDate(Date date) {
-        return getZuluDateFormat().format(date);
-    }
-
-    protected Date parseZuluDate(String dateString) throws ParseException {
-        return getZuluDateFormat().parse(dateString);
+    protected SimpleDateFormat getExchangeZuluDateFormat() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormat.setTimeZone(GMT_TIMEZONE);
+        return dateFormat;
     }
 
     protected Date parseDate(String dateString) throws ParseException {
@@ -1566,7 +1565,7 @@ public class ExchangeSession {
                 }
                 if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
                     icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
-                            formatZuluDate(new Date()) + "\r\nEND:VEVENT");
+                            getZuluDateFormat().format(new Date()) + "\r\nEND:VEVENT");
                 }
             }
         }
@@ -1922,6 +1921,7 @@ public class ExchangeSession {
             attendee = attendee.substring("mailto:".length());
         }
 
+        SimpleDateFormat exchangeZuluDateFormat = getExchangeZuluDateFormat();
         SimpleDateFormat icalDateFormat = getZuluDateFormat();
 
         String url;
@@ -1939,8 +1939,8 @@ public class ExchangeSession {
                 endDate = icalDateFormat.parse(endDateValue);
             }
             url = "/public/?cmd=freebusy" +
-                    "&start=" + icalDateFormat.format(startDate) +
-                    "&end=" + icalDateFormat.format(endDate) +
+                    "&start=" + exchangeZuluDateFormat.format(startDate) +
+                    "&end=" + exchangeZuluDateFormat.format(endDate) +
                     "&interval=" + FREE_BUSY_INTERVAL +
                     "&u=SMTP:" + attendee;
         } catch (ParseException e) {
