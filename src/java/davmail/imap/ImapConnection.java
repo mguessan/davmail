@@ -423,11 +423,10 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     sendClient("BAD Null command");
                 }
+                DavGatewayTray.resetIcon();
             }
 
-
             os.flush();
-            DavGatewayTray.resetIcon();
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
             try {
