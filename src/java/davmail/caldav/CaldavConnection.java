@@ -110,7 +110,7 @@ public class CaldavConnection extends AbstractConnection {
                     String command = tokens.nextToken();
                     Map<String, String> headers = parseHeaders();
                     if (tokens.hasMoreTokens()) {
-                        String path = tokens.nextToken();
+                        String path = URIUtil.decode(tokens.nextToken());
                         String content = getContent(headers.get("content-length"));
                         setSocketTimeout(headers.get("keep-alive"));
                         // client requested connection close
@@ -187,8 +187,15 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPath(1, "principals") && request.isPath(2, "users")) {
             handleUserPrincipals(request);
             // users root
-        } else if (request.isPath(1, "users") && request.getPathLength() >= 3) {
-            handleUsers(request);
+        } else if (request.isPath(1, "users")) {
+            // principal request
+            if (request.isPropFind() && request.isPathLength(3)) {
+                sendUserRoot(request);
+            } else {
+                handleCalendar(request, 3);
+            }
+        } else if (request.isPath(1, "public")) {
+            handleCalendar(request, 2);
         } else {
             sendUnsupported(request);
         }
@@ -207,73 +214,71 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    protected void handleUsers(CaldavRequest request) throws IOException {
-        String principal = request.getPathElement(2);
-        String folderName = request.getPathElement(3);
-        if (request.isPropFind() && request.isPathLength(3)) {
-            sendUserRoot(request, principal);
-        } else if (request.isPropFind() && request.isPathLength(4) && "inbox".equals(folderName)) {
-            sendInbox(request, principal);
-        } else if (request.isReport() && request.isPathLength(4) && "inbox".equals(folderName)) {
-            reportEvents(request, principal, "INBOX");
-        } else if (request.isPropFind() && request.isPathLength(4) && "outbox".equals(folderName)) {
-            sendOutbox(request, principal);
-        } else if (request.isPost() && request.isPathLength(4) && "outbox".equals(folderName)) {
-            if (request.isFreeBusy()) {
-                sendFreeBusy(request.getBody());
-            } else {
-                int status = session.sendEvent(request.getBody());
+    protected void handleCalendar(CaldavRequest request, int depth) throws IOException {
+        String folderName = request.getPathElement(depth);
+        // folder request
+        if (request.isPathLength(depth + 1)) {
+            if (request.isPropFind() && "inbox".equals(folderName)) {
+                sendInbox(request);
+            } else if (request.isPropFind() && "outbox".equals(folderName)) {
+                sendOutbox(request);
+            } else if (request.isPost() && "outbox".equals(folderName)) {
+                if (request.isFreeBusy()) {
+                    sendFreeBusy(request.getBody());
+                } else {
+                    int status = session.sendEvent(request.getBody());
+                    sendHttpResponse(status);
+                }
+            } else if (request.isPropFind()) {
+                sendCalendar(request);
+            } else if (request.isPropPatch()) {
+                patchCalendar();
+            } else if (request.isReport()) {
+                reportEvents(request);
+            }
+            // event request
+        } else if (request.isPathLength(depth + 2)) {
+            String eventName = xmlDecodeName(request.getPathElement(depth + 1));
+            if (request.isPut()) {
+                String etag = request.getHeader("if-match");
+                String noneMatch = request.getHeader("if-none-match");
+                ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(request.getFolderPath(), eventName, request.getBody(), etag, noneMatch);
+                if (eventResult.etag != null) {
+                    HashMap<String, String> responseHeaders = new HashMap<String, String>();
+                    responseHeaders.put("ETag", eventResult.etag);
+                    sendHttpResponse(eventResult.status, responseHeaders, null, "", true);
+                } else {
+                    sendHttpResponse(eventResult.status);
+                }
+
+            } else if (request.isDelete()) {
+                int status = session.deleteEvent(request.getFolderPath(), eventName);
                 sendHttpResponse(status);
-            }
-        } else if (request.isPropFind() && request.isPathLength(4) && "calendar".equals(folderName)) {
-            sendCalendar(request, principal);
-        } else if (request.isPropPatch() && request.isPathLength(4) && "calendar".equals(folderName)) {
-            patchCalendar();
-        } else if (request.isReport() && request.isPathLength(4) && "calendar".equals(folderName)) {
-            reportEvents(request, principal, "calendar");
-
-        } else if (request.isPut() && request.isPathLength(5) && "calendar".equals(folderName)) {
-            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
-            String etag = request.getHeader("if-match");
-            String noneMatch = request.getHeader("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(principal, eventName, request.getBody(), etag, noneMatch);
-            if (eventResult.etag != null) {
-                HashMap<String, String> responseHeaders = new HashMap<String, String>();
-                responseHeaders.put("ETag", eventResult.etag);
-                sendHttpResponse(eventResult.status, responseHeaders, null, "", true);
+            } else if (request.isGet()) {
+                ExchangeSession.Event event = session.getEvent(request.getFolderPath(), eventName);
+                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
             } else {
-                sendHttpResponse(eventResult.status);
+                sendUnsupported(request);
             }
 
-        } else if (request.isDelete() && request.isPathLength(5)) {
-            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
-            if ("inbox".equals(folderName)) {
-                folderName = "INBOX";
-            }
-            int status = session.deleteEvent(principal, folderName, eventName);
-            sendHttpResponse(status);
-        } else if (request.isGet() && request.isPathLength(5) && "calendar".equals(folderName)) {
-            String eventName = xmlDecodeName(URIUtil.decode(request.getPathElement(4)));
-            ExchangeSession.Event event = session.getEvent(principal, folderName, eventName);
-            sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
         } else {
             sendUnsupported(request);
         }
     }
 
-    protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, String path, List<ExchangeSession.Event> events) throws IOException {
+    protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Event> events) throws IOException {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
             DavGatewayTray.debug("Listing event " + (++count) + "/" + size);
             DavGatewayTray.switchIcon();
-            appendEventResponse(response, request, path, event);
+            appendEventResponse(response, request, event);
         }
     }
 
-    protected void appendEventResponse(CaldavResponse response, CaldavRequest request, String path, ExchangeSession.Event event) throws IOException {
+    protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
         String eventPath = xmlEncodeName(event.getPath());
-        response.startResponse("/users/" + session.getEmail() + "/" + path + "/" + URIUtil.encodeWithinQuery(eventPath));
+        response.startResponse(URIUtil.encodePath(request.getPath()) + "/" + URIUtil.encodeWithinQuery(eventPath));
         response.startPropstat();
         if (request.hasProperty("calendar-data")) {
             response.appendCalendarData(event.getICS());
@@ -294,8 +299,12 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
-    public void appendCalendar(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
-        response.startResponse("/users/" + principal + "/calendar");
+    public void appendCalendar(CaldavResponse response, CaldavRequest request) throws IOException {
+        if (request.isLastPath("calendar")) {
+            response.startResponse(URIUtil.encodePath(request.getPath()));
+        } else {
+            response.startResponse(URIUtil.encodePath(request.getPath()) + "/calendar");
+        }
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -303,7 +312,11 @@ public class CaldavConnection extends AbstractConnection {
                     "<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
         }
         if (request.hasProperty("owner")) {
-            response.appendProperty("D:owner", "<D:href>/principals/users/" + principal + "</D:href>");
+            if ("users".equals(request.getPathElement(1))) {
+                response.appendProperty("D:owner", "<D:href>/principals/users/" + request.getPathElement(2) + "</D:href>");
+            } else {
+                response.appendProperty("D:owner", "<D:href>/principals" + request.getPath() + "</D:href>");
+            }
         }
         if (request.hasProperty("getcontenttype")) {
             response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
@@ -316,14 +329,18 @@ public class CaldavConnection extends AbstractConnection {
                     base64Encode(session.getCalendarCtag()));
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", "calendar");
+            response.appendProperty("D:displayname", request.getPathElement(request.getPathLength() - 1));
         }
         response.endPropStatOK();
         response.endResponse();
     }
 
-    public void appendInbox(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
-        response.startResponse("/users/" + principal + "/inbox");
+    public void appendInbox(CaldavResponse response, CaldavRequest request) throws IOException {
+        if (request.isLastPath("inbox")) {
+            response.startResponse(URIUtil.encodePath(request.getPath()));
+        } else {
+            response.startResponse(URIUtil.encodePath(request.getPath()) + "/inbox");
+        }
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -344,8 +361,12 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
-    public void appendOutbox(CaldavResponse response, String principal, CaldavRequest request) throws IOException {
-        response.startResponse("/users/" + principal + "/outbox");
+    public void appendOutbox(CaldavResponse response, CaldavRequest request) throws IOException {
+        if (request.isLastPath("outbox")) {
+            response.startResponse(URIUtil.encodePath(request.getPath()));
+        } else {
+            response.startResponse(URIUtil.encodePath(request.getPath()) + "/outbox");
+        }
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -371,37 +392,38 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
     }
 
-    public void sendInbox(CaldavRequest request, String principal) throws IOException {
+    public void sendInbox(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        appendInbox(response, principal, request);
+        appendInbox(response, request);
         if (request.getDepth() == 1) {
             DavGatewayTray.debug("Searching calendar messages...");
-            List<ExchangeSession.Event> events = session.getEventMessages(principal);
+            List<ExchangeSession.Event> events = session.getEventMessages(request.getFolderPath());
             DavGatewayTray.debug("Found " + events.size() + " calendar messages");
-            appendEventsResponses(response, request, "inbox", events);
+            appendEventsResponses(response, request, events);
         }
         response.endMultistatus();
         response.close();
     }
 
-    public void sendOutbox(CaldavRequest request, String principal) throws IOException {
+    public void sendOutbox(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        appendOutbox(response, principal, request);
+        appendOutbox(response, request);
         response.endMultistatus();
         response.close();
     }
 
-    public void sendCalendar(CaldavRequest request, String principal) throws IOException {
+    public void sendCalendar(CaldavRequest request) throws IOException {
+        String folderPath = request.getFolderPath();
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        appendCalendar(response, principal, request);
+        appendCalendar(response, request);
         if (request.getDepth() == 1) {
-            DavGatewayTray.debug("Searching calendar events...");
-            List<ExchangeSession.Event> events = session.getAllEvents(principal);
+            DavGatewayTray.debug("Searching calendar events at " + folderPath + " ...");
+            List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
             DavGatewayTray.debug("Found " + events.size() + " calendar events");
-            appendEventsResponses(response, request, "calendar", events);
+            appendEventsResponses(response, request, events);
         }
         response.endMultistatus();
         response.close();
@@ -424,7 +446,8 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    public void reportEvents(CaldavRequest request, String principal, String path) throws IOException {
+    public void reportEvents(CaldavRequest request) throws IOException {
+        String folderPath = request.getFolderPath();
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
 
@@ -443,19 +466,19 @@ public class CaldavConnection extends AbstractConnection {
                     } else if ("inbox".equals(eventName) || "calendar".equals(eventName)) {
                         // Sunbird: just ignore
                     } else {
-                        appendEventResponse(response, request, path, session.getEvent(principal, path, eventName));
+                        appendEventResponse(response, request, session.getEvent(folderPath, eventName));
                     }
                 } catch (HttpException e) {
                     DavGatewayTray.warn("Event not found:" + href);
                     notFound.add(href);
                 }
             }
-        } else if ("INBOX".equals(path)) {
-            events = session.getEventMessages(principal);
-            appendEventsResponses(response, request, path, events);
+        } else if (request.isPath(1, "users") && request.isPath(3, "inbox")) {
+            events = session.getEventMessages(request.getFolderPath());
+            appendEventsResponses(response, request, events);
         } else {
-            events = session.getAllEvents(principal);
-            appendEventsResponses(response, request, path, events);
+            events = session.getAllEvents(request.getFolderPath());
+            appendEventsResponses(response, request, events);
         }
 
         // send not found events errors
@@ -468,23 +491,23 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
-    public void sendUserRoot(CaldavRequest request, String principal) throws IOException {
+    public void sendUserRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse("/users/" + principal);
+        response.startResponse(URIUtil.encodePath(request.getPath()));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype", "<D:collection/>");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", principal);
+            response.appendProperty("D:displayname", request.getPathElement(request.getPathLength() - 1));
         }
         response.endPropStatOK();
         if (request.getDepth() == 1) {
-            appendInbox(response, principal, request);
-            appendOutbox(response, principal, request);
-            appendCalendar(response, principal, request);
+            appendInbox(response, request);
+            appendOutbox(response, request);
+            appendCalendar(response, request);
         }
         response.endResponse();
         response.endMultistatus();
@@ -782,7 +805,7 @@ public class CaldavConnection extends AbstractConnection {
         return result;
     }
 
-    protected static class CaldavRequest {
+    protected class CaldavRequest {
         protected String command;
         protected String path;
         protected String[] pathElements;
@@ -850,6 +873,10 @@ public class CaldavConnection extends AbstractConnection {
             return pathElements.length;
         }
 
+        public String getPath() {
+            return path;
+        }
+
         /**
          * Check if path element at index is value
          *
@@ -859,6 +886,10 @@ public class CaldavConnection extends AbstractConnection {
          */
         public boolean isPath(int index, String value) {
             return value != null && value.equals(getPathElement(index));
+        }
+
+        public boolean isLastPath(String value) {
+            return value != null && value.equals(getPathElement(getPathLength() - 1));
         }
 
         protected String getPathElement(int index) {
@@ -970,6 +1001,14 @@ public class CaldavConnection extends AbstractConnection {
         @Override
         public String toString() {
             return command + " " + path + " Depth: " + depth + "\n" + body;
+        }
+
+        public String getFolderPath() throws IOException {
+            if ("users".equals(getPathElement(1))) {
+                return session.buildCalendarPath(getPathElement(2), getPathElement(3));
+            } else {
+                return getPath();
+            }
         }
     }
 
