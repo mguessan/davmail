@@ -434,6 +434,15 @@ public class ExchangeSession {
         }
     }
 
+    protected String getPropertyIfExists(DavPropertySet properties, DavPropertyName davPropertyName) {
+        DavProperty property = properties.get(davPropertyName);
+        if (property == null) {
+            return null;
+        } else {
+            return (String) property.getValue();
+        }
+    }
+
     protected int getIntPropertyIfExists(DavPropertySet properties, String name, Namespace namespace) {
         DavProperty property = properties.get(name, namespace);
         if (property == null) {
@@ -1640,42 +1649,28 @@ public class ExchangeSession {
         return status;
     }
 
-    public String getInboxCtag() throws IOException {
-        return getFolderCtag(inboxUrl);
+    public String getFolderCtag(String folderPath) throws IOException {
+        return getFolderProperty(folderPath, CONTENT_TAG);
     }
 
-    public String getCalendarCtag() throws IOException {
-        return getFolderCtag(calendarUrl);
+    public String getFolderResourceTag(String folderPath) throws IOException {
+        return getFolderProperty(folderPath, RESOURCE_TAG);
     }
 
-    public String getFolderCtag(String folderUrl) throws IOException {
-        String ctag;
+    public String getFolderProperty(String folderPath, DavPropertyNameSet davPropertyNameSet) throws IOException {
+        String result;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(folderUrl), 0, CONTENT_TAG);
+                httpClient, URIUtil.encodePath(folderPath), 0, davPropertyNameSet);
         if (responses.length == 0) {
-            throw new IOException("Unable to get folder object");
+            throw new IOException("Unable to get folder at "+folderPath);
         }
         DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
-        ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-        if (ctag == null) {
-            throw new IOException("Unable to get calendar ctag");
+        DavPropertyName davPropertyName = davPropertyNameSet.iterator().nextPropertyName();
+        result = getPropertyIfExists(properties, davPropertyName);
+        if (result == null) {
+            throw new IOException("Unable to get property "+davPropertyName);
         }
-        return ctag;
-    }
-
-    public String getCalendarEtag() throws IOException {
-        String etag;
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(calendarUrl), 0, RESOURCE_TAG);
-        if (responses.length == 0) {
-            throw new IOException("Unable to get calendar object");
-        }
-        MultiStatusResponse calendarResponse = responses[0];
-        etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-        if (etag == null) {
-            throw new IOException("Unable to get calendar etag");
-        }
-        return etag;
+        return result;
     }
 
     /**
