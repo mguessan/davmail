@@ -735,10 +735,10 @@ public class ExchangeSession {
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest);
 
         for (MultiStatusResponse response : responses) {
-            String messageUrl = response.getHref();
+            String messageUrl = URIUtil.decode(response.getHref());
 
             LOGGER.debug("Delete " + messageUrl);
-            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(messageUrl));
         }
     }
 
