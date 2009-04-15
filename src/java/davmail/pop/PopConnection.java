@@ -228,7 +228,7 @@ public class PopConnection extends AbstractConnection {
 
                 os.flush();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
                 sendERR(e.getMessage());

@@ -27,6 +27,10 @@ import java.util.*;
  * Handle a caldav connection.
  */
 public class CaldavConnection extends AbstractConnection {
+    /**
+     * Maximum keep alive time in seconds
+     */
+    protected static final int MAX_KEEP_ALIVE_TIME = 300;
     protected final Logger wireLogger = Logger.getLogger(this.getClass());
 
     protected boolean closed = false;
@@ -86,8 +90,8 @@ public class CaldavConnection extends AbstractConnection {
             } catch (NumberFormatException e) {
                 throw new IOException("Invalid Keep-Alive: " + keepAliveValue);
             }
-            if (keepAlive > 300) {
-                keepAlive = 300;
+            if (keepAlive > MAX_KEEP_ALIVE_TIME) {
+                keepAlive = MAX_KEEP_ALIVE_TIME;
             }
             client.setSoTimeout(keepAlive * 1000);
             DavGatewayTray.debug("Set socket timeout to " + keepAlive + " seconds");
@@ -106,37 +110,31 @@ public class CaldavConnection extends AbstractConnection {
                     break;
                 }
                 tokens = new StringTokenizer(line);
-                if (tokens.hasMoreTokens()) {
-                    String command = tokens.nextToken();
-                    Map<String, String> headers = parseHeaders();
-                    if (tokens.hasMoreTokens()) {
-                        String path = URIUtil.decode(tokens.nextToken());
-                        String content = getContent(headers.get("content-length"));
-                        setSocketTimeout(headers.get("keep-alive"));
-                        // client requested connection close
-                        closed = "close".equals(headers.get("connection"));
-                        if ("OPTIONS".equals(command)) {
-                            sendOptions();
-                        } else if (!headers.containsKey("authorization")) {
+                String command = tokens.nextToken();
+                Map<String, String> headers = parseHeaders();
+                String path = URIUtil.decode(tokens.nextToken());
+                String content = getContent(headers.get("content-length"));
+                setSocketTimeout(headers.get("keep-alive"));
+                // client requested connection close
+                closed = "close".equals(headers.get("connection"));
+                if ("OPTIONS".equals(command)) {
+                    sendOptions();
+                } else if (!headers.containsKey("authorization")) {
+                    sendUnauthorized();
+                } else {
+                    decodeCredentials(headers.get("authorization"));
+                    // authenticate only once
+                    if (session == null) {
+                        // first check network connectivity
+                        ExchangeSessionFactory.checkConfig();
+                        try {
+                            session = ExchangeSessionFactory.getInstance(userName, password);
+                        } catch (AuthenticationException e) {
                             sendUnauthorized();
-                        } else {
-                            decodeCredentials(headers.get("authorization"));
-                            // authenticate only once
-                            if (session == null) {
-                                // first check network connectivity
-                                ExchangeSessionFactory.checkConfig();
-                                try {
-                                    session = ExchangeSessionFactory.getInstance(userName, password);
-                                } catch (AuthenticationException e) {
-                                    sendUnauthorized();
-                                }
-                            }
-                            if (session != null) {
-                                handleRequest(command, path, headers, content);
-                            }
                         }
-                    } else {
-                        sendErr(HttpStatus.SC_NOT_IMPLEMENTED, "Invalid URI");
+                    }
+                    if (session != null) {
+                        handleRequest(command, path, headers, content);
                     }
                 }
 
@@ -147,12 +145,8 @@ public class CaldavConnection extends AbstractConnection {
             DavGatewayTray.debug("Closing connection on timeout");
         } catch (SocketException e) {
             DavGatewayTray.debug("Connection closed");
-        } catch (IOException e) {
-            if (e.getMessage() != null) {
-                DavGatewayTray.error(e.getMessage(), e);
-            } else {
-                DavGatewayTray.error(e);
-            }
+        } catch (Exception e) {
+            DavGatewayTray.error(e);
             try {
                 sendErr(e);
             } catch (IOException e2) {
@@ -176,19 +170,9 @@ public class CaldavConnection extends AbstractConnection {
             sendRoot(request);
         } else if (request.isGet() && request.isRoot()) {
             sendGetRoot();
-            // deprecated url, will be removed
-        } else if (request.isPath(1, "calendar")) {
-            StringBuilder message = new StringBuilder();
-            message.append("/calendar no longer supported, recreate calendar with /users/")
-                    .append(session.getEmail()).append("/calendar");
-            DavGatewayTray.error(message.toString());
-            sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
-            // /principals/users namespace
         } else if (request.isPath(1, "principals") && request.isPath(2, "users")) {
             handleUserPrincipals(request);
-            // users root
         } else if (request.isPath(1, "users")) {
-            // principal request
             if (request.isPropFind() && request.isPathLength(3)) {
                 sendUserRoot(request);
             } else {
@@ -204,9 +188,7 @@ public class CaldavConnection extends AbstractConnection {
     protected void handleUserPrincipals(CaldavRequest request) throws IOException {
         if (request.isPropFind() && request.isPathLength(4)) {
             sendPrincipal(request, request.getPathElement(3));
-        } else if (request.isPropFind() && request.isPathLength(4)) {
-            sendPrincipal(request, request.getPathElement(3));
-            // send back principal on search
+        // send back principal on search
         } else if (request.isReport() && request.isPathLength(3)) {
             sendPrincipal(request, session.getEmail());
         } else {

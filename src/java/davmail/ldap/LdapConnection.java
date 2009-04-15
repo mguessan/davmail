@@ -371,7 +371,7 @@ public class LdapConnection extends AbstractConnection {
             DavGatewayTray.debug("Connection closed");
         } catch (SocketTimeoutException e) {
             DavGatewayTray.debug("Closing connection on timeout");
-        } catch (IOException e) {
+        } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
                 sendErr(0, LDAP_REP_BIND, e);

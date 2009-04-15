@@ -55,10 +55,7 @@ public class DavGatewayTray {
     }
 
     protected static void displayMessage(String message, Exception e, Priority priority) {
-        LOGGER.log(priority, message, e);
-        if (davGatewayTray != null
-                && (!(e instanceof NetworkDownException) || isActive())) {
-            StringBuilder buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
             if (message != null) {
                 buffer.append(message).append(" ");
             }
@@ -67,6 +64,9 @@ public class DavGatewayTray {
             } else {
                 buffer.append(e.toString());
             }
+        LOGGER.log(priority, buffer.toString(), e);
+        if (davGatewayTray != null
+                && (!(e instanceof NetworkDownException) || isActive())) {
             davGatewayTray.displayMessage(buffer.toString(), priority);
         }
         if (davGatewayTray != null && e instanceof NetworkDownException) {

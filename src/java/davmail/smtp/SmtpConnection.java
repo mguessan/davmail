@@ -136,10 +136,10 @@ public class SmtpConnection extends AbstractConnection {
 
         } catch (SocketException e) {
             DavGatewayTray.debug("Connection closed");
-        } catch (IOException e) {
-            DavGatewayTray.error(e.getMessage());
+        } catch (Exception e) {
+            DavGatewayTray.error(e);
             try {
-                sendClient("500 " + e.getMessage());
+                sendClient("500 " + ((e.getMessage()==null)?e:e.getMessage()));
             } catch (IOException e2) {
                 DavGatewayTray.debug("Exception sending error to client", e2);
             }
