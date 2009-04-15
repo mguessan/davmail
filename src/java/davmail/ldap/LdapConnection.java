@@ -189,7 +189,9 @@ public class LdapConnection extends AbstractConnection {
         IGNORE_MAP.add("augmentconfiguration");
         IGNORE_MAP.add("ou");
         IGNORE_MAP.add("apple-realname");
-        IGNORE_MAP.add("apple-group-nestedgroup");        
+        IGNORE_MAP.add("apple-group-nestedgroup");
+        IGNORE_MAP.add("apple-group-memberguid"); 
+        IGNORE_MAP.add("macaddress");
     }
 
     // LDAP version
