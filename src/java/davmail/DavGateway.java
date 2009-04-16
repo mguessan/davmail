@@ -22,7 +22,7 @@ import java.net.BindException;
  * DavGateway main class
  */
 public class DavGateway {
-    protected DavGateway() {
+    private DavGateway() {
     }
 
     private static SmtpServer smtpServer;

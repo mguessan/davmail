@@ -98,7 +98,7 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    public void run() {
+    @Override public void run() {
         String line;
         StringTokenizer tokens;
 
@@ -789,7 +789,7 @@ public class CaldavConnection extends AbstractConnection {
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
 
-        public CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
+        protected CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
             this.command = command;
             this.path = path.replaceAll("//", "/");
             pathElements = this.path.split("/");
@@ -1017,7 +1017,7 @@ public class CaldavConnection extends AbstractConnection {
     protected class CaldavResponse {
         Writer writer;
 
-        public CaldavResponse(int status) throws IOException {
+        protected CaldavResponse(int status) throws IOException {
             writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
                 @Override
                 public void write(byte[] data, int offset, int length) throws IOException {
@@ -1060,10 +1060,9 @@ public class CaldavConnection extends AbstractConnection {
 
         public void appendCalendarData(String ics) throws IOException {
             if (ics != null && ics.length() > 0) {
-                ics = ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
                 writer.write("<C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"");
                 writer.write(" C:content-type=\"text/calendar\" C:version=\"2.0\">");
-                writer.write(ics);
+                writer.write(ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
                 writer.write("</C:calendar-data>");
             }
         }

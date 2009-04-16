@@ -25,7 +25,7 @@ public final class ExchangeSessionFactory {
         public final String userName;
         public final String password;
 
-        public PoolKey(String url, String userName, String password) {
+        PoolKey(String url, String userName, String password) {
             this.url = url;
             this.userName = userName;
             this.password = password;

@@ -34,7 +34,7 @@ public class ImapConnection extends AbstractConnection {
         super("ImapConnection", clientSocket, null);
     }
 
-    public void run() {
+    @Override public void run() {
         String line;
         String commandId = null;
         IMAPTokenizer tokens;
@@ -908,7 +908,7 @@ public class ImapConnection extends AbstractConnection {
         protected final boolean writeBody;
         protected final int startIndex;
 
-        public PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
+        private PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
                                 int startIndex) {
             super(os);
             this.writeHeaders = writeHeaders;
@@ -1062,7 +1062,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     class IMAPTokenizer extends StringTokenizer {
-        public IMAPTokenizer(String value) {
+        IMAPTokenizer(String value) {
             super(value);
         }
 

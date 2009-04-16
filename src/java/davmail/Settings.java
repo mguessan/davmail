@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
  * Settings facade
  */
 public class Settings {
-    protected Settings() {
+    private Settings() {
     }
 
     private static final Properties SETTINGS = new Properties();

@@ -16,6 +16,7 @@ public abstract class AbstractServer extends Thread {
 
     /**
      * Server socket TCP port
+     *
      * @return port
      */
     public int getPort() {
@@ -55,6 +56,7 @@ public abstract class AbstractServer extends Thread {
      * create a Connection object to handle communication through the
      * new Socket.
      */
+    @Override
     public void run() {
         Socket clientSocket = null;
         AbstractConnection connection = null;

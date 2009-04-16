@@ -79,6 +79,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         }
     }
 
+    @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
     protected boolean isCertificateTrusted(X509Certificate certificate) {
         BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
         String answer = null;

@@ -114,7 +114,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
         if (lf5Appender == null) {
             lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                protected void closeAfterConfirm() {
+                @Override protected void closeAfterConfirm() {
                     hide();
                 }
             });

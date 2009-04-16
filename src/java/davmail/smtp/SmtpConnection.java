@@ -24,6 +24,7 @@ public class SmtpConnection extends AbstractConnection {
         super("SmtpConnection", clientSocket, null);
     }
 
+    @Override
     public void run() {
         String line;
         StringTokenizer tokens;

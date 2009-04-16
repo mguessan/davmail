@@ -114,7 +114,7 @@ public class ExchangeSession {
     private String mailPath;
     private String email;
     private String alias;
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
 
     private final ExchangeSessionFactory.PoolKey poolKey;
 
@@ -883,7 +883,7 @@ public class ExchangeSession {
         ArrayList<DavProperty> list = new ArrayList<DavProperty>();
         list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPF.Note"));
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
-            public String getName() {
+            @Override public String getName() {
                 return "MKCOL";
             }
         };
@@ -1155,7 +1155,7 @@ public class ExchangeSession {
             for (int i = 0; i < multiPart.getCount(); i++) {
                 String contentType = multiPart.getBodyPart(i).getContentType();
                 if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
-                    bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+                    bodyPart = (MimePart) multiPart.getBodyPart(i);
                     break;
                 } else if (contentType.startsWith("multipart")) {
                     Object content = multiPart.getBodyPart(i).getContent();

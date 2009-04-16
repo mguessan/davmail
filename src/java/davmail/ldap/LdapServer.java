@@ -23,6 +23,7 @@ public class LdapServer extends AbstractServer {
         super("LdapServer", port, LdapServer.DEFAULT_PORT);
     }
 
+    @Override
     public AbstractConnection createConnectionHandler(Socket clientSocket) {
         return new LdapConnection(clientSocket);
     }

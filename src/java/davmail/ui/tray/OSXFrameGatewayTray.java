@@ -18,6 +18,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
         return true;
     }
 
+    @Override
     protected void buildMenu() {
         // create a popup menu
         JMenu menu = new JMenu("Logs");
@@ -35,6 +36,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
     }
 
 
+    @Override
     protected void createAndShowGUI() {
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         super.createAndShowGUI();

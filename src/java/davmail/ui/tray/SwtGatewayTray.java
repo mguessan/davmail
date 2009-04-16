@@ -131,6 +131,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         }
 
         new Thread("SWT") {
+            @Override
             public void run() {
                 display = new Display();
                 shell = new Shell(display);
@@ -220,6 +221,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                             LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
                                             if (lf5Appender == null) {
                                                 lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                                                    @Override
                                                     protected void closeAfterConfirm() {
                                                         hide();
                                                     }

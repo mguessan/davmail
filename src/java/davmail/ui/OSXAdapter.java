@@ -51,6 +51,7 @@ public class OSXAdapter implements InvocationHandler {
         setHandler(new OSXAdapter("handleOpenFile", target, fileHandler) {
             // Override OSXAdapter.callTarget to send information on the
             // file to be opened
+            @Override
             public boolean callTarget(Object appleEvent) {
                 if (appleEvent != null) {
                     try {

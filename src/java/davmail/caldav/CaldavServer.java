@@ -23,6 +23,7 @@ public class CaldavServer extends AbstractServer {
         super("CaldavServer", port, CaldavServer.DEFAULT_PORT);
     }
 
+    @Override
     public AbstractConnection createConnectionHandler(Socket clientSocket) {
         return new CaldavConnection(clientSocket);
     }

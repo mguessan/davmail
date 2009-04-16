@@ -163,31 +163,32 @@ public final class DavGatewayHttpClientFacade {
     }
 
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
+        HttpMethod currentMethod = method;
         try {
-            DavGatewayTray.debug("executeFollowRedirects: " + method.getURI());
-            httpClient.executeMethod(method);
-            Header location = method.getResponseHeader("Location");
+            DavGatewayTray.debug("executeFollowRedirects: " + currentMethod.getURI());
+            httpClient.executeMethod(currentMethod);
+            Header location = currentMethod.getResponseHeader("Location");
             int redirectCount = 0;
             while (redirectCount++ < 10
                     && location != null
-                    && isRedirect(method.getStatusCode())) {
-                method.releaseConnection();
-                method = new GetMethod(location.getValue());
-                method.setFollowRedirects(false);
-                DavGatewayTray.debug("executeFollowRedirects: " + method.getURI() + " redirectCount:" + redirectCount);
-                httpClient.executeMethod(method);
-                location = method.getResponseHeader("Location");
+                    && isRedirect(currentMethod.getStatusCode())) {
+                currentMethod.releaseConnection();
+                currentMethod = new GetMethod(location.getValue());
+                currentMethod.setFollowRedirects(false);
+                DavGatewayTray.debug("executeFollowRedirects: " + currentMethod.getURI() + " redirectCount:" + redirectCount);
+                httpClient.executeMethod(currentMethod);
+                location = currentMethod.getResponseHeader("Location");
             }
-            if (location != null && isRedirect(method.getStatusCode())) {
-                method.releaseConnection();
+            if (location != null && isRedirect(currentMethod.getStatusCode())) {
+                currentMethod.releaseConnection();
                 throw new HttpException("Maximum redirections reached");
             }
         } catch (IOException e) {
-            method.releaseConnection();
+            currentMethod.releaseConnection();
             throw e;
         }
         // caller will need to release connection
-        return method;
+        return currentMethod;
     }
 
     /**
@@ -206,11 +207,11 @@ public final class DavGatewayHttpClientFacade {
                 "</d:searchrequest>";
         DavMethodBase searchMethod = new DavMethodBase(path) {
 
-            public String getName() {
+            @Override public String getName() {
                 return "SEARCH";
             }
 
-            protected boolean isSuccess(int statusCode) {
+            @Override protected boolean isSuccess(int statusCode) {
                 return statusCode == 207;
             }
         };
@@ -305,7 +306,7 @@ public final class DavGatewayHttpClientFacade {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
             multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
             httpConnectionManagerThread = new Thread("HttpConnectionManager") {
-                public void run() {
+                @Override public void run() {
                     boolean terminated = false;
                     while (!terminated) {
                         try {

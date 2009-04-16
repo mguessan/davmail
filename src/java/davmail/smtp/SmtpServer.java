@@ -19,6 +19,7 @@ public class SmtpServer extends AbstractServer {
         super("SmtpServer", port, SmtpServer.DEFAULT_PORT);
     }
 
+    @Override
     public AbstractConnection createConnectionHandler(Socket clientSocket) {
         return new SmtpConnection(clientSocket);
     }

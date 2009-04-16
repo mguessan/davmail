@@ -24,7 +24,7 @@ public class ImapServer extends AbstractServer {
         super("ImapServer", port, ImapServer.DEFAULT_PORT);
     }
 
-    public AbstractConnection createConnectionHandler(Socket clientSocket) {
+    @Override public AbstractConnection createConnectionHandler(Socket clientSocket) {
         return new ImapConnection(clientSocket);
     }
 

@@ -57,6 +57,7 @@ public class PopConnection extends AbstractConnection {
     }
 
 
+    @Override
     public void run() {
         String line;
         StringTokenizer tokens;
@@ -270,7 +271,7 @@ public class PopConnection extends AbstractConnection {
         protected int maxLines;
         protected int state = START;
 
-        public TopOutputStream(OutputStream os, int maxLines) {
+        private TopOutputStream(OutputStream os, int maxLines) {
             super(os);
             this.maxLines = maxLines;
         }

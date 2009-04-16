@@ -287,7 +287,7 @@ public class LdapConnection extends AbstractConnection {
         return ldapVersion == LDAP_VERSION3;
     }
 
-    public void run() {
+    @Override public void run() {
         byte[] inbuf = new byte[2048];   // Buffer for reading incoming bytes
         int bytesread;  // Number of bytes in inbuf
         int bytesleft;  // Number of bytes that need to read for completing resp
@@ -338,8 +338,9 @@ public class LdapConnection extends AbstractConnection {
                     }
 
                     // end-of-stream reached before length bytes are read
-                    if (eos)
+                    if (eos) {
                         break;  // EOF
+                    }
 
                     // Add contents of length bytes to determine length
                     seqlen = 0;
@@ -608,7 +609,7 @@ public class LdapConnection extends AbstractConnection {
 
         String sValue = value.toString();
 
-        if (attributeName.equalsIgnoreCase("uid") && sValue.equals(userName)) {
+        if ("uid".equalsIgnoreCase(attributeName) && sValue.equals(userName)) {
             // replace with actual alias instead of login name search
             if (sValue.equals(userName)) {
                 sValue = session.getAlias();

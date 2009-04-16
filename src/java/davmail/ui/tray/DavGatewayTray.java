@@ -18,7 +18,7 @@ import java.net.URL;
 public class DavGatewayTray {
     protected static final Logger LOGGER = Logger.getLogger("davmail");
 
-    protected DavGatewayTray() {
+    private DavGatewayTray() {
     }
 
     static DavGatewayTrayInterface davGatewayTray;
