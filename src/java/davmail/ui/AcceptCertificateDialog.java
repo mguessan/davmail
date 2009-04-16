@@ -9,10 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
 import java.security.cert.X509Certificate;
-import java.text.SimpleDateFormat;
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 /**
  * Accept certificate dialog

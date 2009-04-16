@@ -280,10 +280,13 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             }
         }.start();
-        while (!isReady) {
+        while (true) {
             // wait for SWT init
             try {
                 synchronized (mainThread) {
+                    if (isReady) {
+                        break;
+                    }
                     mainThread.wait(1000);
                 }
             } catch (InterruptedException e) {
