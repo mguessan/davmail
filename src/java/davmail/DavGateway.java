@@ -96,7 +96,7 @@ public class DavGateway {
                 DavGatewayTray.info("A new version (" + releasedVersion + ") of DavMail Gateway is available !");
             }
         } catch (BindException e) {
-            DavGatewayTray.error("Unable to create server socket: the specified port is in use by another process");
+            DavGatewayTray.error("Unable to create server socket: the specified port is not allowed or in use by another process");
         } catch (IOException e) {
             DavGatewayTray.error("Exception creating server socket", e);
         }
