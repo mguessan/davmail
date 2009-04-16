@@ -58,11 +58,18 @@
                     <img src="images/osxDirectoryUtility7.png"/>
                 </div>
 
+                <p>Then activate authentication under the Security tab and
+                    enter your credentials:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osxDirectoryUtility8.png"/>
+                </div>
+
                 <p>Under the Search Policy tab, choose Contacts, set Search to Custom Path
                     and /LDAPV3/localhost to the list of Directory Domains:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxDirectoryUtility8.png"/>
+                    <img src="images/osxDirectoryUtility9.png"/>
                 </div>
 
                 <p>Proceeed to
