@@ -55,7 +55,7 @@ public final class ExchangeSessionFactory {
      * @param userName user login
      * @param password user password
      * @return authenticated session
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
         try {

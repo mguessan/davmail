@@ -637,9 +637,9 @@ public class ImapConnection extends AbstractConnection {
     }
 
     static final class SearchConditions {
-        Boolean flagged = null;
-        Boolean answered = null;
-        long startUid = 0;
+        Boolean flagged;
+        Boolean answered;
+        long startUid;
         final StringBuilder query = new StringBuilder();
 
         public StringBuilder append(String value) {
@@ -861,7 +861,7 @@ public class ImapConnection extends AbstractConnection {
      * Decode IMAP credentials
      *
      * @param tokens tokens
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     protected void parseCredentials(StringTokenizer tokens) throws IOException {
         if (tokens.hasMoreTokens()) {
@@ -903,7 +903,7 @@ public class ImapConnection extends AbstractConnection {
         protected static final int BODY = 4;
 
         protected int state = START;
-        protected int size = 0;
+        protected int size;
         protected final boolean writeHeaders;
         protected final boolean writeBody;
         protected final int startIndex;
@@ -952,8 +952,8 @@ public class ImapConnection extends AbstractConnection {
 
     protected class UIDRangeIterator implements Iterator<ExchangeSession.Message> {
         final String[] ranges;
-        int currentIndex = 0;
-        int currentRangeIndex = 0;
+        int currentIndex;
+        int currentRangeIndex;
         long startUid;
         long endUid;
 
@@ -1010,8 +1010,8 @@ public class ImapConnection extends AbstractConnection {
 
     protected class RangeIterator implements Iterator<ExchangeSession.Message> {
         final String[] ranges;
-        int currentIndex = 0;
-        int currentRangeIndex = 0;
+        int currentIndex;
+        int currentRangeIndex;
         long startUid;
         long endUid;
 

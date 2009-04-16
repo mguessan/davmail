@@ -33,7 +33,7 @@ public class CaldavConnection extends AbstractConnection {
     protected static final int MAX_KEEP_ALIVE_TIME = 300;
     protected final Logger wireLogger = Logger.getLogger(this.getClass());
 
-    protected boolean closed = false;
+    protected boolean closed;
 
     // Initialize the streams and start the thread
     public CaldavConnection(Socket clientSocket) {
@@ -683,8 +683,8 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("HTTP/1.1 " + status + " " + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
         sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-schedule, calendarserver-private-events");
-        SimpleDateFormat formatter = new java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
-        sendClient("Date: " + formatter.format(new java.util.Date()));
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+        sendClient("Date: " + formatter.format(new Date()));
         if (headers != null) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 sendClient(header.getKey() + ": " + header.getValue());
@@ -714,7 +714,7 @@ public class CaldavConnection extends AbstractConnection {
      * Decode HTTP credentials
      *
      * @param authorization http authorization header value
-     * @throws java.io.IOException if invalid credentials
+     * @throws IOException if invalid credentials
      */
     protected void decodeCredentials(String authorization) throws IOException {
         int index = authorization.indexOf(' ');

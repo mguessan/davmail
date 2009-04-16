@@ -17,7 +17,7 @@ public class PopServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      * @param port pop listen port, 110 if not defined (0)
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public PopServer(int port) throws IOException {
         super("PopServer", port, PopServer.DEFAULT_PORT);

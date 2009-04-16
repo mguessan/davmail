@@ -23,13 +23,13 @@ import java.util.ArrayList;
  * Create HttpClient instance according to DavGateway Settings
  */
 public final class DavGatewayHttpClientFacade {
-    final static String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
-    final static int MAX_REDIRECTS = 10;
+    static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
+    static final int MAX_REDIRECTS = 10;
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
-    final static long ONE_MINUTE = 60000;
+    static final long ONE_MINUTE = 60000;
 
-    static Thread httpConnectionManagerThread = null;
+    static Thread httpConnectionManagerThread ;
 
     static {
         DavGatewayHttpClientFacade.start();

@@ -177,7 +177,7 @@ public class SmtpConnection extends AbstractConnection {
      * Decode SMTP credentials
      *
      * @param encodedCredentials smtp encoded credentials
-     * @throws java.io.IOException if invalid credentials
+     * @throws IOException if invalid credentials
      */
     protected void decodeCredentials(String encodedCredentials) throws IOException {
         String decodedCredentials = base64Decode(encodedCredentials);

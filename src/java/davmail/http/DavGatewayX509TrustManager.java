@@ -21,10 +21,9 @@ import java.io.InputStreamReader;
  * Custom Trust Manager, let user accept or deny.
  */
 public class DavGatewayX509TrustManager implements X509TrustManager {
-    private X509TrustManager standardTrustManager = null;
+    private final X509TrustManager standardTrustManager;
 
     public DavGatewayX509TrustManager() throws NoSuchAlgorithmException, KeyStoreException {
-        super();
         TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         factory.init((KeyStore) null);
         TrustManager[] trustmanagers = factory.getTrustManagers();
@@ -52,7 +51,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         this.standardTrustManager.checkClientTrusted(x509Certificates, authType);
     }
 
-    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+    public X509Certificate[] getAcceptedIssuers() {
         return this.standardTrustManager.getAcceptedIssuers();
     }
 

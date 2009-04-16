@@ -17,7 +17,7 @@ public class LdapServer extends AbstractServer {
      * Start the thread.
      *
      * @param port pop listen port, 389 if not defined (0)
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public LdapServer(int port) throws IOException {
         super("LdapServer", port, LdapServer.DEFAULT_PORT);

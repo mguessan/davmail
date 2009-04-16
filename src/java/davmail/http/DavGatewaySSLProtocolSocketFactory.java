@@ -45,7 +45,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         }
     }
 
-    private SSLContext sslcontext = null;
+    private SSLContext sslcontext ;
 
     private SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
         SSLContext context = SSLContext.getInstance("SSL");

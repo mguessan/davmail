@@ -13,7 +13,7 @@ public class SmtpServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      * @param port smtp port
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public SmtpServer(int port) throws IOException {
         super("SmtpServer", port, SmtpServer.DEFAULT_PORT);

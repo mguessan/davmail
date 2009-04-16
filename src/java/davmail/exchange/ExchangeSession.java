@@ -118,7 +118,7 @@ public class ExchangeSession {
 
     private final ExchangeSessionFactory.PoolKey poolKey;
 
-    private boolean disableGalLookup = false;
+    private boolean disableGalLookup;
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     private static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
@@ -128,7 +128,7 @@ public class ExchangeSession {
      * The session is not actually established until a call to login()
      *
      * @param poolKey session pool key
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) throws IOException {
         this.poolKey = poolKey;
@@ -244,7 +244,7 @@ public class ExchangeSession {
      *
      * @param url exchange base URL
      * @return true if basic authentication detected
-     * @throws java.io.IOException unable to connect to exchange
+     * @throws IOException unable to connect to exchange
      */
     protected boolean isBasicAuthentication(String url) throws IOException {
         return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
@@ -272,7 +272,7 @@ public class ExchangeSession {
      * @param httpClient httpClient instance
      * @param initmethod form body http method
      * @return logon method
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     protected PostMethod buildLogonMethod(HttpClient httpClient, HttpMethod initmethod) throws IOException {
 
@@ -501,7 +501,7 @@ public class ExchangeSession {
      * @param messageName message name
      * @param properties  message properties (flags)
      * @param messageBody mail body
-     * @throws java.io.IOException when unable to create message
+     * @throws IOException when unable to create message
      */
     public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
@@ -1281,9 +1281,9 @@ public class ExchangeSession {
     protected String fixICS(String icsBody, boolean fromServer) throws IOException {
         // first pass : detect
         class AllDayState {
-            boolean isAllDay = false;
-            boolean hasCdoAllDay = false;
-            boolean isCdoAllDay = false;
+            boolean isAllDay;
+            boolean hasCdoAllDay;
+            boolean isCdoAllDay;
         }
         // Convert event class from and to iCal
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
@@ -1684,7 +1684,7 @@ public class ExchangeSession {
      * Get current Exchange alias name from mailbox name
      *
      * @return user name
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     protected String getAliasFromMailPath() throws IOException {
         if (mailPath == null) {
@@ -1861,7 +1861,7 @@ public class ExchangeSession {
      * @param searchAttribute exchange search attribute
      * @param searchValue     search value
      * @return List of users
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
         Map<String, Map<String, String>> results;

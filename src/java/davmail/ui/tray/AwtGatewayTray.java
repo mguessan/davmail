@@ -28,10 +28,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     static AboutFrame aboutFrame;
     static SettingsFrame settingsFrame;
 
-    private static TrayIcon trayIcon = null;
-    private static Image image = null;
-    private static Image image2 = null;
-    private static Image inactiveImage = null;
+    private static TrayIcon trayIcon;
+    private static Image image;
+    private static Image image2;
+    private static Image inactiveImage;
     private boolean isActive = true;
 
     public Image getFrameIcon() {

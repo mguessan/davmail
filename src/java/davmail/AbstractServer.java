@@ -12,7 +12,7 @@ import java.net.Socket;
  */
 public abstract class AbstractServer extends Thread {
     private final int port;
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
 
     /**
      * Server socket TCP port
@@ -30,7 +30,7 @@ public abstract class AbstractServer extends Thread {
      * @param name        thread name
      * @param port        tcp socket chosen port
      * @param defaultPort tcp socket default port
-     * @throws java.io.IOException unable to create server socket
+     * @throws IOException unable to create server socket
      */
     public AbstractServer(String name, int port, int defaultPort) throws IOException {
         super(name);

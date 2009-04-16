@@ -16,6 +16,8 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.net.InetAddress;
 import java.util.*;
 
 /**
@@ -739,8 +741,8 @@ public class LdapConnection extends AbstractConnection {
 
     protected String hostName() {
         try {
-            return java.net.InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (java.net.UnknownHostException ex) {
+            return InetAddress.getLocalHost().getCanonicalHostName();
+        } catch (UnknownHostException ex) {
             DavGatewayTray.debug("Couldn't get hostname");
         }
 
@@ -854,7 +856,7 @@ public class LdapConnection extends AbstractConnection {
 
     static class LdapFilter {
         final StringBuilder filterString = new StringBuilder();
-        int ldapFilterType = 0;
+        int ldapFilterType;
         boolean isFullSearch = true;
         final Map<String, SimpleFilter> orCriteria = new HashMap<String, SimpleFilter>();
         final Map<String, SimpleFilter> andCriteria = new HashMap<String, SimpleFilter>();

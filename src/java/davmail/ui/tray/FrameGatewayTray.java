@@ -21,15 +21,15 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     protected FrameGatewayTray() {
     }
 
-    protected static JFrame mainFrame = null;
+    protected static JFrame mainFrame;
     protected static AboutFrame aboutFrame;
     protected static SettingsFrame settingsFrame;
-    private static JEditorPane errorArea = null;
-    private static JLabel errorLabel = null;
-    private static JEditorPane messageArea = null;
-    private static Image image = null;
-    private static Image image2 = null;
-    private static Image inactiveImage = null;
+    private static JEditorPane errorArea;
+    private static JLabel errorLabel;
+    private static JEditorPane messageArea;
+    private static Image image;
+    private static Image image2;
+    private static Image inactiveImage;
     private boolean isActive = true;
 
     public Image getFrameIcon() {

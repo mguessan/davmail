@@ -20,8 +20,8 @@ public class AbstractConnection extends Thread {
     protected BufferedReader in;
     protected OutputStream os;
     // user name and password initialized through connection
-    protected String userName = null;
-    protected String password = null;
+    protected String userName;
+    protected String password;
     // connection state
     protected State state = State.INITIAL;
     // Exchange session proxy

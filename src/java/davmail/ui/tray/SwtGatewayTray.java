@@ -23,15 +23,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected SwtGatewayTray() {
     }
 
-    private static TrayItem trayItem = null;
-    private static java.awt.Image awtImage = null;
-    private static Image image = null;
-    private static Image image2 = null;
-    private static Image inactiveImage = null;
+    private static TrayItem trayItem;
+    private static java.awt.Image awtImage;
+    private static Image image;
+    private static Image image2;
+    private static Image inactiveImage;
     private static Display display;
     private static Shell shell;
     private boolean isActive = true;
-    private boolean isReady = false;
+    private boolean isReady;
 
     private final Thread mainThread = Thread.currentThread();
 

@@ -17,7 +17,7 @@ public class CaldavServer extends AbstractServer {
      * Start the thread.
      *
      * @param port pop listen port, 80 if not defined (0)
-     * @throws java.io.IOException on error
+     * @throws IOException on error
      */
     public CaldavServer(int port) throws IOException {
         super("CaldavServer", port, CaldavServer.DEFAULT_PORT);
