@@ -188,7 +188,7 @@ public class ExchangeSession {
             LOGGER.error(exc.toString());
             throw exc;
         } catch (IOException exc) {
-            StringBuffer message = new StringBuffer();
+            StringBuilder message = new StringBuilder();
             message.append("DavMail login exception: ");
             if (exc.getMessage() != null) {
                 message.append(exc.getMessage());
@@ -322,8 +322,8 @@ public class ExchangeSession {
                                 if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
                                     a_sUrlIndex += "var a_sUrl = \"".length();
                                     a_sLgnIndex += "var a_sLgn = \"".length();
-                                    int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
-                                    int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
+                                    int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
+                                    int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
                                         String src = getAbsolutePathOrUri(initmethod,
                                                 scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
@@ -337,8 +337,8 @@ public class ExchangeSession {
                                     if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
                                         a_sUrlIndex += "var a_sUrl = \"".length();
                                         a_sLgnIndex += "var a_sLgnQS = \"".length();
-                                        int a_sUrlEndIndex = scriptValue.indexOf("\"", a_sUrlIndex);
-                                        int a_sLgnEndIndex = scriptValue.indexOf("\"", a_sLgnIndex);
+                                        int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
+                                        int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                         if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
                                             String src = initmethod.getPath() +
                                                     scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
@@ -391,7 +391,7 @@ public class ExchangeSession {
             }
             if (line != null) {
                 int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
-                int end = line.indexOf("\"", start);
+                int end = line.indexOf('\"', start);
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
@@ -524,7 +524,6 @@ public class ExchangeSession {
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
-        InputStream bodyStream = null;
         try {
             // use same encoding as client socket reader
             putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody.getBytes()));
@@ -534,18 +533,11 @@ public class ExchangeSession {
                 throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
             }
         } finally {
-            if (bodyStream != null) {
-                try {
-                    bodyStream.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
             putmethod.releaseConnection();
         }
 
         // add bcc and other properties
-        if (properties.size() > 0) {
+        if (!properties.isEmpty()) {
             patchMethod = new PropPatchMethod(messageUrl, buildProperties(properties));
             try {
                 // update message with blind carbon copy and other flags
@@ -796,7 +788,7 @@ public class ExchangeSession {
         }
         recipients.removeAll(visibleRecipients);
 
-        StringBuffer bccBuffer = new StringBuffer();
+        StringBuilder bccBuffer = new StringBuilder();
         for (String recipient : recipients) {
             if (bccBuffer.length() > 0) {
                 bccBuffer.append(',');
@@ -1059,7 +1051,7 @@ public class ExchangeSession {
                         line = "..";
                         // patch text/calendar to include utf-8 encoding
                     } else if ("Content-Type: text/calendar;".equals(line)) {
-                        StringBuffer headerBuffer = new StringBuffer();
+                        StringBuilder headerBuffer = new StringBuilder();
                         headerBuffer.append(line);
                         while ((line = reader.readLine()) != null && line.startsWith("\t")) {
                             headerBuffer.append((char) 13);
@@ -1122,7 +1114,7 @@ public class ExchangeSession {
         }
 
         public int compareTo(Object message) {
-            long compareValue = (getImapUid() - ((Message) message).getImapUid());
+            long compareValue = (imapUid - ((Message) message).imapUid);
             if (compareValue > 0) {
                 return 1;
             } else if (compareValue < 0) {
@@ -1134,7 +1126,7 @@ public class ExchangeSession {
 
         @Override
         public boolean equals(Object message) {
-            return message instanceof Message && getImapUid() == ((Message) message).getImapUid();
+            return message instanceof Message && imapUid == ((Message) message).imapUid;
         }
 
         @Override
@@ -1453,7 +1445,7 @@ public class ExchangeSession {
             return "REQUEST";
         }
         int startIndex = methodIndex + "METHOD:".length();
-        int endIndex = icsBody.indexOf("\r", startIndex);
+        int endIndex = icsBody.indexOf('\r', startIndex);
         if (endIndex < 0) {
             return "REQUEST";
         }
@@ -1698,7 +1690,7 @@ public class ExchangeSession {
         if (mailPath == null) {
             return null;
         }
-        int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+        int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
         if (index >= 0 && mailPath.endsWith("/")) {
             return mailPath.substring(index + 1, mailPath.length() - 1);
         } else {
@@ -1710,33 +1702,20 @@ public class ExchangeSession {
         if (mailPath == null) {
             return null;
         }
-        String alias;
+        String displayName;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
         if (responses.length == 0) {
             throw new IOException("Unable to get mail folder");
         }
-        alias = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
-        return alias;
-    }
-
-    public String replacePrincipal(String folderUrl, String principal) throws IOException {
-        if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
-            int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
-            if (index >= 0 && mailPath.endsWith("/")) {
-                return mailPath.substring(0, index) + "/" + principal + "/" + folderUrl.substring(inboxUrl.lastIndexOf("/"));
-            } else {
-                throw new IOException("Invalid mail path: " + mailPath);
-            }
-        } else {
-            return folderUrl;
-        }
+        displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
+        return displayName;
     }
 
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
-            int index = mailPath.lastIndexOf("/", mailPath.length() - 2);
+            int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
                 buffer.append(mailPath.substring(0, index + 1)).append(principal).append("/");
             } else {
@@ -1746,9 +1725,9 @@ public class ExchangeSession {
             buffer.append(mailPath);
         }
         if ("calendar".equals(folderName)) {
-            buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf("/") + 1));
+            buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
         } else if ("inbox".equals(folderName)) {
-            buffer.append(inboxUrl.substring(inboxUrl.lastIndexOf("/") + 1));
+            buffer.append(inboxUrl.substring(inboxUrl.lastIndexOf('/') + 1));
         } else if (folderName != null && folderName.length() > 0) {
             buffer.append(folderName);
         }
@@ -1839,7 +1818,7 @@ public class ExchangeSession {
             }
             if (line != null) {
                 int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
-                int end = line.indexOf("<", start);
+                int end = line.indexOf('<', start);
                 result = line.substring(start, end);
             }
         } catch (IOException e) {
@@ -1911,7 +1890,7 @@ public class ExchangeSession {
                 }
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
                 // add detailed information
-                if (results.size() > 0) {
+                if (!results.isEmpty()) {
                     Map<String, String> fullperson = results.get(person.get("AN").toLowerCase());
                     for (Map.Entry<String, String> entry : fullperson.entrySet()) {
                         person.put(entry.getKey(), entry.getValue());

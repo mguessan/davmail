@@ -573,7 +573,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             String fullkey = line.substring(0, index);
             String value = line.substring(index + 1);
-            int semicolonIndex = fullkey.indexOf(";");
+            int semicolonIndex = fullkey.indexOf(';');
             if (semicolonIndex > 0) {
                 key = fullkey.substring(0, semicolonIndex);
             } else {
@@ -629,17 +629,6 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-
-    public void sendRedirect(Map<String, String> headers, String path) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        if (headers.get("host") != null) {
-            buffer.append("http://").append(headers.get("host"));
-        }
-        buffer.append(path);
-        Map<String, String> responseHeaders = new HashMap<String, String>();
-        responseHeaders.put("Location", buffer.toString());
-        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, responseHeaders);
-    }
 
     public void sendErr(Exception e) throws IOException {
         String message = e.getMessage();
@@ -790,12 +779,12 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected class CaldavRequest {
-        protected String command;
-        protected String path;
-        protected String[] pathElements;
-        protected Map<String, String> headers;
+        protected final String command;
+        protected final String path;
+        protected final String[] pathElements;
+        protected final Map<String, String> headers;
         protected int depth;
-        protected String body;
+        protected final String body;
         protected final HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
@@ -878,10 +867,6 @@ public class CaldavConnection extends AbstractConnection {
          */
         public boolean isPath(int index, String value) {
             return value != null && value.equals(getPathElement(index));
-        }
-
-        public boolean isLastPath(String value) {
-            return value != null && value.equals(getPathElement(getPathLength() - 1));
         }
 
         protected String getPathElement(int index) {
@@ -1009,7 +994,7 @@ public class CaldavConnection extends AbstractConnection {
             if ("users".equals(getPathElement(1))) {
                 return session.buildCalendarPath(getPathElement(2), getPathElement(3));
             } else {
-                return getPath();
+                return path;
             }
         }
 

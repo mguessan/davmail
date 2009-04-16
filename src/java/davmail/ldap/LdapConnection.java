@@ -640,9 +640,9 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendPersons(int currentMessageId, String baseContext, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
-        boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.size() == 0;
+        boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.isEmpty();
         boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
-        boolean returnAllAttributes = returningAttributes.size() == 0;
+        boolean returnAllAttributes = returningAttributes.isEmpty();
         for (Map<String, String> person : persons.values()) {
             boolean needDetails = returnAllAttributes;
             if (!needDetails) {
@@ -731,7 +731,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected void addIf(Map<String, Object> attributes, Set<String> returningAttributes, String name, Object value) {
-        if ((returningAttributes.size() == 0) || returningAttributes.contains(name)) {
+        if ((returningAttributes.isEmpty()) || returningAttributes.contains(name)) {
             attributes.put(name, value);
         }
     }

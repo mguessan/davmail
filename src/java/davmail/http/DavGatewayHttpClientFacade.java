@@ -104,7 +104,7 @@ public final class DavGatewayHttpClientFacade {
                 AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
 
                 // detect ntlm authentication (windows domain name in user name)
-                int backslashindex = proxyUser.indexOf("\\");
+                int backslashindex = proxyUser.indexOf('\\');
                 if (backslashindex > 0) {
                     httpClient.getState().setProxyCredentials(authScope,
                             new NTCredentials(proxyUser.substring(backslashindex + 1),

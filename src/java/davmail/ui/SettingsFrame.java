@@ -189,11 +189,11 @@ public class SettingsFrame extends JFrame {
 
         enableProxyField.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                boolean enableProxy = enableProxyField.isSelected();
-                httpProxyField.setEnabled(enableProxy);
-                httpProxyPortField.setEnabled(enableProxy);
-                httpProxyUserField.setEnabled(enableProxy);
-                httpProxyPasswordField.setEnabled(enableProxy);
+                boolean newEnableProxy = enableProxyField.isSelected();
+                httpProxyField.setEnabled(newEnableProxy);
+                httpProxyPortField.setEnabled(newEnableProxy);
+                httpProxyUserField.setEnabled(newEnableProxy);
+                httpProxyPasswordField.setEnabled(newEnableProxy);
             }
         });
 

@@ -23,7 +23,7 @@ public class Settings {
         configFilePath = value;
     }
 
-    public static boolean isFirstStart() {
+    public static synchronized boolean isFirstStart() {
         return isFirstStart;
     }
 

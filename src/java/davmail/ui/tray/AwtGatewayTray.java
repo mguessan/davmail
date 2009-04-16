@@ -25,8 +25,8 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected AwtGatewayTray() {
     }
 
-    protected static AboutFrame aboutFrame;
-    protected static SettingsFrame settingsFrame;
+    static AboutFrame aboutFrame;
+    static SettingsFrame settingsFrame;
 
     private static TrayIcon trayIcon = null;
     private static Image image = null;

@@ -69,7 +69,7 @@ public class AbstractConnection extends Thread {
      * @throws IOException on error
      */
     public void sendClient(String prefix, String message) throws IOException {
-        StringBuffer logBuffer = new StringBuffer("> ");
+        StringBuilder logBuffer = new StringBuilder("> ");
         if (prefix != null) {
             logBuffer.append(prefix);
             os.write(prefix.getBytes());

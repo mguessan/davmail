@@ -852,7 +852,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             }
         }
-        if (properties.size() > 0) {
+        if (!properties.isEmpty()) {
             session.updateMessage(message, properties);
         }
     }
@@ -875,7 +875,7 @@ public class ImapConnection extends AbstractConnection {
         } else {
             throw new IOException("Invalid credentials");
         }
-        int backslashindex = userName.indexOf("\\");
+        int backslashindex = userName.indexOf('\\');
         if (backslashindex > 0) {
             userName = userName.substring(0, backslashindex) + userName.substring(backslashindex + 1);
         }

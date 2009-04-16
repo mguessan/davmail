@@ -256,10 +256,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     if (Settings.isFirstStart()) {
                         settingsFrame.setVisible(true);
                     }
-                    // ready
-                    isReady = true;
                     synchronized (mainThread) {
-                        mainThread.notify();
+                        // ready
+                        isReady = true;
+                        mainThread.notifyAll();
                     }
 
                     while (!shell.isDisposed()) {
