@@ -27,13 +27,13 @@ public class TestExchangeSession {
             session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg++]);
 
             ExchangeSession.Folder folder = session.getFolder(argv[currentArg++]);
-            String messageName;
-            messageName = URIUtil.decode(argv[currentArg]);
 
             long startTime = System.currentTimeMillis();
-            ExchangeSession.Message messageTest = session.getMessage(folder.folderUrl + "/" + messageName);
+            ExchangeSession.MessageList messageList = session.getAllMessages(folder.folderUrl);
             System.out.println("******");
-            messageTest.write(System.out);
+            for (ExchangeSession.Message message : messageList) {
+                message.write(System.out);
+            }
             System.out.println("Elapsed time " + (System.currentTimeMillis() - startTime) + " ms");
 
             session.purgeOldestTrashAndSentMessages();
