@@ -265,8 +265,14 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
-        String eventPath = xmlEncodeName(event.getPath());
-        response.startResponse(URIUtil.encodePath(request.getPath()) + "/" + URIUtil.encodeWithinQuery(eventPath));
+        StringBuilder eventPath = new StringBuilder();
+        eventPath.append(URIUtil.encodePath(request.getPath()));
+        if (!(eventPath.charAt(eventPath.length()-1) == '/')) {
+            eventPath.append('/');
+        }
+        String eventName = xmlEncodeName(event.getPath()); 
+        eventPath.append(URIUtil.encodeWithinQuery(eventName));
+        response.startResponse(eventPath.toString());
         response.startPropstat();
         if (request.hasProperty("calendar-data")) {
             response.appendCalendarData(event.getICS());
@@ -281,7 +287,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:resourcetype");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", eventPath);
+            response.appendProperty("D:displayname", eventName);
         }
         response.endPropStatOK();
         response.endResponse();
