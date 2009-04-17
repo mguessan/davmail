@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -46,6 +47,10 @@ public class DavGatewayTray {
         return davGatewayTray == null || davGatewayTray.isActive();
     }
 
+    protected static void displayMessage(BundleMessage message, Priority priority) {
+        displayMessage(message.format(), priority);
+    }
+
     protected static void displayMessage(String message, Priority priority) {
         LOGGER.log(priority, message);
         if (davGatewayTray != null) {
@@ -53,16 +58,20 @@ public class DavGatewayTray {
         }
     }
 
+    protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
+        displayMessage(message.format(), e, priority);
+    }
+
     protected static void displayMessage(String message, Exception e, Priority priority) {
         StringBuilder buffer = new StringBuilder();
-            if (message != null) {
-                buffer.append(message).append(" ");
-            }
-            if (e.getMessage() != null) {
-                buffer.append(e.getMessage());
-            } else {
-                buffer.append(e.toString());
-            }
+        if (message != null) {
+            buffer.append(message).append(' ');
+        }
+        if (e.getMessage() != null) {
+            buffer.append(e.getMessage());
+        } else {
+            buffer.append(e.toString());
+        }
         LOGGER.log(priority, buffer.toString(), e);
         if (davGatewayTray != null
                 && (!(e instanceof NetworkDownException) || isActive())) {
@@ -77,11 +86,23 @@ public class DavGatewayTray {
         displayMessage(message, Priority.DEBUG);
     }
 
+    public static void debug(BundleMessage message) {
+        displayMessage(message, Priority.DEBUG);
+    }
+
     public static void info(String message) {
         displayMessage(message, Priority.INFO);
     }
 
+    public static void info(BundleMessage message) {
+        displayMessage(message, Priority.INFO);
+    }
+
     public static void warn(String message) {
+        displayMessage(message, Priority.WARN);
+    }
+
+    public static void warn(BundleMessage message) {
         displayMessage(message, Priority.WARN);
     }
 
@@ -90,7 +111,7 @@ public class DavGatewayTray {
     }
 
     public static void error(Exception e) {
-        displayMessage(null, e, Priority.ERROR);
+        displayMessage((String) null, e, Priority.ERROR);
     }
 
     public static void debug(String message, Exception e) {
@@ -105,7 +126,15 @@ public class DavGatewayTray {
         displayMessage(message, e, Priority.WARN);
     }
 
+    public static void warn(BundleMessage message, Exception e) {
+        displayMessage(message, e, Priority.WARN);
+    }
+
     public static void error(String message, Exception e) {
+        displayMessage(message, e, Priority.ERROR);
+    }
+
+    public static void error(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.ERROR);
     }
 
@@ -120,7 +149,7 @@ public class DavGatewayTray {
                 davGatewayTray = new SwtGatewayTray();
                 davGatewayTray.init();
             } catch (ClassNotFoundException e) {
-                DavGatewayTray.info("SWT not available, fallback to JDK 1.6 system tray support");
+                DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
             }
             // try java6 tray support
             if (davGatewayTray == null) {
@@ -134,7 +163,7 @@ public class DavGatewayTray {
                         davGatewayTray.init();
                     }
                 } catch (NoClassDefFoundError e) {
-                    DavGatewayTray.info("JDK 1.6 needed for system tray support");
+                    DavGatewayTray.info(new BundleMessage("LOG_SYSTEM_TRAY_NOT_AVAILABLE"));
                 }
             }
             if (davGatewayTray == null) {
@@ -171,7 +200,7 @@ public class DavGatewayTray {
             URL imageUrl = classloader.getResource(fileName);
             result = ImageIO.read(imageUrl);
         } catch (IOException e) {
-            DavGatewayTray.warn("Unable to load image", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
         return result;
     }

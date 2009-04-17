@@ -13,7 +13,9 @@ import java.net.Socket;
  */
 public class AbstractConnection extends Thread {
 
-    protected enum State {INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA}
+    protected enum State {
+        INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA
+    }
 
     protected final Socket client;
 
@@ -35,7 +37,7 @@ public class AbstractConnection extends Thread {
 
     // Initialize the streams and set thread name
     public AbstractConnection(String name, Socket clientSocket, String encoding) {
-        super(name + "-" + clientSocket.getPort());
+        super(name + '-' + clientSocket.getPort());
         this.client = clientSocket;
         try {
             if (encoding == null) {
@@ -47,7 +49,7 @@ public class AbstractConnection extends Thread {
             os = new BufferedOutputStream(client.getOutputStream());
         } catch (IOException e) {
             close();
-            DavGatewayTray.error("Exception while getting socket streams", e);
+            DavGatewayTray.error(new BundleMessage("LOG_EXCEPTION_GETTING_SOCKET_STREAMS"), e);
         }
     }
 
@@ -96,8 +98,8 @@ public class AbstractConnection extends Thread {
      * Send only bytes to client.
      *
      * @param messageBytes content
-     * @param      offset   the start offset in the data.
-     * @param      length   the number of bytes to write.
+     * @param offset       the start offset in the data.
+     * @param length       the number of bytes to write.
      * @throws IOException on error
      */
     public void sendClient(byte[] messageBytes, int offset, int length) throws IOException {
@@ -121,8 +123,8 @@ public class AbstractConnection extends Thread {
             if (line.startsWith("PASS")) {
                 DavGatewayTray.debug("< PASS ********");
                 // IMAP LOGIN
-            } else if (state == State.INITIAL && line.indexOf(' ')>=0 &&
-                line.substring(line.indexOf(' ')+1).startsWith("LOGIN")) {
+            } else if (state == State.INITIAL && line.indexOf(' ') >= 0 &&
+                    line.substring(line.indexOf(' ') + 1).startsWith("LOGIN")) {
                 DavGatewayTray.debug("< LOGIN ********");
             } else if (state == State.PASSWORD) {
                 DavGatewayTray.debug("< ********");
@@ -147,20 +149,20 @@ public class AbstractConnection extends Thread {
             try {
                 in.close();
             } catch (IOException e2) {
-                DavGatewayTray.warn("Exception closing client input stream", e2);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_INPUT_STREAM"), e2);
             }
         }
         if (os != null) {
             try {
                 os.close();
             } catch (IOException e2) {
-                DavGatewayTray.warn("Exception closing client output stream", e2);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_OUTPUT_STREAM"), e2);
             }
         }
         try {
             client.close();
         } catch (IOException e2) {
-            DavGatewayTray.warn("Exception closing client socket", e2);
+            DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e2);
         }
     }
 

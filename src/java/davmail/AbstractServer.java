@@ -66,7 +66,7 @@ public abstract class AbstractServer extends Thread {
                 clientSocket = serverSocket.accept();
                 // set default timeout to 5 minutes
                 clientSocket.setSoTimeout(300000);
-                DavGatewayTray.debug("Connection from " + clientSocket.getInetAddress() + " on port " + port);
+                DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
                 // only accept localhost connections for security reasons
                 if (Settings.getBooleanProperty("davmail.allowRemote") ||
                         clientSocket.getInetAddress().toString().indexOf("127.0.0.1") > 0) {
@@ -74,13 +74,13 @@ public abstract class AbstractServer extends Thread {
                     connection.start();
                 } else {
                     clientSocket.close();
-                    DavGatewayTray.warn("Connection from external client refused");
+                    DavGatewayTray.warn(new BundleMessage("LOG_EXTERNAL_CONNECTION_REFUSED"));
                 }
             }
         } catch (IOException e) {
             // do not warn if exception on socket close (gateway restart)
             if (!serverSocket.isClosed()) {
-                DavGatewayTray.warn("Exception while listening for connections", e);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_LISTENING_FOR_CONNECTIONS"), e);
             }
         } finally {
             try {
@@ -88,7 +88,7 @@ public abstract class AbstractServer extends Thread {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                DavGatewayTray.warn("Exception closing client socket", e);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e);
             }
             if (connection != null) {
                 connection.close();
@@ -104,7 +104,7 @@ public abstract class AbstractServer extends Thread {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            DavGatewayTray.warn("Exception closing server socket", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_SERVER_SOCKET"), e);
         }
     }
 }
