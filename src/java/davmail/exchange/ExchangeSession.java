@@ -792,9 +792,9 @@ public class ExchangeSession {
             if (bccBuffer.length() > 0) {
                 bccBuffer.append(',');
             }
-            bccBuffer.append("<");
+            bccBuffer.append('<');
             bccBuffer.append(recipient);
-            bccBuffer.append(">");
+            bccBuffer.append('>');
         }
 
         String bcc = bccBuffer.toString();
@@ -1479,8 +1479,8 @@ public class ExchangeSession {
                         }
                         if ("ORGANIZER".equals(key)) {
                             organizer = value;
-                            // exclude current user from recipients
-                        } else if (!email.equalsIgnoreCase(value)) {
+                        // exclude current user and invalid values from recipients
+                        } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >=0) {
                             attendees.add(value);
                         }
                     }
