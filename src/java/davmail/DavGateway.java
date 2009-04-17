@@ -17,19 +17,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.BindException;
+import java.util.ArrayList;
 
 /**
  * DavGateway main class
  */
 public class DavGateway {
+    private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "http://davmail.sourceforge.net/version.txt";
+
     private DavGateway() {
     }
 
-    private static SmtpServer smtpServer;
-    private static PopServer popServer;
-    private static ImapServer imapServer;
-    private static CaldavServer caldavServer;
-    private static LdapServer ldapServer;
+    private static final ArrayList<AbstractServer> serverList = new ArrayList<AbstractServer>();
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
@@ -51,75 +50,69 @@ public class DavGateway {
     public static void start() {
         // register custom SSL Socket factory
         DavGatewaySSLProtocolSocketFactory.register();
-        try {
-            // prepare HTTP connection pool
-            DavGatewayHttpClientFacade.start();
 
-            String message = "DavMail gateway listening on";
-            int smtpPort = Settings.getIntProperty("davmail.smtpPort");
-            if (smtpPort != 0) {
-                smtpServer = new SmtpServer(smtpPort);
-                smtpServer.start();
-                message += " SMTP port " + smtpServer.getPort();
-            }
-            int popPort = Settings.getIntProperty("davmail.popPort");
-            if (popPort != 0) {
-                popServer = new PopServer(Settings.getIntProperty("davmail.popPort"));
-                popServer.start();
-                message += " POP port " + popServer.getPort();
-            }
-            int imapPort = Settings.getIntProperty("davmail.imapPort");
-            if (imapPort != 0) {
-                imapServer = new ImapServer(Settings.getIntProperty("davmail.imapPort"));
-                imapServer.start();
-                message += " IMAP port " + imapServer.getPort();
-            }
-            int caldavPort = Settings.getIntProperty("davmail.caldavPort");
-            if (caldavPort != 0) {
-                caldavServer = new CaldavServer(Settings.getIntProperty("davmail.caldavPort"));
-                caldavServer.start();
-                message += " Caldav port " + caldavServer.getPort();
-            }
-            int ldapPort = Settings.getIntProperty("davmail.ldapPort");
-            if (ldapPort != 0) {
-                ldapServer = new LdapServer(Settings.getIntProperty("davmail.ldapPort"));
-                ldapServer.start();
-                message += " LDAP port " + ldapServer.getPort();
-            }
+        // prepare HTTP connection pool
+        DavGatewayHttpClientFacade.start();
 
-            DavGatewayTray.info(message);
+        int smtpPort = Settings.getIntProperty("davmail.smtpPort");
+        if (smtpPort != 0) {
+            serverList.add(new SmtpServer(smtpPort));
+        }
+        int popPort = Settings.getIntProperty("davmail.popPort");
+        if (popPort != 0) {
+            serverList.add(new PopServer(popPort));
+        }
+        int imapPort = Settings.getIntProperty("davmail.imapPort");
+        if (imapPort != 0) {
+            serverList.add(new ImapServer(imapPort));
+        }
+        int caldavPort = Settings.getIntProperty("davmail.caldavPort");
+        if (caldavPort != 0) {
+            serverList.add(new CaldavServer(caldavPort));
+        }
+        int ldapPort = Settings.getIntProperty("davmail.ldapPort");
+        if (ldapPort != 0) {
+            serverList.add(new LdapServer(ldapPort));
+        }
 
-            // check for new version
-            String releasedVersion = getReleasedVersion();
-            String currentVersion = getCurrentVersion();
-            if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-                DavGatewayTray.info("A new version (" + releasedVersion + ") of DavMail Gateway is available !");
+        StringBuilder message = new StringBuilder();
+        StringBuilder errorMessage = new StringBuilder();
+        message.append(BundleMessage.format("LOG_DAVMAIL_GATEWAY_LISTENING"));
+        for (AbstractServer server : serverList) {
+            try {
+                server.bind();
+                server.start();
+                message.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+            } catch (BindException e) {
+                errorMessage.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+            } catch (IOException e) {
+                errorMessage.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             }
-        } catch (BindException e) {
-            DavGatewayTray.error("Unable to create server socket: the specified port is not allowed or in use by another process");
-        } catch (IOException e) {
-            DavGatewayTray.error("Exception creating server socket", e);
+        }
+
+        DavGatewayTray.info(message.toString());
+        if (errorMessage.length() > 0) {
+            DavGatewayTray.error(new BundleMessage("LOG_SOCKET_BIND_FAILED", errorMessage.toString()));
+        }
+
+        // check for new version
+        String releasedVersion = getReleasedVersion();
+        String currentVersion = getCurrentVersion();
+        if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+            DavGatewayTray.info(new BundleMessage("LOG_NEW_VERSION_AVAILABLE", releasedVersion));
         }
 
     }
 
-    protected static void stopServer(AbstractServer server) {
-        if (server != null) {
+    public static void stop() {
+        for (AbstractServer server:serverList) {
             server.close();
             try {
                 server.join();
             } catch (InterruptedException e) {
-                DavGatewayTray.warn("Exception waiting for listener to die", e);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
             }
         }
-    }
-
-    public static void stop() {
-        stopServer(smtpServer);
-        stopServer(popServer);
-        stopServer(imapServer);
-        stopServer(caldavServer);
-        stopServer(ldapServer);
         // close pooled connections
         DavGatewayHttpClientFacade.stop();
         // clear session cache
@@ -135,7 +128,7 @@ public class DavGateway {
         String version = null;
         BufferedReader versionReader = null;
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
-        GetMethod getMethod = new GetMethod("http://davmail.sourceforge.net/version.txt");
+        GetMethod getMethod = new GetMethod(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
         try {
             httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(1000);
             int status = httpClient.executeMethod(getMethod);
@@ -144,7 +137,7 @@ public class DavGateway {
                 version = versionReader.readLine();
             }
         } catch (IOException e) {
-            DavGatewayTray.debug("Exception getting released version");
+            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
         } finally {
             if (versionReader != null) {
                 try {

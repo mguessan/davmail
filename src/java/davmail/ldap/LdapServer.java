@@ -17,10 +17,14 @@ public class LdapServer extends AbstractServer {
      * Start the thread.
      *
      * @param port pop listen port, 389 if not defined (0)
-     * @throws IOException on error
      */
-    public LdapServer(int port) throws IOException {
-        super("LdapServer", port, LdapServer.DEFAULT_PORT);
+    public LdapServer(int port)  {
+        super(LdapServer.class.getName(), port, LdapServer.DEFAULT_PORT);
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "LDAP";
     }
 
     @Override

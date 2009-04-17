@@ -12,8 +12,9 @@ import java.net.Socket;
  */
 public abstract class AbstractServer extends Thread {
     private final int port;
-    private final ServerSocket serverSocket;
+    private ServerSocket serverSocket;
 
+    public abstract String getProtocolName();
     /**
      * Server socket TCP port
      *
@@ -30,16 +31,21 @@ public abstract class AbstractServer extends Thread {
      * @param name        thread name
      * @param port        tcp socket chosen port
      * @param defaultPort tcp socket default port
-     * @throws IOException unable to create server socket
      */
-    public AbstractServer(String name, int port, int defaultPort) throws IOException {
+    public AbstractServer(String name, int port, int defaultPort) {
         super(name);
         if (port == 0) {
             this.port = defaultPort;
         } else {
             this.port = port;
         }
+    }
 
+    /**
+     * Bind server socket on defined port.
+     * @throws IOException unable to create server socket
+     */
+    public void bind() throws IOException {
         String bindAddress = Settings.getProperty("davmail.bindAddress");
         //noinspection SocketOpenedButNotSafelyClosed
         if (bindAddress == null || bindAddress.length() == 0) {

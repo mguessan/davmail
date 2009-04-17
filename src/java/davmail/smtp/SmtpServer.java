@@ -1,10 +1,9 @@
 package davmail.smtp;
 
-import davmail.AbstractServer;
 import davmail.AbstractConnection;
+import davmail.AbstractServer;
 
 import java.net.Socket;
-import java.io.IOException;
 
 public class SmtpServer extends AbstractServer {
     public static final int DEFAULT_PORT = 25;
@@ -13,10 +12,14 @@ public class SmtpServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      * @param port smtp port
-     * @throws IOException on error
      */
-    public SmtpServer(int port) throws IOException {
-        super("SmtpServer", port, SmtpServer.DEFAULT_PORT);
+    public SmtpServer(int port) {
+        super(SmtpServer.class.getName(), port, SmtpServer.DEFAULT_PORT);
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "SMTP";
     }
 
     @Override

@@ -110,11 +110,19 @@ public class DavGatewayTray {
         displayMessage(message, Priority.ERROR);
     }
 
+    public static void error(BundleMessage message) {
+        displayMessage(message, Priority.ERROR);
+    }
+
     public static void error(Exception e) {
         displayMessage((String) null, e, Priority.ERROR);
     }
 
     public static void debug(String message, Exception e) {
+        displayMessage(message, e, Priority.DEBUG);
+    }
+
+    public static void debug(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.DEBUG);
     }
 

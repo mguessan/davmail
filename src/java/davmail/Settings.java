@@ -7,6 +7,7 @@ import java.io.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 
 /**
  * Settings facade
@@ -55,31 +56,31 @@ public class Settings {
                 SETTINGS.put("davmail.keepDelay", "30");
                 SETTINGS.put("davmail.sentKeepDelay", "90");
                 SETTINGS.put("davmail.caldavPastDelay", "90");
-                SETTINGS.put("davmail.allowRemote", "false");
+                SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
                 SETTINGS.put("davmail.bindAddress", "");
-                SETTINGS.put("davmail.enableProxy", "false");
+                SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
                 SETTINGS.put("davmail.proxyHost", "");
                 SETTINGS.put("davmail.proxyPort", "");
                 SETTINGS.put("davmail.proxyUser", "");
                 SETTINGS.put("davmail.proxyPassword", "");
-                SETTINGS.put("davmail.server", "false");
+                SETTINGS.put("davmail.server", Boolean.FALSE.toString());
                 SETTINGS.put("davmail.server.certificate.hash", "");
 
                 // logging
-                SETTINGS.put("log4j.rootLogger", "WARN");
-                SETTINGS.put("log4j.logger.davmail", "DEBUG");
-                SETTINGS.put("log4j.logger.httpclient.wire", "WARN");
-                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", "WARN");
+                SETTINGS.put("log4j.rootLogger", Priority.WARN.toString());
+                SETTINGS.put("log4j.logger.davmail", Priority.DEBUG.toString());
+                SETTINGS.put("log4j.logger.httpclient.wire", Priority.WARN.toString());
+                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Priority.WARN.toString());
                 save();
             }
         } catch (IOException e) {
-            DavGatewayTray.error("Unable to load settings: ", e);
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_LOAD_SETTINGS"), e);
         } finally {
             if (fileInputStream != null) {
                 try {
                     fileInputStream.close();
                 } catch (IOException e) {
-                    DavGatewayTray.debug("Error closing configuration file: ", e);
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOGING_CONFIG_FILE"), e);
                 }
             }
         }
@@ -97,13 +98,13 @@ public class Settings {
             fileOutputStream = new FileOutputStream(configFilePath);
             SETTINGS.store(fileOutputStream, "DavMail settings");
         } catch (IOException e) {
-            DavGatewayTray.error("Unable to store settings: ", e);
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
         } finally {
             if (fileOutputStream != null) {
                 try {
                     fileOutputStream.close();
                 } catch (IOException e) {
-                    DavGatewayTray.debug("Error closing configuration file: ", e);
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
                 }
             }
         }
@@ -129,14 +130,14 @@ public class Settings {
                 value = Integer.parseInt(propertyValue);
             }
         } catch (NumberFormatException e) {
-            DavGatewayTray.error("Invalid setting value in " + property, e);
+            DavGatewayTray.error(new BundleMessage("LOG_INVALID_SETTING_VALUE", property), e);
         }
         return value;
     }
 
     public static synchronized boolean getBooleanProperty(String property) {
         String propertyValue = SETTINGS.getProperty(property);
-        return "true".equals(propertyValue);
+        return Boolean.parseBoolean(propertyValue);
     }
 
     protected static String getLoggingPrefix(String category) {

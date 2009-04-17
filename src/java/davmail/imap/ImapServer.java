@@ -1,11 +1,10 @@
 package davmail.imap;
 
 
-import java.net.Socket;
-import java.io.IOException;
-
-import davmail.AbstractServer;
 import davmail.AbstractConnection;
+import davmail.AbstractServer;
+
+import java.net.Socket;
 
 /**
  * Pop3 server
@@ -18,13 +17,18 @@ public class ImapServer extends AbstractServer {
      * Start the thread.
      *
      * @param port imap listen port, 143 if not defined (0)
-     * @throws IOException on error
      */
-    public ImapServer(int port) throws IOException {
-        super("ImapServer", port, ImapServer.DEFAULT_PORT);
+    public ImapServer(int port) {
+        super(ImapServer.class.getName(), port, ImapServer.DEFAULT_PORT);
     }
 
-    @Override public AbstractConnection createConnectionHandler(Socket clientSocket) {
+    @Override
+    public String getProtocolName() {
+        return "IMAP";
+    }
+
+    @Override
+    public AbstractConnection createConnectionHandler(Socket clientSocket) {
         return new ImapConnection(clientSocket);
     }
 

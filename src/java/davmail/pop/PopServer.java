@@ -1,11 +1,10 @@
 package davmail.pop;
 
 
-import davmail.AbstractServer;
 import davmail.AbstractConnection;
+import davmail.AbstractServer;
 
 import java.net.Socket;
-import java.io.IOException;
 
 /**
  * Pop3 server
@@ -17,10 +16,14 @@ public class PopServer extends AbstractServer {
      * Create a ServerSocket to listen for connections.
      * Start the thread.
      * @param port pop listen port, 110 if not defined (0)
-     * @throws IOException on error
      */
-    public PopServer(int port) throws IOException {
-        super("PopServer", port, PopServer.DEFAULT_PORT);
+    public PopServer(int port)  {
+        super(PopServer.class.getName(), port, PopServer.DEFAULT_PORT);
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "POP";
     }
 
     @Override

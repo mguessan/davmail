@@ -21,4 +21,8 @@ public class BundleMessage {
        return MessageFormat.format(MESSAGE_BUNDLE.getString(key), arguments);
     }
 
+    public static String format(String key, Object ... arguments) {
+        return MessageFormat.format(MESSAGE_BUNDLE.getString(key), arguments);
+    }
+
 }
