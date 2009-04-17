@@ -5,6 +5,7 @@ import com.sun.jndi.ldap.BerDecoder;
 import com.sun.jndi.ldap.BerEncoder;
 import davmail.AbstractConnection;
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
@@ -33,6 +34,7 @@ public class LdapConnection extends AbstractConnection {
     static final String COMPUTER_CONTEXT = "cn=computers, o=od";
 
     static final List<String> NAMING_CONTEXTS = new ArrayList<String>();
+
     static {
         NAMING_CONTEXTS.add(BASE_CONTEXT);
         NAMING_CONTEXTS.add(OD_BASE_CONTEXT);
@@ -192,8 +194,9 @@ public class LdapConnection extends AbstractConnection {
         IGNORE_MAP.add("ou");
         IGNORE_MAP.add("apple-realname");
         IGNORE_MAP.add("apple-group-nestedgroup");
-        IGNORE_MAP.add("apple-group-memberguid"); 
+        IGNORE_MAP.add("apple-group-memberguid");
         IGNORE_MAP.add("macaddress");
+        IGNORE_MAP.add("memberuid");
     }
 
     // LDAP version
@@ -253,7 +256,7 @@ public class LdapConnection extends AbstractConnection {
             parseIntWithTag = BerDecoder.class.getDeclaredMethod("parseIntWithTag", int.class);
             parseIntWithTag.setAccessible(true);
         } catch (NoSuchMethodException e) {
-            DavGatewayTray.error("Unable to get BerDecoder.parseIntWithTag method");
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_GET_PARSEINTWITHTAG"));
             throw new RuntimeException(e);
         }
     }
@@ -275,13 +278,13 @@ public class LdapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public LdapConnection(Socket clientSocket) {
-        super("LdapConnection-" + clientSocket.getPort(), clientSocket);
+        super(LdapConnection.class.getName() + '-' + clientSocket.getPort(), clientSocket);
         try {
             is = new BufferedInputStream(client.getInputStream());
             os = new BufferedOutputStream(client.getOutputStream());
         } catch (IOException e) {
             close();
-            DavGatewayTray.error("Exception while getting socket streams", e);
+            DavGatewayTray.error(new BundleMessage("LOG_EXCEPTION_GETTING_SOCKET_STREAMS"), e);
         }
     }
 
@@ -289,7 +292,8 @@ public class LdapConnection extends AbstractConnection {
         return ldapVersion == LDAP_VERSION3;
     }
 
-    @Override public void run() {
+    @Override
+    public void run() {
         byte[] inbuf = new byte[2048];   // Buffer for reading incoming bytes
         int bytesread;  // Number of bytes in inbuf
         int bytesleft;  // Number of bytes that need to read for completing resp
@@ -373,15 +377,15 @@ public class LdapConnection extends AbstractConnection {
             }
 
         } catch (SocketException e) {
-            DavGatewayTray.debug("Connection closed");
+            DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (SocketTimeoutException e) {
-            DavGatewayTray.debug("Closing connection on timeout");
+            DavGatewayTray.debug(new BundleMessage("LOG_CLOSE_CONNECTION_ON_TIMEOUT"));
         } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
                 sendErr(0, LDAP_REP_BIND, e);
             } catch (IOException e2) {
-                DavGatewayTray.warn("Exception sending error to client", e2);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
         } finally {
             close();
@@ -403,7 +407,7 @@ public class LdapConnection extends AbstractConnection {
                 password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
 
                 if (userName.length() > 0 && password.length() > 0) {
-                    DavGatewayTray.debug("LDAP_REQ_BIND " + currentMessageId + " " + userName);
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                     try {
                         session = ExchangeSessionFactory.getInstance(userName, password);
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
@@ -411,13 +415,13 @@ public class LdapConnection extends AbstractConnection {
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
                     }
                 } else {
-                    DavGatewayTray.debug("LDAP_REQ_BIND " + currentMessageId + " anonymous" + userName);
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_ANONYMOUS", currentMessageId));
                     // anonymous bind
                     sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                 }
 
             } else if (requestOperation == LDAP_REQ_UNBIND) {
-                DavGatewayTray.debug("LDAP_REQ_UNBIND " + currentMessageId);
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND", currentMessageId));
                 if (session != null) {
                     session = null;
                 }
@@ -438,8 +442,7 @@ public class LdapConnection extends AbstractConnection {
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
 
                 int size = 0;
-                DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " base=" + dn + " scope: " + scope + " sizelimit: " + sizeLimit + " timelimit: " + timelimit +
-                        " filter: " + ldapFilter.toString() + " returning attributes: " + returningAttributes);
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter.toString(), returningAttributes));
 
                 if (scope == SCOPE_BASE_OBJECT) {
                     if ("".equals(dn)) {
@@ -449,75 +452,85 @@ public class LdapConnection extends AbstractConnection {
                         size = 1;
                         // root
                         sendBaseContext(currentMessageId);
-                    } else if (dn.startsWith("uid=") && dn.indexOf(',') > 0 && session != null) {
-                        // single user request
-                        String uid = dn.substring("uid=".length(), dn.indexOf(','));
-                        Map<String, Map<String, String>> persons = session.galFind("AN", uid);
-                        Map<String, String> person = persons.get(uid.toLowerCase());
-                        // filter out non exact results
-                        if (persons.size() > 1 || person == null) {
-                            persons = new HashMap<String, Map<String, String>>();
-                            if (person != null) {
-                                persons.put(uid.toLowerCase(), person);
+                    } else if (dn.startsWith("uid=") && dn.indexOf(',') > 0) {
+                        if (session != null) {
+                            // single user request
+                            String uid = dn.substring("uid=".length(), dn.indexOf(','));
+                            Map<String, Map<String, String>> persons = session.galFind("AN", uid);
+                            Map<String, String> person = persons.get(uid.toLowerCase());
+                            // filter out non exact results
+                            if (persons.size() > 1 || person == null) {
+                                persons = new HashMap<String, Map<String, String>>();
+                                if (person != null) {
+                                    persons.put(uid.toLowerCase(), person);
+                                }
                             }
+                            size = persons.size();
+                            sendPersons(currentMessageId, dn.substring(dn.indexOf(',')), persons, returningAttributes);
+                        } else {
+                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
                         }
-                        size = persons.size();
-                        sendPersons(currentMessageId, dn.substring(dn.indexOf(',')), persons, returningAttributes);
                     } else {
-                        DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                     }
                 } else if (COMPUTER_CONTEXT.equals(dn)) {
                     size = 1;
                     // computer context for iCal
                     sendComputerContext(currentMessageId, returningAttributes);
-                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) && (session != null)) {
-                    Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
-                    if (ldapFilter.isFullSearch()) {
-                        // full search
-                        for (char c = 'A'; c < 'Z'; c++) {
-                            if (persons.size() < sizeLimit) {
-                                for (Map<String, String> person : session.galFind("AN", String.valueOf(c)).values()) {
-                                    persons.put(person.get("AN"), person);
-                                    if (persons.size() == sizeLimit) {
-                                        break;
-                                    }
-                                }
-                            }
-                            if (persons.size() == sizeLimit) {
-                                break;
-                            }
-                        }
-                    } else {
-                        for (Map.Entry<String, SimpleFilter> entry : ldapFilter.getOrFilterEntrySet()) {
-                            if (persons.size() < sizeLimit) {
-                                for (Map<String, String> person : session.galFind(entry.getKey(), entry.getValue().value).values()) {
-                                    if ((entry.getValue().operator == LDAP_FILTER_SUBSTRINGS)
-                                            || (entry.getValue().operator == LDAP_FILTER_EQUALITY &&
-                                            entry.getValue().value.equalsIgnoreCase(person.get(entry.getKey())))) {
+                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn))) {
+                    if (session != null) {
+                        Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
+                        if (ldapFilter.isFullSearch()) {
+                            // full search
+                            for (char c = 'A'; c < 'Z'; c++) {
+                                if (persons.size() < sizeLimit) {
+                                    for (Map<String, String> person : session.galFind("AN", String.valueOf(c)).values()) {
                                         persons.put(person.get("AN"), person);
-                                    }
-                                    if (persons.size() == sizeLimit) {
-                                        break;
+                                        if (persons.size() == sizeLimit) {
+                                            break;
+                                        }
                                     }
                                 }
+                                if (persons.size() == sizeLimit) {
+                                    break;
+                                }
                             }
-                            if (persons.size() == sizeLimit) {
-                                break;
+                        } else {
+                            for (Map.Entry<String, SimpleFilter> entry : ldapFilter.getOrFilterEntrySet()) {
+                                if (persons.size() < sizeLimit) {
+                                    for (Map<String, String> person : session.galFind(entry.getKey(), entry.getValue().value).values()) {
+                                        if ((entry.getValue().operator == LDAP_FILTER_SUBSTRINGS)
+                                                || (entry.getValue().operator == LDAP_FILTER_EQUALITY &&
+                                                entry.getValue().value.equalsIgnoreCase(person.get(entry.getKey())))) {
+                                            persons.put(person.get("AN"), person);
+                                        }
+                                        if (persons.size() == sizeLimit) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (persons.size() == sizeLimit) {
+                                    break;
+                                }
                             }
                         }
-                    }
 
-                    size = persons.size();
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " found " + size + " results");
-                    sendPersons(currentMessageId, ", "+dn, persons, returningAttributes);
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " end");
-                } else {
-                    DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " unrecognized dn " + dn);
+                        size = persons.size();
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_FOUND_RESULTS", currentMessageId, size));
+                        sendPersons(currentMessageId, ", " + dn, persons, returningAttributes);
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_END", currentMessageId));
+                    } else {
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
+                    }
+                } else if (dn != null && dn.length() > 0){
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 
                 if (size == sizeLimit) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SIZE_LIMIT_EXCEEDED", currentMessageId));
                     sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
                 } else {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SUCCESS", currentMessageId));
                     sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
                 }
             } else if (requestOperation == LDAP_REQ_ABANDON) {
@@ -529,16 +542,16 @@ public class LdapConnection extends AbstractConnection {
                 } catch (InvocationTargetException e) {
                     DavGatewayTray.error(e);
                 }
-                DavGatewayTray.debug("LDAP_REQ_ABANDON " + currentMessageId + " for search " + canceledMessageId + ", too late !");
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_ABANDON_SEARCH", currentMessageId, canceledMessageId));
             } else {
-                DavGatewayTray.debug("Unsupported operation: " + requestOperation);
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_OPERATION", requestOperation));
                 sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_OTHER, "Unsupported operation");
             }
         } catch (IOException e) {
             try {
                 sendErr(currentMessageId, LDAP_REP_RESULT, e);
             } catch (IOException e2) {
-                DavGatewayTray.debug("Exception sending error to client", e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
             throw e;
         }
@@ -548,10 +561,9 @@ public class LdapConnection extends AbstractConnection {
         LdapFilter ldapFilter = new LdapFilter();
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
-            if ("objectclass".equals(attributeName)) {
-                ldapFilter.addFilter(attributeName, new SimpleFilter());
-            } else {
-                DavGatewayTray.warn("Unsupported filter");
+            ldapFilter.addFilter(attributeName, new SimpleFilter());
+            if (!"objectclass".equals(attributeName)) {
+                DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", ldapFilter.toString()));
             }
         } else {
             int[] seqSize = new int[1];
@@ -606,7 +618,7 @@ public class LdapConnection extends AbstractConnection {
         } else if (ldapFilterOperator == LDAP_FILTER_EQUALITY) {
             value.append(reqBer.parseString(isLdapV3()));
         } else {
-            DavGatewayTray.warn("Unsupported filter value");
+            DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_VALUE"));
         }
 
         String sValue = value.toString();
@@ -615,7 +627,7 @@ public class LdapConnection extends AbstractConnection {
             // replace with actual alias instead of login name search
             if (sValue.equals(userName)) {
                 sValue = session.getAlias();
-                DavGatewayTray.debug("Replaced " +userName+ " with " + sValue+" in uid filter");
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REPLACED_UID_FILTER", userName, sValue));
             }
         }
 
@@ -711,7 +723,7 @@ public class LdapConnection extends AbstractConnection {
                     ldapPerson.put("uid", userName);
                 }
             }
-            DavGatewayTray.debug("LDAP_REQ_SEARCH " + currentMessageId + " send uid=" + ldapPerson.get("uid") + baseContext + " " + ldapPerson);
+            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
         }
 
@@ -724,7 +736,7 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendRootDSE(int currentMessageId) throws IOException {
-        DavGatewayTray.debug("Sending root DSE");
+        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_SEND_ROOT_DSE"));
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("objectClass", "top");
@@ -739,16 +751,8 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    protected String hostName() {
-        try {
+    protected String hostName() throws UnknownHostException {
             return InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (UnknownHostException ex) {
-            DavGatewayTray.debug("Couldn't get hostname");
-        }
-
-        // If we can't get the hostname, just return localhost.
-
-        return "localhost";
     }
 
     /**
@@ -773,7 +777,7 @@ public class LdapConnection extends AbstractConnection {
         addIf(attributes, returningAttributes, "cn", hostName());
 
         String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
-        DavGatewayTray.debug("Sending computer context " + dn+" "+attributes);
+        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_SEND_COMPUTER_CONTEXT", dn, attributes));
 
         sendEntry(currentMessageId, dn, attributes);
     }
@@ -876,9 +880,9 @@ public class LdapConnection extends AbstractConnection {
                 isFullSearch = true;
             } else {
                 if (IGNORE_MAP.contains(attributeName)) {
-                    DavGatewayTray.debug("Ignoring filter attribute: " + attributeName + " = " + simpleFilter.value);
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_IGNORE_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
                 } else {
-                    DavGatewayTray.warn("Unsupported filter attribute: " + attributeName + " = " + simpleFilter.value);
+                    DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
                 }
             }
         }
