@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.ui.OSXAdapter;
+import davmail.BundleMessage;
 
 /**
  * Extended Awt tray with OSX extensions.
@@ -20,7 +21,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
             OSXAdapter.setPreferencesHandler(this, AwtGatewayTray.class.getDeclaredMethod("preferences", (Class[]) null));
             OSXAdapter.setQuitHandler(this, OSXAwtGatewayTray.class.getDeclaredMethod("quit", (Class[]) null));
         } catch (Exception e) {
-            DavGatewayTray.error("Error while loading the OSXAdapter", e);
+            DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_OSXADAPTER"), e);
         }
     }
 }

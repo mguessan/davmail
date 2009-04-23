@@ -1,6 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.ui.AcceptCertificateDialog;
 
@@ -61,7 +62,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         // if user already accepted a certificate,
         if (acceptedCertificateHash != null && acceptedCertificateHash.length() > 0
                 && acceptedCertificateHash.equals(certificateHash)) {
-            DavGatewayTray.debug("Found permanently accepted certificate, hash " + acceptedCertificateHash);
+            DavGatewayTray.debug(new BundleMessage("LOG_FOUND_ACCEPTED_CERTIFICATE", acceptedCertificateHash));
         } else {
             boolean isCertificateTrusted;
             if (Settings.getBooleanProperty("davmail.server")) {
@@ -82,29 +83,33 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
     protected boolean isCertificateTrusted(X509Certificate certificate) {
         BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
         String answer = null;
-        while (!"y".equals(answer) && !"Y".equals(answer) && !"n".equals(answer) && !"N".equals(answer) ) {
-            System.out.println("Server Certificate:");
-            System.out.println("Issued to: " + DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN()));
-            System.out.println("Issued by: " + getRDN(certificate.getIssuerDN()));
-            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-            String notBefore = formatter.format(certificate.getNotBefore());
-            System.out.println("Valid from: " + notBefore);
-            String notAfter = formatter.format(certificate.getNotAfter());
-            System.out.println("Valid until: " + notAfter);
-            System.out.println("Serial: " + getFormattedSerial(certificate));
-            String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
-            System.out.println("FingerPrint: " + sha1Hash);
-            System.out.println();
-            System.out.println("Server provided an untrusted certificate,");
-            System.out.println("you can choose to accept or deny access.");
-            System.out.println("Accept certificate (y/n)?");
+        String yes = BundleMessage.format("UI_ANSWER_YES");
+        String no = BundleMessage.format("UI_ANSWER_NO");
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(BundleMessage.format("UI_SERVER_CERTIFICATE")).append(":\n");
+        buffer.append(BundleMessage.format("UI_ISSUED_TO")).append(": ")
+                .append(DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN())).append('\n');
+        buffer.append(BundleMessage.format("UI_ISSUED_BY")).append(": ")
+                .append(getRDN(certificate.getIssuerDN())).append('\n');
+        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+        String notBefore = formatter.format(certificate.getNotBefore());
+        buffer.append(BundleMessage.format("UI_VALID_FROM")).append(": ").append(notBefore).append('\n');
+        String notAfter = formatter.format(certificate.getNotAfter());
+        buffer.append(BundleMessage.format("UI_VALID_UNTIL")).append(": ").append(notAfter).append('\n');
+        buffer.append(BundleMessage.format("UI_SERIAL")).append(": ").append(getFormattedSerial(certificate)).append('\n');
+        String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
+        buffer.append(BundleMessage.format("UI_FINGERPRINT")).append(": ").append(sha1Hash).append('\n');
+        buffer.append('\n');
+        buffer.append(BundleMessage.format("UI_UNTRUSTED_CERTIFICATE")).append('\n');
+        while (!yes.equals(answer) && !no.equals(answer)) {
+            System.out.println(buffer.toString());
             try {
-                answer = inReader.readLine();
+                answer = inReader.readLine().toLowerCase();
             } catch (IOException e) {
                 System.err.println(e);
             }
         }
-        return "y".equals(answer) || "Y".equals(answer);
+        return yes.equals(answer);
     }
 
     public static String getRDN(Principal principal) {

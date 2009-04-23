@@ -1,6 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -165,7 +166,7 @@ public final class DavGatewayHttpClientFacade {
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
         HttpMethod currentMethod = method;
         try {
-            DavGatewayTray.debug("executeFollowRedirects: " + currentMethod.getURI());
+            DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS", currentMethod.getURI()));
             httpClient.executeMethod(currentMethod);
             Header location = currentMethod.getResponseHeader("Location");
             int redirectCount = 0;
@@ -175,7 +176,7 @@ public final class DavGatewayHttpClientFacade {
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(location.getValue());
                 currentMethod.setFollowRedirects(false);
-                DavGatewayTray.debug("executeFollowRedirects: " + currentMethod.getURI() + " redirectCount:" + redirectCount);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS_COUNT", currentMethod.getURI(), redirectCount));
                 httpClient.executeMethod(currentMethod);
                 location = currentMethod.getResponseHeader("Location");
             }
@@ -305,7 +306,7 @@ public final class DavGatewayHttpClientFacade {
         if (multiThreadedHttpConnectionManager == null) {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
             multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
-            httpConnectionManagerThread = new Thread("HttpConnectionManager") {
+            httpConnectionManagerThread = new Thread(HttpConnectionManager.class.getName()) {
                 @Override public void run() {
                     boolean terminated = false;
                     while (!terminated) {

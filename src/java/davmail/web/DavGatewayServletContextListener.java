@@ -2,6 +2,7 @@ package davmail.web;
 
 import davmail.Settings;
 import davmail.DavGateway;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.servlet.ServletContextListener;
@@ -20,21 +21,21 @@ public class DavGatewayServletContextListener implements ServletContextListener 
             Settings.load(settingInputStream);
             DavGateway.start();
         } catch (IOException e) {
-            DavGatewayTray.error("Error loading settings file from classpath: ", e);
+            DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_SETTINGS"), e);
         } finally {
             if (settingInputStream != null) {
                 try {
                     settingInputStream.close();
                 } catch (IOException e) {
-                    DavGatewayTray.debug("Error closing configuration file: ", e);
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIGURATION_FILE"), e);
                 }
             }
         }
-        DavGatewayTray.debug("DavMail Gateway started");
+        DavGatewayTray.debug(new BundleMessage("LOG_DAVMAIL_STARTED"));
     }
 
     public void contextDestroyed(ServletContextEvent event) {
-        DavGatewayTray.debug("Stopping DavMail Gateway...");
+        DavGatewayTray.debug(new BundleMessage("LOG_STOPPING_DAVMAIL"));
         DavGateway.stop();
     }
 }

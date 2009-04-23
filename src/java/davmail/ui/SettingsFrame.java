@@ -2,6 +2,7 @@ package davmail.ui;
 
 import davmail.DavGateway;
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Level;
 
@@ -86,7 +87,7 @@ public class SettingsFrame extends JFrame {
 
     protected JPanel getSettingsPanel() {
         JPanel settingsPanel = new JPanel(new GridLayout(6, 2));
-        settingsPanel.setBorder(BorderFactory.createTitledBorder("Gateway"));
+        settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
         urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
@@ -139,40 +140,40 @@ public class SettingsFrame extends JFrame {
             }
         });
 
-        addSettingComponent(settingsPanel, "OWA url: ", urlField, "Base outlook web access URL");
-        addPortSettingComponent(settingsPanel, "Local POP port: ", popPortField, popPortCheckBox,
-                "Local POP server port to configure in POP client");
-        addPortSettingComponent(settingsPanel, "Local IMAP port: ", imapPortField, imapPortCheckBox,
-                "Local IMAP server port to configure in IMAP client");
-        addPortSettingComponent(settingsPanel, "Local SMTP port: ", smtpPortField, smtpPortCheckBox,
-                "Local SMTP server port to configure in POP client");
-        addPortSettingComponent(settingsPanel, "Caldav HTTP port: ", caldavPortField, caldavPortCheckBox,
-                "Local Caldav server port to configure in Caldav (calendar) client");
-        addPortSettingComponent(settingsPanel, "Local LDAP port: ", ldapPortField, ldapPortCheckBox,
-                "Local LDAP server port to configure in add directory (addresse book) client");
+        addSettingComponent(settingsPanel, BundleMessage.format("UI_OWA_URL"), urlField, BundleMessage.format("UI_OWA_URL_HELP"));
+        addPortSettingComponent(settingsPanel, BundleMessage.format("UI_POP_PORT"), popPortField, popPortCheckBox,
+                BundleMessage.format("UI_POP_PORT_HELP"));
+        addPortSettingComponent(settingsPanel, BundleMessage.format("UI_IMAP_PORT"), imapPortField, imapPortCheckBox,
+                BundleMessage.format("UI_IMAP_PORT_HELP"));
+        addPortSettingComponent(settingsPanel, BundleMessage.format("UI_SMTP_PORT"), smtpPortField, smtpPortCheckBox,
+                BundleMessage.format("UI_SMTP_PORT_HELP"));
+        addPortSettingComponent(settingsPanel, BundleMessage.format("UI_CALDAV_PORT"), caldavPortField, caldavPortCheckBox,
+                BundleMessage.format("UI_CALDAV_PORT_HELP"));
+        addPortSettingComponent(settingsPanel, BundleMessage.format("UI_LDAP_PORT"), ldapPortField, ldapPortCheckBox,
+                BundleMessage.format("UI_LDAP_PORT_HELP"));
         return settingsPanel;
     }
 
     protected JPanel getDelaysPanel() {
         JPanel delaysPanel = new JPanel(new GridLayout(3, 2));
-        delaysPanel.setBorder(BorderFactory.createTitledBorder("Delays"));
+        delaysPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DELAYS")));
 
         keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);
         sentKeepDelayField = new JTextField(Settings.getProperty("davmail.sentKeepDelay"), 4);
         caldavPastDelayField = new JTextField(Settings.getProperty("davmail.caldavPastDelay"), 4);
 
-        addSettingComponent(delaysPanel, "Keep delay: ", keepDelayField,
-                "Number of days to keep messages in trash");
-        addSettingComponent(delaysPanel, "Sent keep delay: ", sentKeepDelayField,
-                "Number of days to keep messages in sent folder");
-        addSettingComponent(delaysPanel, "Calendar past events: ", caldavPastDelayField,
-                "Get events in the past not older than specified days count, leave empty for no limits");
+        addSettingComponent(delaysPanel, BundleMessage.format("UI_KEEP_DELAY"), keepDelayField,
+                BundleMessage.format("UI_KEEP_DELAY_HELP"));
+        addSettingComponent(delaysPanel, BundleMessage.format("UI_SENT_KEEP_DELAY"), sentKeepDelayField,
+                BundleMessage.format("UI_SENT_KEEP_DELAY_HELP"));
+        addSettingComponent(delaysPanel, BundleMessage.format("UI_CALENDAR_PAST_EVENTS"), caldavPastDelayField,
+                BundleMessage.format("UI_CALENDAR_PAST_EVENTS_HELP"));
         return delaysPanel;
     }
 
     protected JPanel getProxyPanel() {
         JPanel proxyPanel = new JPanel(new GridLayout(5, 2));
-        proxyPanel.setBorder(BorderFactory.createTitledBorder("Proxy"));
+        proxyPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_PROXY")));
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField = new JCheckBox();
@@ -197,17 +198,17 @@ public class SettingsFrame extends JFrame {
             }
         });
 
-        addSettingComponent(proxyPanel, "Enable proxy: ", enableProxyField);
-        addSettingComponent(proxyPanel, "Proxy server: ", httpProxyField);
-        addSettingComponent(proxyPanel, "Proxy port: ", httpProxyPortField);
-        addSettingComponent(proxyPanel, "Proxy user: ", httpProxyUserField);
-        addSettingComponent(proxyPanel, "Proxy password: ", httpProxyPasswordField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_ENABLE_PROXY"), enableProxyField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_SERVER"), httpProxyField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PORT"), httpProxyPortField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_USER"), httpProxyUserField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PASSWORD"), httpProxyPasswordField);
         return proxyPanel;
     }
 
     public JPanel getNetworkSettingsPanel() {
         JPanel networkSettingsPanel = new JPanel(new GridLayout(4, 2));
-        networkSettingsPanel.setBorder(BorderFactory.createTitledBorder("Network"));
+        networkSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_NETWORK")));
 
         allowRemoteField = new JCheckBox();
         allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
@@ -219,20 +220,20 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
 
-        addSettingComponent(networkSettingsPanel, "Bind address: ", bindAddressField,
-                "Bind only to the specified network address");
-        addSettingComponent(networkSettingsPanel, "Allow Remote Connections: ", allowRemoteField,
-                "Allow remote connections to the gateway (server mode)");
-        addSettingComponent(networkSettingsPanel, "Server certificate hash: ", certHashField,
-                "Manually accepted server certificate hash");
-        addSettingComponent(networkSettingsPanel, "Disable update check: ", disableUpdateCheck,
-                "Disable DavMail check for new version");
+        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_BIND_ADDRESS"), bindAddressField,
+                BundleMessage.format("UI_BIND_ADDRESS_HELP"));
+        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION"), allowRemoteField,
+                BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION_HELP"));
+        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_SERVER_CERTIFICATE_HASH"), certHashField,
+                BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
+        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
+                BundleMessage.format("UI_DISABLE_VERSION_CHECK"));
         return networkSettingsPanel;
     }
 
     public JPanel getLoggingSettingsPanel() {
         JPanel loggingSettingsPanel = new JPanel(new GridLayout(4, 2));
-        loggingSettingsPanel.setBorder(BorderFactory.createTitledBorder("Logging levels"));
+        loggingSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LOGGING_LEVELS")));
 
         rootLoggingLevelField = new JComboBox(LOG_LEVELS);
         davmailLoggingLevelField = new JComboBox(LOG_LEVELS);
@@ -244,10 +245,10 @@ public class SettingsFrame extends JFrame {
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
 
-        addSettingComponent(loggingSettingsPanel, "Default: ", rootLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, "DavMail: ", davmailLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, "HttpClient: ", httpclientLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, "Wire: ", wireLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_DEFAULT"), rootLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_DAVMAIL"), davmailLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_HTTPCLIENT"), httpclientLoggingLevelField);
+        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_WIRE"), wireLoggingLevelField);
 
         return loggingSettingsPanel;
     }
@@ -292,7 +293,7 @@ public class SettingsFrame extends JFrame {
 
     public SettingsFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("DavMail Gateway Settings");
+        setTitle(BundleMessage.format("UI_DAVMAIL_SETTINGS"));
         setIconImage(DavGatewayTray.getFrameIcon());
 
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -311,7 +312,7 @@ public class SettingsFrame extends JFrame {
         mainPanel.add(getDelaysPanel());
         mainPanel.add(Box.createVerticalGlue());
 
-        tabbedPane.add("Main", mainPanel);
+        tabbedPane.add(BundleMessage.format("UI_TAB_MAIN"), mainPanel);
 
         JPanel advancedPanel = new JPanel();
         advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
@@ -321,19 +322,19 @@ public class SettingsFrame extends JFrame {
         proxyPanel.add(getProxyPanel());
         // empty panel
         proxyPanel.add(new JPanel());
-        tabbedPane.add("Proxy", proxyPanel);
+        tabbedPane.add(BundleMessage.format("UI_TAB_PROXY"), proxyPanel);
 
         advancedPanel.add(getNetworkSettingsPanel());
         advancedPanel.add(getLoggingSettingsPanel());
 
-        tabbedPane.add("Advanced", advancedPanel);
+        tabbedPane.add(BundleMessage.format("UI_TAB_ADVANCED"), advancedPanel);
 
         add(BorderLayout.CENTER, tabbedPane);
 
         JPanel buttonPanel = new JPanel();
-        JButton cancel = new JButton("Cancel");
-        JButton ok = new JButton("Save");
-        JButton help = new JButton("Help");
+        JButton cancel = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
+        JButton ok = new JButton(BundleMessage.format("UI_BUTTON_SAVE"));
+        JButton help = new JButton(BundleMessage.format("UI_BUTTON_HELP"));
         ActionListener save = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 // save options

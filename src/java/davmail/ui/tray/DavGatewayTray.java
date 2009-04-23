@@ -82,6 +82,10 @@ public class DavGatewayTray {
         }
     }
 
+    /**
+     * @deprecated
+     * @param message
+     */
     public static void debug(String message) {
         displayMessage(message, Priority.DEBUG);
     }
@@ -89,6 +93,10 @@ public class DavGatewayTray {
     public static void debug(BundleMessage message) {
         displayMessage(message, Priority.DEBUG);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void info(String message) {
         displayMessage(message, Priority.INFO);
@@ -97,6 +105,10 @@ public class DavGatewayTray {
     public static void info(BundleMessage message) {
         displayMessage(message, Priority.INFO);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void warn(String message) {
         displayMessage(message, Priority.WARN);
@@ -105,6 +117,10 @@ public class DavGatewayTray {
     public static void warn(BundleMessage message) {
         displayMessage(message, Priority.WARN);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void error(String message) {
         displayMessage(message, Priority.ERROR);
@@ -117,6 +133,10 @@ public class DavGatewayTray {
     public static void error(Exception e) {
         displayMessage((String) null, e, Priority.ERROR);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void debug(String message, Exception e) {
         displayMessage(message, e, Priority.DEBUG);
@@ -125,10 +145,18 @@ public class DavGatewayTray {
     public static void debug(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.DEBUG);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void info(String message, Exception e) {
         displayMessage(message, e, Priority.INFO);
     }
+    /**
+     * @deprecated
+     * @param message
+     */
 
     public static void warn(String message, Exception e) {
         displayMessage(message, e, Priority.WARN);
@@ -137,7 +165,10 @@ public class DavGatewayTray {
     public static void warn(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.WARN);
     }
-
+    /**
+     * @deprecated
+     * @param message
+     */
     public static void error(String message, Exception e) {
         displayMessage(message, e, Priority.ERROR);
     }

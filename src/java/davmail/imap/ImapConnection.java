@@ -3,6 +3,7 @@ package davmail.imap;
 import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
 import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
+import davmail.BundleMessage;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
@@ -31,7 +32,7 @@ public class ImapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public ImapConnection(Socket clientSocket) {
-        super("ImapConnection", clientSocket, null);
+        super(ImapConnection.class.getName(), clientSocket, null);
     }
 
     @Override public void run() {
@@ -231,7 +232,7 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                             conditions.append(")");
                                             String query = conditions.query.toString();
-                                            DavGatewayTray.debug("Search: " + conditions.query);
+                                            DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", conditions.query));
                                             if ("AND ()".equals(query)) {
                                                 query = null;
                                             }
@@ -360,7 +361,7 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
-                                        DavGatewayTray.debug(command + " on " + currentFolder.folderName);
+                                        DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
                                         currentFolder = session.getFolder(currentFolder.folderName);
                                         currentFolder.loadMessages();
                                         sendClient("* " + currentFolder.size() + " EXISTS");
@@ -428,32 +429,26 @@ public class ImapConnection extends AbstractConnection {
 
             os.flush();
         } catch (SocketTimeoutException e) {
-            DavGatewayTray.debug("Closing connection on timeout");
+            DavGatewayTray.debug(new BundleMessage("LOG_CLOSE_CONNECTION_ON_TIMEOUT"));
             try {
                 sendClient("* BYE Closing connection");
             } catch (IOException e1) {
-                DavGatewayTray.debug("Exception closing connection on timeout");
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CONNECTION_ON_TIMEOUT"));
             }
         } catch (SocketException e) {
-            DavGatewayTray.debug("Connection closed");
+            DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            StringBuilder buffer = new StringBuilder();
-            if (e.getMessage() != null) {
-                buffer.append(e.getMessage());
-            } else {
-                buffer.append(e);
-            }
-            String message = buffer.toString();
+            DavGatewayTray.error(e);
             try {
+                String message = (e.getMessage()==null)?e.toString():e.getMessage();
                 if (commandId != null) {
                     sendClient(commandId + " BAD unable to handle request: " + message);
                 } else {
                     sendClient("* BYE unable to handle request: " + message);
                 }
             } catch (IOException e2) {
-                DavGatewayTray.warn("Exception sending error to client", e2);
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
-            DavGatewayTray.error("Exception handling client: " + message, e);
         } finally {
             close();
         }
@@ -528,7 +523,7 @@ public class ImapConnection extends AbstractConnection {
                     message.write(bodyOutputStream);
                     rfc822size = bodyOutputStream.size;
                     baos.close();
-                    DavGatewayTray.debug("Message RFC822 size: " + rfc822size + " buffer size:" + baos.size());
+
                     if (bodystructure) {
                         // Apple Mail: need to build full bodystructure
                         appendBodyStructure(buffer, baos);

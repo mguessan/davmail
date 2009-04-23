@@ -71,13 +71,12 @@ public class AbstractConnection extends Thread {
      * @throws IOException on error
      */
     public void sendClient(String prefix, String message) throws IOException {
-        StringBuilder logBuffer = new StringBuilder("> ");
         if (prefix != null) {
-            logBuffer.append(prefix);
             os.write(prefix.getBytes());
+            DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_PREFIX_MESSAGE", prefix, message));
+        } else {
+            DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_MESSAGE", message));
         }
-        logBuffer.append(message);
-        DavGatewayTray.debug(logBuffer.toString());
         os.write(message.getBytes());
         os.write((char) 13);
         os.write((char) 10);
@@ -121,20 +120,20 @@ public class AbstractConnection extends Thread {
         String line = in.readLine();
         if (line != null) {
             if (line.startsWith("PASS")) {
-                DavGatewayTray.debug("< PASS ********");
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_PASS"));
                 // IMAP LOGIN
             } else if (state == State.INITIAL && line.indexOf(' ') >= 0 &&
                     line.substring(line.indexOf(' ') + 1).startsWith("LOGIN")) {
-                DavGatewayTray.debug("< LOGIN ********");
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_LOGIN"));
             } else if (state == State.PASSWORD) {
-                DavGatewayTray.debug("< ********");
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_PASSWORD"));
                 // HTTP Basic Authentication
             } else if (line.startsWith("Authorization:")) {
-                DavGatewayTray.debug("< Authorization: ********");
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_AUTHORIZATION"));
             } else if (line.startsWith("AUTH PLAIN")) {
-                DavGatewayTray.debug("< AUTH PLAIN ********");
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_AUTH_PLAIN"));
             } else {
-                DavGatewayTray.debug("< " + line);
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_LINE", line));
             }
         }
         DavGatewayTray.switchIcon();

@@ -1,6 +1,7 @@
 package davmail.ui;
 
 import davmail.DavGateway;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.imageio.ImageIO;
@@ -24,7 +25,7 @@ public class AboutFrame extends JFrame {
 
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("About DavMail Gateway");
+        setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
         setIconImage(DavGatewayTray.getFrameIcon());
         try {
             JLabel imageLabel = new JLabel();
@@ -37,7 +38,7 @@ public class AboutFrame extends JFrame {
             imagePanel.add(imageLabel);
             add(BorderLayout.WEST, imagePanel);
         } catch (IOException e) {
-            DavGatewayTray.error("Unable to create icon", e);
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_ICON"), e);
         }
 
         jEditorPane = new JEditorPane();
@@ -46,7 +47,7 @@ public class AboutFrame extends JFrame {
         stylesheet.addRule("body { font-size:small;font-family: " + jEditorPane.getFont().getFamily() + "}");
         jEditorPane.setEditorKit(htmlEditorKit);
         jEditorPane.setContentType("text/html");
-	    jEditorPane.setText(getContent());
+	    jEditorPane.setText(getContent(null));
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
@@ -56,7 +57,7 @@ public class AboutFrame extends JFrame {
                     try {
                         DesktopBrowser.browse(hle.getURL().toURI());
                     } catch (URISyntaxException e) {
-                        DavGatewayTray.error("Unable to open link", e);
+                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
                     }
                     dispose();
                 }
@@ -69,7 +70,7 @@ public class AboutFrame extends JFrame {
         add(BorderLayout.CENTER, mainPanel);
 
         JPanel buttonPanel = new JPanel();
-        JButton ok = new JButton("OK");
+        JButton ok = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         ActionListener close = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 dispose();
@@ -90,34 +91,24 @@ public class AboutFrame extends JFrame {
                         getSize().height / 2);
     }
 
-    String getContent() {
+    String getContent(String releasedVersion) {
         Package davmailPackage = DavGateway.class.getPackage();
         StringBuilder buffer = new StringBuilder();
-        buffer.append("<html><b>DavMail Gateway</b><br>");
-        buffer.append("By Mickaël Guessant<br><br>");
+        buffer.append(BundleMessage.format("UI_ABOUT_DAVMAIL_AUTHOR"));
         String currentVersion = davmailPackage.getImplementationVersion();
         if (currentVersion != null) {
-            buffer.append("Current version: ").append(currentVersion).append("<br>");
+            buffer.append(BundleMessage.format("UI_CURRENT_VERSION", currentVersion));
         }
-        String releasedVersion = DavGateway.getReleasedVersion();
         if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
-            buffer.append("Latest version available: ").append(releasedVersion).append("<br>" +
-                    "A new version of DavMail Gateway is available.<br>" +
-                    "<a href=\"http://sourceforge.net/project/platformdownload.php?group_id=184600\">Download latest version</a><br>");
+            buffer.append(BundleMessage.format("UI_LATEST_VERSION", releasedVersion));
         }
-        buffer.append("<br>Help and setup instructions available at:<br>" +
-                "<a href=\"http://davmail.sourceforge.net\">http://davmail.sourceforge.net</a><br>" +
-                "<br>" +
-                "To send comments or report bugs, <br>use <a href=\"http://sourceforge.net/tracker/?group_id=184600\">" +
-                "DavMail Sourceforge trackers</a><br>" +
-                "or contact me at <a href=\"mailto:mguessan@free.fr\">mguessan@free.fr</a>" +
-                "</html>");
+        buffer.append(BundleMessage.format("UI_HELP_INSTRUCTIONS"));
         return buffer.toString();
     }
 
 
     public void update() {
-        jEditorPane.setText(getContent());
+        jEditorPane.setText(getContent(DavGateway.getReleasedVersion()));
         pack();
     }
 

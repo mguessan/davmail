@@ -2,6 +2,7 @@ package davmail.caldav;
 
 import davmail.AbstractConnection;
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
@@ -37,7 +38,7 @@ public class CaldavConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public CaldavConnection(Socket clientSocket) {
-        super("CaldavConnection", clientSocket, "UTF-8");
+        super(CaldavConnection.class.getName(), clientSocket, "UTF-8");
         wireLogger.setLevel(Settings.getLoggingLevel("httpclient.wire"));
     }
 
@@ -94,7 +95,7 @@ public class CaldavConnection extends AbstractConnection {
                 keepAlive = MAX_KEEP_ALIVE_TIME;
             }
             client.setSoTimeout(keepAlive * 1000);
-            DavGatewayTray.debug("Set socket timeout to " + keepAlive + " seconds");
+            DavGatewayTray.debug(new BundleMessage("LOG_SET_SOCKET_TIMEOUT", keepAlive));
         }
     }
 
@@ -142,15 +143,15 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.resetIcon();
             }
         } catch (SocketTimeoutException e) {
-            DavGatewayTray.debug("Closing connection on timeout");
+            DavGatewayTray.debug(new BundleMessage("LOG_CLOSE_CONNECTION_ON_TIMEOUT"));
         } catch (SocketException e) {
-            DavGatewayTray.debug("Connection closed");
+            DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
                 sendErr(e);
             } catch (IOException e2) {
-                DavGatewayTray.debug("Exception sending error to client", e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
         } finally {
             close();
@@ -258,7 +259,7 @@ public class CaldavConnection extends AbstractConnection {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
-            DavGatewayTray.debug("Listing event " + (++count) + "/" + size);
+            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_EVENT", ++count, size));
             DavGatewayTray.switchIcon();
             appendEventResponse(response, request, event);
         }
@@ -383,9 +384,9 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendInbox(response, request, null);
         if (request.getDepth() == 1) {
-            DavGatewayTray.debug("Searching calendar messages...");
+            DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
             List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
-            DavGatewayTray.debug("Found " + events.size() + " calendar messages");
+            DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_MESSAGES", events.size()));
             appendEventsResponses(response, request, events);
         }
         response.endMultistatus();
@@ -406,9 +407,9 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendCalendar(response, request, null);
         if (request.getDepth() == 1) {
-            DavGatewayTray.debug("Searching calendar events at " + folderPath + " ...");
+            DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_EVENTS", folderPath));
             List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
-            DavGatewayTray.debug("Found " + events.size() + " calendar events");
+            DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
             appendEventsResponses(response, request, events);
         }
         response.endMultistatus();
@@ -443,7 +444,7 @@ public class CaldavConnection extends AbstractConnection {
             int count = 0;
             int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {
-                DavGatewayTray.debug("Report event " + (++count) + "/" + total);
+                DavGatewayTray.debug(new BundleMessage("LOG_REPORT_EVENT", ++count, total));
                 DavGatewayTray.switchIcon();
                 try {
                     String eventName = getEventFileNameFromPath(href);
@@ -455,7 +456,7 @@ public class CaldavConnection extends AbstractConnection {
                         appendEventResponse(response, request, session.getEvent(folderPath, eventName));
                     }
                 } catch (HttpException e) {
-                    DavGatewayTray.warn("Event not found:" + href);
+                    DavGatewayTray.warn(new BundleMessage("LOG_EVENT_NOT_FOUND", href));
                     notFound.add(href);
                 }
             }
@@ -645,10 +646,9 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendUnsupported(CaldavRequest request) throws IOException {
-        StringBuilder message = new StringBuilder();
-        message.append("Unsupported request: ").append(request.toString());
-        DavGatewayTray.error(message.toString());
-        sendErr(HttpStatus.SC_BAD_REQUEST, message.toString());
+        BundleMessage message = new BundleMessage("LOG_UNSUPORTED_REQUEST",request);
+        DavGatewayTray.error(message);
+        sendErr(HttpStatus.SC_BAD_REQUEST, message.format());
     }
 
     public void sendErr(int status, String message) throws IOException {
@@ -902,7 +902,7 @@ public class CaldavConnection extends AbstractConnection {
                 try {
                     depth = Integer.valueOf(depthValue);
                 } catch (NumberFormatException e) {
-                    DavGatewayTray.warn("Invalid depth value: " + depthValue);
+                    DavGatewayTray.warn(new BundleMessage("LOG_INVALID_DEPTH", depthValue));
                 }
             }
         }

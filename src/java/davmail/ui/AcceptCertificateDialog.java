@@ -2,6 +2,7 @@ package davmail.ui;
 
 import davmail.http.DavGatewayX509TrustManager;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.BundleMessage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -38,36 +39,36 @@ public class AcceptCertificateDialog extends JDialog {
         String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
         DateFormat formatter = DateFormat.getDateInstance(DateFormat.MEDIUM);
 
-        setTitle("DavMail: Accept certificate ?");
+        setTitle(BundleMessage.format("UI_ACCEPT_CERTIFICATE"));
         try {
             setIconImage(DavGatewayTray.getFrameIcon());
         } catch (NoSuchMethodError error) {
-            DavGatewayTray.debug("Unable to set JDialog icon image (not available under Java 1.5)");
+            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
         }
 
         JPanel subjectPanel = new JPanel();
         subjectPanel.setLayout(new BoxLayout(subjectPanel, BoxLayout.Y_AXIS));
-        subjectPanel.setBorder(BorderFactory.createTitledBorder("Server Certificate"));
-        addFieldValue(subjectPanel, "Issued to", DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN()));
-        addFieldValue(subjectPanel, "Issued by", DavGatewayX509TrustManager.getRDN(certificate.getIssuerDN()));
+        subjectPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_SERVER_CERTIFICATE")));
+        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_TO"), DavGatewayX509TrustManager.getRDN(certificate.getSubjectDN()));
+        addFieldValue(subjectPanel, BundleMessage.format("UI_ISSUED_BY"), DavGatewayX509TrustManager.getRDN(certificate.getIssuerDN()));
         Date now = new Date();
         String notBefore = formatter.format(certificate.getNotBefore());
         if (now.before(certificate.getNotBefore())) {
            notBefore = "<html><font color=\"#FF0000\">"+notBefore+"</font></html>"; 
         }
-        addFieldValue(subjectPanel, "Valid from", notBefore);
+        addFieldValue(subjectPanel, BundleMessage.format("UI_VALID_FROM"), notBefore);
         String notAfter = formatter.format(certificate.getNotAfter());
         if (now.after(certificate.getNotAfter())) {
            notAfter = "<html><font color=\"#FF0000\">"+notAfter+"</font></html>";
         }
-        addFieldValue(subjectPanel, "Valid until", notAfter);
-        addFieldValue(subjectPanel, "Serial", DavGatewayX509TrustManager.getFormattedSerial(certificate));
-        addFieldValue(subjectPanel, "FingerPrint", sha1Hash);
+        addFieldValue(subjectPanel, BundleMessage.format("UI_VALID_UNTIL"), notAfter);
+        addFieldValue(subjectPanel, BundleMessage.format("UI_SERIAL"), DavGatewayX509TrustManager.getFormattedSerial(certificate));
+        addFieldValue(subjectPanel, BundleMessage.format("UI_FINGERPRINT"), sha1Hash);
 
         JPanel warningPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel imageLabel = new JLabel();
         imageLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
-        imageLabel.setText("<html><b>Server provided an untrusted certificate,<br> you can choose to accept or deny access</b></html>");
+        imageLabel.setText(BundleMessage.format("UI_UNTRUSTED_CERTIFICATE_HTML"));
         warningPanel.add(imageLabel);
         add(warningPanel, BorderLayout.NORTH);
         add(subjectPanel, BorderLayout.CENTER);
@@ -85,8 +86,8 @@ public class AcceptCertificateDialog extends JDialog {
 
     protected JPanel getButtonPanel() {
         JPanel buttonPanel = new JPanel();
-        JButton accept = new JButton("Accept");
-        JButton deny = new JButton("Deny");
+        JButton accept = new JButton(BundleMessage.format("UI_BUTTON_ACCEPT"));
+        JButton deny = new JButton(BundleMessage.format("UI_BUTTON_DENY"));
         accept.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 accepted = true;
@@ -116,9 +117,9 @@ public class AcceptCertificateDialog extends JDialog {
                 }
             });
         } catch (InterruptedException ie) {
-            DavGatewayTray.error("Error waiting for certificate check", ie);
+            DavGatewayTray.error(new BundleMessage("UI_ERROR_WAITING_FOR_CERTIFICATE_CHECK"), ie);
         } catch (InvocationTargetException ite) {
-            DavGatewayTray.error("Error waiting for certificate check", ite);
+            DavGatewayTray.error(new BundleMessage("UI_ERROR_WAITING_FOR_CERTIFICATE_CHECK"), ite);
         }
 
         return answer[0];

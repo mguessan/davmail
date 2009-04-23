@@ -278,7 +278,7 @@ public class LdapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public LdapConnection(Socket clientSocket) {
-        super(LdapConnection.class.getName() + '-' + clientSocket.getPort(), clientSocket);
+        super(LdapConnection.class.getName(), clientSocket);
         try {
             is = new BufferedInputStream(client.getInputStream());
             os = new BufferedOutputStream(client.getOutputStream());
@@ -522,7 +522,7 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
                     }
-                } else if (dn != null && dn.length() > 0){
+                } else if (dn != null && dn.length() > 0) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 
@@ -752,7 +752,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected String hostName() throws UnknownHostException {
-            return InetAddress.getLocalHost().getCanonicalHostName();
+        return InetAddress.getLocalHost().getCanonicalHostName();
     }
 
     /**

@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.ui.OSXAdapter;
+import davmail.BundleMessage;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -19,12 +20,12 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
     @Override
     protected void buildMenu() {
         // create a popup menu
-        JMenu menu = new JMenu("Logs");
+        JMenu menu = new JMenu(BundleMessage.format("UI_LOGS"));
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(menu);
         mainFrame.setJMenuBar(menuBar);
 
-        JMenuItem logItem = new JMenuItem("Show logs...");
+        JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
         logItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showLogs();
@@ -43,7 +44,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
             OSXAdapter.setPreferencesHandler(this, FrameGatewayTray.class.getDeclaredMethod("preferences", (Class[]) null));
             OSXAdapter.setQuitHandler(this, OSXFrameGatewayTray.class.getDeclaredMethod("quit", (Class[]) null));
         } catch (Exception e) {
-            DavGatewayTray.error("Error while loading the OSXAdapter", e);
+            DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_OSXADAPTER"), e);
         }
     }
 }

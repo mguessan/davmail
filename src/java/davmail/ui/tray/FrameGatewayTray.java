@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -188,7 +189,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            DavGatewayTray.warn("Unable to set system look and feel", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_SYSTEM_LOOK_AND_FEEL"), e);
         }
 
         image = DavGatewayTray.loadImage("tray.png");

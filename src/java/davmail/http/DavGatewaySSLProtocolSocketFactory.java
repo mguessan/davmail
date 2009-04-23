@@ -1,6 +1,7 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpsURL;
 import org.apache.commons.httpclient.params.HttpConnectionParams;
@@ -41,7 +42,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
                         new Protocol(protocol, (ProtocolSocketFactory)new DavGatewaySSLProtocolSocketFactory(), port));
             }
         } catch (MalformedURLException e) {
-            DavGatewayTray.error("Exception handling url: " + urlString);
+            DavGatewayTray.error(new BundleMessage("LOG_INVALID_URL", urlString));
         }
     }
 

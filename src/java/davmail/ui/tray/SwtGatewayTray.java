@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -88,12 +89,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     }
                     if (messageType != 0) {
                         final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
-                        toolTip.setText("DavMail gateway");
+                        toolTip.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
                         toolTip.setMessage(message);
                         trayItem.setToolTip(toolTip);
                         toolTip.setVisible(true);
                     }
-                    trayItem.setToolTipText("DavMail gateway \n" + message);
+                    trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
                 }
             });
         }
@@ -112,7 +113,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             URL imageUrl = classloader.getResource(fileName);
             result = new Image(display, imageUrl.openStream());
         } catch (IOException e) {
-            DavGatewayTray.warn("Unable to load image", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
         return result;
     }
@@ -127,7 +128,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             }
             UIManager.setLookAndFeel(lafClassName);
         } catch (Exception e) {
-            DavGatewayTray.warn("Unable to set look and feel");
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
         }
 
         new Thread("SWT") {
@@ -140,7 +141,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 if (tray != null) {
 
                     trayItem = new TrayItem(tray, SWT.NONE);
-                    trayItem.setToolTipText("DavMail gateway");
+                    trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
                     awtImage = DavGatewayTray.loadImage("tray.png");
                     image = loadSwtImage("tray.png");
@@ -163,7 +164,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     });
 
                     MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
-                    aboutItem.setText("About...");
+                    aboutItem.setText(BundleMessage.format("UI_ABOUT"));
                     final AboutFrame aboutFrame = new AboutFrame();
                     aboutItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
@@ -194,7 +195,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                     // create menu item for the default action
                     MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
-                    defaultItem.setText("Settings...");
+                    defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
                     defaultItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
                             SwingUtilities.invokeLater(
@@ -210,7 +211,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     });
 
                     MenuItem logItem = new MenuItem(popup, SWT.PUSH);
-                    logItem.setText("Show logs...");
+                    logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
                     logItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
                             SwingUtilities.invokeLater(
@@ -236,7 +237,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     });
 
                     MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
-                    exitItem.setText("Exit");
+                    exitItem.setText(BundleMessage.format("UI_EXIT"));
                     exitItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
                             shell.dispose();
@@ -290,7 +291,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     mainThread.wait(1000);
                 }
             } catch (InterruptedException e) {
-                DavGatewayTray.error("Error waiting for SWT init", e);
+                DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
             }
         }
     }

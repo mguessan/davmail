@@ -54,6 +54,8 @@ public class DavGateway {
         // prepare HTTP connection pool
         DavGatewayHttpClientFacade.start();
 
+        serverList.clear();
+        
         int smtpPort = Settings.getIntProperty("davmail.smtpPort");
         if (smtpPort != 0) {
             serverList.add(new SmtpServer(smtpPort));
@@ -90,7 +92,7 @@ public class DavGateway {
             }
         }
 
-        DavGatewayTray.info(message.toString());
+        DavGatewayTray.info(new BundleMessage("LOG_MESSAGE", message.toString()));
         if (errorMessage.length() > 0) {
             DavGatewayTray.error(new BundleMessage("LOG_SOCKET_BIND_FAILED", errorMessage.toString()));
         }
@@ -125,6 +127,7 @@ public class DavGateway {
     }
 
     public static String getReleasedVersion() {
+        long start = System.currentTimeMillis();
         String version = null;
         BufferedReader versionReader = null;
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
@@ -148,6 +151,7 @@ public class DavGateway {
             }
             getMethod.releaseConnection();
         }
+        System.out.println("Elapsed time: "+(System.currentTimeMillis()-start)+" ms");
         return version;
     }
 }

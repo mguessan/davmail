@@ -1,6 +1,7 @@
 package davmail.ui.tray;
 
 import davmail.Settings;
+import davmail.BundleMessage;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -85,9 +86,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                         messageType = TrayIcon.MessageType.ERROR;
                     }
                     if (messageType != null) {
-                        trayIcon.displayMessage("DavMail gateway", message, messageType);
+                        trayIcon.displayMessage(BundleMessage.format("UI_DAVMAIL_GATEWAY"), message, messageType);
                     }
-                    trayIcon.setToolTip("DavMail gateway \n" + message);
+                    trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
                 }
             }
         });
@@ -125,7 +126,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            DavGatewayTray.warn("Unable to set system look and feel", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_SYSTEM_LOOK_AND_FEEL"), e);
         }
 
         // get the SystemTray instance
@@ -145,7 +146,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        MenuItem aboutItem = new MenuItem("About...");
+        MenuItem aboutItem = new MenuItem(BundleMessage.format("UI_ABOUT"));
         aboutItem.addActionListener(aboutListener);
         popup.add(aboutItem);
 
@@ -157,11 +158,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        MenuItem defaultItem = new MenuItem("Settings...");
+        MenuItem defaultItem = new MenuItem(BundleMessage.format("UI_SETTINGS"));
         defaultItem.addActionListener(settingsListener);
         popup.add(defaultItem);
 
-        MenuItem logItem = new MenuItem("Show logs...");
+        MenuItem logItem = new MenuItem(BundleMessage.format("UI_SHOW_LOGS"));
         logItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 Logger rootLogger = Logger.getRootLogger();
@@ -189,13 +190,13 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the exit action
-        MenuItem exitItem = new MenuItem("Exit");
+        MenuItem exitItem = new MenuItem(BundleMessage.format("UI_EXIT"));
         exitItem.addActionListener(exitListener);
         popup.add(exitItem);
 
         /// ... add other items
         // construct a TrayIcon
-        trayIcon = new TrayIcon(image, "DavMail Gateway", popup);
+        trayIcon = new TrayIcon(image, BundleMessage.format("UI_DAVMAIL_GATEWAY"), popup);
         // set the TrayIcon properties
         trayIcon.addActionListener(settingsListener);
         // ...
@@ -203,7 +204,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         try {
             tray.add(trayIcon);
         } catch (AWTException e) {
-            DavGatewayTray.warn("Unable to create tray", e);
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_CREATE_TRAY"), e);
         }
 
         // display settings frame on first start

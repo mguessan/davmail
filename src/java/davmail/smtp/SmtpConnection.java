@@ -1,6 +1,7 @@
 package davmail.smtp;
 
 import davmail.AbstractConnection;
+import davmail.BundleMessage;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
@@ -21,7 +22,7 @@ public class SmtpConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public SmtpConnection(Socket clientSocket) {
-        super("SmtpConnection", clientSocket, null);
+        super(SmtpConnection.class.getName(), clientSocket, null);
     }
 
     @Override
@@ -117,7 +118,7 @@ public class SmtpConnection extends AbstractConnection {
                                 state = State.AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
                             } catch (Exception e) {
-                                DavGatewayTray.error("Authentication failed", e);
+                                DavGatewayTray.error(e);
                                 state = State.AUTHENTICATED;
                                 sendClient("451 Error : " + e + " " + e.getMessage());
                             }
@@ -136,13 +137,13 @@ public class SmtpConnection extends AbstractConnection {
             }
 
         } catch (SocketException e) {
-            DavGatewayTray.debug("Connection closed");
+            DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
                 sendClient("500 " + ((e.getMessage()==null)?e:e.getMessage()));
             } catch (IOException e2) {
-                DavGatewayTray.debug("Exception sending error to client", e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
         } finally {
             close();
