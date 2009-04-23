@@ -1740,7 +1740,7 @@ public class ExchangeSession {
      */
     public String getCmdBasePath() {
         if (mailPath == null) {
-            return "/exchange/";
+            return "/public/";
         } else {
             return mailPath;
         }
@@ -1993,7 +1993,7 @@ public class ExchangeSession {
 
         final HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
 
-        protected StringBuilder getBusyBuffer(char type) {
+        StringBuilder getBusyBuffer(char type) {
             String fbType = FBTYPES.get(Character.valueOf(type));
             StringBuilder buffer = busyMap.get(fbType);
             if (buffer == null) {
@@ -2003,7 +2003,7 @@ public class ExchangeSession {
             return buffer;
         }
 
-        protected void startBusy(char type, Calendar currentCal) {
+        void startBusy(char type, Calendar currentCal) {
             if (type == '4') {
                 knownAttendee = false;
             } else if (type != '0') {
@@ -2015,13 +2015,13 @@ public class ExchangeSession {
             }
         }
 
-        protected void endBusy(char type, Calendar currentCal) {
+        void endBusy(char type, Calendar currentCal) {
             if (type != '0' && type != '4') {
                 getBusyBuffer(type).append('/').append(icalParser.format(currentCal.getTime()));
             }
         }
 
-        public FreeBusy(SimpleDateFormat icalParser, Date startDate, String fbdata) {
+        FreeBusy(SimpleDateFormat icalParser, Date startDate, String fbdata) {
             this.icalParser = icalParser;
             if (fbdata.length() > 0) {
                 Calendar currentCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
