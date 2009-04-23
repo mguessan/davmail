@@ -400,7 +400,7 @@ public class ExchangeSession {
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
                 buildEmail(method);
-                mailPath = "/exchange/" + email + "/";
+                mailPath = "/exchange/" + email + '/';
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
         } catch (IOException e) {
@@ -503,7 +503,7 @@ public class ExchangeSession {
      * @throws IOException when unable to create message
      */
     public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(folderUrl + "/" + messageName + ".EML");
+        String messageUrl = URIUtil.encodePathQuery(folderUrl + '/' + messageName + ".EML");
         PropPatchMethod patchMethod;
         // create the message first as draft
         if (properties.containsKey("draft")) {
@@ -512,7 +512,7 @@ public class ExchangeSession {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
+                    throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + ' ' + patchMethod.getStatusLine());
                 }
 
             } finally {
@@ -529,7 +529,7 @@ public class ExchangeSession {
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
-                throw new IOException("Unable to create message " + messageUrl + ": " + code + " " + putmethod.getStatusLine());
+                throw new IOException("Unable to create message " + messageUrl + ": " + code + ' ' + putmethod.getStatusLine());
             }
         } finally {
             putmethod.releaseConnection();
@@ -542,7 +542,7 @@ public class ExchangeSession {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + " " + patchMethod.getStatusLine());
+                    throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + ' ' + patchMethod.getStatusLine());
                 }
 
             } finally {
@@ -807,7 +807,7 @@ public class ExchangeSession {
 
         createMessage(draftsUrl, messageName, properties, mailBuffer.toString());
 
-        String tempUrl = draftsUrl + "/" + messageName + ".EML";
+        String tempUrl = draftsUrl + '/' + messageName + ".EML";
         MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         if (status != HttpStatus.SC_OK) {
@@ -867,7 +867,7 @@ public class ExchangeSession {
         Folder newFolder = getFolder(currentFolder.folderName);
         if (currentFolder.contenttag == null || !currentFolder.contenttag.equals(newFolder.contenttag)) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Contenttag changed on " + currentFolder.folderName + " "
+                LOGGER.debug("Contenttag changed on " + currentFolder.folderName + ' '
                         + currentFolder.contenttag + " => " + newFolder.contenttag + ", reloading messages");
             }
             newFolder.loadMessages();
@@ -928,8 +928,8 @@ public class ExchangeSession {
     }
 
     public void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
-        String source = encodedPath + "/" + encodedMessageName;
-        String destination = URIUtil.encodePath(deleteditemsUrl) + "/" + encodedMessageName;
+        String source = encodedPath + '/' + encodedMessageName;
+        String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
         MoveMethod method = new MoveMethod(source, destination, false);
         method.addRequestHeader("Allow-rename", "t");
@@ -1261,7 +1261,7 @@ public class ExchangeSession {
     }
 
     public Event getEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(path + "/" + eventName);
+        String eventPath = URIUtil.encodePath(path + '/' + eventName);
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new IOException("Unable to get calendar event");
@@ -1419,7 +1419,7 @@ public class ExchangeSession {
     }
 
     public int sendEvent(String icsBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(draftsUrl + "/" + UUID.randomUUID().toString() + ".EML");
+        String messageUrl = URIUtil.encodePathQuery(draftsUrl + '/' + UUID.randomUUID().toString() + ".EML");
         int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
         if (status != HttpStatus.SC_CREATED) {
             return status;
@@ -1434,7 +1434,7 @@ public class ExchangeSession {
     }
 
     public EventResult createOrUpdateEvent(String path, String eventName, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = URIUtil.encodePath(path + "/" + eventName);
+        String messageUrl = URIUtil.encodePath(path + '/' + eventName);
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
@@ -1604,7 +1604,7 @@ public class ExchangeSession {
                         LOGGER.warn("Overwritten event " + messageUrl);
                     }
                 } else if (status != HttpURLConnection.HTTP_CREATED) {
-                    LOGGER.warn("Unable to create or update message " + status + " " + putmethod.getStatusLine());
+                    LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
                 }
             }
         } finally {
@@ -1624,7 +1624,7 @@ public class ExchangeSession {
     }
 
     public int deleteEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(path + "/" + eventName);
+        String eventPath = URIUtil.encodePath(path + '/' + eventName);
         int status;
         if (inboxUrl.endsWith(path)) {
             // do not delete calendar messages, mark read and processed
@@ -1716,7 +1716,7 @@ public class ExchangeSession {
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
             int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
-                buffer.append(mailPath.substring(0, index + 1)).append(principal).append("/");
+                buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
             } else {
                 throw new IOException("Invalid mail path: " + mailPath);
             }
@@ -1864,7 +1864,7 @@ public class ExchangeSession {
      */
     public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
         Map<String, Map<String, String>> results;
-        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + "=" + searchValue));
+        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + '=' + searchValue));
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
@@ -1874,7 +1874,7 @@ public class ExchangeSession {
         } finally {
             getMethod.releaseConnection();
         }
-        LOGGER.debug("galfind " + searchAttribute + "=" + searchValue + ": " + results.size() + " result(s)");
+        LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
         return results;
     }
 
@@ -2032,7 +2032,7 @@ public class ExchangeSession {
         public void appendTo(StringBuilder buffer) {
             for (Map.Entry<String, StringBuilder> entry : busyMap.entrySet()) {
                 buffer.append("FREEBUSY;FBTYPE=").append(entry.getKey())
-                        .append(":").append(entry.getValue()).append((char) 13).append((char) 10);
+                        .append(':').append(entry.getValue()).append((char) 13).append((char) 10);
             }
         }
     }

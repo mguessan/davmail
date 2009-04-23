@@ -528,14 +528,14 @@ public class CaldavConnection extends AbstractConnection {
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath("/principals/" + prefix + "/" + principal));
+        response.startResponse(URIUtil.encodePath("/principals/" + prefix + '/' + principal));
         response.startPropstat();
 
         if (request.hasProperty("calendar-home-set")) {
             if ("users".equals(prefix)) {
                 response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "/calendar</D:href>");
             } else {
-                response.appendProperty("C:calendar-home-set", "<D:href>" + prefix + "/" + actualPrincipal + "</D:href>");
+                response.appendProperty("C:calendar-home-set", "<D:href>" + prefix + '/' + actualPrincipal + "</D:href>");
             }
         }
 
@@ -620,7 +620,7 @@ public class CaldavConnection extends AbstractConnection {
                         .append("DTSTART:").append(valueMap.get("DTSTART")).append("").append((char) 13).append((char) 10)
                         .append("DTEND:").append(valueMap.get("DTEND")).append("").append((char) 13).append((char) 10)
                         .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
-                        .append(attendeeKeyMap.get(attendee)).append(":").append(attendee).append("").append((char) 13).append((char) 10);
+                        .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append("").append((char) 13).append((char) 10);
                 entry.getValue().appendTo(ics);
                 ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
                         .append("END:VCALENDAR");
@@ -663,7 +663,7 @@ public class CaldavConnection extends AbstractConnection {
 
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
-        headers.put("WWW-Authenticate", "Basic realm=\"" + Settings.getProperty("davmail.url") + "\"");
+        headers.put("WWW-Authenticate", "Basic realm=\"" + Settings.getProperty("davmail.url") + '\"');
         sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers);
     }
 
@@ -686,7 +686,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
-        sendClient("HTTP/1.1 " + status + " " + HttpStatus.getStatusText(status));
+        sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
         sendClient("DAV: 1, 2, 3, access-control, calendar-access, ticket, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
@@ -860,7 +860,7 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder == null || subFolder.length() == 0) {
                 return path;
             } else {
-                return path + "/" + subFolder;
+                return path + '/' + subFolder;
             }
         }
 
@@ -987,7 +987,7 @@ public class CaldavConnection extends AbstractConnection {
 
         @Override
         public String toString() {
-            return command + " " + path + " Depth: " + depth + "\n" + body;
+            return command + ' ' + path + " Depth: " + depth + '\n' + body;
         }
 
         /**

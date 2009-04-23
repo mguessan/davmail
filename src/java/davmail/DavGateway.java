@@ -127,7 +127,6 @@ public class DavGateway {
     }
 
     public static String getReleasedVersion() {
-        long start = System.currentTimeMillis();
         String version = null;
         BufferedReader versionReader = null;
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
@@ -151,7 +150,6 @@ public class DavGateway {
             }
             getMethod.releaseConnection();
         }
-        System.out.println("Elapsed time: "+(System.currentTimeMillis()-start)+" ms");
         return version;
     }
 }

@@ -144,7 +144,7 @@ public class LdapConnection extends AbstractConnection {
                     "</plist>";
 
     static {
-        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ":" + VIRTUALHOST_GUID + ":calendar");
+        STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ':' + VIRTUALHOST_GUID + ":calendar");
     }
 
     static final HashSet<String> EXTENDED_ATTRIBUTES = new HashSet<String>();

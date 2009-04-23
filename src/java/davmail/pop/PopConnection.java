@@ -134,7 +134,7 @@ public class PopConnection extends AbstractConnection {
                                 try {
                                     int messageNumber = Integer.valueOf(token);
                                     ExchangeSession.Message message = messages.get(messageNumber - 1);
-                                    sendOK("" + messageNumber + " " + message.size);
+                                    sendOK("" + messageNumber + ' ' + message.size);
                                 } catch (NumberFormatException e) {
                                     sendERR("Invalid message index: " + token);
                                 } catch (IndexOutOfBoundsException e) {
@@ -176,7 +176,7 @@ public class PopConnection extends AbstractConnection {
                                     DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
                                 } catch (Exception e) {
                                     DavGatewayTray.error(new BundleMessage("LOG_ERROR_RETRIEVING_MESSAGE"), e);
-                                    sendERR("error retreiving message " + e + " " + e.getMessage());
+                                    sendERR("error retreiving message " + e + ' ' + e.getMessage());
                                 }
                             } else {
                                 sendERR("invalid message index");
