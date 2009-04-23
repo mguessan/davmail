@@ -75,7 +75,7 @@ public abstract class AbstractServer extends Thread {
                 DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
                 // only accept localhost connections for security reasons
                 if (Settings.getBooleanProperty("davmail.allowRemote") ||
-                        clientSocket.getInetAddress().toString().indexOf("127.0.0.1") > 0) {
+                        clientSocket.getInetAddress().isLoopbackAddress()) {
                     connection = createConnectionHandler(clientSocket);
                     connection.start();
                 } else {
