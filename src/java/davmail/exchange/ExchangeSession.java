@@ -1733,10 +1733,23 @@ public class ExchangeSession {
         return buffer.toString();
     }
 
+    /**
+     * Build base path for cmd commands (galfind, gallookup).
+     * This does not work with freebusy, which requires /public/
+     * @return cmd base path
+     */
+    public String getCmdBasePath() {
+        if (mailPath == null) {
+            return "/exchange/";
+        } else {
+            return mailPath;
+        }
+    }
+
     public String getEmail(String alias) throws IOException {
         String emailResult = null;
         if (alias != null) {
-            String path = "/public/?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
+            String path = getCmdBasePath()+"?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
             GetMethod getMethod = new GetMethod(path);
             try {
                 int status = httpClient.executeMethod(getMethod);
@@ -1864,7 +1877,7 @@ public class ExchangeSession {
      */
     public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
         Map<String, Map<String, String>> results;
-        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=galfind&" + searchAttribute + '=' + searchValue));
+        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath()+"?Cmd=galfind&" + searchAttribute + '=' + searchValue));
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
@@ -1882,7 +1895,7 @@ public class ExchangeSession {
         if (!disableGalLookup) {
             GetMethod getMethod = null;
             try {
-                getMethod = new GetMethod(URIUtil.encodePathQuery("/public/?Cmd=gallookup&ADDR=" + person.get("EM")));
+                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath()+"?Cmd=gallookup&ADDR=" + person.get("EM")));
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
                     throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
