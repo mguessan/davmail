@@ -141,7 +141,7 @@ public final class ExchangeSessionFactory {
      *
      * @return true if network available
      */
-    protected static boolean checkNetwork() {
+    static boolean checkNetwork() {
         boolean up = false;
         Enumeration<NetworkInterface> enumeration;
         try {

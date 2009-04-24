@@ -227,7 +227,7 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_SERVER_CERTIFICATE_HASH"), certHashField,
                 BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
-                BundleMessage.format("UI_DISABLE_VERSION_CHECK"));
+                BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
         return networkSettingsPanel;
     }
 

@@ -27,7 +27,7 @@ public class DavGatewayServletContextListener implements ServletContextListener 
                 try {
                     settingInputStream.close();
                 } catch (IOException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIGURATION_FILE"), e);
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
                 }
             }
         }

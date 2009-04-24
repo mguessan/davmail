@@ -3,7 +3,6 @@ package davmail.caldav;
 import davmail.AbstractConnection;
 import davmail.AbstractServer;
 
-import java.io.IOException;
 import java.net.Socket;
 
 /**
