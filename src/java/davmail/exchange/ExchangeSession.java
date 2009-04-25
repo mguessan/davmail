@@ -156,26 +156,18 @@ public class ExchangeSession {
             // manually follow redirect
             HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, poolKey.url);
 
-            if (!isBasicAuthentication) {
-                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
-            }
-            int status = method.getStatusCode();
+            if (isBasicAuthentication) {
+                int status = method.getStatusCode();
 
-            if (status == HttpStatus.SC_UNAUTHORIZED) {
-                throw new AuthenticationException("Authentication failed: invalid user or password");
-            } else if (status != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
-            }
-            // test form based authentication
-            String queryString = method.getQueryString();
-            if (queryString != null && queryString.contains("reason=2")) {
-                method.releaseConnection();
-                if (poolKey.userName != null && poolKey.userName.contains("\\")) {
+                if (status == HttpStatus.SC_UNAUTHORIZED) {
+                    method.releaseConnection();
                     throw new AuthenticationException("Authentication failed: invalid user or password");
-                } else {
-                    throw new AuthenticationException("Authentication failed: invalid user or password, " +
-                            "retry with domain\\user");
+                } else if (status != HttpStatus.SC_OK) {
+                    method.releaseConnection();
+                    throw DavGatewayHttpClientFacade.buildHttpException(method);
                 }
+            } else {
+                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
             }
 
             buildMailPath(method);
@@ -374,7 +366,31 @@ public class ExchangeSession {
         ((PostMethod) logonMethod).addParameter("username", userName);
         ((PostMethod) logonMethod).addParameter("password", password);
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
+
+        // test form based authentication
+        checkFormLoginQueryString(logonMethod);
+        
+        // workaround for post logon script redirect
+        if (httpClient.getState().getCookies().length == 0) {
+            logonMethod = buildLogonMethod(httpClient, logonMethod);
+            logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
+            checkFormLoginQueryString(logonMethod);
+        }
+
         return logonMethod;
+    }
+
+    protected void checkFormLoginQueryString(HttpMethod logonMethod) throws AuthenticationException {
+       String queryString = logonMethod.getQueryString();
+        if (queryString != null && queryString.contains("reason=2")) {
+            logonMethod.releaseConnection();
+            if (poolKey.userName != null && poolKey.userName.contains("\\")) {
+                throw new AuthenticationException("Authentication failed: invalid user or password");
+            } else {
+                throw new AuthenticationException("Authentication failed: invalid user or password, " +
+                        "retry with domain\\user");
+            }
+        }
     }
 
     protected void buildMailPath(HttpMethod method) throws HttpException {
