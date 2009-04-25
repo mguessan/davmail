@@ -77,24 +77,23 @@ public class DavGateway {
             serverList.add(new LdapServer(ldapPort));
         }
 
-        StringBuilder message = new StringBuilder();
-        StringBuilder errorMessage = new StringBuilder();
-        message.append(BundleMessage.format("LOG_DAVMAIL_GATEWAY_LISTENING"));
+        BundleMessage.BundleMessageList messages = new BundleMessage.BundleMessageList();
+        BundleMessage.BundleMessageList errorMessages = new BundleMessage.BundleMessageList();
         for (AbstractServer server : serverList) {
             try {
                 server.bind();
                 server.start();
-                message.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+                messages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             } catch (BindException e) {
-                errorMessage.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+                errorMessages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             } catch (IOException e) {
-                errorMessage.append(' ').append(BundleMessage.format("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+                errorMessages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             }
         }
 
-        DavGatewayTray.info(new BundleMessage("LOG_MESSAGE", message.toString()));
-        if (errorMessage.length() > 0) {
-            DavGatewayTray.error(new BundleMessage("LOG_SOCKET_BIND_FAILED", errorMessage.toString()));
+        DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", messages));
+        if (!errorMessages.isEmpty()) {
+            DavGatewayTray.error(new BundleMessage("LOG_SOCKET_BIND_FAILED", errorMessages));
         }
 
         // check for new version

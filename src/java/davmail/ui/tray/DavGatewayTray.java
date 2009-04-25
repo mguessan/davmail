@@ -10,6 +10,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Locale;
 
 
 /**
@@ -48,82 +49,46 @@ public class DavGatewayTray {
     }
 
     protected static void displayMessage(BundleMessage message, Priority priority) {
-        displayMessage(message.format(), priority);
-    }
-
-    protected static void displayMessage(String message, Priority priority) {
-        LOGGER.log(priority, message);
+        LOGGER.log(priority, message.format(Locale.ROOT));
         if (davGatewayTray != null) {
-            davGatewayTray.displayMessage(message, priority);
+            davGatewayTray.displayMessage(message.format(), priority);
         }
     }
 
-    protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
-        displayMessage(message.format(), e, priority);
-    }
-
-    protected static void displayMessage(String message, Exception e, Priority priority) {
+    protected static String getExceptionMessage(BundleMessage message, Exception e, Locale locale) {
         StringBuilder buffer = new StringBuilder();
         if (message != null) {
-            buffer.append(message).append(' ');
+            buffer.append(message.format(locale)).append(' ');
         }
         if (e.getMessage() != null) {
             buffer.append(e.getMessage());
         } else {
             buffer.append(e.toString());
         }
-        LOGGER.log(priority, buffer.toString(), e);
+        return buffer.toString();
+    }
+
+    protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
+        LOGGER.log(priority, getExceptionMessage(message, e, Locale.ROOT), e);
         if (davGatewayTray != null
                 && (!(e instanceof NetworkDownException) || isActive())) {
-            davGatewayTray.displayMessage(buffer.toString(), priority);
+            davGatewayTray.displayMessage(getExceptionMessage(message, e, null), priority);
         }
         if (davGatewayTray != null && e instanceof NetworkDownException) {
             davGatewayTray.inactiveIcon();
         }
     }
 
-    /**
-     * @deprecated
-     * @param message
-     */
-    public static void debug(String message) {
-        displayMessage(message, Priority.DEBUG);
-    }
-
     public static void debug(BundleMessage message) {
         displayMessage(message, Priority.DEBUG);
-    }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void info(String message) {
-        displayMessage(message, Priority.INFO);
     }
 
     public static void info(BundleMessage message) {
         displayMessage(message, Priority.INFO);
     }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void warn(String message) {
-        displayMessage(message, Priority.WARN);
-    }
 
     public static void warn(BundleMessage message) {
         displayMessage(message, Priority.WARN);
-    }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void error(String message) {
-        displayMessage(message, Priority.ERROR);
     }
 
     public static void error(BundleMessage message) {
@@ -131,46 +96,15 @@ public class DavGatewayTray {
     }
 
     public static void error(Exception e) {
-        displayMessage((String) null, e, Priority.ERROR);
-    }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void debug(String message, Exception e) {
-        displayMessage(message, e, Priority.DEBUG);
+        displayMessage(null, e, Priority.ERROR);
     }
 
     public static void debug(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.DEBUG);
     }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void info(String message, Exception e) {
-        displayMessage(message, e, Priority.INFO);
-    }
-    /**
-     * @deprecated
-     * @param message
-     */
-
-    public static void warn(String message, Exception e) {
-        displayMessage(message, e, Priority.WARN);
-    }
 
     public static void warn(BundleMessage message, Exception e) {
         displayMessage(message, e, Priority.WARN);
-    }
-    /**
-     * @deprecated
-     * @param message
-     */
-    public static void error(String message, Exception e) {
-        displayMessage(message, e, Priority.ERROR);
     }
 
     public static void error(BundleMessage message, Exception e) {
