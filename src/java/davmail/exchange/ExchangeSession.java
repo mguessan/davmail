@@ -1,9 +1,11 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.BundleMessage;
+import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -145,7 +147,7 @@ public class ExchangeSession {
                 httpURL = new HttpsURL(poolKey.userName, poolKey.password,
                         urlObject.getHost(), urlObject.getPort());
             } else {
-                throw new IllegalArgumentException("Invalid URL: " + poolKey.url);
+                throw new DavMailException("LOG_INVALID_URL", poolKey.url);
             }
 
 
@@ -161,7 +163,7 @@ public class ExchangeSession {
 
                 if (status == HttpStatus.SC_UNAUTHORIZED) {
                     method.releaseConnection();
-                    throw new AuthenticationException("Authentication failed: invalid user or password");
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                 } else if (status != HttpStatus.SC_OK) {
                     method.releaseConnection();
                     throw DavGatewayHttpClientFacade.buildHttpException(method);
@@ -175,20 +177,12 @@ public class ExchangeSession {
             // got base http mailbox http url
             getWellKnownFolders();
 
-        } catch (AuthenticationException exc) {
-            LOGGER.error(exc.toString());
+        } catch (DavMailAuthenticationException exc) {
+            LOGGER.error(exc.getLogMessage());
             throw exc;
         } catch (IOException exc) {
-            StringBuilder message = new StringBuilder();
-            message.append("DavMail login exception: ");
-            if (exc.getMessage() != null) {
-                message.append(exc.getMessage());
-            } else {
-                message.append(exc);
-            }
-
-            LOGGER.error(message.toString());
-            throw new IOException(message.toString());
+            LOGGER.error(BundleMessage.formatLog("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc));
+            throw new DavMailException("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc);
         }
         LOGGER.debug("Session " + this + " created");
     }
@@ -354,7 +348,7 @@ public class ExchangeSession {
         }
 
         if (logonMethod == null) {
-            throw new IOException("Authentication form not found at " + initmethod.getURI());
+            throw new DavMailException("EXCEPTION_AUTHENTICATION_FORM_NOT_FOUND", initmethod.getURI());
         }
         return logonMethod;
     }
@@ -380,20 +374,19 @@ public class ExchangeSession {
         return logonMethod;
     }
 
-    protected void checkFormLoginQueryString(HttpMethod logonMethod) throws AuthenticationException {
+    protected void checkFormLoginQueryString(HttpMethod logonMethod) throws DavMailAuthenticationException {
        String queryString = logonMethod.getQueryString();
         if (queryString != null && queryString.contains("reason=2")) {
             logonMethod.releaseConnection();
             if (poolKey.userName != null && poolKey.userName.contains("\\")) {
-                throw new AuthenticationException("Authentication failed: invalid user or password");
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             } else {
-                throw new AuthenticationException("Authentication failed: invalid user or password, " +
-                        "retry with domain\\user");
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_RETRY");
             }
         }
     }
 
-    protected void buildMailPath(HttpMethod method) throws HttpException {
+    protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         try {
@@ -432,11 +425,8 @@ public class ExchangeSession {
             method.releaseConnection();
         }
 
-        if (mailPath == null) {
-            throw new AuthenticationException("Unable to build mail path, authentication failed: password expired ?");
-        }
-        if (email == null) {
-            throw new AuthenticationException("Unable to get email, authentication failed: password expired ?");
+        if (mailPath == null || email == null) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
     }
 
@@ -490,7 +480,7 @@ public class ExchangeSession {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
         if (responses.length == 0) {
-            throw new IOException("Unable to get mail folders");
+            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDERS");
         }
         DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
         inboxUrl = getURIPropertyIfExists(properties, "inbox", URN_SCHEMAS_HTTPMAIL);
@@ -528,7 +518,7 @@ public class ExchangeSession {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new IOException("Unable to create message " + messageUrl + ": " + statusCode + ' ' + patchMethod.getStatusLine());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
                 }
 
             } finally {
@@ -545,7 +535,7 @@ public class ExchangeSession {
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
-                throw new IOException("Unable to create message " + messageUrl + ": " + code + ' ' + putmethod.getStatusLine());
+                throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
             }
         } finally {
             putmethod.releaseConnection();
@@ -558,7 +548,7 @@ public class ExchangeSession {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new IOException("Unable to patch message " + messageUrl + ": " + statusCode + ' ' + patchMethod.getStatusLine());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_PATCH_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
                 }
 
             } finally {
@@ -629,7 +619,7 @@ public class ExchangeSession {
         try {
             int statusCode = httpClient.executeMethod(patchMethod);
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                throw new IOException("Unable to update message properties");
+                throw new DavMailException("EXCEPTION_UNABLE_TO_UPDATE_MESSAGE");
             }
 
         } finally {
@@ -683,7 +673,7 @@ public class ExchangeSession {
         return folders;
     }
 
-    protected Folder buildFolder(MultiStatusResponse entity) throws URIException {
+    protected Folder buildFolder(MultiStatusResponse entity) throws IOException {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
         DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
@@ -714,7 +704,7 @@ public class ExchangeSession {
                     folder.folderUrl = href.substring(index + mailPath.length());
                 }
             } else {
-                throw new URIException("Invalid folder url: " + folder.folderUrl);
+                throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", folder.folderUrl);
             }
         }
         return folder;
@@ -917,7 +907,7 @@ public class ExchangeSession {
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
-                throw new HttpException("Unable to move message, target already exists");
+                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
@@ -934,7 +924,7 @@ public class ExchangeSession {
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
-                throw new HttpException("Unable to move folder, target already exists");
+                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_FOLDER");
             } else if (statusCode != HttpStatus.SC_CREATED) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
@@ -1121,7 +1111,7 @@ public class ExchangeSession {
 
             int index = messageUrl.lastIndexOf('/');
             if (index < 0) {
-                throw new IOException("Invalid message url: " + messageUrl);
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", messageUrl);
             }
             String encodedPath = URIUtil.encodePath(messageUrl.substring(0, index));
             String encodedMessageName = URIUtil.encodePath(messageUrl.substring(index + 1));
@@ -1208,7 +1198,7 @@ public class ExchangeSession {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     mimeMessage.getDataHandler().writeTo(baos);
                     baos.close();
-                    throw new IOException("Invalid calendar message content: " + new String(baos.toByteArray(), "UTF-8"));
+                    throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
                 }
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bodyPart.getDataHandler().writeTo(baos);
@@ -1216,7 +1206,7 @@ public class ExchangeSession {
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
 
             } catch (MessagingException e) {
-                throw new IOException(e.getMessage());
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", e.getMessage());
             } finally {
                 method.releaseConnection();
             }
@@ -1280,7 +1270,7 @@ public class ExchangeSession {
         String eventPath = URIUtil.encodePath(path + '/' + eventName);
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
-            throw new IOException("Unable to get calendar event");
+            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
         return buildEvent(responses[0]);
     }
@@ -1421,7 +1411,7 @@ public class ExchangeSession {
         int valueIndex = line.lastIndexOf(':');
         int valueEndIndex = line.lastIndexOf('T');
         if (valueIndex < 0 || valueEndIndex < 0) {
-            throw new IOException("Invalid ICS line: " + line);
+            throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
         }
         String dateValue = line.substring(valueIndex + 1, valueEndIndex);
         String key = line.substring(0, Math.max(keyIndex, valueIndex));
@@ -1669,13 +1659,13 @@ public class ExchangeSession {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(folderPath), 0, davPropertyNameSet);
         if (responses.length == 0) {
-            throw new IOException("Unable to get folder at "+folderPath);
+            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_FOLDER", folderPath);
         }
         DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
         DavPropertyName davPropertyName = davPropertyNameSet.iterator().nextPropertyName();
         result = getPropertyIfExists(properties, davPropertyName);
         if (result == null) {
-            throw new IOException("Unable to get property "+davPropertyName);
+            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_PROPERTY", davPropertyName);
         }
         return result;
     }
@@ -1709,7 +1699,7 @@ public class ExchangeSession {
         if (index >= 0 && mailPath.endsWith("/")) {
             return mailPath.substring(index + 1, mailPath.length() - 1);
         } else {
-            throw new IOException("Invalid mail path: " + mailPath);
+            throw new DavMailException("EXCEPTION_INVALID_MAIL_PATH", mailPath);
         }
     }
 
@@ -1721,7 +1711,7 @@ public class ExchangeSession {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
         if (responses.length == 0) {
-            throw new IOException("Unable to get mail folder");
+            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER");
         }
         displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
         return displayName;
@@ -1734,7 +1724,7 @@ public class ExchangeSession {
             if (index >= 0 && mailPath.endsWith("/")) {
                 buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
             } else {
-                throw new IOException("Invalid mail path: " + mailPath);
+                throw new DavMailException("EXCEPTION_INVALID_MAIL_PATH", mailPath);
             }
         } else if (principal != null) {
             buffer.append(mailPath);
@@ -1770,7 +1760,7 @@ public class ExchangeSession {
             try {
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
-                    throw new IOException("Unable to get user email from: " + getMethod.getPath());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_GET_EMAIL", getMethod.getPath());
                 }
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
                 Map<String, String> result = results.get(alias.toLowerCase());
@@ -1897,7 +1887,7 @@ public class ExchangeSession {
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
-                throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
+                throw new DavMailException("EXCEPTION_UNABLE_TO_FIND_USERS", status, getMethod.getURI());
             }
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
         } finally {
@@ -1914,7 +1904,7 @@ public class ExchangeSession {
                 getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath()+"?Cmd=gallookup&ADDR=" + person.get("EM")));
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
-                    throw new IOException(status + "Unable to find users from: " + getMethod.getURI());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_FIND_USERS", status, getMethod.getURI());
                 }
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
                 // add detailed information
@@ -1966,7 +1956,7 @@ public class ExchangeSession {
                     "&interval=" + FREE_BUSY_INTERVAL +
                     "&u=SMTP:" + attendee;
         } catch (ParseException e) {
-            throw new IOException(e.getMessage());
+            throw new DavMailException("EXCEPTION_INVALID_DATES", e.getMessage());
         }
 
         FreeBusy freeBusy = null;
@@ -1976,7 +1966,7 @@ public class ExchangeSession {
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
-                throw new IOException("Unable to get free-busy from: " + getMethod.getPath());
+                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_FREEBUSY", getMethod.getPath());
             }
             String body = getMethod.getResponseBodyAsString();
             int startIndex = body.lastIndexOf("<a:fbdata>");

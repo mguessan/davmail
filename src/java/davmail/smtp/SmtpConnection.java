@@ -2,6 +2,7 @@ package davmail.smtp;
 
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
@@ -97,7 +98,7 @@ public class SmtpConnection extends AbstractConnection {
                                     InternetAddress internetAddress = new InternetAddress(line.substring("RCPT TO:".length()));
                                     recipients.add(internetAddress.getAddress());
                                 } catch (AddressException e) {
-                                    throw new IOException("Invalid recipient: " + line);
+                                    throw new DavMailException("EXCEPTION_INVALID_RECIPIENT", line);
                                 }
                                 sendClient("250 Recipient OK");
                             } else {
@@ -187,7 +188,7 @@ public class SmtpConnection extends AbstractConnection {
             userName = decodedCredentials.substring(1, index);
             password = decodedCredentials.substring(index + 1);
         } else {
-            throw new IOException("Invalid credentials");
+            throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }
     }
 

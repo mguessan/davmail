@@ -6,6 +6,7 @@ import com.sun.jndi.ldap.BerEncoder;
 import davmail.AbstractConnection;
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
@@ -817,7 +818,7 @@ public class LdapConnection extends AbstractConnection {
                     responseBer.encodeString((String) value, isLdapV3());
                 }
             } else {
-                throw new IllegalArgumentException();
+                throw new DavMailException("EXCEPTION_UNSUPPORTED_VALUE", values);
             }
             responseBer.endSeq();
             responseBer.endSeq();

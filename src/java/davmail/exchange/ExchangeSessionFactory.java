@@ -1,6 +1,8 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
@@ -92,7 +94,7 @@ public final class ExchangeSessionFactory {
             if (checkNetwork()) {
                 throw e;
             } else {
-                throw new NetworkDownException("All network interfaces down !");
+                throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
             }
         }
     }
@@ -109,27 +111,24 @@ public final class ExchangeSessionFactory {
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
                     && status != HttpStatus.SC_MOVED_TEMPORARILY && status != HttpStatus.SC_MOVED_PERMANENTLY) {
-                throw new IOException("Unable to connect to OWA at " + url + ", status code " +
-                        status + ", check configuration");
+                throw new DavMailException("EXCEPTION_CONNECTION_FAILED", url, status);
             }
 
         } catch (UnknownHostException exc) {
-            String message = "DavMail configuration exception: \n";
             if (checkNetwork()) {
-                message += "Unknown host " + exc.getMessage();
-                ExchangeSession.LOGGER.error(message, exc);
-                throw new IOException(message);
-            } else {
-                message = "All network interfaces down !";
+                BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
                 ExchangeSession.LOGGER.error(message);
-                throw new NetworkDownException(message);
+                throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
+            } else {
+                ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
+                throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
             }
 
         } catch (NetworkDownException exc) {
             throw exc;
         } catch (Exception exc) {
-            ExchangeSession.LOGGER.error("DavMail configuration exception: \n" + exc.getMessage(), exc);
-            throw new IOException("DavMail configuration exception: \n" + exc.getMessage());
+            ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_DAVMAIL_CONFIGURATION", exc), exc);
+            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", exc);
         } finally {
             testMethod.releaseConnection();
         }

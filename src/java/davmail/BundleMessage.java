@@ -1,5 +1,7 @@
 package davmail;
 
+import davmail.exception.DavMailException;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -43,6 +45,13 @@ public class BundleMessage {
                         buffer.append(bundleMessage.format(locale));
                     }
                     formattedArguments[i] = buffer.toString();
+                } else if (arguments[i] instanceof DavMailException) {
+                    formattedArguments[i] = ((DavMailException)arguments[i]).getMessage(locale);
+                } else if (arguments[i] instanceof Throwable) {
+                    formattedArguments[i] = ((Throwable)arguments[i]).getMessage();
+                    if (formattedArguments[i] == null) {
+                        formattedArguments[i] = arguments[i].toString();
+                    }
                 } else {
                     formattedArguments[i] = arguments[i];
                 }
@@ -53,6 +62,14 @@ public class BundleMessage {
 
     public static String format(String key, Object... arguments) {
         return MessageFormat.format(ResourceBundle.getBundle(MESSAGE_BUNDLE_NAME).getString(key), arguments);
+    }
+
+    public static String format(Locale locale, String key, Object... arguments) {
+        return MessageFormat.format(ResourceBundle.getBundle(MESSAGE_BUNDLE_NAME, locale).getString(key), arguments);
+    }
+
+    public static String formatLog(String key, Object... arguments) {
+        return MessageFormat.format(ResourceBundle.getBundle(MESSAGE_BUNDLE_NAME, Locale.ROOT).getString(key), arguments);
     }
 
     public static class BundleMessageList extends ArrayList<BundleMessage>{}

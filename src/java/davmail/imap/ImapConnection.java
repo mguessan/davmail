@@ -4,6 +4,7 @@ import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
 import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
@@ -483,7 +484,7 @@ public class ImapConnection extends AbstractConnection {
                         SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
                         buffer.append(" INTERNALDATE \"").append(dateFormatter.format(date)).append('\"');
                     } catch (ParseException e) {
-                        throw new IOException("Invalid date: " + message.date);
+                        throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
                 } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -560,7 +561,7 @@ public class ImapConnection extends AbstractConnection {
                 }
                 int slashIndex = multiPart.getContentType().indexOf('/');
                 if (slashIndex < 0) {
-                    throw new IOException("Invalid content type: " + multiPart.getContentType());
+                    throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", multiPart.getContentType());
                 }
                 int semiColonIndex = multiPart.getContentType().indexOf(';');
                 if (semiColonIndex < 0) {
@@ -573,7 +574,7 @@ public class ImapConnection extends AbstractConnection {
                 appendBodyStructure(buffer, mimeMessage);
             }
         } catch (MessagingException me) {
-            throw new IOException(me);
+            throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", me.getMessage());
         }
     }
 
@@ -581,7 +582,7 @@ public class ImapConnection extends AbstractConnection {
         String contentType = bodyPart.getContentType();
         int slashIndex = contentType.indexOf('/');
         if (slashIndex < 0) {
-            throw new IOException("Invalid content type: " + contentType);
+            throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", contentType);
         }
         buffer.append("(\"").append(contentType.substring(0, slashIndex).toUpperCase()).append("\" \"");
         int semiColonIndex = contentType.indexOf(';');
@@ -707,22 +708,23 @@ public class ImapConnection extends AbstractConnection {
             } else if (range.endsWith(":*")) {
                 conditions.startUid = Long.parseLong(range.substring(0, range.indexOf(':')));
             } else {
-                throw new IOException("Invalid search parameters");
+                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", range);
             }
         } else if ("BEFORE".equals(token)) {
             SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
             SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+            String dateToken = tokens.nextToken();
             try {
-                Date date = parser.parse(tokens.nextToken());
+                Date date = parser.parse(dateToken);
                 conditions.append(operator).append("\"urn:schemas:httpmail:datereceived\"<'").append(dateFormatter.format(date)).append('\'');
             } catch (ParseException e) {
-                throw new IOException("Invalid search parameters");
+                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
             }
         } else if ("OLD".equals(token) || "RECENT".equals(token)) {
             // ignore
         } else {
-            throw new IOException("Invalid search parameter: " + token);
+            throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
         }
     }
 
@@ -733,14 +735,15 @@ public class ImapConnection extends AbstractConnection {
         parser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        String dateToken = tokens.nextToken();
         try {
-            startDate = parser.parse(tokens.nextToken());
+            startDate = parser.parse(dateToken);
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(startDate);
             calendar.add(Calendar.DAY_OF_MONTH, 1);
             endDate = calendar.getTime();
         } catch (ParseException e) {
-            throw new IOException("Invalid search parameters");
+            throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
         if ("SENTON".equals(token)) {
             conditions.append("(\"urn:schemas:httpmail:date\" > '")
@@ -862,13 +865,13 @@ public class ImapConnection extends AbstractConnection {
         if (tokens.hasMoreTokens()) {
             userName = tokens.nextToken();
         } else {
-            throw new IOException("Invalid credentials");
+            throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }
 
         if (tokens.hasMoreTokens()) {
             password = tokens.nextToken();
         } else {
-            throw new IOException("Invalid credentials");
+            throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }
         int backslashindex = userName.indexOf('\\');
         if (backslashindex > 0) {

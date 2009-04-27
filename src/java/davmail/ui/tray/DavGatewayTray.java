@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -60,7 +61,9 @@ public class DavGatewayTray {
         if (message != null) {
             buffer.append(message.format(locale)).append(' ');
         }
-        if (e.getMessage() != null) {
+        if (e instanceof DavMailException) {
+            buffer.append(((DavMailException)e).getMessage(locale));
+        } else if (e.getMessage() != null) {
             buffer.append(e.getMessage());
         } else {
             buffer.append(e.toString());

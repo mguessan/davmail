@@ -1,15 +1,14 @@
 package davmail.caldav;
 
-import davmail.AbstractConnection;
-import davmail.Settings;
-import davmail.BundleMessage;
+import davmail.*;
+import davmail.exception.DavMailException;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
@@ -48,7 +47,7 @@ public class CaldavConnection extends AbstractConnection {
         while ((line = readClient()) != null && line.length() > 0) {
             int index = line.indexOf(':');
             if (index <= 0) {
-                throw new IOException("Invalid header: " + line);
+                throw new DavMailException("EXCEPTION_INVALID_HEADER", line);
             }
             headers.put(line.substring(0, index).toLowerCase(), line.substring(index + 1).trim());
         }
@@ -63,14 +62,14 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 size = Integer.parseInt(contentLength);
             } catch (NumberFormatException e) {
-                throw new IOException("Invalid content length: " + contentLength);
+                throw new DavMailException("EXCEPTION_INVALID_CONTENT_LENGTH", contentLength);
             }
             char[] buffer = new char[size];
             StringBuilder builder = new StringBuilder();
             int actualSize = in.read(buffer);
             builder.append(buffer, 0, actualSize);
             if (actualSize < 0) {
-                throw new IOException("End of stream reached reading content");
+                throw new DavMailException("EXCEPTION_END_OF_STREAM");
             }
             // dirty hack to ensure full content read
             // TODO : replace with a dedicated reader
@@ -89,7 +88,7 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 keepAlive = Integer.parseInt(keepAliveValue);
             } catch (NumberFormatException e) {
-                throw new IOException("Invalid Keep-Alive: " + keepAliveValue);
+                throw new DavMailException("EXCEPTION_INVALID_KEEPALIVE", keepAliveValue);
             }
             if (keepAlive > MAX_KEEP_ALIVE_TIME) {
                 keepAlive = MAX_KEEP_ALIVE_TIME;
@@ -130,7 +129,7 @@ public class CaldavConnection extends AbstractConnection {
                         ExchangeSessionFactory.checkConfig();
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
-                        } catch (AuthenticationException e) {
+                        } catch (DavMailAuthenticationException e) {
                             sendUnauthorized();
                         }
                     }
@@ -576,7 +575,7 @@ public class CaldavConnection extends AbstractConnection {
         while ((line = reader.readLine()) != null) {
             int index = line.indexOf(':');
             if (index <= 0) {
-                throw new IOException("Invalid request: " + body);
+                throw new DavMailException("EXCEPTION_INVALID_REQUEST", body);
             }
             String fullkey = line.substring(0, index);
             String value = line.substring(index + 1);
@@ -727,7 +726,7 @@ public class CaldavConnection extends AbstractConnection {
         if (index > 0) {
             String mode = authorization.substring(0, index).toLowerCase();
             if (!"basic".equals(mode)) {
-                throw new IOException("Unsupported authorization mode: " + mode);
+                throw new DavMailException("EXCEPTION_UNSUPPORTED_AUTHORIZATION_MODE", mode);
             }
             String encodedCredentials = authorization.substring(index + 1);
             String decodedCredentials = base64Decode(encodedCredentials);
@@ -736,10 +735,10 @@ public class CaldavConnection extends AbstractConnection {
                 userName = decodedCredentials.substring(0, index);
                 password = decodedCredentials.substring(index + 1);
             } else {
-                throw new IOException("Invalid credentials");
+                throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
             }
         } else {
-            throw new IOException("Invalid credentials");
+            throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }
 
     }
@@ -961,7 +960,7 @@ public class CaldavConnection extends AbstractConnection {
                     }
                 }
             } catch (XMLStreamException e) {
-                throw new IOException(e.getMessage());
+                throw new DavMailException("EXCEPTION_INVALID_CALDAV_REQUEST", e.getMessage());
             } finally {
                 try {
                     if (streamReader != null) {
