@@ -363,7 +363,7 @@ public class ExchangeSession {
 
         // test form based authentication
         checkFormLoginQueryString(logonMethod);
-        
+
         // workaround for post logon script redirect
         if (httpClient.getState().getCookies().length == 0) {
             logonMethod = buildLogonMethod(httpClient, logonMethod);
@@ -375,7 +375,7 @@ public class ExchangeSession {
     }
 
     protected void checkFormLoginQueryString(HttpMethod logonMethod) throws DavMailAuthenticationException {
-       String queryString = logonMethod.getQueryString();
+        String queryString = logonMethod.getQueryString();
         if (queryString != null && queryString.contains("reason=2")) {
             logonMethod.releaseConnection();
             if (poolKey.userName != null && poolKey.userName.contains("\\")) {
@@ -888,7 +888,8 @@ public class ExchangeSession {
         ArrayList<DavProperty> list = new ArrayList<DavProperty>();
         list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPF.Note"));
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
-            @Override public String getName() {
+            @Override
+            public String getName() {
                 return "MKCOL";
             }
         };
@@ -1485,8 +1486,10 @@ public class ExchangeSession {
                         }
                         if ("ORGANIZER".equals(key)) {
                             organizer = value;
-                        // exclude current user and invalid values from recipients
-                        } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >=0) {
+                            // exclude current user and invalid values from recipients
+                            // also exclude RSVP=FALSE attendees
+                        } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
+                                && line.indexOf("RSVP=FALSE") < 0) {
                             attendees.add(value);
                         }
                     }
@@ -1742,6 +1745,7 @@ public class ExchangeSession {
     /**
      * Build base path for cmd commands (galfind, gallookup).
      * This does not work with freebusy, which requires /public/
+     *
      * @return cmd base path
      */
     public String getCmdBasePath() {
@@ -1755,7 +1759,7 @@ public class ExchangeSession {
     public String getEmail(String alias) throws IOException {
         String emailResult = null;
         if (alias != null) {
-            String path = getCmdBasePath()+"?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
+            String path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
             GetMethod getMethod = new GetMethod(path);
             try {
                 int status = httpClient.executeMethod(getMethod);
@@ -1883,7 +1887,7 @@ public class ExchangeSession {
      */
     public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
         Map<String, Map<String, String>> results;
-        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath()+"?Cmd=galfind&" + searchAttribute + '=' + searchValue));
+        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
@@ -1901,7 +1905,7 @@ public class ExchangeSession {
         if (!disableGalLookup) {
             GetMethod getMethod = null;
             try {
-                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath()+"?Cmd=gallookup&ADDR=" + person.get("EM")));
+                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + person.get("EM")));
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
                     throw new DavMailException("EXCEPTION_UNABLE_TO_FIND_USERS", status, getMethod.getURI());
