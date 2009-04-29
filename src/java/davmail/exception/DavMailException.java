@@ -25,7 +25,7 @@ public class DavMailException extends IOException {
     }
 
     public String getLogMessage() {
-        return message.format(Locale.ROOT);
+        return message.formatLog();
     }
 
     public BundleMessage getBundleMessage() {

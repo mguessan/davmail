@@ -2,7 +2,6 @@ package davmail.ui.tray;
 
 import davmail.Settings;
 import davmail.BundleMessage;
-import davmail.exception.DavMailException;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
@@ -11,7 +10,6 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Locale;
 
 
 /**
@@ -50,32 +48,17 @@ public class DavGatewayTray {
     }
 
     protected static void displayMessage(BundleMessage message, Priority priority) {
-        LOGGER.log(priority, message.format(Locale.ROOT));
+        LOGGER.log(priority, message.formatLog());
         if (davGatewayTray != null) {
             davGatewayTray.displayMessage(message.format(), priority);
         }
     }
 
-    protected static String getExceptionMessage(BundleMessage message, Exception e, Locale locale) {
-        StringBuilder buffer = new StringBuilder();
-        if (message != null) {
-            buffer.append(message.format(locale)).append(' ');
-        }
-        if (e instanceof DavMailException) {
-            buffer.append(((DavMailException)e).getMessage(locale));
-        } else if (e.getMessage() != null) {
-            buffer.append(e.getMessage());
-        } else {
-            buffer.append(e.toString());
-        }
-        return buffer.toString();
-    }
-
     protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
-        LOGGER.log(priority, getExceptionMessage(message, e, Locale.ROOT), e);
+        LOGGER.log(priority, BundleMessage.getExceptionLogMessage(message, e), e);
         if (davGatewayTray != null
                 && (!(e instanceof NetworkDownException) || isActive())) {
-            davGatewayTray.displayMessage(getExceptionMessage(message, e, null), priority);
+            davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), priority);
         }
         if (davGatewayTray != null && e instanceof NetworkDownException) {
             davGatewayTray.inactiveIcon();
