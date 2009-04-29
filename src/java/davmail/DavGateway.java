@@ -4,16 +4,19 @@ import davmail.caldav.CaldavServer;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
-import davmail.imap.ImapServer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.BindException;
@@ -41,10 +44,31 @@ public class DavGateway {
             Settings.setConfigFilePath(args[0]);
         }
 
+        updateLogFilePath();
+
         Settings.load();
         DavGatewayTray.init();
 
         start();
+    }
+
+    public static void updateLogFilePath() {
+        // update log file path on Mac OS X
+        if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+            String logFileDir = System.getProperty("user.home") + "/Library/Logs/DavMail";
+            Logger rootLogger = Logger.getRootLogger();
+            try {
+                File file = new File(logFileDir);
+                if (file.mkdirs()) {
+                    ((FileAppender) rootLogger.getAppender("FileAppender")).setFile(logFileDir + "/davmail.log", true, false, 8192);
+                } else {
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
+                }
+            } catch (IOException e) {
+                 DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
+            }
+        }
+
     }
 
     public static void start() {
