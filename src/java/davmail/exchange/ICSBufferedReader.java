@@ -19,8 +19,7 @@ public class ICSBufferedReader extends BufferedReader {
 
     @Override
     public String readLine() throws IOException {
-        // empty line means end of ICS
-        if (nextLine == null || nextLine.length() == 0) {
+        if (nextLine == null) {
             return null;
         } else {
             currentLine.setLength(0);
