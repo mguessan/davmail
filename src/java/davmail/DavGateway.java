@@ -55,7 +55,7 @@ public class DavGateway {
         DavGatewayHttpClientFacade.start();
 
         serverList.clear();
-        
+
         int smtpPort = Settings.getIntProperty("davmail.smtpPort");
         if (smtpPort != 0) {
             serverList.add(new SmtpServer(smtpPort));
@@ -85,15 +85,15 @@ public class DavGateway {
                 server.start();
                 messages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             } catch (BindException e) {
-                errorMessages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+                errorMessages.add(new BundleMessage("LOG_SOCKET_BIND_FAILED", server.getProtocolName(), server.getPort()));
             } catch (IOException e) {
-                errorMessages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
+                errorMessages.add(new BundleMessage("LOG_SOCKET_BIND_FAILED", server.getProtocolName(), server.getPort()));
             }
         }
 
         DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", messages));
         if (!errorMessages.isEmpty()) {
-            DavGatewayTray.error(new BundleMessage("LOG_SOCKET_BIND_FAILED", errorMessages));
+            DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
 
         // check for new version
@@ -106,7 +106,7 @@ public class DavGateway {
     }
 
     public static void stop() {
-        for (AbstractServer server:serverList) {
+        for (AbstractServer server : serverList) {
             server.close();
             try {
                 server.join();
