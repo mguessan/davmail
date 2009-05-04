@@ -33,7 +33,7 @@ public class ImapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public ImapConnection(Socket clientSocket) {
-        super(ImapConnection.class.getName(), clientSocket, null);
+        super(ImapConnection.class.getSimpleName(), clientSocket, null);
     }
 
     @Override public void run() {

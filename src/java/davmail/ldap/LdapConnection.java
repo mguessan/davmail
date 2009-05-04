@@ -279,7 +279,7 @@ public class LdapConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public LdapConnection(Socket clientSocket) {
-        super(LdapConnection.class.getName(), clientSocket);
+        super(LdapConnection.class.getSimpleName(), clientSocket);
         try {
             is = new BufferedInputStream(client.getInputStream());
             os = new BufferedOutputStream(client.getOutputStream());
