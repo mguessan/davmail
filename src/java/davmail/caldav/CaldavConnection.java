@@ -37,7 +37,7 @@ public class CaldavConnection extends AbstractConnection {
 
     // Initialize the streams and start the thread
     public CaldavConnection(Socket clientSocket) {
-        super(CaldavConnection.class.getName(), clientSocket, "UTF-8");
+        super(CaldavConnection.class.getSimpleName(), clientSocket, "UTF-8");
         wireLogger.setLevel(Settings.getLoggingLevel("httpclient.wire"));
     }
 
@@ -125,8 +125,6 @@ public class CaldavConnection extends AbstractConnection {
                     decodeCredentials(headers.get("authorization"));
                     // authenticate only once
                     if (session == null) {
-                        // first check network connectivity
-                        ExchangeSessionFactory.checkConfig();
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
                         } catch (DavMailAuthenticationException e) {
