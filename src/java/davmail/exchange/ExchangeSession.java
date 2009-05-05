@@ -29,6 +29,7 @@ import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -180,6 +181,10 @@ public class ExchangeSession {
         } catch (DavMailAuthenticationException exc) {
             LOGGER.error(exc.getLogMessage());
             throw exc;
+        } catch (UnknownHostException exc) {
+            BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
+            ExchangeSession.LOGGER.error(message);
+            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         } catch (IOException exc) {
             LOGGER.error(BundleMessage.formatLog("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc));
             throw new DavMailException("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc);
