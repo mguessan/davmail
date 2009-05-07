@@ -73,6 +73,11 @@ public class BundleMessage {
         return MessageFormat.format(getBundle(locale).getString(key), formattedArguments);
     }
 
+    @Override
+    public String toString() {
+        return formatLog();
+    }
+
     public static String formatLog(String key, Object... arguments) {
         return format(ROOT_LOCALE, key, arguments);
     }
