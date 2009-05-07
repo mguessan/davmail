@@ -41,7 +41,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                if (mainFrame.getIconImage() == image) {
+                if (mainFrame.getIconImage().equals(image)) {
                     mainFrame.setIconImage(image2);
                 } else {
                     mainFrame.setIconImage(image);
@@ -75,13 +75,13 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 if (mainFrame != null) {
-                    if (priority == Priority.INFO) {
+                    if (priority.equals(Priority.INFO)) {
                         errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
                         errorArea.setText(message);
-                    } else if (priority == Priority.WARN) {
+                    } else if (priority.equals(Priority.WARN)) {
                         errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
                         errorArea.setText(message);
-                    } else if (priority == Priority.ERROR) {
+                    } else if (priority.equals(Priority.ERROR)) {
                         errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
                         errorArea.setText(message);
                     } else {

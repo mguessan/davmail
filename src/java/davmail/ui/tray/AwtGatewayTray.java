@@ -43,7 +43,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                if (trayIcon.getImage() == image) {
+                if (trayIcon.getImage().equals(image)) {
                     trayIcon.setImage(image2);
                 } else {
                     trayIcon.setImage(image);
@@ -78,11 +78,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             public void run() {
                 if (trayIcon != null) {
                     TrayIcon.MessageType messageType = null;
-                    if (priority == Priority.INFO) {
+                    if (priority.equals(Priority.INFO)) {
                         messageType = TrayIcon.MessageType.INFO;
-                    } else if (priority == Priority.WARN) {
+                    } else if (priority.equals(Priority.WARN)) {
                         messageType = TrayIcon.MessageType.WARNING;
-                    } else if (priority == Priority.ERROR) {
+                    } else if (priority.equals(Priority.ERROR)) {
                         messageType = TrayIcon.MessageType.ERROR;
                     }
                     if (messageType != null) {

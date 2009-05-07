@@ -44,7 +44,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         display.syncExec(new Runnable() {
             public void run() {
-                if (trayItem.getImage() == image) {
+                if (trayItem.getImage().equals(image)) {
                     trayItem.setImage(image2);
                 } else {
                     trayItem.setImage(image);
@@ -80,11 +80,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             display.asyncExec(new Runnable() {
                 public void run() {
                     int messageType = 0;
-                    if (priority == Priority.INFO) {
+                    if (priority.equals(Priority.INFO)) {
                         messageType = SWT.ICON_INFORMATION;
-                    } else if (priority == Priority.WARN) {
+                    } else if (priority.equals(Priority.WARN)) {
                         messageType = SWT.ICON_WARNING;
-                    } else if (priority == Priority.ERROR) {
+                    } else if (priority.equals(Priority.ERROR)) {
                         messageType = SWT.ICON_ERROR;
                     }
                     if (messageType != 0) {
