@@ -392,13 +392,14 @@ public class ExchangeSession {
     }
 
     protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
+        // find base url
+        final String BASE_HREF = "<base href=\"";
+        String line = null;
+
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         try {
             mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-            String line;
-            // find base url
-            final String BASE_HREF = "<base href=\"";
             //noinspection StatementWithEmptyBody
             while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) {
             }
@@ -409,11 +410,11 @@ public class ExchangeSession {
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
                 LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail(method);
+                buildEmail(method.getURI().getHost(), method.getPath());
                 LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(method);
+                buildEmail(method.getURI().getHost(), method.getPath());
                 mailPath = "/exchange/" + email + '/';
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
@@ -429,6 +430,7 @@ public class ExchangeSession {
             }
             method.releaseConnection();
         }
+
 
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
@@ -1697,9 +1699,8 @@ public class ExchangeSession {
      * Get current Exchange alias name from mailbox name
      *
      * @return user name
-     * @throws IOException on error
      */
-    protected String getAliasFromMailPath() throws IOException {
+    protected String getAliasFromMailPath() {
         if (mailPath == null) {
             return null;
         }
@@ -1707,21 +1708,27 @@ public class ExchangeSession {
         if (index >= 0 && mailPath.endsWith("/")) {
             return mailPath.substring(index + 1, mailPath.length() - 1);
         } else {
-            throw new DavMailException("EXCEPTION_INVALID_MAIL_PATH", mailPath);
+            LOGGER.warn(new BundleMessage("EXCEPTION_INVALID_MAIL_PATH", mailPath));
+            return null;
         }
     }
 
-    public String getAliasFromMailboxDisplayName() throws IOException {
+    public String getAliasFromMailboxDisplayName() {
         if (mailPath == null) {
             return null;
         }
-        String displayName;
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
-        if (responses.length == 0) {
-            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER");
+        String displayName = null;
+        try {
+            MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
+                    httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
+            if (responses.length == 0) {
+                LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER"));
+            } else {
+                displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
+            }
+        } catch (IOException e) {
+            LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER"));
         }
-        displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
         return displayName;
     }
 
@@ -1761,12 +1768,14 @@ public class ExchangeSession {
         }
     }
 
-    public String getEmail(String alias) throws IOException {
+    public String getEmail(String alias) {
         String emailResult = null;
         if (alias != null) {
-            String path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
-            GetMethod getMethod = new GetMethod(path);
+            GetMethod getMethod = null;
+            String path = null;
             try {
+                path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
+                getMethod = new GetMethod(path);
                 int status = httpClient.executeMethod(getMethod);
                 if (status != HttpStatus.SC_OK) {
                     throw new DavMailException("EXCEPTION_UNABLE_TO_GET_EMAIL", getMethod.getPath());
@@ -1776,16 +1785,18 @@ public class ExchangeSession {
                 if (result != null) {
                     emailResult = result.get("EM");
                 }
-            } catch (HttpException e) {
-                LOGGER.debug("GET " + path + " failed: " + e);
+            } catch (IOException e) {
+                LOGGER.debug("GET " + path + " failed: " + e + ' ' + e.getMessage());
             } finally {
-                getMethod.releaseConnection();
+                if (getMethod != null) {
+                    getMethod.releaseConnection();
+                }
             }
         }
         return emailResult;
     }
 
-    public void buildEmail(HttpMethod method) throws IOException {
+    public void buildEmail(String hostName, String methodPath) {
         // first try to get email from login name
         alias = getAliasFromLogin();
         email = getEmail(alias);
@@ -1801,13 +1812,13 @@ public class ExchangeSession {
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions(method.getPath());
+            alias = getAliasFromOptions(methodPath);
             email = getEmail(alias);
         }
         if (email == null) {
             LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
                     + " or " + getAliasFromMailPath()
-                    + " or " + getAliasFromOptions(method.getPath())
+                    + " or " + getAliasFromOptions(methodPath)
             );
             // last failover: build email from domain name and mailbox display name
             StringBuilder buffer = new StringBuilder();
@@ -1819,7 +1830,6 @@ public class ExchangeSession {
             if (alias != null) {
                 buffer.append(alias);
                 buffer.append('@');
-                String hostName = method.getURI().getHost();
                 int dotIndex = hostName.indexOf('.');
                 if (dotIndex >= 0) {
                     buffer.append(hostName.substring(dotIndex + 1));
