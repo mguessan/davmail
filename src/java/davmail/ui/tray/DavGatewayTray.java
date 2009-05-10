@@ -57,7 +57,7 @@ public class DavGatewayTray {
     protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
         LOGGER.log(priority, BundleMessage.getExceptionLogMessage(message, e), e);
         if (davGatewayTray != null
-                && (!(e instanceof NetworkDownException) || isActive())) {
+                && (!(e instanceof NetworkDownException))) {
             davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), priority);
         }
         if (davGatewayTray != null && e instanceof NetworkDownException) {

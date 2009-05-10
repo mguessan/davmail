@@ -1,7 +1,7 @@
 package davmail.exchange;
 
-import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
@@ -11,9 +11,12 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.net.NetworkInterface;
+import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Create ExchangeSession instances.
@@ -21,6 +24,7 @@ import java.util.*;
 public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
     private static final Map<PoolKey, ExchangeSession> poolMap = new HashMap<PoolKey, ExchangeSession>();
+    private static boolean configChecked;
 
     static class PoolKey {
         public final String url;
@@ -60,11 +64,11 @@ public final class ExchangeSessionFactory {
      * @throws IOException on error
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
+        ExchangeSession session = null;
         try {
             String baseUrl = Settings.getProperty("davmail.url");
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
-            ExchangeSession session;
             synchronized (LOCK) {
                 session = poolMap.get(poolKey);
             }
@@ -89,14 +93,14 @@ public final class ExchangeSessionFactory {
             synchronized (LOCK) {
                 poolMap.put(poolKey, session);
             }
-            return session;
-        } catch (IOException e) {
-            if (checkNetwork()) {
-                throw e;
-            } else {
-                throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
-            }
+            // session opened, future failure will mean network down
+            configChecked = true;
+        } catch (UnknownHostException exc) {
+            handleNetworkDown(exc);
+        } catch (NoRouteToHostException exc) {
+            handleNetworkDown(exc);
         }
+        return session;
     }
 
     public static void checkConfig() throws IOException {
@@ -113,17 +117,13 @@ public final class ExchangeSessionFactory {
                     && status != HttpStatus.SC_MOVED_TEMPORARILY && status != HttpStatus.SC_MOVED_PERMANENTLY) {
                 throw new DavMailException("EXCEPTION_CONNECTION_FAILED", url, status);
             }
+            // session opened, future failure will mean network down
+            configChecked = true;
 
         } catch (UnknownHostException exc) {
-            if (checkNetwork()) {
-                BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
-                ExchangeSession.LOGGER.error(message);
-                throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
-            } else {
-                ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
-                throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
-            }
-
+            handleNetworkDown(exc);
+        } catch (NoRouteToHostException exc) {
+            handleNetworkDown(exc);
         } catch (NetworkDownException exc) {
             throw exc;
         } catch (Exception exc) {
@@ -133,6 +133,17 @@ public final class ExchangeSessionFactory {
             testMethod.releaseConnection();
         }
 
+    }
+
+    private static void handleNetworkDown(Exception exc) throws DavMailException {
+        if (!checkNetwork() || configChecked) {
+            ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
+            throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
+        } else {
+            BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
+            ExchangeSession.LOGGER.error(message);
+            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
+        }
     }
 
     /**
@@ -160,6 +171,7 @@ public final class ExchangeSessionFactory {
     }
 
     public static void reset() {
+        configChecked=false;
         poolMap.clear();
     }
 }
