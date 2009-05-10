@@ -108,7 +108,6 @@ public class PopConnection extends AbstractConnection {
                             password = line.substring("PASS".length() + 1);
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
-                                messages = session.getAllMessages("INBOX");
                                 sendOK("PASS");
                                 state = State.AUTHENTICATED;
                             } catch (SocketException e) {
@@ -125,6 +124,10 @@ public class PopConnection extends AbstractConnection {
                     } else if (state != State.AUTHENTICATED) {
                         sendERR("Invalid state not authenticated");
                     } else {
+                        // load messages (once)
+                        if (messages == null) {
+                            messages = session.getAllMessageUidAndSize("INBOX");
+                        }
                         if ("STAT".equalsIgnoreCase(command)) {
                             sendOK(messages.size() + " " +
                                     getTotalMessagesLength());

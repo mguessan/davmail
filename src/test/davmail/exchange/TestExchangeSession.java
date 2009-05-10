@@ -2,7 +2,6 @@ package davmail.exchange;
 
 import davmail.Settings;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
-import org.apache.commons.httpclient.util.URIUtil;
 
 /**
  *
@@ -29,7 +28,7 @@ public class TestExchangeSession {
             ExchangeSession.Folder folder = session.getFolder(argv[currentArg++]);
 
             long startTime = System.currentTimeMillis();
-            ExchangeSession.MessageList messageList = session.getAllMessages(folder.folderUrl);
+            ExchangeSession.MessageList messageList = session.getAllMessageUidAndSize(folder.folderUrl);
             System.out.println("******");
             for (ExchangeSession.Message message : messageList) {
                 message.write(System.out);

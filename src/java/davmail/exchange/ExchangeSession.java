@@ -634,18 +634,22 @@ public class ExchangeSession {
         }
     }
 
-    public MessageList getAllMessages(String folderName) throws IOException {
-        return searchMessages(folderName, "");
+    public MessageList getAllMessageUidAndSize(String folderName) throws IOException {
+       return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"", "");
     }
 
     public MessageList searchMessages(String folderName, String conditions) throws IOException {
-        String folderUrl = getFolderPath(folderName);
-        MessageList messages = new MessageList();
-        String searchRequest = "Select \"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
+        return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"" +
+                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"", conditions);
+    }
+
+    public MessageList searchMessages(String folderName, String attributes, String conditions) throws IOException {
+        String folderUrl = getFolderPath(folderName);
+        MessageList messages = new MessageList();
+        String searchRequest = "Select "+ attributes +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n";
         if (conditions != null) {
@@ -980,7 +984,7 @@ public class ExchangeSession {
         }
 
         public void loadMessages() throws IOException {
-            messages = getAllMessages(folderUrl);
+            messages = searchMessages(folderUrl, "");
         }
 
         public int size() {
