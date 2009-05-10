@@ -84,9 +84,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
                     } else if (priority.equals(Priority.ERROR)) {
                         errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
                         errorArea.setText(message);
-                    } else {
-                        messageArea.setText(message);
                     }
+                    messageArea.setText(message);
                 }
             }
         });
@@ -115,7 +114,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
         if (lf5Appender == null) {
             lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                @Override protected void closeAfterConfirm() {
+                @Override
+                protected void closeAfterConfirm() {
                     hide();
                 }
             });
@@ -135,7 +135,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
 
     protected void buildMenu() {
         // create a popup menu
-        JMenu menu = new JMenu("DavMail");
+        JMenu menu = new JMenu(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(menu);
         mainFrame.setJMenuBar(menuBar);
@@ -147,7 +147,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        JMenuItem aboutItem = new JMenuItem("About...");
+        JMenuItem aboutItem = new JMenuItem(BundleMessage.format("UI_ABOUT"));
         aboutItem.addActionListener(aboutListener);
         menu.add(aboutItem);
 
@@ -159,11 +159,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the default action
-        JMenuItem defaultItem = new JMenuItem("Settings...");
+        JMenuItem defaultItem = new JMenuItem(BundleMessage.format("UI_SETTINGS"));
         defaultItem.addActionListener(settingsListener);
         menu.add(defaultItem);
 
-        JMenuItem logItem = new JMenuItem("Show logs...");
+        JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
         logItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showLogs();
@@ -179,7 +179,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
             }
         };
         // create menu item for the exit action
-        JMenuItem exitItem = new JMenuItem("Quit");
+        JMenuItem exitItem = new JMenuItem(BundleMessage.format("UI_EXIT"));
         exitItem.addActionListener(exitListener);
         menu.add(exitItem);
     }
@@ -198,11 +198,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
 
         mainFrame = new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainFrame.setTitle("DavMail Gateway");
+        mainFrame.setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         mainFrame.setIconImage(image);
 
         JPanel errorPanel = new JPanel();
-        errorPanel.setBorder(BorderFactory.createTitledBorder("Last message"));
+        errorPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LAST_MESSAGE")));
         errorPanel.setLayout(new BoxLayout(errorPanel, BoxLayout.X_AXIS));
         errorArea = new JTextPane();
         errorArea.setEditable(false);
@@ -212,11 +212,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         errorPanel.add(errorArea);
 
         JPanel messagePanel = new JPanel();
-        messagePanel.setBorder(BorderFactory.createTitledBorder("Last log"));
+        messagePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LAST_LOG")));
         messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.X_AXIS));
 
         messageArea = new JTextPane();
-        messageArea.setText("Starting DavMail Gateway...");
+        messageArea.setText(BundleMessage.format("LOG_STARTING_DAVMAIL"));
         messageArea.setEditable(false);
         messageArea.setBackground(mainFrame.getBackground());
         messagePanel.add(messageArea);
@@ -235,8 +235,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         mainFrame.pack();
         // workaround MacOSX
         if (mainFrame.getSize().width < 400 || mainFrame.getSize().height < 180) {
-           mainFrame.setSize(Math.max(mainFrame.getSize().width, 400),
-                   Math.max(mainFrame.getSize().height, 180)); 
+            mainFrame.setSize(Math.max(mainFrame.getSize().width, 400),
+                    Math.max(mainFrame.getSize().height, 180));
         }
         // center frame
         mainFrame.setLocation(mainFrame.getToolkit().getScreenSize().width / 2 -
