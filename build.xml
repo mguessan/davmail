@@ -50,9 +50,6 @@
                  classname="net.sourceforge.jarbundler.JarBundler">
             <classpath location="lib/jarbundler-2.1.0.jar"/>
         </taskdef>
-        <!-- Fake JavaApplicationStub, replaced with a link to
-         /System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub-->
-        <touch file="dist/JavaApplicationStub"/>
         <jarbundler dir="dist"
                     shortname="DavMail"
                     name="DavMail"
@@ -64,7 +61,7 @@
                     version="${version}"
                     vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
                     workingdirectory="$APP_PACKAGE"
-                    stubfile="dist/JavaApplicationStub">
+                    stubfile="src/osx/davmail">
             <jarfileset dir="dist/lib">
                 <include name="*.jar"/>
                 <exclude name="swt*.jar"/>
@@ -73,14 +70,14 @@
                 <include name="*.jar"/>
             </jarfileset>
         </jarbundler>
-        <delete file="dist/JavaApplicationStub"/>
-        <delete dir="dist/DavMail.app/Contents/MacOS"/>
-        <copy file="src/osx/DavMail.JavaApplicationStub.app.zip"
-              tofile="dist/DavMail-MacOSX-${version}.app.zip" overwrite="true"/>
-        <zip update="true" file="dist/DavMail-MacOSX-${version}.app.zip">
-            <fileset dir="dist">
+        <zip file="dist/DavMail-MacOSX-${version}.app.zip" >
+            <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
-            </fileset>
+                <exclude name="DavMail.app/Contents/MacOS/davmail"/>
+            </zipfileset>
+            <zipfileset dir="dist" filemode="755">
+                <include name="DavMail.app/Contents/MacOS/davmail"/>
+            </zipfileset>
         </zip>
         <delete dir="dist/DavMail.app"/>
     </target>
