@@ -9,6 +9,7 @@ import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.exception.DavMailException;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -108,8 +109,8 @@ public class DavGateway {
                 server.bind();
                 server.start();
                 messages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
-            } catch (BindException e) {
-                errorMessages.add(new BundleMessage("LOG_SOCKET_BIND_FAILED", server.getProtocolName(), server.getPort()));
+            } catch (DavMailException e) {
+                errorMessages.add(e.getBundleMessage());
             } catch (IOException e) {
                 errorMessages.add(new BundleMessage("LOG_SOCKET_BIND_FAILED", server.getProtocolName(), server.getPort()));
             }

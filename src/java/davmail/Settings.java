@@ -65,6 +65,10 @@ public class Settings {
                 SETTINGS.put("davmail.proxyPassword", "");
                 SETTINGS.put("davmail.server", Boolean.FALSE.toString());
                 SETTINGS.put("davmail.server.certificate.hash", "");
+                SETTINGS.put("davmail.ssl.keystoreType", "");
+                SETTINGS.put("davmail.ssl.keystoreFile", "");
+                SETTINGS.put("davmail.ssl.keystorePass", "");
+                SETTINGS.put("davmail.ssl.keyPass", "");
 
                 // logging
                 SETTINGS.put("log4j.rootLogger", Priority.WARN.toString());

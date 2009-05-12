@@ -1,11 +1,18 @@
 package davmail;
 
+import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 
 /**
  * Generic abstract server common to SMTP and POP3 implementations
@@ -15,6 +22,7 @@ public abstract class AbstractServer extends Thread {
     private ServerSocket serverSocket;
 
     public abstract String getProtocolName();
+
     /**
      * Server socket TCP port
      *
@@ -43,15 +51,55 @@ public abstract class AbstractServer extends Thread {
 
     /**
      * Bind server socket on defined port.
-     * @throws IOException unable to create server socket
+     *
+     * @throws DavMailException unable to create server socket
      */
-    public void bind() throws IOException {
+    public void bind() throws DavMailException {
         String bindAddress = Settings.getProperty("davmail.bindAddress");
-        //noinspection SocketOpenedButNotSafelyClosed
-        if (bindAddress == null || bindAddress.length() == 0) {
-            serverSocket = new ServerSocket(this.port);
+        String keystoreFile = Settings.getProperty("davmail.ssl.keystoreFile");
+
+        ServerSocketFactory serverSocketFactory;
+        if (keystoreFile == null || keystoreFile.length() == 0) {
+            serverSocketFactory = ServerSocketFactory.getDefault();
         } else {
-            serverSocket = new ServerSocket(this.port, 0, Inet4Address.getByName(bindAddress));
+
+            try {
+                // keystore for keys and certificates
+                // keystore and private keys should be password protected...
+                KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
+                keystore.load(new FileInputStream(keystoreFile),
+                        Settings.getProperty("davmail.ssl.keystorePass").toCharArray());
+
+                // KeyManagerFactory to create key managers
+                KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+
+                // initialize KMF to work with keystore
+                kmf.init(keystore, Settings.getProperty("davmail.ssl.keyPass").toCharArray());
+
+                // SSLContext is environment for implementing JSSE...
+                // create ServerSocketFactory
+                SSLContext sslc = SSLContext.getInstance("SSLv3");
+
+                // initialize sslc to work with key managers
+                sslc.init(kmf.getKeyManagers(), null, null);
+
+                // create ServerSocketFactory from sslc
+                serverSocketFactory = sslc.getServerSocketFactory();
+            } catch (IOException ex) {
+                throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
+            } catch (GeneralSecurityException ex) {
+                throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
+            }
+        }
+        try {
+            // create the server socket
+            if (bindAddress == null || bindAddress.length() == 0) {
+                serverSocket = serverSocketFactory.createServerSocket(port);
+            } else {
+                serverSocket = serverSocketFactory.createServerSocket(port, 0, Inet4Address.getByName(bindAddress));
+            }
+        } catch (IOException e) {
+            throw new DavMailException("LOG_SOCKET_BIND_FAILED", getProtocolName(), port);
         }
     }
 
@@ -114,4 +162,3 @@ public abstract class AbstractServer extends Thread {
         }
     }
 }
-
