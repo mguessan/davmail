@@ -75,6 +75,31 @@
                         <td>Allow remote connections to the gateway (server mode)</td>
                         <td>false</td>
                     </tr>
+                    <tr>
+                        <td>Key store type</td>
+                        <td>Choose key store type</td>
+                        <td>JKS</td>
+                    </tr>
+                    <tr>
+                        <td>Key store</td>
+                        <td>SSL certificate key store file path</td>
+                        <td>path/to/keystore</td>
+                    </tr>
+                    <tr>
+                        <td>Key store password</td>
+                        <td>Key store password</td>
+                        <td>password</td>
+                    </tr>
+                    <tr>
+                        <td>Key password</td>
+                        <td>SSL key password inside key store</td>
+                        <td>password</td>
+                    </tr>
+                    <tr>
+                        <td>Allow remote connections</td>
+                        <td>Allow remote connections to the gateway (server mode)</td>
+                        <td>false</td>
+                    </tr>
                      <tr>
                         <td>Bind Address</td>
                         <td>Bind only to the specified network address</td>
