@@ -36,7 +36,8 @@ public class ImapConnection extends AbstractConnection {
         super(ImapConnection.class.getSimpleName(), clientSocket, null);
     }
 
-    @Override public void run() {
+    @Override
+    public void run() {
         String line;
         String commandId = null;
         IMAPTokenizer tokens;
@@ -192,16 +193,26 @@ public class ImapConnection extends AbstractConnection {
                                                 sendClient(commandId + " NO no folder selected");
                                             } else {
                                                 currentFolder = session.refreshFolder(currentFolder);
-                                                UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
-                                                String parameters = null;
-                                                if (tokens.hasMoreTokens()) {
-                                                    parameters = tokens.nextToken();
+                                                String ranges = tokens.nextToken();
+                                                if (ranges == null) {
+                                                    sendClient(commandId + " BAD missing range parameter");
+                                                } else {
+                                                    UIDRangeIterator uidRangeIterator = new UIDRangeIterator(ranges);
+                                                    String parameters = null;
+                                                    if (tokens.hasMoreTokens()) {
+                                                        parameters = tokens.nextToken();
+                                                    }
+                                                    if (!uidRangeIterator.hasNext() && ranges.indexOf(':') < 0) {
+                                                        // message not found in current list, maybe deleted in another thread
+                                                        sendClient(commandId + " NO No message found");
+                                                    } else {
+                                                        while (uidRangeIterator.hasNext()) {
+                                                            ExchangeSession.Message message = uidRangeIterator.next();
+                                                            handleFetch(message, uidRangeIterator.currentIndex, parameters);
+                                                        }
+                                                        sendClient(commandId + " OK UID FETCH completed");
+                                                    }
                                                 }
-                                                while (uidRangeIterator.hasNext()) {
-                                                    ExchangeSession.Message message = uidRangeIterator.next();
-                                                    handleFetch(message, uidRangeIterator.currentIndex, parameters);
-                                                }
-                                                sendClient(commandId + " OK UID FETCH completed");
                                             }
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
@@ -441,7 +452,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (Exception e) {
             DavGatewayTray.error(e);
             try {
-                String message = (e.getMessage()==null)?e.toString():e.getMessage();
+                String message = (e.getMessage() == null) ? e.toString() : e.getMessage();
                 if (commandId != null) {
                     sendClient(commandId + " BAD unable to handle request: " + message);
                 } else {
@@ -907,7 +918,7 @@ public class ImapConnection extends AbstractConnection {
         protected final int startIndex;
 
         private PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
-                                int startIndex) {
+                                 int startIndex) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
