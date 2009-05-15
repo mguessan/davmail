@@ -30,6 +30,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.net.NoRouteToHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -217,11 +218,15 @@ public class ExchangeSession {
     }
 
 
-    public boolean isExpired() {
+    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         boolean isExpired = false;
         try {
             DavGatewayHttpClientFacade.executePropFindMethod(
                     httpClient, URIUtil.encodePath(inboxUrl), 0, DISPLAY_NAME);
+        } catch (UnknownHostException exc) {
+            throw exc;
+        } catch (NoRouteToHostException exc) {
+            throw exc;
         } catch (IOException e) {
             isExpired = true;
         }
