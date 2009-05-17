@@ -119,7 +119,11 @@ public class Settings {
     }
 
     public static synchronized void setProperty(String property, String value) {
-        SETTINGS.setProperty(property, value);
+        if (value != null) {
+            SETTINGS.setProperty(property, value);
+        } else {
+            SETTINGS.setProperty(property, "");
+        }
     }
 
     public static synchronized int getIntProperty(String property) {
