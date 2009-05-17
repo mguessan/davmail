@@ -243,6 +243,10 @@ public class CaldavConnection extends AbstractConnection {
             } else if (request.isGet()) {
                 ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), eventName);
                 sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
+            } else if (request.isHead()) {
+                // test event
+                session.getEvent(request.getExchangeFolderPath(), eventName);
+                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", (byte[])null, true);
             } else {
                 sendUnsupported(request);
             }
@@ -823,6 +827,10 @@ public class CaldavConnection extends AbstractConnection {
 
         public boolean isGet() {
             return "GET".equals(command);
+        }
+
+        public boolean isHead() {
+            return "HEAD".equals(command);
         }
 
         public boolean isPut() {
