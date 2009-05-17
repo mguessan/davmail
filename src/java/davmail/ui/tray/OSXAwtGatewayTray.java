@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.ui.OSXAdapter;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 
 /**
  * Extended Awt tray with OSX extensions.
@@ -9,6 +10,13 @@ import davmail.BundleMessage;
 public class OSXAwtGatewayTray extends AwtGatewayTray {
     @SuppressWarnings({"SameReturnValue"})
     public boolean quit() {
+        DavGateway.stop();
+        // dispose frames
+        settingsFrame.dispose();
+        aboutFrame.dispose();
+        if (logBrokerMonitor != null) {
+            logBrokerMonitor.dispose();
+        }
         return true;
     }
 

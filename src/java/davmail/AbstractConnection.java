@@ -33,6 +33,7 @@ public class AbstractConnection extends Thread {
     public AbstractConnection(String name, Socket clientSocket) {
         super(name);
         this.client = clientSocket;
+        setDaemon(true);
     }
 
     // Initialize the streams and set thread name

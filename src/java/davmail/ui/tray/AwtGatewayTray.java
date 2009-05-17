@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -33,6 +34,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     private static Image image;
     private static Image image2;
     private static Image inactiveImage;
+    protected static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
     public Image getFrameIcon() {
@@ -168,11 +170,13 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 Logger rootLogger = Logger.getRootLogger();
                 LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
                 if (lf5Appender == null) {
-                    lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                        @Override protected void closeAfterConfirm() {
+                    logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                        @Override
+                        protected void closeAfterConfirm() {
                             hide();
                         }
-                    });
+                    };
+                    lf5Appender = new LF5Appender(logBrokerMonitor);
                     lf5Appender.setName("LF5Appender");
                     rootLogger.addAppender(lf5Appender);
                 }
@@ -184,9 +188,15 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                DavGateway.stop();
                 SystemTray.getSystemTray().remove(trayIcon);
-                //noinspection CallToSystemExit
-                System.exit(0);
+
+                // dispose frames
+                settingsFrame.dispose();
+                aboutFrame.dispose();
+                if (logBrokerMonitor != null) {
+                    logBrokerMonitor.dispose();
+                }
             }
         };
         // create menu item for the exit action

@@ -306,7 +306,7 @@ public final class DavGatewayHttpClientFacade {
         if (multiThreadedHttpConnectionManager == null) {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
             multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
-            httpConnectionManagerThread = new Thread(HttpConnectionManager.class.getName()) {
+            httpConnectionManagerThread = new Thread(HttpConnectionManager.class.getSimpleName()) {
                 @Override public void run() {
                     boolean terminated = false;
                     while (!terminated) {
@@ -321,6 +321,7 @@ public final class DavGatewayHttpClientFacade {
                     }
                 }
             };
+            httpConnectionManagerThread.setDaemon(true);
             httpConnectionManagerThread.start();
         }
     }

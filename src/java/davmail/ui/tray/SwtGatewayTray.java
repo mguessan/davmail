@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -31,6 +32,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Image inactiveImage;
     private static Display display;
     private static Shell shell;
+    private static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
     private boolean isReady;
 
@@ -221,12 +223,13 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                             Logger rootLogger = Logger.getRootLogger();
                                             LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
                                             if (lf5Appender == null) {
-                                                lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                                                logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
                                                     @Override
                                                     protected void closeAfterConfirm() {
                                                         hide();
                                                     }
-                                                });
+                                                };
+                                                lf5Appender = new LF5Appender(logBrokerMonitor);
                                                 lf5Appender.setName("LF5Appender");
                                                 rootLogger.addAppender(lf5Appender);
                                             }
@@ -240,18 +243,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     exitItem.setText(BundleMessage.format("UI_EXIT"));
                     exitItem.addListener(SWT.Selection, new Listener() {
                         public void handleEvent(Event event) {
+                            DavGateway.stop();
                             shell.dispose();
-
-                            if (image != null) {
-                                image.dispose();
-                            }
-                            if (image2 != null) {
-                                image2.dispose();
-                            }
-                            display.dispose();
-
-                            //noinspection CallToSystemExit
-                            System.exit(0);
                         }
                     });
 
@@ -271,6 +264,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         }
                     }
 
+                    if (trayItem != null) {
+                        trayItem.dispose();
+                    }
+
                     if (image != null) {
                         image.dispose();
                     }
@@ -278,6 +275,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         image2.dispose();
                     }
                     display.dispose();
+                    // dispose AWT frames
+                    settingsFrame.dispose();
+                    aboutFrame.dispose();
+                    if (logBrokerMonitor != null) {
+                        logBrokerMonitor.dispose();
+                    }
                 }
             }
         }.start();

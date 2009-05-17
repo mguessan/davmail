@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.ui.OSXAdapter;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -14,6 +15,13 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
 
     @SuppressWarnings({"SameReturnValue"})
     public boolean quit() {
+        DavGateway.stop();
+        // dispose frames
+        settingsFrame.dispose();
+        aboutFrame.dispose();
+        if (logBrokerMonitor != null) {
+            logBrokerMonitor.dispose();
+        }
         return true;
     }
 

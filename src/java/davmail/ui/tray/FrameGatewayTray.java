@@ -2,6 +2,7 @@ package davmail.ui.tray;
 
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
@@ -25,6 +26,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     protected static JFrame mainFrame;
     protected static AboutFrame aboutFrame;
     protected static SettingsFrame settingsFrame;
+    protected static LogBrokerMonitor logBrokerMonitor;
     private static JEditorPane errorArea;
     private static JLabel errorLabel;
     private static JEditorPane messageArea;
@@ -113,12 +115,13 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         Logger rootLogger = Logger.getRootLogger();
         LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
         if (lf5Appender == null) {
-            lf5Appender = new LF5Appender(new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+            logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
                 @Override
                 protected void closeAfterConfirm() {
                     hide();
                 }
-            });
+            };
+            lf5Appender = new LF5Appender(logBrokerMonitor);
             lf5Appender.setName("LF5Appender");
             rootLogger.addAppender(lf5Appender);
         }
@@ -174,8 +177,13 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                //noinspection CallToSystemExit
-                System.exit(0);
+                DavGateway.stop();
+                // dispose frames
+                settingsFrame.dispose();
+                aboutFrame.dispose();
+                if (logBrokerMonitor != null) {
+                    logBrokerMonitor.dispose();
+                }
             }
         };
         // create menu item for the exit action

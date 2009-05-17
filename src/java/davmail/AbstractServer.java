@@ -42,6 +42,7 @@ public abstract class AbstractServer extends Thread {
      */
     public AbstractServer(String name, int port, int defaultPort) {
         super(name);
+        setDaemon(true);
         if (port == 0) {
             this.port = defaultPort;
         } else {
