@@ -98,7 +98,8 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    @Override public void run() {
+    @Override
+    public void run() {
         String line;
         StringTokenizer tokens;
 
@@ -218,7 +219,7 @@ public class CaldavConnection extends AbstractConnection {
             } else if (request.isPropFind()) {
                 sendCalendar(request);
             } else if (request.isPropPatch()) {
-                patchCalendar();
+                patchCalendar(request);
             } else if (request.isReport()) {
                 reportEvents(request);
             }
@@ -246,7 +247,7 @@ public class CaldavConnection extends AbstractConnection {
             } else if (request.isHead()) {
                 // test event
                 session.getEvent(request.getExchangeFolderPath(), eventName);
-                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", (byte[])null, true);
+                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", (byte[]) null, true);
             } else {
                 sendUnsupported(request);
             }
@@ -269,10 +270,10 @@ public class CaldavConnection extends AbstractConnection {
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
         StringBuilder eventPath = new StringBuilder();
         eventPath.append(URIUtil.encodePath(request.getPath()));
-        if (!(eventPath.charAt(eventPath.length()-1) == '/')) {
+        if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
-        String eventName = xmlEncodeName(event.getPath()); 
+        String eventName = xmlEncodeName(event.getPath());
         eventPath.append(URIUtil.encodeWithinQuery(eventName));
         response.startResponse(eventPath.toString());
         response.startPropstat();
@@ -417,10 +418,15 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
-    public void patchCalendar() throws IOException {
+    public void patchCalendar(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         // just ignore calendar folder proppatch (color not supported in Exchange)
+        if (request.hasProperty("calendar-color")) {
+            response.startPropstat();
+            response.appendProperty("x1:calendar-color", "x1=\"http://apple.com/ns/ical/\"", null);
+            response.endPropStatOK();
+        }
         response.endMultistatus();
         response.close();
     }
@@ -647,7 +653,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void sendUnsupported(CaldavRequest request) throws IOException {
-        BundleMessage message = new BundleMessage("LOG_UNSUPORTED_REQUEST",request);
+        BundleMessage message = new BundleMessage("LOG_UNSUPORTED_REQUEST", request);
         DavGatewayTray.error(message);
         sendErr(HttpStatus.SC_BAD_REQUEST, message.format());
     }
@@ -1102,6 +1108,10 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 writer.write('<');
                 writer.write(propertyName);
+                if (namespace != null) {
+                    writer.write("  xmlns:");
+                    writer.write(namespace);
+                }
                 writer.write("/>");
             }
         }
