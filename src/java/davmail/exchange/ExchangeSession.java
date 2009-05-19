@@ -399,7 +399,7 @@ public class ExchangeSession {
     protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
         // find base url
         final String BASE_HREF = "<base href=\"";
-        String line = null;
+        String line;
 
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
@@ -1823,6 +1823,10 @@ public class ExchangeSession {
             // failover : get email from Exchange 2007 Options page
             alias = getAliasFromOptions(methodPath);
             email = getEmail(alias);
+            // failover: get email from options
+            if (alias != null && email == null) {
+                email = getEmailFromOptions(methodPath);
+            }
         }
         if (email == null) {
             LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
@@ -1865,6 +1869,43 @@ public class ExchangeSession {
             if (line != null) {
                 int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf('<', start);
+                result = line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+        } finally {
+            if (optionsPageReader != null) {
+                try {
+                    optionsPageReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                }
+            }
+            optionsMethod.releaseConnection();
+        }
+
+        return result;
+    }
+
+    protected String getEmailFromOptions(String path) {
+        String result = null;
+        // get user mail URL from html body
+        BufferedReader optionsPageReader = null;
+        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
+        try {
+            httpClient.executeMethod(optionsMethod);
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+            String line;
+            // find email
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null
+                    && (line.indexOf('[') == -1
+                    || line.indexOf('@') == -1
+                    || line.indexOf(']') == -1)) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().indexOf('[') + 1;
+                int end = line.indexOf(']', start);
                 result = line.substring(start, end);
             }
         } catch (IOException e) {
