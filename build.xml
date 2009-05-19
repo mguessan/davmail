@@ -14,10 +14,33 @@
         <delete file="build.log"/>
     </target>
 
-    <target name="init">
-        <condition property="is.windows">
-            <os family="windows"/>
-        </condition>
+    <condition property="is.windows">
+        <os family="windows"/>
+    </condition>
+    <condition property="is.svn">
+        <available file=".svn"/>
+    </condition>
+
+    <target name="svnrelease" if="is.svn">
+        <typedef resource="org/tigris/subversion/svnant/svnantlib.xml">
+            <classpath>
+                <fileset dir="svnant">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </typedef>
+        <svn svnkit="true">
+            <wcversion path="."/>
+        </svn>
+        <property name="release" value="${version}-${revision.max}"/>
+    </target>
+
+    <target name="defaultrelease" unless="is.svn">
+        <property name="release" value="${version}"/>
+    </target>
+
+    <target name="init" depends="svnrelease, defaultrelease">
+        <echo message="Creating DavMail ${release} dist package"/>
         <mkdir dir="target/classes"/>
     </target>
 
@@ -41,7 +64,7 @@
             <classpath location="lib/nsisant-1.2.jar"/>
         </taskdef>
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
-            <define name="VERSION" value="${version}"/>
+            <define name="VERSION" value="${release}"/>
         </nsis>
     </target>
 
@@ -54,11 +77,11 @@
                     shortname="DavMail"
                     name="DavMail"
                     mainclass="davmail.DavGateway"
-                    build="${version}"
+                    build="${release}"
                     icon="src/osx/tray.icns"
-                    infostring="DavMail Gateway ${version}"
+                    infostring="DavMail Gateway ${release}"
                     jvmversion="1.5+"
-                    version="${version}"
+                    version="${release}"
                     vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
                     workingdirectory="$APP_PACKAGE"
                     stubfile="src/osx/davmail">
@@ -70,7 +93,7 @@
                 <include name="*.jar"/>
             </jarfileset>
         </jarbundler>
-        <zip file="dist/DavMail-MacOSX-${version}.app.zip" >
+        <zip file="dist/DavMail-MacOSX-${release}.app.zip">
             <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
                 <exclude name="DavMail.app/Contents/MacOS/davmail"/>
@@ -98,7 +121,7 @@
              package="davmail"
              section="mail"
              depends="sun-java6-jre,libswt-gtk-3.4-java">
-            <version upstream="${version}"/>
+            <version upstream="${release}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/LDAP Exchange Gateway">
                 Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway allowing
@@ -134,12 +157,12 @@
     <target name="dist" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <echo file="dist/version.txt" message="${version}"/>
+        <echo file="dist/version.txt" message="${release}"/>
         <jar basedir="target/classes" destfile="dist/davmail.jar">
             <manifest>
                 <section name="davmail/">
                     <attribute name="Implementation-Title" value="DavMail Gateway"/>
-                    <attribute name="Implementation-Version" value="${version}"/>
+                    <attribute name="Implementation-Version" value="${release}"/>
                     <attribute name="Implementation-Vendor" value="Mickael Guessant"/>
                 </section>
             </manifest>
@@ -161,7 +184,7 @@
                  classpathref="classpath"/>
         <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
-        <zip file="dist/davmail-${version}.zip">
+        <zip file="dist/davmail-${release}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
@@ -185,14 +208,14 @@
                 <exclude name="swt*.jar"/>
             </fileset>
         </copy>
-        <jar destfile="dist/davmail-${version}.war">
+        <jar destfile="dist/davmail-${release}.war">
             <fileset dir="dist/web"/>
         </jar>
-        <tar tarfile="dist/davmail-linux-x86-${version}.tgz" compression="gzip">
-            <tarfileset prefix="davmail-linux-x86-${version}" dir="dist" filemode="755">
+        <tar tarfile="dist/davmail-linux-x86-${release}.tgz" compression="gzip">
+            <tarfileset prefix="davmail-linux-x86-${release}" dir="dist" filemode="755">
                 <include name="davmail.sh"/>
             </tarfileset>
-            <tarfileset prefix="davmail-linux-x86-${version}" dir="dist">
+            <tarfileset prefix="davmail-linux-x86-${release}" dir="dist">
                 <include name="davmail.desktop"/>
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
@@ -202,11 +225,11 @@
                 <exclude name="lib/swt-*-win32-x86.jar"/>
             </tarfileset>
         </tar>
-        <tar tarfile="dist/davmail-linux-x86_64-${version}.tgz" compression="gzip">
-            <tarfileset prefix="davmail-linux-x86_64-${version}" dir="dist" filemode="755">
+        <tar tarfile="dist/davmail-linux-x86_64-${release}.tgz" compression="gzip">
+            <tarfileset prefix="davmail-linux-x86_64-${release}" dir="dist" filemode="755">
                 <include name="davmail.sh"/>
             </tarfileset>
-            <tarfileset prefix="davmail-linux-x86_64-${version}" dir="dist">
+            <tarfileset prefix="davmail-linux-x86_64-${release}" dir="dist">
                 <include name="davmail.desktop"/>
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
@@ -220,8 +243,8 @@
         <antcall target="dist-deb"/>
         <antcall target="dist-osx"/>
         <!-- source package -->
-        <tar tarfile="dist/davmail-src-${version}.tgz" compression="gzip" longfile="gnu">
-            <tarfileset prefix="davmail-src-${version}" dir=".">
+        <tar tarfile="dist/davmail-src-${release}.tgz" compression="gzip" longfile="gnu">
+            <tarfileset prefix="davmail-src-${release}" dir=".">
                 <include name="**/*"/>
                 <exclude name="build.log"/>
                 <exclude name="dist/**"/>
