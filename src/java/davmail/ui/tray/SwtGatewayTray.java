@@ -266,6 +266,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                     if (trayItem != null) {
                         trayItem.dispose();
+                        trayItem = null;
                     }
 
                     if (image != null) {
@@ -281,6 +282,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     if (logBrokerMonitor != null) {
                         logBrokerMonitor.dispose();
                     }
+                    // make sure we do exit
+                    System.exit(0);
                 }
             }
         }.start();

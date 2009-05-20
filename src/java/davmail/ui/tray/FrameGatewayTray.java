@@ -184,6 +184,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
                 if (logBrokerMonitor != null) {
                     logBrokerMonitor.dispose();
                 }
+                // make sure we do exit
+                System.exit(0);
             }
         };
         // create menu item for the exit action
