@@ -25,7 +25,7 @@ public class TestExchangeSession {
             ExchangeSessionFactory.checkConfig();
             session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg++]);
 
-            ExchangeSession.Folder folder = session.getFolder(argv[currentArg++]);
+            ExchangeSession.Folder folder = session.getFolder("INBOX");
 
             long startTime = System.currentTimeMillis();
             ExchangeSession.MessageList messageList = session.getAllMessageUidAndSize(folder.folderUrl);
