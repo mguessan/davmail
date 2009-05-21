@@ -1,6 +1,7 @@
 package davmail;
 
 import davmail.caldav.CaldavServer;
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
@@ -9,7 +10,6 @@ import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
-import davmail.exception.DavMailException;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -20,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.BindException;
 import java.util.ArrayList;
 
 /**
@@ -116,14 +115,15 @@ public class DavGateway {
             }
         }
 
-        DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", messages));
+        String currentVersion = getCurrentVersion();
+        DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING",
+                currentVersion==null?"":currentVersion, messages));
         if (!errorMessages.isEmpty()) {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
 
         // check for new version
         String releasedVersion = getReleasedVersion();
-        String currentVersion = getCurrentVersion();
         if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
             DavGatewayTray.info(new BundleMessage("LOG_NEW_VERSION_AVAILABLE", releasedVersion));
         }
