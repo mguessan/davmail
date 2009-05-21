@@ -6,6 +6,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -154,6 +155,8 @@ public class ExchangeSession {
 
 
             httpClient = DavGatewayHttpClientFacade.getInstance(httpURL);
+            // avoid 401 roundtrips
+            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
 
             // get webmail root url
             // providing credentials
