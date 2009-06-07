@@ -21,6 +21,14 @@
         <available file=".svn"/>
     </condition>
 
+    <condition property="is.java6">
+        <equals arg1="${ant.java.version}" arg2="1.6"/>
+    </condition>
+
+    <target name="check-java6" unless="is.java6">
+        <fail message="Java 6 needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
+    </target>
+
     <target name="svnrelease" if="is.svn">
         <typedef resource="org/tigris/subversion/svnant/svnantlib.xml">
             <classpath>
@@ -39,7 +47,7 @@
         <property name="release" value="${version}"/>
     </target>
 
-    <target name="init" depends="svnrelease, defaultrelease">
+    <target name="init" depends="check-java6, svnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package"/>
         <mkdir dir="target/classes"/>
     </target>
