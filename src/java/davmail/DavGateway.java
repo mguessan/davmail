@@ -65,7 +65,7 @@ public class DavGateway {
                     DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
                 }
             } catch (IOException e) {
-                 DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
+                DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
             }
         }
 
@@ -117,7 +117,7 @@ public class DavGateway {
 
         String currentVersion = getCurrentVersion();
         DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING",
-                currentVersion==null?"":currentVersion, messages));
+                currentVersion == null ? "" : currentVersion, messages));
         if (!errorMessages.isEmpty()) {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
@@ -152,27 +152,29 @@ public class DavGateway {
 
     public static String getReleasedVersion() {
         String version = null;
-        BufferedReader versionReader = null;
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
-        GetMethod getMethod = new GetMethod(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
-        try {
-            httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(1000);
-            int status = httpClient.executeMethod(getMethod);
-            if (status == HttpStatus.SC_OK) {
-                versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
-                version = versionReader.readLine();
-            }
-        } catch (IOException e) {
-            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
-        } finally {
-            if (versionReader != null) {
-                try {
-                    versionReader.close();
-                } catch (IOException e) {
-                    // ignore
+        if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
+            BufferedReader versionReader = null;
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
+            GetMethod getMethod = new GetMethod(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+            try {
+                httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(1000);
+                int status = httpClient.executeMethod(getMethod);
+                if (status == HttpStatus.SC_OK) {
+                    versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
+                    version = versionReader.readLine();
                 }
+            } catch (IOException e) {
+                DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
+            } finally {
+                if (versionReader != null) {
+                    try {
+                        versionReader.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
+                getMethod.releaseConnection();
             }
-            getMethod.releaseConnection();
         }
         return version;
     }
