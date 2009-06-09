@@ -39,7 +39,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             // first try standard Trust Manager
             this.standardTrustManager.checkServerTrusted(x509Certificates, authType);
         } catch (CertificateException e) {
-            if ((x509Certificates != null) && (x509Certificates.length > 0) && !GraphicsEnvironment.isHeadless()) {
+            if ((x509Certificates != null) && (x509Certificates.length > 0)) {
                 userCheckServerTrusted(x509Certificates);
             } else {
                 throw e;
@@ -65,8 +65,8 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_ACCEPTED_CERTIFICATE", acceptedCertificateHash));
         } else {
             boolean isCertificateTrusted;
-            if (Settings.getBooleanProperty("davmail.server")) {
-                // headless mode
+            if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                // headless or server mode
                 isCertificateTrusted = isCertificateTrusted(x509Certificates[0]);
             } else {
                 isCertificateTrusted = AcceptCertificateDialog.isCertificateTrusted(x509Certificates[0]);
