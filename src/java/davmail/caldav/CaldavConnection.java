@@ -113,7 +113,12 @@ public class CaldavConnection extends AbstractConnection {
                 tokens = new StringTokenizer(line);
                 String command = tokens.nextToken();
                 Map<String, String> headers = parseHeaders();
-                String path = URIUtil.decode(tokens.nextToken());
+                String encodedPath = tokens.nextToken();
+                // make sure + sign in URL is encoded
+                if (encodedPath.indexOf('+') >= 0) {
+                    encodedPath = encodedPath.replaceAll("\\+", "%2B");
+                }
+                String path = URIUtil.decode(encodedPath);
                 String content = getContent(headers.get("content-length"));
                 setSocketTimeout(headers.get("keep-alive"));
                 // client requested connection close
@@ -638,7 +643,12 @@ public class CaldavConnection extends AbstractConnection {
             response.endScheduleResponse();
             response.close();
         } else {
-            sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", "Unknown recipient: " + valueMap.get("ATTENDEE"), true);
+            StringBuilder buffer = new StringBuilder("Unknown recipient(s): ");
+            for (String attendee : attendees) {
+                buffer.append(attendee);
+                buffer.append(' ');
+            }
+            sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", buffer.toString(), true);
         }
 
     }
