@@ -2051,7 +2051,11 @@ public class ExchangeSession {
             getMethod.releaseConnection();
         }
 
-        return freeBusy;
+        if (freeBusy != null && freeBusy.knownAttendee) {
+           return freeBusy;
+        } else {
+            return null;
+        }
     }
 
     /**
