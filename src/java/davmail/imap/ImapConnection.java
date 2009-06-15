@@ -192,7 +192,6 @@ public class ImapConnection extends AbstractConnection {
                                             if (currentFolder == null) {
                                                 sendClient(commandId + " NO no folder selected");
                                             } else {
-                                                currentFolder = session.refreshFolder(currentFolder);
                                                 String ranges = tokens.nextToken();
                                                 if (ranges == null) {
                                                     sendClient(commandId + " BAD missing range parameter");
@@ -261,7 +260,6 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
-                                            currentFolder = session.refreshFolder(currentFolder);
                                             UIDRangeIterator UIDRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
@@ -273,7 +271,6 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
-                                                currentFolder = session.refreshFolder(currentFolder);
                                                 UIDRangeIterator UIDRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                                 while (UIDRangeIterator.hasNext()) {
