@@ -235,30 +235,34 @@ public class CaldavConnection extends AbstractConnection {
                 String etag = request.getHeader("if-match");
                 String noneMatch = request.getHeader("if-none-match");
                 ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(request.getExchangeFolderPath(), eventName, request.getBody(), etag, noneMatch);
-                if (eventResult.etag != null) {
-                    HashMap<String, String> responseHeaders = new HashMap<String, String>();
-                    responseHeaders.put("ETag", eventResult.etag);
-                    sendHttpResponse(eventResult.status, responseHeaders, null, "", true);
-                } else {
-                    sendHttpResponse(eventResult.status);
-                }
+                sendHttpResponse(eventResult.status, buildEtagHeader(eventResult.etag), null, "", true);
 
             } else if (request.isDelete()) {
                 int status = session.deleteEvent(request.getExchangeFolderPath(), eventName);
                 sendHttpResponse(status);
             } else if (request.isGet()) {
                 ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), eventName);
-                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", event.getICS(), true);
+                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
             } else if (request.isHead()) {
                 // test event
-                session.getEvent(request.getExchangeFolderPath(), eventName);
-                sendHttpResponse(HttpStatus.SC_OK, null, "text/calendar;charset=UTF-8", (byte[]) null, true);
+                ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), eventName);
+                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", (byte[]) null, true);
             } else {
                 sendUnsupported(request);
             }
 
         } else {
             sendUnsupported(request);
+        }
+    }
+
+    protected HashMap<String, String> buildEtagHeader(String etag) {
+        if (etag != null) {
+            HashMap<String, String> etagHeader = new HashMap<String, String>();
+            etagHeader.put("ETag", etag);
+            return etagHeader;
+        } else {
+            return null;
         }
     }
 
