@@ -188,14 +188,18 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // create an action exitListener to listen for exit action executed on the tray icon
         ActionListener exitListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                DavGateway.stop();
-                SystemTray.getSystemTray().remove(trayIcon);
+                try {
+                    DavGateway.stop();
+                    SystemTray.getSystemTray().remove(trayIcon);
 
-                // dispose frames
-                settingsFrame.dispose();
-                aboutFrame.dispose();
-                if (logBrokerMonitor != null) {
-                    logBrokerMonitor.dispose();
+                    // dispose frames
+                    settingsFrame.dispose();
+                    aboutFrame.dispose();
+                    if (logBrokerMonitor != null) {
+                        logBrokerMonitor.dispose();
+                    }
+                } catch (Exception exc) {
+                    DavGatewayTray.error(exc);
                 }
                 // make sure we do exit
                 System.exit(0);

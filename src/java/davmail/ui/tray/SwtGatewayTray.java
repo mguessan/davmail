@@ -136,155 +136,159 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         new Thread("SWT") {
             @Override
             public void run() {
-                display = new Display();
-                shell = new Shell(display);
+                try {
+                    display = new Display();
+                    shell = new Shell(display);
 
-                final Tray tray = display.getSystemTray();
-                if (tray != null) {
+                    final Tray tray = display.getSystemTray();
+                    if (tray != null) {
 
-                    trayItem = new TrayItem(tray, SWT.NONE);
-                    trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
+                        trayItem = new TrayItem(tray, SWT.NONE);
+                        trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
-                    awtImage = DavGatewayTray.loadImage("tray.png");
-                    image = loadSwtImage("tray.png");
-                    image2 = loadSwtImage(AwtGatewayTray.TRAY2_PNG);
-                    inactiveImage = loadSwtImage(AwtGatewayTray.TRAYINACTIVE_PNG);
+                        awtImage = DavGatewayTray.loadImage("tray.png");
+                        image = loadSwtImage("tray.png");
+                        image2 = loadSwtImage(AwtGatewayTray.TRAY2_PNG);
+                        inactiveImage = loadSwtImage(AwtGatewayTray.TRAYINACTIVE_PNG);
 
-                    trayItem.setImage(image);
+                        trayItem.setImage(image);
 
-                    // create a popup menu
-                    final Menu popup = new Menu(shell, SWT.POP_UP);
-                    trayItem.addListener(SWT.MenuDetect, new Listener() {
-                        public void handleEvent(Event event) {
-                            display.asyncExec(
-                                    new Runnable() {
-                                        public void run() {
-                                            popup.setVisible(true);
-                                        }
-                                    });
-                        }
-                    });
-
-                    MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
-                    aboutItem.setText(BundleMessage.format("UI_ABOUT"));
-                    final AboutFrame aboutFrame = new AboutFrame();
-                    aboutItem.addListener(SWT.Selection, new Listener() {
-                        public void handleEvent(Event event) {
-                            SwingUtilities.invokeLater(
-                                    new Runnable() {
-                                        public void run() {
-                                            aboutFrame.update();
-                                            aboutFrame.setVisible(true);
-                                        }
-                                    });
-                        }
-                    });
-
-                    final SettingsFrame settingsFrame = new SettingsFrame();
-                    trayItem.addListener(SWT.DefaultSelection, new Listener() {
-                        public void handleEvent(Event event) {
-                            SwingUtilities.invokeLater(
-                                    new Runnable() {
-                                        public void run() {
-                                            settingsFrame.reload();
-                                            settingsFrame.setVisible(true);
-                                            // workaround for focus on first open
-                                            settingsFrame.setVisible(true);
-                                        }
-                                    });
-                        }
-                    });
-
-                    // create menu item for the default action
-                    MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
-                    defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
-                    defaultItem.addListener(SWT.Selection, new Listener() {
-                        public void handleEvent(Event event) {
-                            SwingUtilities.invokeLater(
-                                    new Runnable() {
-                                        public void run() {
-                                            settingsFrame.reload();
-                                            settingsFrame.setVisible(true);
-                                            // workaround for focus on first open
-                                            settingsFrame.setVisible(true);
-                                        }
-                                    });
-                        }
-                    });
-
-                    MenuItem logItem = new MenuItem(popup, SWT.PUSH);
-                    logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
-                    logItem.addListener(SWT.Selection, new Listener() {
-                        public void handleEvent(Event event) {
-                            SwingUtilities.invokeLater(
-                                    new Runnable() {
-                                        public void run() {
-
-                                            Logger rootLogger = Logger.getRootLogger();
-                                            LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-                                            if (lf5Appender == null) {
-                                                logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                                                    @Override
-                                                    protected void closeAfterConfirm() {
-                                                        hide();
-                                                    }
-                                                };
-                                                lf5Appender = new LF5Appender(logBrokerMonitor);
-                                                lf5Appender.setName("LF5Appender");
-                                                rootLogger.addAppender(lf5Appender);
+                        // create a popup menu
+                        final Menu popup = new Menu(shell, SWT.POP_UP);
+                        trayItem.addListener(SWT.MenuDetect, new Listener() {
+                            public void handleEvent(Event event) {
+                                display.asyncExec(
+                                        new Runnable() {
+                                            public void run() {
+                                                popup.setVisible(true);
                                             }
-                                            lf5Appender.getLogBrokerMonitor().show();
-                                        }
-                                    });
+                                        });
+                            }
+                        });
+
+                        MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
+                        aboutItem.setText(BundleMessage.format("UI_ABOUT"));
+                        final AboutFrame aboutFrame = new AboutFrame();
+                        aboutItem.addListener(SWT.Selection, new Listener() {
+                            public void handleEvent(Event event) {
+                                SwingUtilities.invokeLater(
+                                        new Runnable() {
+                                            public void run() {
+                                                aboutFrame.update();
+                                                aboutFrame.setVisible(true);
+                                            }
+                                        });
+                            }
+                        });
+
+                        final SettingsFrame settingsFrame = new SettingsFrame();
+                        trayItem.addListener(SWT.DefaultSelection, new Listener() {
+                            public void handleEvent(Event event) {
+                                SwingUtilities.invokeLater(
+                                        new Runnable() {
+                                            public void run() {
+                                                settingsFrame.reload();
+                                                settingsFrame.setVisible(true);
+                                                // workaround for focus on first open
+                                                settingsFrame.setVisible(true);
+                                            }
+                                        });
+                            }
+                        });
+
+                        // create menu item for the default action
+                        MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
+                        defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
+                        defaultItem.addListener(SWT.Selection, new Listener() {
+                            public void handleEvent(Event event) {
+                                SwingUtilities.invokeLater(
+                                        new Runnable() {
+                                            public void run() {
+                                                settingsFrame.reload();
+                                                settingsFrame.setVisible(true);
+                                                // workaround for focus on first open
+                                                settingsFrame.setVisible(true);
+                                            }
+                                        });
+                            }
+                        });
+
+                        MenuItem logItem = new MenuItem(popup, SWT.PUSH);
+                        logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
+                        logItem.addListener(SWT.Selection, new Listener() {
+                            public void handleEvent(Event event) {
+                                SwingUtilities.invokeLater(
+                                        new Runnable() {
+                                            public void run() {
+
+                                                Logger rootLogger = Logger.getRootLogger();
+                                                LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
+                                                if (lf5Appender == null) {
+                                                    logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
+                                                        @Override
+                                                        protected void closeAfterConfirm() {
+                                                            hide();
+                                                        }
+                                                    };
+                                                    lf5Appender = new LF5Appender(logBrokerMonitor);
+                                                    lf5Appender.setName("LF5Appender");
+                                                    rootLogger.addAppender(lf5Appender);
+                                                }
+                                                lf5Appender.getLogBrokerMonitor().show();
+                                            }
+                                        });
+                            }
+                        });
+
+                        MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
+                        exitItem.setText(BundleMessage.format("UI_EXIT"));
+                        exitItem.addListener(SWT.Selection, new Listener() {
+                            public void handleEvent(Event event) {
+                                DavGateway.stop();
+                                shell.dispose();
+                            }
+                        });
+
+                        // display settings frame on first start
+                        if (Settings.isFirstStart()) {
+                            settingsFrame.setVisible(true);
                         }
-                    });
-
-                    MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
-                    exitItem.setText(BundleMessage.format("UI_EXIT"));
-                    exitItem.addListener(SWT.Selection, new Listener() {
-                        public void handleEvent(Event event) {
-                            DavGateway.stop();
-                            shell.dispose();
+                        synchronized (mainThread) {
+                            // ready
+                            isReady = true;
+                            mainThread.notifyAll();
                         }
-                    });
 
-                    // display settings frame on first start
-                    if (Settings.isFirstStart()) {
-                        settingsFrame.setVisible(true);
-                    }
-                    synchronized (mainThread) {
-                        // ready
-                        isReady = true;
-                        mainThread.notifyAll();
-                    }
+                        while (!shell.isDisposed()) {
+                            if (!display.readAndDispatch()) {
+                                display.sleep();
+                            }
+                        }
 
-                    while (!shell.isDisposed()) {
-                        if (!display.readAndDispatch()) {
-                            display.sleep();
+                        if (trayItem != null) {
+                            trayItem.dispose();
+                            trayItem = null;
+                        }
+
+                        if (image != null) {
+                            image.dispose();
+                        }
+                        if (image2 != null) {
+                            image2.dispose();
+                        }
+                        display.dispose();
+                        // dispose AWT frames
+                        settingsFrame.dispose();
+                        aboutFrame.dispose();
+                        if (logBrokerMonitor != null) {
+                            logBrokerMonitor.dispose();
                         }
                     }
-
-                    if (trayItem != null) {
-                        trayItem.dispose();
-                        trayItem = null;
-                    }
-
-                    if (image != null) {
-                        image.dispose();
-                    }
-                    if (image2 != null) {
-                        image2.dispose();
-                    }
-                    display.dispose();
-                    // dispose AWT frames
-                    settingsFrame.dispose();
-                    aboutFrame.dispose();
-                    if (logBrokerMonitor != null) {
-                        logBrokerMonitor.dispose();
-                    }
-                    // make sure we do exit
-                    System.exit(0);
+                } catch (Exception exc) {
+                    DavGatewayTray.error(exc);
                 }
+                // make sure we do exit
+                System.exit(0);
             }
         }.start();
         while (true) {
