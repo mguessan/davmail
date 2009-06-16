@@ -617,43 +617,34 @@ public class CaldavConnection extends AbstractConnection {
                 freeBusyMap.put(attendee, freeBusy);
             }
         }
-        if (!freeBusyMap.isEmpty()) {
-            CaldavResponse response = new CaldavResponse(HttpStatus.SC_OK);
-            response.startScheduleResponse();
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_OK);
+        response.startScheduleResponse();
 
-            for (Map.Entry<String, ExchangeSession.FreeBusy> entry : freeBusyMap.entrySet()) {
-                String attendee = entry.getKey();
-                response.startRecipientResponse(attendee);
+        for (Map.Entry<String, ExchangeSession.FreeBusy> entry : freeBusyMap.entrySet()) {
+            String attendee = entry.getKey();
+            response.startRecipientResponse(attendee);
 
-                StringBuilder ics = new StringBuilder();
-                ics.append("BEGIN:VCALENDAR").append((char) 13).append((char) 10)
-                        .append("VERSION:2.0").append((char) 13).append((char) 10)
-                        .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN").append((char) 13).append((char) 10)
-                        .append("METHOD:REPLY").append((char) 13).append((char) 10)
-                        .append("BEGIN:VFREEBUSY").append((char) 13).append((char) 10)
-                        .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("").append((char) 13).append((char) 10)
-                        .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append("").append((char) 13).append((char) 10)
-                        .append("DTSTART:").append(valueMap.get("DTSTART")).append("").append((char) 13).append((char) 10)
-                        .append("DTEND:").append(valueMap.get("DTEND")).append("").append((char) 13).append((char) 10)
-                        .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
-                        .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append("").append((char) 13).append((char) 10);
-                entry.getValue().appendTo(ics);
-                ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
-                        .append("END:VCALENDAR");
-                response.appendCalendarData(ics.toString());
-                response.endRecipientResponse();
+            StringBuilder ics = new StringBuilder();
+            ics.append("BEGIN:VCALENDAR").append((char) 13).append((char) 10)
+                    .append("VERSION:2.0").append((char) 13).append((char) 10)
+                    .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN").append((char) 13).append((char) 10)
+                    .append("METHOD:REPLY").append((char) 13).append((char) 10)
+                    .append("BEGIN:VFREEBUSY").append((char) 13).append((char) 10)
+                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("").append((char) 13).append((char) 10)
+                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append("").append((char) 13).append((char) 10)
+                    .append("DTSTART:").append(valueMap.get("DTSTART")).append("").append((char) 13).append((char) 10)
+                    .append("DTEND:").append(valueMap.get("DTEND")).append("").append((char) 13).append((char) 10)
+                    .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
+                    .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append("").append((char) 13).append((char) 10);
+            entry.getValue().appendTo(ics);
+            ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
+                    .append("END:VCALENDAR");
+            response.appendCalendarData(ics.toString());
+            response.endRecipientResponse();
 
-            }
-            response.endScheduleResponse();
-            response.close();
-        } else {
-            StringBuilder buffer = new StringBuilder("Unknown recipient(s): ");
-            for (String attendee : attendees) {
-                buffer.append(attendee);
-                buffer.append(' ');
-            }
-            sendHttpResponse(HttpStatus.SC_NOT_FOUND, null, "text/plain", buffer.toString(), true);
         }
+        response.endScheduleResponse();
+        response.close();
 
     }
 
