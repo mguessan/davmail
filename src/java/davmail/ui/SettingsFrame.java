@@ -48,6 +48,9 @@ public class SettingsFrame extends JFrame {
     JPasswordField keystorePassField;
     JPasswordField keyPassField;
 
+    JTextField pkcs11LibraryField;
+    JTextArea pkcs11ConfigField;
+
     JComboBox rootLoggingLevelField;
     JComboBox davmailLoggingLevelField;
     JComboBox httpclientLoggingLevelField;
@@ -211,26 +214,43 @@ public class SettingsFrame extends JFrame {
         return proxyPanel;
     }
 
-    protected JPanel getEncryptionPanel() {
-        JPanel encryptionPanel = new JPanel(new GridLayout(4, 2));
-        encryptionPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CERTIFICATE")));
+    protected JPanel getKeystorePanel() {
+        JPanel keyStorePanel = new JPanel(new GridLayout(4, 2));
+        keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_SERVER_CERTIFICATE")));
 
         keystoreTypeCombo = new JComboBox(new String[]{"JKS", "PKCS12"});
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
-        keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 15);
+        keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 17);
         keystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.keystorePass"), 15);
         keyPassField = new JPasswordField(Settings.getProperty("davmail.ssl.keyPass"), 15);
 
-        addSettingComponent(encryptionPanel, BundleMessage.format("UI_KEY_STORE_TYPE"), keystoreTypeCombo,
+        addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_STORE_TYPE"), keystoreTypeCombo,
                 BundleMessage.format("UI_KEY_STORE_TYPE_HELP"));
-        addSettingComponent(encryptionPanel, BundleMessage.format("UI_KEY_STORE"), keystoreFileField,
+        addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_STORE"), keystoreFileField,
                 BundleMessage.format("UI_KEY_STORE_HELP"));
-        addSettingComponent(encryptionPanel, BundleMessage.format("UI_KEY_STORE_PASSWORD"), keystorePassField,
+        addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_STORE_PASSWORD"), keystorePassField,
                 BundleMessage.format("UI_KEY_STORE_PASSWORD_HELP"));
-        addSettingComponent(encryptionPanel, BundleMessage.format("UI_KEY_PASSWORD"), keyPassField,
+        addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_PASSWORD"), keyPassField,
                 BundleMessage.format("UI_KEY_PASSWORD_HELP"));
 
-        return encryptionPanel;
+        return keyStorePanel;
+    }
+
+    protected JPanel getSmartcardPanel() {
+        JPanel smartcardPanel = new JPanel(new GridLayout(2, 2));
+        smartcardPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
+
+        pkcs11LibraryField = new JTextField(Settings.getProperty("davmail.ssl.pkcs11Library"), 17);
+        pkcs11ConfigField = new JTextArea(2, 17);
+        pkcs11ConfigField.setBorder(pkcs11LibraryField.getBorder());
+        pkcs11ConfigField.setFont(pkcs11LibraryField.getFont());
+
+        addSettingComponent(smartcardPanel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
+                BundleMessage.format("UI_PKCS11_LIBRARY_HELP"));
+        addSettingComponent(smartcardPanel, BundleMessage.format("UI_PKCS11_CONFIG"), pkcs11ConfigField,
+                BundleMessage.format("UI_PKCS11_CONFIG_HELP"));
+
+        return smartcardPanel;
     }
 
     public JPanel getNetworkSettingsPanel() {
@@ -317,6 +337,9 @@ public class SettingsFrame extends JFrame {
         keystorePassField.setText(Settings.getProperty("davmail.ssl.keystorePass"));
         keyPassField.setText(Settings.getProperty("davmail.ssl.keyPass"));
 
+        pkcs11LibraryField.setText(Settings.getProperty("davmail.ssl.pkcs11Library"));
+        pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
+
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
@@ -358,9 +381,9 @@ public class SettingsFrame extends JFrame {
 
         JPanel encryptionPanel = new JPanel();
         encryptionPanel.setLayout(new BoxLayout(encryptionPanel, BoxLayout.Y_AXIS));
-        encryptionPanel.add(getEncryptionPanel());
+        encryptionPanel.add(getKeystorePanel());
         // empty panel
-        encryptionPanel.add(new JPanel());
+        encryptionPanel.add(getSmartcardPanel());
         tabbedPane.add(BundleMessage.format("UI_TAB_ENCRYPTION"), encryptionPanel);
 
         advancedPanel.add(getNetworkSettingsPanel());
@@ -400,6 +423,9 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
                 Settings.setProperty("davmail.ssl.keystorePass", String.valueOf(keystorePassField.getPassword()));
                 Settings.setProperty("davmail.ssl.keyPass", String.valueOf(keyPassField.getPassword()));
+
+                Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
+                Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
 
                 Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
