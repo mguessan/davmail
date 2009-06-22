@@ -6,7 +6,7 @@ import davmail.DavGateway;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
+import org.apache.log4j.Level;
 import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
@@ -77,16 +77,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         return isActive;
     }
 
-    public void displayMessage(final String message, final Priority priority) {
+    public void displayMessage(final String message, final Level level) {
         if (trayItem != null) {
             display.asyncExec(new Runnable() {
                 public void run() {
                     int messageType = 0;
-                    if (priority.equals(Priority.INFO)) {
+                    if (level.equals(Level.INFO)) {
                         messageType = SWT.ICON_INFORMATION;
-                    } else if (priority.equals(Priority.WARN)) {
+                    } else if (level.equals(Level.WARN)) {
                         messageType = SWT.ICON_WARNING;
-                    } else if (priority.equals(Priority.ERROR)) {
+                    } else if (level.equals(Level.ERROR)) {
                         messageType = SWT.ICON_ERROR;
                     }
                     if (messageType != 0) {

@@ -4,7 +4,7 @@ import davmail.Settings;
 import davmail.BundleMessage;
 import davmail.exchange.NetworkDownException;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
+import org.apache.log4j.Level;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -47,18 +47,18 @@ public class DavGatewayTray {
         return davGatewayTray == null || davGatewayTray.isActive();
     }
 
-    protected static void displayMessage(BundleMessage message, Priority priority) {
-        LOGGER.log(priority, message.formatLog());
+    protected static void displayMessage(BundleMessage message, Level level) {
+        LOGGER.log(level, message.formatLog());
         if (davGatewayTray != null) {
-            davGatewayTray.displayMessage(message.format(), priority);
+            davGatewayTray.displayMessage(message.format(), level);
         }
     }
 
-    protected static void displayMessage(BundleMessage message, Exception e, Priority priority) {
-        LOGGER.log(priority, BundleMessage.getExceptionLogMessage(message, e), e);
+    protected static void displayMessage(BundleMessage message, Exception e, Level level) {
+        LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e), e);
         if (davGatewayTray != null
                 && (!(e instanceof NetworkDownException))) {
-            davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), priority);
+            davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), level);
         }
         if (davGatewayTray != null && e instanceof NetworkDownException) {
             davGatewayTray.inactiveIcon();
@@ -66,35 +66,35 @@ public class DavGatewayTray {
     }
 
     public static void debug(BundleMessage message) {
-        displayMessage(message, Priority.DEBUG);
+        displayMessage(message, Level.DEBUG);
     }
 
     public static void info(BundleMessage message) {
-        displayMessage(message, Priority.INFO);
+        displayMessage(message, Level.INFO);
     }
 
     public static void warn(BundleMessage message) {
-        displayMessage(message, Priority.WARN);
+        displayMessage(message, Level.WARN);
     }
 
     public static void error(BundleMessage message) {
-        displayMessage(message, Priority.ERROR);
+        displayMessage(message, Level.ERROR);
     }
 
     public static void error(Exception e) {
-        displayMessage(null, e, Priority.ERROR);
+        displayMessage(null, e, Level.ERROR);
     }
 
     public static void debug(BundleMessage message, Exception e) {
-        displayMessage(message, e, Priority.DEBUG);
+        displayMessage(message, e, Level.DEBUG);
     }
 
     public static void warn(BundleMessage message, Exception e) {
-        displayMessage(message, e, Priority.WARN);
+        displayMessage(message, e, Level.WARN);
     }
 
     public static void error(BundleMessage message, Exception e) {
-        displayMessage(message, e, Priority.ERROR);
+        displayMessage(message, e, Level.ERROR);
     }
 
     public static void init() {

@@ -7,7 +7,6 @@ import java.io.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
 
 /**
  * Settings facade
@@ -73,10 +72,10 @@ public class Settings {
                 SETTINGS.put("davmail.ssl.pkcs11Config", "");
 
                 // logging
-                SETTINGS.put("log4j.rootLogger", Priority.WARN.toString());
-                SETTINGS.put("log4j.logger.davmail", Priority.DEBUG.toString());
-                SETTINGS.put("log4j.logger.httpclient.wire", Priority.WARN.toString());
-                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Priority.WARN.toString());
+                SETTINGS.put("log4j.rootLogger", Level.WARN.toString());
+                SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
+                SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
+                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
                 save();
             }
         } catch (IOException e) {

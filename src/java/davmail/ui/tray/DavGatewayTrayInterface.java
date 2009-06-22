@@ -1,6 +1,6 @@
 package davmail.ui.tray;
 
-import org.apache.log4j.Priority;
+import org.apache.log4j.Level;
 
 import java.awt.*;
 
@@ -9,10 +9,16 @@ import java.awt.*;
  */
 public interface DavGatewayTrayInterface {
     void switchIcon();
+
     void resetIcon();
+
     void inactiveIcon();
+
     boolean isActive();
+
     Image getFrameIcon();
-    void displayMessage(String message, Priority priority);
+
+    void displayMessage(String message, Level level);
+
     void init();
 }
