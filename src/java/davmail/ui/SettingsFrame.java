@@ -55,6 +55,7 @@ public class SettingsFrame extends JFrame {
     JComboBox davmailLoggingLevelField;
     JComboBox httpclientLoggingLevelField;
     JComboBox wireLoggingLevelField;
+    JTextField logFilePathField;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
@@ -279,25 +280,37 @@ public class SettingsFrame extends JFrame {
     }
 
     public JPanel getLoggingSettingsPanel() {
-        JPanel loggingSettingsPanel = new JPanel(new GridLayout(4, 2));
-        loggingSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LOGGING_LEVELS")));
+        JPanel loggingLevelPanel = new JPanel();
+        JPanel leftLoggingPanel = new JPanel(new GridLayout(2, 2));
+        JPanel rightLoggingPanel = new JPanel(new GridLayout(2, 2));
+        loggingLevelPanel.add(leftLoggingPanel);
+        loggingLevelPanel.add(rightLoggingPanel);
 
         rootLoggingLevelField = new JComboBox(LOG_LEVELS);
         davmailLoggingLevelField = new JComboBox(LOG_LEVELS);
         httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
         wireLoggingLevelField = new JComboBox(LOG_LEVELS);
+        logFilePathField = new JTextField(Settings.getProperty("davmail.logFilePath"), 15);
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
 
-        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_DEFAULT"), rootLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_DAVMAIL"), davmailLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_HTTPCLIENT"), httpclientLoggingLevelField);
-        addSettingComponent(loggingSettingsPanel, BundleMessage.format("UI_LOG_WIRE"), wireLoggingLevelField);
+        addSettingComponent(leftLoggingPanel, BundleMessage.format("UI_LOG_DEFAULT"), rootLoggingLevelField);
+        addSettingComponent(leftLoggingPanel, BundleMessage.format("UI_LOG_DAVMAIL"), davmailLoggingLevelField);
+        addSettingComponent(rightLoggingPanel, BundleMessage.format("UI_LOG_HTTPCLIENT"), httpclientLoggingLevelField);
+        addSettingComponent(rightLoggingPanel, BundleMessage.format("UI_LOG_WIRE"), wireLoggingLevelField);
 
-        return loggingSettingsPanel;
+        JPanel logFilePathPanel = new JPanel();
+        addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_PATH"), logFilePathField);
+
+        JPanel loggingPanel = new JPanel();
+        loggingPanel.setLayout(new BoxLayout(loggingPanel, BoxLayout.Y_AXIS));
+        loggingPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LOGGING_LEVELS")));
+        loggingPanel.add(logFilePathPanel);
+        loggingPanel.add(loggingLevelPanel);
+        return loggingPanel;
     }
 
     public void reload() {
@@ -344,6 +357,7 @@ public class SettingsFrame extends JFrame {
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
+       logFilePathField.setText(Settings.getProperty("davmail.logFilePath")); 
     }
 
     public SettingsFrame() {
@@ -431,6 +445,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
+                Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
 
                 dispose();
                 Settings.save();

@@ -44,31 +44,10 @@ public class DavGateway {
             Settings.setConfigFilePath(args[0]);
         }
 
-        updateLogFilePath();
-
         Settings.load();
         DavGatewayTray.init();
 
         start();
-    }
-
-    public static void updateLogFilePath() {
-        // update log file path on Mac OS X
-        if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
-            String logFileDir = System.getProperty("user.home") + "/Library/Logs/DavMail";
-            Logger rootLogger = Logger.getRootLogger();
-            try {
-                File file = new File(logFileDir);
-                if (file.mkdirs()) {
-                    ((FileAppender) rootLogger.getAppender("FileAppender")).setFile(logFileDir + "/davmail.log", true, false, 8192);
-                } else {
-                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
-                }
-            } catch (IOException e) {
-                DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
-            }
-        }
-
     }
 
     public static void start() {

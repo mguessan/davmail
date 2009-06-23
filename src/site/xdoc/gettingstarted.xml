@@ -128,6 +128,13 @@
                         </td>
                         <td>WARN</td>
                     </tr>
+                    <tr>
+                        <td>Log file Path</td>
+                        <td>DavMail log file path (default is davmail.log in working directory on Unix and Windows,
+                            ~/Library/Logs/DavMail/davmail.log on OSX)
+                        </td>
+                        <td>davmail.log</td>
+                    </tr>
                 </table>
             </p>
             <p>Uncheck a port to disable matching service.</p>

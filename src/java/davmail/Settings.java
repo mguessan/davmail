@@ -5,8 +5,7 @@ import davmail.ui.tray.DavGatewayTray;
 import java.util.Properties;
 import java.io.*;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.log4j.*;
 
 /**
  * Settings facade
@@ -76,6 +75,7 @@ public class Settings {
                 SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
                 SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
                 SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
+                SETTINGS.put("log4j.logFilePath", "");
                 save();
             }
         } catch (IOException e) {
@@ -89,12 +89,51 @@ public class Settings {
                 }
             }
         }
+        updateLoggingConfig();
+    }
+
+    public static void updateLoggingConfig() {
+        String logFilePath = Settings.getProperty("davmail.logFilePath");
+        // use default log file path on Mac OS X
+        if (logFilePath == null && System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+            logFilePath = System.getProperty("user.home") + "/Library/Logs/DavMail/davmail.log";
+        }
+
+        Logger rootLogger = Logger.getRootLogger();
+        try {
+            if (logFilePath != null && logFilePath.length() > 0) {
+                File logFile = new File(logFilePath);
+                // create parent directory if needed
+                File logFileDir = logFile.getParentFile();
+                if (logFileDir != null && !logFileDir.exists()) {
+                    if (!logFileDir.mkdirs()) {
+                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_LOG_FILE_DIR"));
+                        throw new IOException();
+                    }
+                }
+            } else {
+                logFilePath = "davmail.log";
+            }
+            // Build file appender
+            RollingFileAppender fileAppender = ((RollingFileAppender) rootLogger.getAppender("FileAppender"));
+            if (fileAppender == null) {
+                fileAppender = new RollingFileAppender();
+                fileAppender.setName("FileAppender");
+                fileAppender.setMaxBackupIndex(2);
+                fileAppender.setMaxFileSize("1MB");
+                fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+            }
+            fileAppender.setFile(logFilePath, true, false, 8192);
+            rootLogger.addAppender(fileAppender);
+        } catch (IOException e) {
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
+        }
+
         // update logging levels
         Settings.setLoggingLevel("rootLogger", Settings.getLoggingLevel("rootLogger"));
         Settings.setLoggingLevel("davmail", Settings.getLoggingLevel("davmail"));
         Settings.setLoggingLevel("httpclient.wire", Settings.getLoggingLevel("httpclient.wire"));
         Settings.setLoggingLevel("org.apache.commons.httpclient", Settings.getLoggingLevel("org.apache.commons.httpclient"));
-
     }
 
     public static synchronized void save() {
@@ -113,6 +152,7 @@ public class Settings {
                 }
             }
         }
+        updateLoggingConfig();
     }
 
     public static synchronized String getProperty(String property) {
