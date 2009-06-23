@@ -13,11 +13,8 @@ import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -27,6 +24,8 @@ import java.util.ArrayList;
  */
 public class DavGateway {
     private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "http://davmail.sourceforge.net/version.txt";
+
+    private static boolean stopped;
 
     private DavGateway() {
     }
@@ -48,6 +47,30 @@ public class DavGateway {
         DavGatewayTray.init();
 
         start();
+
+        // server mode: all threads are daemon threads, do not let main stop
+        if (Settings.getBooleanProperty("davmail.server")) {
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                    DavGateway.stop();
+                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
+                    stopped = true;
+                }
+            });
+
+            try {
+                while (!stopped) {
+                    Thread.sleep(1000);
+                }
+            } catch (InterruptedException e) {
+                DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                stop();
+                DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
+            }
+
+        }
     }
 
     public static void start() {
