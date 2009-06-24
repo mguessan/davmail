@@ -1482,7 +1482,15 @@ public class ExchangeSession {
         String organizer;
     }
 
-    protected Participants getParticipants(String icsBody) throws IOException {
+    /**
+     * Parse ics event for attendees and organizer.
+     * For notifications, only include attendees with RSVP=TRUE or PARTSTAT=NEEDS-ACTION
+     * @param icsBody ics event
+     * @param isNotification get only notified attendees
+     * @return participants
+     * @throws IOException on error
+     */
+    protected Participants getParticipants(String icsBody, boolean isNotification) throws IOException {
         HashSet<String> attendees = new HashSet<String>();
         String organizer = null;
         BufferedReader reader = null;
@@ -1506,9 +1514,11 @@ public class ExchangeSession {
                         if ("ORGANIZER".equals(key)) {
                             organizer = value;
                             // exclude current user and invalid values from recipients
-                            // also exclude RSVP=FALSE attendees
+                            // also exclude no action attendees
                         } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
-                                && line.indexOf("RSVP=FALSE") < 0) {
+                                && (!isNotification
+                                || line.indexOf("RSVP=TRUE") >= 0)
+                                || line.indexOf("PARTSTAT=NEEDS-ACTION") >=0) {
                             attendees.add(value);
                         }
                     }
@@ -1553,9 +1563,9 @@ public class ExchangeSession {
                 "Content-class: ");
         writer.write(contentClass);
         writer.write("\r\n");
-        // need to parse attendees and organizer to build recipients
-        Participants participants = getParticipants(icsBody);
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
+            // need to parse attendees and organizer to build recipients
+            Participants participants = getParticipants(icsBody, true);
             String recipients;
             if (email.equalsIgnoreCase(participants.organizer)) {
                 // current user is organizer => notify all
@@ -1573,6 +1583,8 @@ public class ExchangeSession {
                 status = HttpStatus.SC_NO_CONTENT;
             }
         } else {
+            // need to parse attendees and organizer to build recipients
+            Participants participants = getParticipants(icsBody, false);
             // storing appointment, full recipients header
             if (participants.attendees != null) {
                 writer.write("To: ");
