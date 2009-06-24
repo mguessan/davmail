@@ -227,6 +227,8 @@ public class CaldavConnection extends AbstractConnection {
                 patchCalendar(request);
             } else if (request.isReport()) {
                 reportEvents(request);
+            } else {
+                sendUnsupported(request);
             }
             // event request
         } else if (request.isPathLength(depth + 2)) {
@@ -834,7 +836,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public boolean isPropPatch() {
-            return "PROPFIND".equals(command);
+            return "PROPPATCH".equals(command);
         }
 
         public boolean isReport() {
