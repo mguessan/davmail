@@ -29,8 +29,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
     static AboutFrame aboutFrame;
     static SettingsFrame settingsFrame;
+    ActionListener settingsListener;
 
-    private static TrayIcon trayIcon;
+    protected static TrayIcon trayIcon;
     private static Image image;
     private static Image image2;
     private static Image inactiveImage;
@@ -154,7 +155,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         settingsFrame = new SettingsFrame();
         // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener settingsListener = new ActionListener() {
+        settingsListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 preferences();
             }
