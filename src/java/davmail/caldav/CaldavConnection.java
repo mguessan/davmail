@@ -529,6 +529,11 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "ROOT");
         }
+        if (request.hasProperty("supported-calendar-component-set")) {
+            response.appendProperty("C:supported-calendar-component-set",
+                    "<C:comp name=\"VEVENT\"/>" +
+                    "<C:comp name=\"VTODO\"/>");
+        }
         response.endPropStatOK();
         response.endResponse();
         response.endMultistatus();
