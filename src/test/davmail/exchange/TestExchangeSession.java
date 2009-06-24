@@ -35,7 +35,7 @@ public class TestExchangeSession {
             }
             System.out.println("Elapsed time " + (System.currentTimeMillis() - startTime) + " ms");
 
-            session.purgeOldestTrashAndSentMessages();
+            //session.purgeOldestTrashAndSentMessages();
 
         } catch (Exception e) {
             e.printStackTrace();
