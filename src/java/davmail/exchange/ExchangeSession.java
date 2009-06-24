@@ -2038,7 +2038,8 @@ public class ExchangeSession {
         try {
             int status = httpClient.executeMethod(getMethod);
             if (status != HttpStatus.SC_OK) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_FREEBUSY", getMethod.getPath());
+                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_FREEBUSY", getMethod.getPath(),
+                        status, getMethod.getResponseBodyAsString());
             }
             String body = getMethod.getResponseBodyAsString();
             int startIndex = body.lastIndexOf("<a:fbdata>");
