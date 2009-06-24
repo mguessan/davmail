@@ -23,6 +23,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
     @Override
     protected void createAndShowGUI() {
         System.setProperty("apple.laf.useScreenMenuBar", "true");
+        trayIcon.removeActionListener(settingsListener);
         super.createAndShowGUI();
         try {
             OSXAdapter.setAboutHandler(this, AwtGatewayTray.class.getDeclaredMethod("about", (Class[]) null));
