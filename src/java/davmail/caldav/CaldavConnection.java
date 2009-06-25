@@ -531,10 +531,8 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "ROOT");
         }
-        if (request.hasProperty("supported-calendar-component-set")) {
-            response.appendProperty("C:supported-calendar-component-set",
-                    "<C:comp name=\"VEVENT\"/>" +
-                    "<C:comp name=\"VTODO\"/>");
+        if (request.hasProperty("resourcetype")) {
+            response.appendProperty("D:resourcetype", "<D:collection/>");
         }
         response.endPropStatOK();
         response.endResponse();
@@ -882,6 +880,8 @@ public class CaldavConnection extends AbstractConnection {
         public String getPath(String subFolder) {
             if (subFolder == null || subFolder.length() == 0) {
                 return path;
+            } else if (path.endsWith("/")) {
+                return path + subFolder;
             } else {
                 return path + '/' + subFolder;
             }
@@ -1052,6 +1052,11 @@ public class CaldavConnection extends AbstractConnection {
                 public void write(byte[] data, int offset, int length) throws IOException {
                     sendClient(Integer.toHexString(length));
                     sendClient(data, offset, length);
+                    if (wireLogger.isDebugEnabled()) {
+                        StringBuilder logBuffer = new StringBuilder("> ");
+                        logBuffer.append(new String(data, offset, length));
+                        wireLogger.debug(logBuffer.toString());
+                    }
                     sendClient("");
                 }
 
