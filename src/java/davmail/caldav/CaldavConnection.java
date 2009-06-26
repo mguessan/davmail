@@ -466,7 +466,7 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.switchIcon();
                 try {
                     String eventName = getEventFileNameFromPath(href);
-                    if (eventName == null || eventName.isEmpty()) {
+                    if (eventName == null || eventName.length() == 0) {
                         notFound.add(href);
                     } else if ("inbox".equals(eventName) || "calendar".equals(eventName)) {
                         // Sunbird: just ignore
