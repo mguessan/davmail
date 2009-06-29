@@ -50,7 +50,7 @@ public class DavGateway {
 
         // server mode: all threads are daemon threads, do not let main stop
         if (Settings.getBooleanProperty("davmail.server")) {
-            Runtime.getRuntime().addShutdownHook(new Thread() {
+            Runtime.getRuntime().addShutdownHook(new Thread("Shutdown") {
                 @Override
                 public void run() {
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
