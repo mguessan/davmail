@@ -78,7 +78,11 @@ public class CaldavConnection extends AbstractConnection {
                 builder.append(buffer, 0, actualSize);
             }
 
-            return builder.toString();
+            String content = builder.toString();
+            if (wireLogger.isDebugEnabled()) {
+                wireLogger.debug("< " + content);
+            }
+            return content;
         }
     }
 
@@ -164,10 +168,6 @@ public class CaldavConnection extends AbstractConnection {
 
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         CaldavRequest request = new CaldavRequest(command, path, headers, body);
-        // full debug trace
-        if (wireLogger.isDebugEnabled()) {
-            wireLogger.debug("Caldav command: " + request.toString());
-        }
         if (request.isOptions()) {
             sendOptions();
         } else if (request.isPropFind() && request.isRoot()) {
