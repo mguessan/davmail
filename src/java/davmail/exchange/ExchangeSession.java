@@ -643,7 +643,7 @@ public class ExchangeSession {
     }
 
     public MessageList getAllMessageUidAndSize(String folderName) throws IOException {
-       return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"", "");
+        return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"", "");
     }
 
     public MessageList searchMessages(String folderName, String conditions) throws IOException {
@@ -657,7 +657,7 @@ public class ExchangeSession {
     public MessageList searchMessages(String folderName, String attributes, String conditions) throws IOException {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
-        String searchRequest = "Select "+ attributes +
+        String searchRequest = "Select " + attributes +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n";
         if (conditions != null) {
@@ -1313,6 +1313,7 @@ public class ExchangeSession {
         // Convert event class from and to iCal
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
         boolean isAppleiCal = false;
+        boolean hasOrganizer = false;
         String eventClass = null;
 
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
@@ -1340,6 +1341,8 @@ public class ExchangeSession {
                         eventClass = value;
                     } else if (!isAppleiCal && "CLASS".equals(key)) {
                         eventClass = value;
+                    } else if (key.startsWith("ORGANIZER")) {
+                        hasOrganizer = true;
                     }
                 }
             }
@@ -1401,6 +1404,10 @@ public class ExchangeSession {
                         } else {
                             result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
                         }
+                    }
+                } else if ("END:VEVENT".equals(line)) {
+                    if (!hasOrganizer) {
+                        result.writeLine("ORGANIZER:MAILTO:" + email);
                     }
                 }
                 result.writeLine(line);
@@ -1485,7 +1492,8 @@ public class ExchangeSession {
     /**
      * Parse ics event for attendees and organizer.
      * For notifications, only include attendees with RSVP=TRUE or PARTSTAT=NEEDS-ACTION
-     * @param icsBody ics event
+     *
+     * @param icsBody        ics event
      * @param isNotification get only notified attendees
      * @return participants
      * @throws IOException on error
@@ -1517,8 +1525,8 @@ public class ExchangeSession {
                             // also exclude no action attendees
                         } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
                                 && (!isNotification
-                                || line.indexOf("RSVP=TRUE") >= 0)
-                                || line.indexOf("PARTSTAT=NEEDS-ACTION") >=0) {
+                                || line.indexOf("RSVP=TRUE") >= 0
+                                || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0)) {
                             attendees.add(value);
                         }
                     }
@@ -2065,7 +2073,7 @@ public class ExchangeSession {
         }
 
         if (freeBusy != null && freeBusy.knownAttendee) {
-           return freeBusy;
+            return freeBusy;
         } else {
             return null;
         }
