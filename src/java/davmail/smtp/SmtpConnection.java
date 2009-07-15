@@ -140,7 +140,7 @@ public class SmtpConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            DavGatewayTray.error(e);
+            DavGatewayTray.log(e);
             try {
                 sendClient("500 " + ((e.getMessage()==null)?e:e.getMessage()));
             } catch (IOException e2) {

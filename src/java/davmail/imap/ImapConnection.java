@@ -447,7 +447,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            DavGatewayTray.error(e);
+            DavGatewayTray.log(e);
             try {
                 String message = (e.getMessage() == null) ? e.toString() : e.getMessage();
                 if (commandId != null) {

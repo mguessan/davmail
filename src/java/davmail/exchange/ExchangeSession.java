@@ -186,7 +186,7 @@ public class ExchangeSession {
             LOGGER.error(exc.getLogMessage());
             throw exc;
         } catch (UnknownHostException exc) {
-            BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
+            BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         } catch (IOException exc) {

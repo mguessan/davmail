@@ -10,10 +10,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
-import java.net.NetworkInterface;
-import java.net.NoRouteToHostException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,10 +121,12 @@ public final class ExchangeSessionFactory {
             handleNetworkDown(exc);
         } catch (NoRouteToHostException exc) {
             handleNetworkDown(exc);
+            // Could not open the port (probably because it is blocked behind a firewall)
+        } catch (ConnectException exc) {
+            handleNetworkDown(exc);
         } catch (NetworkDownException exc) {
             throw exc;
         } catch (Exception exc) {
-            ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_DAVMAIL_CONFIGURATION", exc), exc);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", exc);
         } finally {
             testMethod.releaseConnection();
@@ -137,10 +136,10 @@ public final class ExchangeSessionFactory {
 
     private static void handleNetworkDown(Exception exc) throws DavMailException {
         if (!checkNetwork() || configChecked) {
-            ExchangeSession.LOGGER.error(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
+            ExchangeSession.LOGGER.warn(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
         } else {
-            BundleMessage message = new BundleMessage("EXCEPTION_UNKNOWN_HOST", exc.getMessage());
+            BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         }
@@ -171,7 +170,7 @@ public final class ExchangeSessionFactory {
     }
 
     public static void reset() {
-        configChecked=false;
+        configChecked = false;
         poolMap.clear();
     }
 }

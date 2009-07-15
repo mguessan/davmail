@@ -55,7 +55,11 @@ public class DavGatewayTray {
     }
 
     protected static void displayMessage(BundleMessage message, Exception e, Level level) {
-        LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e), e);
+        if (e instanceof NetworkDownException) {
+            LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e));
+        } else {
+            LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e), e);
+        }
         if (davGatewayTray != null
                 && (!(e instanceof NetworkDownException))) {
             davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), level);
@@ -77,8 +81,21 @@ public class DavGatewayTray {
         displayMessage(message, Level.WARN);
     }
 
+    public static void warn(Exception e) {
+        displayMessage(null, e, Level.WARN);
+    }
+
     public static void error(BundleMessage message) {
         displayMessage(message, Level.ERROR);
+    }
+
+    public static void log(Exception e) {
+        // only warn on network down
+        if (e instanceof NetworkDownException) {
+            warn(e);
+        } else {
+            error(e);
+        }
     }
 
     public static void error(Exception e) {

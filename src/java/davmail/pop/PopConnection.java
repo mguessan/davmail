@@ -235,7 +235,7 @@ public class PopConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            DavGatewayTray.error(e);
+            DavGatewayTray.log(e);
             try {
                 sendERR(e.getMessage());
             } catch (IOException e2) {
