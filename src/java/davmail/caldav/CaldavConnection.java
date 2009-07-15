@@ -358,6 +358,9 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
                     base64Encode(session.getFolderCtag(request.getExchangeFolderPath(subFolder))));
         }
+        if (request.hasProperty("getetag")) {
+            response.appendProperty("D:getetag", session.getFolderResourceTag(request.getExchangeFolderPath(subFolder)));
+        }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "inbox");
         }
@@ -376,6 +379,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getctag")) {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
                     "0");
+        }
+        if (request.hasProperty("getetag")) {
+            response.appendProperty("D:getetag", session.getFolderResourceTag(request.getExchangeFolderPath(subFolder)));
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "outbox");
@@ -466,9 +472,8 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.switchIcon();
                 try {
                     String eventName = getEventFileNameFromPath(href);
-                    if (eventName == null || eventName.length() == 0) {
-                        notFound.add(href);
-                    } else if ("inbox".equals(eventName) || "calendar".equals(eventName)) {
+                    if (eventName == null || eventName.length() == 0
+                            || "inbox".equals(eventName) || "calendar".equals(eventName)) {
                         // Sunbird: just ignore
                     } else {
                         appendEventResponse(response, request, session.getEvent(folderPath, eventName));
