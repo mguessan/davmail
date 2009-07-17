@@ -217,14 +217,11 @@ public class ImapConnection extends AbstractConnection {
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
                                             SearchConditions conditions = new SearchConditions();
                                             conditions.append("AND (");
-                                            boolean undeleted = true;
                                             boolean or = false;
 
                                             while (tokens.hasMoreTokens()) {
                                                 String token = tokens.nextToken();
-                                                if ("UNDELETED".equals(token)) {
-                                                    undeleted = true;
-                                                } else if ("OR".equals(token)) {
+                                                if ("OR".equals(token)) {
                                                     or = true;
                                                 } else if (token.startsWith("OR ")) {
                                                     or = true;
@@ -250,7 +247,7 @@ public class ImapConnection extends AbstractConnection {
                                             ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
                                             int index = 1;
                                             for (ExchangeSession.Message message : localMessages) {
-                                                if (((undeleted && !message.deleted) || !undeleted)
+                                                if ((conditions.deleted == null || message.deleted == conditions.deleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
                                                         && (conditions.answered == null || message.answered == conditions.answered)
                                                         && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
@@ -645,6 +642,7 @@ public class ImapConnection extends AbstractConnection {
     static final class SearchConditions {
         Boolean flagged;
         Boolean answered;
+        Boolean deleted;
         long startUid;
         int startIndex;
         final StringBuilder query = new StringBuilder();
@@ -672,8 +670,7 @@ public class ImapConnection extends AbstractConnection {
 
     protected void appendSearchParam(String operator, StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
-            conditions.append(operator).append(" NOT ");
-            appendSearchParam("", tokens, tokens.nextToken(), conditions);
+            appendSearchParam(operator + " NOT ", tokens, tokens.nextToken(), conditions);
         } else if (token.startsWith("OR ")) {
             appendOrSearchParams(token, conditions);
         } else if ("SUBJECT".equals(token)) {
@@ -697,6 +694,10 @@ public class ImapConnection extends AbstractConnection {
             conditions.append(operator).append("\"urn:schemas:httpmail:read\" = True");
         } else if ("UNSEEN".equals(token) || "NEW".equals(token)) {
             conditions.append(operator).append("\"urn:schemas:httpmail:read\" = False");
+        } else if ("DELETED".equals(token)) {
+            conditions.deleted = !operator.endsWith(" NOT ");
+        } else if ("UNDELETED".equals(token)) {
+            conditions.deleted = Boolean.FALSE;
         } else if ("FLAGGED".equals(token)) {
             conditions.flagged = Boolean.TRUE;
         } else if ("UNFLAGGED".equals(token) || "NEW".equals(token)) {
