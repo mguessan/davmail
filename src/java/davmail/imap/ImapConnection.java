@@ -248,11 +248,13 @@ public class ImapConnection extends AbstractConnection {
                                                 query = null;
                                             }
                                             ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
+                                            int index = 1;
                                             for (ExchangeSession.Message message : localMessages) {
                                                 if (((undeleted && !message.deleted) || !undeleted)
                                                         && (conditions.flagged == null || message.flagged == conditions.flagged)
                                                         && (conditions.answered == null || message.answered == conditions.answered)
                                                         && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
+                                                        && (conditions.startIndex == 0 || (index++ >= conditions.startIndex))
                                                         ) {
                                                     sendClient("* SEARCH " + message.getImapUid());
                                                 }
@@ -644,6 +646,7 @@ public class ImapConnection extends AbstractConnection {
         Boolean flagged;
         Boolean answered;
         long startUid;
+        int startIndex;
         final StringBuilder query = new StringBuilder();
 
         public StringBuilder append(String value) {
@@ -731,6 +734,13 @@ public class ImapConnection extends AbstractConnection {
             }
         } else if ("OLD".equals(token) || "RECENT".equals(token)) {
             // ignore
+        } else if (token.indexOf(':') >= 0) {
+            // range search
+            try {
+                conditions.startIndex = Integer.parseInt(token.substring(0, token.indexOf(':')));
+            } catch (NumberFormatException e) {
+                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
+            }
         } else {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
         }
