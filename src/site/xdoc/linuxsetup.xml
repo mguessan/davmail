@@ -3,7 +3,7 @@
 <document>
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - Linux setup</title>
+        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Linux setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 

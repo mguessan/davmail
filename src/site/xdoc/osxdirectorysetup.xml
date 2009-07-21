@@ -3,7 +3,7 @@
 <document>
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/Caldav Exchange Gateway - OSX directory setup</title>
+        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - OSX directory setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
