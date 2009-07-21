@@ -39,7 +39,11 @@ import java.util.StringTokenizer;
 public class PopConnection extends AbstractConnection {
     private List<ExchangeSession.Message> messages;
 
-    // Initialize the streams and start the thread
+    /**
+     * Initialize the streams and start the thread.
+     *
+     * @param clientSocket POP client socket
+     */
     public PopConnection(Socket clientSocket) {
         super(PopConnection.class.getSimpleName(), clientSocket, null);
     }
@@ -149,6 +153,8 @@ public class PopConnection extends AbstractConnection {
                         if ("STAT".equalsIgnoreCase(command)) {
                             sendOK(messages.size() + " " +
                                     getTotalMessagesLength());
+                        } else if ("NOOP".equalsIgnoreCase(command)) {
+                            sendOK("");
                         } else if ("LIST".equalsIgnoreCase(command)) {
                             if (tokens.hasMoreTokens()) {
                                 String token = tokens.nextToken();
