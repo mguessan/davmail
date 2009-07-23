@@ -815,11 +815,6 @@ public class ExchangeSession {
                     recipientBuffer.append(line);
                 }
             }
-            // patch thunderbird html in reply for correct outlook display
-            if (line != null && line.startsWith("<head>")) {
-                mailBuffer.append(line).append((char) 13).append((char) 10);
-                line = "  <style> blockquote { display: block; margin: 1em 0px; padding-left: 1em; border-left: solid; border-color: blue; border-width: thin;}</style>";
-            }
         }
         // remove visible recipients from list
         List<String> visibleRecipients = new ArrayList<String>();
