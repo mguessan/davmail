@@ -559,6 +559,29 @@ public class CaldavConnection extends AbstractConnection {
         }
         response.endPropStatOK();
         response.endResponse();
+        if (request.depth == 1) {
+            response.startResponse("/users");
+            response.startPropstat();
+            if (request.hasProperty("displayname")) {
+                response.appendProperty("D:displayname", "users");
+            }
+            if (request.hasProperty("resourcetype")) {
+                response.appendProperty("D:resourcetype", "<D:collection/>");
+            }
+            response.endPropStatOK();
+            response.endResponse();
+            
+            response.startResponse("/principals");
+            response.startPropstat();
+            if (request.hasProperty("displayname")) {
+                response.appendProperty("D:displayname", "principals");
+            }
+            if (request.hasProperty("resourcetype")) {
+                response.appendProperty("D:resourcetype", "<D:collection/>");
+            }
+            response.endPropStatOK();
+            response.endResponse();
+        }
         response.endMultistatus();
         response.close();
     }
@@ -704,7 +727,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\"');
-        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[])null, false);
+        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[]) null, false);
     }
 
     public void sendHttpResponse(int status) throws IOException {
