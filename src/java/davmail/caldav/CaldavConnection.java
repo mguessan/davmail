@@ -703,8 +703,8 @@ public class CaldavConnection extends AbstractConnection {
 
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
-        headers.put("WWW-Authenticate", "Basic realm=\"" + Settings.getProperty("davmail.url") + '\"');
-        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers);
+        headers.put("WWW-Authenticate", "Basic realm=\"" + BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\"');
+        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[])null, false);
     }
 
     public void sendHttpResponse(int status) throws IOException {
