@@ -91,6 +91,9 @@ public class DavGateway {
         }
     }
 
+    /**
+     * Start DavMail listeners.
+     */
     public static void start() {
         // register custom SSL Socket factory
         DavGatewaySSLProtocolSocketFactory.register();
@@ -150,6 +153,9 @@ public class DavGateway {
 
     }
 
+    /**
+     * Stop all listeners, shutdown connection pool and clear session cache.
+     */
     public static void stop() {
         for (AbstractServer server : serverList) {
             server.close();
@@ -165,11 +171,19 @@ public class DavGateway {
         ExchangeSessionFactory.reset();
     }
 
+    /**
+     * Get current DavMail version.
+     * @return current version
+     */
     public static String getCurrentVersion() {
         Package davmailPackage = DavGateway.class.getPackage();
         return davmailPackage.getImplementationVersion();
     }
 
+    /**
+     * Get latest released version from SourceForge.
+     * @return latest version
+     */
     public static String getReleasedVersion() {
         String version = null;
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {

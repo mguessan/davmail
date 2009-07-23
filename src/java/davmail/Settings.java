@@ -26,7 +26,9 @@ import java.io.*;
 import org.apache.log4j.*;
 
 /**
- * Settings facade
+ * Settings facade.
+ * DavMail settings are stored in the .davmail.properties file in current
+ * user home directory or in the file specified on the command line. 
  */
 public class Settings {
     private Settings() {
@@ -36,18 +38,34 @@ public class Settings {
     private static String configFilePath;
     private static boolean isFirstStart;
 
-    public static synchronized void setConfigFilePath(String value) {
-        configFilePath = value;
+    /**
+     * Set config file path (from command line parameter).
+     * @param path davmail properties file path 
+     */
+    public static synchronized void setConfigFilePath(String path) {
+        configFilePath = path;
     }
 
+    /**
+     * Detect first launch (properties file does not exist).
+     * @return true if this is the first start with the current file path
+     */
     public static synchronized boolean isFirstStart() {
         return isFirstStart;
     }
 
+    /**
+     * Load properties from provided stream (used in webapp mode).
+     * @param inputStream properties stream
+     * @throws IOException on error
+     */
     public static synchronized void load(InputStream inputStream) throws IOException {
         SETTINGS.load(inputStream);
     }
 
+    /**
+     * Load properties from current file path (command line or default).
+     */
     public static synchronized void load() {
         FileInputStream fileInputStream = null;
         try {
@@ -62,7 +80,7 @@ public class Settings {
             } else {
                 isFirstStart = true;
 
-                // first start : set default values, ports above 1024 for linux
+                // first start : set default values, ports above 1024 for unix/linux
                 SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
                 SETTINGS.put("davmail.popPort", "1110");
                 SETTINGS.put("davmail.imapPort", "1143");
@@ -110,7 +128,10 @@ public class Settings {
         updateLoggingConfig();
     }
 
-    public static void updateLoggingConfig() {
+    /**
+     * Update Log4J config from settings.
+     */
+    protected static void updateLoggingConfig() {
         String logFilePath = Settings.getProperty("davmail.logFilePath");
         // use default log file path on Mac OS X
         if ((logFilePath == null || logFilePath.length() == 0) 
@@ -155,6 +176,9 @@ public class Settings {
         Settings.setLoggingLevel("org.apache.commons.httpclient", Settings.getLoggingLevel("org.apache.commons.httpclient"));
     }
 
+    /**
+     * Save settings in current file path (command line or default).
+     */
     public static synchronized void save() {
         FileOutputStream fileOutputStream = null;
         try {
@@ -174,10 +198,20 @@ public class Settings {
         updateLoggingConfig();
     }
 
+    /**
+     * Get a property value as String.
+     * @param property property name
+     * @return property value
+     */
     public static synchronized String getProperty(String property) {
         return SETTINGS.getProperty(property);
     }
 
+    /**
+     * Set a property value.
+     * @param property property name
+     * @param value property value
+     */
     public static synchronized void setProperty(String property, String value) {
         if (value != null) {
             SETTINGS.setProperty(property, value);
@@ -186,10 +220,21 @@ public class Settings {
         }
     }
 
+    /**
+     * Get a property value as int.
+     * @param property property name
+     * @return property value
+     */
     public static synchronized int getIntProperty(String property) {
         return getIntProperty(property, 0);
     }
 
+    /**
+     * Get a property value as int, return default value if null.
+     * @param property property name
+     * @param defaultValue default property value
+     * @return property value
+     */
     public static synchronized int getIntProperty(String property, int defaultValue) {
         int value = defaultValue;
         try {
@@ -203,11 +248,21 @@ public class Settings {
         return value;
     }
 
+    /**
+     * Get a property value as boolean.
+     * @param property property name
+     * @return property value
+     */
     public static synchronized boolean getBooleanProperty(String property) {
         String propertyValue = SETTINGS.getProperty(property);
         return Boolean.parseBoolean(propertyValue);
     }
 
+    /**
+     * Build logging properties prefix.
+     * @param category logging category
+     * @return prefix
+     */
     protected static String getLoggingPrefix(String category) {
         String prefix;
         if ("rootLogger".equals(category)) {
@@ -218,6 +273,11 @@ public class Settings {
         return prefix;
     }
 
+    /**
+     * Return Log4J logging level for the category.
+     * @param category logging category
+     * @return logging level
+     */
     public static synchronized Level getLoggingLevel(String category) {
         String prefix = getLoggingPrefix(category);
         String currentValue = SETTINGS.getProperty(prefix + category);
@@ -231,6 +291,11 @@ public class Settings {
         }
     }
 
+    /**
+     * Set Log4J logging level for the category
+     * @param category logging category
+     * @param level logging level
+     */
     public static synchronized void setLoggingLevel(String category, Level level) {
         String prefix = getLoggingPrefix(category);
         SETTINGS.setProperty(prefix + category, level.toString());
@@ -241,6 +306,11 @@ public class Settings {
         }
     }
 
+    /**
+     * Change and save a single property.
+     * @param property property name
+     * @param value property value
+     */
     public static synchronized void saveProperty(String property, String value) {
         Settings.load();
         Settings.setProperty(property, value);
