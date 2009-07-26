@@ -1,23 +1,3 @@
-** DavMail 3.3.0 released **
-This is a bug fix release after two beta releases,
-including PKCS11 (smartcard) client certificate support,
-gateway encryption (SSL) support, the new jackrabbit and httpclient libraries
-and I18N support (french and english available).
-
-- Caldav: updated caldav response headers according to gmail, added Expires and Cache-control HTTP headers
-- POP3: implement NOOP command
-- Doc: Update documentation header
-- Doc: Add GPLv2 header to all source files
-- Doc: Remove Apache license from checkstyle config file header
-- IMAP: fix DELETED/UNDELETED SEARCH parameters
-- IMAP: Fix bug 2822625: support index range in IMAP SEARCH
-- Enhancements: Merged network down (with firewall) code from Dan Foody
-- Caldav: Additional properties and ignore cases for Sunbird
-- Caldav: Fix empty organizer field in ICS (active sync support) and another getParticipants bug
-- GUI: Fix OSX menu default ActionListener
-- GUI: Try to set Nimbus Look And Feel on Linux with Gtk
-
-** DavMail 3.3.0b2 released with smartcard (PKCS11) support **
 This is a bug fix release, with nonetheless one main new feature:
 PKCS11 (smartcard) client certificate support !
 Tested with ActivIdentity ActivClient and Mozilla soft token, should
@@ -63,7 +43,6 @@ Known issues :
 - Does not - yet - work with iPhone 3.0 Caldav
 - Still issues with Exchange activeSync mode
 
-** Davmail 3.3.0b1 released **
 This release is mainly a deep refactoring: replaced deprecated 
 jakarta slide library with jackrabbit and upgrade httpclient.
 Also added client to gateway encryption (SSL) support, started I18N
