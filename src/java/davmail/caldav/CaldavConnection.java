@@ -27,6 +27,8 @@ import davmail.exchange.ICSBufferedReader;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
@@ -298,7 +300,7 @@ public class CaldavConnection extends AbstractConnection {
 
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
         StringBuilder eventPath = new StringBuilder();
-        eventPath.append(URIUtil.encodePath(request.getPath()));
+        eventPath.append(encodePath(request.getPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
@@ -326,7 +328,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendCalendar(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -335,9 +337,9 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("owner")) {
             if ("users".equals(request.getPathElement(1))) {
-                response.appendProperty("D:owner", "<D:href>/principals/users/" + request.getPathElement(2) + "</D:href>");
+                response.appendHrefProperty("D:owner", "/principals/users/" + request.getPathElement(2));
             } else {
-                response.appendProperty("D:owner", "<D:href>/principals" + request.getPath() + "</D:href>");
+                response.appendHrefProperty("D:owner", "/principals" + request.getPath());
             }
         }
         if (request.hasProperty("getcontenttype")) {
@@ -362,7 +364,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendInbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -387,7 +389,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendOutbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -511,7 +513,7 @@ public class CaldavConnection extends AbstractConnection {
 
         // send not found events errors
         for (String href : notFound) {
-            response.startResponse(URIUtil.encodePath(href));
+            response.startResponse(encodePath(href));
             response.appendPropstatNotFound();
             response.endResponse();
         }
@@ -522,7 +524,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendUserRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath(request.getPath()));
+        response.startResponse(encodePath(request.getPath()));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -549,7 +551,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startPropstat();
 
         if (request.hasProperty("principal-collection-set")) {
-            response.appendProperty("D:principal-collection-set", "<D:href>/principals/users/" + session.getEmail() + "</D:href>");
+            response.appendHrefProperty("D:principal-collection-set", "/principals/users/" + session.getEmail());
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "ROOT");
@@ -595,29 +597,29 @@ public class CaldavConnection extends AbstractConnection {
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath("/principals/" + prefix + '/' + principal));
+        response.startResponse(encodePath("/principals/" + prefix + '/' + principal));
         response.startPropstat();
 
         if (request.hasProperty("calendar-home-set")) {
             if ("users".equals(prefix)) {
-                response.appendProperty("C:calendar-home-set", "<D:href>/users/" + actualPrincipal + "/calendar</D:href>");
+                response.appendHrefProperty("C:calendar-home-set", "/users/" + actualPrincipal + "/calendar");
             } else {
-                response.appendProperty("C:calendar-home-set", "<D:href>" + prefix + '/' + actualPrincipal + "</D:href>");
+                response.appendHrefProperty("C:calendar-home-set", prefix + '/' + actualPrincipal);
             }
         }
 
         if (request.hasProperty("calendar-user-address-set") && "users".equals(prefix)) {
-            response.appendProperty("C:calendar-user-address-set", "<D:href>mailto:" + actualPrincipal + "</D:href>");
+            response.appendHrefProperty("C:calendar-user-address-set", "mailto:" + actualPrincipal);
         }
 
         // no inbox/outbox for delegated/shared calendars
         if ("users".equals(prefix) && session.getEmail().equals(principal)) {
             if (request.hasProperty("schedule-inbox-URL")) {
-                response.appendProperty("C:schedule-inbox-URL", "<D:href>/users/" + actualPrincipal + "/inbox</D:href>");
+                response.appendHrefProperty("C:schedule-inbox-URL", "/users/" + actualPrincipal + "/inbox");
             }
 
             if (request.hasProperty("schedule-outbox-URL")) {
-                response.appendProperty("C:schedule-outbox-URL", "<D:href>/users/" + actualPrincipal + "/outbox</D:href>");
+                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + actualPrincipal + "/outbox");
             }
         }
 
@@ -848,6 +850,15 @@ public class CaldavConnection extends AbstractConnection {
             result = result.replaceAll("&lt;", "<");
         }
         return result;
+    }
+
+    public static final BitSet caldav_allowed_abs_path = new BitSet(256);
+    static {
+        caldav_allowed_abs_path.or(URI.allowed_abs_path);
+        caldav_allowed_abs_path.clear('@');
+    }
+    protected String encodePath(String unencodedPath) throws URIException {
+        return URIUtil.encode(unencodedPath, caldav_allowed_abs_path,URI.getDefaultProtocolCharset());
     }
 
     protected class CaldavRequest {
@@ -1148,6 +1159,10 @@ public class CaldavConnection extends AbstractConnection {
                 writer.write(ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
                 writer.write("</C:calendar-data>");
             }
+        }
+
+        public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
+            appendProperty(propertyName, null, "<D:href>"+encodePath(propertyValue)+"</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {
