@@ -79,11 +79,20 @@ public final class DavGatewayHttpClientFacade {
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
         hostConfig.setHost(httpURL);
-        UsernamePasswordCredentials hostCredentials =
-                new UsernamePasswordCredentials(httpURL.getUser(),
-                        httpURL.getPassword());
-        httpClient.getState().setCredentials(new AuthScope(httpURL.getHost(), httpURL.getPort(), AuthScope.ANY_REALM),
-                hostCredentials);
+        String userName = httpURL.getUser();
+        String password = httpURL.getPassword();
+        AuthScope authScope = new AuthScope(httpURL.getHost(), httpURL.getPort(), AuthScope.ANY_REALM);
+        // detect ntlm authentication (windows domain name in user name)
+        int backslashindex = userName.indexOf('\\');
+        if (backslashindex > 0) {
+            httpClient.getState().setCredentials(authScope,
+                    new NTCredentials(userName.substring(backslashindex + 1),
+                            password, httpURL.getHost(),
+                            userName.substring(0, backslashindex)));
+        } else {
+            httpClient.getState().setCredentials(authScope,
+                    new UsernamePasswordCredentials(userName, password));
+        }
         configureClient(httpClient);
         return httpClient;
     }
@@ -95,12 +104,6 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void configureClient(HttpClient httpClient) {
         httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
-
-        ArrayList<String> authPrefs = new ArrayList<String>();
-        authPrefs.add(AuthPolicy.DIGEST);
-        authPrefs.add(AuthPolicy.BASIC);
-        // exclude the NTLM authentication scheme
-        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
