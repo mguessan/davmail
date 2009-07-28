@@ -300,7 +300,7 @@ public class CaldavConnection extends AbstractConnection {
 
     protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
         StringBuilder eventPath = new StringBuilder();
-        eventPath.append(encodePath(request.getPath()));
+        eventPath.append(URIUtil.encodePath(request.getPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
@@ -328,7 +328,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendCalendar(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(encodePath(request.getPath(subFolder)));
+        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -364,7 +364,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendInbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(encodePath(request.getPath(subFolder)));
+        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -389,7 +389,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     public void appendOutbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(encodePath(request.getPath(subFolder)));
+        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -513,7 +513,7 @@ public class CaldavConnection extends AbstractConnection {
 
         // send not found events errors
         for (String href : notFound) {
-            response.startResponse(encodePath(href));
+            response.startResponse(URIUtil.encodePath(href));
             response.appendPropstatNotFound();
             response.endResponse();
         }
@@ -524,7 +524,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendUserRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(encodePath(request.getPath()));
+        response.startResponse(URIUtil.encodePath(request.getPath()));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -597,7 +597,7 @@ public class CaldavConnection extends AbstractConnection {
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(encodePath("/principals/" + prefix + '/' + principal));
+        response.startResponse(URIUtil.encodePath("/principals/" + prefix + '/' + principal));
         response.startPropstat();
 
         if (request.hasProperty("calendar-home-set")) {
@@ -850,15 +850,6 @@ public class CaldavConnection extends AbstractConnection {
             result = result.replaceAll("&lt;", "<");
         }
         return result;
-    }
-
-    public static final BitSet caldav_allowed_abs_path = new BitSet(256);
-    static {
-        caldav_allowed_abs_path.or(URI.allowed_abs_path);
-        caldav_allowed_abs_path.clear('@');
-    }
-    protected String encodePath(String unencodedPath) throws URIException {
-        return URIUtil.encode(unencodedPath, caldav_allowed_abs_path,URI.getDefaultProtocolCharset());
     }
 
     protected class CaldavRequest {
@@ -1162,7 +1153,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
-            appendProperty(propertyName, null, "<D:href>"+encodePath(propertyValue)+"</D:href>");
+            appendProperty(propertyName, null, "<D:href>"+URIUtil.encodePath(propertyValue)+"</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {
