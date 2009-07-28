@@ -383,7 +383,7 @@ public class ImapConnection extends AbstractConnection {
                                     readClient();
 
                                     String messageName = UUID.randomUUID().toString();
-                                    session.createMessage(session.getFolderPath(folderName), messageName, properties, new String(buffer));
+                                    session.createMessage(folderName, messageName, properties, new String(buffer));
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {

@@ -535,14 +535,14 @@ public class ExchangeSession {
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
      *
-     * @param folderUrl   Exchange folder URL
+     * @param folderPath  Exchange folder path
      * @param messageName message name
      * @param properties  message properties (flags)
      * @param messageBody mail body
      * @throws IOException when unable to create message
      */
-    public void createMessage(String folderUrl, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(folderUrl + '/' + messageName + ".EML");
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
+        String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName + ".EML");
         PropPatchMethod patchMethod;
         // create the message first as draft
         if (properties.containsKey("draft")) {
@@ -884,7 +884,7 @@ public class ExchangeSession {
 
         String messageName = UUID.randomUUID().toString();
 
-        createMessage(draftsUrl, messageName, properties, mailBuffer.toString());
+        createMessage("Drafts", messageName, properties, mailBuffer.toString());
 
         String tempUrl = draftsUrl + '/' + messageName + ".EML";
         MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);
@@ -895,9 +895,9 @@ public class ExchangeSession {
     }
 
     /**
-     *
-     * @param folderName
-     * @return
+     * Convert logical or relative folder path to absolute folder path.
+     * @param folderName folder name
+     * @return folder path
      */
     public String getFolderPath(String folderName) {
         String folderPath;
@@ -921,13 +921,13 @@ public class ExchangeSession {
     }
 
     /**
-     * Select current folder.
-     * Folder name can be logical names INBOX, DRAFTS or TRASH (translated to local names),
-     * relative path to user base folder or absolute path.
+     * Get folder object.
+     * Folder name can be logical names INBOX, Drafts, Trash or calendar,
+     * or a path relative to user base folder or absolute path.
      *
      * @param folderName folder name
      * @return Folder object
-     * @throws IOException when unable to change folder
+     * @throws IOException on error
      */
     public Folder getFolder(String folderName) throws IOException {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
@@ -941,7 +941,7 @@ public class ExchangeSession {
     }
 
     /**
-     * Check folder ctag and reload messages as needed
+     * Check folder ctag and reload messages as needed.
      *
      * @param currentFolder current folder
      * @return current folder or new refreshed folder
