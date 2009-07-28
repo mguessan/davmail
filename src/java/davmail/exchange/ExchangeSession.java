@@ -60,6 +60,9 @@ import java.util.*;
 public class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
+    /**
+     * Reference GMT timezone to format dates
+     */
     public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
 
     protected static final int FREE_BUSY_INTERVAL = 15;
@@ -109,15 +112,6 @@ public class ExchangeSession {
 
     static {
         RESOURCE_TAG.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
-    }
-
-    public static final HashMap<String, String> PRIORITIES = new HashMap<String, String>();
-
-    static {
-        PRIORITIES.put("-2", "5 (Lowest)");
-        PRIORITIES.put("-1", "4 (Low)");
-        PRIORITIES.put("1", "2 (High)");
-        PRIORITIES.put("2", "1 (Highest)");
     }
 
     /**
@@ -239,6 +233,12 @@ public class ExchangeSession {
     }
 
 
+    /**
+     * Test if the session expired.
+     * @return true this session expired
+     * @throws NoRouteToHostException on error
+     * @throws UnknownHostException on error
+     */
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         boolean isExpired = false;
         try {
@@ -647,6 +647,12 @@ public class ExchangeSession {
         return list;
     }
 
+    /**
+     * Update given properties on message.
+     * @param message Exchange message
+     * @param properties Webdav properties map
+     * @throws IOException on error
+     */
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
         PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties));
         try {
@@ -660,10 +666,23 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Return folder message list with id and size only (for POP3 listener).
+     * @param folderName Exchange folder name
+     * @return folder message list
+     * @throws IOException on error
+     */
     public MessageList getAllMessageUidAndSize(String folderName) throws IOException {
         return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"", "");
     }
 
+    /**
+     * Search folder for messages matching conditions, with attributes needed by IMAP listener.
+     * @param folderName Exchange folder name
+     * @param conditions conditions string in Exchange SQL syntax
+     * @return message list
+     * @throws IOException on error
+     */
     public MessageList searchMessages(String folderName, String conditions) throws IOException {
         return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
@@ -672,6 +691,14 @@ public class ExchangeSession {
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"DAV:isdeleted\", \"urn:schemas:mailheader:date\"", conditions);
     }
 
+    /**
+     * Search folder for messages matching conditions, with given attributes.
+     * @param folderName Exchange folder name
+     * @param attributes requested Webdav attributes
+     * @param conditions conditions string in Exchange SQL syntax
+     * @return message list
+     * @throws IOException on error
+     */
     public MessageList searchMessages(String folderName, String attributes, String conditions) throws IOException {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
@@ -693,6 +720,13 @@ public class ExchangeSession {
         return messages;
     }
 
+    /**
+     * Search folders under given folder
+     * @param folderName Exchange folder name
+     * @param recursive deep search if true
+     * @return list of folders
+     * @throws IOException on error
+     */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
         String mode = recursive ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
@@ -765,7 +799,7 @@ public class ExchangeSession {
         }
     }
 
-    public void purgeOldestFolderMessages(String folderUrl, int keepDelay) throws IOException {
+    protected void purgeOldestFolderMessages(String folderUrl, int keepDelay) throws IOException {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_MONTH, -keepDelay);
         LOGGER.debug("Delete messages in " + folderUrl + " since " + cal.getTime());
@@ -785,6 +819,13 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Send message in reader to recipients.
+     * Detect visible recipients in message body to determine bcc recipients
+     * @param recipients recipients list
+     * @param reader message stream
+     * @throws IOException on error
+     */
     public void sendMessage(List<String> recipients, BufferedReader reader) throws IOException {
         String line = reader.readLine();
         StringBuilder mailBuffer = new StringBuilder();
@@ -853,6 +894,11 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     *
+     * @param folderName
+     * @return
+     */
     public String getFolderPath(String folderName) {
         String folderPath;
         if (folderName.startsWith("INBOX")) {
