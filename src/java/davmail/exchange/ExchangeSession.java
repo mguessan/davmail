@@ -759,23 +759,23 @@ public class ExchangeSession {
 
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
-            folder.folderUrl = href.replaceFirst(inboxUrl, "INBOX");
+            folder.folderPath = href.replaceFirst(inboxUrl, "INBOX");
         } else if (href.startsWith(sentitemsUrl)) {
-            folder.folderUrl = href.replaceFirst(sentitemsUrl, "Sent");
+            folder.folderPath = href.replaceFirst(sentitemsUrl, "Sent");
         } else if (href.startsWith(draftsUrl)) {
-            folder.folderUrl = href.replaceFirst(draftsUrl, "Drafts");
+            folder.folderPath = href.replaceFirst(draftsUrl, "Drafts");
         } else if (href.startsWith(deleteditemsUrl)) {
-            folder.folderUrl = href.replaceFirst(deleteditemsUrl, "Trash");
+            folder.folderPath = href.replaceFirst(deleteditemsUrl, "Trash");
         } else {
             int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
             if (index >= 0) {
                 if (index + mailPath.length() > href.length()) {
-                    folder.folderUrl = "";
+                    folder.folderPath = "";
                 } else {
-                    folder.folderUrl = href.substring(index + mailPath.length());
+                    folder.folderPath = href.substring(index + mailPath.length());
                 }
             } else {
-                throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", folder.folderUrl);
+                throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", folder.folderPath);
             }
         }
         return folder;
@@ -946,6 +946,7 @@ public class ExchangeSession {
      * @param currentFolder current folder
      * @return current folder or new refreshed folder
      * @throws IOException on error
+     * @deprecated no longer used: breaks Outlook IMAP
      */
     public Folder refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderName);
@@ -961,10 +962,16 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Create Exchange folder
+     * @param folderName logical folder name
+     * @throws IOException on error
+     */
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
         ArrayList<DavProperty> list = new ArrayList<DavProperty>();
         list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPF.Note"));
+        // standard MkColMethod does not take properties, override PropPatchMethod instead
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
             @Override
             public String getName() {
@@ -978,15 +985,22 @@ public class ExchangeSession {
         }
     }
 
-    public void copyMessage(String messageUrl, String targetName) throws IOException {
-        String targetPath = getFolderPath(targetName) + messageUrl.substring(messageUrl.lastIndexOf('/'));
-        CopyMethod method = new CopyMethod(URIUtil.encodePath(messageUrl),
-                URIUtil.encodePath(targetPath), false);
+    /**
+     * Copy message to target folder
+     * @param message Exchange message
+     * @param targetFolder target folder
+     * @throws IOException on error
+     */
+    public void copyMessage(Message message, String targetFolder) throws IOException {
+        String messageUrl = message.messageUrl;
+        String targetPath = getFolderPath(targetFolder) + messageUrl.substring(messageUrl.lastIndexOf('/'));
+        CopyMethod method = new CopyMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(targetPath), false);
+        // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
+                throw new DavMailException("EXCEPTION_UNABLE_TO_COPY_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
@@ -995,11 +1009,16 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Move folder to target name.
+     * @param folderName current folder name/path
+     * @param targetName target folder name/path
+     * @throws IOException on error
+     */
     public void moveFolder(String folderName, String targetName) throws IOException {
         String folderPath = getFolderPath(folderName);
         String targetPath = getFolderPath(targetName);
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath),
-                URIUtil.encodePath(targetPath), false);
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath), URIUtil.encodePath(targetPath), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -1012,7 +1031,7 @@ public class ExchangeSession {
         }
     }
 
-    public void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
+    protected void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
         String source = encodedPath + '/' + encodedMessageName;
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
@@ -1031,15 +1050,44 @@ public class ExchangeSession {
         LOGGER.debug("Deleted to :" + destination);
     }
 
+    /**
+     * Exchange folder with IMAP properties
+     */
     public class Folder {
-        public String folderUrl;
+        /**
+         * Logical (IMAP) folder path.
+         */
+        public String folderPath;
+        /**
+         * Folder unread message count.
+         */
         public int unreadCount;
+        /**
+         * true if folder has subfolders (DAV:hassubs).
+         */
         public boolean hasChildren;
+        /**
+         * true if folder has no subfolders (DAV:nosubs).
+         */
         public boolean noInferiors;
+        /**
+         * Requested folder name
+         * TODO : same as folderPath ?
+         */
         public String folderName;
+        /**
+         * Folder content tag (to detect folder content changes).
+         */
         public String contenttag;
+        /**
+         * Folder message list, empty before loadMessages call.
+         */
         public ExchangeSession.MessageList messages;
 
+        /**
+         * Get IMAP folder flags.
+         * @return folder flags in IMAP format
+         */
         public String getFlags() {
             if (noInferiors) {
                 return "\\NoInferiors";
@@ -1050,46 +1098,124 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Load folder messages.
+         * @throws IOException on error
+         */
         public void loadMessages() throws IOException {
-            messages = searchMessages(folderUrl, "");
+            messages = searchMessages(folderPath, "");
         }
 
-        public int size() {
+        /**
+         * Folder message count.
+         * @return message count
+         */
+        public int count() {
             return messages.size();
         }
 
+        /**
+         * Compute IMAP uidnext.
+         * @return max(message uids)+1
+         */
         public long getUidNext() {
             return messages.get(messages.size() - 1).getImapUid() + 1;
         }
 
+        /**
+         * Get message uid at index.
+         * @param index message index
+         * @return message uid
+         */
         public long getImapUid(int index) {
             return messages.get(index).getImapUid();
         }
 
+        /**
+         * Get message at index.
+         * @param index message index
+         * @return message
+         */
         public Message get(int index) {
             return messages.get(index);
         }
     }
 
+    /**
+     * Exchange message.
+     */
     public class Message implements Comparable {
-        public String messageUrl;
-        public String uid;
-        public long imapUid;
+        protected String messageUrl;
+        /**
+         * Message uid.
+         */
+        protected String uid;
+        /**
+         * Message IMAP uid, unique in folder (x0e230003).
+         */
+        protected long imapUid;
+        /**
+         * MAPI message size.
+         */
         public int size;
-        public String messageId;
+        /**
+         * Mail header message-id.
+         */
+        protected String messageId;
+        /**
+         * Message date (urn:schemas:mailheader:date).
+         */
         public String date;
+
+        /**
+         * Message flag: read.
+         */
         public boolean read;
+        /**
+         * Message flag: deleted.
+         */
         public boolean deleted;
+        /**
+         * Message flag: junk.
+         */
         public boolean junk;
+        /**
+         * Message flag: flagged.
+         */
         public boolean flagged;
+        /**
+         * Message flag: draft.
+         */
         public boolean draft;
+        /**
+         * Message flag: answered.
+         */
         public boolean answered;
+        /**
+         * Message flag: fowarded.
+         */
         public boolean forwarded;
 
+        /**
+         * IMAP uid , unique in folder (x0e230003)
+         * @return IMAP uid
+         */
         public long getImapUid() {
             return imapUid;
         }
 
+        /**
+         * Exchange uid.
+         * @return uid
+         */
+        public String getUid() {
+            return uid;
+        }
+
+        /**
+         * Return message flags in IMAP format.
+         * @return IMAP flags
+         */
         public String getImapFlags() {
             StringBuilder buffer = new StringBuilder();
             if (read) {
@@ -1116,6 +1242,11 @@ public class ExchangeSession {
             return buffer.toString().trim();
         }
 
+        /**
+         * Write MIME message to os
+         * @param os output stream
+         * @throws IOException on error
+         */
         public void write(OutputStream os) throws IOException {
             HttpMethod method = null;
             BufferedReader reader = null;
@@ -1124,8 +1255,6 @@ public class ExchangeSession {
                 method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
                 method.setRequestHeader("Translate", "f");
                 httpClient.executeMethod(method);
-
-                boolean inHTML = false;
 
                 reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
@@ -1149,15 +1278,6 @@ public class ExchangeSession {
                         headerBuffer.append((char) 10);
                         headerBuffer.append(line);
                         line = headerBuffer.toString();
-                        // detect html body to patch Exchange html body
-                    } else if (line.startsWith("<html")) {
-                        inHTML = true;
-                    } else if (inHTML && "</html>".equals(line)) {
-                        inHTML = false;
-                    }
-                    if (inHTML) {
-                        //    line = line.replaceAll("&#8217;", "'");
-                        //    line = line.replaceAll("&#8230;", "...");
                     }
                     isoWriter.write(line);
                     isoWriter.write((char) 13);
@@ -1178,10 +1298,18 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Delete message.
+         * @throws IOException on error
+         */
         public void delete() throws IOException {
             DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(messageUrl));
         }
 
+        /**
+         * Move message to trash, mark message read.
+         * @throws IOException on error
+         */
         public void moveToTrash() throws IOException {
             // mark message as read
             HashMap<String, String> properties = new HashMap<String, String>();
@@ -1197,6 +1325,11 @@ public class ExchangeSession {
             ExchangeSession.this.moveToTrash(encodedPath, encodedMessageName);
         }
 
+        /**
+         * Comparator to sort messages by IMAP uid
+         * @param message other message
+         * @return imapUid comparison result
+         */
         public int compareTo(Object message) {
             long compareValue = (imapUid - ((Message) message).imapUid);
             if (compareValue > 0) {
@@ -1208,27 +1341,30 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Override equals, compare IMAP uids
+         * @param message other message
+         * @return true if IMAP uids are equal
+         */
         @Override
         public boolean equals(Object message) {
             return message instanceof Message && imapUid == ((Message) message).imapUid;
         }
 
+        /**
+         * Override hashCode, return imapUid hashcode.
+         * @return imapUid hashcode
+         */
         @Override
         public int hashCode() {
             return (int) (imapUid ^ (imapUid >>> 32));
         }
     }
 
-    public static class MessageList extends ArrayList<Message> {
-        final HashMap<Long, Message> uidMessageMap = new HashMap<Long, Message>();
-
-        @Override
-        public boolean add(Message message) {
-            uidMessageMap.put(message.getImapUid(), message);
-            return super.add(message);
-        }
-
-    }
+    /**
+     * Message list
+     */
+    public static class MessageList extends ArrayList<Message>{}
 
     public class Event {
         protected String href;

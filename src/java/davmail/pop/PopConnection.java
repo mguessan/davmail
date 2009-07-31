@@ -74,7 +74,7 @@ public class PopConnection extends AbstractConnection {
     protected void printUidList() throws IOException {
         int i = 1;
         for (ExchangeSession.Message message : messages) {
-            sendClient(i++ + " " + message.uid);
+            sendClient(i++ + " " + message.getUid());
         }
         sendClient(".");
     }
@@ -178,7 +178,7 @@ public class PopConnection extends AbstractConnection {
                                 String token = tokens.nextToken();
                                 try {
                                     int messageNumber = Integer.valueOf(token);
-                                    sendOK(messageNumber + " " + messages.get(messageNumber - 1).uid);
+                                    sendOK(messageNumber + " " + messages.get(messageNumber - 1).getUid());
                                 } catch (NumberFormatException e) {
                                     sendERR("Invalid message index: " + token);
                                 } catch (IndexOutOfBoundsException e) {

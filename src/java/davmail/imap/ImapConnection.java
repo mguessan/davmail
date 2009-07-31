@@ -134,13 +134,13 @@ public class ImapConnection extends AbstractConnection {
                                                 boolean recursive = folderQuery.endsWith("*");
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 1), recursive);
                                                 for (ExchangeSession.Folder folder : folders) {
-                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderUrl) + '\"');
+                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
                                                 }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
                                                 ExchangeSession.Folder folder = session.getFolder(folderQuery);
                                                 if (folder != null) {
-                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderUrl) + '\"');
+                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
                                                     sendClient(commandId + " OK " + command + " completed");
                                                 } else {
                                                     sendClient(commandId + " NO Folder not found");
@@ -157,10 +157,10 @@ public class ImapConnection extends AbstractConnection {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         currentFolder = session.getFolder(folderName);
                                         currentFolder.loadMessages();
-                                        sendClient("* " + currentFolder.size() + " EXISTS");
-                                        sendClient("* " + currentFolder.size() + " RECENT");
+                                        sendClient("* " + currentFolder.count() + " EXISTS");
+                                        sendClient("* " + currentFolder.count() + " RECENT");
                                         sendClient("* OK [UIDVALIDITY 1]");
-                                        if (currentFolder.size() == 0) {
+                                        if (currentFolder.count() == 0) {
                                             sendClient("* OK [UIDNEXT " + 1 + ']');
                                         } else {
                                             sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
@@ -292,7 +292,7 @@ public class ImapConnection extends AbstractConnection {
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                                 while (UIDRangeIterator.hasNext()) {
                                                     ExchangeSession.Message message = UIDRangeIterator.next();
-                                                    session.copyMessage(message.messageUrl, targetName);
+                                                    session.copyMessage(message, targetName);
                                                 }
                                                 sendClient(commandId + " OK copy completed");
                                             } catch (HttpException e) {
@@ -390,8 +390,8 @@ public class ImapConnection extends AbstractConnection {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
                                         currentFolder = session.getFolder(currentFolder.folderName);
                                         currentFolder.loadMessages();
-                                        sendClient("* " + currentFolder.size() + " EXISTS");
-                                        sendClient("* " + currentFolder.size() + " RECENT");
+                                        sendClient("* " + currentFolder.count() + " EXISTS");
+                                        sendClient("* " + currentFolder.count() + " RECENT");
                                     }
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("subscribe".equalsIgnoreCase(command) || "unsubscribe".equalsIgnoreCase(command)) {
@@ -409,16 +409,16 @@ public class ImapConnection extends AbstractConnection {
                                         while (parametersTokens.hasMoreTokens()) {
                                             String token = parametersTokens.nextToken();
                                             if ("MESSAGES".equalsIgnoreCase(token)) {
-                                                answer.append("MESSAGES ").append(folder.size()).append(' ');
+                                                answer.append("MESSAGES ").append(folder.count()).append(' ');
                                             }
                                             if ("RECENT".equalsIgnoreCase(token)) {
-                                                answer.append("RECENT ").append(folder.size()).append(' ');
+                                                answer.append("RECENT ").append(folder.count()).append(' ');
                                             }
                                             if ("UIDNEXT".equalsIgnoreCase(token)) {
-                                                if (folder.size() == 0) {
+                                                if (folder.count() == 0) {
                                                     answer.append("UIDNEXT 1 ");
                                                 } else {
-                                                    if (folder.size() == 0) {
+                                                    if (folder.count() == 0) {
                                                         answer.append("UIDNEXT 1 ");
                                                     } else {
                                                         answer.append("UIDNEXT ").append(folder.getUidNext()).append(' ');
@@ -1014,19 +1014,19 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
-                while (currentIndex < currentFolder.size() && currentFolder.getImapUid(currentIndex) < startUid) {
+                while (currentIndex < currentFolder.count() && currentFolder.getImapUid(currentIndex) < startUid) {
                     currentIndex++;
                 }
             } else {
-                currentIndex = currentFolder.size();
+                currentIndex = currentFolder.count();
             }
         }
 
         public boolean hasNext() {
-            while (currentIndex < currentFolder.size() && currentFolder.getImapUid(currentIndex) > endUid) {
+            while (currentIndex < currentFolder.count() && currentFolder.getImapUid(currentIndex) > endUid) {
                 skipToStartUid();
             }
-            return currentIndex < currentFolder.size();
+            return currentIndex < currentFolder.count();
         }
 
         public ExchangeSession.Message next() {
@@ -1072,19 +1072,19 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
-                while (currentIndex < currentFolder.size() && (currentIndex + 1) < startUid) {
+                while (currentIndex < currentFolder.count() && (currentIndex + 1) < startUid) {
                     currentIndex++;
                 }
             } else {
-                currentIndex = currentFolder.size();
+                currentIndex = currentFolder.count();
             }
         }
 
         public boolean hasNext() {
-            while (currentIndex < currentFolder.size() && (currentIndex + 1) > endUid) {
+            while (currentIndex < currentFolder.count() && (currentIndex + 1) > endUid) {
                 skipToStartUid();
             }
-            return currentIndex < currentFolder.size();
+            return currentIndex < currentFolder.count();
         }
 
         public ExchangeSession.Message next() {
