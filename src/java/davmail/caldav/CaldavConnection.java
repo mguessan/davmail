@@ -562,6 +562,22 @@ public class CaldavConnection extends AbstractConnection {
         response.endPropStatOK();
         response.endResponse();
         if (request.depth == 1) {
+            // iPhone workaround: send calendar subfolder
+            response.startResponse("/users/"+session.getEmail()+"/calendar");
+            response.startPropstat();
+            if (request.hasProperty("resourcetype")) {
+                response.appendProperty("D:resourcetype", "<D:collection/>" +
+                        "<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
+            }
+            if (request.hasProperty("displayname")) {
+                    response.appendProperty("D:displayname", session.getEmail());
+            }
+            if (request.hasProperty("supported-calendar-component-set")) {
+                    response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/><C:comp name=\"VTODO\"/>");
+            }
+            response.endPropStatOK();
+            response.endResponse();
+
             response.startResponse("/users");
             response.startPropstat();
             if (request.hasProperty("displayname")) {
@@ -963,7 +979,7 @@ public class CaldavConnection extends AbstractConnection {
 
         protected boolean isIcal() {
             String userAgent = headers.get("user-agent");
-            return userAgent != null && userAgent.indexOf("DAVKit") >= 0;
+            return userAgent != null && userAgent.indexOf("DAVKit/3") >= 0;
         }
 
         public boolean isFreeBusy() {
