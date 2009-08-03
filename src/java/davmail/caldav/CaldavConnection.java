@@ -629,7 +629,8 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         // no inbox/outbox for delegated/shared calendars
-        if ("users".equals(prefix) && session.getEmail().equals(principal)) {
+        // case insensitive to avoir "response..*::["schedule-inbox-URL"]..*::href[0] is undefined" error in Lightning
+        if ("users".equals(prefix) && session.getEmail().equalsIgnoreCase(principal)) {
             if (request.hasProperty("schedule-inbox-URL")) {
                 response.appendHrefProperty("C:schedule-inbox-URL", "/users/" + actualPrincipal + "/inbox");
             }
