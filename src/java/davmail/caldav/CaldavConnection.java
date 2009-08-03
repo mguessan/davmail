@@ -18,17 +18,17 @@
  */
 package davmail.caldav;
 
-import davmail.*;
-import davmail.exception.DavMailException;
+import davmail.AbstractConnection;
+import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
@@ -55,7 +55,11 @@ public class CaldavConnection extends AbstractConnection {
 
     protected boolean closed;
 
-    // Initialize the streams and start the thread
+   /**
+     * Initialize the streams and start the thread.
+     *
+     * @param clientSocket Caldav client socket
+     */
     public CaldavConnection(Socket clientSocket) {
         super(CaldavConnection.class.getSimpleName(), clientSocket, "UTF-8");
         wireLogger.setLevel(Settings.getLoggingLevel("httpclient.wire"));
@@ -186,6 +190,14 @@ public class CaldavConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
+    /**
+     * Handle caldav request.
+     * @param command Http command
+     * @param path request path
+     * @param headers Http headers map
+     * @param body request body
+     * @throws IOException on error
+     */
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
         CaldavRequest request = new CaldavRequest(command, path, headers, body);
         if (request.isOptions()) {
@@ -327,6 +339,13 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
+    /**
+     * Append calendar object to Caldav response.
+     * @param response Caldav response
+     * @param request Caldav request
+     * @param subFolder calendar folder path relative to request path
+     * @throws IOException on error
+     */
     public void appendCalendar(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
@@ -363,6 +382,13 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
+    /**
+     * Append calendar inbox object to Caldav response.
+     * @param response Caldav response
+     * @param request Caldav request
+     * @param subFolder inbox folder path relative to request path
+     * @throws IOException on error
+     */
     public void appendInbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
@@ -388,6 +414,13 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
+    /**
+     * Append calendar outbox object to Caldav response.
+     * @param response Caldav response
+     * @param request Caldav request
+     * @param subFolder outbox folder path relative to request path
+     * @throws IOException on error
+     */
     public void appendOutbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
@@ -410,6 +443,10 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
     }
 
+    /**
+     * Send simple html response to GET /.
+     * @throws IOException on error
+     */
     public void sendGetRoot() throws IOException {
         StringBuilder buffer = new StringBuilder();
         buffer.append("Connected to DavMail<br/>");
@@ -418,6 +455,11 @@ public class CaldavConnection extends AbstractConnection {
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
     }
 
+    /**
+     * Send inbox response for request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendInbox(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -432,6 +474,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send outbox response for request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendOutbox(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -440,6 +487,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send calendar response for request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendCalendar(CaldavRequest request) throws IOException {
         String folderPath = request.getExchangeFolderPath();
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
@@ -455,6 +507,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Fake PROPPATCH response for request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void patchCalendar(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -477,6 +534,11 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
+    /**
+     * Report events listed in request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void reportEvents(CaldavRequest request) throws IOException {
         String folderPath = request.getExchangeFolderPath();
         List<ExchangeSession.Event> events;
@@ -521,6 +583,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send user response for request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendUserRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -544,6 +611,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send caldav response for / request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -604,6 +676,13 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send Caldav principal response.
+     * @param request Caldav request
+     * @param prefix principal prefix (users or public)
+     * @param principal principal name (email address for users)
+     * @throws IOException on error
+     */
     public void sendPrincipal(CaldavRequest request, String prefix, String principal) throws IOException {
         // actual principal is email address
         String actualPrincipal = principal;
@@ -652,6 +731,11 @@ public class CaldavConnection extends AbstractConnection {
         response.close();
     }
 
+    /**
+     * Send free busy response for body request.
+     * @param body request body
+     * @throws IOException on error
+     */
     public void sendFreeBusy(String body) throws IOException {
         HashMap<String, String> valueMap = new HashMap<String, String>();
         ArrayList<String> attendees = new ArrayList<String>();
@@ -719,6 +803,11 @@ public class CaldavConnection extends AbstractConnection {
     }
 
 
+    /**
+     * Send Http error response for exception
+     * @param e exception
+     * @throws IOException on error
+     */
     public void sendErr(Exception e) throws IOException {
         String message = e.getMessage();
         if (message == null) {
@@ -727,46 +816,101 @@ public class CaldavConnection extends AbstractConnection {
         sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
     }
 
+    /**
+     * Send 400 bad response for unsupported request.
+     * @param request Caldav request
+     * @throws IOException on error
+     */
     public void sendUnsupported(CaldavRequest request) throws IOException {
         BundleMessage message = new BundleMessage("LOG_UNSUPORTED_REQUEST", request);
         DavGatewayTray.error(message);
         sendErr(HttpStatus.SC_BAD_REQUEST, message.format());
     }
 
+    /**
+     * Send Http error status and message.
+     * @param status Http status
+     * @param message error messagee
+     * @throws IOException on error
+     */
     public void sendErr(int status, String message) throws IOException {
         sendHttpResponse(status, null, "text/plain;charset=UTF-8", message, false);
     }
 
+    /**
+     * Send OPTIONS response.
+     * @throws IOException on error
+     */
     public void sendOptions() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Allow", "OPTIONS, GET, PROPFIND, PUT, POST");
         sendHttpResponse(HttpStatus.SC_OK, headers);
     }
 
+    /**
+     * Send 401 Unauthorized response.
+     * @throws IOException on error
+     */
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\"');
         sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[]) null, false);
     }
 
+    /**
+     * Send Http response with given status.
+     * @param status Http status
+     * @throws IOException on error
+     */
     public void sendHttpResponse(int status) throws IOException {
         sendHttpResponse(status, null, null, (byte[]) null, true);
     }
 
+    /**
+     * Send Http response with given status and headers.
+     * @param status Http status
+     * @param headers Http headers
+     * @throws IOException on error
+     */
     public void sendHttpResponse(int status, Map<String, String> headers) throws IOException {
         sendHttpResponse(status, headers, null, (byte[]) null, true);
     }
 
+    /**
+     * Send Http response with given status in chunked mode.
+     * @param status Http status
+     * @throws IOException on error
+     */
     public void sendChunkedHttpResponse(int status) throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Transfer-Encoding", "chunked");
         sendHttpResponse(status, headers, "text/xml;charset=UTF-8", (byte[]) null, true);
     }
 
+    /**
+     * Send Http response with given status, headers, content type and content.
+     * Close connection if keepAlive is false
+     * @param status Http status
+     * @param headers Http headers
+     * @param contentType MIME content type
+     * @param content response body as string
+     * @param keepAlive keep connection open
+     * @throws IOException on error
+     */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
         sendHttpResponse(status, headers, contentType, content.getBytes("UTF-8"), keepAlive);
     }
 
+    /**
+     * Send Http response with given status, headers, content type and content.
+     * Close connection if keepAlive is false
+     * @param status Http status
+     * @param headers Http headers
+     * @param contentType MIME content type
+     * @param content response body as byte array
+     * @param keepAlive keep connection open
+     * @throws IOException on error
+     */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         sendClient("Server: DavMail Gateway");
@@ -1111,6 +1255,9 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
+    /**
+     * Caldav response wrapper, content sent in chunked mode to avoid timeout
+     */
     protected class CaldavResponse {
         Writer writer;
 
