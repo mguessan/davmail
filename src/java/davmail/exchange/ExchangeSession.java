@@ -235,9 +235,10 @@ public class ExchangeSession {
 
     /**
      * Test if the session expired.
+     *
      * @return true this session expired
      * @throws NoRouteToHostException on error
-     * @throws UnknownHostException on error
+     * @throws UnknownHostException   on error
      */
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         boolean isExpired = false;
@@ -649,7 +650,8 @@ public class ExchangeSession {
 
     /**
      * Update given properties on message.
-     * @param message Exchange message
+     *
+     * @param message    Exchange message
      * @param properties Webdav properties map
      * @throws IOException on error
      */
@@ -668,6 +670,7 @@ public class ExchangeSession {
 
     /**
      * Return folder message list with id and size only (for POP3 listener).
+     *
      * @param folderName Exchange folder name
      * @return folder message list
      * @throws IOException on error
@@ -678,6 +681,7 @@ public class ExchangeSession {
 
     /**
      * Search folder for messages matching conditions, with attributes needed by IMAP listener.
+     *
      * @param folderName Exchange folder name
      * @param conditions conditions string in Exchange SQL syntax
      * @return message list
@@ -693,6 +697,7 @@ public class ExchangeSession {
 
     /**
      * Search folder for messages matching conditions, with given attributes.
+     *
      * @param folderName Exchange folder name
      * @param attributes requested Webdav attributes
      * @param conditions conditions string in Exchange SQL syntax
@@ -722,8 +727,9 @@ public class ExchangeSession {
 
     /**
      * Search folders under given folder
+     *
      * @param folderName Exchange folder name
-     * @param recursive deep search if true
+     * @param recursive  deep search if true
      * @return list of folders
      * @throws IOException on error
      */
@@ -822,8 +828,9 @@ public class ExchangeSession {
     /**
      * Send message in reader to recipients.
      * Detect visible recipients in message body to determine bcc recipients
+     *
      * @param recipients recipients list
-     * @param reader message stream
+     * @param reader     message stream
      * @throws IOException on error
      */
     public void sendMessage(List<String> recipients, BufferedReader reader) throws IOException {
@@ -896,6 +903,7 @@ public class ExchangeSession {
 
     /**
      * Convert logical or relative folder path to absolute folder path.
+     *
      * @param folderName folder name
      * @return folder path
      */
@@ -964,6 +972,7 @@ public class ExchangeSession {
 
     /**
      * Create Exchange folder
+     *
      * @param folderName logical folder name
      * @throws IOException on error
      */
@@ -987,7 +996,8 @@ public class ExchangeSession {
 
     /**
      * Copy message to target folder
-     * @param message Exchange message
+     *
+     * @param message      Exchange message
      * @param targetFolder target folder
      * @throws IOException on error
      */
@@ -1011,6 +1021,7 @@ public class ExchangeSession {
 
     /**
      * Move folder to target name.
+     *
      * @param folderName current folder name/path
      * @param targetName target folder name/path
      * @throws IOException on error
@@ -1086,6 +1097,7 @@ public class ExchangeSession {
 
         /**
          * Get IMAP folder flags.
+         *
          * @return folder flags in IMAP format
          */
         public String getFlags() {
@@ -1100,6 +1112,7 @@ public class ExchangeSession {
 
         /**
          * Load folder messages.
+         *
          * @throws IOException on error
          */
         public void loadMessages() throws IOException {
@@ -1108,6 +1121,7 @@ public class ExchangeSession {
 
         /**
          * Folder message count.
+         *
          * @return message count
          */
         public int count() {
@@ -1116,7 +1130,8 @@ public class ExchangeSession {
 
         /**
          * Compute IMAP uidnext.
-         * @return max(message uids)+1
+         *
+         * @return max(messageuids)+1
          */
         public long getUidNext() {
             return messages.get(messages.size() - 1).getImapUid() + 1;
@@ -1124,6 +1139,7 @@ public class ExchangeSession {
 
         /**
          * Get message uid at index.
+         *
          * @param index message index
          * @return message uid
          */
@@ -1133,6 +1149,7 @@ public class ExchangeSession {
 
         /**
          * Get message at index.
+         *
          * @param index message index
          * @return message
          */
@@ -1198,6 +1215,7 @@ public class ExchangeSession {
 
         /**
          * IMAP uid , unique in folder (x0e230003)
+         *
          * @return IMAP uid
          */
         public long getImapUid() {
@@ -1206,6 +1224,7 @@ public class ExchangeSession {
 
         /**
          * Exchange uid.
+         *
          * @return uid
          */
         public String getUid() {
@@ -1214,6 +1233,7 @@ public class ExchangeSession {
 
         /**
          * Return message flags in IMAP format.
+         *
          * @return IMAP flags
          */
         public String getImapFlags() {
@@ -1244,6 +1264,7 @@ public class ExchangeSession {
 
         /**
          * Write MIME message to os
+         *
          * @param os output stream
          * @throws IOException on error
          */
@@ -1300,6 +1321,7 @@ public class ExchangeSession {
 
         /**
          * Delete message.
+         *
          * @throws IOException on error
          */
         public void delete() throws IOException {
@@ -1308,6 +1330,7 @@ public class ExchangeSession {
 
         /**
          * Move message to trash, mark message read.
+         *
          * @throws IOException on error
          */
         public void moveToTrash() throws IOException {
@@ -1327,6 +1350,7 @@ public class ExchangeSession {
 
         /**
          * Comparator to sort messages by IMAP uid
+         *
          * @param message other message
          * @return imapUid comparison result
          */
@@ -1343,6 +1367,7 @@ public class ExchangeSession {
 
         /**
          * Override equals, compare IMAP uids
+         *
          * @param message other message
          * @return true if IMAP uids are equal
          */
@@ -1353,6 +1378,7 @@ public class ExchangeSession {
 
         /**
          * Override hashCode, return imapUid hashcode.
+         *
          * @return imapUid hashcode
          */
         @Override
@@ -1364,7 +1390,8 @@ public class ExchangeSession {
     /**
      * Message list
      */
-    public static class MessageList extends ArrayList<Message>{}
+    public static class MessageList extends ArrayList<Message> {
+    }
 
     public class Event {
         protected String href;
@@ -1509,6 +1536,7 @@ public class ExchangeSession {
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
         boolean isAppleiCal = false;
         boolean hasOrganizer = false;
+        boolean hasAttendee = false;
         String eventClass = null;
 
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
@@ -1536,6 +1564,8 @@ public class ExchangeSession {
                         eventClass = value;
                     } else if (!isAppleiCal && "CLASS".equals(key)) {
                         eventClass = value;
+                    } else if (key.startsWith("ATTENDEE")) {
+                        hasAttendee = true;
                     } else if (key.startsWith("ORGANIZER")) {
                         hasOrganizer = true;
                     }
@@ -1600,13 +1630,12 @@ public class ExchangeSession {
                             result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
                         }
                     }
-                // remove organizer line if current user is organizer for iPhone
-                // will not remove line for events with attendees
-                } else if (fromServer && line.equals("ORGANIZER:MAILTO:" + email)) {
-                       continue;
-                // add organizer line to all events created in Exchange for active sync
+                    // remove organizer line if event has no attendees for iPhone
+                } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
+                    continue;
+                    // add organizer line to all events created in Exchange for active sync
                 } else if (!fromServer && "END:VEVENT".equals(line) && !hasOrganizer) {
-                        result.writeLine("ORGANIZER:MAILTO:" + email);
+                    result.writeLine("ORGANIZER:MAILTO:" + email);
                 }
                 result.writeLine(line);
             }
