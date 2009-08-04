@@ -1600,10 +1600,13 @@ public class ExchangeSession {
                             result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
                         }
                     }
-                } else if ("END:VEVENT".equals(line)) {
-                    if (!hasOrganizer) {
+                // remove organizer line if current user is organizer for iPhone
+                // will not remove line for events with attendees
+                } else if (fromServer && line.equals("ORGANIZER:MAILTO:" + email)) {
+                       continue;
+                // add organizer line to all events created in Exchange for active sync
+                } else if (!fromServer && "END:VEVENT".equals(line) && !hasOrganizer) {
                         result.writeLine("ORGANIZER:MAILTO:" + email);
-                    }
                 }
                 result.writeLine(line);
             }
