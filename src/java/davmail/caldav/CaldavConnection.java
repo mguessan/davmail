@@ -214,10 +214,10 @@ public class CaldavConnection extends AbstractConnection {
             if (request.isPropFind() && request.isPathLength(3)) {
                 sendUserRoot(request);
             } else {
-                handleCalendar(request, 3);
+                handleCalendar(request);
             }
         } else if (request.isPath(1, "public")) {
-            handleCalendar(request, 2);
+            handleCalendar(request);
         } else {
             sendUnsupported(request);
         }
@@ -233,63 +233,58 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 sendUnsupported(request);
             }
-        } else if (request.isPath(2, "public") && request.isPathLength(4)) {
-            sendPrincipal(request, "public", request.getPathElement(3));
+        } else if (request.isPath(2, "public")) {
+            StringBuilder prefixBuffer = new StringBuilder("public");
+            for (int i=3; i<request.getPathLength()-1;i++) {
+                 prefixBuffer.append('/').append(request.getPathElement(i));
+            }
+            sendPrincipal(request, prefixBuffer.toString(), request.getLastPath());
         } else {
             sendUnsupported(request);
         }
     }
 
-    protected void handleCalendar(CaldavRequest request, int depth) throws IOException {
-        String folderName = request.getPathElement(depth);
-        // folder request
-        if (request.isPathLength(depth + 1)) {
-            if (request.isPropFind() && "inbox".equals(folderName)) {
-                sendInbox(request);
-            } else if (request.isPropFind() && "outbox".equals(folderName)) {
-                sendOutbox(request);
-            } else if (request.isPost() && "outbox".equals(folderName)) {
-                if (request.isFreeBusy()) {
-                    sendFreeBusy(request.getBody());
-                } else {
-                    int status = session.sendEvent(request.getBody());
-                    sendHttpResponse(status);
-                }
-            } else if (request.isPropFind()) {
-                sendCalendar(request);
-            } else if (request.isPropPatch()) {
-                patchCalendar(request);
-            } else if (request.isReport()) {
-                reportEvents(request);
+    protected void handleCalendar(CaldavRequest request) throws IOException {
+        String lastPath = xmlDecodeName(request.getLastPath());
+        // folder requests
+        if (request.isPropFind() && "inbox".equals(lastPath)) {
+            sendInbox(request);
+        } else if (request.isPropFind() && "outbox".equals(lastPath)) {
+            sendOutbox(request);
+        } else if (request.isPost() && "outbox".equals(lastPath)) {
+            if (request.isFreeBusy()) {
+                sendFreeBusy(request.getBody());
             } else {
-                sendUnsupported(request);
-            }
-            // event request
-        } else if (request.isPathLength(depth + 2)) {
-            String eventName = xmlDecodeName(request.getPathElement(depth + 1));
-            if (request.isPut()) {
-                String etag = request.getHeader("if-match");
-                String noneMatch = request.getHeader("if-none-match");
-                ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(request.getExchangeFolderPath(), eventName, request.getBody(), etag, noneMatch);
-                sendHttpResponse(eventResult.status, buildEtagHeader(eventResult.etag), null, "", true);
-
-            } else if (request.isDelete()) {
-                int status = session.deleteEvent(request.getExchangeFolderPath(), eventName);
+                int status = session.sendEvent(request.getBody());
                 sendHttpResponse(status);
-            } else if (request.isGet()) {
-                ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), eventName);
-                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
-            } else if (request.isHead()) {
-                // test event
-                ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), eventName);
-                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", (byte[]) null, true);
-            } else {
-                sendUnsupported(request);
             }
+        } else if (request.isPropFind()) {
+            sendCalendar(request);
+        } else if (request.isPropPatch()) {
+            patchCalendar(request);
+        } else if (request.isReport()) {
+            reportEvents(request);
+            // event requests
+        } else if (request.isPut()) {
+            String etag = request.getHeader("if-match");
+            String noneMatch = request.getHeader("if-none-match");
+            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(request.getExchangeFolderPath(), lastPath, request.getBody(), etag, noneMatch);
+            sendHttpResponse(eventResult.status, buildEtagHeader(eventResult.etag), null, "", true);
 
+        } else if (request.isDelete()) {
+            int status = session.deleteEvent(request.getExchangeFolderPath(), lastPath);
+            sendHttpResponse(status);
+        } else if (request.isGet()) {
+            ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
+            sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
+        } else if (request.isHead()) {
+            // test event
+            ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
+            sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", (byte[]) null, true);
         } else {
             sendUnsupported(request);
         }
+
     }
 
     protected HashMap<String, String> buildEtagHeader(String etag) {
@@ -713,7 +708,7 @@ public class CaldavConnection extends AbstractConnection {
             if ("users".equals(prefix)) {
                 response.appendHrefProperty("C:calendar-home-set", "/users/" + actualPrincipal + "/calendar");
             } else {
-                response.appendHrefProperty("C:calendar-home-set", prefix + '/' + actualPrincipal);
+                response.appendHrefProperty("C:calendar-home-set", '/' + prefix + '/' + actualPrincipal);
             }
         }
 
@@ -1323,7 +1318,7 @@ public class CaldavConnection extends AbstractConnection {
         public void startResponse(String href) throws IOException {
             writer.write("<D:response>");
             writer.write("<D:href>");
-            writer.write(href);
+            writer.write(xmlEncodeName(href));
             writer.write("</D:href>");
         }
 
@@ -1342,7 +1337,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
-            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(propertyValue) + "</D:href>");
+            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(xmlEncodeName(propertyValue)) + "</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {
