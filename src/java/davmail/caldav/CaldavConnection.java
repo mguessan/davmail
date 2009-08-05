@@ -55,14 +55,15 @@ public class CaldavConnection extends AbstractConnection {
 
     protected boolean closed;
 
-   /**
+    /**
      * Initialize the streams and start the thread.
      *
      * @param clientSocket Caldav client socket
      */
     public CaldavConnection(Socket clientSocket) {
         super(CaldavConnection.class.getSimpleName(), clientSocket, "UTF-8");
-        wireLogger.setLevel(Settings.getLoggingLevel("httpclient.wire"));
+        // set caldav logging to davmail logging level
+        wireLogger.setLevel(Settings.getLoggingLevel("davmail"));
     }
 
     protected Map<String, String> parseHeaders() throws IOException {
@@ -192,10 +193,11 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Handle caldav request.
+     *
      * @param command Http command
-     * @param path request path
+     * @param path    request path
      * @param headers Http headers map
-     * @param body request body
+     * @param body    request body
      * @throws IOException on error
      */
     public void handleRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
@@ -341,8 +343,9 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Append calendar object to Caldav response.
-     * @param response Caldav response
-     * @param request Caldav request
+     *
+     * @param response  Caldav response
+     * @param request   Caldav request
      * @param subFolder calendar folder path relative to request path
      * @throws IOException on error
      */
@@ -384,8 +387,9 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Append calendar inbox object to Caldav response.
-     * @param response Caldav response
-     * @param request Caldav request
+     *
+     * @param response  Caldav response
+     * @param request   Caldav request
      * @param subFolder inbox folder path relative to request path
      * @throws IOException on error
      */
@@ -416,8 +420,9 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Append calendar outbox object to Caldav response.
-     * @param response Caldav response
-     * @param request Caldav request
+     *
+     * @param response  Caldav response
+     * @param request   Caldav request
      * @param subFolder outbox folder path relative to request path
      * @throws IOException on error
      */
@@ -445,6 +450,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send simple html response to GET /.
+     *
      * @throws IOException on error
      */
     public void sendGetRoot() throws IOException {
@@ -457,6 +463,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send inbox response for request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -476,6 +483,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send outbox response for request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -489,6 +497,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send calendar response for request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -509,6 +518,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Fake PROPPATCH response for request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -536,6 +546,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Report events listed in request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -585,6 +596,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send user response for request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -613,6 +625,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send caldav response for / request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -635,17 +648,17 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
         if (request.depth == 1) {
             // iPhone workaround: send calendar subfolder
-            response.startResponse("/users/"+session.getEmail()+"/calendar");
+            response.startResponse("/users/" + session.getEmail() + "/calendar");
             response.startPropstat();
             if (request.hasProperty("resourcetype")) {
                 response.appendProperty("D:resourcetype", "<D:collection/>" +
                         "<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
             }
             if (request.hasProperty("displayname")) {
-                    response.appendProperty("D:displayname", session.getEmail());
+                response.appendProperty("D:displayname", session.getEmail());
             }
             if (request.hasProperty("supported-calendar-component-set")) {
-                    response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/>");
+                response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/>");
             }
             response.endPropStatOK();
             response.endResponse();
@@ -660,7 +673,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             response.endPropStatOK();
             response.endResponse();
-            
+
             response.startResponse("/principals");
             response.startPropstat();
             if (request.hasProperty("displayname")) {
@@ -678,8 +691,9 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Caldav principal response.
-     * @param request Caldav request
-     * @param prefix principal prefix (users or public)
+     *
+     * @param request   Caldav request
+     * @param prefix    principal prefix (users or public)
      * @param principal principal name (email address for users)
      * @throws IOException on error
      */
@@ -733,6 +747,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send free busy response for body request.
+     *
      * @param body request body
      * @throws IOException on error
      */
@@ -805,6 +820,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Http error response for exception
+     *
      * @param e exception
      * @throws IOException on error
      */
@@ -818,6 +834,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send 400 bad response for unsupported request.
+     *
      * @param request Caldav request
      * @throws IOException on error
      */
@@ -829,7 +846,8 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Http error status and message.
-     * @param status Http status
+     *
+     * @param status  Http status
      * @param message error messagee
      * @throws IOException on error
      */
@@ -839,6 +857,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send OPTIONS response.
+     *
      * @throws IOException on error
      */
     public void sendOptions() throws IOException {
@@ -849,6 +868,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send 401 Unauthorized response.
+     *
      * @throws IOException on error
      */
     public void sendUnauthorized() throws IOException {
@@ -859,6 +879,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Http response with given status.
+     *
      * @param status Http status
      * @throws IOException on error
      */
@@ -868,7 +889,8 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Http response with given status and headers.
-     * @param status Http status
+     *
+     * @param status  Http status
      * @param headers Http headers
      * @throws IOException on error
      */
@@ -878,6 +900,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Send Http response with given status in chunked mode.
+     *
      * @param status Http status
      * @throws IOException on error
      */
@@ -890,11 +913,12 @@ public class CaldavConnection extends AbstractConnection {
     /**
      * Send Http response with given status, headers, content type and content.
      * Close connection if keepAlive is false
-     * @param status Http status
-     * @param headers Http headers
+     *
+     * @param status      Http status
+     * @param headers     Http headers
      * @param contentType MIME content type
-     * @param content response body as string
-     * @param keepAlive keep connection open
+     * @param content     response body as string
+     * @param keepAlive   keep connection open
      * @throws IOException on error
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
@@ -904,11 +928,12 @@ public class CaldavConnection extends AbstractConnection {
     /**
      * Send Http response with given status, headers, content type and content.
      * Close connection if keepAlive is false
-     * @param status Http status
-     * @param headers Http headers
+     *
+     * @param status      Http status
+     * @param headers     Http headers
      * @param contentType MIME content type
-     * @param content response body as byte array
-     * @param keepAlive keep connection open
+     * @param content     response body as byte array
+     * @param keepAlive   keep connection open
      * @throws IOException on error
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
@@ -1317,7 +1342,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
-            appendProperty(propertyName, null, "<D:href>"+URIUtil.encodePath(propertyValue)+"</D:href>");
+            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(propertyValue) + "</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {
