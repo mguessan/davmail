@@ -143,11 +143,7 @@ public class CaldavConnection extends AbstractConnection {
                 tokens = new StringTokenizer(line);
                 String command = tokens.nextToken();
                 Map<String, String> headers = parseHeaders();
-                String encodedPath = tokens.nextToken();
-                // make sure + sign in URL is encoded
-                if (encodedPath.indexOf('+') >= 0) {
-                    encodedPath = encodedPath.replaceAll("\\+", "%2B");
-                }
+                String encodedPath = encodePlusSign(tokens.nextToken());
                 String path = URIUtil.decode(encodedPath);
                 String content = getContent(headers.get("content-length"));
                 setSocketTimeout(headers.get("keep-alive"));
@@ -236,8 +232,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         } else if (request.isPath(2, "public")) {
             StringBuilder prefixBuffer = new StringBuilder("public");
-            for (int i=3; i<request.getPathLength()-1;i++) {
-                 prefixBuffer.append('/').append(request.getPathElement(i));
+            for (int i = 3; i < request.getPathLength() - 1; i++) {
+                prefixBuffer.append('/').append(request.getPathElement(i));
             }
             sendPrincipal(request, prefixBuffer.toString(), request.getLastPath());
         } else {
@@ -935,7 +931,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         String version = DavGateway.getCurrentVersion();
-        sendClient("Server: DavMail Gateway "+ (version==null?"":version));
+        sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
         sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events, calendar-proxy");
         SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         String now = formatter.format(new Date());
@@ -1033,6 +1029,20 @@ public class CaldavConnection extends AbstractConnection {
             result = result.replaceAll("&lt;", "<");
         }
         return result;
+    }
+
+    /**
+     * Make sure + sign in URL is encoded.
+     * @param path URL path
+     * @return reencoded path
+     */
+    protected String encodePlusSign(String path) {
+        // make sure + sign in URL is encoded
+        if (path.indexOf('+') >= 0) {
+            return path.replaceAll("\\+", "%2B");
+        } else {
+            return path;
+        }
     }
 
     protected class CaldavRequest {
@@ -1211,7 +1221,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (isIcal()) {
                                 hrefs.add(streamReader.getText());
                             } else {
-                                hrefs.add(URIUtil.decode(streamReader.getText()));
+                                hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getText())));
                             }
                         }
                         inElement = false;
