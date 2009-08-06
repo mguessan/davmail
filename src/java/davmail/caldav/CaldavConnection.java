@@ -347,7 +347,7 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype", "<D:collection/>" +
-                    "<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>");
+                    "<C:calendar/>");
         }
         if (request.hasProperty("owner")) {
             if ("users".equals(request.getPathElement(1))) {
@@ -373,6 +373,10 @@ public class CaldavConnection extends AbstractConnection {
                 response.appendProperty("D:displayname", subFolder);
             }
         }
+        if (request.hasProperty("calendar-description")) {
+            response.appendProperty("C:calendar-description", "");
+        }
+
         response.endPropStatOK();
         response.endResponse();
     }
@@ -604,6 +608,10 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", request.getLastPath());
         }
+        if (request.hasProperty("getctag")) {
+            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
+                    base64Encode(session.getFolderCtag(request.getExchangeFolderPath())));
+        }
         response.endPropStatOK();
         if (request.getDepth() == 1) {
             appendInbox(response, request, "inbox");
@@ -703,7 +711,7 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("calendar-home-set")) {
             if ("users".equals(prefix)) {
-                response.appendHrefProperty("C:calendar-home-set", "/users/" + actualPrincipal + "/calendar");
+                response.appendHrefProperty("C:calendar-home-set", "/users/" + actualPrincipal + "/calendar/");
             } else {
                 response.appendHrefProperty("C:calendar-home-set", '/' + prefix + '/' + actualPrincipal);
             }
@@ -1122,12 +1130,18 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public String getPath(String subFolder) {
+            String folderPath = null;
             if (subFolder == null || subFolder.length() == 0) {
-                return path;
+                folderPath = path;
             } else if (path.endsWith("/")) {
-                return path + subFolder;
+                folderPath  = path + subFolder;
             } else {
-                return path + '/' + subFolder;
+                folderPath = path + '/' + subFolder;
+            }
+            if (folderPath.endsWith("/")) {
+                return folderPath;
+            } else {
+                return folderPath + '/';
             }
         }
 
