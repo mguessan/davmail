@@ -144,16 +144,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             String lafClassName = UIManager.getSystemLookAndFeelClassName();
             // workaround for bug when SWT and AWT both try to access Gtk
             if (lafClassName.indexOf("gtk") > 0) {
-                // try to set Nimbus LAF
-                for (UIManager.LookAndFeelInfo laf : UIManager.getInstalledLookAndFeels()) {
-                    if ("Nimbus".equals(laf.getName())) {
-                        lafClassName = laf.getClassName();
-                    }
-                }
-                // failover to default
-                if (lafClassName == null) {
                     lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
-                }
             }
             UIManager.setLookAndFeel(lafClassName);
         } catch (Exception e) {
