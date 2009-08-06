@@ -940,7 +940,7 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         String version = DavGateway.getCurrentVersion();
         sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
-        sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events, calendar-proxy");
+        sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         String now = formatter.format(new Date());
         sendClient("Date: " + now);
@@ -1130,7 +1130,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public String getPath(String subFolder) {
-            String folderPath = null;
+            String folderPath;
             if (subFolder == null || subFolder.length() == 0) {
                 folderPath = path;
             } else if (path.endsWith("/")) {
