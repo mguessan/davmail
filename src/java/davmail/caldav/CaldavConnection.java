@@ -857,7 +857,7 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendOptions() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
-        headers.put("Allow", "OPTIONS, GET, PROPFIND, PUT, POST");
+        headers.put("Allow", "OPTIONS, PROPFIND, HEAD, GET, REPORT, PROPPATCH, PUT, DELETE, POST");
         sendHttpResponse(HttpStatus.SC_OK, headers);
     }
 
