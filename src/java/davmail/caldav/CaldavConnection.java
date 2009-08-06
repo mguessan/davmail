@@ -21,6 +21,7 @@ package davmail.caldav;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.Settings;
+import davmail.DavGateway;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
@@ -933,8 +934,9 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
-        sendClient("Server: DavMail Gateway");
-        sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events");
+        String version = DavGateway.getCurrentVersion();
+        sendClient("Server: DavMail Gateway "+ (version==null?"":version));
+        sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events, calendar-proxy");
         SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         String now = formatter.format(new Date());
         sendClient("Date: " + now);
