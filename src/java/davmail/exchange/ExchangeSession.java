@@ -1584,7 +1584,10 @@ public class ExchangeSession {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
+                // remove empty properties
+                if ("CLASS:".equals(line) || "LOCATION:".equals(line)) {
+                    continue;
+                } else if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
                 } else if (!fromServer && "END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
                     result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
