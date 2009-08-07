@@ -1,0 +1,43 @@
+/* You can override this file with your own styles */
+.externalLink img {
+	vertical-align: middle;
+}
+.section h2, .section h3 {
+	border:0px;
+	background: transparent;
+	color:black;
+	font-size:17px;
+}
+.section h2 {
+	border-bottom:1px solid;
+	padding:1px;
+}
+.section h3 {
+	background:#ECECEC;
+	font-size:15px;
+	font-weight:bold;
+}
+.section p {
+	padding-left:15px;
+}
+
+
+
+.section table {
+	margin-left:10px;	
+	border-collapse: collapse;	
+}
+.small { 
+	font-size:9px;
+}
+.source {
+	overflow:auto;
+}
+.floatLeft {
+	float:left;
+} 
+.notype {
+	list-style-type:none;
+	margin-left:10px;
+	padding-left:0px;
+}

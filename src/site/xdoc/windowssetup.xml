@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Windows setup</title>
@@ -24,27 +25,27 @@
             <p>Choose language:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/setup1.png"/>
+                <img src="images/setup1.png" alt=""/>
             </div>
             <p>Click Next:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/setup2.png"/>
+                <img src="images/setup2.png" alt=""/>
             </div>
             <p>Accept GPL licence:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/setup3.png"/>
+                <img src="images/setup3.png" alt=""/>
             </div>
             <p>Choose path:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/setup4.png"/>
+                <img src="images/setup4.png" alt=""/>
             </div>
             <p>Launch installation and start gateway:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/setup5.png"/>
+                <img src="images/setup5.png" alt=""/>
             </div>
             <p>Adjust DavMail settings :
                 <a href="gettingstarted.html">Getting started</a>

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway</title>
@@ -8,9 +9,9 @@
     </properties>
 
     <body>
-        <style>
+        <!--style>
             .externalLink img {vertical-align: middle;}
-        </style>
+        </style-->
 
         <section name="About DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway">
             <p>Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway allowing
@@ -23,7 +24,7 @@
                 Tested successfully with the Iphone (gateway running on a server).
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/ubuntutray.png"/>
+                <img src="images/ubuntutray.png" alt=""/>
             </div>
         </section>
         <section name="Download and support this project">

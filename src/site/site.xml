@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="Maven">
+<project name="Maven" xmlns="http://maven.apache.org/DECORATION/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.0.0 http://maven.apache.org/xsd/decoration-1.0.0.xsd">
     <version position="left"/>
-    
+
     <bannerLeft>
         <name>SourceForge</name>
         <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=12</src>
@@ -17,7 +19,7 @@
     </skin>
     <body>
         <head>
-            <link href="/favicon.ico" rel="shortcut icon" />
+            <link href="/favicon.ico" rel="shortcut icon"/>
         </head>
         <menu name="Quick Links">
             <item name="Home" href="/index.html"/>

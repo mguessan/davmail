@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Server setup</title>
@@ -71,7 +72,7 @@ davmail.logFilePath=/var/log/davmail.log
         </section>
 
         <section name="DavMail Setup as a JEE Web Application">
-            <p>Prerequisites : Sun J2SE 1.5 or 1.6 and any JEE compliant web container 
+            <p>Prerequisites : Sun J2SE 1.5 or 1.6 and any JEE compliant web container
             </p>
 
             <p>Davmail Gateway can now be deployed in any JEE application server using
@@ -81,7 +82,7 @@ davmail.logFilePath=/var/log/davmail.log
                 details will vary according to the specific application server available.
             </p>
 
-            <p>Download the war DavMail package from Sourceforge <code>davmail-*.war</code>,
+            <p>Download the war DavMail package from Sourceforge<code>davmail-*.war</code>,
                 and deploy it inside the application server. In Tomcat, this means copy the
                 war file to the webapps directory. If Tomcat is started and automatic
                 deployment enabled (this is the default configuration), the package is
@@ -90,7 +91,7 @@ davmail.logFilePath=/var/log/davmail.log
             <p>The davmail.properties configuration file is then available under
                 <code>davmail-*/WEB-INF/classes</code>.
             </p>
-            
+
             <p>See above and
                 <a href="gettingstarted.html">Getting started</a>
                 for more information on

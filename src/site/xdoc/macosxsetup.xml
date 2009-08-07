@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Mac OS X setup</title>
@@ -17,16 +18,17 @@
             <p>Download DavMail Mac OSX package from Sourceforge:
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/osxdownload.png"/>
+                <img src="images/osxdownload.png" alt=""/>
             </div>
             <p>Safari should automatically extract the application archive. If not, just
                 double click on the zip file to trigger decompression. The extracted
                 DavMail.app directory is then recognised as a valid OSX application.
             </p>
             <p>Just double click on the application icon to launch DavMail. On
-            first start the application displays the Settings (Preferences) frame.</p>
+                first start the application displays the Settings (Preferences) frame.
+            </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/osxsettings.jpg"/>
+                <img src="images/osxsettings.jpg" alt=""/>
             </div>
             <p>Adjust DavMail settings:
                 <a href="gettingstarted.html">Getting started</a>

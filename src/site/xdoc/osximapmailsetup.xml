@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - OSX IMAP Mail setup</title>
@@ -16,88 +17,89 @@
                 than POP. This page describes OSX IMAP Mail setup.
             </p>
 
-            <section name="Create a new account">
+            <subsection name="Create a new account">
                 <p>Launch Apple Mail, open Preferences and click the plus button to create a new
-                account. Enter you full name, email address and password:</p>
+                    account. Enter you full name, email address and password:
+                </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap1.png"/>
+                    <img src="images/osxMailImap1.png" alt=""/>
                 </div>
 
                 <p>Choose IMAP account type, enter description, DavMail gateway address (localhost).
                     Check username and password:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap2.png"/>
+                    <img src="images/osxMailImap2.png" alt=""/>
                 </div>
 
                 <p>Click continue, if DavMail is not listening on the default IMAP port (143), you
                     will get the following error message, click Continue again to proceed:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap3.png"/>
+                    <img src="images/osxMailImap3.png" alt=""/>
                 </div>
 
                 <p>Leave SSL unchecked and click Continue:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap4.png"/>
+                    <img src="images/osxMailImap4.png" alt=""/>
                 </div>
 
                 <p>Enter Outgoing Mail Server (SMTP) description and DavMail gateway address (localhost).
                     Check Use Authentication and enter your Exchange username and password:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap5.png"/>
+                    <img src="images/osxMailImap5.png" alt=""/>
                 </div>
 
                 <p>Click continue, if DavMail is not listening on the default SMTP port (25), you
                     will get the following error message, click Continue again to proceed:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap6.png"/>
+                    <img src="images/osxMailImap6.png" alt=""/>
                 </div>
 
                 <p>Leave SSL unchecked and click Continue:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap7.png"/>
+                    <img src="images/osxMailImap7.png" alt=""/>
                 </div>
 
                 <p>Check summary and click Create:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap8.png"/>
+                    <img src="images/osxMailImap8.png" alt=""/>
                 </div>
 
-            </section>
-            <section name="Additional settings">
+            </subsection>
+            <subsection name="Additional settings">
                 <p>Open the Mailbox Behaviors tab and uncheck Store sent messages on server, as Exchange already
                     stores each sent message in this folder:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap9.png"/>
+                    <img src="images/osxMailImap9.png" alt=""/>
                 </div>
                 <p>Under the advanced tab, enter actual DavMail IMAP port:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap10.png"/>
+                    <img src="images/osxMailImap10.png" alt=""/>
                 </div>
                 <p>Under the Account Information tab, choose Edit Server List in Outgoing Mail Server (SMTP) field:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap11.png"/>
+                    <img src="images/osxMailImap11.png" alt=""/>
                 </div>
                 <p>Open the advanced tab, check use custom port and enter actual DavMail SMTP port:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap12.png"/>
+                    <img src="images/osxMailImap12.png" alt=""/>
                 </div>
                 <p>You may also want to set the Add invitations to iCal parameter to Never:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/osxMailImap13.png"/>
+                    <img src="images/osxMailImap13.png" alt=""/>
                 </div>
-            </section>
+            </subsection>
         </section>
     </body>
 </document>

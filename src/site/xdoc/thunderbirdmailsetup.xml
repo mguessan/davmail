@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Thunderbird mail setup</title>
@@ -27,21 +28,21 @@
                 Thunderbird
             </p>
 
-            <section name="Create a new account">
+            <subsection name="Create a new account">
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount1.png"/>
+                    <img src="images/thunderbirdAccount1.png" alt=""/>
                 </div>
 
                 <p>Edit common name and Exchange mail address:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount2.png"/>
+                    <img src="images/thunderbirdAccount2.png" alt=""/>
                 </div>
 
                 <p>Choose POP as server type, located at localhost:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount3.png"/>
+                    <img src="images/thunderbirdAccount3.png" alt=""/>
                 </div>
 
 
@@ -50,27 +51,27 @@
                     Exchange 2007.
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount4.png"/>
+                    <img src="images/thunderbirdAccount4.png" alt=""/>
                 </div>
 
                 <p>Edit account name (email address by default):
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount5.png"/>
+                    <img src="images/thunderbirdAccount5.png" alt=""/>
                 </div>
 
                 <p>Finish:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount6.png"/>
+                    <img src="images/thunderbirdAccount6.png" alt=""/>
                 </div>
 
-            </section>
-            <section name="Create a new SMTP configuration">
+            </subsection>
+            <subsection name="Create a new SMTP configuration">
                 <p>Create a new outgoing mail configuration under account settings:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdSmtp.png"/>
+                    <img src="images/thunderbirdSmtp.png" alt=""/>
                 </div>
                 <p>Server name is localhost, edit port according to DavMail settings.
                     The connection must use authentication with Active Directory account and encryption is not needed.
@@ -78,7 +79,7 @@
                 <p>Proceeed to
                     <a href="thunderbirdcalendarsetup.html">Thunderbird calendar setup</a>
                 </p>
-            </section>
+            </subsection>
         </section>
     </body>
 </document>

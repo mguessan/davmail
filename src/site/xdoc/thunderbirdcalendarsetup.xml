@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Thunderbird calendar setup</title>
@@ -14,12 +15,12 @@
                 This should also work with other Caldav clients.
             </p>
 
-            <section name="Create a new network calendar">
+            <subsection name="Create a new network calendar">
                 <p>Obviously, you need to install the Thunderbird Lightning extension. You can
                     then create a new network calendar:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar1.png"/>
+                    <img src="images/thunderbirdCalendar1.png" alt=""/>
                 </div>
 
                 <p>Choose CalDav format and specify location (adjust port to your settings):</p>
@@ -28,27 +29,27 @@
                 <p>Replace mail@company.com with actual user email address.
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar2.png"/>
+                    <img src="images/thunderbirdCalendar2.png" alt=""/>
                 </div>
 
                 <p>Choose a name, color and set the associated email address (as set in mail setup)
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar3.png"/>
+                    <img src="images/thunderbirdCalendar3.png" alt=""/>
                 </div>
 
 
                 <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar4.png"/>
+                    <img src="images/thunderbirdCalendar4.png" alt=""/>
                 </div>
 
 
                 <p>Finish:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdCalendar5.png"/>
+                    <img src="images/thunderbirdCalendar5.png" alt=""/>
                 </div>
 
                 <p>You may want to enable the (experimental) Lightning calendar cach feature to avoid
@@ -59,7 +60,7 @@
                 <p>Proceeed to
                     <a href="thunderbirddirectorysetup.html">Thunderbird directory setup</a>
                 </p>
-            </section>
+            </subsection>
         </section>
     </body>
 </document>

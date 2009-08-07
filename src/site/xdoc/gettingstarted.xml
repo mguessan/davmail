@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Getting started</title>
@@ -15,128 +16,126 @@
                 <code>Settings...</code>
             </p>
             <div style="width: 100%;text-align: center">
-                <img src="images/davmailSettings.png"/>
+                <img src="images/davmailSettings.png" alt=""/>
             </div>
-            <p>
-                The following table describes the main and advanced options :
-                <table>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Description</th>
-                        <th>Sample value</th>
-                    </tr>
-                    <tr>
-                        <td>OWA url</td>
-                        <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL</td>
-                        <td>http://exchangeServer/exchange/</td>
-                    </tr>
-                    <tr>
-                        <td>Local POP port</td>
-                        <td>Local POP server port to configure in POP client</td>
-                        <td>110</td>
-                    </tr>
-                    <tr>
-                        <td>Local IMAP port</td>
-                        <td>Local IMAP server port to configure in IMAP client</td>
-                        <td>143</td>
-                    </tr>
-                    <tr>
-                        <td>Local SMTP port</td>
-                        <td>Local SMTP server port to configure in POP client</td>
-                        <td>25</td>
-                    </tr>
-                    <tr>
-                        <td>Local Caldav HTTP port</td>
-                        <td>Local Caldav server port to configure in Caldav (calendar) client</td>
-                        <td>80</td>
-                    </tr>
-                    <tr>
-                        <td>Local LDAP port</td>
-                        <td>Local LDAP server port to configure in add directory (addresse book) client</td>
-                        <td>389</td>
-                    </tr>
-                    <tr>
-                        <td>Keep Delay</td>
-                        <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
-                        <td>30</td>
-                    </tr>
-                    <tr>
-                        <td>Sent Keep Delay</td>
-                        <td>Number of days to keep sent messages in Exchange sent folder</td>
-                        <td>90</td>
-                    </tr>
-                    <tr>
-                        <td>Calendar past events</td>
-                        <td>Get events in the past not older than specified days count, leave empty for no limits</td>
-                        <td>90</td>
-                    </tr>
-                    <tr>
-                        <td>Allow remote connections</td>
-                        <td>Allow remote connections to the gateway (server mode)</td>
-                        <td>false</td>
-                    </tr>
-                    <tr>
-                        <td>Key store type</td>
-                        <td>Choose key store type</td>
-                        <td>JKS</td>
-                    </tr>
-                    <tr>
-                        <td>Key store</td>
-                        <td>SSL certificate key store file path</td>
-                        <td>path/to/keystore</td>
-                    </tr>
-                    <tr>
-                        <td>Key store password</td>
-                        <td>Key store password</td>
-                        <td>password</td>
-                    </tr>
-                    <tr>
-                        <td>Key password</td>
-                        <td>SSL key password inside key store</td>
-                        <td>password</td>
-                    </tr>
-                    <tr>
-                        <td>PKCS11 library</td>
-                        <td>PKCS11 (smartcard) library path (.so or .dll)</td>
-                        <td>softokn3.dll</td>
-                    </tr>
-                    <tr>
-                        <td>PKCS11 config</td>
-                        <td>Optional additional PKCS11 settings (slot, nssArgs, ...)</td>
-                        <td>slot=2</td>
-                    </tr>
-                    <tr>
-                        <td>Bind Address</td>
-                        <td>Bind only to the specified network address</td>
-                        <td>10.0.1.2</td>
-                    </tr>
-                    <tr>
-                        <td>Server certificate hash</td>
-                        <td>Manually accepted server certificate hash, contains the SHA1 hash of
-                            a manually accepted certificate (invalid or self signed)
-                        </td>
-                        <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
-                    </tr>
-                    <tr>
-                        <td>Disable update check</td>
-                        <td>Disable DavMail check for new version</td>
-                        <td>false</td>
-                    </tr>
-                    <tr>
-                        <td>Logging levels</td>
-                        <td>Default, DavMail and HttpClient logging levels, see Log4J documentation for more details
-                        </td>
-                        <td>WARN</td>
-                    </tr>
-                    <tr>
-                        <td>Log file Path</td>
-                        <td>DavMail log file path (default is davmail.log in working directory on Unix and Windows,
-                            ~/Library/Logs/DavMail/davmail.log on OSX)
-                        </td>
-                        <td>davmail.log</td>
-                    </tr>
-                </table>
-            </p>
+            <p>The following table describes the main and advanced options :</p>
+            <table>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                    <th>Sample value</th>
+                </tr>
+                <tr>
+                    <td>OWA url</td>
+                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL</td>
+                    <td>http://exchangeServer/exchange/</td>
+                </tr>
+                <tr>
+                    <td>Local POP port</td>
+                    <td>Local POP server port to configure in POP client</td>
+                    <td>110</td>
+                </tr>
+                <tr>
+                    <td>Local IMAP port</td>
+                    <td>Local IMAP server port to configure in IMAP client</td>
+                    <td>143</td>
+                </tr>
+                <tr>
+                    <td>Local SMTP port</td>
+                    <td>Local SMTP server port to configure in POP client</td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td>Local Caldav HTTP port</td>
+                    <td>Local Caldav server port to configure in Caldav (calendar) client</td>
+                    <td>80</td>
+                </tr>
+                <tr>
+                    <td>Local LDAP port</td>
+                    <td>Local LDAP server port to configure in add directory (addresse book) client</td>
+                    <td>389</td>
+                </tr>
+                <tr>
+                    <td>Keep Delay</td>
+                    <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
+                    <td>30</td>
+                </tr>
+                <tr>
+                    <td>Sent Keep Delay</td>
+                    <td>Number of days to keep sent messages in Exchange sent folder</td>
+                    <td>90</td>
+                </tr>
+                <tr>
+                    <td>Calendar past events</td>
+                    <td>Get events in the past not older than specified days count, leave empty for no limits</td>
+                    <td>90</td>
+                </tr>
+                <tr>
+                    <td>Allow remote connections</td>
+                    <td>Allow remote connections to the gateway (server mode)</td>
+                    <td>false</td>
+                </tr>
+                <tr>
+                    <td>Key store type</td>
+                    <td>Choose key store type</td>
+                    <td>JKS</td>
+                </tr>
+                <tr>
+                    <td>Key store</td>
+                    <td>SSL certificate key store file path</td>
+                    <td>path/to/keystore</td>
+                </tr>
+                <tr>
+                    <td>Key store password</td>
+                    <td>Key store password</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td>Key password</td>
+                    <td>SSL key password inside key store</td>
+                    <td>password</td>
+                </tr>
+                <tr>
+                    <td>PKCS11 library</td>
+                    <td>PKCS11 (smartcard) library path (.so or .dll)</td>
+                    <td>softokn3.dll</td>
+                </tr>
+                <tr>
+                    <td>PKCS11 config</td>
+                    <td>Optional additional PKCS11 settings (slot, nssArgs, ...)</td>
+                    <td>slot=2</td>
+                </tr>
+                <tr>
+                    <td>Bind Address</td>
+                    <td>Bind only to the specified network address</td>
+                    <td>10.0.1.2</td>
+                </tr>
+                <tr>
+                    <td>Server certificate hash</td>
+                    <td>Manually accepted server certificate hash, contains the SHA1 hash of
+                        a manually accepted certificate (invalid or self signed)
+                    </td>
+                    <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
+                </tr>
+                <tr>
+                    <td>Disable update check</td>
+                    <td>Disable DavMail check for new version</td>
+                    <td>false</td>
+                </tr>
+                <tr>
+                    <td>Logging levels</td>
+                    <td>Default, DavMail and HttpClient logging levels, see Log4J documentation for more details
+                    </td>
+                    <td>WARN</td>
+                </tr>
+                <tr>
+                    <td>Log file Path</td>
+                    <td>DavMail log file path (default is davmail.log in working directory on Unix and Windows,
+                        ~/Library/Logs/DavMail/davmail.log on OSX)
+                    </td>
+                    <td>davmail.log</td>
+                </tr>
+            </table>
             <p>Uncheck a port to disable matching service.</p>
             <p>Activate panel under Proxy tab to set an HTTP proxy and associated credentials if needed</p>
             <p>Proceeed to

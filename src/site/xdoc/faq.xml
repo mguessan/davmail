@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Frequently asked questions</title>
@@ -11,7 +13,7 @@
         <section name="Frequently asked questions">
             <p>Frequently asked questions on DavMail forums, mailing list or direct email.
             </p>
-            <section name="General">
+            <subsection name="General">
                 <p>
                     <strong>Authentication fails with invalid user or password message</strong>
                 </p>
@@ -34,9 +36,9 @@
                 <p>Your Exchange server expects HTTPS (secured) connections, use https instead of http in
                     OWA url.
                 </p>
-            </section>
+            </subsection>
 
-            <section name="Caldav (calendar)">
+            <subsection name="Caldav (calendar)">
                 <p>
                     <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
                 </p>
@@ -44,9 +46,9 @@
                     on. To detect errors at this level, you may activate calendar log settings
                     under Tools/Options/Advanced:
                 </p>
-                <source>calendar.debug.log=true
-                    calendar.debug.log.verbose=true
-                </source>
+                <source>
+calendar.debug.log=true
+calendar.debug.log.verbose=true</source>
 
                 <p>
                     <strong>Invalid notifications</strong>
@@ -59,22 +61,27 @@
                 </p>
                 <source>calendar.caldav.sched.enabled=true</source>
 
-            </section>
+            </subsection>
 
-            <section name="Build">
+            <subsection name="Build">
                 <p>
                     <strong>How to build DavMail ?</strong>
                 </p>
                 <p>Building DavMail is quite simple:</p>
                 <ul>
                     <li>Make sure you have Java 6 installed and set as current version by checking
-                        JAVA_HOME:<br/>
+                        JAVA_HOME:
+                        <br/>
                         <ul>
-                            <li>Unix/OSX: <source>echo $JAVA_HOME</source></li>
-                            <li>Windows: <source>echo %JAVA_HOME%</source></li>
+                            <li>Unix/OSX:
+                                <source>echo $JAVA_HOME</source>
+                            </li>
+                            <li>Windows:
+                                <source>echo %JAVA_HOME%</source>
+                            </li>
                         </ul>
                     </li>
-                    <li>Download and unzip ant from<a href="http://ant.apache.org/">ant.apache.org</a>,
+                    <li>Download and unzip ant from <a href="http://ant.apache.org/">ant.apache.org</a>,
                         add ant/bin full path to the PATH environment variable
                     </li>
                     <li>Get DavMail source package from sourceforge and uncompress it:
@@ -89,7 +96,7 @@
                 </ul>
                 <p>Packages are then available under dist
                 </p>
-            </section>
+            </subsection>
         </section>
     </body>
 </document>

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-
-<document>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Thunderbird directory setup</title>
@@ -13,22 +14,22 @@
             <p>DavMail Directory support is now available to access Exchange address book through LDAP.
             </p>
 
-            <section name="Create a new LDAP directory">
+            <subsection name="Create a new LDAP directory">
                 <p>Open Thunderbird address book and choose File/New/LDAP Directory:</p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdDirectory1.png"/>
+                    <img src="images/thunderbirdDirectory1.png" alt=""/>
                 </div>
 
-                <p>Choose a name, host is always localhost, LDAP base context <code>ou=people</code>,
+                <p>Choose a name, host is always localhost, LDAP base context<code>ou=people</code>,
                     adjust port to your settings and set user to your Active Directory account name,
                     i.e. domain\account. Leave other options to default values.
                 </p>
                 <p>You may also want to use this directory for mail completion in compoze window :
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdDirectory2.png"/>
+                    <img src="images/thunderbirdDirectory2.png" alt=""/>
                 </div>
-            </section>
+            </subsection>
         </section>
     </body>
 </document>
