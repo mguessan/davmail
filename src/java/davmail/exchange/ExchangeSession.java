@@ -742,7 +742,7 @@ public class ExchangeSession {
                 "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n" +
                 "                      AND (\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')";
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(mailPath), searchRequest);
+                httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest);
 
         for (MultiStatusResponse response : responses) {
             folders.add(buildFolder(response));
