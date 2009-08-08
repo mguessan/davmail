@@ -1536,7 +1536,6 @@ public class ExchangeSession {
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
         boolean isAppleiCal = false;
         boolean hasOrganizer = false;
-        boolean hasAttendee = false;
         boolean invalidTimezoneId = false;
         String eventClass = null;
 
@@ -1565,8 +1564,6 @@ public class ExchangeSession {
                         eventClass = value;
                     } else if (!isAppleiCal && "CLASS".equals(key)) {
                         eventClass = value;
-                    } else if (key.startsWith("ATTENDEE")) {
-                        hasAttendee = true;
                     } else if (key.startsWith("ORGANIZER")) {
                         hasOrganizer = true;
                     } else if (key.startsWith("DTSTART;TZID=\"")) {
@@ -1643,8 +1640,8 @@ public class ExchangeSession {
                             result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
                         }
                     }
-                    // remove organizer line if event has no attendees for iPhone
-                } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
+                    // remove organizer line if user is organizer for iPhone
+                } else if (fromServer && line.startsWith("ORGANIZER") && line.toLowerCase().endsWith(email)) {
                     continue;
                     // add organizer line to all events created in Exchange for active sync
                 } else if (!fromServer && "END:VEVENT".equals(line) && !hasOrganizer) {
