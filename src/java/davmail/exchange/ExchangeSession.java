@@ -1536,7 +1536,9 @@ public class ExchangeSession {
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
         boolean isAppleiCal = false;
         boolean hasOrganizer = false;
-        boolean invalidTimezoneId = false;
+        boolean hasAttendee = false;
+        boolean hasCdoBusyStatus = false;
+        String validTimezoneId = null;
         String eventClass = null;
 
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
@@ -1566,8 +1568,16 @@ public class ExchangeSession {
                         eventClass = value;
                     } else if (key.startsWith("ORGANIZER")) {
                         hasOrganizer = true;
-                    } else if (key.startsWith("DTSTART;TZID=\"")) {
-                        invalidTimezoneId = true;
+                    } else if (key.startsWith("ATTENDEE")) {
+                        hasAttendee = true;
+                    } else if (line.startsWith("TZID:(GMT")) {
+                        try {
+                            validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
+                        } catch (MissingResourceException mre) {
+                            LOGGER.warn(new BundleMessage("LOG_INVALID_TIMEZONE", value));
+                        }
+                    } else if (key.equals("X-MICROSOFT-CDO-BUSYSTATUS")) {
+                        hasCdoBusyStatus = true;
                     }
                 }
             }
@@ -1589,11 +1599,13 @@ public class ExchangeSession {
                     continue;
                 }
                 // fix invalid exchange timezoneid
-                if (invalidTimezoneId && line.indexOf(";TZID=\"") >= 0) {
-                    line = fixTimezoneId(line);
+                if (validTimezoneId != null && line.indexOf(";TZID=\"") >= 0) {
+                    line = fixTimezoneId(line, validTimezoneId);
                 }
                 if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
+                } else if (!fromServer && "END:VEVENT".equals(line) && !hasCdoBusyStatus) {
+                    result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:BUSY");
                 } else if (!fromServer && "END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
                     result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
                 } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
@@ -1602,8 +1614,8 @@ public class ExchangeSession {
                     line = getAllDayLine(line);
                 } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
                     line = getAllDayLine(line);
-                } else if (line.startsWith("TZID:") && invalidTimezoneId) {
-                    line = "TZID:TimezoneId";
+                } else if (line.startsWith("TZID:") && validTimezoneId != null) {
+                    line = "TZID:" + validTimezoneId;
                 } else if ("BEGIN:VEVENT".equals(line)) {
                     currentAllDayState = allDayStates.get(count++);
                 } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
@@ -1641,7 +1653,7 @@ public class ExchangeSession {
                         }
                     }
                     // remove organizer line if user is organizer for iPhone
-                } else if (fromServer && line.startsWith("ORGANIZER") && line.toLowerCase().endsWith(email)) {
+                } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
                     continue;
                     // add organizer line to all events created in Exchange for active sync
                 } else if (!fromServer && "END:VEVENT".equals(line) && !hasOrganizer) {
@@ -1656,13 +1668,13 @@ public class ExchangeSession {
         return result.toString();
     }
 
-    protected String fixTimezoneId(String line) {
+    protected String fixTimezoneId(String line, String validTimezoneId) {
         int startIndex = line.indexOf("TZID=\"");
-        int endIndex = line.indexOf('"', startIndex+6);
-        if (startIndex >= 0 && endIndex >=0) {
-            return line.substring(0, startIndex+5)+"TimezoneId"+line.substring(endIndex+1);
+        int endIndex = line.indexOf('"', startIndex + 6);
+        if (startIndex >= 0 && endIndex >= 0) {
+            return line.substring(0, startIndex + 5) + validTimezoneId + line.substring(endIndex + 1);
         } else {
-           return line;
+            return line;
         }
     }
 
