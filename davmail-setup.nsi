@@ -97,7 +97,7 @@ Section "MainSection" SEC01
   File "dist\lib\slf4j-api-1.3.1.jar"
   File "dist\lib\slf4j-log4j12-1.3.1.jar"
   File "dist\lib\stax-api-1.0.1.jar"
-  File "dist\lib\swt-3.4-win32-x86.jar"
+  File "dist\lib\swt-3.5-win32-x86.jar"
   File "dist\lib\wstx-asl-3.2.7.jar"
   File "dist\lib\xercesImpl-2.8.1.jar"
 
@@ -167,7 +167,7 @@ no_quest:
   Delete "$INSTDIR\lib\slf4j-api-1.3.1.jar"
   Delete "$INSTDIR\lib\slf4j-log4j12-1.3.1.jar"
   Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
-  Delete "$INSTDIR\lib\swt-3.4-win32-x86.jar"
+  Delete "$INSTDIR\lib\swt-3.5-win32-x86.jar"
   Delete "$INSTDIR\lib\wstx-asl-3.2.7.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
