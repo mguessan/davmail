@@ -1538,6 +1538,7 @@ public class ExchangeSession {
         boolean hasOrganizer = false;
         boolean hasAttendee = false;
         boolean hasCdoBusyStatus = false;
+        String transp = null;
         String validTimezoneId = null;
         String eventClass = null;
 
@@ -1570,6 +1571,8 @@ public class ExchangeSession {
                         hasOrganizer = true;
                     } else if (key.startsWith("ATTENDEE")) {
                         hasAttendee = true;
+                    } else if ("TRANSP".equals(key)) {
+                        transp = value;
                     } else if (line.startsWith("TZID:(GMT")) {
                         try {
                             validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
@@ -1605,7 +1608,9 @@ public class ExchangeSession {
                 if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
                 } else if (!fromServer && "END:VEVENT".equals(line) && !hasCdoBusyStatus) {
-                    result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:BUSY");
+                    result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
+                } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
+                    line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
                 } else if (!fromServer && "END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
                     result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
                 } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
