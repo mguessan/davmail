@@ -48,7 +48,7 @@ public final class DavGatewayHttpClientFacade {
 
     static final long ONE_MINUTE = 60000;
 
-    static Thread httpConnectionManagerThread ;
+    static Thread httpConnectionManagerThread;
 
     static {
         DavGatewayHttpClientFacade.start();
@@ -229,11 +229,13 @@ public final class DavGatewayHttpClientFacade {
                 "</d:searchrequest>";
         DavMethodBase searchMethod = new DavMethodBase(path) {
 
-            @Override public String getName() {
+            @Override
+            public String getName() {
                 return "SEARCH";
             }
 
-            @Override protected boolean isSuccess(int statusCode) {
+            @Override
+            protected boolean isSuccess(int statusCode) {
                 return statusCode == 207;
             }
         };
@@ -310,7 +312,13 @@ public final class DavGatewayHttpClientFacade {
      * @return Http Exception
      */
     public static HttpException buildHttpException(HttpMethod method) {
-        return new HttpException(method.getStatusCode() + " " + method.getStatusText());
+        int status = method.getStatusCode();
+        // 440 means forbidden on Exchange
+        if (status == 440) {
+            return new HttpException(HttpStatus.SC_FORBIDDEN + " " + HttpStatus.getStatusText(HttpStatus.SC_FORBIDDEN));
+        } else {
+            return new HttpException(method.getStatusCode() + " " + method.getStatusText());
+        }
     }
 
     public static void stop() {
@@ -328,7 +336,8 @@ public final class DavGatewayHttpClientFacade {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
             multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
             httpConnectionManagerThread = new Thread(HttpConnectionManager.class.getSimpleName()) {
-                @Override public void run() {
+                @Override
+                public void run() {
                     boolean terminated = false;
                     while (!terminated) {
                         try {

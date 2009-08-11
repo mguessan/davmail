@@ -1925,6 +1925,10 @@ public class ExchangeSession {
             putmethod.releaseConnection();
         }
         EventResult eventResult = new EventResult();
+        // 440 means forbidden on Exchange
+        if (status == 440) {
+            status = HttpStatus.SC_FORBIDDEN;
+        }
         eventResult.status = status;
         if (putmethod.getResponseHeader("GetETag") != null) {
             eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
