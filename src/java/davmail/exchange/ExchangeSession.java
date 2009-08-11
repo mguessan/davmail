@@ -1573,7 +1573,9 @@ public class ExchangeSession {
                         hasAttendee = true;
                     } else if ("TRANSP".equals(key)) {
                         transp = value;
-                    } else if (line.startsWith("TZID:(GMT")) {
+                    } else if (line.startsWith("TZID:(GMT") ||
+                            // additional test for Outlook created recurring events
+                            line.startsWith("TZID:GMT ")) {
                         try {
                             validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
                         } catch (MissingResourceException mre) {
@@ -1602,7 +1604,7 @@ public class ExchangeSession {
                     continue;
                 }
                 // fix invalid exchange timezoneid
-                if (validTimezoneId != null && line.indexOf(";TZID=\"") >= 0) {
+                if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
                     line = fixTimezoneId(line, validTimezoneId);
                 }
                 if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
@@ -1674,10 +1676,10 @@ public class ExchangeSession {
     }
 
     protected String fixTimezoneId(String line, String validTimezoneId) {
-        int startIndex = line.indexOf("TZID=\"");
-        int endIndex = line.indexOf('"', startIndex + 6);
+        int startIndex = line.indexOf("TZID=");
+        int endIndex = line.indexOf(':', startIndex + 5);
         if (startIndex >= 0 && endIndex >= 0) {
-            return line.substring(0, startIndex + 5) + validTimezoneId + line.substring(endIndex + 1);
+            return line.substring(0, startIndex + 5) + validTimezoneId + line.substring(endIndex);
         } else {
             return line;
         }
