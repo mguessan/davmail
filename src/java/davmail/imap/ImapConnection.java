@@ -49,7 +49,11 @@ public class ImapConnection extends AbstractConnection {
 
     ExchangeSession.Folder currentFolder;
 
-    // Initialize the streams and start the thread
+    /**
+     * Initialize the streams and start the thread.
+     *
+     * @param clientSocket IMAP client socket
+     */
     public ImapConnection(Socket clientSocket) {
         super(ImapConnection.class.getSimpleName(), clientSocket, null);
     }
@@ -705,7 +709,7 @@ public class ImapConnection extends AbstractConnection {
             conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &gt;= ").append(Long.parseLong(tokens.nextToken())).append("");
         } else if ("SMALLER".equals(token)) {
             conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" < ").append(Long.parseLong(tokens.nextToken())).append("");
-        } else if (token.startsWith("SENT")) {
+        } else if (token.startsWith("SENT") || "SINCE".equals(token) || "BEFORE".equals(token)) {
             conditions.append(operator);
             appendDateSearchParam(tokens, token, conditions);
         } else if ("SEEN".equals(token)) {
@@ -740,18 +744,7 @@ public class ImapConnection extends AbstractConnection {
             } else {
                 throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", range);
             }
-        } else if ("BEFORE".equals(token)) {
-            SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-            dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-            String dateToken = tokens.nextToken();
-            try {
-                Date date = parser.parse(dateToken);
-                conditions.append(operator).append("\"urn:schemas:httpmail:datereceived\"<'").append(dateFormatter.format(date)).append('\'');
-            } catch (ParseException e) {
-                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
-            }
-        } else if ("OLD".equals(token) || "RECENT".equals(token)) {
+        } else if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
             // ignore
         } else if (token.indexOf(':') >= 0) {
             // range search
@@ -782,18 +775,25 @@ public class ImapConnection extends AbstractConnection {
         } catch (ParseException e) {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
-        if ("SENTON".equals(token)) {
-            conditions.append("(\"urn:schemas:httpmail:date\" > '")
+        String searchAttribute;
+        if (token.startsWith("SENT")) {
+            searchAttribute = "urn:schemas:httpmail:date";
+        } else {
+             searchAttribute = "DAV:getlastmodified";
+        }
+
+        if (token.endsWith("ON")) {
+            conditions.append("(\"").append(searchAttribute).append("\" > '")
                     .append(dateFormatter.format(startDate))
-                    .append("' AND \"urn:schemas:httpmail:date\" < '")
+                    .append("' AND \"").append(searchAttribute).append("\" < '")
                     .append(dateFormatter.format(endDate))
                     .append("')");
-        } else if ("SENTBEFORE".equals(token)) {
-            conditions.append("\"urn:schemas:httpmail:date\" < '")
+        } else if (token.endsWith("BEFORE")) {
+            conditions.append("\"").append(searchAttribute).append("\" < '")
                     .append(dateFormatter.format(startDate))
                     .append('\'');
-        } else if ("SENTSINCE".equals(token)) {
-            conditions.append("\"urn:schemas:httpmail:date\" >= '")
+        } else if (token.endsWith("SINCE")) {
+            conditions.append("\"").append(searchAttribute).append("\" >= '")
                     .append(dateFormatter.format(startDate))
                     .append('\'');
         }
