@@ -242,7 +242,7 @@ public class ImapConnection extends AbstractConnection {
                                             boolean or = false;
 
                                             while (tokens.hasMoreTokens()) {
-                                                String token = tokens.nextToken();
+                                                String token = tokens.nextToken().toUpperCase();
                                                 if ("OR".equals(token)) {
                                                     or = true;
                                                 } else if (token.startsWith("OR ")) {
