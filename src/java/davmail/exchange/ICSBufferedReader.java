@@ -30,11 +30,19 @@ public class ICSBufferedReader extends BufferedReader {
     protected String nextLine;
     protected final StringBuilder currentLine = new StringBuilder(75);
 
+    /**
+     * Create an ICS reader on the provided reader
+     * @param in input reader
+     * @throws IOException on error
+     */
     public ICSBufferedReader(Reader in) throws IOException {
         super(in);
         nextLine = super.readLine();
     }
 
+    /**
+     * Read a line from input reader, unwrap long lines.
+     */
     @Override
     public String readLine() throws IOException {
         if (nextLine == null) {

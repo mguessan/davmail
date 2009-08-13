@@ -118,6 +118,11 @@ public final class ExchangeSessionFactory {
         return session;
     }
 
+    /**
+     * Send a request to Exchange server to check current settings.
+     * 
+     * @throws IOException if unable to access Exchange server
+     */
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
@@ -187,6 +192,9 @@ public final class ExchangeSessionFactory {
         return up;
     }
 
+    /**
+     * Reset config check status and clear session pool.
+     */
     public static void reset() {
         configChecked = false;
         poolMap.clear();

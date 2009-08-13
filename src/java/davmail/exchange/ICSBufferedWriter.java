@@ -25,6 +25,10 @@ package davmail.exchange;
 public class ICSBufferedWriter {
     final StringBuilder buffer = new StringBuilder();
 
+    /**
+     * Write line to buffer, split lines at 75 characters.
+     * @param line ics event line
+     */
     public void writeLine(String line) {
         if (line.length() > 75) {
             buffer.append(line.substring(0, 75));
@@ -37,10 +41,14 @@ public class ICSBufferedWriter {
         }
     }
 
-    public void newLine() {
+    protected void newLine() {
         buffer.append((char) 13).append((char) 10);
     }
 
+    /**
+     * Get buffer as String
+     * @return ICS content as String
+     */
     @Override
     public String toString() {
       return buffer.toString();  

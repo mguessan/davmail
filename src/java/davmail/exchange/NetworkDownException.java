@@ -24,6 +24,10 @@ import davmail.exception.DavMailException;
  * Custom exception to mark network down case.
  */
 public class NetworkDownException extends DavMailException {
+    /**
+     * Build a network down exception with the provided BundleMessage key.
+     * @param key message key
+     */
     public NetworkDownException(String key) {
         super(key);
     }
