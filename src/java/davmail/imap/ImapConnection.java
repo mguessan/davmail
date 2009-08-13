@@ -1014,6 +1014,8 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
+                // Need to reset index for Palm pre
+                currentIndex = 0;
                 while (currentIndex < currentFolder.count() && currentFolder.getImapUid(currentIndex) < startUid) {
                     currentIndex++;
                 }
@@ -1072,6 +1074,8 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
+                // Need to reset index for Palm pre
+                currentIndex = 0;
                 while (currentIndex < currentFolder.count() && (currentIndex + 1) < startUid) {
                     currentIndex++;
                 }
