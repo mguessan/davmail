@@ -310,7 +310,7 @@ public class CaldavConnection extends AbstractConnection {
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
-        String eventName = xmlEncodeName(event.getPath());
+        String eventName = xmlEncodeName(event.getName());
         eventPath.append(URIUtil.encodeWithinQuery(eventName));
         response.startResponse(eventPath.toString());
         response.startPropstat();
@@ -779,7 +779,7 @@ public class CaldavConnection extends AbstractConnection {
         // get freebusy for each attendee
         HashMap<String, ExchangeSession.FreeBusy> freeBusyMap = new HashMap<String, ExchangeSession.FreeBusy>();
         for (String attendee : attendees) {
-            ExchangeSession.FreeBusy freeBusy = session.getFreebusy(attendee, valueMap);
+            ExchangeSession.FreeBusy freeBusy = session.getFreebusy(attendee, valueMap.get("DTSTART"), valueMap.get("DTEND"));
             if (freeBusy != null) {
                 freeBusyMap.put(attendee, freeBusy);
             }

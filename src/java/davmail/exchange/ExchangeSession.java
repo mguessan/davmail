@@ -971,7 +971,7 @@ public class ExchangeSession {
     }
 
     /**
-     * Create Exchange folder
+     * Create Exchange folder.
      *
      * @param folderName logical folder name
      * @throws IOException on error
@@ -992,6 +992,16 @@ public class ExchangeSession {
         if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
+    }
+
+    /**
+     * Delete Exchange folder.
+     * 
+     * @param folderName logical folder name
+     * @throws IOException on error
+     */
+    public void deleteFolder(String folderName) throws IOException {
+        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(folderName)));
     }
 
     /**
@@ -1393,6 +1403,9 @@ public class ExchangeSession {
     public static class MessageList extends ArrayList<Message> {
     }
 
+    /**
+     * Calendar event object
+     */
     public class Event {
         protected String href;
         protected String etag;
@@ -1415,6 +1428,12 @@ public class ExchangeSession {
             return bodyPart;
         }
 
+        /**
+         * Load ICS content from Exchange server.
+         * User Translate: f header to get MIME event content and get ICS attachment from it
+         * @return ICS (iCalendar) event
+         * @throws IOException on error
+         */
         public String getICS() throws IOException {
             String result = null;
             LOGGER.debug("Get event: " + href);
@@ -1455,7 +1474,11 @@ public class ExchangeSession {
             return result;
         }
 
-        public String getPath() {
+        /**
+         * Get event name (file name part in URL).
+         * @return event name
+         */
+        public String getName() {
             int index = href.lastIndexOf('/');
             if (index >= 0) {
                 return href.substring(index + 1);
@@ -1464,11 +1487,21 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Get event etag (last change tag).
+         * @return event etag
+         */
         public String getEtag() {
             return etag;
         }
     }
 
+    /**
+     * Search calendar messages in provided folder.
+     * @param folderPath Exchange folder path
+     * @return list of calendar messages as Event objects
+     * @throws IOException on error
+     */
     public List<Event> getEventMessages(String folderPath) throws IOException {
         String searchQuery = "Select \"DAV:getetag\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
@@ -1478,6 +1511,12 @@ public class ExchangeSession {
         return getEvents(folderPath, searchQuery);
     }
 
+    /**
+     * Search calendar events in provided folder.
+     * @param folderPath Exchange folder path
+     * @return list of calendar events
+     * @throws IOException on error
+     */
     public List<Event> getAllEvents(String folderPath) throws IOException {
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", Integer.MAX_VALUE);
         String dateCondition = "";
@@ -1499,22 +1538,61 @@ public class ExchangeSession {
         return getEvents(folderPath, searchQuery);
     }
 
-    public List<Event> getEvents(String path, String searchQuery) throws IOException {
+
+    /**
+     * Search calendar events or messages in provided folder matching the search query.
+     * @param folderPath Exchange folder path
+     * @param searchQuery Exchange search query
+     * @return list of calendar messages as Event objects
+     * @throws IOException on error
+     */
+    protected List<Event> getEvents(String folderPath, String searchQuery) throws IOException {
         List<Event> events = new ArrayList<Event>();
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(path), searchQuery);
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(folderPath), searchQuery);
         for (MultiStatusResponse response : responses) {
             events.add(buildEvent(response));
         }
         return events;
     }
 
-    public Event getEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(path + '/' + eventName);
+    /**
+     * Get event named eventName in folder
+     * @param folderPath Exchange folder path
+     * @param eventName event name
+     * @return event object
+     * @throws IOException on error
+     */
+    public Event getEvent(String folderPath, String eventName) throws IOException {
+        String eventPath = URIUtil.encodePath(folderPath + '/' + eventName);
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
         return buildEvent(responses[0]);
+    }
+
+    /**
+     * Delete event named eventName in folder
+     * @param folderPath Exchange folder path
+     * @param eventName event name
+     * @return HTTP status
+     * @throws IOException on error
+     */
+    public int deleteEvent(String folderPath, String eventName) throws IOException {
+        String eventPath = URIUtil.encodePath(folderPath + '/' + eventName);
+        int status;
+        if (inboxUrl.endsWith(folderPath)) {
+            // do not delete calendar messages, mark read and processed
+            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+            list.add(new DefaultDavProperty(DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:")), "CALDAV:schedule-processed"));
+            list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
+            PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
+            DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
+            status = HttpStatus.SC_OK;
+        } else {
+            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        }
+        return status;
     }
 
     protected Event buildEvent(MultiStatusResponse calendarResponse) throws URIException {
@@ -1581,7 +1659,7 @@ public class ExchangeSession {
                         } catch (MissingResourceException mre) {
                             LOGGER.warn(new BundleMessage("LOG_INVALID_TIMEZONE", value));
                         }
-                    } else if (key.equals("X-MICROSOFT-CDO-BUSYSTATUS")) {
+                    } else if ("X-MICROSOFT-CDO-BUSYSTATUS".equals(key)) {
                         hasCdoBusyStatus = true;
                     }
                 }
@@ -1712,11 +1790,26 @@ public class ExchangeSession {
     }
 
 
+    /**
+     * Event result object to hold HTTP status and event etag from an event creation/update.
+     */
     public static class EventResult {
+        /**
+         * HTTP status
+         */
         public int status;
+        /**
+         * Event etag from response HTTP header
+         */
         public String etag;
     }
 
+    /**
+     * Build and send the MIME message for the provided ICS event.
+     * @param icsBody event in iCalendar format
+     * @return HTTP status
+     * @throws IOException on error
+     */
     public int sendEvent(String icsBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(draftsUrl + '/' + UUID.randomUUID().toString() + ".EML");
         int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
@@ -1732,8 +1825,18 @@ public class ExchangeSession {
         }
     }
 
-    public EventResult createOrUpdateEvent(String path, String eventName, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = URIUtil.encodePath(path + '/' + eventName);
+    /**
+     * Create or update event on the Exchange server
+     * @param folderPath Exchange folder path
+     * @param eventName event name
+     * @param icsBody event body in iCalendar format
+     * @param etag previous event etag to detect concurrent updates
+     * @param noneMatch if-none-match header value
+     * @return HTTP response event result (status and etag)
+     * @throws IOException on error
+     */
+    public EventResult createOrUpdateEvent(String folderPath, String eventName, String icsBody, String etag, String noneMatch) throws IOException {
+        String messageUrl = URIUtil.encodePath(folderPath + '/' + eventName);
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
@@ -1936,37 +2039,31 @@ public class ExchangeSession {
         return eventResult;
     }
 
-
-    public void deleteFolder(String path) throws IOException {
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(path)));
-    }
-
-    public int deleteEvent(String path, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(path + '/' + eventName);
-        int status;
-        if (inboxUrl.endsWith(path)) {
-            // do not delete calendar messages, mark read and processed
-            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
-            list.add(new DefaultDavProperty(DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:")), "CALDAV:schedule-processed"));
-            list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
-            PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
-            DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
-            status = HttpStatus.SC_OK;
-        } else {
-            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
-        }
-        return status;
-    }
-
+    /**
+     * Get folder ctag (change tag).
+     * This flag changes whenever folder or folder content changes
+     *
+     * @param folderPath Exchange folder path 
+     * @return folder ctag
+     * @throws IOException on error
+     */
     public String getFolderCtag(String folderPath) throws IOException {
         return getFolderProperty(folderPath, CONTENT_TAG);
     }
 
+    /**
+     * Get folder resource tag.
+     * Same as etag for folders, changes when folder (not content) changes
+     *
+     * @param folderPath Exchange folder path
+     * @return folder resource tag
+     * @throws IOException on error
+     */
     public String getFolderResourceTag(String folderPath) throws IOException {
         return getFolderProperty(folderPath, RESOURCE_TAG);
     }
 
-    public String getFolderProperty(String folderPath, DavPropertyNameSet davPropertyNameSet) throws IOException {
+    protected String getFolderProperty(String folderPath, DavPropertyNameSet davPropertyNameSet) throws IOException {
         String result;
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(folderPath), 0, davPropertyNameSet);
@@ -2015,6 +2112,10 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Get user alias from mailbox display name over Webdav.
+     * @return user alias
+     */
     public String getAliasFromMailboxDisplayName() {
         if (mailPath == null) {
             return null;
@@ -2034,6 +2135,17 @@ public class ExchangeSession {
         return displayName;
     }
 
+    /**
+     * Build Caldav calendar path for principal and folder name.
+     * - prefix is current user mailbox path if principal is current user,
+     *   else prefix is parent folder of current user mailbox path followed by principal
+     * - suffix according to well known folder names (internationalized on Exchange)
+     *
+     * @param principal calendar principal
+     * @param folderName requested folder name
+     * @return Exchange folder path
+     * @throws IOException on error
+     */
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
@@ -2070,6 +2182,12 @@ public class ExchangeSession {
         }
     }
 
+    /**
+     * Get user email from global address list (galfind).
+     *
+     * @param alias user alias
+     * @return user email
+     */
     public String getEmail(String alias) {
         String emailResult = null;
         if (alias != null) {
@@ -2098,6 +2216,12 @@ public class ExchangeSession {
         return emailResult;
     }
 
+    /**
+     * Determine user email through various means.
+     *
+     * @param hostName Exchange server host name for last failover
+     * @param methodPath current httpclient method path
+     */
     public void buildEmail(String hostName, String methodPath) {
         // first try to get email from login name
         alias = getAliasFromLogin();
@@ -2259,6 +2383,12 @@ public class ExchangeSession {
         return results;
     }
 
+    /**
+     * Get extended address book information for person with gallookup.
+     * Does not work with Exchange 2007
+     *
+     * @param person person attributes map
+     */
     public void galLookup(Map<String, String> person) {
         if (!disableGalLookup) {
             GetMethod getMethod = null;
@@ -2287,10 +2417,17 @@ public class ExchangeSession {
         }
     }
 
-    public FreeBusy getFreebusy(String attendee, Map<String, String> valueMap) throws IOException {
+    /**
+     * Get freebusy info for attendee between start and end date.
+     * 
+     * @param attendee attendee email
+     * @param startDateValue start date
+     * @param endDateValue end date
+     * @return FreeBusy info
+     * @throws IOException on error
+     */
+    public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
 
-        String startDateValue = valueMap.get("DTSTART");
-        String endDateValue = valueMap.get("DTEND");
         if (attendee.startsWith("mailto:")) {
             attendee = attendee.substring("mailto:".length());
         }
@@ -2415,6 +2552,10 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Append freebusy information to buffer.
+         * @param buffer String buffer
+         */
         public void appendTo(StringBuilder buffer) {
             for (Map.Entry<String, StringBuilder> entry : busyMap.entrySet()) {
                 buffer.append("FREEBUSY;FBTYPE=").append(entry.getKey())

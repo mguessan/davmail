@@ -27,6 +27,9 @@ import java.net.Socket;
  * Calendar server, handle HTTP Caldav requests.
  */
 public class CaldavServer extends AbstractServer {
+    /**
+     * Default HTTP Caldav port
+     */
     public static final int DEFAULT_PORT = 80;
 
     /**
