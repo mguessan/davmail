@@ -105,6 +105,13 @@ public final class DavGatewayHttpClientFacade {
     public static void configureClient(HttpClient httpClient) {
         httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
 
+        ArrayList<String> authPrefs = new ArrayList<String>();
+        authPrefs.add(AuthPolicy.DIGEST);
+        authPrefs.add(AuthPolicy.BASIC);
+        // set NTLM as last authentication scheme
+        authPrefs.add(AuthPolicy.NTLM);
+        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
+
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
         int proxyPort = 0;
