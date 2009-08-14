@@ -2563,5 +2563,7 @@ public class ExchangeSession {
             }
         }
     }
-
+public HttpClient getHttpClient() {
+    return httpClient;
+}
 }

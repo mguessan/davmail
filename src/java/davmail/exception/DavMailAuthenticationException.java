@@ -23,7 +23,8 @@ package davmail.exception;
  */
 public class DavMailAuthenticationException extends DavMailException {
     /**
-     * Create a DavMail exception with the given BundleMessage key
+     * Create a DavMail authentication exception with the given BundleMessage key.
+     *
      * @param key message key
      */
     public DavMailAuthenticationException(String key) {

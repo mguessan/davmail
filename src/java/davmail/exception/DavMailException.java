@@ -29,23 +29,50 @@ import java.util.Locale;
 public class DavMailException extends IOException {
     private final BundleMessage message;
 
+    /**
+     * Create a DavMail exception with the given BundleMessage key and arguments.
+     *
+     * @param key message key
+     * @param arguments message values
+     */
     public DavMailException(String key, Object... arguments) {
          this.message = new BundleMessage(key, arguments);
     }
 
+    /**
+     * Get formatted message
+     *
+     * @return formatted message
+     */
     @Override
     public String getMessage() {
         return message.format();
     }
 
+    /**
+     * Get formatted message using locale.
+     *
+     * @param locale locale
+     * @return localized formatted message
+     */
     public String getMessage(Locale locale) {
         return message.format(locale);
     }
 
+    /**
+     * Get formatted message for logging.
+     *
+     * @return english formatted message
+     */
     public String getLogMessage() {
         return message.formatLog();
     }
 
+    /**
+     * Get internal exception BundleMessage.
+     *
+     * @return unformatted message
+     */
     public BundleMessage getBundleMessage() {
         return message;
     }
