@@ -82,17 +82,7 @@ public final class DavGatewayHttpClientFacade {
         String userName = httpURL.getUser();
         String password = httpURL.getPassword();
         AuthScope authScope = new AuthScope(httpURL.getHost(), httpURL.getPort(), AuthScope.ANY_REALM);
-        // detect ntlm authentication (windows domain name in user name)
-        int backslashindex = userName.indexOf('\\');
-        if (backslashindex > 0) {
-            httpClient.getState().setCredentials(authScope,
-                    new NTCredentials(userName.substring(backslashindex + 1),
-                            password, httpURL.getHost(),
-                            userName.substring(0, backslashindex)));
-        } else {
-            httpClient.getState().setCredentials(authScope,
-                    new UsernamePasswordCredentials(userName, password));
-        }
+        httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
         configureClient(httpClient);
         return httpClient;
     }
@@ -108,8 +98,7 @@ public final class DavGatewayHttpClientFacade {
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.DIGEST);
         authPrefs.add(AuthPolicy.BASIC);
-        // set NTLM as last authentication scheme
-        authPrefs.add(AuthPolicy.NTLM);
+        // exclude the NTLM authentication scheme
         httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
