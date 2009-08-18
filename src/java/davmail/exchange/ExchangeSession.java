@@ -151,22 +151,7 @@ public class ExchangeSession {
         try {
             boolean isBasicAuthentication = isBasicAuthentication(poolKey.url);
 
-            // get proxy configuration from setttings properties
-            URL urlObject = new URL(poolKey.url);
-            // webdavresource is unable to create the correct url type
-            HttpURL httpURL;
-            if (poolKey.url.startsWith("http://")) {
-                httpURL = new HttpURL(poolKey.userName, poolKey.password,
-                        urlObject.getHost(), urlObject.getPort());
-            } else if (poolKey.url.startsWith("https://")) {
-                httpURL = new HttpsURL(poolKey.userName, poolKey.password,
-                        urlObject.getHost(), urlObject.getPort());
-            } else {
-                throw new DavMailException("LOG_INVALID_URL", poolKey.url);
-            }
-
-
-            httpClient = DavGatewayHttpClientFacade.getInstance(httpURL);
+            httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url, poolKey.userName, poolKey.password);
             // avoid 401 roundtrips
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
 

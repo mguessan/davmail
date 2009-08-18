@@ -20,6 +20,7 @@ package davmail.http;
 
 import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -37,6 +38,7 @@ import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.net.URL;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -73,16 +75,19 @@ public final class DavGatewayHttpClientFacade {
         return httpClient;
     }
 
-    public static HttpClient getInstance(HttpURL httpURL) throws URIException {
+    public static HttpClient getInstance(String url, String userName, String password) throws DavMailException {
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
-        hostConfig.setHost(httpURL);
-        String userName = httpURL.getUser();
-        String password = httpURL.getPassword();
-        AuthScope authScope = new AuthScope(httpURL.getHost(), httpURL.getPort(), AuthScope.ANY_REALM);
-        httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
+        try {
+            URI httpURI = new URI(url, true); 
+            hostConfig.setHost(httpURI);
+            AuthScope authScope = new AuthScope(httpURI.getHost(), httpURI.getPort(), AuthScope.ANY_REALM);
+            httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
+        } catch (URIException e) {
+            throw new DavMailException("LOG_INVALID_URL", url);
+        }
         configureClient(httpClient);
         return httpClient;
     }
