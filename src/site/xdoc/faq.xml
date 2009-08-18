@@ -13,6 +13,24 @@
         <section name="Frequently asked questions">
             <p>Frequently asked questions on DavMail forums, mailing list or direct email.
             </p>
+            <subsection name="Feedback">
+                <p>
+                    <strong>How do I create a WIRE debug log ?</strong>
+                </p>
+                <p>In DavMail trackers and forums, I often ask for a WIRE debug log. To create this
+                    log file, you will need to change DavMail settings under the advanced tab.
+                    Set the WIRE logging category to DEBUG level.
+                </p>
+                <p>You can then reproduce you issue and send the log file to
+                    <a href="mailto:mguessan@free.fr">mguessan@free.fr</a>
+                </p>
+                <p>The davmail.log file is available in DavMail working directory on Unix and Windows,
+                    ~/Library/Logs/DavMail/davmail.log on OSX. This default path can be customized with
+                    the
+                    <code>Log File Path</code>
+                    setting.
+                </p>
+            </subsection>
             <subsection name="General">
                 <p>
                     <strong>Authentication fails with invalid user or password message</strong>
@@ -47,8 +65,9 @@
                     under Tools/Options/Advanced:
                 </p>
                 <source>
-calendar.debug.log=true
-calendar.debug.log.verbose=true</source>
+                    calendar.debug.log=true
+                    calendar.debug.log.verbose=true
+                </source>
 
                 <p>
                     <strong>Invalid notifications</strong>
@@ -81,7 +100,7 @@ calendar.debug.log.verbose=true</source>
                             </li>
                         </ul>
                     </li>
-                    <li>Download and unzip ant from <a href="http://ant.apache.org/">ant.apache.org</a>,
+                    <li>Download and unzip ant from<a href="http://ant.apache.org/">ant.apache.org</a>,
                         add ant/bin full path to the PATH environment variable
                     </li>
                     <li>Get DavMail source package from sourceforge and uncompress it:
