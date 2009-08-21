@@ -18,8 +18,8 @@
  */
 package davmail.http;
 
-import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
@@ -28,17 +28,16 @@ import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
-import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.net.URL;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -75,13 +74,22 @@ public final class DavGatewayHttpClientFacade {
         return httpClient;
     }
 
+    /**
+     * Build an HttpClient instance for the provided url and credentials.
+     *
+     * @param url      http(s) url
+     * @param userName user name
+     * @param password user password
+     * @return HttpClient instance
+     * @throws DavMailException on error
+     */
     public static HttpClient getInstance(String url, String userName, String password) throws DavMailException {
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
         HostConfiguration hostConfig = httpClient.getHostConfiguration();
         try {
-            URI httpURI = new URI(url, true); 
+            URI httpURI = new URI(url, true);
             hostConfig.setHost(httpURI);
             AuthScope authScope = new AuthScope(httpURI.getHost(), httpURI.getPort(), AuthScope.ANY_REALM);
             httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
@@ -163,6 +171,12 @@ public final class DavGatewayHttpClientFacade {
         return status;
     }
 
+    /**
+     * Check if status is a redirect (various 30x values).
+     *
+     * @param status Http status
+     * @return true if status is a redirect
+     */
     public static boolean isRedirect(int status) {
         return status == HttpStatus.SC_MOVED_PERMANENTLY
                 || status == HttpStatus.SC_MOVED_TEMPORARILY
@@ -185,6 +199,14 @@ public final class DavGatewayHttpClientFacade {
         return executeFollowRedirects(httpClient, method);
     }
 
+    /**
+     * Execute method with httpClient, follow 30x redirects.
+     *
+     * @param httpClient Http client instance
+     * @param method     Http method
+     * @return last http method after redirects
+     * @throws IOException on error
+     */
     public static HttpMethod executeFollowRedirects(HttpClient httpClient, HttpMethod method) throws IOException {
         HttpMethod currentMethod = method;
         try {
@@ -259,6 +281,14 @@ public final class DavGatewayHttpClientFacade {
         return executeMethod(httpClient, propFindMethod);
     }
 
+    /**
+     * Execute a delete method on the given path with httpClient.
+     *
+     * @param httpClient Http client instance
+     * @param path       Path to be deleted
+     * @return Http status
+     * @throws IOException on error
+     */
     public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
         DeleteMethod deleteMethod = new DeleteMethod(path);
 
@@ -296,6 +326,14 @@ public final class DavGatewayHttpClientFacade {
         return responses;
     }
 
+    /**
+     * Execute method with httpClient.
+     *
+     * @param httpClient Http client instance
+     * @param method     Http method
+     * @return Http status
+     * @throws IOException on error
+     */
     public static int executeHttpMethod(HttpClient httpClient, HttpMethod method) throws IOException {
         int status = 0;
         try {
@@ -322,6 +360,9 @@ public final class DavGatewayHttpClientFacade {
         }
     }
 
+    /**
+     * Stop HttpConnectionManager.
+     */
     public static void stop() {
         if (multiThreadedHttpConnectionManager != null) {
             if (httpConnectionManagerThread != null) {
@@ -332,6 +373,9 @@ public final class DavGatewayHttpClientFacade {
         }
     }
 
+    /**
+     * Create and start a new HttpConnectionManager, close idle connections every minute. 
+     */
     public static void start() {
         if (multiThreadedHttpConnectionManager == null) {
             multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();

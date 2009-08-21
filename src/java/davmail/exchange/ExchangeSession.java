@@ -981,7 +981,7 @@ public class ExchangeSession {
 
     /**
      * Delete Exchange folder.
-     * 
+     *
      * @param folderName logical folder name
      * @throws IOException on error
      */
@@ -1416,6 +1416,7 @@ public class ExchangeSession {
         /**
          * Load ICS content from Exchange server.
          * User Translate: f header to get MIME event content and get ICS attachment from it
+         *
          * @return ICS (iCalendar) event
          * @throws IOException on error
          */
@@ -1461,6 +1462,7 @@ public class ExchangeSession {
 
         /**
          * Get event name (file name part in URL).
+         *
          * @return event name
          */
         public String getName() {
@@ -1474,6 +1476,7 @@ public class ExchangeSession {
 
         /**
          * Get event etag (last change tag).
+         *
          * @return event etag
          */
         public String getEtag() {
@@ -1483,6 +1486,7 @@ public class ExchangeSession {
 
     /**
      * Search calendar messages in provided folder.
+     *
      * @param folderPath Exchange folder path
      * @return list of calendar messages as Event objects
      * @throws IOException on error
@@ -1498,6 +1502,7 @@ public class ExchangeSession {
 
     /**
      * Search calendar events in provided folder.
+     *
      * @param folderPath Exchange folder path
      * @return list of calendar events
      * @throws IOException on error
@@ -1526,7 +1531,8 @@ public class ExchangeSession {
 
     /**
      * Search calendar events or messages in provided folder matching the search query.
-     * @param folderPath Exchange folder path
+     *
+     * @param folderPath  Exchange folder path
      * @param searchQuery Exchange search query
      * @return list of calendar messages as Event objects
      * @throws IOException on error
@@ -1542,8 +1548,9 @@ public class ExchangeSession {
 
     /**
      * Get event named eventName in folder
+     *
      * @param folderPath Exchange folder path
-     * @param eventName event name
+     * @param eventName  event name
      * @return event object
      * @throws IOException on error
      */
@@ -1558,8 +1565,9 @@ public class ExchangeSession {
 
     /**
      * Delete event named eventName in folder
+     *
      * @param folderPath Exchange folder path
-     * @param eventName event name
+     * @param eventName  event name
      * @return HTTP status
      * @throws IOException on error
      */
@@ -1791,6 +1799,7 @@ public class ExchangeSession {
 
     /**
      * Build and send the MIME message for the provided ICS event.
+     *
      * @param icsBody event in iCalendar format
      * @return HTTP status
      * @throws IOException on error
@@ -1812,11 +1821,12 @@ public class ExchangeSession {
 
     /**
      * Create or update event on the Exchange server
+     *
      * @param folderPath Exchange folder path
-     * @param eventName event name
-     * @param icsBody event body in iCalendar format
-     * @param etag previous event etag to detect concurrent updates
-     * @param noneMatch if-none-match header value
+     * @param eventName  event name
+     * @param icsBody    event body in iCalendar format
+     * @param etag       previous event etag to detect concurrent updates
+     * @param noneMatch  if-none-match header value
      * @return HTTP response event result (status and etag)
      * @throws IOException on error
      */
@@ -2028,7 +2038,7 @@ public class ExchangeSession {
      * Get folder ctag (change tag).
      * This flag changes whenever folder or folder content changes
      *
-     * @param folderPath Exchange folder path 
+     * @param folderPath Exchange folder path
      * @return folder ctag
      * @throws IOException on error
      */
@@ -2099,6 +2109,7 @@ public class ExchangeSession {
 
     /**
      * Get user alias from mailbox display name over Webdav.
+     *
      * @return user alias
      */
     public String getAliasFromMailboxDisplayName() {
@@ -2123,10 +2134,10 @@ public class ExchangeSession {
     /**
      * Build Caldav calendar path for principal and folder name.
      * - prefix is current user mailbox path if principal is current user,
-     *   else prefix is parent folder of current user mailbox path followed by principal
+     * else prefix is parent folder of current user mailbox path followed by principal
      * - suffix according to well known folder names (internationalized on Exchange)
      *
-     * @param principal calendar principal
+     * @param principal  calendar principal
      * @param folderName requested folder name
      * @return Exchange folder path
      * @throws IOException on error
@@ -2204,7 +2215,7 @@ public class ExchangeSession {
     /**
      * Determine user email through various means.
      *
-     * @param hostName Exchange server host name for last failover
+     * @param hostName   Exchange server host name for last failover
      * @param methodPath current httpclient method path
      */
     public void buildEmail(String hostName, String methodPath) {
@@ -2404,10 +2415,10 @@ public class ExchangeSession {
 
     /**
      * Get freebusy info for attendee between start and end date.
-     * 
-     * @param attendee attendee email
+     *
+     * @param attendee       attendee email
      * @param startDateValue start date
-     * @param endDateValue end date
+     * @param endDateValue   end date
      * @return FreeBusy info
      * @throws IOException on error
      */
@@ -2539,6 +2550,7 @@ public class ExchangeSession {
 
         /**
          * Append freebusy information to buffer.
+         *
          * @param buffer String buffer
          */
         public void appendTo(StringBuilder buffer) {
@@ -2548,7 +2560,12 @@ public class ExchangeSession {
             }
         }
     }
-public HttpClient getHttpClient() {
-    return httpClient;
-}
+
+    /**
+     * Return internal HttpClient instance
+     * @return http client
+     */
+    public HttpClient getHttpClient() {
+        return httpClient;
+    }
 }

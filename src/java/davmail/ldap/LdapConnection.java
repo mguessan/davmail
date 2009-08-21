@@ -295,7 +295,11 @@ public class LdapConnection extends AbstractConnection {
      */
     int ldapVersion = LDAP_VERSION3;
 
-    // Initialize the streams and start the thread
+    /**
+     * Initialize the streams and start the thread.
+     *
+     * @param clientSocket LDAP client socket
+     */
     public LdapConnection(Socket clientSocket) {
         super(LdapConnection.class.getSimpleName(), clientSocket);
         try {

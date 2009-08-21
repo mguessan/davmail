@@ -28,6 +28,9 @@ import java.net.Socket;
  * Pop3 server
  */
 public class ImapServer extends AbstractServer {
+    /**
+     * Default IMAP port
+     */
     public static final int DEFAULT_PORT = 143;
 
     /**

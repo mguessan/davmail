@@ -27,6 +27,9 @@ import java.net.Socket;
  * LDAP server, handle LDAP directory requests.
  */
 public class LdapServer extends AbstractServer {
+    /**
+     * Default LDAP port
+     */
     public static final int DEFAULT_PORT = 389;
 
     /**

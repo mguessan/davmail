@@ -42,6 +42,12 @@ import java.io.InputStreamReader;
 public class DavGatewayX509TrustManager implements X509TrustManager {
     private final X509TrustManager standardTrustManager;
 
+    /**
+     * Create a new custom X509 trust manager.
+     *
+     * @throws NoSuchAlgorithmException on error
+     * @throws KeyStoreException        on error
+     */
     public DavGatewayX509TrustManager() throws NoSuchAlgorithmException, KeyStoreException {
         TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         factory.init((KeyStore) null);
@@ -130,6 +136,12 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         return yes.equals(answer);
     }
 
+    /**
+     * Get rdn value from principal dn.
+     *
+     * @param principal security principal
+     * @return rdn
+     */
     public static String getRDN(Principal principal) {
         String dn = principal.getName();
         int start = dn.indexOf('=');
@@ -141,6 +153,12 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         }
     }
 
+    /**
+     * Build a formatted certificate serial string.
+     *
+     * @param certificate X509 certificate
+     * @return formatted serial
+     */
     public static String getFormattedSerial(X509Certificate certificate) {
         StringBuilder builder = new StringBuilder();
         String serial = certificate.getSerialNumber().toString(16);
@@ -153,6 +171,12 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         return builder.toString().toUpperCase();
     }
 
+    /**
+     * Build a formatted hash string.
+     *
+     * @param certificate X509 certificate
+     * @return formatted hash
+     */
     public static String getFormattedHash(X509Certificate certificate) {
         String sha1Hash;
         try {
@@ -167,7 +191,13 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         return sha1Hash;
     }
 
-    public static String formatHash(byte[] buffer) {
+    /**
+     * Format byte buffer to a hexadecimal hash string.
+     *
+     * @param buffer byte array
+     * @return hexadecimal hash string
+     */
+    protected static String formatHash(byte[] buffer) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < buffer.length; i++) {
             if (i > 0) {

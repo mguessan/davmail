@@ -39,7 +39,11 @@ import java.util.ArrayList;
  */
 public class SmtpConnection extends AbstractConnection {
 
-    // Initialize the streams and start the thread
+    /**
+     * Initialize the streams and start the thread.
+     *
+     * @param clientSocket SMTP client socket
+     */
     public SmtpConnection(Socket clientSocket) {
         super(SmtpConnection.class.getSimpleName(), clientSocket, null);
     }

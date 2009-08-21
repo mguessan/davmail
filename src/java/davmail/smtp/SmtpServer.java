@@ -23,7 +23,13 @@ import davmail.AbstractServer;
 
 import java.net.Socket;
 
+/**
+ * SMTP server, handle message send requests.
+ */
 public class SmtpServer extends AbstractServer {
+    /**
+     * Default SMTP Caldav port
+     */
     public static final int DEFAULT_PORT = 25;
 
     /**

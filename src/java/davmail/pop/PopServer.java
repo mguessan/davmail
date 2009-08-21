@@ -28,6 +28,9 @@ import java.net.Socket;
  * Pop3 server
  */
 public class PopServer extends AbstractServer {
+    /**
+     * Default POP port
+     */
     public static final int DEFAULT_PORT = 110;
 
     /**
