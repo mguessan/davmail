@@ -114,6 +114,9 @@ public class ExchangeSession {
         RESOURCE_TAG.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
+    protected static final DavPropertyName DEFAULT_SCHEDULE_STATE_PROPERTY = DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:"));
+    protected DavPropertyName scheduleStateProperty = DEFAULT_SCHEDULE_STATE_PROPERTY;
+
     /**
      * Various standard mail boxes Urls
      */
@@ -1492,12 +1495,24 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> getEventMessages(String folderPath) throws IOException {
-        String searchQuery = "Select \"DAV:getetag\"" +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
-                "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
-                "                AND (NOT \"CALDAV:schedule-state\" = 'CALDAV:schedule-processed')\n" +
-                "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
-        return getEvents(folderPath, searchQuery);
+        List<Event> result;
+        try {
+            String searchQuery = "Select \"DAV:getetag\"" +
+                    "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
+                    "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
+                    "                AND (NOT \"" + scheduleStateProperty.getNamespace().getURI() + scheduleStateProperty.getName() + "\" = 'CALDAV:schedule-processed')\n" +
+                    "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
+            result = getEvents(folderPath, searchQuery);
+        } catch (HttpException e) {
+            // failover to DAV:content property on some Exchange servers
+            if (DEFAULT_SCHEDULE_STATE_PROPERTY.equals(scheduleStateProperty)) {
+                scheduleStateProperty = DavPropertyName.create("comment", Namespace.getNamespace("DAV:"));
+                result = getEventMessages(folderPath);
+            } else {
+                throw e;
+            }
+        }
+        return result;
     }
 
     /**
@@ -1577,7 +1592,7 @@ public class ExchangeSession {
         if (inboxUrl.endsWith(folderPath)) {
             // do not delete calendar messages, mark read and processed
             ArrayList<DavProperty> list = new ArrayList<DavProperty>();
-            list.add(new DefaultDavProperty(DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:")), "CALDAV:schedule-processed"));
+            list.add(new DefaultDavProperty(scheduleStateProperty, "CALDAV:schedule-processed"));
             list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
             PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
             DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
@@ -2563,6 +2578,7 @@ public class ExchangeSession {
 
     /**
      * Return internal HttpClient instance
+     *
      * @return http client
      */
     public HttpClient getHttpClient() {
