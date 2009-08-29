@@ -85,6 +85,7 @@ public class ExchangeSession {
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("sendmsg", URN_SCHEMAS_HTTPMAIL));
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("drafts", URN_SCHEMAS_HTTPMAIL));
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("calendar", URN_SCHEMAS_HTTPMAIL));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("contacts", URN_SCHEMAS_HTTPMAIL));
     }
 
     protected static final DavPropertyNameSet DISPLAY_NAME = new DavPropertyNameSet();
@@ -126,6 +127,7 @@ public class ExchangeSession {
     private String sendmsgUrl;
     private String draftsUrl;
     private String calendarUrl;
+    private String contactsUrl;
 
     /**
      * Base user mailboxes path (used to select folder)
@@ -511,12 +513,14 @@ public class ExchangeSession {
         sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg", URN_SCHEMAS_HTTPMAIL);
         draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
         calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
+        contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
         LOGGER.debug("Inbox URL : " + inboxUrl +
                 " Trash URL : " + deleteditemsUrl +
                 " Sent URL : " + sentitemsUrl +
                 " Send URL : " + sendmsgUrl +
                 " Drafts URL : " + draftsUrl +
-                " Calendar URL : " + calendarUrl
+                " Calendar URL : " + calendarUrl +
+                " Contacts URL : " + contactsUrl
         );
     }
 
@@ -1983,7 +1987,7 @@ public class ExchangeSession {
                 writer.write(participants.organizer);
                 writer.write("\r\n");
             }
-            // if not organizer, set REPLYTIME to force Outlook in attendee mode 
+            // if not organizer, set REPLYTIME to force Outlook in attendee mode
             if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
                 if (icsBody.indexOf("METHOD:") < 0) {
                     icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
@@ -2395,6 +2399,112 @@ public class ExchangeSession {
     }
 
     /**
+     * Search users in contacts folder
+     *
+     * @param searchFilter search filter
+     * @return List of users
+     * @throws IOException on error
+     */
+    public Map<String, Map<String, String>> contactFind(String searchFilter) throws IOException {
+        StringBuilder searchRequest = new StringBuilder();
+        searchRequest.append("Select \"DAV:uid\", \"urn:schemas:contacts:email1\", \"urn:schemas:contacts:cn\"," +
+                " \"urn:schemas:contacts:givenName\",\"urn:schemas:contacts:sn\", \"urn:schemas:contacts:title\"," +
+                "\"urn:schemas:contacts:o\", \"urn:schemas:contacts:location\", \"urn:schemas:contacts:department\"," +
+                "\"urn:schemas:contacts:telephoneNumber\", \"urn:schemas:contacts:initials\", \"urn:schemas:contacts:street\"," +
+                "\"urn:schemas:contacts:st\", \"urn:schemas:contacts:c\", \"urn:schemas:contacts:mobile\"")
+                .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n");
+        if (searchFilter != null) {
+            searchRequest.append("                WHERE ").append(searchFilter);
+        }
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
+                httpClient, URIUtil.encodePath(contactsUrl), searchRequest.toString());
+
+        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+        Map<String, String> item;
+        for (MultiStatusResponse response : responses) {
+            DavPropertySet properties = response.getProperties(HttpStatus.SC_OK);
+            // TODO: improve mapping
+            String uid = getPropertyIfExists(properties, "uid", Namespace.getNamespace("DAV:"));
+            String email1 = getPropertyIfExists(properties, "email1", Namespace.getNamespace("urn:schemas:contacts:"));
+            // patch email
+            if (email1 != null && email1.startsWith("\"")) {
+                int endIndex = email1.indexOf('\"', 1);
+                if (endIndex > 0) {
+                    email1 = email1.substring(1, endIndex);
+                }
+            }
+            String cn = getPropertyIfExists(properties, "cn", Namespace.getNamespace("urn:schemas:contacts:"));
+            String givenName = getPropertyIfExists(properties, "givenName", Namespace.getNamespace("urn:schemas:contacts:"));
+            String sn = getPropertyIfExists(properties, "sn", Namespace.getNamespace("urn:schemas:contacts:"));
+            String title = getPropertyIfExists(properties, "title", Namespace.getNamespace("urn:schemas:contacts:"));
+            String company = getPropertyIfExists(properties, "o", Namespace.getNamespace("urn:schemas:contacts:"));
+            String location = getPropertyIfExists(properties, "location", Namespace.getNamespace("urn:schemas:contacts:"));
+            String department = getPropertyIfExists(properties, "department", Namespace.getNamespace("urn:schemas:contacts:"));
+
+            String telephoneNumber = getPropertyIfExists(properties, "telephoneNumber", Namespace.getNamespace("urn:schemas:contacts:"));
+            String initials = getPropertyIfExists(properties, "initials", Namespace.getNamespace("urn:schemas:contacts:"));
+            String street = getPropertyIfExists(properties, "street", Namespace.getNamespace("urn:schemas:contacts:"));
+            String st = getPropertyIfExists(properties, "st", Namespace.getNamespace("urn:schemas:contacts:"));
+            String postalcode = getPropertyIfExists(properties, "postalcode", Namespace.getNamespace("urn:schemas:contacts:"));
+            String c = getPropertyIfExists(properties, "c", Namespace.getNamespace("urn:schemas:contacts:"));
+            String mobile = getPropertyIfExists(properties, "mobile", Namespace.getNamespace("urn:schemas:contacts:"));
+            item = new HashMap<String, String>();
+            if (uid != null) {
+                item.put("AN", uid);
+            }
+            if (email1 != null) {
+                item.put("EM", email1);
+            }
+            if (cn != null) {
+                item.put("DN", cn);
+            }
+            if (givenName != null) {
+                item.put("first", givenName);
+            }
+            if (sn != null) {
+                item.put("last", sn);
+            }
+            if (title != null) {
+                item.put("TL", title);
+            }
+            if (company != null) {
+                item.put("CP", company);
+            }
+            if (location != null) {
+                item.put("OFFICE", location);
+            }
+            if (department != null) {
+                item.put("department", department);
+            }
+            if (telephoneNumber != null) {
+                item.put("PH", telephoneNumber);
+            }
+            if (initials != null) {
+                item.put("initials", initials);
+            }
+            if (street != null) {
+                item.put("street", street);
+            }
+            if (st != null) {
+                item.put("state", st);
+            }
+            if (postalcode != null) {
+                item.put("zip", postalcode);
+            }
+            if (c != null) {
+                item.put("country", c);
+            }
+            if (mobile != null) {
+                item.put("mobile", mobile);
+            }
+            results.put(uid, item);
+        }
+
+        LOGGER.debug("contactFind " + searchFilter + ": " + results.size() + " result(s)");
+        return results;
+    }
+
+    /**
      * Get extended address book information for person with gallookup.
      * Does not work with Exchange 2007
      *
@@ -2413,8 +2523,10 @@ public class ExchangeSession {
                 // add detailed information
                 if (!results.isEmpty()) {
                     Map<String, String> fullperson = results.get(person.get("AN").toLowerCase());
-                    for (Map.Entry<String, String> entry : fullperson.entrySet()) {
-                        person.put(entry.getKey(), entry.getValue());
+                    if (fullperson != null) {
+                        for (Map.Entry<String, String> entry : fullperson.entrySet()) {
+                            person.put(entry.getKey(), entry.getValue());
+                        }
                     }
                 }
             } catch (IOException e) {
