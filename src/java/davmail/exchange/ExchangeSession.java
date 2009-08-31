@@ -1277,7 +1277,12 @@ public class ExchangeSession {
                 method = new GetMethod(URIUtil.encodePath(messageUrl));
                 method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
                 method.setRequestHeader("Translate", "f");
-                httpClient.executeMethod(method);
+                // do not follow redirects in expired session
+                method.setFollowRedirects(false);
+                int status = httpClient.executeMethod(method);
+                if (status != HttpStatus.SC_OK) {
+                    throw DavGatewayHttpClientFacade.buildHttpException(method);
+                }
 
                 reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
