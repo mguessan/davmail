@@ -105,8 +105,23 @@
                     </li>
                     <li>Get DavMail source package from sourceforge and uncompress it:
                         <source>tar xvzf davmail-src-*.tgz</source>
+                        <br/>
                         or checkout trunk:
                         <source>svn co http://davmail.svn.sourceforge.net/svnroot/davmail/trunk</source>
+                        <br/>
+                        or get and uncompress tarball from
+                        <a href="http://davmail.svn.sourceforge.net/viewvc/davmail/trunk">
+                            http://davmail.svn.sourceforge.net/viewvc/davmail/trunk
+                        </a>
+                    </li>
+                    <li>Additional step on Windows: Download and install NSIS from
+                        <a href="http://nsis.sourceforge.net">http://nsis.sourceforge.net</a>.
+                        Then get KillProcess plugin from
+                        <a href="http://www.esanu.name/software/index.php/nsis-kill-process/">
+                            http://www.esanu.name/software/index.php/nsis-kill-process/
+                        </a>
+                        or the nsis directory in DavMail source. Copy the processwork.dll
+                        library to NSIS plugin directory.
                     </li>
                     <li>Go into davmail directory root directory (which contains the build.xml file) and
                         type:

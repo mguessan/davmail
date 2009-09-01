@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <document xmlns="http://maven.apache.org/XDOC/2.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
         <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway</title>
@@ -15,6 +15,13 @@
                 server, even from the internet or behind a firewall through Outlook Web Access. DavMail now includes an
                 LDAP gateway to Exchange global address book to allow recipient address completion in mail compoze
                 window and full calendar support with attendees free/busy display.
+            </p>
+            <p>The main goal of DavMail is to provide standard compliant protocols in front of proprietary
+                Exchange. This means LDAP for address book, SMTP to send messages, IMAP to browse messages on the
+                server in any folder, POP to retrieve inbox messages only and Caldav for calendar support.
+                Thus any standard compliant client can be used with Microsoft Exchange.
+            </p>
+            <p>
                 DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows,
                 Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is replaced with a full frame.
                 Tested successfully with the Iphone (gateway running on a server).
