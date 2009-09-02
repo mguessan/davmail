@@ -558,7 +558,12 @@ public class ImapConnection extends AbstractConnection {
                         // Apple Mail: need to build full bodystructure
                         appendBodyStructure(buffer, baos);
                     }
-                    buffer.append(" RFC822.SIZE ").append(rfc822size).append(' ').append("BODY[]");
+                    buffer.append(" RFC822.SIZE ").append(rfc822size).append(' ');
+                    if ("BODY.PEEK[TEXT]".equals(param)) {
+                        buffer.append("BODY[TEXT]");
+                    } else {
+                        buffer.append("BODY[]");
+                    }
                     // partial
                     if (startIndex > 0) {
                         buffer.append('<').append(startIndex).append('>');
@@ -779,7 +784,7 @@ public class ImapConnection extends AbstractConnection {
         if (token.startsWith("SENT")) {
             searchAttribute = "urn:schemas:httpmail:date";
         } else {
-             searchAttribute = "DAV:getlastmodified";
+            searchAttribute = "DAV:getlastmodified";
         }
 
         if (token.endsWith("ON")) {
