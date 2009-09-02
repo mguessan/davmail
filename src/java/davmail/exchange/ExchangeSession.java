@@ -258,20 +258,22 @@ public class ExchangeSession {
         return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
-    protected String getAbsolutePathOrUri(HttpMethod method, String path) throws URIException {
-        if (path == null) {
-            return method.getURI().getURI();
-        } else if (path.startsWith("/")) {
-            return path;
-        } else {
-            String currentPath = method.getPath();
-            int end = currentPath.lastIndexOf('/');
-            if (end >= 0) {
-                return currentPath.substring(0, end + 1) + path;
+    protected String getAbsoluteUri(HttpMethod method, String path) throws URIException {
+        URI uri = method.getURI();
+        if (path != null) {
+            if (path.startsWith("/")) {
+                uri.setPath(path);
             } else {
-                return path;
+                String currentPath = method.getPath();
+                int end = currentPath.lastIndexOf('/');
+                if (end >= 0) {
+                    uri.setPath(currentPath.substring(0, end + 1) + path);
+                } else {
+                    throw new URIException(uri.getURI());
+                }
             }
         }
+        return uri.getURI();
     }
 
     /**
@@ -296,7 +298,7 @@ public class ExchangeSession {
                 TagNode form = (TagNode) forms.get(0);
                 String logonMethodPath = form.getAttributeByName("action");
 
-                logonMethod = new PostMethod(getAbsolutePathOrUri(initmethod, logonMethodPath));
+                logonMethod = new PostMethod(getAbsoluteUri(initmethod, logonMethodPath));
 
                 List inputList = form.getElementListByName("input", true);
                 for (Object input : inputList) {
@@ -333,7 +335,7 @@ public class ExchangeSession {
                                     int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
                                     int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        String src = getAbsolutePathOrUri(initmethod,
+                                        String src = getAbsoluteUri(initmethod,
                                                 scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
                                                         scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
                                         LOGGER.debug("Detected script based logon, redirect to form at " + src);
@@ -382,6 +384,7 @@ public class ExchangeSession {
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
         ((PostMethod) logonMethod).addParameter("username", userName);
         ((PostMethod) logonMethod).addParameter("password", password);
+        ((PostMethod) logonMethod).addParameter("trusted", "4");
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
         // test form based authentication
