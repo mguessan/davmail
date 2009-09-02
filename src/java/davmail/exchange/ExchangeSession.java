@@ -2171,8 +2171,7 @@ public class ExchangeSession {
 
         // Write a part of the message that contains the
         // ICS description so that invites contain the description text
-
-        String description = getICSDescription(icsBody);
+        String description = getICSDescription(icsBody).replaceAll("\\\\[Nn]", "\r\n");
 
         if (description.length() > 0) {
             writer.write("\r\n" +
