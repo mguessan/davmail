@@ -520,6 +520,12 @@ public class ImapConnection extends AbstractConnection {
                     PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0);
                     message.write(partOutputStream);
                     baos.close();
+
+                    if (bodystructure) {
+                        bodystructure = false;
+                        // Apple Mail: need to build full bodystructure
+                        appendBodyStructure(buffer, baos);
+                    }
                     buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                     if ("BODY.PEEK[HEADER]".equals(param)) {
                         buffer.append(" BODY[HEADER] {");
@@ -555,6 +561,7 @@ public class ImapConnection extends AbstractConnection {
                     baos.close();
 
                     if (bodystructure) {
+                        bodystructure = false;
                         // Apple Mail: need to build full bodystructure
                         appendBodyStructure(buffer, baos);
                     }
