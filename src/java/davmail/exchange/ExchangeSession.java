@@ -262,8 +262,10 @@ public class ExchangeSession {
         URI uri = method.getURI();
         if (path != null) {
             if (path.startsWith("/")) {
+                // path is absolute, replace method path
                 uri.setPath(path);
             } else {
+                // relative path, build new path
                 String currentPath = method.getPath();
                 int end = currentPath.lastIndexOf('/');
                 if (end >= 0) {
@@ -335,9 +337,11 @@ public class ExchangeSession {
                                     int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
                                     int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        String src = getAbsoluteUri(initmethod,
-                                                scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
+                                        URI initmethodURI = initmethod.getURI();
+                                        initmethodURI.setQuery(
+                                                scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
                                                         scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
+                                        String src = initmethodURI.getURI();
                                         LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
@@ -350,9 +354,11 @@ public class ExchangeSession {
                                         int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
                                         int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                         if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                            String src = initmethod.getPath() +
-                                                    scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
-                                                    scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                            URI initmethodURI = initmethod.getURI();
+                                            initmethodURI.setQuery(
+                                                scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
+                                                        scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
+                                            String src = initmethodURI.getURI();
                                             LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                             HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                             logonMethod = buildLogonMethod(httpClient, newInitMethod);
