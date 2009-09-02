@@ -45,6 +45,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
+import javax.mail.internet.MimeUtility;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -1620,6 +1621,41 @@ public class ExchangeSession {
         return event;
     }
 
+    private static int dumpIndex = 1;
+    private static String defaultSound = "Basso";
+
+    protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
+        // additional setting to activate ICS dump (not available in GUI)
+        if (Settings.getBooleanProperty("davmail.dumpICS")) {
+            StringBuilder filePath = new StringBuilder();
+            filePath.append(Settings.getLogFileDirectory()).append('/')
+                    .append(dumpIndex)
+                    .append(after ? "-to" : "-from")
+                    .append((after ^ fromServer) ? "-server" : "-client")
+                    .append(".ics");
+            if ((icsBody != null) && (icsBody.length() > 0)) {
+                FileWriter fileWriter = null;
+                try {
+                    fileWriter = new FileWriter(filePath.toString());
+                    fileWriter.write(icsBody);
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                } finally {
+                    if (fileWriter != null) {
+                        try {
+                            fileWriter.close();
+                        } catch (IOException e) {
+                            LOGGER.error(e);
+                        }
+                    }
+                }
+
+
+            }
+        }
+
+    }
+
     protected String fixICS(String icsBody, boolean fromServer) throws IOException {
         // first pass : detect
         class AllDayState {
@@ -1627,15 +1663,21 @@ public class ExchangeSession {
             boolean hasCdoAllDay;
             boolean isCdoAllDay;
         }
+
+        dumpIndex++;
+        dumpICS(icsBody, fromServer, false);
+
         // Convert event class from and to iCal
         // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
         boolean isAppleiCal = false;
-        boolean hasOrganizer = false;
         boolean hasAttendee = false;
         boolean hasCdoBusyStatus = false;
         String transp = null;
         String validTimezoneId = null;
         String eventClass = null;
+        String organizer = null;
+        String action = null;
+        boolean sound = false;
 
         List<AllDayState> allDayStates = new ArrayList<AllDayState>();
         AllDayState currentAllDayState = new AllDayState();
@@ -1657,13 +1699,27 @@ public class ExchangeSession {
                         allDayStates.add(currentAllDayState);
                         currentAllDayState = new AllDayState();
                     } else if ("PRODID".equals(key) && line.contains("iCal")) {
+                        // detect iCal created events
                         isAppleiCal = true;
                     } else if (isAppleiCal && "X-CALENDARSERVER-ACCESS".equals(key)) {
                         eventClass = value;
                     } else if (!isAppleiCal && "CLASS".equals(key)) {
                         eventClass = value;
+                    } else if ("ACTION".equals(key)) {
+                        action = value;
+                    } else if ("ATTACH;VALUES=URI".equals(key)) {
+                        // This is a marker that this event has an alarm with sound
+                        sound = true;
+                        // Set the default sound to whatever this event contains
+                        // (under assumption that the user has the same sound set
+                        //  for all events)
+                        defaultSound = value;
                     } else if (key.startsWith("ORGANIZER")) {
-                        hasOrganizer = true;
+                        if (value.startsWith("MAILTO:")) {
+                            organizer = value.substring(7);
+                        } else {
+                            organizer = value;
+                        }
                     } else if (key.startsWith("ATTENDEE")) {
                         hasAttendee = true;
                     } else if ("TRANSP".equals(key)) {
@@ -1742,6 +1798,54 @@ public class ExchangeSession {
                     // Apple iCal doesn't understand this key, and it's entourage
                     // specific (i.e. not needed by any caldav client): strip it out
                     continue;
+                } else if (fromServer && line.startsWith("ATTENDEE;")
+                        && (line.indexOf(email) >= 0)) {
+                    // If this is coming from the server, strip out RSVP for this
+                    // user as an attendee where the partstat is something other
+                    // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
+                    // thinking the attendee has not replied
+
+                    int rsvpSuffix = line.indexOf("RSVP=TRUE;");
+                    int rsvpPrefix = line.indexOf(";RSVP=TRUE");
+
+                    if (((rsvpSuffix >= 0) || (rsvpPrefix >= 0))
+                            && (line.indexOf("PARTSTAT=") >= 0)
+                            && (line.indexOf("PARTSTAT=NEEDS-ACTION") < 0)) {
+
+                        // Strip out the "RSVP" line from the calendar entry
+                        if (rsvpSuffix >= 0) {
+                            line = line.substring(0, rsvpSuffix) + line.substring(rsvpSuffix + 10);
+                        } else {
+                            line = line.substring(0, rsvpPrefix) + line.substring(rsvpPrefix + 10);
+                        }
+
+                    }
+                } else if (line.startsWith("ACTION:")) {
+                    if (fromServer && "DISPLAY".equals(action)) {
+                        // Use the default iCal alarm action instead
+                        // of the alarm Action exchange (and blackberry) understand.
+                        // This is a bit of a hack because we don't know what type
+                        // of alarm an iCal user really wants - but we know what the
+                        // default is, and can setup the default action type
+
+                        result.writeLine("ACTION:AUDIO");
+
+                        if (!sound) {
+                            // Add default sound into the audio alarm
+                            result.writeLine("ATTACH;VALUE=URI:" + defaultSound);
+                        }
+
+                        continue;
+                    } else if (!fromServer && "AUDIO".equals(action)) {
+                        // Use the alarm action that exchange (and blackberry) understand
+                        // (exchange and blackberry don't understand audio actions)
+
+                        result.writeLine("ACTION:DISPLAY");
+                        continue;
+                    }
+
+                    // Don't recognize this type of action: pass it through
+
                 } else if (line.startsWith("CLASS:")) {
                     if (isAppleiCal) {
                         continue;
@@ -1758,14 +1862,21 @@ public class ExchangeSession {
                 } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
                     continue;
                     // add organizer line to all events created in Exchange for active sync
-                } else if (!fromServer && "END:VEVENT".equals(line) && !hasOrganizer) {
+                } else if (!fromServer && "END:VEVENT".equals(line) && organizer == null) {
                     result.writeLine("ORGANIZER:MAILTO:" + email);
+                } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
+                    // Ignore organizer as attendee
+                    continue;
                 }
+
                 result.writeLine(line);
             }
         } finally {
             reader.close();
         }
+
+        String resultString = result.toString();
+        dumpICS(resultString, fromServer, true);
 
         return result.toString();
     }
@@ -1872,6 +1983,44 @@ public class ExchangeSession {
         return icsBody.substring(startIndex, endIndex);
     }
 
+    protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
+        BufferedReader reader = null;
+
+        try {
+            reader = new ICSBufferedReader(new StringReader(icsBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith(prefix)) {
+                    return line.substring(prefix.length());
+                }
+            }
+
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+
+        return defval;
+    }
+
+    protected String getICSSummary(String icsBody) throws IOException {
+        return getICSValue(icsBody, "SUMMARY:", BundleMessage.format("MEETING_REQUEST"));
+    }
+
+    protected String getICSDescription(String icsBody) throws IOException {
+        String description = getICSValue(icsBody, "DESCRIPTION:", "");
+
+        if ("reminder".equalsIgnoreCase(description)) {
+            // Ignore this as a description text because
+            // it's likely part of the valarm segment
+            // (the default valarm description from outlook is "reminder")
+            return "";
+        }
+
+        return description;
+    }
+
     static class Participants {
         String attendees;
         String organizer;
@@ -1971,6 +2120,9 @@ public class ExchangeSession {
                 recipients = participants.organizer;
             }
 
+            // Make sure invites have a proper subject line
+            writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
+
             writer.write("To: ");
             writer.write(recipients);
             writer.write("\r\n");
@@ -1979,6 +2131,9 @@ public class ExchangeSession {
                 status = HttpStatus.SC_NO_CONTENT;
             }
         } else {
+            // Make sure invites have a proper subject line
+            writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
+
             // need to parse attendees and organizer to build recipients
             Participants participants = getParticipants(icsBody, false);
             // storing appointment, full recipients header
@@ -2013,6 +2168,26 @@ public class ExchangeSession {
                 "\r\n" +
                 "------=_NextPart_");
         writer.write(uid);
+
+        // Write a part of the message that contains the
+        // ICS description so that invites contain the description text
+
+        String description = getICSDescription(icsBody);
+
+        if (description.length() > 0) {
+            writer.write("\r\n" +
+                    "Content-Type: text/plain;\r\n" +
+                    "\tcharset=\"utf-8\"\r\n" +
+                    "content-transfer-encoding: 8bit\r\n" +
+                    "\r\n");
+            writer.flush();
+            baos.write(description.getBytes("UTF-8"));
+            writer.write("\r\n" +
+                    "------=_NextPart_" +
+                    uid);
+
+        }
+
         writer.write("\r\n" +
                 "Content-class: ");
         writer.write(contentClass);
