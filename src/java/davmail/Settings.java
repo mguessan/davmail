@@ -129,15 +129,44 @@ public class Settings {
     }
 
     /**
-     * Update Log4J config from settings.
+     * Return DavMail log file path
+     * @return full log file path
      */
-    protected static void updateLoggingConfig() {
-        String logFilePath = Settings.getProperty("davmail.logFilePath");
+    public static String getLogFilePath() {
+         String logFilePath = Settings.getProperty("davmail.logFilePath");
         // use default log file path on Mac OS X
-        if ((logFilePath == null || logFilePath.length() == 0) 
+        if ((logFilePath == null || logFilePath.length() == 0)
                 && System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
             logFilePath = System.getProperty("user.home") + "/Library/Logs/DavMail/davmail.log";
         }
+        return logFilePath;
+    }
+
+    /**
+     * Return DavMail log file directory
+     * @return full log file directory
+     */
+    public static String getLogFileDirectory() {
+        String logFilePath = getLogFilePath();
+        if (logFilePath == null || logFilePath.length() == 0) {
+            return "";
+        }
+        int lastSlashIndex = logFilePath.lastIndexOf('/');
+        if (lastSlashIndex == -1) {
+             lastSlashIndex = logFilePath.lastIndexOf('\\');
+        }
+        if (lastSlashIndex >= 0) {
+            return logFilePath.substring(0, lastSlashIndex);
+        } else {
+            return "";
+        }
+    }
+
+    /**
+     * Update Log4J config from settings.
+     */
+    protected static void updateLoggingConfig() {
+        String logFilePath = getLogFilePath();
 
         Logger rootLogger = Logger.getRootLogger();
         try {
