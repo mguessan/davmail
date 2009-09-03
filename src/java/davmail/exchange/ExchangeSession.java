@@ -356,8 +356,8 @@ public class ExchangeSession {
                                         if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
                                             URI initmethodURI = initmethod.getURI();
                                             initmethodURI.setQuery(
-                                                scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
-                                                        scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
+                                                    scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
+                                                            scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
                                             String src = initmethodURI.getURI();
                                             LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                             HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
@@ -2610,82 +2610,26 @@ public class ExchangeSession {
         Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
         Map<String, String> item;
         for (MultiStatusResponse response : responses) {
-            DavPropertySet properties = response.getProperties(HttpStatus.SC_OK);
-            // TODO: improve mapping
-            String uid = getPropertyIfExists(properties, "uid", Namespace.getNamespace("DAV:"));
-            String email1 = getPropertyIfExists(properties, "email1", Namespace.getNamespace("urn:schemas:contacts:"));
-            // patch email
-            if (email1 != null && email1.startsWith("\"")) {
-                int endIndex = email1.indexOf('\"', 1);
-                if (endIndex > 0) {
-                    email1 = email1.substring(1, endIndex);
-                }
-            }
-            String cn = getPropertyIfExists(properties, "cn", Namespace.getNamespace("urn:schemas:contacts:"));
-            String givenName = getPropertyIfExists(properties, "givenName", Namespace.getNamespace("urn:schemas:contacts:"));
-            String sn = getPropertyIfExists(properties, "sn", Namespace.getNamespace("urn:schemas:contacts:"));
-            String title = getPropertyIfExists(properties, "title", Namespace.getNamespace("urn:schemas:contacts:"));
-            String company = getPropertyIfExists(properties, "o", Namespace.getNamespace("urn:schemas:contacts:"));
-            String location = getPropertyIfExists(properties, "location", Namespace.getNamespace("urn:schemas:contacts:"));
-            String department = getPropertyIfExists(properties, "department", Namespace.getNamespace("urn:schemas:contacts:"));
-
-            String telephoneNumber = getPropertyIfExists(properties, "telephoneNumber", Namespace.getNamespace("urn:schemas:contacts:"));
-            String initials = getPropertyIfExists(properties, "initials", Namespace.getNamespace("urn:schemas:contacts:"));
-            String street = getPropertyIfExists(properties, "street", Namespace.getNamespace("urn:schemas:contacts:"));
-            String st = getPropertyIfExists(properties, "st", Namespace.getNamespace("urn:schemas:contacts:"));
-            String postalcode = getPropertyIfExists(properties, "postalcode", Namespace.getNamespace("urn:schemas:contacts:"));
-            String c = getPropertyIfExists(properties, "c", Namespace.getNamespace("urn:schemas:contacts:"));
-            String mobile = getPropertyIfExists(properties, "mobile", Namespace.getNamespace("urn:schemas:contacts:"));
             item = new HashMap<String, String>();
-            if (uid != null) {
-                item.put("AN", uid);
+
+            DavPropertySet properties = response.getProperties(HttpStatus.SC_OK);
+            DavPropertyIterator propertiesIterator = properties.iterator();
+            while (propertiesIterator.hasNext()) {
+                DavProperty property = propertiesIterator.nextProperty();
+                String propertyName = property.getName().getName();
+                String propertyValue = (String) property.getValue();
+                if ("email1".equals(propertyName)) {
+                    propertyName = "mail";
+                    if (propertyValue != null && propertyValue.startsWith("\"")) {
+                        int endIndex = propertyValue.indexOf('\"', 1);
+                        if (endIndex > 0) {
+                            propertyValue = propertyValue.substring(1, endIndex);
+                        }
+                    }
+                }
+                item.put(propertyName, propertyValue);
             }
-            if (email1 != null) {
-                item.put("EM", email1);
-            }
-            if (cn != null) {
-                item.put("DN", cn);
-            }
-            if (givenName != null) {
-                item.put("first", givenName);
-            }
-            if (sn != null) {
-                item.put("last", sn);
-            }
-            if (title != null) {
-                item.put("TL", title);
-            }
-            if (company != null) {
-                item.put("CP", company);
-            }
-            if (location != null) {
-                item.put("OFFICE", location);
-            }
-            if (department != null) {
-                item.put("department", department);
-            }
-            if (telephoneNumber != null) {
-                item.put("PH", telephoneNumber);
-            }
-            if (initials != null) {
-                item.put("initials", initials);
-            }
-            if (street != null) {
-                item.put("street", street);
-            }
-            if (st != null) {
-                item.put("state", st);
-            }
-            if (postalcode != null) {
-                item.put("zip", postalcode);
-            }
-            if (c != null) {
-                item.put("country", c);
-            }
-            if (mobile != null) {
-                item.put("mobile", mobile);
-            }
-            results.put(uid, item);
+            results.put(item.get("uid"), item);
         }
 
         LOGGER.debug("contactFind " + searchFilter + ": " + results.size() + " result(s)");

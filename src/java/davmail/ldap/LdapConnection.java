@@ -496,13 +496,19 @@ public class LdapConnection extends AbstractConnection {
                         if (session != null) {
                             // single user request
                             String uid = dn.substring("uid=".length(), dn.indexOf(','));
-                            Map<String, Map<String, String>> persons = session.galFind("AN", uid);
-                            Map<String, String> person = persons.get(uid.toLowerCase());
-                            // filter out non exact results
-                            if (persons.size() > 1 || person == null) {
-                                persons = new HashMap<String, Map<String, String>>();
-                                if (person != null) {
-                                    persons.put(uid.toLowerCase(), person);
+                            // first search in contact
+                            Map<String, Map<String, String>> persons = session.contactFind("\"DAV:uid\"='" + uid + '\'');
+                            // then in GAL
+                            if (persons.isEmpty()) {
+                                persons = session.galFind("AN", uid);
+
+                                Map<String, String> person = persons.get(uid.toLowerCase());
+                                // filter out non exact results
+                                if (persons.size() > 1 || person == null) {
+                                    persons = new HashMap<String, Map<String, String>>();
+                                    if (person != null) {
+                                        persons.put(uid.toLowerCase(), person);
+                                    }
                                 }
                             }
                             size = persons.size();
@@ -713,23 +719,24 @@ public class LdapConnection extends AbstractConnection {
         boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.isEmpty();
         boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
         boolean returnAllAttributes = returningAttributes.isEmpty();
-        for (Map<String, String> person : persons.values()) {
-            boolean needDetails = returnAllAttributes;
-            if (!needDetails) {
-                for (String attributeName : EXTENDED_ATTRIBUTES) {
-                    if (returningAttributes.contains(attributeName)) {
-                        needDetails = true;
-                        break;
-                    }
+        boolean needDetails = returnAllAttributes;
+        if (!needDetails) {
+            for (String attributeName : EXTENDED_ATTRIBUTES) {
+                if (returningAttributes.contains(attributeName)) {
+                    needDetails = true;
+                    break;
                 }
             }
-            // iCal search, do not lookup details
-            if (iCalSearch) {
-                needDetails = false;
-            }
+        }
+        // iCal search, do not lookup details
+        if (iCalSearch) {
+            needDetails = false;
+        }
 
-            // add detailed information
-            if (needDetails) {
+        for (Map<String, String> person : persons.values()) {
+
+            // add detailed information, only for GAL entries
+            if (needDetails && person.get("AN") != null) {
                 session.galLookup(person);
             }
 
@@ -743,6 +750,10 @@ public class LdapConnection extends AbstractConnection {
                 String ldapAttribute = entry.getKey();
                 String exchangeAttribute = entry.getValue();
                 String value = person.get(exchangeAttribute);
+                // contactFind return ldap attributes directly
+                if (value == null) {
+                    value = person.get(ldapAttribute);
+                }
                 if (value != null
                         && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
                     ldapPerson.put(ldapAttribute, value);
