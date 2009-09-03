@@ -144,6 +144,7 @@ public class ExchangeSession {
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     private static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    private static final String YYYY_MM_DD_T_HHMMSS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     /**
      * Create an exchange session for the given URL.
@@ -213,6 +214,12 @@ public class ExchangeSession {
 
     protected SimpleDateFormat getExchangeZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormat.setTimeZone(GMT_TIMEZONE);
+        return dateFormat;
+    }
+
+    protected SimpleDateFormat getExchangeZuluDateFormatMillisecond() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_SSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
@@ -2595,11 +2602,47 @@ public class ExchangeSession {
      */
     public Map<String, Map<String, String>> contactFind(String searchFilter) throws IOException {
         StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"DAV:uid\", \"urn:schemas:contacts:email1\", \"urn:schemas:contacts:cn\"," +
-                " \"urn:schemas:contacts:givenName\",\"urn:schemas:contacts:sn\", \"urn:schemas:contacts:title\"," +
-                "\"urn:schemas:contacts:o\", \"urn:schemas:contacts:location\", \"urn:schemas:contacts:department\"," +
-                "\"urn:schemas:contacts:telephoneNumber\", \"urn:schemas:contacts:initials\", \"urn:schemas:contacts:street\"," +
-                "\"urn:schemas:contacts:st\", \"urn:schemas:contacts:c\", \"urn:schemas:contacts:mobile\"")
+        searchRequest.append("Select \"DAV:uid\", " +
+                "\"http://schemas.microsoft.com/exchange/extensionattribute1\"," +
+                "\"http://schemas.microsoft.com/exchange/extensionattribute2\"," +
+                "\"http://schemas.microsoft.com/exchange/extensionattribute3\"," +
+                "\"http://schemas.microsoft.com/exchange/extensionattribute4\"," +
+                "\"urn:schemas:contacts:bday\"," +
+                "\"urn:schemas:contacts:businesshomepage\"," +
+                "\"urn:schemas:contacts:c\"," +
+                "\"urn:schemas:contacts:cn\"," +
+                "\"urn:schemas:contacts:co\"," +
+                "\"urn:schemas:contacts:department\"," +
+                "\"urn:schemas:contacts:email1\"," +
+                "\"urn:schemas:contacts:email2\"," +
+                "\"urn:schemas:contacts:facsimiletelephonenumber\"," +
+                "\"urn:schemas:contacts:givenName\"," +
+                "\"urn:schemas:contacts:homeCity\"," +
+                "\"urn:schemas:contacts:homeCountry\"," +
+                "\"urn:schemas:contacts:homePhone\"," +
+                "\"urn:schemas:contacts:homePostalCode\"," +
+                "\"urn:schemas:contacts:homeState\"," +
+                "\"urn:schemas:contacts:homeStreet\"," +
+                "\"urn:schemas:contacts:l\"," +
+                "\"urn:schemas:contacts:manager\"," +
+                "\"urn:schemas:contacts:mobile\"," +
+                "\"urn:schemas:contacts:namesuffix\"," +
+                "\"urn:schemas:contacts:nickname\"," +
+                "\"urn:schemas:contacts:o\"," +
+                "\"urn:schemas:contacts:pager\"," +
+                "\"urn:schemas:contacts:personaltitle\"," +
+                "\"urn:schemas:contacts:postalcode\"," +
+                "\"urn:schemas:contacts:postofficebox\"," +
+                "\"urn:schemas:contacts:profession\"," +
+                "\"urn:schemas:contacts:roomnumber\"," +
+                "\"urn:schemas:contacts:secretarycn\"," +
+                "\"urn:schemas:contacts:sn\"," +
+                "\"urn:schemas:contacts:spousecn\"," +
+                "\"urn:schemas:contacts:st\"," +
+                "\"urn:schemas:contacts:street\"," +
+                "\"urn:schemas:contacts:telephoneNumber\"," +
+                "\"urn:schemas:contacts:title\"," +
+                "\"urn:schemas:httpmail:textdescription\"")
                 .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n");
         if (searchFilter != null) {
             searchRequest.append("                WHERE ").append(searchFilter);
@@ -2618,16 +2661,29 @@ public class ExchangeSession {
                 DavProperty property = propertiesIterator.nextProperty();
                 String propertyName = property.getName().getName();
                 String propertyValue = (String) property.getValue();
-                if ("email1".equals(propertyName)) {
-                    propertyName = "mail";
+                if (propertyName.startsWith("email")) {
                     if (propertyValue != null && propertyValue.startsWith("\"")) {
                         int endIndex = propertyValue.indexOf('\"', 1);
                         if (endIndex > 0) {
                             propertyValue = propertyValue.substring(1, endIndex);
                         }
                     }
+                } else if ("bday".equals(propertyName)) {
+                    SimpleDateFormat parser = getExchangeZuluDateFormatMillisecond();
+                    try {
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTime(parser.parse(propertyValue));
+                        item.put("birthday", String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
+                        item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH)+1));
+                        item.put("birthyear", String.valueOf(calendar.get(Calendar.YEAR)));
+                        propertyValue = null;
+                    } catch (ParseException e) {
+                        throw new IOException(e);
+                    }
                 }
-                item.put(propertyName, propertyValue);
+                if (propertyValue != null && propertyValue.length() > 0) {
+                    item.put(propertyName, propertyValue);
+                }
             }
             results.put(item.get("uid"), item);
         }

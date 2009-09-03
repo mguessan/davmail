@@ -97,6 +97,27 @@ public class LdapConnection extends AbstractConnection {
         ATTRIBUTE_MAP.put("mobile", "mobile");
     }
 
+
+    static final HashMap<String, String> CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
+
+    static {
+        CONTACT_ATTRIBUTE_MAP.put("co", "countryname");
+        CONTACT_ATTRIBUTE_MAP.put("extensionattribute1", "custom1");
+        CONTACT_ATTRIBUTE_MAP.put("extensionattribute2", "custom2");
+        CONTACT_ATTRIBUTE_MAP.put("extensionattribute3", "custom3");
+        CONTACT_ATTRIBUTE_MAP.put("extensionattribute4", "custom4");
+        CONTACT_ATTRIBUTE_MAP.put("email1", "mail");
+        CONTACT_ATTRIBUTE_MAP.put("email2", "xmozillasecondemail");
+        CONTACT_ATTRIBUTE_MAP.put("homeCountry", "mozillahomecountryname");
+        CONTACT_ATTRIBUTE_MAP.put("homeCity", "mozillahomelocalityname");
+        CONTACT_ATTRIBUTE_MAP.put("homePostalCode", "mozillahomepostalcode");
+        CONTACT_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
+        CONTACT_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
+        CONTACT_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
+        CONTACT_ATTRIBUTE_MAP.put("textdescription", "notes");
+        CONTACT_ATTRIBUTE_MAP.put("nickname", "xmozillanickname");
+    }
+
     static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static final String COMPUTER_GUID = "52486C30-F0AB-48E3-9C37-37E9B28CDD7B";
@@ -734,30 +755,39 @@ public class LdapConnection extends AbstractConnection {
         }
 
         for (Map<String, String> person : persons.values()) {
-
-            // add detailed information, only for GAL entries
-            if (needDetails && person.get("AN") != null) {
-                session.galLookup(person);
-            }
-
             returningAttributes.add("uid");
 
             Map<String, Object> ldapPerson = new HashMap<String, Object>();
 
-            // Process all attributes that are mapped from exchange
+            // convert GAL entries
+            if (person.get("AN") != null) {
+                // add detailed information, only for GAL entries
+                if (needDetails) {
+                    session.galLookup(person);
+                }
+                // Process all attributes that are mapped from exchange
+                for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
+                    String ldapAttribute = entry.getKey();
+                    String exchangeAttribute = entry.getValue();
+                    String value = person.get(exchangeAttribute);
+                    // contactFind return ldap attributes directly
+                    if (value == null) {
+                        value = person.get(ldapAttribute);
+                    }
+                    if (value != null
+                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                        ldapPerson.put(ldapAttribute, value);
+                    }
+                }
+            } else {
+                // convert Contact entries
+                for (Map.Entry<String, String> entry : person.entrySet()) {
+                    String contactAttribute = entry.getKey();
+                    String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
+                    String value = entry.getValue();
+                    ldapPerson.put(ldapAttribute == null ? contactAttribute : ldapAttribute, value);
+                }
 
-            for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
-                String ldapAttribute = entry.getKey();
-                String exchangeAttribute = entry.getValue();
-                String value = person.get(exchangeAttribute);
-                // contactFind return ldap attributes directly
-                if (value == null) {
-                    value = person.get(ldapAttribute);
-                }
-                if (value != null
-                        && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
-                    ldapPerson.put(ldapAttribute, value);
-                }
             }
             // iCal: copy cn to sn
             if (iCalSearch && ldapPerson.get("cn") != null) {
