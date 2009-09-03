@@ -40,6 +40,7 @@ public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
     private static final Map<PoolKey, ExchangeSession> poolMap = new HashMap<PoolKey, ExchangeSession>();
     private static boolean configChecked;
+    private static boolean errorSent;
 
     static class PoolKey {
         public final String url;
@@ -110,9 +111,13 @@ public final class ExchangeSessionFactory {
             }
             // session opened, future failure will mean network down
             configChecked = true;
+            // Reset so next time an problem occurs message will be sent once
+            errorSent = false;
         } catch (UnknownHostException exc) {
             handleNetworkDown(exc);
         } catch (NoRouteToHostException exc) {
+            handleNetworkDown(exc);
+        } catch (ConnectException exc) {
             handleNetworkDown(exc);
         }
         return session;
@@ -120,7 +125,7 @@ public final class ExchangeSessionFactory {
 
     /**
      * Send a request to Exchange server to check current settings.
-     * 
+     *
      * @throws IOException if unable to access Exchange server
      */
     public static void checkConfig() throws IOException {
@@ -139,18 +144,12 @@ public final class ExchangeSessionFactory {
             }
             // session opened, future failure will mean network down
             configChecked = true;
-
-        } catch (UnknownHostException exc) {
-            handleNetworkDown(exc);
-        } catch (NoRouteToHostException exc) {
-            handleNetworkDown(exc);
-            // Could not open the port (probably because it is blocked behind a firewall)
-        } catch (ConnectException exc) {
-            handleNetworkDown(exc);
+            // Reset so next time an problem occurs message will be sent once
+            errorSent = false;
         } catch (NetworkDownException exc) {
             throw exc;
         } catch (Exception exc) {
-            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", exc);
+            handleNetworkDown(exc);
         } finally {
             testMethod.releaseConnection();
         }
@@ -163,8 +162,16 @@ public final class ExchangeSessionFactory {
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
         } else {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
-            ExchangeSession.LOGGER.error(message);
-            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
+            if (errorSent) {
+                ExchangeSession.LOGGER.warn(message);
+                throw new NetworkDownException("EXCEPTION_DAVMAIL_CONFIGURATION");
+            } else {
+                // Mark that an error has been sent so you only get one
+                // error in a row (not a repeating string of errors).
+                errorSent = true;
+                ExchangeSession.LOGGER.error(message);
+                throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
+            }
         }
     }
 
@@ -197,6 +204,7 @@ public final class ExchangeSessionFactory {
      */
     public static void reset() {
         configChecked = false;
+        errorSent = false;
         poolMap.clear();
     }
 }
