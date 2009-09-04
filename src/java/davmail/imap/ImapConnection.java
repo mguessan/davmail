@@ -615,6 +615,9 @@ public class ImapConnection extends AbstractConnection {
                 appendBodyStructure(buffer, mimeMessage);
             }
         } catch (MessagingException me) {
+            DavGatewayTray.warn(me);
+            // dump message in log
+            DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", new String(baos.toByteArray())));
             throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", me.getMessage());
         }
     }
