@@ -56,10 +56,18 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
+    /**
+     * Return AWT Image icon for frame title.
+     *
+     * @return frame icon
+     */
     public Image getFrameIcon() {
         return image;
     }
 
+    /**
+     * Switch tray icon between active and standby icon.
+     */
     public void switchIcon() {
         isActive = true;
         SwingUtilities.invokeLater(new Runnable() {
@@ -73,6 +81,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void resetIcon() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -81,6 +92,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void inactiveIcon() {
         isActive = false;
         SwingUtilities.invokeLater(new Runnable() {
@@ -90,10 +104,21 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Check if current tray status is inactive (network down).
+     *
+     * @return true if inactive
+     */
     public boolean isActive() {
         return isActive;
     }
 
+    /**
+     * Display balloon message for log level.
+     *
+     * @param message text message
+     * @param level   log level
+     */
     public void displayMessage(final String message, final Level level) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -115,6 +140,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Open about window
+     */
     public void about() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -124,6 +152,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Open settings window
+     */
     public void preferences() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -133,6 +164,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Create tray icon and register frame listeners.
+     */
     public void init() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {

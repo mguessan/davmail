@@ -34,6 +34,11 @@ public final class XMLStreamUtil {
     private XMLStreamUtil() {
     }
 
+    /**
+     * Build a new XMLInputFactory.
+     *
+     * @return XML input factory
+     */
     public static XMLInputFactory getXmlInputFactory() {
         XMLInputFactory inputFactory = XMLInputFactory.newInstance();
         inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
@@ -41,6 +46,16 @@ public final class XMLStreamUtil {
         return inputFactory;
     }
 
+    /**
+     * Convert the XML stream to a map of entries.
+     * An entry is also a key/value map
+     *
+     * @param inputStream xml input stream
+     * @param rowName     xml tag name of entries
+     * @param idName      xml tag name of entry attribute used as key in the main map
+     * @return map of entries
+     * @throws IOException on error
+     */
     public static Map<String, Map<String, String>> getElementContentsAsMap(InputStream inputStream, String rowName, String idName) throws IOException {
         Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
         Map<String, String> item = null;

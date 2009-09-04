@@ -41,6 +41,11 @@ public class DavGatewayTray {
 
     static DavGatewayTrayInterface davGatewayTray;
 
+    /**
+     * Return AWT Image icon for frame title.
+     *
+     * @return frame icon
+     */
     public static Image getFrameIcon() {
         Image icon = null;
         if (davGatewayTray != null) {
@@ -49,22 +54,39 @@ public class DavGatewayTray {
         return icon;
     }
 
+    /**
+     * Switch tray icon between active and standby icon.
+     */
     public static void switchIcon() {
         if (davGatewayTray != null) {
             davGatewayTray.switchIcon();
         }
     }
 
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public static void resetIcon() {
         if (davGatewayTray != null && isActive()) {
             davGatewayTray.resetIcon();
         }
     }
 
+    /**
+     * Check if current tray status is inactive (network down).
+     *
+     * @return true if inactive
+     */
     public static boolean isActive() {
         return davGatewayTray == null || davGatewayTray.isActive();
     }
 
+    /**
+     * Log and display balloon message according to log level.
+     *
+     * @param message text message
+     * @param level   log level
+     */
     protected static void displayMessage(BundleMessage message, Level level) {
         LOGGER.log(level, message.formatLog());
         if (davGatewayTray != null) {
@@ -72,6 +94,13 @@ public class DavGatewayTray {
         }
     }
 
+    /**
+     * Log and display balloon message and exception according to log level.
+     *
+     * @param message text message
+     * @param e       exception
+     * @param level   log level
+     */
     protected static void displayMessage(BundleMessage message, Exception e, Level level) {
         if (e instanceof NetworkDownException) {
             LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e));
@@ -87,26 +116,57 @@ public class DavGatewayTray {
         }
     }
 
+    /**
+     * Log message at level DEBUG.
+     *
+     * @param message bundle message
+     */
     public static void debug(BundleMessage message) {
         displayMessage(message, Level.DEBUG);
     }
 
+    /**
+     * Log message at level INFO.
+     *
+     * @param message bundle message
+     */
     public static void info(BundleMessage message) {
         displayMessage(message, Level.INFO);
     }
 
+    /**
+     * Log message at level WARN.
+     *
+     * @param message bundle message
+     */
     public static void warn(BundleMessage message) {
         displayMessage(message, Level.WARN);
     }
 
+    /**
+     * Log exception at level WARN.
+     *
+     * @param e exception
+     */
     public static void warn(Exception e) {
         displayMessage(null, e, Level.WARN);
     }
 
+    /**
+     * Log message at level ERROR.
+     *
+     * @param message bundle message
+     */
     public static void error(BundleMessage message) {
         displayMessage(message, Level.ERROR);
     }
 
+    /**
+     * Log exception at level WARN for NetworkDownException,
+     * ERROR for other exceptions.
+     *
+     * @param e exception
+     */
     public static void log(Exception e) {
         // only warn on network down
         if (e instanceof NetworkDownException) {
@@ -116,22 +176,48 @@ public class DavGatewayTray {
         }
     }
 
+    /**
+     * Log exception at level ERROR.
+     *
+     * @param e exception
+     */
     public static void error(Exception e) {
         displayMessage(null, e, Level.ERROR);
     }
 
+    /**
+     * Log message and exception at level DEBUG.
+     *
+     * @param message bundle message
+     * @param e       exception
+     */
     public static void debug(BundleMessage message, Exception e) {
         displayMessage(message, e, Level.DEBUG);
     }
 
+    /**
+     * Log message and exception at level WARN.
+     *
+     * @param message bundle message
+     * @param e       exception
+     */
     public static void warn(BundleMessage message, Exception e) {
         displayMessage(message, e, Level.WARN);
     }
 
+    /**
+     * Log message and exception at level ERROR.
+     *
+     * @param message bundle message
+     * @param e       exception
+     */
     public static void error(BundleMessage message, Exception e) {
         displayMessage(message, e, Level.ERROR);
     }
 
+    /**
+     * Create tray icon and register frame listeners.
+     */
     public static void init() {
         if (!Settings.getBooleanProperty("davmail.server")) {
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();

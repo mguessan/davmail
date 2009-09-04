@@ -56,10 +56,18 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     private final Thread mainThread = Thread.currentThread();
 
+    /**
+     * Return AWT Image icon for frame title.
+     *
+     * @return frame icon
+     */
     public java.awt.Image getFrameIcon() {
         return awtImage;
     }
 
+    /**
+     * Switch tray icon between active and standby icon.
+     */
     public void switchIcon() {
         isActive = true;
         display.syncExec(new Runnable() {
@@ -74,6 +82,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     }
 
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void resetIcon() {
         display.syncExec(new Runnable() {
             public void run() {
@@ -82,6 +93,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void inactiveIcon() {
         isActive = false;
         display.syncExec(new Runnable() {
@@ -91,10 +105,21 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    /**
+     * Check if current tray status is inactive (network down).
+     *
+     * @return true if inactive
+     */
     public boolean isActive() {
         return isActive;
     }
 
+    /**
+     * Log and display balloon message according to log level.
+     *
+     * @param message text message
+     * @param level   log level
+     */
     public void displayMessage(final String message, final Level level) {
         if (trayItem != null) {
             display.asyncExec(new Runnable() {
@@ -138,13 +163,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         return result;
     }
 
+    /**
+     * Create tray icon and register frame listeners.
+     */
     public void init() {
         // set native look and feel
         try {
             String lafClassName = UIManager.getSystemLookAndFeelClassName();
             // workaround for bug when SWT and AWT both try to access Gtk
             if (lafClassName.indexOf("gtk") > 0) {
-                    lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
+                lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
             }
             UIManager.setLookAndFeel(lafClassName);
         } catch (Exception e) {

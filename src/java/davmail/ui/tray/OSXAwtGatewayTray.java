@@ -26,6 +26,11 @@ import davmail.DavGateway;
  * Extended Awt tray with OSX extensions.
  */
 public class OSXAwtGatewayTray extends AwtGatewayTray {
+    /**
+     * Exit DavMail Gateway.
+     *
+     * @return true
+     */
     @SuppressWarnings({"SameReturnValue"})
     public boolean quit() {
         DavGateway.stop();

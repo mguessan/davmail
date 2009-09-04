@@ -31,6 +31,11 @@ import java.awt.event.ActionListener;
  */
 public class OSXFrameGatewayTray extends FrameGatewayTray {
 
+    /**
+     * Exit DavMail Gateway.
+     *
+     * @return true
+     */
     @SuppressWarnings({"SameReturnValue"})
     public boolean quit() {
         DavGateway.stop();

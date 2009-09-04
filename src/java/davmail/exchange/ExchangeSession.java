@@ -1102,7 +1102,6 @@ public class ExchangeSession {
         public boolean noInferiors;
         /**
          * Requested folder name
-         * TODO : same as folderPath ?
          */
         public String folderName;
         /**
