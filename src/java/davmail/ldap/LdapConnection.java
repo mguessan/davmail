@@ -114,8 +114,8 @@ public class LdapConnection extends AbstractConnection {
         CONTACT_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
         CONTACT_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
         CONTACT_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
-        CONTACT_ATTRIBUTE_MAP.put("textdescription", "notes");
-        CONTACT_ATTRIBUTE_MAP.put("nickname", "xmozillanickname");
+        CONTACT_ATTRIBUTE_MAP.put("textdescription", "description");
+        CONTACT_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
     }
 
     static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
@@ -232,11 +232,14 @@ public class LdapConnection extends AbstractConnection {
         CONTACT_MAP.put("givenname", "urn:schemas:contacts:givenName");
         CONTACT_MAP.put("sn", "urn:schemas:contacts:sn");
         CONTACT_MAP.put("title", "urn:schemas:contacts:title");
-        CONTACT_MAP.put("company", "urn:schemas:contacts:company");
-        CONTACT_MAP.put("o", "urn:schemas:contacts:company");
-        CONTACT_MAP.put("l", "urn:schemas:contacts:location");
+        CONTACT_MAP.put("company", "urn:schemas:contacts:o");
+        CONTACT_MAP.put("o", "urn:schemas:contacts:o");
+        CONTACT_MAP.put("l", "urn:schemas:contacts:l");
         CONTACT_MAP.put("department", "urn:schemas:contacts:department");
         CONTACT_MAP.put("apple-group-realname", "urn:schemas:contacts:department");
+        CONTACT_MAP.put("description", "urn:schemas:httpmail:textdescription");
+        CONTACT_MAP.put("mozillahomelocalityname", "urn:schemas:contacts:homeCity");
+        CONTACT_MAP.put("c", "urn:schemas:contacts:co");
     }
 
     /**
@@ -579,15 +582,18 @@ public class LdapConnection extends AbstractConnection {
                             }
                             for (SimpleFilter simpleFilter : ldapFilter.getOrFilterSet()) {
                                 if (persons.size() < sizeLimit) {
-                                    for (Map<String, String> person : session.galFind(simpleFilter.getGalFindAttributeName(), simpleFilter.value).values()) {
-                                        if ((simpleFilter.operator == LDAP_FILTER_SUBSTRINGS)
-                                                // exclude non exact match on exact search
-                                                || (simpleFilter.operator == LDAP_FILTER_EQUALITY &&
-                                                simpleFilter.value.equalsIgnoreCase(person.get(simpleFilter.getGalFindAttributeName())))) {
-                                            persons.put(person.get("AN"), person);
-                                        }
-                                        if (persons.size() == sizeLimit) {
-                                            break;
+                                    String attributeName = simpleFilter.getGalFindAttributeName();
+                                    if (attributeName != null) {
+                                        for (Map<String, String> person : session.galFind(attributeName, simpleFilter.value).values()) {
+                                            if ((simpleFilter.operator == LDAP_FILTER_SUBSTRINGS)
+                                                    // exclude non exact match on exact search
+                                                    || (simpleFilter.operator == LDAP_FILTER_EQUALITY &&
+                                                    simpleFilter.value.equalsIgnoreCase(person.get(attributeName)))) {
+                                                persons.put(person.get("AN"), person);
+                                            }
+                                            if (persons.size() == sizeLimit) {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -965,24 +971,23 @@ public class LdapConnection extends AbstractConnection {
             filterString.append('(').append(simpleFilter.toString()).append(')');
             String attributeName = simpleFilter.getAttributeName();
 
-            // known search attribute
-            if (CRITERIA_MAP.get(attributeName) != null) {
+            // full search (objectclass=*) filter
+            if ("objectclass".equals(attributeName) && SimpleFilter.STAR.equals(simpleFilter.value)) {
+                isFullSearch = true;
+                // known search attribute
+            } else {
                 isFullSearch = false;
                 if (ldapFilterType == 0 || ldapFilterType == LDAP_FILTER_OR) {
                     orCriteria.add(simpleFilter);
                 } else if (ldapFilterType == LDAP_FILTER_AND) {
                     andCriteria.add(simpleFilter);
                 }
-                // full search (objectclass=*) filter
-            } else if ("objectclass".equals(attributeName) && SimpleFilter.STAR.equals(simpleFilter.value)) {
-                isFullSearch = true;
-                // ignore search attribute
-            } else if (IGNORE_MAP.contains(attributeName)) {
-                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_IGNORE_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
                 // unknown search attribute: warn
-            } else {
-                DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
+                if (!IGNORE_MAP.contains(attributeName) && CRITERIA_MAP.get(attributeName) == null && CONTACT_MAP.get(attributeName) == null) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
+                }
             }
+
         }
 
         public String getContactSearchFilter() {
@@ -991,18 +996,24 @@ public class LdapConnection extends AbstractConnection {
             } else {
                 StringBuilder buffer = new StringBuilder();
                 for (SimpleFilter simpleFilter : orCriteria) {
-                    if (buffer.length() > 0) {
-                        buffer.append(" OR ");
+                    String contactAttributeName = simpleFilter.getContactAttributeName();
+                    if (contactAttributeName != null) {
+                        if (buffer.length() > 0) {
+                            buffer.append(" OR ");
+                        }
+                        buffer.append('"').append(contactAttributeName).append('"');
+                        if (simpleFilter.operator == LDAP_FILTER_EQUALITY) {
+                            buffer.append(" = '").append(simpleFilter.value).append('\'');
+                        } else if ("mail".equals(simpleFilter.getAttributeName())) {
+                            buffer.append(" LIKE '\"").append(simpleFilter.value).append("%'");
+                        } else {
+                            buffer.append(" LIKE '").append(simpleFilter.value).append("%'");
+                        }
                     }
-                    buffer.append('"').append(simpleFilter.getContactAttributeName()).append('"');
-                    if (simpleFilter.operator == LDAP_FILTER_EQUALITY) {
-                        buffer.append(" = '").append(simpleFilter.value).append('\'');
-                    } else if ("mail".equals(simpleFilter.getAttributeName())) {
-                        buffer.append(" LIKE '\"").append(simpleFilter.value).append("%'");
-                    } else {
-                        buffer.append(" LIKE '").append(simpleFilter.value).append("%'");
-                    }
-
+                }
+                // if criteria not empty but filter is, add a fake filter
+                if (!orCriteria.isEmpty() && buffer.length() == 0) {
+                    buffer.append("\"DAV:uid\"='#INVALID#'");
                 }
                 return buffer.toString();
             }

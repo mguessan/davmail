@@ -2643,7 +2643,7 @@ public class ExchangeSession {
                 "\"urn:schemas:contacts:title\"," +
                 "\"urn:schemas:httpmail:textdescription\"")
                 .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n");
-        if (searchFilter != null) {
+        if (searchFilter != null && searchFilter.length() > 0) {
             searchRequest.append("                WHERE ").append(searchFilter);
         }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
