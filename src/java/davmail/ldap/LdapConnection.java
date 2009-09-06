@@ -789,9 +789,17 @@ public class LdapConnection extends AbstractConnection {
                 // convert Contact entries
                 for (Map.Entry<String, String> entry : person.entrySet()) {
                     String contactAttribute = entry.getKey();
+                    // get converted attribute name
                     String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
+                    // no conversion, use exchange attribute name
+                    if (ldapAttribute == null){
+                        ldapAttribute = contactAttribute;
+                    }
                     String value = entry.getValue();
-                    ldapPerson.put(ldapAttribute == null ? contactAttribute : ldapAttribute, value);
+                     if (value != null
+                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                        ldapPerson.put(ldapAttribute, value);
+                    }
                 }
 
             }
