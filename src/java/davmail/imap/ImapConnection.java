@@ -1020,18 +1020,21 @@ public class ImapConnection extends AbstractConnection {
             }
         }
 
-        protected void skipToStartUid() {
+        protected void skipToNextRangeStartUid() {
             if (currentRangeIndex < ranges.length) {
                 String currentRange = ranges[currentRangeIndex++];
                 int colonIndex = currentRange.indexOf(':');
                 if (colonIndex > 0) {
                     startUid = convertToLong(currentRange.substring(0, colonIndex));
                     endUid = convertToLong(currentRange.substring(colonIndex + 1));
+                    if (endUid < startUid) {
+                        long swap = endUid;
+                        endUid = startUid;
+                        startUid = swap;
+                    }
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
-                // Need to reset index for Palm pre
-                currentIndex = 0;
                 while (currentIndex < currentFolder.count() && currentFolder.getImapUid(currentIndex) < startUid) {
                     currentIndex++;
                 }
@@ -1040,11 +1043,29 @@ public class ImapConnection extends AbstractConnection {
             }
         }
 
-        public boolean hasNext() {
-            while (currentIndex < currentFolder.count() && currentFolder.getImapUid(currentIndex) > endUid) {
-                skipToStartUid();
-            }
+        protected boolean hasNextInRange() {
+            return hasNextIndex() && currentFolder.getImapUid(currentIndex) <= endUid;
+        }
+
+        protected boolean hasNextIndex() {
             return currentIndex < currentFolder.count();
+        }
+
+        protected boolean hasNextRange() {
+            return currentRangeIndex < ranges.length;
+        }
+
+        public boolean hasNext() {
+            boolean hasNextInRange = hasNextInRange();
+            // if has next range and current index after current range end, reset index
+            if (hasNextRange() && !hasNextInRange) {
+                currentIndex = 0;
+            }
+            while (hasNextIndex() && !hasNextInRange) {
+                skipToNextRangeStartUid();
+                hasNextInRange = hasNextInRange();
+            }
+            return hasNextIndex();
         }
 
         public ExchangeSession.Message next() {
@@ -1080,18 +1101,21 @@ public class ImapConnection extends AbstractConnection {
             }
         }
 
-        protected void skipToStartUid() {
+        protected void skipToNextRangeStart() {
             if (currentRangeIndex < ranges.length) {
                 String currentRange = ranges[currentRangeIndex++];
                 int colonIndex = currentRange.indexOf(':');
                 if (colonIndex > 0) {
                     startUid = convertToLong(currentRange.substring(0, colonIndex));
                     endUid = convertToLong(currentRange.substring(colonIndex + 1));
+                    if (endUid < startUid) {
+                        long swap = endUid;
+                        endUid = startUid;
+                        startUid = swap;
+                    }
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
-                // Need to reset index for Palm pre
-                currentIndex = 0;
                 while (currentIndex < currentFolder.count() && (currentIndex + 1) < startUid) {
                     currentIndex++;
                 }
@@ -1100,11 +1124,29 @@ public class ImapConnection extends AbstractConnection {
             }
         }
 
-        public boolean hasNext() {
-            while (currentIndex < currentFolder.count() && (currentIndex + 1) > endUid) {
-                skipToStartUid();
-            }
+        protected boolean hasNextInRange() {
+            return hasNextIndex() && currentIndex < endUid;
+        }
+
+        protected boolean hasNextIndex() {
             return currentIndex < currentFolder.count();
+        }
+
+        protected boolean hasNextRange() {
+            return currentRangeIndex < ranges.length;
+        }
+
+        public boolean hasNext() {
+            boolean hasNextInRange = hasNextInRange();
+            // if has next range and current index after current range end, reset index
+            if (hasNextRange() && !hasNextInRange) {
+                currentIndex = 0;
+            }
+            while (hasNextIndex() && !hasNextInRange) {
+                skipToNextRangeStart();
+                hasNextInRange = hasNextInRange();
+            }
+            return hasNextIndex();
         }
 
         public ExchangeSession.Message next() {
