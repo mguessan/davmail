@@ -553,7 +553,7 @@ public class LdapConnection extends AbstractConnection {
                         if (ldapFilter.isFullSearch()) {
                             // append personal contacts first
                             for (Map<String, String> person : session.contactFind(null).values()) {
-                                persons.put(person.get("AN"), person);
+                                persons.put(person.get("uid"), person);
                                 if (persons.size() == sizeLimit) {
                                     break;
                                 }
@@ -575,7 +575,7 @@ public class LdapConnection extends AbstractConnection {
                         } else {
                             // append personal contacts first
                             for (Map<String, String> person : session.contactFind(ldapFilter.getContactSearchFilter()).values()) {
-                                persons.put(person.get("AN"), person);
+                                persons.put(person.get("uid"), person);
                                 if (persons.size() == sizeLimit) {
                                     break;
                                 }
@@ -804,7 +804,7 @@ public class LdapConnection extends AbstractConnection {
 
             }
             // iCal: copy cn to sn
-            if (iCalSearch && ldapPerson.get("cn") != null) {
+            if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
                 ldapPerson.put("sn", ldapPerson.get("cn"));
             }
 

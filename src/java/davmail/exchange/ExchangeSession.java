@@ -2642,9 +2642,10 @@ public class ExchangeSession {
                 "\"urn:schemas:contacts:telephoneNumber\"," +
                 "\"urn:schemas:contacts:title\"," +
                 "\"urn:schemas:httpmail:textdescription\"")
-                .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n");
+                .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n")
+                .append("                WHERE \"DAV:contentclass\" = 'urn:content-classes:person' \n");
         if (searchFilter != null && searchFilter.length() > 0) {
-            searchRequest.append("                WHERE ").append(searchFilter);
+            searchRequest.append("                AND ").append(searchFilter);
         }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(contactsUrl), searchRequest.toString());
@@ -2687,7 +2688,7 @@ public class ExchangeSession {
             results.put(item.get("uid"), item);
         }
 
-        LOGGER.debug("contactFind " + searchFilter + ": " + results.size() + " result(s)");
+        LOGGER.debug("contactFind " + ((searchFilter==null)?"":searchFilter) + ": " + results.size() + " result(s)");
         return results;
     }
 
