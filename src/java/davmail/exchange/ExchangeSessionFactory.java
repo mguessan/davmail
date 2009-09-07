@@ -113,11 +113,7 @@ public final class ExchangeSessionFactory {
             configChecked = true;
             // Reset so next time an problem occurs message will be sent once
             errorSent = false;
-        } catch (UnknownHostException exc) {
-            handleNetworkDown(exc);
-        } catch (NoRouteToHostException exc) {
-            handleNetworkDown(exc);
-        } catch (ConnectException exc) {
+        } catch (Exception exc) {
             handleNetworkDown(exc);
         }
         return session;
@@ -146,8 +142,6 @@ public final class ExchangeSessionFactory {
             configChecked = true;
             // Reset so next time an problem occurs message will be sent once
             errorSent = false;
-        } catch (NetworkDownException exc) {
-            throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
         } finally {
