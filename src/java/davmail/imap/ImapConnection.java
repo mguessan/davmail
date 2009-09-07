@@ -618,7 +618,8 @@ public class ImapConnection extends AbstractConnection {
             DavGatewayTray.warn(me);
             // dump message in log
             DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", new String(baos.toByteArray())));
-            throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", me.getMessage());
+            // failover: send default bodystructure
+            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL ").append(baos.size()).append(" NIL)");
         }
     }
 
