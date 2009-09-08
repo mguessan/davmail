@@ -501,9 +501,7 @@ public class ImapConnection extends AbstractConnection {
                         bodystructure = true;
                     } else {
                         // thunderbird : send BODYSTRUCTURE
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        message.write(baos);
-                        appendBodyStructure(buffer, baos);
+                        appendBodyStructure(buffer, message);
                     }
                 } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                     try {
@@ -524,7 +522,7 @@ public class ImapConnection extends AbstractConnection {
                     if (bodystructure) {
                         bodystructure = false;
                         // Apple Mail: need to build full bodystructure
-                        appendBodyStructure(buffer, baos);
+                        appendBodyStructure(buffer, message);
                     }
                     buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                     if ("BODY.PEEK[HEADER]".equals(param)) {
@@ -563,7 +561,7 @@ public class ImapConnection extends AbstractConnection {
                     if (bodystructure) {
                         bodystructure = false;
                         // Apple Mail: need to build full bodystructure
-                        appendBodyStructure(buffer, baos);
+                        appendBodyStructure(buffer, message);
                     }
                     buffer.append(" RFC822.SIZE ").append(rfc822size).append(' ');
                     if ("BODY.PEEK[TEXT]".equals(param)) {
@@ -587,7 +585,10 @@ public class ImapConnection extends AbstractConnection {
         sendClient(buffer.toString());
     }
 
-    protected void appendBodyStructure(StringBuilder buffer, ByteArrayOutputStream baos) throws IOException {
+    protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        message.write(baos);
+        
         buffer.append(" BODYSTRUCTURE ");
         try {
             MimeMessage mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
