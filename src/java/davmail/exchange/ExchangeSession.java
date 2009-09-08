@@ -147,6 +147,15 @@ public class ExchangeSession {
     private static final String YYYY_MM_DD_T_HHMMSS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     /**
+     * Logon form user name field, default is username.
+     */
+    private String userNameInput = "username";
+    /**
+     * Logon form password field, default is password.
+     */
+    private String passwordInput = "password";
+
+    /**
      * Create an exchange session for the given URL.
      * The session is not actually established until a call to login()
      *
@@ -317,6 +326,12 @@ public class ExchangeSession {
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
                         logonMethod.addParameter(name, value);
                     }
+                    // custom login form
+                    if ("txtUserName".equals(name)) {
+                        userNameInput = "txtUserName";
+                    } else if ("txtUserPass".equals(name)) {
+                        passwordInput = "txtUserPass";
+                    }
                 }
             } else {
                 List frameList = node.getElementListByName("frame", true);
@@ -395,8 +410,8 @@ public class ExchangeSession {
         LOGGER.debug("Form based authentication detected");
 
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
-        ((PostMethod) logonMethod).addParameter("username", userName);
-        ((PostMethod) logonMethod).addParameter("password", password);
+        ((PostMethod) logonMethod).addParameter(userNameInput, userName);
+        ((PostMethod) logonMethod).addParameter(passwordInput, password);
         ((PostMethod) logonMethod).addParameter("trusted", "4");
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
