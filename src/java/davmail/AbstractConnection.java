@@ -47,14 +47,25 @@ public class AbstractConnection extends Thread {
     // Exchange session proxy
     protected ExchangeSession session;
 
-    // only set the thread name and socket
+    /**
+     * Only set the thread name and socket
+     *
+     * @param name         thread type name
+     * @param clientSocket client socket
+     */
     public AbstractConnection(String name, Socket clientSocket) {
-        super(name);
+        super(name + '-' + clientSocket.getPort());
         this.client = clientSocket;
         setDaemon(true);
     }
 
-    // Initialize the streams and set thread name
+    /**
+     * Initialize the streams and set thread name.
+     *
+     * @param name         thread type name
+     * @param clientSocket client socket
+     * @param encoding     socket stream encoding
+     */
     public AbstractConnection(String name, Socket clientSocket, String encoding) {
         super(name + '-' + clientSocket.getPort());
         this.client = clientSocket;
