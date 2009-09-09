@@ -29,28 +29,73 @@ import java.util.ResourceBundle;
  * Internationalization message.
  */
 public class BundleMessage {
+    /**
+     *  Root locale to get english messages for logging.
+     */
     public static final Locale ROOT_LOCALE = new Locale("", "");
     protected static final String MESSAGE_BUNDLE_NAME = "davmailmessages";
     protected final String key;
     private final Object[] arguments;
 
+    /**
+     * Internationalization message.
+     *
+     * @param key       message key in resource bundle
+     * @param arguments message values
+     */
     public BundleMessage(String key, Object... arguments) {
         this.key = key;
         this.arguments = arguments;
     }
 
+
+    /**
+     * Format message with the default locale.
+     *
+     * @return formatted message
+     */
     public String format() {
         return format(null);
     }
 
+    /**
+     * Format message with the given locale.
+     *
+     * @param locale resource bundle locale
+     * @return formatted message
+     */
     public String format(Locale locale) {
         return BundleMessage.format(locale, key, arguments);
     }
 
+    /**
+     * Format message for logging (with the root locale).
+     * Log file should remain in english
+     *
+     * @return log formatted message
+     */
     public String formatLog() {
         return format(ROOT_LOCALE);
     }
 
+    /**
+     * Format message for logging (with the root locale).
+     * Log file should remain in english
+     *
+     * @return log formatted message
+     */
+    @Override
+    public String toString() {
+        return formatLog();
+    }
+
+    /**
+     * Get bundle for the given locale.
+     * Load the properties file for the given locale in a resource bundle
+     *
+     * @param locale resource bundle locale
+     * @return resource bundle
+     */
     protected static ResourceBundle getBundle(Locale locale) {
         if (locale == null) {
             return ResourceBundle.getBundle(MESSAGE_BUNDLE_NAME);
@@ -59,10 +104,25 @@ public class BundleMessage {
         }
     }
 
+    /**
+     * Get formatted message for message key and values with the default locale.
+     *
+     * @param key       message key in resource bundle
+     * @param arguments message values
+     * @return formatted message
+     */
     public static String format(String key, Object... arguments) {
         return format(null, key, arguments);
     }
 
+    /**
+     * Get formatted message for message key and values with the given locale.
+     *
+     * @param locale    resource bundle locale
+     * @param key       message key in resource bundle
+     * @param arguments message values
+     * @return formatted message
+     */
     public static String format(Locale locale, String key, Object... arguments) {
         Object[] formattedArguments = null;
         if (arguments != null) {
@@ -91,23 +151,49 @@ public class BundleMessage {
         return MessageFormat.format(getBundle(locale).getString(key), formattedArguments);
     }
 
-    @Override
-    public String toString() {
-        return formatLog();
-    }
-
+    /**
+     * Get formatted log message for message key and values.
+     * Use the root locale
+     *
+     * @param key       message key in resource bundle
+     * @param arguments message values
+     * @return formatted message
+     */
     public static String formatLog(String key, Object... arguments) {
         return format(ROOT_LOCALE, key, arguments);
     }
 
+    /**
+     * Get formatted error message for bundle message and exception for logging.
+     * Use the root locale
+     *
+     * @param message bundle message
+     * @param e       exception
+     * @return formatted message
+     */
     public static String getExceptionLogMessage(BundleMessage message, Exception e) {
         return getExceptionMessage(message, e, ROOT_LOCALE);
     }
 
+    /**
+     * Get formatted error message for bundle message and exception with default locale.
+     *
+     * @param message bundle message
+     * @param e       exception
+     * @return formatted message
+     */
     public static String getExceptionMessage(BundleMessage message, Exception e) {
         return getExceptionMessage(message, e, null);
     }
 
+    /**
+     * Get formatted error message for bundle message and exception with given locale.
+     *
+     * @param message bundle message
+     * @param e       exception
+     * @param locale  bundle locale
+     * @return formatted message
+     */
     public static String getExceptionMessage(BundleMessage message, Exception e, Locale locale) {
         StringBuilder buffer = new StringBuilder();
         if (message != null) {
@@ -123,6 +209,9 @@ public class BundleMessage {
         return buffer.toString();
     }
 
+    /**
+     * Typed bundle message collection
+     */
     public static class BundleMessageList extends ArrayList<BundleMessage> {
     }
 }

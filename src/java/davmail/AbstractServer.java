@@ -39,6 +39,11 @@ public abstract class AbstractServer extends Thread {
     private final int port;
     private ServerSocket serverSocket;
 
+    /**
+     * Get server protocol name (SMTP, POP, IMAP, ...).
+     *
+     * @return server protocol name
+     */
     public abstract String getProtocolName();
 
     /**
