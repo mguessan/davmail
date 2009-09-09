@@ -750,7 +750,7 @@ public class ExchangeSession {
     }
 
     /**
-     * Search folders under given folder
+     * Search folders under given folder.
      *
      * @param folderName Exchange folder name
      * @param recursive  deep search if true
@@ -758,15 +758,42 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
+        return getSubFolders(folderName, "(\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')", recursive);
+    }
+
+    /**
+     * Search calendar folders under given folder.
+     *
+     * @param folderName Exchange folder name
+     * @param recursive  deep search if true
+     * @return list of folders
+     * @throws IOException on error
+     */
+    public List<Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
+        return getSubFolders(folderName, "\"DAV:contentclass\"='urn:content-classes:calendarfolder'", recursive);
+    }
+
+    /**
+     * Search folders under given folder matching filter.
+     *
+     * @param folderName Exchange folder name
+     * @param filter search filter
+     * @param recursive  deep search if true
+     * @return list of folders
+     * @throws IOException on error
+     */
+    public List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException {
         String mode = recursive ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
-        String searchRequest = "Select \"DAV:nosubs\", \"DAV:hassubs\"," +
-                "                \"DAV:hassubs\",\"urn:schemas:httpmail:unreadcount\"" +
-                "                FROM Scope('" + mode + " TRAVERSAL OF \"" + getFolderPath(folderName) + "\"')\n" +
-                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n" +
-                "                      AND (\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')";
+        StringBuilder searchRequest = new StringBuilder();
+        searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\", \"DAV:hassubs\"," +
+                "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderName)).append("\"')\n" +
+                " WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n");
+        if (filter != null && filter.length() > 0) {
+            searchRequest.append("                      AND ").append(filter);
+        }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest);
+                httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest.toString());
 
         for (MultiStatusResponse response : responses) {
             folders.add(buildFolder(response));
@@ -2689,7 +2716,7 @@ public class ExchangeSession {
                         Calendar calendar = Calendar.getInstance();
                         calendar.setTime(parser.parse(propertyValue));
                         item.put("birthday", String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
-                        item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH)+1));
+                        item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH) + 1));
                         item.put("birthyear", String.valueOf(calendar.get(Calendar.YEAR)));
                         propertyValue = null;
                     } catch (ParseException e) {
@@ -2703,7 +2730,7 @@ public class ExchangeSession {
             results.put(item.get("uid"), item);
         }
 
-        LOGGER.debug("contactFind " + ((searchFilter==null)?"":searchFilter) + ": " + results.size() + " result(s)");
+        LOGGER.debug("contactFind " + ((searchFilter == null) ? "" : searchFilter) + ": " + results.size() + " result(s)");
         return results;
     }
 

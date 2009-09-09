@@ -507,6 +507,11 @@ public class CaldavConnection extends AbstractConnection {
             List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
             appendEventsResponses(response, request, events);
+            // TODO append sub calendars
+            List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
+            for (ExchangeSession.Folder folder : folderList) {
+                appendCalendar(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/')+1));
+            }
         }
         response.endMultistatus();
         response.close();
@@ -1039,6 +1044,7 @@ public class CaldavConnection extends AbstractConnection {
 
     /**
      * Make sure + sign in URL is encoded.
+     *
      * @param path URL path
      * @return reencoded path
      */
@@ -1132,7 +1138,7 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder == null || subFolder.length() == 0) {
                 folderPath = path;
             } else if (path.endsWith("/")) {
-                folderPath  = path + subFolder;
+                folderPath = path + subFolder;
             } else {
                 folderPath = path + '/' + subFolder;
             }
