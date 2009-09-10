@@ -786,17 +786,21 @@ public class LdapConnection extends AbstractConnection {
                     }
                 }
             } else {
+                // iCal: copy uid to apple-generateduid
+                if (returningAttributes.contains("apple-generateduid") && person.get("uid") != null) {
+                    person.put("apple-generateduid", person.get("uid"));
+                }
                 // convert Contact entries
                 for (Map.Entry<String, String> entry : person.entrySet()) {
                     String contactAttribute = entry.getKey();
                     // get converted attribute name
                     String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
                     // no conversion, use exchange attribute name
-                    if (ldapAttribute == null){
+                    if (ldapAttribute == null) {
                         ldapAttribute = contactAttribute;
                     }
                     String value = entry.getValue();
-                     if (value != null
+                    if (value != null
                             && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
                         ldapPerson.put(ldapAttribute, value);
                     }
