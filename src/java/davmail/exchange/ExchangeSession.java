@@ -777,7 +777,7 @@ public class ExchangeSession {
      * Search folders under given folder matching filter.
      *
      * @param folderName Exchange folder name
-     * @param filter search filter
+     * @param filter     search filter
      * @param recursive  deep search if true
      * @return list of folders
      * @throws IOException on error
@@ -2399,6 +2399,7 @@ public class ExchangeSession {
      */
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
+        // other user calendar => replace principal folder name in mailPath
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
             int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
@@ -2409,10 +2410,20 @@ public class ExchangeSession {
         } else if (principal != null) {
             buffer.append(mailPath);
         }
-        if ("calendar".equals(folderName)) {
+
+        if (folderName != null && folderName.startsWith("calendar")) {
+            // replace 'calendar' folder name with i18n name
             buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
+
+            // sub calendar folder => append sub folder name
+            int index = folderName.indexOf('/');
+            if (index >= 0) {
+                 buffer.append(folderName.substring(index));
+            }
+            // replace 'inbox' folder name with i18n name
         } else if ("inbox".equals(folderName)) {
             buffer.append(inboxUrl.substring(inboxUrl.lastIndexOf('/') + 1));
+            // append folder name without replace (public folder)
         } else if (folderName != null && folderName.length() > 0) {
             buffer.append(folderName);
         }
