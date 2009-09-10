@@ -21,6 +21,7 @@ package davmail.exchange;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
@@ -113,6 +114,8 @@ public final class ExchangeSessionFactory {
             configChecked = true;
             // Reset so next time an problem occurs message will be sent once
             errorSent = false;
+        } catch (DavMailAuthenticationException exc) {
+            throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
         }
