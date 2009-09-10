@@ -2733,6 +2733,8 @@ public class ExchangeSession {
                     } catch (ParseException e) {
                         throw new IOException(e);
                     }
+                } else if ("textdescription".equals(propertyName) && " \n".equals(propertyValue)) {
+                    propertyValue = null;
                 }
                 if (propertyValue != null && propertyValue.length() > 0) {
                     item.put(propertyName, propertyValue);
