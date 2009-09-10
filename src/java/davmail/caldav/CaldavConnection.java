@@ -435,7 +435,7 @@ public class CaldavConnection extends AbstractConnection {
                     "0");
         }
         if (request.hasProperty("getetag")) {
-            response.appendProperty("D:getetag", session.getFolderResourceTag(request.getExchangeFolderPath(subFolder)));
+            response.appendProperty("D:getetag", "0");
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "outbox");
@@ -1283,7 +1283,12 @@ public class CaldavConnection extends AbstractConnection {
          */
         public String getExchangeFolderPath() throws IOException {
             if ("users".equals(getPathElement(1))) {
-                return session.buildCalendarPath(getPathElement(2), getPathElement(3));
+                StringBuilder calendarPath = new StringBuilder();
+                calendarPath.append(getPathElement(3));
+                for (int i=4;i<getPathLength()-1;i++) {
+                    calendarPath.append('/').append(getPathElement(i));
+                }
+                return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
             } else {
                 return path;
             }
