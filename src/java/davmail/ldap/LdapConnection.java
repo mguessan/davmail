@@ -614,7 +614,8 @@ public class LdapConnection extends AbstractConnection {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 
-                if (size == sizeLimit) {
+                // iCal: do not send LDAP_SIZE_LIMIT_EXCEEDED on apple-computer search by cn with sizelimit 1
+                if (size > 1 && size == sizeLimit) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SIZE_LIMIT_EXCEEDED", currentMessageId));
                     sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
                 } else {
