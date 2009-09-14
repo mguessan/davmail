@@ -1924,6 +1924,8 @@ public class ExchangeSession {
                 } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
                     // Ignore organizer as attendee
                     continue;
+                } else if (!fromServer && line.startsWith("ATTENDEE")) {
+                    line = replaceIcal4Principal(line);
                 }
 
                 result.writeLine(line);
@@ -1936,6 +1938,20 @@ public class ExchangeSession {
         dumpICS(resultString, fromServer, true);
 
         return result.toString();
+    }
+
+    /**
+     * Replace iCal4 (Snow Leopard) principal paths with mailto expression
+     *
+     * @param value attendee value or ics line
+     * @return fixed value
+     */
+    protected String replaceIcal4Principal(String value) {
+        if (value.contains("/principals/__uuids__/")) {
+            return value.replaceAll("/principals/__uuids__/([^/]*)__AT__([^/]*)/", "mailto:$1@$2");
+        } else {
+            return value;
+        }
     }
 
     protected String fixTimezoneId(String line, String validTimezoneId) {
@@ -2113,6 +2129,7 @@ public class ExchangeSession {
                         if (colonIndex >= 0) {
                             value = value.substring(colonIndex + 1);
                         }
+                        value = replaceIcal4Principal(value);
                         if ("ORGANIZER".equals(key)) {
                             organizer = value;
                             // exclude current user and invalid values from recipients
@@ -2418,7 +2435,7 @@ public class ExchangeSession {
             // sub calendar folder => append sub folder name
             int index = folderName.indexOf('/');
             if (index >= 0) {
-                 buffer.append(folderName.substring(index));
+                buffer.append(folderName.substring(index));
             }
             // replace 'inbox' folder name with i18n name
         } else if ("inbox".equals(folderName)) {
@@ -2793,7 +2810,7 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
-
+        attendee = replaceIcal4Principal(attendee);
         if (attendee.startsWith("mailto:")) {
             attendee = attendee.substring("mailto:".length());
         }

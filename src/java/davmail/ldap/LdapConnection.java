@@ -76,7 +76,6 @@ public class LdapConnection extends AbstractConnection {
     static final HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
-        ATTRIBUTE_MAP.put("apple-generateduid", "AN");
         ATTRIBUTE_MAP.put("uid", "AN");
         ATTRIBUTE_MAP.put("mail", "EM");
         ATTRIBUTE_MAP.put("cn", "DN");
@@ -170,7 +169,7 @@ public class LdapConnection extends AbstractConnection {
                     "<string>urn:uuid:%(guid)s</string>" +
                     "</array>" +
                     "<key>principalPath</key>" +
-                    "<string>/principals/users/%(email)s/</string>" +
+                    "<string>/principals/__uuids__/%(guid)s/</string>" +
                     "</dict>" +
                     "</dict>" +
                     "</dict>" +
@@ -787,10 +786,6 @@ public class LdapConnection extends AbstractConnection {
                     }
                 }
             } else {
-                // iCal: copy uid to apple-generateduid
-                if (returningAttributes.contains("apple-generateduid") && person.get("uid") != null) {
-                    person.put("apple-generateduid", person.get("uid"));
-                }
                 // convert Contact entries
                 for (Map.Entry<String, String> entry : person.entrySet()) {
                     String contactAttribute = entry.getKey();
@@ -808,10 +803,12 @@ public class LdapConnection extends AbstractConnection {
                 }
 
             }
+
+            // TODO: fix for iCal4/iCal3
             // iCal: copy cn to sn
-            if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
-                ldapPerson.put("sn", ldapPerson.get("cn"));
-            }
+            //if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
+            //    ldapPerson.put("sn", ldapPerson.get("cn"));
+            //}
 
 
             // Process all attributes which have static mappings
@@ -828,15 +825,29 @@ public class LdapConnection extends AbstractConnection {
             if (needObjectClasses) {
                 ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
             }
+
+            // iCal: copy email to apple-generateduid, encode @
+            if (returnAllAttributes || returningAttributes.contains("apple-generateduid")) {
+                String mail = (String) ldapPerson.get("mail");
+                if (mail != null) {
+                    ldapPerson.put("apple-generateduid", mail.replaceAll("@", "__AT__"));
+                } else {
+                    // failover, should not happen
+                    ldapPerson.put("apple-generateduid", ldapPerson.get("uid"));
+                }
+            }
+
             // iCal: replace current user alias with login name
             if (session.getAlias().equals(ldapPerson.get("uid"))) {
                 if (returningAttributes.contains("uidnumber")) {
                     ldapPerson.put("uidnumber", userName);
                 }
-                if (returningAttributes.contains("apple-generateduid")) {
+                // TODO: check if this breaks iCal3
+/*                if (returningAttributes.contains("apple-generateduid")) {
                     ldapPerson.put("apple-generateduid", userName);
                     ldapPerson.put("uid", userName);
                 }
+*/
             }
             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
