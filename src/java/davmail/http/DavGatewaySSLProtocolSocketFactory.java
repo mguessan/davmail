@@ -71,7 +71,8 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
 
     private SSLContext sslcontext;
 
-    private SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, IOException, CertificateException, InvalidAlgorithmParameterException {
+    private SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
+            InvalidAlgorithmParameterException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
         if (pkcs11Library != null && pkcs11Library.length() > 0) {
@@ -80,12 +81,12 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             pkcs11Buffer.append("library=").append(pkcs11Library).append('\n');
             String pkcs11Config = Settings.getProperty("davmail.ssl.pkcs11Config");
             if (pkcs11Config != null && pkcs11Config.length() > 0) {
-                 pkcs11Buffer.append(pkcs11Config).append('\n');
+                pkcs11Buffer.append(pkcs11Config).append('\n');
             }
             Provider p = new SunPKCS11(new ByteArrayInputStream(pkcs11Buffer.toString().getBytes()));
             Security.addProvider(p);
         }
-        
+
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(/*KeyManagerFactory.getDefaultAlgorithm()*/"NewSunX509");
         KeyStore.Builder scBuilder = KeyStore.Builder.newInstance("PKCS11", null,
                 new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
