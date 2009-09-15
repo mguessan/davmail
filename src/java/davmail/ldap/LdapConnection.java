@@ -473,8 +473,10 @@ public class LdapConnection extends AbstractConnection {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                     try {
                         session = ExchangeSessionFactory.getInstance(userName, password);
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                     } catch (IOException e) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
                         sendClient(currentMessageId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
                     }
                 } else {
@@ -484,7 +486,7 @@ public class LdapConnection extends AbstractConnection {
                 }
 
             } else if (requestOperation == LDAP_REQ_UNBIND) {
-                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND", currentMessageId));
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_UNBIND", currentMessageId));
                 if (session != null) {
                     session = null;
                 }
@@ -785,6 +787,12 @@ public class LdapConnection extends AbstractConnection {
                         ldapPerson.put(ldapAttribute, value);
                     }
                 }
+                // iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
+                if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
+                    ldapPerson.put("sn", ldapPerson.get("cn"));
+                    ldapPerson.remove("cn");
+                }
+
             } else {
                 // convert Contact entries
                 for (Map.Entry<String, String> entry : person.entrySet()) {
@@ -803,13 +811,6 @@ public class LdapConnection extends AbstractConnection {
                 }
 
             }
-
-            // TODO: fix for iCal4/iCal3
-            // iCal: copy cn to sn
-            //if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
-            //    ldapPerson.put("sn", ldapPerson.get("cn"));
-            //}
-
 
             // Process all attributes which have static mappings
             for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
