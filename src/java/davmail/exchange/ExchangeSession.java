@@ -832,7 +832,12 @@ public class ExchangeSession {
                     folder.folderPath = href.substring(index + mailPath.length());
                 }
             } else {
-                throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", folder.folderPath);
+                try {
+                    URI folderURI = new URI(href, false);
+                    folder.folderPath = folderURI.getPath();
+                } catch (URIException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
+                }
             }
         }
         return folder;
@@ -970,6 +975,8 @@ public class ExchangeSession {
             folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
         } else if (folderName.startsWith("calendar")) {
             folderPath = folderName.replaceFirst("calendar", calendarUrl);
+        } else if (folderName.startsWith("public")) {
+            folderPath = '/' + folderName;
             // absolute folder path
         } else if (folderName.startsWith("/")) {
             folderPath = folderName;
