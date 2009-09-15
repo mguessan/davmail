@@ -390,6 +390,16 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void appendInbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
+        String ctag = "0";
+        String etag = "0";
+        String exchangeFolderPath = request.getExchangeFolderPath(subFolder);
+        try {
+            ctag = base64Encode(session.getFolderCtag(exchangeFolderPath));
+            etag = session.getFolderResourceTag(exchangeFolderPath);
+        } catch (HttpException e) {
+            // unauthorized access, probably an inbox on shared calendar
+            DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", exchangeFolderPath, e.getMessage()));
+        }
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
@@ -401,11 +411,10 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
         }
         if (request.hasProperty("getctag")) {
-            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    base64Encode(session.getFolderCtag(request.getExchangeFolderPath(subFolder))));
+            response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"", ctag);
         }
         if (request.hasProperty("getetag")) {
-            response.appendProperty("D:getetag", session.getFolderResourceTag(request.getExchangeFolderPath(subFolder)));
+            response.appendProperty("D:getetag", etag);
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "inbox");
@@ -468,10 +477,15 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendInbox(response, request, null);
         if (request.getDepth() == 1) {
-            DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
-            List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
-            DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_MESSAGES", events.size()));
-            appendEventsResponses(response, request, events);
+            try {
+                DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
+                List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
+                DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_MESSAGES", events.size()));
+                appendEventsResponses(response, request, events);
+            } catch (HttpException e) {
+                // unauthorized access, probably an inbox on shared calendar
+                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", request.getExchangeFolderPath(), e.getMessage()));
+            }
         }
         response.endMultistatus();
         response.close();
@@ -510,7 +524,7 @@ public class CaldavConnection extends AbstractConnection {
             // TODO append sub calendars
             List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
             for (ExchangeSession.Folder folder : folderList) {
-                appendCalendar(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/')+1));
+                appendCalendar(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/') + 1));
             }
         }
         response.endMultistatus();
@@ -1285,7 +1299,7 @@ public class CaldavConnection extends AbstractConnection {
             if ("users".equals(getPathElement(1))) {
                 StringBuilder calendarPath = new StringBuilder();
                 calendarPath.append(getPathElement(3));
-                for (int i=4;i<getPathLength()-1;i++) {
+                for (int i = 4; i < getPathLength() - 1; i++) {
                     calendarPath.append('/').append(getPathElement(i));
                 }
                 return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
