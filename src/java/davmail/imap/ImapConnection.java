@@ -873,7 +873,7 @@ public class ImapConnection extends AbstractConnection {
                     message.junk = true;
                 }
             }
-        } else if ("FLAGS".equalsIgnoreCase(action)) {
+        } else if ("FLAGS".equalsIgnoreCase(action) || "FLAGS.SILENT".equalsIgnoreCase(action)) {
             properties.put("read", "0");
             message.read = false;
             properties.put("flagged", "0");
