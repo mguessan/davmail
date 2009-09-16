@@ -3,7 +3,7 @@
 	vertical-align: middle;
 }
 .section h2, .section h3 {
-	border:0px;
+	border:0;
 	background: transparent;
 	color:black;
 	font-size:17px;
@@ -39,5 +39,5 @@
 .notype {
 	list-style-type:none;
 	margin-left:10px;
-	padding-left:0px;
+	padding-left:0;
 }
