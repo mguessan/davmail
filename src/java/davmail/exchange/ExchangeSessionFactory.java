@@ -116,6 +116,8 @@ public final class ExchangeSessionFactory {
             errorSent = false;
         } catch (DavMailAuthenticationException exc) {
             throw exc;
+        } catch (DavMailException exc) {
+            throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
         }
