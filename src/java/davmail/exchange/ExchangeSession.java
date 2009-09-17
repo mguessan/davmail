@@ -294,6 +294,18 @@ public class ExchangeSession {
         return uri.getURI();
     }
 
+    protected String getScriptBasedFormURL(HttpMethod initmethod, String pathQuery) throws URIException {
+        URI initmethodURI = initmethod.getURI();
+        int queryIndex = pathQuery.indexOf('?');
+        if (queryIndex >= 0) {
+            if (queryIndex > 0) {
+                initmethodURI.setPath(pathQuery.substring(0, queryIndex));
+            }
+            initmethodURI.setQuery(pathQuery.substring(queryIndex + 1));
+        }
+        return initmethodURI.getURI();
+    }
+
     /**
      * Try to find logon method path from logon form body.
      *
@@ -359,11 +371,9 @@ public class ExchangeSession {
                                     int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
                                     int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                     if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        URI initmethodURI = initmethod.getURI();
-                                        initmethodURI.setQuery(
-                                                scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
-                                                        scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
-                                        String src = initmethodURI.getURI();
+                                        String pathQuery = scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
+                                                scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                        String src = getScriptBasedFormURL(initmethod, pathQuery);
                                         LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
@@ -376,11 +386,9 @@ public class ExchangeSession {
                                         int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
                                         int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
                                         if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                            URI initmethodURI = initmethod.getURI();
-                                            initmethodURI.setQuery(
-                                                    scriptValue.substring(a_sLgnIndex + 1, a_sLgnEndIndex) +
-                                                            scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex));
-                                            String src = initmethodURI.getURI();
+                                            String pathQuery = scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
+                                                    scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                            String src = getScriptBasedFormURL(initmethod, pathQuery);
                                             LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                             HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                             logonMethod = buildLogonMethod(httpClient, newInitMethod);
