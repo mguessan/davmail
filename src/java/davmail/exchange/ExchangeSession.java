@@ -1356,18 +1356,12 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void write(OutputStream os) throws IOException {
-            HttpMethod method = null;
+            GetMethod method = new GetMethod(URIUtil.encodePath(messageUrl));
+            method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+            method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
             try {
-                method = new GetMethod(URIUtil.encodePath(messageUrl));
-                method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-                method.setRequestHeader("Translate", "f");
-                // do not follow redirects in expired session
-                method.setFollowRedirects(false);
-                int status = httpClient.executeMethod(method);
-                if (status != HttpStatus.SC_OK) {
-                    throw DavGatewayHttpClientFacade.buildHttpException(method);
-                }
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method);
 
                 reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
@@ -1405,9 +1399,7 @@ public class ExchangeSession {
                         LOGGER.warn("Error closing message input stream", e);
                     }
                 }
-                if (method != null) {
-                    method.releaseConnection();
-                }
+                method.releaseConnection();
             }
         }
 
@@ -1524,10 +1516,8 @@ public class ExchangeSession {
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             try {
-                int status = httpClient.executeMethod(method);
-                if (status != HttpStatus.SC_OK) {
-                    LOGGER.warn("Unable to get event at " + href + " status: " + status);
-                }
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method);
+
                 MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
                 Object mimeBody = mimeMessage.getContent();
                 MimePart bodyPart;
@@ -1548,9 +1538,10 @@ public class ExchangeSession {
                 bodyPart.getDataHandler().writeTo(baos);
                 baos.close();
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
-
+            } catch (IOException e) {
+                LOGGER.warn("Unable to get event at " + href+": "+e.getMessage());
             } catch (MessagingException e) {
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", e.getMessage());
+                LOGGER.warn("Unable to get event at " + href+": "+e.getMessage());
             } finally {
                 method.releaseConnection();
             }
@@ -2502,10 +2493,7 @@ public class ExchangeSession {
             try {
                 path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
                 getMethod = new GetMethod(path);
-                int status = httpClient.executeMethod(getMethod);
-                if (status != HttpStatus.SC_OK) {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_GET_EMAIL", getMethod.getPath());
-                }
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
                 Map<String, String> result = results.get(alias.toLowerCase());
                 if (result != null) {
@@ -2581,7 +2569,7 @@ public class ExchangeSession {
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
-            httpClient.executeMethod(optionsMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find mailbox full name
@@ -2616,7 +2604,7 @@ public class ExchangeSession {
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
-            httpClient.executeMethod(optionsMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find email
@@ -2677,10 +2665,7 @@ public class ExchangeSession {
         Map<String, Map<String, String>> results;
         GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
         try {
-            int status = httpClient.executeMethod(getMethod);
-            if (status != HttpStatus.SC_OK) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_FIND_USERS", status, getMethod.getURI());
-            }
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
         } finally {
             getMethod.releaseConnection();
@@ -2802,10 +2787,7 @@ public class ExchangeSession {
             GetMethod getMethod = null;
             try {
                 getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + person.get("EM")));
-                int status = httpClient.executeMethod(getMethod);
-                if (status != HttpStatus.SC_OK) {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_FIND_USERS", status, getMethod.getURI());
-                }
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
                 // add detailed information
                 if (!results.isEmpty()) {
@@ -2873,11 +2855,7 @@ public class ExchangeSession {
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
         try {
-            int status = httpClient.executeMethod(getMethod);
-            if (status != HttpStatus.SC_OK) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_FREEBUSY", getMethod.getPath(),
-                        status, getMethod.getResponseBodyAsString());
-            }
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
             String body = getMethod.getResponseBodyAsString();
             int startIndex = body.lastIndexOf("<a:fbdata>");
             int endIndex = body.lastIndexOf("</a:fbdata>");

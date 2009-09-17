@@ -35,6 +35,7 @@ import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +44,8 @@ import java.util.ArrayList;
  * Create HttpClient instance according to DavGateway Settings
  */
 public final class DavGatewayHttpClientFacade {
+    static final Logger LOGGER = Logger.getLogger("davmail.http.DavGatewayHttpClientFacade");
+
     static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
     static final int MAX_REDIRECTS = 10;
     static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
@@ -291,6 +294,7 @@ public final class DavGatewayHttpClientFacade {
      */
     public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
         DeleteMethod deleteMethod = new DeleteMethod(path);
+        deleteMethod.setFollowRedirects(false);
 
         int status = executeHttpMethod(httpClient, deleteMethod);
         // do not throw error if already deleted
@@ -342,6 +346,24 @@ public final class DavGatewayHttpClientFacade {
             method.releaseConnection();
         }
         return status;
+    }
+
+    /**
+     * Execute Get method, do not follow redirects.
+     *
+     * @param httpClient Http client instance
+     * @param method     Http method
+     * @throws IOException on error
+     */
+    public static void executeGetMethod(HttpClient httpClient, GetMethod method) throws IOException {
+        // do not follow redirects in expired sessions
+        method.setFollowRedirects(false);
+        int status = httpClient.executeMethod(method);
+        if (status != HttpStatus.SC_OK) {
+            LOGGER.warn("GET failed with status "+status+" at "+method.getURI()+": "+method.getResponseBodyAsString());
+            throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
+        }
+
     }
 
     /**
