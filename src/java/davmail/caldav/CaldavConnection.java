@@ -155,8 +155,8 @@ public class CaldavConnection extends AbstractConnection {
                     sendUnauthorized();
                 } else {
                     decodeCredentials(headers.get("authorization"));
-                    // authenticate only once
-                    if (session == null) {
+                    // authenticate only once, but check credentials
+                    if (session == null || !session.checkCredentials(userName, password)) {
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
                         } catch (DavMailAuthenticationException e) {

@@ -264,6 +264,18 @@ public class ExchangeSession {
     }
 
     /**
+     * Compare credentials to current session credentials.
+     *
+     * @param userName user name
+     * @param password user password
+     * @return true if credentials match
+     */
+    public boolean checkCredentials(String userName, String password) {
+        return userName != null && password != null
+                && userName.equals(poolKey.userName) && password.equals(poolKey.password);
+    }
+
+    /**
      * Test authentication mode : form based or basic.
      *
      * @param url exchange base URL
