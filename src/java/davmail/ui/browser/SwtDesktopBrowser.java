@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package davmail.ui;
+package davmail.ui.browser;
 
 import org.eclipse.swt.program.Program;
 
@@ -29,6 +29,12 @@ public final class SwtDesktopBrowser {
     private SwtDesktopBrowser() {
     }
 
+    /**
+     * Open default browser at location URI.
+     * User SWT program launch
+     *
+     * @param location location URI
+     */
     public static void browse(URI location) {
         Program.launch(location.toString());
     }

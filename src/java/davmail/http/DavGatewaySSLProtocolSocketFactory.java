@@ -41,7 +41,6 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.security.*;
-import java.security.cert.CertificateException;
 
 /**
  * Manual Socket Factory.
@@ -71,8 +70,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
 
     private SSLContext sslcontext;
 
-    private SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
-            InvalidAlgorithmParameterException {
+    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
         if (pkcs11Library != null && pkcs11Library.length() > 0) {
@@ -105,7 +103,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         return context;
     }
 
-    private SSLContext getSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, IOException, CertificateException, InvalidAlgorithmParameterException {
+    private SSLContext getSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException,    InvalidAlgorithmParameterException {
         if (this.sslcontext == null) {
             this.sslcontext = createSSLContext();
         }
@@ -122,10 +120,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             throw new IOException(e + " " + e.getMessage());
         } catch (KeyStoreException e) {
             throw new IOException(e + " " + e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (CertificateException e) {
-            throw new IOException(e + " " + e.getMessage());
         } catch (InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
@@ -139,10 +133,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         } catch (KeyManagementException e) {
             throw new IOException(e + " " + e.getMessage());
         } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (CertificateException e) {
             throw new IOException(e + " " + e.getMessage());
         } catch (InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
@@ -159,10 +149,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             throw new IOException(e + " " + e.getMessage());
         } catch (KeyStoreException e) {
             throw new IOException(e + " " + e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (CertificateException e) {
-            throw new IOException(e + " " + e.getMessage());
         } catch (InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
@@ -176,10 +162,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         } catch (KeyManagementException e) {
             throw new IOException(e + " " + e.getMessage());
         } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (CertificateException e) {
             throw new IOException(e + " " + e.getMessage());
         } catch (InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());

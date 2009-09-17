@@ -16,9 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package davmail.ui;
+package davmail.ui.browser;
 
 import davmail.ui.tray.DavGatewayTray;
+import davmail.ui.AboutFrame;
 import davmail.BundleMessage;
 
 import java.net.URI;
@@ -31,6 +32,12 @@ public final class DesktopBrowser {
     private DesktopBrowser() {
     }
 
+    /**
+     * Open default browser at location URI.
+     * User Java 6 Desktop class, OSX open command or SWT program launch
+     *
+     * @param location location URI
+     */
     public static void browse(URI location) {
         try {
             // trigger ClassNotFoundException
@@ -66,6 +73,12 @@ public final class DesktopBrowser {
         }
     }
 
+    /**
+     * Open default browser at location.
+     * User Java 6 Desktop class, OSX open command or SWT program launch
+     *
+     * @param location target location
+     */
     public static void browse(String location) {
         try {
             DesktopBrowser.browse(new URI(location));

@@ -34,14 +34,34 @@ public class OSXAdapter implements InvocationHandler {
 
     static Object macOSXApplication;
 
-    // Pass this method an Object and Method equipped to perform application shutdown logic
-    // The method passed should return a boolean stating whether or not the quit should occur
+    /**
+     * Pass this method an Object and Method equipped to perform application shutdown logic.
+     * The method passed should return a boolean stating whether or not the quit should occur
+     *
+     * @param target      target object
+     * @param quitHandler quit method
+     * @throws InvocationTargetException on error
+     * @throws ClassNotFoundException    on error
+     * @throws NoSuchMethodException     on error
+     * @throws InstantiationException    on error
+     * @throws IllegalAccessException    on error
+     */
     public static void setQuitHandler(Object target, Method quitHandler) throws InvocationTargetException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         setHandler(new OSXAdapter("handleQuit", target, quitHandler));
     }
 
-    // Pass this method an Object and Method equipped to display application info
-    // They will be called when the About menu item is selected from the application menu
+    /**
+     * Pass this method an Object and Method equipped to display application info
+     * They will be called when the About menu item is selected from the application menu
+     *
+     * @param target       target object
+     * @param aboutHandler about method
+     * @throws InvocationTargetException on error
+     * @throws ClassNotFoundException    on error
+     * @throws NoSuchMethodException     on error
+     * @throws InstantiationException    on error
+     * @throws IllegalAccessException    on error
+     */
     public static void setAboutHandler(Object target, Method aboutHandler) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException, InstantiationException {
         boolean enableAboutMenu = (target != null && aboutHandler != null);
         if (enableAboutMenu) {
@@ -51,8 +71,18 @@ public class OSXAdapter implements InvocationHandler {
         enableAboutMethod.invoke(macOSXApplication, enableAboutMenu);
     }
 
-    // Pass this method an Object and a Method equipped to display application options
-    // They will be called when the Preferences menu item is selected from the application menu
+    /**
+     * Pass this method an Object and a Method equipped to display application options.
+     * They will be called when the Preferences menu item is selected from the application menu
+     *
+     * @param target       target object
+     * @param prefsHandler preferences method
+     * @throws InvocationTargetException on error
+     * @throws ClassNotFoundException    on error
+     * @throws NoSuchMethodException     on error
+     * @throws InstantiationException    on error
+     * @throws IllegalAccessException    on error
+     */
     public static void setPreferencesHandler(Object target, Method prefsHandler) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException, InstantiationException {
         boolean enablePrefsMenu = (target != null && prefsHandler != null);
         if (enablePrefsMenu) {
@@ -62,9 +92,19 @@ public class OSXAdapter implements InvocationHandler {
         enablePrefsMethod.invoke(macOSXApplication, enablePrefsMenu);
     }
 
-    // Pass this method an Object and a Method equipped to handle document events from the Finder
-    // Documents are registered with the Finder via the CFBundleDocumentTypes dictionary in the
-    // application bundle's Info.plist
+    /**
+     * Pass this method an Object and a Method equipped to handle document events from the Finder.
+     * Documents are registered with the Finder via the CFBundleDocumentTypes dictionary in the
+     * application bundle's Info.plist
+     *
+     * @param target      target object
+     * @param fileHandler file method
+     * @throws InvocationTargetException on error
+     * @throws ClassNotFoundException    on error
+     * @throws NoSuchMethodException     on error
+     * @throws InstantiationException    on error
+     * @throws IllegalAccessException    on error
+     */
     public static void setFileHandler(Object target, Method fileHandler) throws InvocationTargetException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         setHandler(new OSXAdapter("handleOpenFile", target, fileHandler) {
             // Override OSXAdapter.callTarget to send information on the
@@ -85,7 +125,16 @@ public class OSXAdapter implements InvocationHandler {
         });
     }
 
-    // setHandler creates a Proxy object from the passed OSXAdapter and adds it as an ApplicationListener
+    /**
+     * setHandler creates a Proxy object from the passed OSXAdapter and adds it as an ApplicationListener.
+     *
+     * @param adapter OSX adapter
+     * @throws InvocationTargetException on error
+     * @throws ClassNotFoundException    on error
+     * @throws NoSuchMethodException     on error
+     * @throws InstantiationException    on error
+     * @throws IllegalAccessException    on error
+     */
     public static void setHandler(OSXAdapter adapter) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         Class applicationClass = Class.forName("com.apple.eawt.Application");
         if (macOSXApplication == null) {
@@ -98,24 +147,45 @@ public class OSXAdapter implements InvocationHandler {
         addListenerMethod.invoke(macOSXApplication, osxAdapterProxy);
     }
 
-    // Each OSXAdapter has the name of the EAWT method it intends to listen for (handleAbout, for example),
-    // the Object that will ultimately perform the task, and the Method to be called on that Object
+    /**
+     * Each OSXAdapter has the name of the EAWT method it intends to listen for (handleAbout, for example),
+     * the Object that will ultimately perform the task, and the Method to be called on that Object
+     *
+     * @param proxySignature proxy signature
+     * @param target         target object
+     * @param handler        handler method
+     */
     protected OSXAdapter(String proxySignature, Object target, Method handler) {
         this.proxySignature = proxySignature;
         this.targetObject = target;
         this.targetMethod = handler;
     }
 
-    // Override this method to perform any operations on the event
-    // that comes with the various callbacks
-    // See setFileHandler above for an example
+    /**
+     * Override this method to perform any operations on the event
+     * that comes with the various callbacks.
+     * See setFileHandler above for an example
+     *
+     * @param appleEvent apple event object
+     * @return true on success
+     * @throws InvocationTargetException on error
+     * @throws IllegalAccessException    on error
+     */
     public boolean callTarget(Object appleEvent) throws InvocationTargetException, IllegalAccessException {
         Object result = targetMethod.invoke(targetObject, (Object[]) null);
         return result == null || Boolean.valueOf(result.toString());
     }
 
-    // InvocationHandler implementation
-    // This is the entry point for our proxy object; it is called every time an ApplicationListener method is invoked
+    /**
+     * InvocationHandler implementation.
+     * This is the entry point for our proxy object; it is called every time an ApplicationListener method is invoked
+     *
+     * @param proxy  proxy object
+     * @param method handler method
+     * @param args   method arguments
+     * @return null
+     * @throws Throwable on error
+     */
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (isCorrectMethod(method, args)) {
             boolean handled = callTarget(args[0]);
@@ -125,14 +195,30 @@ public class OSXAdapter implements InvocationHandler {
         return null;
     }
 
-    // Compare the method that was called to the intended method when the OSXAdapter instance was created
-    // (e.g. handleAbout, handleQuit, handleOpenFile, etc.)
+    //
+    //
+    /**
+     * Compare the method that was called to the intended method when the OSXAdapter instance was created
+     * (e.g. handleAbout, handleQuit, handleOpenFile, etc.).
+     *
+     * @param method handler method
+     * @param args   method arguments
+     * @return true if method is correct
+     */
     protected boolean isCorrectMethod(Method method, Object[] args) {
         return (targetMethod != null && proxySignature.equals(method.getName()) && args.length == 1);
     }
 
-    // It is important to mark the ApplicationEvent as handled and cancel the default behavior
-    // This method checks for a boolean result from the proxy method and sets the event accordingly
+    /**
+     * It is important to mark the ApplicationEvent as handled and cancel the default behavior.
+     * This method checks for a boolean result from the proxy method and sets the event accordingly
+     *
+     * @param event   event object
+     * @param handled true if event handled
+     * @throws NoSuchMethodException     on error
+     * @throws InvocationTargetException on error
+     * @throws IllegalAccessException    on error
+     */
     protected void setApplicationEventHandled(Object event, boolean handled) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         if (event != null) {
             Method setHandledMethod = event.getClass().getDeclaredMethod("setHandled", new Class[]{boolean.class});

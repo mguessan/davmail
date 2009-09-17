@@ -21,6 +21,7 @@ package davmail.ui;
 import davmail.DavGateway;
 import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.ui.browser.DesktopBrowser;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -41,6 +42,9 @@ import java.net.URL;
 public class AboutFrame extends JFrame {
     private final JEditorPane jEditorPane;
 
+    /**
+     * About frame.
+     */
     public AboutFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
@@ -65,7 +69,7 @@ public class AboutFrame extends JFrame {
         stylesheet.addRule("body { font-size:small;font-family: " + jEditorPane.getFont().getFamily() + '}');
         jEditorPane.setEditorKit(htmlEditorKit);
         jEditorPane.setContentType("text/html");
-	    jEditorPane.setText(getContent(null));
+        jEditorPane.setText(getContent(null));
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
@@ -125,6 +129,9 @@ public class AboutFrame extends JFrame {
     }
 
 
+    /**
+     * Update about frame content with current released version.
+     */
     public void update() {
         jEditorPane.setText(getContent(DavGateway.getReleasedVersion()));
         pack();

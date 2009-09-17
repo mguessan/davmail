@@ -174,8 +174,17 @@ public abstract class AbstractServer extends Thread {
         }
     }
 
+    /**
+     * Create a connection handler for the current listener.
+     *
+     * @param clientSocket client socket
+     * @return connection handler
+     */
     public abstract AbstractConnection createConnectionHandler(Socket clientSocket);
 
+    /**
+     * Close server socket
+     */
     public void close() {
         try {
             if (serverSocket != null) {

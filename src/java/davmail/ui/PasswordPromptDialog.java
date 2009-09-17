@@ -33,10 +33,20 @@ public class PasswordPromptDialog extends JDialog {
     final JPasswordField passwordField = new JPasswordField(20);
     protected char[] password;
 
+    /**
+     * Get user password.
+     *
+     * @return user password as char array
+     */
     public char[] getPassword() {
         return password;
     }
 
+    /**
+     * Get smartcard password.
+     *
+     * @param prompt password prompt from PKCS11 module
+     */
     public PasswordPromptDialog(String prompt) {
         setAlwaysOnTop(true);
 

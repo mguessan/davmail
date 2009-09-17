@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package davmail.ui;
+package davmail.ui.browser;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,6 +29,13 @@ public final class AwtDesktopBrowser {
     private AwtDesktopBrowser() {
     }
 
+    /**
+     * Open default browser at location URI.
+     * User Java 6 Desktop class
+     *
+     * @param location location URI
+     * @throws IOException on error
+     */
     public static void browse(URI location) throws IOException {
         Desktop desktop = Desktop.getDesktop();
         desktop.browse(location);

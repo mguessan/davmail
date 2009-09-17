@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.DavGateway;
 import davmail.Settings;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.ui.browser.DesktopBrowser;
 import org.apache.log4j.Level;
 
 import javax.swing.*;
@@ -272,7 +273,7 @@ public class SettingsFrame extends JFrame {
         return smartcardPanel;
     }
 
-    public JPanel getNetworkSettingsPanel() {
+    protected JPanel getNetworkSettingsPanel() {
         JPanel networkSettingsPanel = new JPanel(new GridLayout(4, 2));
         networkSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_NETWORK")));
 
@@ -297,7 +298,7 @@ public class SettingsFrame extends JFrame {
         return networkSettingsPanel;
     }
 
-    public JPanel getLoggingSettingsPanel() {
+    protected JPanel getLoggingSettingsPanel() {
         JPanel loggingLevelPanel = new JPanel();
         JPanel leftLoggingPanel = new JPanel(new GridLayout(2, 2));
         JPanel rightLoggingPanel = new JPanel(new GridLayout(2, 2));
@@ -331,6 +332,9 @@ public class SettingsFrame extends JFrame {
         return loggingPanel;
     }
 
+    /**
+     * Reload settings from properties.
+     */
     public void reload() {
         // reload settings in form
         urlField.setText(Settings.getProperty("davmail.url"));
@@ -375,9 +379,12 @@ public class SettingsFrame extends JFrame {
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
-       logFilePathField.setText(Settings.getProperty("davmail.logFilePath")); 
+        logFilePathField.setText(Settings.getProperty("davmail.logFilePath"));
     }
 
+    /**
+     * DavMail settings frame.
+     */
     public SettingsFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_DAVMAIL_SETTINGS"));

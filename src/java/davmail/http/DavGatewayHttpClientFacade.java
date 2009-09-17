@@ -374,7 +374,7 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
-     * Create and start a new HttpConnectionManager, close idle connections every minute. 
+     * Create and start a new HttpConnectionManager, close idle connections every minute.
      */
     public static void start() {
         if (multiThreadedHttpConnectionManager == null) {

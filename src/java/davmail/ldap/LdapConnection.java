@@ -843,12 +843,6 @@ public class LdapConnection extends AbstractConnection {
                 if (returningAttributes.contains("uidnumber")) {
                     ldapPerson.put("uidnumber", userName);
                 }
-                // TODO: check if this breaks iCal3
-/*                if (returningAttributes.contains("apple-generateduid")) {
-                    ldapPerson.put("apple-generateduid", userName);
-                    ldapPerson.put("uid", userName);
-                }
-*/
             }
             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
             sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);

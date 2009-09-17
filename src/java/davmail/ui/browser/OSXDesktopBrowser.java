@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package davmail.ui;
+package davmail.ui.browser;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,6 +28,13 @@ public class OSXDesktopBrowser {
     private OSXDesktopBrowser() {
     }
 
+    /**
+     * Open default browser at location URI.
+     * User OSX open command
+     *
+     * @param location location URI
+     * @throws IOException on error
+     */
     public static void browse(URI location) throws IOException {
        Runtime.getRuntime().exec("open "+location.toString());
     }

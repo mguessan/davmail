@@ -37,11 +37,23 @@ import java.util.Date;
 public class AcceptCertificateDialog extends JDialog {
     protected boolean accepted;
 
+    /**
+     * Accept status.
+     *
+     * @return true if user accepted certificate
+     */
     public boolean isAccepted() {
         return accepted;
     }
 
-    public void addFieldValue(JPanel panel, String label, String value) {
+    /**
+     * Add a new JLabel to panel with <b>label</b>: value text.
+     *
+     * @param panel certificate details panel
+     * @param label certificate attribute label
+     * @param value certificate attribute value
+     */
+    protected void addFieldValue(JPanel panel, String label, String value) {
         JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         StringBuilder buffer = new StringBuilder();
         buffer.append("<html><b>");
@@ -52,6 +64,11 @@ public class AcceptCertificateDialog extends JDialog {
         panel.add(fieldPanel);
     }
 
+    /**
+     * Accept certificate dialog.
+     *
+     * @param certificate certificate sent by server
+     */
     public AcceptCertificateDialog(X509Certificate certificate) {
         setAlwaysOnTop(true);
         String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
@@ -72,12 +89,12 @@ public class AcceptCertificateDialog extends JDialog {
         Date now = new Date();
         String notBefore = formatter.format(certificate.getNotBefore());
         if (now.before(certificate.getNotBefore())) {
-           notBefore = "<html><font color=\"#FF0000\">"+notBefore+"</font></html>"; 
+            notBefore = "<html><font color=\"#FF0000\">" + notBefore + "</font></html>";
         }
         addFieldValue(subjectPanel, BundleMessage.format("UI_VALID_FROM"), notBefore);
         String notAfter = formatter.format(certificate.getNotAfter());
         if (now.after(certificate.getNotAfter())) {
-           notAfter = "<html><font color=\"#FF0000\">"+notAfter+"</font></html>";
+            notAfter = "<html><font color=\"#FF0000\">" + notAfter + "</font></html>";
         }
         addFieldValue(subjectPanel, BundleMessage.format("UI_VALID_UNTIL"), notAfter);
         addFieldValue(subjectPanel, BundleMessage.format("UI_SERIAL"), DavGatewayX509TrustManager.getFormattedSerial(certificate));
@@ -125,6 +142,12 @@ public class AcceptCertificateDialog extends JDialog {
     }
 
 
+    /**
+     * Display certificate accept dialog and get user answer.
+     *
+     * @param certificate certificate sent by server
+     * @return true if user accepted certificate
+     */
     public static boolean isCertificateTrusted(final X509Certificate certificate) {
         final boolean[] answer = new boolean[1];
         try {
