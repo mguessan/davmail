@@ -48,11 +48,12 @@ public final class DavGatewayHttpClientFacade {
 
     static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)";
     static final int MAX_REDIRECTS = 10;
-    static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
+    static final Object LOCK = new Object();
+    private static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
     static final long ONE_MINUTE = 60000;
 
-    static Thread httpConnectionManagerThread;
+    private static Thread httpConnectionManagerThread;
 
     static {
         DavGatewayHttpClientFacade.start();
@@ -109,7 +110,9 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient current Http client
      */
     public static void configureClient(HttpClient httpClient) {
-        httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
+        synchronized (LOCK) {
+            httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
+        }
 
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.DIGEST);
@@ -360,7 +363,7 @@ public final class DavGatewayHttpClientFacade {
         method.setFollowRedirects(false);
         int status = httpClient.executeMethod(method);
         if (status != HttpStatus.SC_OK) {
-            LOGGER.warn("GET failed with status "+status+" at "+method.getURI()+": "+method.getResponseBodyAsString());
+            LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
             throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
         }
 
@@ -386,12 +389,38 @@ public final class DavGatewayHttpClientFacade {
      * Stop HttpConnectionManager.
      */
     public static void stop() {
-        if (multiThreadedHttpConnectionManager != null) {
-            if (httpConnectionManagerThread != null) {
-                httpConnectionManagerThread.interrupt();
+        synchronized (LOCK) {
+            if (multiThreadedHttpConnectionManager != null) {
+                if (httpConnectionManagerThread != null) {
+                    httpConnectionManagerThread.interrupt();
+                }
+                multiThreadedHttpConnectionManager.shutdown();
+                multiThreadedHttpConnectionManager = null;
             }
-            multiThreadedHttpConnectionManager.shutdown();
-            multiThreadedHttpConnectionManager = null;
+        }
+    }
+
+    static class HttpConnectionManagerThread extends Thread {
+        HttpConnectionManagerThread() {
+            super(HttpConnectionManager.class.getSimpleName());
+            setDaemon(true);
+        }
+
+        @Override
+        public void run() {
+            boolean terminated = false;
+            while (!terminated) {
+                try {
+                    sleep(ONE_MINUTE);
+                } catch (InterruptedException e) {
+                    terminated = true;
+                }
+                synchronized (LOCK) {
+                    if (multiThreadedHttpConnectionManager != null) {
+                        multiThreadedHttpConnectionManager.closeIdleConnections(ONE_MINUTE);
+                    }
+                }
+            }
         }
     }
 
@@ -399,27 +428,13 @@ public final class DavGatewayHttpClientFacade {
      * Create and start a new HttpConnectionManager, close idle connections every minute.
      */
     public static void start() {
-        if (multiThreadedHttpConnectionManager == null) {
-            multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
-            multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
-            httpConnectionManagerThread = new Thread(HttpConnectionManager.class.getSimpleName()) {
-                @Override
-                public void run() {
-                    boolean terminated = false;
-                    while (!terminated) {
-                        try {
-                            sleep(ONE_MINUTE);
-                        } catch (InterruptedException e) {
-                            terminated = true;
-                        }
-                        if (multiThreadedHttpConnectionManager != null) {
-                            multiThreadedHttpConnectionManager.closeIdleConnections(ONE_MINUTE);
-                        }
-                    }
-                }
-            };
-            httpConnectionManagerThread.setDaemon(true);
-            httpConnectionManagerThread.start();
+        synchronized (LOCK) {
+            if (multiThreadedHttpConnectionManager == null) {
+                multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
+                multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
+                httpConnectionManagerThread = new HttpConnectionManagerThread();
+                httpConnectionManagerThread.start();
+            }
         }
     }
 }
