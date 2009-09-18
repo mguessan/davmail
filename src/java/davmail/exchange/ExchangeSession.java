@@ -1697,7 +1697,7 @@ public class ExchangeSession {
     }
 
     private static int dumpIndex = 1;
-    private static String defaultSound = "Basso";
+    private String defaultSound = "Basso";
 
     protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
         // additional setting to activate ICS dump (not available in GUI)

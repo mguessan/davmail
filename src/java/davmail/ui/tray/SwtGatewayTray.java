@@ -50,7 +50,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Image inactiveImage;
     private static Display display;
     private static Shell shell;
-    private static LogBrokerMonitor logBrokerMonitor;
+    private LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
     private boolean isReady;
 

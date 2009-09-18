@@ -49,11 +49,11 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     static SettingsFrame settingsFrame;
     ActionListener settingsListener;
 
-    protected static TrayIcon trayIcon;
+    static TrayIcon trayIcon;
     private static Image image;
     private static Image image2;
     private static Image inactiveImage;
-    protected static LogBrokerMonitor logBrokerMonitor;
+    LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
     /**

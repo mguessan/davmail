@@ -128,7 +128,11 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         while (!yes.equals(answer) && !no.equals(answer)) {
             System.out.println(buffer.toString());
             try {
-                answer = inReader.readLine().toLowerCase();
+                answer = inReader.readLine();
+                if (answer == null) {
+                    answer = no;
+                }
+                answer = answer.toLowerCase();
             } catch (IOException e) {
                 System.err.println(e);
             }

@@ -41,10 +41,10 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     protected FrameGatewayTray() {
     }
 
-    protected static JFrame mainFrame;
-    protected static AboutFrame aboutFrame;
-    protected static SettingsFrame settingsFrame;
-    protected static LogBrokerMonitor logBrokerMonitor;
+    static JFrame mainFrame;
+    static AboutFrame aboutFrame;
+    static SettingsFrame settingsFrame;
+    LogBrokerMonitor logBrokerMonitor;
     private static JEditorPane errorArea;
     private static JLabel errorLabel;
     private static JEditorPane messageArea;

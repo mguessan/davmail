@@ -86,12 +86,13 @@ public abstract class AbstractServer extends Thread {
         if (keystoreFile == null || keystoreFile.length() == 0) {
             serverSocketFactory = ServerSocketFactory.getDefault();
         } else {
-
+            FileInputStream keyStoreInputStream = null;
             try {
+                keyStoreInputStream = new FileInputStream(keystoreFile);
                 // keystore for keys and certificates
                 // keystore and private keys should be password protected...
                 KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
-                keystore.load(new FileInputStream(keystoreFile),
+                keystore.load(keyStoreInputStream,
                         Settings.getProperty("davmail.ssl.keystorePass").toCharArray());
 
                 // KeyManagerFactory to create key managers
@@ -113,6 +114,14 @@ public abstract class AbstractServer extends Thread {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
             } catch (GeneralSecurityException ex) {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
+            } finally {
+                if (keyStoreInputStream != null) {
+                    try {
+                        keyStoreInputStream.close();
+                    } catch (IOException exc) {
+                        DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
+                    }
+                }
             }
         }
         try {
