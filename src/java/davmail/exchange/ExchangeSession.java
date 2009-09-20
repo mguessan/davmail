@@ -551,29 +551,35 @@ public class ExchangeSession {
         }
     }
 
-    protected void getWellKnownFolders() throws IOException {
+    protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
-        if (responses.length == 0) {
-            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDERS");
+        MultiStatusResponse[] responses;
+        try {
+            responses = DavGatewayHttpClientFacade.executePropFindMethod(
+                    httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
+            if (responses.length == 0) {
+                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
+            }
+            DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
+            inboxUrl = getURIPropertyIfExists(properties, "inbox", URN_SCHEMAS_HTTPMAIL);
+            deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems", URN_SCHEMAS_HTTPMAIL);
+            sentitemsUrl = getURIPropertyIfExists(properties, "sentitems", URN_SCHEMAS_HTTPMAIL);
+            sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg", URN_SCHEMAS_HTTPMAIL);
+            draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
+            calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
+            contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
+            LOGGER.debug("Inbox URL : " + inboxUrl +
+                    " Trash URL : " + deleteditemsUrl +
+                    " Sent URL : " + sentitemsUrl +
+                    " Send URL : " + sendmsgUrl +
+                    " Drafts URL : " + draftsUrl +
+                    " Calendar URL : " + calendarUrl +
+                    " Contacts URL : " + contactsUrl
+            );
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
-        DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
-        inboxUrl = getURIPropertyIfExists(properties, "inbox", URN_SCHEMAS_HTTPMAIL);
-        deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems", URN_SCHEMAS_HTTPMAIL);
-        sentitemsUrl = getURIPropertyIfExists(properties, "sentitems", URN_SCHEMAS_HTTPMAIL);
-        sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg", URN_SCHEMAS_HTTPMAIL);
-        draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
-        calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
-        contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
-        LOGGER.debug("Inbox URL : " + inboxUrl +
-                " Trash URL : " + deleteditemsUrl +
-                " Sent URL : " + sentitemsUrl +
-                " Send URL : " + sendmsgUrl +
-                " Drafts URL : " + draftsUrl +
-                " Calendar URL : " + calendarUrl +
-                " Contacts URL : " + contactsUrl
-        );
     }
 
     /**
@@ -1539,9 +1545,9 @@ public class ExchangeSession {
                 baos.close();
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
             } catch (IOException e) {
-                LOGGER.warn("Unable to get event at " + href+": "+e.getMessage());
+                LOGGER.warn("Unable to get event at " + href + ": " + e.getMessage());
             } catch (MessagingException e) {
-                LOGGER.warn("Unable to get event at " + href+": "+e.getMessage());
+                LOGGER.warn("Unable to get event at " + href + ": " + e.getMessage());
             } finally {
                 method.releaseConnection();
             }
@@ -2411,12 +2417,12 @@ public class ExchangeSession {
             MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                     httpClient, URIUtil.encodePath(mailPath), 0, DISPLAY_NAME);
             if (responses.length == 0) {
-                LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER"));
+                LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
             } else {
                 displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
             }
         } catch (IOException e) {
-            LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER"));
+            LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
         }
         return displayName;
     }
