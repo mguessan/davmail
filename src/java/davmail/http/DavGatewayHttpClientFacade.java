@@ -379,10 +379,16 @@ public final class DavGatewayHttpClientFacade {
         int status = method.getStatusCode();
         // 440 means forbidden on Exchange
         if (status == 440) {
-            return new HttpException(HttpStatus.SC_FORBIDDEN + " " + HttpStatus.getStatusText(HttpStatus.SC_FORBIDDEN));
-        } else {
-            return new HttpException(method.getStatusCode() + " " + method.getStatusText());
+            status = HttpStatus.SC_FORBIDDEN;
         }
+        StringBuilder message = new StringBuilder();
+        message.append(status).append(' ').append(method.getStatusText());
+        try {
+            message.append(" at ").append(method.getURI().getURI());
+        } catch (URIException e) {
+            message.append(method.getPath());
+        }
+        return new HttpException();
     }
 
     /**
