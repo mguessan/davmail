@@ -281,21 +281,21 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
-                                            UIDRangeIterator UIDRangeIterator = new UIDRangeIterator(tokens.nextToken());
+                                            UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
-                                            while (UIDRangeIterator.hasNext()) {
-                                                ExchangeSession.Message message = UIDRangeIterator.next();
+                                            while (uidRangeIterator.hasNext()) {
+                                                ExchangeSession.Message message = uidRangeIterator.next();
                                                 updateFlags(message, action, flags);
-                                                sendClient("* " + (UIDRangeIterator.currentIndex) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
+                                                sendClient("* " + (uidRangeIterator.currentIndex) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
                                             }
                                             sendClient(commandId + " OK STORE completed");
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
-                                                UIDRangeIterator UIDRangeIterator = new UIDRangeIterator(tokens.nextToken());
+                                                UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                                while (UIDRangeIterator.hasNext()) {
-                                                    ExchangeSession.Message message = UIDRangeIterator.next();
+                                                while (uidRangeIterator.hasNext()) {
+                                                    ExchangeSession.Message message = uidRangeIterator.next();
                                                     session.copyMessage(message, targetName);
                                                 }
                                                 sendClient(commandId + " OK copy completed");
@@ -588,7 +588,7 @@ public class ImapConnection extends AbstractConnection {
     protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         message.write(baos);
-        
+
         buffer.append(" BODYSTRUCTURE ");
         try {
             MimeMessage mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
@@ -947,18 +947,18 @@ public class ImapConnection extends AbstractConnection {
     /**
      * Filter to output only headers, also count full size
      */
-    private static class PartOutputStream extends FilterOutputStream {
-        protected static final int START = 0;
-        protected static final int CR = 1;
-        protected static final int CRLF = 2;
-        protected static final int CRLFCR = 3;
-        protected static final int BODY = 4;
+    private static final class PartOutputStream extends FilterOutputStream {
+        private static final int START = 0;
+        private static final int CR = 1;
+        private static final int CRLF = 2;
+        private static final int CRLFCR = 3;
+        private static final int BODY = 4;
 
-        protected int state = START;
-        protected int size;
-        protected final boolean writeHeaders;
-        protected final boolean writeBody;
-        protected final int startIndex;
+        private int state = START;
+        private int size;
+        private final boolean writeHeaders;
+        private final boolean writeBody;
+        private final int startIndex;
 
         private PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
                                  int startIndex) {

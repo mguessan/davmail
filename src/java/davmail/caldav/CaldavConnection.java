@@ -521,7 +521,7 @@ public class CaldavConnection extends AbstractConnection {
             List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
             appendEventsResponses(response, request, events);
-            // TODO: does not work with iCal3
+            // TODO does not work with iCal3
             /*
             List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
             for (ExchangeSession.Folder folder : folderList) {
@@ -581,10 +581,9 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.switchIcon();
                 try {
                     String eventName = getEventFileNameFromPath(href);
-                    if (eventName == null || eventName.length() == 0
-                            || "inbox".equals(eventName) || "calendar".equals(eventName)) {
-                        // Sunbird: just ignore
-                    } else {
+                    // ignore cases for Sunbird
+                    if (eventName != null && eventName.length() > 0
+                            && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
                         appendEventResponse(response, request, session.getEvent(folderPath, eventName));
                     }
                 } catch (HttpException e) {

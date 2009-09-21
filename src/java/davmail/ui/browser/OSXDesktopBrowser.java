@@ -24,7 +24,7 @@ import java.net.URI;
 /**
  * Failover: Runtime.exec open URL
  */
-public class OSXDesktopBrowser {
+public final class OSXDesktopBrowser {
     private OSXDesktopBrowser() {
     }
 

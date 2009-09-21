@@ -375,31 +375,31 @@ public class ExchangeSession {
                         for (Object content : contents) {
                             if (content instanceof CommentToken) {
                                 String scriptValue = ((CommentToken) content).getCommentedContent();
-                                int a_sUrlIndex = scriptValue.indexOf("var a_sUrl = \"");
-                                int a_sLgnIndex = scriptValue.indexOf("var a_sLgn = \"");
-                                if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
-                                    a_sUrlIndex += "var a_sUrl = \"".length();
-                                    a_sLgnIndex += "var a_sLgn = \"".length();
-                                    int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
-                                    int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
-                                    if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                        String pathQuery = scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
-                                                scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                int sUrlIndex = scriptValue.indexOf("var a_sUrl = \"");
+                                int sLgnIndex = scriptValue.indexOf("var a_sLgn = \"");
+                                if (sUrlIndex >= 0 && sLgnIndex >= 0) {
+                                    sUrlIndex += "var a_sUrl = \"".length();
+                                    sLgnIndex += "var a_sLgn = \"".length();
+                                    int sUrlEndIndex = scriptValue.indexOf('\"', sUrlIndex);
+                                    int sLgnEndIndex = scriptValue.indexOf('\"', sLgnIndex);
+                                    if (sUrlEndIndex >= 0 && sLgnEndIndex >= 0) {
+                                        String pathQuery = scriptValue.substring(sLgnIndex, sLgnEndIndex) +
+                                                scriptValue.substring(sUrlIndex, sUrlEndIndex);
                                         String src = getScriptBasedFormURL(initmethod, pathQuery);
                                         LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
                                     }
                                 } else {
-                                    a_sLgnIndex = scriptValue.indexOf("var a_sLgnQS = \"");
-                                    if (a_sUrlIndex >= 0 && a_sLgnIndex >= 0) {
-                                        a_sUrlIndex += "var a_sUrl = \"".length();
-                                        a_sLgnIndex += "var a_sLgnQS = \"".length();
-                                        int a_sUrlEndIndex = scriptValue.indexOf('\"', a_sUrlIndex);
-                                        int a_sLgnEndIndex = scriptValue.indexOf('\"', a_sLgnIndex);
-                                        if (a_sUrlEndIndex >= 0 && a_sLgnEndIndex >= 0) {
-                                            String pathQuery = scriptValue.substring(a_sLgnIndex, a_sLgnEndIndex) +
-                                                    scriptValue.substring(a_sUrlIndex, a_sUrlEndIndex);
+                                    sLgnIndex = scriptValue.indexOf("var a_sLgnQS = \"");
+                                    if (sUrlIndex >= 0 && sLgnIndex >= 0) {
+                                        sUrlIndex += "var a_sUrl = \"".length();
+                                        sLgnIndex += "var a_sLgnQS = \"".length();
+                                        int sUrlEndIndex = scriptValue.indexOf('\"', sUrlIndex);
+                                        int sLgnEndIndex = scriptValue.indexOf('\"', sLgnIndex);
+                                        if (sUrlEndIndex >= 0 && sLgnEndIndex >= 0) {
+                                            String pathQuery = scriptValue.substring(sLgnIndex, sLgnEndIndex) +
+                                                    scriptValue.substring(sUrlIndex, sUrlEndIndex);
                                             String src = getScriptBasedFormURL(initmethod, pathQuery);
                                             LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                             HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
@@ -460,9 +460,10 @@ public class ExchangeSession {
         }
     }
 
+    static final String BASE_HREF = "<base href=\"";
+
     protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
         // find base url
-        final String BASE_HREF = "<base href=\"";
         String line;
 
         // get user mail URL from html body (multi frame)
@@ -2569,6 +2570,8 @@ public class ExchangeSession {
         }
     }
 
+    static final String MAILBOX_BASE = "cn=recipients/cn=";
+
     protected String getAliasFromOptions(String path) {
         String result = null;
         // get user mail URL from html body
@@ -2579,7 +2582,6 @@ public class ExchangeSession {
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find mailbox full name
-            final String MAILBOX_BASE = "cn=recipients/cn=";
             //noinspection StatementWithEmptyBody
             while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
             }

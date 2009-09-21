@@ -308,12 +308,12 @@ public class LdapConnection extends AbstractConnection {
     /**
      * For some unknow reaseon parseIntWithTag is private !
      */
-    static final Method parseIntWithTag;
+    static final Method PARSE_INT_WITH_TAG_METHOD;
 
     static {
         try {
-            parseIntWithTag = BerDecoder.class.getDeclaredMethod("parseIntWithTag", int.class);
-            parseIntWithTag.setAccessible(true);
+            PARSE_INT_WITH_TAG_METHOD = BerDecoder.class.getDeclaredMethod("parseIntWithTag", int.class);
+            PARSE_INT_WITH_TAG_METHOD.setAccessible(true);
         } catch (NoSuchMethodException e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_GET_PARSEINTWITHTAG"));
             throw new RuntimeException(e);
@@ -626,7 +626,7 @@ public class LdapConnection extends AbstractConnection {
             } else if (requestOperation == LDAP_REQ_ABANDON) {
                 int canceledMessageId = 0;
                 try {
-                    canceledMessageId = (Integer) parseIntWithTag.invoke(reqBer, LDAP_REQ_ABANDON);
+                    canceledMessageId = (Integer) PARSE_INT_WITH_TAG_METHOD.invoke(reqBer, LDAP_REQ_ABANDON);
                 } catch (IllegalAccessException e) {
                     DavGatewayTray.error(e);
                 } catch (InvocationTargetException e) {

@@ -39,14 +39,14 @@ import java.util.Map;
  */
 public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
-    private static final Map<PoolKey, ExchangeSession> poolMap = new HashMap<PoolKey, ExchangeSession>();
+    private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<PoolKey, ExchangeSession>();
     private static boolean configChecked;
     private static boolean errorSent;
 
     static class PoolKey {
-        public final String url;
-        public final String userName;
-        public final String password;
+        final String url;
+        final String userName;
+        final String password;
 
         PoolKey(String url, String userName, String password) {
             this.url = url;
@@ -87,7 +87,7 @@ public final class ExchangeSessionFactory {
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
             synchronized (LOCK) {
-                session = poolMap.get(poolKey);
+                session = POOL_MAP.get(poolKey);
             }
             if (session != null) {
                 ExchangeSession.LOGGER.debug("Got session " + session + " from cache");
@@ -98,7 +98,7 @@ public final class ExchangeSessionFactory {
                 session = null;
                 // expired session, remove from cache
                 synchronized (LOCK) {
-                    poolMap.remove(poolKey);
+                    POOL_MAP.remove(poolKey);
                 }
             }
 
@@ -108,7 +108,7 @@ public final class ExchangeSessionFactory {
             }
             // successfull login, put session in cache
             synchronized (LOCK) {
-                poolMap.put(poolKey, session);
+                POOL_MAP.put(poolKey, session);
             }
             // session opened, future failure will mean network down
             configChecked = true;
@@ -204,6 +204,6 @@ public final class ExchangeSessionFactory {
     public static void reset() {
         configChecked = false;
         errorSent = false;
-        poolMap.clear();
+        POOL_MAP.clear();
     }
 }

@@ -290,15 +290,15 @@ public class PopConnection extends AbstractConnection {
     /**
      * Filter to limit output lines to max body lines after header
      */
-    private static class TopOutputStream extends FilterOutputStream {
-        protected static final int START = 0;
-        protected static final int CR = 1;
-        protected static final int CRLF = 2;
-        protected static final int CRLFCR = 3;
-        protected static final int BODY = 4;
+    private static final class TopOutputStream extends FilterOutputStream {
+        private static final int START = 0;
+        private static final int CR = 1;
+        private static final int CRLF = 2;
+        private static final int CRLFCR = 3;
+        private static final int BODY = 4;
 
-        protected int maxLines;
-        protected int state = START;
+        private int maxLines;
+        private int state = START;
 
         private TopOutputStream(OutputStream os, int maxLines) {
             super(os);

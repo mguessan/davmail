@@ -40,7 +40,7 @@ import java.util.ArrayList;
 /**
  * DavGateway main class
  */
-public class DavGateway {
+public final class DavGateway {
     private static final String HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT = "http://davmail.sourceforge.net/version.txt";
 
     private static boolean stopped;
@@ -48,7 +48,7 @@ public class DavGateway {
     private DavGateway() {
     }
 
-    private static final ArrayList<AbstractServer> serverList = new ArrayList<AbstractServer>();
+    private static final ArrayList<AbstractServer> SERVER_LIST = new ArrayList<AbstractServer>();
 
     /**
      * Start the gateway, listen on spécified smtp and pop3 ports
@@ -101,32 +101,32 @@ public class DavGateway {
         // prepare HTTP connection pool
         DavGatewayHttpClientFacade.start();
 
-        serverList.clear();
+        SERVER_LIST.clear();
 
         int smtpPort = Settings.getIntProperty("davmail.smtpPort");
         if (smtpPort != 0) {
-            serverList.add(new SmtpServer(smtpPort));
+            SERVER_LIST.add(new SmtpServer(smtpPort));
         }
         int popPort = Settings.getIntProperty("davmail.popPort");
         if (popPort != 0) {
-            serverList.add(new PopServer(popPort));
+            SERVER_LIST.add(new PopServer(popPort));
         }
         int imapPort = Settings.getIntProperty("davmail.imapPort");
         if (imapPort != 0) {
-            serverList.add(new ImapServer(imapPort));
+            SERVER_LIST.add(new ImapServer(imapPort));
         }
         int caldavPort = Settings.getIntProperty("davmail.caldavPort");
         if (caldavPort != 0) {
-            serverList.add(new CaldavServer(caldavPort));
+            SERVER_LIST.add(new CaldavServer(caldavPort));
         }
         int ldapPort = Settings.getIntProperty("davmail.ldapPort");
         if (ldapPort != 0) {
-            serverList.add(new LdapServer(ldapPort));
+            SERVER_LIST.add(new LdapServer(ldapPort));
         }
 
         BundleMessage.BundleMessageList messages = new BundleMessage.BundleMessageList();
         BundleMessage.BundleMessageList errorMessages = new BundleMessage.BundleMessageList();
-        for (AbstractServer server : serverList) {
+        for (AbstractServer server : SERVER_LIST) {
             try {
                 server.bind();
                 server.start();
@@ -157,7 +157,7 @@ public class DavGateway {
      * Stop all listeners, shutdown connection pool and clear session cache.
      */
     public static void stop() {
-        for (AbstractServer server : serverList) {
+        for (AbstractServer server : SERVER_LIST) {
             server.close();
             try {
                 server.join();

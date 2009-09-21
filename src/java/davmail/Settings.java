@@ -28,9 +28,9 @@ import org.apache.log4j.*;
 /**
  * Settings facade.
  * DavMail settings are stored in the .davmail.properties file in current
- * user home directory or in the file specified on the command line. 
+ * user home directory or in the file specified on the command line.
  */
-public class Settings {
+public final class Settings {
     private Settings() {
     }
 
@@ -40,7 +40,8 @@ public class Settings {
 
     /**
      * Set config file path (from command line parameter).
-     * @param path davmail properties file path 
+     *
+     * @param path davmail properties file path
      */
     public static synchronized void setConfigFilePath(String path) {
         configFilePath = path;
@@ -48,6 +49,7 @@ public class Settings {
 
     /**
      * Detect first launch (properties file does not exist).
+     *
      * @return true if this is the first start with the current file path
      */
     public static synchronized boolean isFirstStart() {
@@ -56,6 +58,7 @@ public class Settings {
 
     /**
      * Load properties from provided stream (used in webapp mode).
+     *
      * @param inputStream properties stream
      * @throws IOException on error
      */
@@ -130,10 +133,11 @@ public class Settings {
 
     /**
      * Return DavMail log file path
+     *
      * @return full log file path
      */
     public static String getLogFilePath() {
-         String logFilePath = Settings.getProperty("davmail.logFilePath");
+        String logFilePath = Settings.getProperty("davmail.logFilePath");
         // use default log file path on Mac OS X
         if ((logFilePath == null || logFilePath.length() == 0)
                 && System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
@@ -144,6 +148,7 @@ public class Settings {
 
     /**
      * Return DavMail log file directory
+     *
      * @return full log file directory
      */
     public static String getLogFileDirectory() {
@@ -153,7 +158,7 @@ public class Settings {
         }
         int lastSlashIndex = logFilePath.lastIndexOf('/');
         if (lastSlashIndex == -1) {
-             lastSlashIndex = logFilePath.lastIndexOf('\\');
+            lastSlashIndex = logFilePath.lastIndexOf('\\');
         }
         if (lastSlashIndex >= 0) {
             return logFilePath.substring(0, lastSlashIndex);
@@ -165,7 +170,7 @@ public class Settings {
     /**
      * Update Log4J config from settings.
      */
-    protected static void updateLoggingConfig() {
+    private static void updateLoggingConfig() {
         String logFilePath = getLogFilePath();
 
         Logger rootLogger = Logger.getRootLogger();
@@ -229,6 +234,7 @@ public class Settings {
 
     /**
      * Get a property value as String.
+     *
      * @param property property name
      * @return property value
      */
@@ -238,8 +244,9 @@ public class Settings {
 
     /**
      * Set a property value.
+     *
      * @param property property name
-     * @param value property value
+     * @param value    property value
      */
     public static synchronized void setProperty(String property, String value) {
         if (value != null) {
@@ -251,6 +258,7 @@ public class Settings {
 
     /**
      * Get a property value as int.
+     *
      * @param property property name
      * @return property value
      */
@@ -260,7 +268,8 @@ public class Settings {
 
     /**
      * Get a property value as int, return default value if null.
-     * @param property property name
+     *
+     * @param property     property name
      * @param defaultValue default property value
      * @return property value
      */
@@ -279,6 +288,7 @@ public class Settings {
 
     /**
      * Get a property value as boolean.
+     *
      * @param property property name
      * @return property value
      */
@@ -289,10 +299,11 @@ public class Settings {
 
     /**
      * Build logging properties prefix.
+     *
      * @param category logging category
      * @return prefix
      */
-    protected static String getLoggingPrefix(String category) {
+    private static String getLoggingPrefix(String category) {
         String prefix;
         if ("rootLogger".equals(category)) {
             prefix = "log4j.";
@@ -304,6 +315,7 @@ public class Settings {
 
     /**
      * Return Log4J logging level for the category.
+     *
      * @param category logging category
      * @return logging level
      */
@@ -322,8 +334,9 @@ public class Settings {
 
     /**
      * Set Log4J logging level for the category
+     *
      * @param category logging category
-     * @param level logging level
+     * @param level    logging level
      */
     public static synchronized void setLoggingLevel(String category, Level level) {
         String prefix = getLoggingPrefix(category);
@@ -337,8 +350,9 @@ public class Settings {
 
     /**
      * Change and save a single property.
+     *
      * @param property property name
-     * @param value property value
+     * @param value    property value
      */
     public static synchronized void saveProperty(String property, String value) {
         Settings.load();

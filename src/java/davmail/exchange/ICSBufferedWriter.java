@@ -27,6 +27,7 @@ public class ICSBufferedWriter {
 
     /**
      * Write line to buffer, split lines at 75 characters.
+     *
      * @param line ics event line
      */
     public void writeLine(String line) {
@@ -47,11 +48,12 @@ public class ICSBufferedWriter {
 
     /**
      * Get buffer as String
+     *
      * @return ICS content as String
      */
     @Override
     public String toString() {
-      return buffer.toString();  
+        return buffer.toString();
     }
 
 }

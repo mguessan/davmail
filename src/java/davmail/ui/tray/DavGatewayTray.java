@@ -33,7 +33,7 @@ import java.net.URL;
 /**
  * Tray icon handler
  */
-public class DavGatewayTray {
+public final class DavGatewayTray {
     protected static final Logger LOGGER = Logger.getLogger("davmail");
 
     private DavGatewayTray() {
