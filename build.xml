@@ -192,6 +192,7 @@
                  classpathref="classpath"/>
         <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
+        <jsmoothgen project="davmailservice.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <zip file="dist/davmail-${release}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
