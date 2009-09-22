@@ -470,7 +470,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
-                String message = (e.getMessage() == null) ? e.toString() : e.getMessage();
+                String message = ((e.getMessage() == null) ? e.toString() : e.getMessage()).replaceAll("\\n", " ");
                 if (commandId != null) {
                     sendClient(commandId + " BAD unable to handle request: " + message);
                 } else {

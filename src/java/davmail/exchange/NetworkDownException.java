@@ -31,4 +31,13 @@ public class NetworkDownException extends DavMailException {
     public NetworkDownException(String key) {
         super(key);
     }
+
+    /**
+     * Build a network down exception with the provided BundleMessage key.
+     * @param key message key
+     * @param message detailed message
+     */
+    public NetworkDownException(String key, Object message) {
+        super(key, message);
+    }
 }

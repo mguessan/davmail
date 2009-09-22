@@ -163,7 +163,7 @@ public final class ExchangeSessionFactory {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             if (errorSent) {
                 ExchangeSession.LOGGER.warn(message);
-                throw new NetworkDownException("EXCEPTION_DAVMAIL_CONFIGURATION");
+                throw new NetworkDownException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
             } else {
                 // Mark that an error has been sent so you only get one
                 // error in a row (not a repeating string of errors).
