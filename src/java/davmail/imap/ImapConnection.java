@@ -126,6 +126,8 @@ public class ImapConnection extends AbstractConnection {
                             if (state != State.AUTHENTICATED) {
                                 sendClient(commandId + " BAD command authentication required");
                             } else {
+                                // check for expired session
+                                session = ExchangeSessionFactory.getInstance(session, userName, password);
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());

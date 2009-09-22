@@ -125,6 +125,40 @@ public final class ExchangeSessionFactory {
     }
 
     /**
+     * Get a non expired session.
+     * If the current session is not expired, return current session, else try to create a new session
+     *
+     * @param currentSession current session
+     * @param userName       user login
+     * @param password       user password
+     * @return authenticated session
+     * @throws IOException on error
+     */
+    public static ExchangeSession getInstance(ExchangeSession currentSession, String userName, String password)
+            throws IOException {
+        ExchangeSession session = currentSession;
+        try {
+            if (session.isExpired()) {
+                session = null;
+                String baseUrl = Settings.getProperty("davmail.url");
+                PoolKey poolKey = new PoolKey(baseUrl, userName, password);
+                // expired session, remove from cache
+                synchronized (LOCK) {
+                    POOL_MAP.remove(poolKey);
+                }
+                session = getInstance(userName, password);
+            }
+        } catch (DavMailAuthenticationException exc) {
+            throw exc;
+        } catch (DavMailException exc) {
+            throw exc;
+        } catch (Exception exc) {
+            handleNetworkDown(exc);
+        }
+        return session;
+    }
+
+    /**
      * Send a request to Exchange server to check current settings.
      *
      * @throws IOException if unable to access Exchange server
