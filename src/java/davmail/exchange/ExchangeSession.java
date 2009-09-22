@@ -1842,12 +1842,19 @@ public class ExchangeSession {
                 }
                 if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
-                } else if (!fromServer && "END:VEVENT".equals(line) && !hasCdoBusyStatus) {
-                    result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
+                } else if (!fromServer && "END:VEVENT".equals(line)) {
+                    if (!hasCdoBusyStatus) {
+                        result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
+                    }
+                    if (currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
+                        result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
+                    }
+                    // add organizer line to all events created in Exchange for active sync
+                    if (organizer == null) {
+                       result.writeLine("ORGANIZER:MAILTO:" + email);
+                    }
                 } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
                     line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
-                } else if (!fromServer && "END:VEVENT".equals(line) && currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
-                    result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
                 } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
                 } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART") && !line.startsWith("DTSTART;VALUE=DATE")) {
@@ -1943,9 +1950,6 @@ public class ExchangeSession {
                     // remove organizer line if user is organizer for iPhone
                 } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
                     continue;
-                    // add organizer line to all events created in Exchange for active sync
-                } else if (!fromServer && "END:VEVENT".equals(line) && organizer == null) {
-                    result.writeLine("ORGANIZER:MAILTO:" + email);
                 } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
                     // Ignore organizer as attendee
                     continue;
