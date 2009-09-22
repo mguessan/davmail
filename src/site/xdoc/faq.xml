@@ -65,9 +65,8 @@
                     under Tools/Options/Advanced:
                 </p>
                 <source>
-                    calendar.debug.log=true
-                    calendar.debug.log.verbose=true
-                </source>
+calendar.debug.log=true
+calendar.debug.log.verbose=true</source>
 
                 <p>
                     <strong>Invalid notifications</strong>
