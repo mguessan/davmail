@@ -83,6 +83,7 @@ Section "MainSection" SEC01
   CreateShortCut "$DESKTOP\DavMail.lnk" "$INSTDIR\davmail.exe"
   File "dist\davmail.jar"
   File "dist\davmailconsole.exe"
+  File "dist\davmailservice.exe"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.0.2.jar"
   File "dist\lib\commons-codec-1.3.jar"
@@ -171,6 +172,7 @@ no_quest:
   Delete "$INSTDIR\lib\wstx-asl-3.2.7.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
+  Delete "$INSTDIR\davmailservice.exe"
   Delete "$INSTDIR\davmailconsole.exe"
   Delete "$INSTDIR\davmail.log"
   Delete "$INSTDIR\davmail.jar"
