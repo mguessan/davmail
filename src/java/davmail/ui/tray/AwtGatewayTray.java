@@ -53,7 +53,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     private static Image image;
     private static Image image2;
     private static Image inactiveImage;
-    LogBrokerMonitor logBrokerMonitor;
+    static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
     /**
