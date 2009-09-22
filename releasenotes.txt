@@ -1,3 +1,98 @@
+** DavMail 3.5.0 released **
+This release improves OSX Snow Leopard support, thank to
+contributions from Dan Foody. Contact searches are also
+available now in addition to global address book searches
+over LDAP. IMAP with iPhone should now work correctly with
+most messages, Evolution IMAP read flag is fixed.
+Also added an experimental windows service support
+and a lot of other bug fixes and enhancements. 
+
+Doc:
+- Doc: Fix FAQ whitespaces
+- Doc: improve javadoc and code cleanup
+- Doc: New OSX settings screenshot
+- Doc: update release guide
+- Doc: improve index and build doc
+- Doc: detailed WIRE debug log file creation
+
+Windows:
+- Windows: Include DavMail service in windows package
+- Windows: create windows service exe
+- Windows: create windows service exe
+
+IMAP:
+- IMAP: test session expiration on each command, get a new session on expiration
+- IMAP: improve error logging on network down
+- IMAP: fix bug 2845530 implement FLAGS.SILENT command
+- IMAP: fix absolute (public) path handling
+- IMAP: fix BODYSTRUCTURE, build message on full buffer, do not rely on partial buffer (header, body, ...)
+- IMAP: fix bug 2835529 FETCH with unordered range
+- IMAP: send default BODYSTRUCTURE on mime parsing failure
+- IMAP: Improve IMAP bodystructure error logging
+- IMAP: Send bodystructure with headers for iPhone request (BODYSTRUCTURE BODY.PEEK[HEADER]) 
+- IMAP: send BODY[TEXT] for BODY.PEEK[TEXT] request, may improve iPhone support
+- IMAP: First fix for bug 2840255, do not follow redirects on message FETCH
+
+Caldav:
+- Caldav: fix conflict between X-MICROSOFT-CDO-BUSYSTATUS, X-MICROSOFT-CDO-ALLDAYEVENT and ORGANIZER ics patches
+- Caldav: check credentials on each request
+- Caldav: Disable broken sub calendar folders code
+- Caldav: Do not fail on Inbox access denied, just return an empty folder
+- Caldav: fix multi calendar Exchange path for sub folders
+- Caldav: Experimental, fix sub calendar folders path
+- Caldav: Experimental, send sub calendar folders on propfind with depth 1
+- Caldav: Handle multi line description in calendar message body
+- Caldav: merged contribution from Dan Foody,
+- Caldav: convert sound to display alarms and back
+- Caldav: remove additional organizer attendee line
+- Caldav: remove RSVP=TRUE if PARTSTAT is not NEEDS-ACTION
+- Caldav: add dump ICS logging feature
+- Caldav: add a text/plain body to calendar messages
+- Caldav: create a subject for calendar messages
+- Caldav: fixed some encoding issues in Dan's code
+- Caldav: Additional timezones
+- Caldav: failover to DAV:comment instead of CALDAV:schedule-state on some Exchange servers
+
+LDAP:
+- LDAP: iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
+- LDAP: iCal: do not send LDAP_SIZE_LIMIT_EXCEEDED on apple-computer search by cn with sizelimit 1
+- LDAP: copy uid to apple-generateduid for iCal attendee search 
+- LDAP: Make sure we do not send empty description field, replace " \n" with null
+- LDAP: fix thread name
+- LDAP: exclude non contact entries from search, fiw map key and sn copy for iCal
+- LDAP: fix contact search, do not send unrequested attributes
+- LDAP: improve Contact search filter support
+- LDAP: Additional Contact attributes
+- LDAP: refactor contact find, generic attribute mapping
+- LDAP: experimental contact search support
+
+OSX:
+- OSX: Prepare hide from Dock option
+- OSX: crazy workaround from Dan Foody to fix attendee search on OSX Snow Leopard
+- OSX: iCal4 (OSX Snow Leopard fixes)
+
+Bug Fixes:
+- Fix regression in Form Based Logon: fix script based logon URI creation with path and query
+- Another network down fix: DavMailException is not network down
+- Improve Form Based Logon: fix script based logon URI creation
+- Improve Form Based Logon: use full URI instead of path in PostMethod, also force trusted=4
+- Simplify HttpClient creation to avoid password decoding bug in commons httpclient ('+' in password decoded as ' ')
+
+Enhancements:
+- Improve HttpException error logging
+- Fixes from checkStyle audit
+- Adjust checkStyle settings
+- Improve error handling on invalid URL
+- Various fixes from FindBugs audit
+- Fix from audit: synchronize access to HttpConnectionManager
+- Refactor ExchangeSession: do not follow redirects with GET methods
+- Fix from audit
+- Do not pass DavMailAuthenticationException to handle network down
+- Custom form (txtUserName, tstUserPass) support
+- Another network down fix from Dan Foody
+- Merged another patch from Dan Foody on network down detection
+- New settings method: return log file directory
+
 ** DavMail 3.4.0 released **
 This release includes iPhone 3 Caldav support, upgrade to SWT 3.5,
 Palm Pre IMAP fixes, improved shared/public calendar support
@@ -203,8 +298,9 @@ Enhancements:
 
 OSX:
 - OSX: replace JavaApplicationStub link with actual file
-- Move davmail.log to Library/Logs/DavMail on OSX
-- Improve Mac OSX Java6 support
+- OSX: Move davmail.log to Library/Logs/DavMail on OSX
+- OSX: Improve Mac OSX Java6 support
+- OSX: fix regression on OSX Quit handler
 
 Bugs fixed:
 - Fix bug 2797272: Add disable update check
