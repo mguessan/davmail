@@ -846,6 +846,9 @@ public class ImapConnection extends AbstractConnection {
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "0");
                     message.flagged = false;
+                } else if ("\\Deleted".equals(flag)) {
+                    properties.put("deleted", null);
+                    message.deleted = false;
                 } else if ("Junk".equals(flag)) {
                     properties.put("junk", "0");
                     message.junk = false;
@@ -860,7 +863,7 @@ public class ImapConnection extends AbstractConnection {
                     message.read = true;
                 } else if ("\\Deleted".equals(flag)) {
                     message.deleted = true;
-                    properties.put("deleted", "1");
+                    properties.put("deleted", "deleted");
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "2");
                     message.flagged = true;
@@ -882,6 +885,8 @@ public class ImapConnection extends AbstractConnection {
             message.flagged = false;
             properties.put("junk", "0");
             message.junk = false;
+            properties.put("deleted", null);
+            message.deleted = false;
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
@@ -890,7 +895,7 @@ public class ImapConnection extends AbstractConnection {
                     message.read = true;
                 } else if ("\\Deleted".equals(flag)) {
                     message.deleted = true;
-                    properties.put("deleted", "1");
+                    properties.put("deleted", "deleted");
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "2");
                     message.flagged = true;
