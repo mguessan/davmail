@@ -613,7 +613,6 @@ public class ExchangeSession {
 
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
-        putmethod.setRequestHeader("Content-Type", "message/rfc822");
         try {
             // use same encoding as client socket reader
             putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody.getBytes()));
