@@ -114,7 +114,7 @@ public final class Settings {
                 SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
                 SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
                 SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
-                SETTINGS.put("log4j.logFilePath", "");
+                SETTINGS.put("davmail.logFilePath", "");
                 save();
             }
         } catch (IOException e) {
