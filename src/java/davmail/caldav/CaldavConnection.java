@@ -1131,6 +1131,15 @@ public class CaldavConnection extends AbstractConnection {
             return "DELETE".equals(command);
         }
 
+        /**
+         * Check if this request is a folder request.
+         *
+         * @return true if this is a folder (not event) request
+         */
+        public boolean isFolder() {
+            return isPropFind() || isReport() || isPropPatch() || isOptions() || isPost();
+        }
+
         public boolean isRoot() {
             return (pathElements.length == 0 || pathElements.length == 1);
         }
@@ -1296,15 +1305,25 @@ public class CaldavConnection extends AbstractConnection {
          * @throws IOException on error
          */
         public String getExchangeFolderPath() throws IOException {
+            int endIndex;
+            if (isFolder()) {
+                endIndex = getPathLength();
+            } else {
+                endIndex = getPathLength() - 1;
+            }
             if ("users".equals(getPathElement(1))) {
                 StringBuilder calendarPath = new StringBuilder();
                 calendarPath.append(getPathElement(3));
-                for (int i = 4; i < getPathLength() - 1; i++) {
+                for (int i = 4; i < endIndex; i++) {
                     calendarPath.append('/').append(getPathElement(i));
                 }
                 return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
             } else {
-                return path;
+                StringBuilder calendarPath = new StringBuilder();
+                for (int i=0;i<endIndex;i++) {
+                    calendarPath.append('/').append(getPathElement(i));
+                }
+                return calendarPath.toString();
             }
         }
 
