@@ -230,6 +230,7 @@ public class ImapConnection extends AbstractConnection {
                                                         sendClient(commandId + " NO No message found");
                                                     } else {
                                                         while (uidRangeIterator.hasNext()) {
+                                                            DavGatewayTray.switchIcon();
                                                             ExchangeSession.Message message = uidRangeIterator.next();
                                                             handleFetch(message, uidRangeIterator.currentIndex, parameters);
                                                         }
@@ -287,6 +288,7 @@ public class ImapConnection extends AbstractConnection {
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
                                             while (uidRangeIterator.hasNext()) {
+                                                DavGatewayTray.switchIcon();
                                                 ExchangeSession.Message message = uidRangeIterator.next();
                                                 updateFlags(message, action, flags);
                                                 sendClient("* " + (uidRangeIterator.currentIndex) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
@@ -297,6 +299,7 @@ public class ImapConnection extends AbstractConnection {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                                 while (uidRangeIterator.hasNext()) {
+                                                    DavGatewayTray.switchIcon();
                                                     ExchangeSession.Message message = uidRangeIterator.next();
                                                     session.copyMessage(message, targetName);
                                                 }
@@ -318,6 +321,7 @@ public class ImapConnection extends AbstractConnection {
                                             parameters = tokens.nextToken();
                                         }
                                         while (rangeIterator.hasNext()) {
+                                            DavGatewayTray.switchIcon();
                                             ExchangeSession.Message message = rangeIterator.next();
                                             handleFetch(message, rangeIterator.currentIndex, parameters);
                                         }

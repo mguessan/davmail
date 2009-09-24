@@ -34,7 +34,9 @@ import java.net.URL;
  * Tray icon handler
  */
 public final class DavGatewayTray {
-    protected static final Logger LOGGER = Logger.getLogger("davmail");
+    private static final Logger LOGGER = Logger.getLogger("davmail");
+    private static final long ICON_SWITCH_MINIMUM_DELAY = 250;
+    private static long lastIconSwitch;
 
     private DavGatewayTray() {
     }
@@ -59,7 +61,10 @@ public final class DavGatewayTray {
      */
     public static void switchIcon() {
         if (davGatewayTray != null) {
-            davGatewayTray.switchIcon();
+            if (System.currentTimeMillis() - lastIconSwitch > ICON_SWITCH_MINIMUM_DELAY) {
+                davGatewayTray.switchIcon();
+                lastIconSwitch = System.currentTimeMillis();
+            }
         }
     }
 
@@ -87,7 +92,7 @@ public final class DavGatewayTray {
      * @param message text message
      * @param level   log level
      */
-    protected static void displayMessage(BundleMessage message, Level level) {
+    private static void displayMessage(BundleMessage message, Level level) {
         LOGGER.log(level, message.formatLog());
         if (davGatewayTray != null) {
             davGatewayTray.displayMessage(message.format(), level);
@@ -101,7 +106,7 @@ public final class DavGatewayTray {
      * @param e       exception
      * @param level   log level
      */
-    protected static void displayMessage(BundleMessage message, Exception e, Level level) {
+    private static void displayMessage(BundleMessage message, Exception e, Level level) {
         if (e instanceof NetworkDownException) {
             LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e));
         } else {
@@ -263,7 +268,7 @@ public final class DavGatewayTray {
      *
      * @return true on Mac OS X
      */
-    protected static boolean isOSX() {
+    private static boolean isOSX() {
         return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
     }
 
