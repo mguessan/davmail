@@ -139,16 +139,7 @@ public class ImapConnection extends AbstractConnection {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
                                                 for (ExchangeSession.Folder folder : folders) {
                                                     sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
-                                                    try {
-                                                        List<ExchangeSession.Folder> subfolders = session.getSubFolders(folder.folderPath, false);
-                                                        for (ExchangeSession.Folder subfolder : subfolders) {
-                                                            sendClient("* " + command + " (" + subfolder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(subfolder.folderPath) + '\"');
-                                                        }
-                                                    } catch (HttpForbiddenException e) {
-                                                        // access forbidden, ignore
-                                                    } catch (HttpNotFoundException e) {
-                                                        // not found, ignore
-                                                    }
+                                                    sendSubFolders(command, folder.folderPath, false);
                                                 }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
@@ -160,10 +151,7 @@ public class ImapConnection extends AbstractConnection {
                                                     sendClient("* " + command + " (\\HasChildren) \"/\" \"/public\"");
                                                 }
                                                 boolean recursive = folderQuery.endsWith("*") && !folderQuery.startsWith("/public");
-                                                List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 1), recursive);
-                                                for (ExchangeSession.Folder folder : folders) {
-                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
-                                                }
+                                                sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive);
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
                                                 ExchangeSession.Folder folder = null;
@@ -171,8 +159,13 @@ public class ImapConnection extends AbstractConnection {
                                                     folder = session.getFolder(folderQuery);
                                                 } catch (HttpForbiddenException e) {
                                                     // access forbidden, ignore
+                                                    DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_ACCESS_FORBIDDEN", folderQuery));
                                                 } catch (HttpNotFoundException e) {
                                                     // not found, ignore
+                                                    DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_NOT_FOUND", folderQuery));
+                                                } catch (HttpException e) {
+                                                    // other errors, ignore
+                                                    DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_ACCESS_ERROR", folderQuery, e.getMessage()));
                                                 }
                                                 if (folder != null) {
                                                     sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
@@ -714,6 +707,24 @@ public class ImapConnection extends AbstractConnection {
             buffer.append(" NIL");
         } else {
             buffer.append(' ').append(value);
+        }
+    }
+
+    protected void sendSubFolders(String command, String folderPath, boolean recursive) throws IOException {
+        try {
+            List<ExchangeSession.Folder> folders = session.getSubFolders(folderPath, recursive);
+            for (ExchangeSession.Folder folder : folders) {
+                sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
+            }
+        } catch (HttpForbiddenException e) {
+            // access forbidden, ignore
+            DavGatewayTray.debug(new BundleMessage("LOG_SUBFOLDER_ACCESS_FORBIDDEN", folderPath));
+        } catch (HttpNotFoundException e) {
+            // not found, ignore
+            DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_NOT_FOUND", folderPath));
+        } catch (HttpException e) {
+            // other errors, ignore
+            DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_ACCESS_ERROR", folderPath, e.getMessage()));
         }
     }
 
