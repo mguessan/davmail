@@ -168,7 +168,7 @@ public class ImapConnection extends AbstractConnection {
                                             } else {
                                                 ExchangeSession.Folder folder = null;
                                                 try {
-                                                    session.getFolder(folderQuery);
+                                                    folder = session.getFolder(folderQuery);
                                                 } catch (HttpForbiddenException e) {
                                                     // access forbidden, ignore
                                                 } catch (HttpNotFoundException e) {
