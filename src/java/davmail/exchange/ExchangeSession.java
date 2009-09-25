@@ -836,10 +836,6 @@ public class ExchangeSession {
         folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
         folder.contenttag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
 
-        if (href.endsWith("/")) {
-            href = href.substring(0, href.length() - 1);
-        }
-
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
             folder.folderPath = href.replaceFirst(inboxUrl, "INBOX");
@@ -865,6 +861,9 @@ public class ExchangeSession {
                     throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                 }
             }
+        }
+        if (folder.folderPath.endsWith("/")) {
+            folder.folderPath = folder.folderPath.substring(0, folder.folderPath.length() - 1);
         }
         return folder;
     }
