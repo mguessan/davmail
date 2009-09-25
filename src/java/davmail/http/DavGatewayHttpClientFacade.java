@@ -21,6 +21,8 @@ package davmail.http;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpNotFoundException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -388,7 +390,13 @@ public final class DavGatewayHttpClientFacade {
         } catch (URIException e) {
             message.append(method.getPath());
         }
-        return new HttpException();
+        if (status == HttpStatus.SC_FORBIDDEN) {
+            return new HttpForbiddenException(message.toString());
+        } else if (status == HttpStatus.SC_NOT_FOUND) {
+            return new HttpNotFoundException(message.toString());
+        } else {
+            return new HttpException(message.toString());
+        }
     }
 
     /**

@@ -23,6 +23,8 @@ import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
@@ -133,18 +135,45 @@ public class ImapConnection extends AbstractConnection {
                                         String folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
-                                            if (folderQuery.endsWith("%/%")) {
-                                                folderQuery = folderQuery.substring(0, folderQuery.length() - 2);
-                                            }
-                                            if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
-                                                boolean recursive = folderQuery.endsWith("*");
+                                            if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
+                                                List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
+                                                for (ExchangeSession.Folder folder : folders) {
+                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
+                                                    try {
+                                                        List<ExchangeSession.Folder> subfolders = session.getSubFolders(folder.folderPath, false);
+                                                        for (ExchangeSession.Folder subfolder : subfolders) {
+                                                            sendClient("* " + command + " (" + subfolder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(subfolder.folderPath) + '\"');
+                                                        }
+                                                    } catch (HttpForbiddenException e) {
+                                                        // access forbidden, ignore
+                                                    } catch (HttpNotFoundException e) {
+                                                        // not found, ignore
+                                                    }
+                                                }
+                                                sendClient(commandId + " OK " + command + " completed");
+                                            } else if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
+                                                if ("/*".equals(folderQuery) || "/%".equals(folderQuery) || "/%/%".equals(folderQuery)) {
+                                                    folderQuery = folderQuery.substring(1);
+                                                    if ("%/%".equals(folderQuery)) {
+                                                        folderQuery = folderQuery.substring(0, folderQuery.length() - 2);
+                                                    }
+                                                    sendClient("* " + command + " (\\HasChildren) \"/\" \"/public\"");
+                                                }
+                                                boolean recursive = folderQuery.endsWith("*") && !folderQuery.startsWith("/public");
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 1), recursive);
                                                 for (ExchangeSession.Folder folder : folders) {
                                                     sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
                                                 }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
-                                                ExchangeSession.Folder folder = session.getFolder(folderQuery);
+                                                ExchangeSession.Folder folder = null;
+                                                try {
+                                                    session.getFolder(folderQuery);
+                                                } catch (HttpForbiddenException e) {
+                                                    // access forbidden, ignore
+                                                } catch (HttpNotFoundException e) {
+                                                    // not found, ignore
+                                                }
                                                 if (folder != null) {
                                                     sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
                                                     sendClient(commandId + " OK " + command + " completed");
@@ -161,22 +190,26 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        currentFolder = session.getFolder(folderName);
-                                        currentFolder.loadMessages();
-                                        sendClient("* " + currentFolder.count() + " EXISTS");
-                                        sendClient("* " + currentFolder.count() + " RECENT");
-                                        sendClient("* OK [UIDVALIDITY 1]");
-                                        if (currentFolder.count() == 0) {
-                                            sendClient("* OK [UIDNEXT " + 1 + ']');
-                                        } else {
-                                            sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
-                                        }
-                                        sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
-                                        sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
-                                        if ("select".equalsIgnoreCase(command)) {
-                                            sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
-                                        } else {
-                                            sendClient(commandId + " OK [READ-ONLY] " + command + " completed");
+                                        try {
+                                            currentFolder = session.getFolder(folderName);
+                                            currentFolder.loadMessages();
+                                            sendClient("* " + currentFolder.count() + " EXISTS");
+                                            sendClient("* " + currentFolder.count() + " RECENT");
+                                            sendClient("* OK [UIDVALIDITY 1]");
+                                            if (currentFolder.count() == 0) {
+                                                sendClient("* OK [UIDNEXT " + 1 + ']');
+                                            } else {
+                                                sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
+                                            }
+                                            sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
+                                            sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
+                                            if ("select".equalsIgnoreCase(command)) {
+                                                sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
+                                            } else {
+                                                sendClient(commandId + " OK [READ-ONLY] " + command + " completed");
+                                            }
+                                        } catch (HttpForbiddenException e) {
+                                            sendClient(commandId + " NO Forbidden");
                                         }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
