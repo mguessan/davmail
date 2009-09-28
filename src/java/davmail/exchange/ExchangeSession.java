@@ -57,7 +57,7 @@ import java.util.*;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
- */       
+ */
 public class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
@@ -311,7 +311,22 @@ public class ExchangeSession {
         int queryIndex = pathQuery.indexOf('?');
         if (queryIndex >= 0) {
             if (queryIndex > 0) {
-                initmethodURI.setPath(pathQuery.substring(0, queryIndex));
+                // update path
+                String newPath = pathQuery.substring(0, queryIndex);
+                if (newPath.startsWith("/")) {
+                    // absolute path
+                    initmethodURI.setPath(newPath);
+                } else {
+                    String currentPath = initmethodURI.getPath();
+                    int folderIndex = currentPath.lastIndexOf('/');
+                    if (folderIndex >= 0) {
+                        // replace relative path
+                        initmethodURI.setPath(currentPath.substring(0, folderIndex + 1) + newPath);
+                    } else {
+                        // should not happen
+                        initmethodURI.setPath('/' + newPath);
+                    }
+                }
             }
             initmethodURI.setQuery(pathQuery.substring(queryIndex + 1));
         }
@@ -1849,7 +1864,7 @@ public class ExchangeSession {
                     }
                     // add organizer line to all events created in Exchange for active sync
                     if (organizer == null) {
-                       result.writeLine("ORGANIZER:MAILTO:" + email);
+                        result.writeLine("ORGANIZER:MAILTO:" + email);
                     }
                 } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
                     line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
