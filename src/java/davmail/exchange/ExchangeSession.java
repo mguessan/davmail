@@ -2481,6 +2481,7 @@ public class ExchangeSession {
         StringBuilder buffer = new StringBuilder();
         // other user calendar => replace principal folder name in mailPath
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
+            LOGGER.debug("Detected shared calendar path for principal "+principal+", user principal is "+email);
             int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
                 buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
