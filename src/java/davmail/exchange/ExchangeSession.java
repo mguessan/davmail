@@ -1676,6 +1676,10 @@ public class ExchangeSession {
      */
     public Event getEvent(String folderPath, String eventName) throws IOException {
         String eventPath = URIUtil.encodePath(folderPath + '/' + eventName);
+        return getEvent(eventPath);
+    }
+
+    protected Event getEvent(String eventPath) throws IOException {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
@@ -2344,6 +2348,23 @@ public class ExchangeSession {
         eventResult.status = status;
         if (putmethod.getResponseHeader("GetETag") != null) {
             eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+        }
+
+        // trigger activeSync push event
+        if (status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) {
+            ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
+            propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
+            PropPatchMethod propPatchMethod = new PropPatchMethod(messageUrl, propertyList);
+            int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+            if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
+                LOGGER.warn("Unable to patch event to trigger activeSync push");
+            } else {
+                // Need to get event again to get updated etag
+                Event event = getEvent(messageUrl);
+                if (event.getEtag() != null) {
+                    eventResult.etag = event.getEtag();
+                }
+            }
         }
         return eventResult;
     }
