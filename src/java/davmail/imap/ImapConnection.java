@@ -201,6 +201,8 @@ public class ImapConnection extends AbstractConnection {
                                             } else {
                                                 sendClient(commandId + " OK [READ-ONLY] " + command + " completed");
                                             }
+                                        } catch (HttpNotFoundException e) {
+                                            sendClient(commandId + " NO Not found");
                                         } catch (HttpForbiddenException e) {
                                             sendClient(commandId + " NO Forbidden");
                                         }
