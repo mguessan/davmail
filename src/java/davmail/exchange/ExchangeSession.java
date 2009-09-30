@@ -138,8 +138,9 @@ public class ExchangeSession {
     private String alias;
     private final HttpClient httpClient;
 
-    private final ExchangeSessionFactory.PoolKey poolKey;
-
+    private final String userName;
+    private final String password;
+    
     private boolean disableGalLookup;
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
@@ -157,24 +158,27 @@ public class ExchangeSession {
 
     /**
      * Create an exchange session for the given URL.
-     * The session is not actually established until a call to login()
+     * The session is established for given userName and password
      *
-     * @param poolKey session pool key
+     * @param url Exchange url
+     * @param userName user login name
+     * @param password user password
      * @throws IOException on error
      */
-    ExchangeSession(ExchangeSessionFactory.PoolKey poolKey) throws IOException {
-        this.poolKey = poolKey;
+    ExchangeSession(String url, String userName, String password) throws IOException {
+        this.userName = userName;
+        this.password = password;
         try {
-            boolean isBasicAuthentication = isBasicAuthentication(poolKey.url);
+            boolean isBasicAuthentication = isBasicAuthentication(url);
 
-            httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url, poolKey.userName, poolKey.password);
+            httpClient = DavGatewayHttpClientFacade.getInstance(url, userName, password);
             // avoid 401 roundtrips
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
 
             // get webmail root url
             // providing credentials
             // manually follow redirect
-            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, poolKey.url);
+            HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, url);
 
             if (isBasicAuthentication) {
                 int status = method.getStatusCode();
@@ -187,7 +191,7 @@ public class ExchangeSession {
                     throw DavGatewayHttpClientFacade.buildHttpException(method);
                 }
             } else {
-                method = formLogin(httpClient, method, poolKey.userName, poolKey.password);
+                method = formLogin(httpClient, method, userName, password);
             }
 
             buildMailPath(method);
@@ -272,7 +276,7 @@ public class ExchangeSession {
      */
     public boolean checkCredentials(String userName, String password) {
         return userName != null && password != null
-                && userName.equals(poolKey.userName) && password.equals(poolKey.password);
+                && userName.equals(this.userName) && password.equals(this.password);
     }
 
     /**
@@ -467,7 +471,7 @@ public class ExchangeSession {
         String queryString = logonMethod.getQueryString();
         if (queryString != null && queryString.contains("reason=2")) {
             logonMethod.releaseConnection();
-            if (poolKey.userName != null && poolKey.userName.contains("\\")) {
+            if (this.userName != null && this.userName.contains("\\")) {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             } else {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_RETRY");
@@ -2416,12 +2420,12 @@ public class ExchangeSession {
      */
     protected String getAliasFromLogin() {
         // Exchange 2007 : userName is login without domain
-        String userName = poolKey.userName;
-        int index = userName.indexOf('\\');
+        String result = this.userName;
+        int index = result.indexOf('\\');
         if (index >= 0) {
-            userName = userName.substring(index + 1);
+            result = result.substring(index + 1);
         }
-        return userName;
+        return result;
     }
 
     /**
@@ -2874,7 +2878,7 @@ public class ExchangeSession {
         SimpleDateFormat exchangeZuluDateFormat = getExchangeZuluDateFormat();
         SimpleDateFormat icalDateFormat = getZuluDateFormat();
 
-        String url;
+        String freebusyUrl;
         Date startDate;
         Date endDate;
         try {
@@ -2888,7 +2892,7 @@ public class ExchangeSession {
             } else {
                 endDate = icalDateFormat.parse(endDateValue);
             }
-            url = "/public/?cmd=freebusy" +
+            freebusyUrl = "/public/?cmd=freebusy" +
                     "&start=" + exchangeZuluDateFormat.format(startDate) +
                     "&end=" + exchangeZuluDateFormat.format(endDate) +
                     "&interval=" + FREE_BUSY_INTERVAL +
@@ -2898,7 +2902,7 @@ public class ExchangeSession {
         }
 
         FreeBusy freeBusy = null;
-        GetMethod getMethod = new GetMethod(url);
+        GetMethod getMethod = new GetMethod(freebusyUrl);
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
         try {

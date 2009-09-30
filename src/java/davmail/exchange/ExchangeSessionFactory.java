@@ -103,7 +103,7 @@ public final class ExchangeSessionFactory {
             }
 
             if (session == null) {
-                session = new ExchangeSession(poolKey);
+                session = new ExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 ExchangeSession.LOGGER.debug("Created new session: " + session);
             }
             // successfull login, put session in cache

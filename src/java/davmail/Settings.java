@@ -84,37 +84,7 @@ public final class Settings {
                 isFirstStart = true;
 
                 // first start : set default values, ports above 1024 for unix/linux
-                SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
-                SETTINGS.put("davmail.popPort", "1110");
-                SETTINGS.put("davmail.imapPort", "1143");
-                SETTINGS.put("davmail.smtpPort", "1025");
-                SETTINGS.put("davmail.caldavPort", "1080");
-                SETTINGS.put("davmail.ldapPort", "1389");
-                SETTINGS.put("davmail.keepDelay", "30");
-                SETTINGS.put("davmail.sentKeepDelay", "90");
-                SETTINGS.put("davmail.caldavPastDelay", "90");
-                SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
-                SETTINGS.put("davmail.bindAddress", "");
-                SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
-                SETTINGS.put("davmail.proxyHost", "");
-                SETTINGS.put("davmail.proxyPort", "");
-                SETTINGS.put("davmail.proxyUser", "");
-                SETTINGS.put("davmail.proxyPassword", "");
-                SETTINGS.put("davmail.server", Boolean.FALSE.toString());
-                SETTINGS.put("davmail.server.certificate.hash", "");
-                SETTINGS.put("davmail.ssl.keystoreType", "");
-                SETTINGS.put("davmail.ssl.keystoreFile", "");
-                SETTINGS.put("davmail.ssl.keystorePass", "");
-                SETTINGS.put("davmail.ssl.keyPass", "");
-                SETTINGS.put("davmail.ssl.pkcs11Library", "");
-                SETTINGS.put("davmail.ssl.pkcs11Config", "");
-
-                // logging
-                SETTINGS.put("log4j.rootLogger", Level.WARN.toString());
-                SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
-                SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
-                SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
-                SETTINGS.put("davmail.logFilePath", "");
+                setDefaultSettings();
                 save();
             }
         } catch (IOException e) {
@@ -129,6 +99,44 @@ public final class Settings {
             }
         }
         updateLoggingConfig();
+    }
+
+    /**
+     * Set all settings to default values.
+     * Ports above 1024 for unix/linux
+     */
+    public static void setDefaultSettings() {
+        SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
+        SETTINGS.put("davmail.popPort", "1110");
+        SETTINGS.put("davmail.imapPort", "1143");
+        SETTINGS.put("davmail.smtpPort", "1025");
+        SETTINGS.put("davmail.caldavPort", "1080");
+        SETTINGS.put("davmail.ldapPort", "1389");
+        SETTINGS.put("davmail.keepDelay", "30");
+        SETTINGS.put("davmail.sentKeepDelay", "90");
+        SETTINGS.put("davmail.caldavPastDelay", "90");
+        SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.bindAddress", "");
+        SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.proxyHost", "");
+        SETTINGS.put("davmail.proxyPort", "");
+        SETTINGS.put("davmail.proxyUser", "");
+        SETTINGS.put("davmail.proxyPassword", "");
+        SETTINGS.put("davmail.server", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.server.certificate.hash", "");
+        SETTINGS.put("davmail.ssl.keystoreType", "");
+        SETTINGS.put("davmail.ssl.keystoreFile", "");
+        SETTINGS.put("davmail.ssl.keystorePass", "");
+        SETTINGS.put("davmail.ssl.keyPass", "");
+        SETTINGS.put("davmail.ssl.pkcs11Library", "");
+        SETTINGS.put("davmail.ssl.pkcs11Config", "");
+
+        // logging
+        SETTINGS.put("log4j.rootLogger", Level.WARN.toString());
+        SETTINGS.put("log4j.logger.davmail", Level.DEBUG.toString());
+        SETTINGS.put("log4j.logger.httpclient.wire", Level.WARN.toString());
+        SETTINGS.put("log4j.logger.org.apache.commons.httpclient", Level.WARN.toString());
+        SETTINGS.put("davmail.logFilePath", "");
     }
 
     /**
