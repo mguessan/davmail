@@ -1643,7 +1643,6 @@ public class ExchangeSession {
         String searchQuery = "Select \"DAV:getetag\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
-                "                       \"urn:schemas:calendar:instancetype\" is null OR" +
                 "                       \"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                OR (\"urn:schemas:calendar:instancetype\" = 0\n" +
                 dateCondition +
