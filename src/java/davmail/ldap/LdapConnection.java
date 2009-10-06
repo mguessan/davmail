@@ -22,9 +22,10 @@ import com.sun.jndi.ldap.Ber;
 import com.sun.jndi.ldap.BerDecoder;
 import com.sun.jndi.ldap.BerEncoder;
 import davmail.AbstractConnection;
-import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
@@ -33,11 +34,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
-import java.net.InetAddress;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -522,7 +519,8 @@ public class LdapConnection extends AbstractConnection {
                             // single user request
                             String uid = dn.substring("uid=".length(), dn.indexOf(','));
                             // first search in contact
-                            Map<String, Map<String, String>> persons = session.contactFind("\"DAV:uid\"='" + uid + '\'');
+                            Map<String, Map<String, String>> persons = session.contactFindByUid(uid);
+
                             // then in GAL
                             if (persons.isEmpty()) {
                                 persons = session.galFind("AN", uid);
@@ -575,32 +573,24 @@ public class LdapConnection extends AbstractConnection {
                             }
                         } else {
                             // append personal contacts first
-                            for (Map<String, String> person : session.contactFind(ldapFilter.getContactSearchFilter()).values()) {
+                            String filter = ldapFilter.getContactSearchFilter();
+
+                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, filter, returningAttributes));
+
+                            for (Map<String, String> person : session.contactFind(filter).values()) {
                                 persons.put(person.get("uid"), person);
+
                                 if (persons.size() == sizeLimit) {
                                     break;
                                 }
                             }
-                            for (SimpleFilter simpleFilter : ldapFilter.getOrFilterSet()) {
-                                if (persons.size() < sizeLimit) {
-                                    String attributeName = simpleFilter.getGalFindAttributeName();
-                                    if (attributeName != null) {
-                                        for (Map<String, String> person : session.galFind(attributeName, simpleFilter.value).values()) {
-                                            if ((simpleFilter.operator == LDAP_FILTER_SUBSTRINGS)
-                                                    // exclude non exact match on exact search
-                                                    || (simpleFilter.operator == LDAP_FILTER_EQUALITY &&
-                                                    simpleFilter.value.equalsIgnoreCase(person.get(attributeName)))) {
-                                                persons.put(person.get("AN"), person);
-                                            }
-                                            if (persons.size() == sizeLimit) {
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
+
+                            for (Map<String, String> person : ldapFilter.findInGAL(session).values()) {
                                 if (persons.size() == sizeLimit) {
                                     break;
                                 }
+
+                                persons.put(person.get("AN"), person);
                             }
                         }
 
@@ -648,10 +638,10 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected LdapFilter parseFilter(BerDecoder reqBer) throws IOException {
-        LdapFilter ldapFilter = new LdapFilter();
+        LdapFilter ldapFilter;
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
-            ldapFilter.addFilter(new SimpleFilter(attributeName));
+            ldapFilter = new SimpleFilter(attributeName);
             if (!"objectclass".equals(attributeName)) {
                 DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", ldapFilter.toString()));
             }
@@ -660,35 +650,33 @@ public class LdapConnection extends AbstractConnection {
             int ldapFilterType = reqBer.parseSeq(seqSize);
             int end = reqBer.getParsePosition() + seqSize[0];
 
-            parseNestedFilter(reqBer, ldapFilter, ldapFilterType, end);
+            ldapFilter = parseNestedFilter(reqBer, ldapFilterType, end);
         }
+
         return ldapFilter;
     }
 
-    protected void parseNestedFilter(BerDecoder reqBer, LdapFilter ldapFilter, int ldapFilterType, int end) throws IOException {
-        if (ldapFilterType == LDAP_FILTER_OR) {
-            ldapFilter.startFilter(LDAP_FILTER_OR);
-            // OR filter
+    protected LdapFilter parseNestedFilter(BerDecoder reqBer, int ldapFilterType, int end) throws IOException {
+        LdapFilter nestedFilter;
+
+        if ((ldapFilterType == LDAP_FILTER_OR) || (ldapFilterType == LDAP_FILTER_AND)) {
+            nestedFilter = new CompoundFilter(ldapFilterType);
+
             while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-                int ldapFilterOperator = reqBer.parseSeq(null);
-                parseNestedFilter(reqBer, ldapFilter, ldapFilterOperator, end);
+                int[] seqSize = new int[1];
+                int ldapFilterOperator = reqBer.parseSeq(seqSize);
+                int subEnd = reqBer.getParsePosition() + seqSize[0];
+                nestedFilter.add(parseNestedFilter(reqBer, ldapFilterOperator, subEnd));
             }
-            ldapFilter.endFilter();
-        } else if (ldapFilterType == LDAP_FILTER_AND) {
-            ldapFilter.startFilter(LDAP_FILTER_AND);
-            // AND filter
-            while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-                int ldapFilterOperator = reqBer.parseSeq(null);
-                parseNestedFilter(reqBer, ldapFilter, ldapFilterOperator, end);
-            }
-            ldapFilter.endFilter();
         } else {
             // simple filter
-            parseSimpleFilter(reqBer, ldapFilter, ldapFilterType);
+            nestedFilter = parseSimpleFilter(reqBer, ldapFilterType);
         }
+
+        return nestedFilter;
     }
 
-    protected void parseSimpleFilter(BerDecoder reqBer, LdapFilter ldapFilter, int ldapFilterOperator) throws IOException {
+    protected LdapFilter parseSimpleFilter(BerDecoder reqBer, int ldapFilterOperator) throws IOException {
         String attributeName = reqBer.parseString(isLdapV3()).toLowerCase();
 
         StringBuilder value = new StringBuilder();
@@ -721,7 +709,7 @@ public class LdapConnection extends AbstractConnection {
             }
         }
 
-        ldapFilter.addFilter(new SimpleFilter(attributeName, sValue, ldapFilterOperator));
+        return new SimpleFilter(attributeName, sValue, ldapFilterOperator);
     }
 
     protected Set<String> parseReturningAttributes(BerDecoder reqBer) throws IOException {
@@ -873,6 +861,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected String hostName() throws UnknownHostException {
+        // TODO: send multiple computer context with getHostName and getCanonicalHostName
         return InetAddress.getLocalHost().getCanonicalHostName();
     }
 
@@ -979,115 +968,237 @@ public class LdapConnection extends AbstractConnection {
         os.flush();
     }
 
-    static class LdapFilter {
-        final StringBuilder filterString = new StringBuilder();
-        int ldapFilterType;
-        boolean isFullSearch = true;
-        final Set<SimpleFilter> orCriteria = new HashSet<SimpleFilter>();
-        final Set<SimpleFilter> andCriteria = new HashSet<SimpleFilter>();
+    static interface LdapFilter {
+        public String getContactSearchFilter();
 
-        public void addFilter(SimpleFilter simpleFilter) {
-            filterString.append('(').append(simpleFilter.toString()).append(')');
-            String attributeName = simpleFilter.getAttributeName();
+        public Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException;
 
-            // full search (objectclass=*) filter
-            if ("objectclass".equals(attributeName) && SimpleFilter.STAR.equals(simpleFilter.value)) {
-                isFullSearch = true;
-                // known search attribute
-            } else {
-                isFullSearch = false;
-                if (ldapFilterType == 0 || ldapFilterType == LDAP_FILTER_OR) {
-                    orCriteria.add(simpleFilter);
-                } else if (ldapFilterType == LDAP_FILTER_AND) {
-                    andCriteria.add(simpleFilter);
-                }
-                // unknown search attribute: warn
-                if (!IGNORE_MAP.contains(attributeName) && CRITERIA_MAP.get(attributeName) == null && CONTACT_MAP.get(attributeName) == null) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE", attributeName, simpleFilter.value));
-                }
-            }
+        public void add(LdapFilter filter);
 
-        }
+        public boolean isFullSearch();
 
-        public String getContactSearchFilter() {
-            if (orCriteria.isEmpty()) {
-                return null;
-            } else {
-                StringBuilder buffer = new StringBuilder();
-                for (SimpleFilter simpleFilter : orCriteria) {
-                    String contactAttributeName = simpleFilter.getContactAttributeName();
-                    if (contactAttributeName != null) {
-                        if (buffer.length() > 0) {
-                            buffer.append(" OR ");
-                        }
-                        buffer.append('"').append(contactAttributeName).append('"');
-                        if (simpleFilter.operator == LDAP_FILTER_EQUALITY) {
-                            buffer.append(" = '").append(simpleFilter.value).append('\'');
-                        } else if ("mail".equals(simpleFilter.getAttributeName())) {
-                            buffer.append(" LIKE '\"").append(simpleFilter.value).append("%'");
-                        } else {
-                            buffer.append(" LIKE '").append(simpleFilter.value).append("%'");
-                        }
-                    }
-                }
-                // if criteria not empty but filter is, add a fake filter
-                if (!orCriteria.isEmpty() && buffer.length() == 0) {
-                    buffer.append("\"DAV:uid\"='#INVALID#'");
-                }
-                return buffer.toString();
-            }
+        public boolean isMatch(Map<String, String> person);
+    }
+
+    static class CompoundFilter implements LdapFilter {
+        final Set<LdapFilter> criteria = new HashSet<LdapFilter>();
+        int type;
+
+
+        CompoundFilter(int filterType) {
+            type = filterType;
         }
 
         @Override
         public String toString() {
-            return filterString.toString();
-        }
+            StringBuilder buffer = new StringBuilder();
 
-        public void startFilter(int ldapFilterType) {
-            this.ldapFilterType = ldapFilterType;
-            filterString.append('(');
-            if (ldapFilterType == LDAP_FILTER_OR) {
-                filterString.append('|');
-            } else if (ldapFilterType == LDAP_FILTER_AND) {
-                filterString.append('&');
+            if (type == LDAP_FILTER_OR) {
+                buffer.append("(|");
+            } else {
+                buffer.append("(&");
             }
+
+            for (LdapFilter child : criteria) {
+                buffer.append(child.toString());
+            }
+
+            buffer.append(')');
+
+            return buffer.toString();
         }
 
-        public void endFilter() {
-            ldapFilterType = 0;
-            filterString.append(')');
+        /**
+         * Add child filter
+         *
+         * @param filter inner filter
+         */
+        public void add(LdapFilter filter) {
+            criteria.add(filter);
         }
 
+        /**
+         * This is only a full search if every child
+         * is also a full search
+         *
+         * @return true if full search filter
+         */
         public boolean isFullSearch() {
-            return isFullSearch;
+            for (LdapFilter child : criteria) {
+                if (!child.isFullSearch()) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
-        public Set<SimpleFilter> getOrFilterSet() {
-            return orCriteria;
+        /**
+         * Build search filter for Contacts folder search.
+         * Use Exchange SEARCH syntax
+         *
+         * @return contact search filter
+         */
+        public String getContactSearchFilter() {
+            StringBuilder buffer = new StringBuilder();
+            String op;
+
+            if (type == LDAP_FILTER_OR) {
+                op = " OR ";
+            } else {
+                op = " AND ";
+            }
+
+            buffer.append('(');
+            for (LdapFilter child : criteria) {
+                String childFilter = child.getContactSearchFilter();
+
+                if (childFilter != null) {
+                    if (buffer.length() > 1) {
+                        buffer.append(op);
+                    }
+                    buffer.append(childFilter);
+                }
+            }
+
+            // empty filter
+            if (buffer.length() == 1) {
+                return null;
+            }
+
+            buffer.append(')');
+            return buffer.toString();
+        }
+
+        /**
+         * Test if person matches the current filter.
+         *
+         * @param person person attributes map
+         * @return true if filter match
+         */
+        public boolean isMatch(Map<String, String> person) {
+            if (type == LDAP_FILTER_OR) {
+                for (LdapFilter child : criteria) {
+                    if (!child.isFullSearch()) {
+                        if (child.isMatch(person)) {
+                            // We've found a match
+                            return true;
+                        }
+                    }
+                }
+
+                // No subconditions are met
+                return false;
+            } else if (type == LDAP_FILTER_AND) {
+                for (LdapFilter child : criteria) {
+                    if (!child.isFullSearch()) {
+                        if (!child.isMatch(person)) {
+                            // We've found a miss
+                            return false;
+                        }
+                    }
+                }
+
+                // All subconditions are met
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Find persons in Exchange GAL matching filter.
+         * Iterate over child filters to build results.
+         *
+         * @param session Exchange session
+         * @return persons map
+         * @throws IOException on error
+         */
+        public Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException {
+            Map<String, Map<String, String>> persons = null;
+
+            for (LdapFilter child : criteria) {
+                Map<String, Map<String, String>> childFind = child.findInGAL(session);
+
+                if (childFind != null) {
+                    if (persons == null) {
+                        persons = childFind;
+                    } else if (type == LDAP_FILTER_OR) {
+                        // Create the union of the existing results and the child found results
+                        persons.putAll(childFind);
+                    } else if (type == LDAP_FILTER_AND) {
+                        // Append current child filter results that match all child filters to persons.
+                        // The hard part is that, due to the 100-item-returned galFind limit
+                        // we may catch new items that match all child filters in each child search.
+                        // Thus, instead of building the intersection, we check each result against
+                        // all filters.
+
+                        for (Map<String, String> result : childFind.values()) {
+                            if (isMatch(result)) {
+                                // This item from the child result set matches all sub-criteria, add it
+                                persons.put(result.get("AN"), result);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ((persons == null) && !isFullSearch()) {
+                // return an empty map (indicating no results were found)
+                return new HashMap<String, Map<String, String>>();
+            }
+
+            return persons;
         }
     }
 
-    static class SimpleFilter {
+    static class SimpleFilter implements LdapFilter {
         static final String STAR = "*";
         final String attributeName;
         final String value;
         final int operator;
+        boolean canIgnore;
 
         SimpleFilter(String attributeName) {
             this.attributeName = attributeName;
             this.value = SimpleFilter.STAR;
             this.operator = LDAP_FILTER_SUBSTRINGS;
+            this.canIgnore = checkIgnore();
         }
 
         SimpleFilter(String attributeName, String value, int ldapFilterOperator) {
             this.attributeName = attributeName;
             this.value = value;
             this.operator = ldapFilterOperator;
+            this.canIgnore = checkIgnore();
+        }
+
+        private boolean checkIgnore() {
+            if ("objectclass".equals(attributeName) && STAR.equals(value)) {
+                // ignore cases where any object class can match
+                return true;
+            } else if (IGNORE_MAP.contains(attributeName)) {
+                // Ignore this specific attribute
+                return true;
+            } else if (CRITERIA_MAP.get(attributeName) == null && CONTACT_MAP.get(attributeName) == null) {
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE",
+                        attributeName, value));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public boolean isFullSearch() {
+            // This is a full search if we ignore this attribute
+            return canIgnore;
         }
 
         @Override
         public String toString() {
             StringBuilder buffer = new StringBuilder();
+            buffer.append('(');
             buffer.append(attributeName);
             buffer.append('=');
             if (SimpleFilter.STAR.equals(value)) {
@@ -1097,7 +1208,97 @@ public class LdapConnection extends AbstractConnection {
             } else {
                 buffer.append(value);
             }
+
+            buffer.append(')');
             return buffer.toString();
+        }
+
+        public String getContactSearchFilter() {
+            StringBuilder buffer;
+            String contactAttributeName = getContactAttributeName();
+
+            if (canIgnore || (contactAttributeName == null)) {
+                return null;
+            }
+
+            buffer = new StringBuilder();
+            buffer.append('"').append(contactAttributeName).append('"');
+
+            if (operator == LDAP_FILTER_EQUALITY) {
+                buffer.append("='").append(value).append('\'');
+            } else {
+                buffer.append(" LIKE '%").append(value).append("%'");
+            }
+// TODO: handle startsWith
+// TODO: handle empty after parse filter
+/*
+ // if criteria not empty but filter is, add a fake filter
+                if (!orCriteria.isEmpty() && buffer.length() == 0) {
+                    buffer.append("\"DAV:uid\"='#INVALID#'");
+                }
+*/
+            return buffer.toString();
+        }
+
+        public boolean isMatch(Map<String, String> person) {
+            if (canIgnore) {
+                // Ignore this filter
+                return true;
+            }
+
+            String personAttributeValue = person.get(getGalFindAttributeName());
+
+            if (personAttributeValue == null) {
+                // No value to allow for filter match
+                return false;
+            } else if (value == null) {
+                // This is a presence filter: found
+                return true;
+            } else if ((operator == LDAP_FILTER_EQUALITY) && personAttributeValue.equalsIgnoreCase(value)) {
+                // Found an exact match
+                return true;
+            } else if ((operator == LDAP_FILTER_SUBSTRINGS) && (personAttributeValue.toLowerCase().indexOf(value.toLowerCase()) >= 0)) {
+                // Found a substring match
+                return true;
+            }
+
+            return false;
+        }
+
+        public Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException {
+            if (canIgnore) {
+                return null;
+            }
+
+            String galFindAttributeName = getGalFindAttributeName();
+
+            if (galFindAttributeName != null) {
+                Map<String, Map<String, String>> galPersons = session.galFind(galFindAttributeName, value);
+
+                if (operator == LDAP_FILTER_EQUALITY) {
+                    // Make sure only exact matches are returned
+
+                    Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+
+                    for (Map<String, String> person : galPersons.values()) {
+                        if (isMatch(person)) {
+                            // Found an exact match
+                            results.put(person.get("AN"), person);
+                        }
+                    }
+
+                    return results;
+                } else {
+                    return galPersons;
+                }
+            }
+
+            return null;
+        }
+
+        public void add(LdapFilter filter) {
+            // Should never be called
+            DavGatewayTray.error(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", "nested simple filters"));
         }
 
         public String getAttributeName() {
