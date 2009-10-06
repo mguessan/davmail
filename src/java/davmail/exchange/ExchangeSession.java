@@ -18,17 +18,20 @@
  */
 package davmail.exchange;
 
-import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
@@ -48,9 +51,9 @@ import javax.mail.internet.MimePart;
 import javax.mail.internet.MimeUtility;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.net.NoRouteToHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -140,7 +143,7 @@ public class ExchangeSession {
 
     private final String userName;
     private final String password;
-    
+
     private boolean disableGalLookup;
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
@@ -160,7 +163,7 @@ public class ExchangeSession {
      * Create an exchange session for the given URL.
      * The session is established for given userName and password
      *
-     * @param url Exchange url
+     * @param url      Exchange url
      * @param userName user login name
      * @param password user password
      * @throws IOException on error
@@ -2106,7 +2109,7 @@ public class ExchangeSession {
     }
 
     protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
-		// only return values in VEVENT section, not VALARM
+        // only return values in VEVENT section, not VALARM
         Stack<String> sectionStack = new Stack<String>();
         BufferedReader reader = null;
 
@@ -2494,7 +2497,7 @@ public class ExchangeSession {
         StringBuilder buffer = new StringBuilder();
         // other user calendar => replace principal folder name in mailPath
         if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
-            LOGGER.debug("Detected shared calendar path for principal "+principal+", user principal is "+email);
+            LOGGER.debug("Detected shared calendar path for principal " + principal + ", user principal is " + email);
             int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
                 buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
@@ -2735,6 +2738,19 @@ public class ExchangeSession {
     }
 
     /**
+     * Search users in contacts folder by uid.
+     *
+     * @param uid unique id
+     * @return List of users
+     * @throws IOException on error
+     */
+    public Map<String, Map<String, String>> contactFindByUid(String uid) throws IOException {
+        return contactFind(DAV_UID_FILTER + uid + '\'');
+    }
+
+    static final String DAV_UID_FILTER = "\"DAV:uid\"='";
+
+    /**
      * Search users in contacts folder
      *
      * @param searchFilter search filter
@@ -2742,6 +2758,27 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public Map<String, Map<String, String>> contactFind(String searchFilter) throws IOException {
+        // uid value in search filter (hex value)
+        String filterUid = null;
+        // base64 encoded uid value
+        String actualFilterUid = null;
+
+        // replace hex encoded uid with base64 uid
+        if (searchFilter != null) {
+            int uidStart = searchFilter.indexOf(DAV_UID_FILTER);
+            if (uidStart >= 0) {
+                int uidEnd = searchFilter.indexOf('\'', uidStart + DAV_UID_FILTER.length());
+                if (uidEnd >= 0) {
+                    try {
+                        filterUid = searchFilter.substring(uidStart + DAV_UID_FILTER.length(), uidEnd);
+                        actualFilterUid = new String(Base64.encodeBase64(Hex.decodeHex(filterUid.toCharArray())));
+                        searchFilter = searchFilter.substring(0, uidStart + DAV_UID_FILTER.length()) + actualFilterUid + searchFilter.substring(uidEnd);
+                    } catch (DecoderException e) {
+                        // ignore, this is not an hex uid
+                    }
+                }
+            }
+        }
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("Select \"DAV:uid\", " +
                 "\"http://schemas.microsoft.com/exchange/extensionattribute1\"," +
@@ -2789,6 +2826,7 @@ public class ExchangeSession {
         if (searchFilter != null && searchFilter.length() > 0) {
             searchRequest.append("                AND ").append(searchFilter);
         }
+        LOGGER.debug("contactFind: " + searchRequest);
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(contactsUrl), searchRequest.toString());
 
@@ -2803,7 +2841,14 @@ public class ExchangeSession {
                 DavProperty property = propertiesIterator.nextProperty();
                 String propertyName = property.getName().getName();
                 String propertyValue = (String) property.getValue();
-                if (propertyName.startsWith("email")) {
+                if ("uid".equals(propertyName)) {
+                    // uid is base64, reencode to hex
+                    propertyValue = new String(Hex.encodeHex(Base64.decodeBase64(propertyValue.getBytes())));
+                    // if actualFilterUid is not null, exclude non exact match
+                    if (actualFilterUid != null && !filterUid.equals(propertyValue)) {
+                        propertyValue = null;
+                    }
+                } else if (propertyName.startsWith("email")) {
                     if (propertyValue != null && propertyValue.startsWith("\"")) {
                         int endIndex = propertyValue.indexOf('\"', 1);
                         if (endIndex > 0) {
@@ -2829,7 +2874,9 @@ public class ExchangeSession {
                     item.put(propertyName, propertyValue);
                 }
             }
-            results.put(item.get("uid"), item);
+            if (item.get("uid") != null) {
+                results.put(item.get("uid"), item);
+            }
         }
 
         LOGGER.debug("contactFind " + ((searchFilter == null) ? "" : searchFilter) + ": " + results.size() + " result(s)");
