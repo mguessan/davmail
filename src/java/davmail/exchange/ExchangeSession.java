@@ -2106,13 +2106,19 @@ public class ExchangeSession {
     }
 
     protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
+		// only return values in VEVENT section, not VALARM
+        Stack<String> sectionStack = new Stack<String>();
         BufferedReader reader = null;
 
         try {
             reader = new ICSBufferedReader(new StringReader(icsBody));
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith(prefix)) {
+                if (line.startsWith("BEGIN:")) {
+                    sectionStack.push(line);
+                } else if (line.startsWith("END:") && !sectionStack.isEmpty()) {
+                    sectionStack.pop();
+                } else if (!sectionStack.isEmpty() && "BEGIN:VEVENT".equals(sectionStack.peek()) && line.startsWith(prefix)) {
                     return line.substring(prefix.length());
                 }
             }
@@ -2131,16 +2137,7 @@ public class ExchangeSession {
     }
 
     protected String getICSDescription(String icsBody) throws IOException {
-        String description = getICSValue(icsBody, "DESCRIPTION:", "");
-
-        if ("reminder".equalsIgnoreCase(description)) {
-            // Ignore this as a description text because
-            // it's likely part of the valarm segment
-            // (the default valarm description from outlook is "reminder")
-            return "";
-        }
-
-        return description;
+        return getICSValue(icsBody, "DESCRIPTION:", "");
     }
 
     static class Participants {
