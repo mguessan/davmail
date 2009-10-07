@@ -1726,14 +1726,46 @@ public class ExchangeSession {
         return event;
     }
 
-    private static int dumpIndex = 1;
+    private static int dumpIndex;
     private String defaultSound = "Basso";
 
     protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
+        String logFileDirectory = Settings.getLogFileDirectory();
+
         // additional setting to activate ICS dump (not available in GUI)
-        if (Settings.getBooleanProperty("davmail.dumpICS")) {
+        int dumpMax = Settings.getIntProperty("davmail.dumpICS");
+        if (dumpMax > 0) {
+            if (dumpIndex > dumpMax) {
+                // Delete the oldest dump file
+                final int oldest = dumpIndex - dumpMax;
+                try {
+                    File[] oldestFiles = (new File(logFileDirectory)).listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                            if (name.endsWith(".ics")) {
+                                int dashIndex = name.indexOf('-');
+                                if (dashIndex > 0) {
+                                    try {
+                                        int fileIndex = Integer.parseInt(name.substring(0, dashIndex));
+                                        return fileIndex < oldest;
+                                    } catch (NumberFormatException nfe) {
+                                        // ignore
+                                    }
+                                }
+                            }
+                            return false;
+                        }
+                    });
+                    for (File file : oldestFiles) {
+                        //noinspection ResultOfMethodCallIgnored
+                        file.delete();
+                    }
+                } catch (Exception ex) {
+                    LOGGER.warn("Error deleting ics dump: " + ex.getMessage());
+                }
+            }
+
             StringBuilder filePath = new StringBuilder();
-            filePath.append(Settings.getLogFileDirectory()).append('/')
+            filePath.append(logFileDirectory).append('/')
                     .append(dumpIndex)
                     .append(after ? "-to" : "-from")
                     .append((after ^ fromServer) ? "-server" : "-client")

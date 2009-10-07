@@ -162,7 +162,7 @@ public final class Settings {
     public static String getLogFileDirectory() {
         String logFilePath = getLogFilePath();
         if (logFilePath == null || logFilePath.length() == 0) {
-            return "";
+            return ".";
         }
         int lastSlashIndex = logFilePath.lastIndexOf('/');
         if (lastSlashIndex == -1) {
@@ -171,7 +171,7 @@ public final class Settings {
         if (lastSlashIndex >= 0) {
             return logFilePath.substring(0, lastSlashIndex);
         } else {
-            return "";
+            return ".";
         }
     }
 
