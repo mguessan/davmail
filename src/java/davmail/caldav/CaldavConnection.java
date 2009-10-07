@@ -155,16 +155,12 @@ public class CaldavConnection extends AbstractConnection {
                     sendUnauthorized();
                 } else {
                     decodeCredentials(headers.get("authorization"));
-                    // authenticate only once, but check credentials
-                    if (session == null || !session.checkCredentials(userName, password)) {
-                        try {
-                            session = ExchangeSessionFactory.getInstance(userName, password);
-                        } catch (DavMailAuthenticationException e) {
-                            sendUnauthorized();
-                        }
-                    }
-                    if (session != null) {
+                    // need to check session on each request, credentials may have changed or session expired
+                    try {
+                        session = ExchangeSessionFactory.getInstance(userName, password);
                         handleRequest(command, path, headers, content);
+                    } catch (DavMailAuthenticationException e) {
+                        sendUnauthorized();
                     }
                 }
 
@@ -1322,7 +1318,7 @@ public class CaldavConnection extends AbstractConnection {
                 return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
             } else {
                 StringBuilder calendarPath = new StringBuilder();
-                for (int i=0;i<endIndex;i++) {
+                for (int i = 0; i < endIndex; i++) {
                     calendarPath.append('/').append(getPathElement(i));
                 }
                 return calendarPath.toString();
