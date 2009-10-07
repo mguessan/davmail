@@ -861,8 +861,13 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected String hostName() throws UnknownHostException {
-        // TODO: send multiple computer context with getHostName and getCanonicalHostName
-        return InetAddress.getLocalHost().getCanonicalHostName();
+        if (client.getInetAddress().isLoopbackAddress()) {
+            // local address, probably using localhost in iCal URL
+            return "localhost";
+        } else {
+            // remote address, send fully qualified domain name
+            return InetAddress.getLocalHost().getCanonicalHostName();
+        }
     }
 
     /**
