@@ -679,7 +679,7 @@ public class ExchangeSession {
         message.answered = "102".equals(x10810003) || "103".equals(x10810003);
         message.forwarded = "104".equals(x10810003);
         message.date = getPropertyIfExists(properties, "date", Namespace.getNamespace("urn:schemas:mailheader:"));
-        message.deleted = "deleted".equals(getPropertyIfExists(properties, "contentstate", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")));
+        message.deleted = "1".equals(getPropertyIfExists(properties, "deleted", Namespace.getNamespace("")));
         message.messageId = getPropertyIfExists(properties, "message-id", Namespace.getNamespace("urn:schemas:mailheader:"));
         if (message.messageId != null && message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
             message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
@@ -712,7 +712,7 @@ public class ExchangeSession {
             } else if ("draft".equals(entry.getKey())) {
                 list.add(new DefaultDavProperty(DavPropertyName.create("x0E070003", SCHEMAS_MAPI_PROPTAG), entry.getValue()));
             } else if ("deleted".equals(entry.getKey())) {
-                list.add(new DefaultDavProperty(DavPropertyName.create("contentstate", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), entry.getValue()));
+                list.add(new DefaultDavProperty(DavPropertyName.create("_x0030_x8570", Namespace.getNamespace("http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/")), entry.getValue()));
             } else if ("datereceived".equals(entry.getKey())) {
                 list.add(new DefaultDavProperty(DavPropertyName.create("datereceived", URN_SCHEMAS_HTTPMAIL), entry.getValue()));
             }
@@ -728,7 +728,11 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
-        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties));
+        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties)) {
+            protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
+                // ignore response body, sometimes invalid with exchange mapi properties
+            }
+        };
         try {
             int statusCode = httpClient.executeMethod(patchMethod);
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
@@ -764,8 +768,9 @@ public class ExchangeSession {
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\", \"http://schemas.microsoft.com/exchange/contentstate\", \"urn:schemas:mailheader:date\"", conditions);
-    }
+                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\" " +
+                "                ,\"http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8570\" as deleted, \"urn:schemas:mailheader:date\"", conditions);
+    }                                                                                                           
 
     /**
      * Search folder for messages matching conditions, with given attributes.

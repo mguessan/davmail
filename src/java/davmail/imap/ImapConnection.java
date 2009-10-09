@@ -913,7 +913,7 @@ public class ImapConnection extends AbstractConnection {
                     message.read = true;
                 } else if ("\\Deleted".equals(flag)) {
                     message.deleted = true;
-                    properties.put("deleted", "deleted");
+                    properties.put("deleted", "1");
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "2");
                     message.flagged = true;
@@ -945,7 +945,7 @@ public class ImapConnection extends AbstractConnection {
                     message.read = true;
                 } else if ("\\Deleted".equals(flag)) {
                     message.deleted = true;
-                    properties.put("deleted", "deleted");
+                    properties.put("deleted", "1");
                 } else if ("\\Flagged".equals(flag)) {
                     properties.put("flagged", "2");
                     message.flagged = true;
