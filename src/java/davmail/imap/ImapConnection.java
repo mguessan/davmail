@@ -649,6 +649,12 @@ public class ImapConnection extends AbstractConnection {
                 // no multipart, single body
                 appendBodyStructure(buffer, mimeMessage);
             }
+        } catch (UnsupportedEncodingException e) {
+            DavGatewayTray.warn(e);
+            // dump message in log
+            DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", new String(baos.toByteArray())));
+            // failover: send default bodystructure
+            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL ").append(baos.size()).append(" NIL)");
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
             // dump message in log
