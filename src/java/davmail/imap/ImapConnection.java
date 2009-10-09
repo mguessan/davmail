@@ -674,12 +674,18 @@ public class ImapConnection extends AbstractConnection {
             int charsetindex = contentType.indexOf("charset=");
             if (charsetindex >= 0) {
                 buffer.append(" (\"CHARSET\" ");
-                int charsetEndIndex = Math.max(contentType.indexOf(' '), contentType.length());
+                int charsetSemiColonIndex =  contentType.indexOf(';', charsetindex);
+                int charsetEndIndex;
+                if (charsetSemiColonIndex > 0) {
+                    charsetEndIndex = charsetSemiColonIndex;
+                } else {
+                   charsetEndIndex = contentType.length();
+                }
                 String charSet = contentType.substring(charsetindex + "charset=".length(), charsetEndIndex);
                 if (!charSet.startsWith("\"")) {
                     buffer.append('"');
                 }
-                buffer.append(charSet.toUpperCase());
+                buffer.append(charSet.trim().toUpperCase());
                 if (!charSet.endsWith("\"")) {
                     buffer.append('"');
                 }
