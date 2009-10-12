@@ -575,8 +575,6 @@ public class LdapConnection extends AbstractConnection {
                             // append personal contacts first
                             String filter = ldapFilter.getContactSearchFilter();
 
-                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, filter, returningAttributes));
-
                             for (Map<String, String> person : session.contactFind(filter).values()) {
                                 persons.put(person.get("uid"), person);
 
@@ -974,15 +972,15 @@ public class LdapConnection extends AbstractConnection {
     }
 
     static interface LdapFilter {
-        public String getContactSearchFilter();
+        String getContactSearchFilter();
 
-        public Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException;
+        Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException;
 
-        public void add(LdapFilter filter);
+        void add(LdapFilter filter);
 
-        public boolean isFullSearch();
+        boolean isFullSearch();
 
-        public boolean isMatch(Map<String, String> person);
+        boolean isMatch(Map<String, String> person);
     }
 
     static class CompoundFilter implements LdapFilter {

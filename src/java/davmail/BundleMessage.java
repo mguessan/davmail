@@ -24,13 +24,14 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.io.Serializable;
 
 /**
  * Internationalization message.
  */
-public class BundleMessage {
+public class BundleMessage implements Serializable {
     /**
-     *  Root locale to get english messages for logging.
+     * Root locale to get english messages for logging.
      */
     public static final Locale ROOT_LOCALE = new Locale("", "");
     protected static final String MESSAGE_BUNDLE_NAME = "davmailmessages";
