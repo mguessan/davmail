@@ -27,8 +27,9 @@
                 </tr>
                 <tr>
                     <td>OWA url</td>
-                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL</td>
-                    <td>http://exchangeServer/exchange/</td>
+                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL<br/>
+                    Note: use /owa/ path for Exchange 2007, /exchange/ for older versions</td>
+                    <td>http://exchangeServer/owa/</td>
                 </tr>
                 <tr>
                     <td>Local POP port</td>
