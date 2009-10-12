@@ -575,20 +575,24 @@ public class LdapConnection extends AbstractConnection {
                             // append personal contacts first
                             String filter = ldapFilter.getContactSearchFilter();
 
-                            for (Map<String, String> person : session.contactFind(filter).values()) {
-                                persons.put(person.get("uid"), person);
+                            // if ldapfilter is not a full search and filter is null,
+                            // ignored all attribute filters => return empty results
+                            if (ldapFilter.isFullSearch() || filter != null) {
+                                for (Map<String, String> person : session.contactFind(filter).values()) {
+                                    persons.put(person.get("uid"), person);
 
-                                if (persons.size() == sizeLimit) {
-                                    break;
-                                }
-                            }
-
-                            for (Map<String, String> person : ldapFilter.findInGAL(session).values()) {
-                                if (persons.size() == sizeLimit) {
-                                    break;
+                                    if (persons.size() == sizeLimit) {
+                                        break;
+                                    }
                                 }
 
-                                persons.put(person.get("AN"), person);
+                                for (Map<String, String> person : ldapFilter.findInGAL(session).values()) {
+                                    if (persons.size() == sizeLimit) {
+                                        break;
+                                    }
+
+                                    persons.put(person.get("AN"), person);
+                                }
                             }
                         }
 
@@ -676,6 +680,7 @@ public class LdapConnection extends AbstractConnection {
 
     protected LdapFilter parseSimpleFilter(BerDecoder reqBer, int ldapFilterOperator) throws IOException {
         String attributeName = reqBer.parseString(isLdapV3()).toLowerCase();
+        int ldapFilterMode = 0;
 
         StringBuilder value = new StringBuilder();
         if (ldapFilterOperator == LDAP_FILTER_SUBSTRINGS) {
@@ -685,7 +690,7 @@ public class LdapConnection extends AbstractConnection {
             reqBer.parseSeq(seqSize);
             int end = reqBer.getParsePosition() + seqSize[0];
             while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
-                int ldapFilterMode = reqBer.peekByte();
+                ldapFilterMode = reqBer.peekByte();
                 if (value.length() > 0) {
                     value.append(' ');
                 }
@@ -707,7 +712,7 @@ public class LdapConnection extends AbstractConnection {
             }
         }
 
-        return new SimpleFilter(attributeName, sValue, ldapFilterOperator);
+        return new SimpleFilter(attributeName, sValue, ldapFilterOperator, ldapFilterMode);
     }
 
     protected Set<String> parseReturningAttributes(BerDecoder reqBer) throws IOException {
@@ -1159,6 +1164,7 @@ public class LdapConnection extends AbstractConnection {
         static final String STAR = "*";
         final String attributeName;
         final String value;
+        final int mode;
         final int operator;
         boolean canIgnore;
 
@@ -1166,13 +1172,15 @@ public class LdapConnection extends AbstractConnection {
             this.attributeName = attributeName;
             this.value = SimpleFilter.STAR;
             this.operator = LDAP_FILTER_SUBSTRINGS;
+            this.mode = 0;
             this.canIgnore = checkIgnore();
         }
 
-        SimpleFilter(String attributeName, String value, int ldapFilterOperator) {
+        SimpleFilter(String attributeName, String value, int ldapFilterOperator, int ldapFilterMode) {
             this.attributeName = attributeName;
             this.value = value;
             this.operator = ldapFilterOperator;
+            this.mode = ldapFilterMode;
             this.canIgnore = checkIgnore();
         }
 
@@ -1194,8 +1202,8 @@ public class LdapConnection extends AbstractConnection {
         }
 
         public boolean isFullSearch() {
-            // This is a full search if we ignore this attribute
-            return canIgnore;
+            // only (objectclass=*) is a full search
+            return "objectclass".equals(attributeName) && STAR.equals(value);
         }
 
         @Override
@@ -1207,7 +1215,13 @@ public class LdapConnection extends AbstractConnection {
             if (SimpleFilter.STAR.equals(value)) {
                 buffer.append(SimpleFilter.STAR);
             } else if (operator == LDAP_FILTER_SUBSTRINGS) {
-                buffer.append(SimpleFilter.STAR).append(value).append(SimpleFilter.STAR);
+                if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
+                    buffer.append(SimpleFilter.STAR);
+                }
+                buffer.append(value);
+                if (mode == LDAP_SUBSTRING_INITIAL || mode == LDAP_SUBSTRING_ANY) {
+                    buffer.append(SimpleFilter.STAR);
+                }
             } else {
                 buffer.append(value);
             }
@@ -1230,16 +1244,15 @@ public class LdapConnection extends AbstractConnection {
             if (operator == LDAP_FILTER_EQUALITY) {
                 buffer.append("='").append(value).append('\'');
             } else {
-                buffer.append(" LIKE '%").append(value).append("%'");
-            }
-// TODO: handle startsWith
-// TODO: handle empty after parse filter
-/*
- // if criteria not empty but filter is, add a fake filter
-                if (!orCriteria.isEmpty() && buffer.length() == 0) {
-                    buffer.append("\"DAV:uid\"='#INVALID#'");
+                buffer.append(" LIKE '");
+                if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
+                    buffer.append('%');
                 }
-*/
+                buffer.append(value);
+                // endsWith not supported by exchange, always append %
+                buffer.append('%');
+                buffer.append('\'');
+            }
             return buffer.toString();
         }
 
