@@ -1,4 +1,11 @@
 /* You can override this file with your own styles */
+body {
+        background:#F1FAFF url(../images/inner-gd.png) repeat-x scroll 0 0;
+}
+#breadcrumbs {
+  background-color: white;
+  border:0;
+}
 .externalLink img {
 	vertical-align: middle;
 }
