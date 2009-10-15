@@ -97,7 +97,8 @@ public final class DavGatewayHttpClientFacade {
         try {
             URI httpURI = new URI(url, true);
             hostConfig.setHost(httpURI);
-            AuthScope authScope = new AuthScope(httpURI.getHost(), httpURI.getPort(), AuthScope.ANY_REALM);
+            // some Exchange servers redirect to a different host for freebusy, use wide auth scope
+            AuthScope authScope = new AuthScope(null, -1);
             httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
         } catch (URIException e) {
             throw new DavMailException("LOG_INVALID_URL", url);
