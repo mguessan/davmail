@@ -729,6 +729,7 @@ public class ExchangeSession {
      */
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
         PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties)) {
+            @Override
             protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
                 // ignore response body, sometimes invalid with exchange mapi properties
             }
@@ -1393,7 +1394,7 @@ public class ExchangeSession {
             method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
             try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method);
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
 
                 reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
@@ -1548,7 +1549,7 @@ public class ExchangeSession {
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method);
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
 
                 MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
                 Object mimeBody = mimeMessage.getContent();
@@ -1621,7 +1622,7 @@ public class ExchangeSession {
                     "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
             result = getEvents(folderPath, searchQuery);
         } catch (HttpException e) {
-            // failover to DAV:content property on some Exchange servers
+            // failover to DAV:comment property on some Exchange servers
             if (DEFAULT_SCHEDULE_STATE_PROPERTY.equals(scheduleStateProperty)) {
                 scheduleStateProperty = DavPropertyName.create("comment", Namespace.getNamespace("DAV:"));
                 result = getEventMessages(folderPath);
@@ -2592,7 +2593,7 @@ public class ExchangeSession {
             try {
                 path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
                 getMethod = new GetMethod(path);
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
                 Map<String, String> result = results.get(alias.toLowerCase());
                 if (result != null) {
@@ -2670,7 +2671,7 @@ public class ExchangeSession {
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find mailbox full name
@@ -2704,7 +2705,7 @@ public class ExchangeSession {
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
         try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
             // find email
@@ -2765,7 +2766,7 @@ public class ExchangeSession {
         Map<String, Map<String, String>> results;
         GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
         try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
         } finally {
             getMethod.releaseConnection();
@@ -2931,7 +2932,7 @@ public class ExchangeSession {
             GetMethod getMethod = null;
             try {
                 getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + person.get("EM")));
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
                 // add detailed information
                 if (!results.isEmpty()) {
@@ -2999,7 +3000,7 @@ public class ExchangeSession {
         getMethod.setRequestHeader("Content-Type", "text/xml");
 
         try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod);
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
             String body = getMethod.getResponseBodyAsString();
             int startIndex = body.lastIndexOf("<a:fbdata>");
             int endIndex = body.lastIndexOf("</a:fbdata>");

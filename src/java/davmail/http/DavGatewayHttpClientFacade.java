@@ -357,19 +357,27 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Execute Get method, do not follow redirects.
      *
-     * @param httpClient Http client instance
-     * @param method     Http method
+     * @param httpClient      Http client instance
+     * @param method          Http method
+     * @param followRedirects Follow redirects flag
      * @throws IOException on error
      */
-    public static void executeGetMethod(HttpClient httpClient, GetMethod method) throws IOException {
+    public static void executeGetMethod(HttpClient httpClient, GetMethod method, boolean followRedirects) throws IOException {
         // do not follow redirects in expired sessions
-        method.setFollowRedirects(false);
+        method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
         if (status != HttpStatus.SC_OK) {
             LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
             throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
         }
-
+        // check for expired session
+        if (followRedirects) {
+            String queryString = method.getQueryString();
+            if (queryString != null && queryString.contains("reason=2")) {
+                LOGGER.warn("GET failed, session expired  at " + method.getURI() + ": " + method.getResponseBodyAsString());
+                throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
+            }
+        }
     }
 
     /**
