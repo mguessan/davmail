@@ -48,3 +48,26 @@ body {
 	margin-left:10px;
 	padding-left:0;
 }
+.about td{
+  vertical-align: top;
+}
+a.download {
+ display: block;
+  background: #5ACE1D url(../images/download.png) 95% center no-repeat;
+  color: white;
+  font-weight: bold;
+  padding: 8px;
+  -moz-border-radius: 8px; 
+  -webkit-border-radius: 10px;
+  margin: 5px; 
+}
+a.donate {
+ display: block;
+  background: #5ACE1D url(../images/donate.png) 95% center no-repeat;
+  color: white;
+  font-weight: bold;
+  padding: 8px;
+  -moz-border-radius: 8px;  
+  -webkit-border-radius: 10px;
+  margin: 5px; 
+}
