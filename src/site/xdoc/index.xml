@@ -10,7 +10,7 @@
 
     <body>
         <section name="DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway">
-            <table class="about" border="0">
+            <table class="about" border="0" style="width: 98%">
                 <tr>
                     <td>
                         <p>Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway
