@@ -2391,33 +2391,15 @@ public class ExchangeSession {
             eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
         }
 
-        // trigger activeSync push event
-        if (status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) {
+        // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
+        if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
+                (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
             ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
             propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
             PropPatchMethod propPatchMethod = new PropPatchMethod(messageUrl, propertyList);
             int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
             if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
                 LOGGER.warn("Unable to patch event to trigger activeSync push");
-            } else {
-                // Yet another patch: restore message custom body, all custom lines are removed by PROPPATCH
-                PutMethod restorePutMethod = new PutMethod(messageUrl);
-                restorePutMethod.setRequestHeader("Translate", "f");
-                restorePutMethod.setRequestHeader("Overwrite", "f");
-                restorePutMethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
-                try {
-                    status = httpClient.executeMethod(restorePutMethod);
-                    if (status == HttpURLConnection.HTTP_OK) {
-                        LOGGER.warn("Unable to create or update message " + status + ' ' + restorePutMethod.getStatusLine());
-                    }
-                } finally {
-                    putmethod.releaseConnection();
-                }
-                // Need to get event again to get updated etag
-                Event event = getEvent(messageUrl);
-                if (event.getEtag() != null) {
-                    eventResult.etag = event.getEtag();
-                }
             }
         }
         return eventResult;
