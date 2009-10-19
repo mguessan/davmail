@@ -990,8 +990,7 @@ public class LdapConnection extends AbstractConnection {
 
     static class CompoundFilter implements LdapFilter {
         final Set<LdapFilter> criteria = new HashSet<LdapFilter>();
-        int type;
-
+        final int type;
 
         CompoundFilter(int filterType) {
             type = filterType;
@@ -1166,7 +1165,7 @@ public class LdapConnection extends AbstractConnection {
         final String value;
         final int mode;
         final int operator;
-        boolean canIgnore;
+        final boolean canIgnore;
 
         SimpleFilter(String attributeName) {
             this.attributeName = attributeName;

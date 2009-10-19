@@ -142,7 +142,6 @@ public class ExchangeSession {
     private final HttpClient httpClient;
 
     private final String userName;
-    private final String password;
 
     private boolean disableGalLookup;
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
@@ -170,7 +169,6 @@ public class ExchangeSession {
      */
     ExchangeSession(String url, String userName, String password) throws IOException {
         this.userName = userName;
-        this.password = password;
         try {
             boolean isBasicAuthentication = isBasicAuthentication(url);
 
@@ -268,18 +266,6 @@ public class ExchangeSession {
         }
 
         return isExpired;
-    }
-
-    /**
-     * Compare credentials to current session credentials.
-     *
-     * @param userName user name
-     * @param password user password
-     * @return true if credentials match
-     */
-    public boolean checkCredentials(String userName, String password) {
-        return userName != null && password != null
-                && userName.equals(this.userName) && password.equals(this.password);
     }
 
     /**
@@ -1762,8 +1748,9 @@ public class ExchangeSession {
                         }
                     });
                     for (File file : oldestFiles) {
-                        //noinspection ResultOfMethodCallIgnored
-                        file.delete();
+                        if (!file.delete()) {
+                            LOGGER.warn("Unable to delete " + file.getAbsolutePath());
+                    }
                     }
                 } catch (Exception ex) {
                     LOGGER.warn("Error deleting ics dump: " + ex.getMessage());
