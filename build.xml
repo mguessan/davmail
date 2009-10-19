@@ -1,4 +1,5 @@
 <project name="DavMail" default="dist" basedir=".">
+    <property file="user.properties"/>
     <property name="version" value="3.5.0"/>
 
     <path id="classpath">
@@ -279,4 +280,10 @@
 
     </target>
 
+    <target name='upload-site' depends="fix-site">
+        <scp todir="${username},davmail@web.sourceforge.net:htdocs"
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true">
+            <fileset dir="target/site"/>
+        </scp>
+    </target>
 </project>
