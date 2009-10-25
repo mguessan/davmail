@@ -446,7 +446,6 @@ public class ExchangeSession {
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
         ((PostMethod) logonMethod).addParameter(userNameInput, userName);
         ((PostMethod) logonMethod).addParameter(passwordInput, password);
-        ((PostMethod) logonMethod).addParameter("trusted", "4");
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
         // test form based authentication
