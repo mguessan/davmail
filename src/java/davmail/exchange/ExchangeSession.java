@@ -285,6 +285,8 @@ public class ExchangeSession {
             if (path.startsWith("/")) {
                 // path is absolute, replace method path
                 uri.setPath(path);
+            } else if (path.startsWith("http://") || path.startsWith("https://")){
+                return path;
             } else {
                 // relative path, build new path
                 String currentPath = method.getPath();
@@ -363,6 +365,10 @@ public class ExchangeSession {
                         userNameInput = "txtUserName";
                     } else if ("txtUserPass".equals(name)) {
                         passwordInput = "txtUserPass";
+                    } else if ("addr".equals(name)) {
+                        // this is not a logon form but a redirect form
+                        HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
+                        logonMethod = buildLogonMethod(httpClient, newInitMethod);
                     }
                 }
             } else {
@@ -757,7 +763,7 @@ public class ExchangeSession {
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
                 "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\" " +
                 "                ,\"http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8570\" as deleted, \"urn:schemas:mailheader:date\"", conditions);
-    }                                                                                                           
+    }
 
     /**
      * Search folder for messages matching conditions, with given attributes.
@@ -1750,7 +1756,7 @@ public class ExchangeSession {
                     for (File file : oldestFiles) {
                         if (!file.delete()) {
                             LOGGER.warn("Unable to delete " + file.getAbsolutePath());
-                    }
+                        }
                     }
                 } catch (Exception ex) {
                     LOGGER.warn("Error deleting ics dump: " + ex.getMessage());
