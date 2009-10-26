@@ -36,17 +36,17 @@
     </developers>
     <contributors>
         <contributor>
-            <name>John Ahern</name>
-            <email>jahern2502@users.sourceforge.net</email>
-            <url>http://sourceforge.net/users/jahern2502</url>
-            <roles>
-                <role>Java Contributor</role>
-            </roles>
-        </contributor>
-        <contributor>
             <name>Dfoody</name>
             <email>dfoody@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/dfoody</url>
+            <roles>
+                <role>Main Java Contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>John Ahern</name>
+            <email>jahern2502@users.sourceforge.net</email>
+            <url>http://sourceforge.net/users/jahern2502</url>
             <roles>
                 <role>Java Contributor</role>
             </roles>
