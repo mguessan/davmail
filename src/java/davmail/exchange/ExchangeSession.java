@@ -1075,12 +1075,33 @@ public class ExchangeSession {
     }
 
     /**
-     * Create Exchange folder.
+     * Create Exchange message folder.
      *
      * @param folderName logical folder name
      * @throws IOException on error
      */
-    public void createFolder(String folderName) throws IOException {
+    public void createMessageFolder(String folderName) throws IOException {
+        createFolder(folderName, "IPF.Note");
+    }
+
+    /**
+     * Create Exchange calendar folder.
+     *
+     * @param folderName logical folder name
+     * @throws IOException on error
+     */
+    public void createCalendarFolder(String folderName) throws IOException {
+        createFolder(folderName, "IPF.Appointment");
+    }
+
+    /**
+     * Create Exchange folder with given folder class.
+     *
+     * @param folderName logical folder name
+     * @param folderClass folder class 
+     * @throws IOException on error
+     */
+    public void createFolder(String folderName, String folderClass) throws IOException {
         String folderPath = getFolderPath(folderName);
         ArrayList<DavProperty> list = new ArrayList<DavProperty>();
         list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), folderClass));
