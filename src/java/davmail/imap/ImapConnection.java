@@ -215,7 +215,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        session.createFolder(folderName);
+                                        session.createMessageFolder(folderName);
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
@@ -268,46 +268,9 @@ public class ImapConnection extends AbstractConnection {
                                             }
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
-                                            SearchConditions conditions = new SearchConditions();
-                                            conditions.append("AND (");
-                                            boolean or = false;
-
-                                            while (tokens.hasMoreTokens()) {
-                                                String token = tokens.nextToken().toUpperCase();
-                                                if ("OR".equals(token)) {
-                                                    or = true;
-                                                } else if (token.startsWith("OR ")) {
-                                                    or = true;
-                                                    appendOrSearchParams(token, conditions);
-                                                } else {
-                                                    String operator;
-                                                    if (conditions.query.length() == 5) {
-                                                        operator = "";
-                                                    } else if (or) {
-                                                        operator = " OR ";
-                                                    } else {
-                                                        operator = " AND ";
-                                                    }
-                                                    appendSearchParam(operator, tokens, token, conditions);
-                                                }
-                                            }
-                                            conditions.append(")");
-                                            String query = conditions.query.toString();
-                                            DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", conditions.query));
-                                            if ("AND ()".equals(query)) {
-                                                query = null;
-                                            }
-                                            ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
-                                            int index = 1;
-                                            for (ExchangeSession.Message message : localMessages) {
-                                                if ((conditions.deleted == null || message.deleted == conditions.deleted)
-                                                        && (conditions.flagged == null || message.flagged == conditions.flagged)
-                                                        && (conditions.answered == null || message.answered == conditions.answered)
-                                                        && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
-                                                        && (conditions.startIndex == 0 || (index++ >= conditions.startIndex))
-                                                        ) {
-                                                    sendClient("* SEARCH " + message.getImapUid());
-                                                }
+                                            List<Long> uidList = handleSearch(tokens);
+                                            for (long uid : uidList) {
+                                                sendClient("* SEARCH " + uid);
                                             }
                                             sendClient(commandId + " OK SEARCH completed");
 
@@ -338,6 +301,20 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
+                                    }
+                                } else if ("search".equalsIgnoreCase(command)) {
+                                    if (currentFolder == null) {
+                                        sendClient(commandId + " NO no folder selected");
+                                    } else {
+                                        List<Long> uidList = handleSearch(tokens);
+                                        int currentIndex = 0;
+                                        for (ExchangeSession.Message message : currentFolder.messages) {
+                                            currentIndex++;
+                                            if (uidList.contains(message.getImapUid())) {
+                                                sendClient("* SEARCH " + currentIndex);
+                                            }
+                                        }
+                                        sendClient(commandId + " OK SEARCH completed");
                                     }
                                 } else if ("fetch".equalsIgnoreCase(command)) {
                                     if (currentFolder == null) {
@@ -619,6 +596,52 @@ public class ImapConnection extends AbstractConnection {
         sendClient(buffer.toString());
     }
 
+    protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
+        List<Long> uidList = new ArrayList<Long>();
+        SearchConditions conditions = new SearchConditions();
+        conditions.append("AND (");
+        boolean or = false;
+
+        while (tokens.hasMoreTokens()) {
+            String token = tokens.nextToken().toUpperCase();
+            if ("OR".equals(token)) {
+                or = true;
+            } else if (token.startsWith("OR ")) {
+                or = true;
+                appendOrSearchParams(token, conditions);
+            } else {
+                String operator;
+                if (conditions.query.length() == 5) {
+                    operator = "";
+                } else if (or) {
+                    operator = " OR ";
+                } else {
+                    operator = " AND ";
+                }
+                appendSearchParam(operator, tokens, token, conditions);
+            }
+        }
+        conditions.append(")");
+        String query = conditions.query.toString();
+        DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", conditions.query));
+        if ("AND ()".equals(query)) {
+            query = null;
+        }
+        ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
+        int index = 1;
+        for (ExchangeSession.Message message : localMessages) {
+            if ((conditions.deleted == null || message.deleted == conditions.deleted)
+                    && (conditions.flagged == null || message.flagged == conditions.flagged)
+                    && (conditions.answered == null || message.answered == conditions.answered)
+                    && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
+                    && (conditions.startIndex == 0 || (index++ >= conditions.startIndex))
+                    ) {
+                uidList.add(message.getImapUid());
+            }
+        }
+        return uidList;
+    }
+
     protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         message.write(baos);
@@ -680,12 +703,12 @@ public class ImapConnection extends AbstractConnection {
             int charsetindex = contentType.indexOf("charset=");
             if (charsetindex >= 0) {
                 buffer.append(" (\"CHARSET\" ");
-                int charsetSemiColonIndex =  contentType.indexOf(';', charsetindex);
+                int charsetSemiColonIndex = contentType.indexOf(';', charsetindex);
                 int charsetEndIndex;
                 if (charsetSemiColonIndex > 0) {
                     charsetEndIndex = charsetSemiColonIndex;
                 } else {
-                   charsetEndIndex = contentType.length();
+                    charsetEndIndex = contentType.length();
                 }
                 String charSet = contentType.substring(charsetindex + "charset=".length(), charsetEndIndex);
                 if (!charSet.startsWith("\"")) {
