@@ -282,6 +282,8 @@ public class ExchangeSession {
     protected String getAbsoluteUri(HttpMethod method, String path) throws URIException {
         URI uri = method.getURI();
         if (path != null) {
+            // reset query string
+            uri.setQuery(null);
             if (path.startsWith("/")) {
                 // path is absolute, replace method path
                 uri.setPath(path);
@@ -1081,7 +1083,7 @@ public class ExchangeSession {
     public void createFolder(String folderName) throws IOException {
         String folderPath = getFolderPath(folderName);
         ArrayList<DavProperty> list = new ArrayList<DavProperty>();
-        list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPF.Note"));
+        list.add(new DefaultDavProperty(DavPropertyName.create("outlookfolderclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), folderClass));
         // standard MkColMethod does not take properties, override PropPatchMethod instead
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
             @Override
