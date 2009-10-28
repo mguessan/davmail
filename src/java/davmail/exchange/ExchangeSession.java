@@ -359,7 +359,9 @@ public class ExchangeSession {
                     String type = ((TagNode) input).getAttributeByName("type");
                     String name = ((TagNode) input).getAttributeByName("name");
                     String value = ((TagNode) input).getAttributeByName("value");
-                    if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
+                    if ("hidden".equalsIgnoreCase(type) && name != null && value != null
+                            // found a server with a username hidden field
+                            && !"username".equals(name)) {
                         logonMethod.addParameter(name, value);
                     }
                     // custom login form
