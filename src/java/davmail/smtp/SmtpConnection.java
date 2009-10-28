@@ -80,21 +80,21 @@ public class SmtpConnection extends AbstractConnection {
                     } else if ("QUIT".equalsIgnoreCase(command)) {
                         sendClient("221 Closing connection");
                         break;
-                    } else if ("EHLO".equals(command)) {
+                    } else if ("EHLO".equalsIgnoreCase(command)) {
                         sendClient("250-" + tokens.nextToken());
                         // inform server that AUTH is supported
                         // actually it is mandatory (only way to get credentials)
                         sendClient("250-AUTH LOGIN PLAIN");
                         sendClient("250 Hello");
-                    } else if ("HELO".equals(command)) {
+                    } else if ("HELO".equalsIgnoreCase(command)) {
                         sendClient("250 Hello");
-                    } else if ("AUTH".equals(command)) {
+                    } else if ("AUTH".equalsIgnoreCase(command)) {
                         if (tokens.hasMoreElements()) {
                             String authType = tokens.nextToken();
-                            if ("PLAIN".equals(authType) && tokens.hasMoreElements()) {
+                            if ("PLAIN".equalsIgnoreCase(authType) && tokens.hasMoreElements()) {
                                 decodeCredentials(tokens.nextToken());
                                 authenticate();
-                            } else if ("LOGIN".equals(authType)) {
+                            } else if ("LOGIN".equalsIgnoreCase(authType)) {
                                 sendClient("334 " + base64Encode("Username:"));
                                 state = State.LOGIN;
                             } else {
@@ -103,7 +103,7 @@ public class SmtpConnection extends AbstractConnection {
                         } else {
                             sendClient("451 Error : authentication type not specified");
                         }
-                    } else if ("MAIL".equals(command)) {
+                    } else if ("MAIL".equalsIgnoreCase(command)) {
                         if (state == State.AUTHENTICATED) {
                             state = State.STARTMAIL;
                             recipients.clear();
@@ -112,7 +112,7 @@ public class SmtpConnection extends AbstractConnection {
                             state = State.INITIAL;
                             sendClient("503 Bad sequence of commands");
                         }
-                    } else if ("RCPT".equals(command)) {
+                    } else if ("RCPT".equalsIgnoreCase(command)) {
                         if (state == State.STARTMAIL || state == State.RECIPIENT) {
                             if (line.startsWith("RCPT TO:")) {
                                 state = State.RECIPIENT;
@@ -131,7 +131,7 @@ public class SmtpConnection extends AbstractConnection {
                             state = State.AUTHENTICATED;
                             sendClient("503 Bad sequence of commands");
                         }
-                    } else if ("DATA".equals(command)) {
+                    } else if ("DATA".equalsIgnoreCase(command)) {
                         if (state == State.RECIPIENT) {
                             state = State.MAILDATA;
                             sendClient("354 Start mail input; end with <CRLF>.<CRLF>");
