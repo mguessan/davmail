@@ -679,15 +679,9 @@ public class ImapConnection extends AbstractConnection {
     protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) {
         buffer.append(' ');
         if (value != null && value.length > 0) {
-            try {
-                buffer.append('"');
-                // TODO: replace with MimeUtility.unfold
-                buffer.append(MimeUtility.decodeText(value[0]).replaceAll("\r\n", ""));
-                buffer.append('"');
-            } catch (UnsupportedEncodingException e) {
-                DavGatewayTray.warn(e);
-                buffer.append("nil");
-            }
+            buffer.append('"');
+            buffer.append(MimeUtility.unfold(value[0]));
+            buffer.append('"');
         } else {
             buffer.append("nil");
         }
@@ -703,7 +697,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append('(');
                     String personal = address.getPersonal();
                     if (personal != null) {
-                        buffer.append('"').append(personal).append('"');
+                        buffer.append('"').append(MimeUtility.encodeText(personal)).append('"');
                     } else {
                         buffer.append("nil");
                     }
@@ -721,6 +715,9 @@ public class ImapConnection extends AbstractConnection {
                 }
                 buffer.append(')');
             } catch (AddressException e) {
+                DavGatewayTray.warn(e);
+                buffer.append("nil");
+            } catch (UnsupportedEncodingException e) {
                 DavGatewayTray.warn(e);
                 buffer.append("nil");
             }

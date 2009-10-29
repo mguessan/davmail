@@ -1458,6 +1458,12 @@ public class ExchangeSession {
             }
         }
 
+        /**
+         * Load message content in a Mime message
+         * @return mime message
+         * @throws IOException on error
+         * @throws MessagingException on error
+         */
         public MimeMessage getMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
