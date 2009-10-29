@@ -333,6 +333,11 @@ public class LdapConnection extends AbstractConnection {
     int ldapVersion = LDAP_VERSION3;
 
     /**
+     * Search threads map
+     */
+    protected final HashMap<Integer, SearchThread> searchThreadMap = new HashMap<Integer, SearchThread>();
+
+    /**
      * Initialize the streams and start the thread.
      *
      * @param clientSocket LDAP client socket
@@ -502,129 +507,30 @@ public class LdapConnection extends AbstractConnection {
                 reqBer.parseBoolean();
                 LdapFilter ldapFilter = parseFilter(reqBer);
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
-
-                int size = 0;
-                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter.toString(), returningAttributes));
-
-                if (scope == SCOPE_BASE_OBJECT) {
-                    if ("".equals(dn)) {
-                        size = 1;
-                        sendRootDSE(currentMessageId);
-                    } else if (BASE_CONTEXT.equals(dn)) {
-                        size = 1;
-                        // root
-                        sendBaseContext(currentMessageId);
-                    } else if (dn.startsWith("uid=") && dn.indexOf(',') > 0) {
-                        if (session != null) {
-                            // single user request
-                            String uid = dn.substring("uid=".length(), dn.indexOf(','));
-                            // first search in contact
-                            Map<String, Map<String, String>> persons = session.contactFindByUid(uid);
-
-                            // then in GAL
-                            if (persons.isEmpty()) {
-                                persons = session.galFind("AN", uid);
-
-                                Map<String, String> person = persons.get(uid.toLowerCase());
-                                // filter out non exact results
-                                if (persons.size() > 1 || person == null) {
-                                    persons = new HashMap<String, Map<String, String>>();
-                                    if (person != null) {
-                                        persons.put(uid.toLowerCase(), person);
-                                    }
-                                }
-                            }
-                            size = persons.size();
-                            sendPersons(currentMessageId, dn.substring(dn.indexOf(',')), persons, returningAttributes);
-                        } else {
-                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
-                        }
-                    } else {
-                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
-                    }
-                } else if (COMPUTER_CONTEXT.equals(dn)) {
-                    size = 1;
-                    // computer context for iCal
-                    sendComputerContext(currentMessageId, returningAttributes);
-                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn))) {
-                    if (session != null) {
-                        Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
-                        if (ldapFilter.isFullSearch()) {
-                            // append personal contacts first
-                            for (Map<String, String> person : session.contactFind(null).values()) {
-                                persons.put(person.get("uid"), person);
-                                if (persons.size() == sizeLimit) {
-                                    break;
-                                }
-                            }
-                            // full search
-                            for (char c = 'A'; c < 'Z'; c++) {
-                                if (persons.size() < sizeLimit) {
-                                    for (Map<String, String> person : session.galFind("AN", String.valueOf(c)).values()) {
-                                        persons.put(person.get("AN"), person);
-                                        if (persons.size() == sizeLimit) {
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (persons.size() == sizeLimit) {
-                                    break;
-                                }
-                            }
-                        } else {
-                            // append personal contacts first
-                            String filter = ldapFilter.getContactSearchFilter();
-
-                            // if ldapfilter is not a full search and filter is null,
-                            // ignored all attribute filters => return empty results
-                            if (ldapFilter.isFullSearch() || filter != null) {
-                                for (Map<String, String> person : session.contactFind(filter).values()) {
-                                    persons.put(person.get("uid"), person);
-
-                                    if (persons.size() == sizeLimit) {
-                                        break;
-                                    }
-                                }
-
-                                for (Map<String, String> person : ldapFilter.findInGAL(session).values()) {
-                                    if (persons.size() == sizeLimit) {
-                                        break;
-                                    }
-
-                                    persons.put(person.get("AN"), person);
-                                }
-                            }
-                        }
-
-                        size = persons.size();
-                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_FOUND_RESULTS", currentMessageId, size));
-                        sendPersons(currentMessageId, ", " + dn, persons, returningAttributes);
-                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_END", currentMessageId));
-                    } else {
-                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
-                    }
-                } else if (dn != null && dn.length() > 0) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
+                // launch search in a separate thread
+                SearchThread searchThread = new SearchThread(getName(), currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter, returningAttributes);
+                synchronized (searchThreadMap) {
+                    searchThreadMap.put(currentMessageId, searchThread);
                 }
+                searchThread.start();
 
-                // iCal: do not send LDAP_SIZE_LIMIT_EXCEEDED on apple-computer search by cn with sizelimit 1
-                if (size > 1 && size == sizeLimit) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SIZE_LIMIT_EXCEEDED", currentMessageId));
-                    sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
-                } else {
-                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SUCCESS", currentMessageId));
-                    sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
-                }
             } else if (requestOperation == LDAP_REQ_ABANDON) {
-                int canceledMessageId = 0;
+                int abandonMessageId = 0;
                 try {
-                    canceledMessageId = (Integer) PARSE_INT_WITH_TAG_METHOD.invoke(reqBer, LDAP_REQ_ABANDON);
+                    abandonMessageId = (Integer) PARSE_INT_WITH_TAG_METHOD.invoke(reqBer, LDAP_REQ_ABANDON);
+                    synchronized (searchThreadMap) {
+                        SearchThread searchThread = searchThreadMap.get(abandonMessageId);
+                        if (searchThread != null) {
+                            searchThread.abandon();
+                            searchThreadMap.remove(currentMessageId);
+                        }
+                    }
                 } catch (IllegalAccessException e) {
                     DavGatewayTray.error(e);
                 } catch (InvocationTargetException e) {
                     DavGatewayTray.error(e);
                 }
-                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_ABANDON_SEARCH", currentMessageId, canceledMessageId));
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_ABANDON_SEARCH", currentMessageId, abandonMessageId));
             } else {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_OPERATION", requestOperation));
                 sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_OTHER, "Unsupported operation");
@@ -727,121 +633,6 @@ public class LdapConnection extends AbstractConnection {
     }
 
     /**
-     * Convert to LDAP attributes and send entry
-     *
-     * @param currentMessageId    current Message Id
-     * @param baseContext         request base context (BASE_CONTEXT or OD_BASE_CONTEXT)
-     * @param persons             persons Map
-     * @param returningAttributes returning attributes
-     * @throws IOException on error
-     */
-    protected void sendPersons(int currentMessageId, String baseContext, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
-        boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.isEmpty();
-        boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
-        boolean returnAllAttributes = returningAttributes.isEmpty();
-        boolean needDetails = returnAllAttributes;
-        if (!needDetails) {
-            for (String attributeName : EXTENDED_ATTRIBUTES) {
-                if (returningAttributes.contains(attributeName)) {
-                    needDetails = true;
-                    break;
-                }
-            }
-        }
-        // iCal search, do not lookup details
-        if (iCalSearch) {
-            needDetails = false;
-        }
-
-        for (Map<String, String> person : persons.values()) {
-            returningAttributes.add("uid");
-
-            Map<String, Object> ldapPerson = new HashMap<String, Object>();
-
-            // convert GAL entries
-            if (person.get("AN") != null) {
-                // add detailed information, only for GAL entries
-                if (needDetails) {
-                    session.galLookup(person);
-                }
-                // Process all attributes that are mapped from exchange
-                for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
-                    String ldapAttribute = entry.getKey();
-                    String exchangeAttribute = entry.getValue();
-                    String value = person.get(exchangeAttribute);
-                    // contactFind return ldap attributes directly
-                    if (value == null) {
-                        value = person.get(ldapAttribute);
-                    }
-                    if (value != null
-                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
-                        ldapPerson.put(ldapAttribute, value);
-                    }
-                }
-                // iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
-                if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
-                    ldapPerson.put("sn", ldapPerson.get("cn"));
-                    ldapPerson.remove("cn");
-                }
-
-            } else {
-                // convert Contact entries
-                for (Map.Entry<String, String> entry : person.entrySet()) {
-                    String contactAttribute = entry.getKey();
-                    // get converted attribute name
-                    String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
-                    // no conversion, use exchange attribute name
-                    if (ldapAttribute == null) {
-                        ldapAttribute = contactAttribute;
-                    }
-                    String value = entry.getValue();
-                    if (value != null
-                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
-                        ldapPerson.put(ldapAttribute, value);
-                    }
-                }
-
-            }
-
-            // Process all attributes which have static mappings
-            for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
-                String ldapAttribute = entry.getKey();
-                String value = entry.getValue();
-
-                if (value != null
-                        && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
-                    ldapPerson.put(ldapAttribute, value);
-                }
-            }
-
-            if (needObjectClasses) {
-                ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
-            }
-
-            // iCal: copy email to apple-generateduid, encode @
-            if (returnAllAttributes || returningAttributes.contains("apple-generateduid")) {
-                String mail = (String) ldapPerson.get("mail");
-                if (mail != null) {
-                    ldapPerson.put("apple-generateduid", mail.replaceAll("@", "__AT__"));
-                } else {
-                    // failover, should not happen
-                    ldapPerson.put("apple-generateduid", ldapPerson.get("uid"));
-                }
-            }
-
-            // iCal: replace current user alias with login name
-            if (session.getAlias().equals(ldapPerson.get("uid"))) {
-                if (returningAttributes.contains("uidnumber")) {
-                    ldapPerson.put("uidnumber", userName);
-                }
-            }
-            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
-            sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
-        }
-
-    }
-
-    /**
      * Send Root DSE
      *
      * @param currentMessageId current message id
@@ -917,33 +708,36 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected void sendEntry(int currentMessageId, String dn, Map<String, Object> attributes) throws IOException {
-        responseBer.reset();
-        responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
-        responseBer.encodeInt(currentMessageId);
-        responseBer.beginSeq(LDAP_REP_SEARCH);
-        responseBer.encodeString(dn, isLdapV3());
-        responseBer.beginSeq(LBER_SEQUENCE);
-        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+        // synchronize on responseBer
+        synchronized (responseBer) {
+            responseBer.reset();
+            responseBer.beginSeq(Ber.ASN_SEQUENCE | Ber.ASN_CONSTRUCTOR);
+            responseBer.encodeInt(currentMessageId);
+            responseBer.beginSeq(LDAP_REP_SEARCH);
+            responseBer.encodeString(dn, isLdapV3());
             responseBer.beginSeq(LBER_SEQUENCE);
-            responseBer.encodeString(entry.getKey(), isLdapV3());
-            responseBer.beginSeq(LBER_SET);
-            Object values = entry.getValue();
-            if (values instanceof String) {
-                responseBer.encodeString((String) values, isLdapV3());
-            } else if (values instanceof List) {
-                for (Object value : (List) values) {
-                    responseBer.encodeString((String) value, isLdapV3());
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                responseBer.beginSeq(LBER_SEQUENCE);
+                responseBer.encodeString(entry.getKey(), isLdapV3());
+                responseBer.beginSeq(LBER_SET);
+                Object values = entry.getValue();
+                if (values instanceof String) {
+                    responseBer.encodeString((String) values, isLdapV3());
+                } else if (values instanceof List) {
+                    for (Object value : (List) values) {
+                        responseBer.encodeString((String) value, isLdapV3());
+                    }
+                } else {
+                    throw new DavMailException("EXCEPTION_UNSUPPORTED_VALUE", values);
                 }
-            } else {
-                throw new DavMailException("EXCEPTION_UNSUPPORTED_VALUE", values);
+                responseBer.endSeq();
+                responseBer.endSeq();
             }
             responseBer.endSeq();
             responseBer.endSeq();
+            responseBer.endSeq();
+            sendResponse();
         }
-        responseBer.endSeq();
-        responseBer.endSeq();
-        responseBer.endSeq();
-        sendResponse();
     }
 
     protected void sendErr(int currentMessageId, int responseOperation, Exception e) throws IOException {
@@ -1329,4 +1123,282 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
+    protected class SearchThread extends Thread {
+        private final int currentMessageId;
+        private final String dn;
+        private final int scope;
+        private final int sizeLimit;
+        private final int timelimit;
+        private final LdapFilter ldapFilter;
+        private final Set<String> returningAttributes;
+        private boolean abandon;
+
+        protected SearchThread(String threadName, int currentMessageId, String dn, int scope, int sizeLimit, int timelimit, LdapFilter ldapFilter, Set<String> returningAttributes) {
+            super(threadName + "-Search-" + currentMessageId);
+            this.currentMessageId = currentMessageId;
+            this.dn = dn;
+            this.scope = scope;
+            this.sizeLimit = sizeLimit;
+            this.timelimit = timelimit;
+            this.ldapFilter = ldapFilter;
+            this.returningAttributes = returningAttributes;
+        }
+
+        /**
+         * Abandon search.
+         */
+        protected void abandon() {
+            abandon = true;
+        }
+
+        @Override
+        public void run() {
+            try {
+                int size = 0;
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter.toString(), returningAttributes));
+
+                if (scope == SCOPE_BASE_OBJECT) {
+                    if ("".equals(dn)) {
+                        size = 1;
+                        sendRootDSE(currentMessageId);
+                    } else if (BASE_CONTEXT.equals(dn)) {
+                        size = 1;
+                        // root
+                        sendBaseContext(currentMessageId);
+                    } else if (dn.startsWith("uid=") && dn.indexOf(',') > 0) {
+                        if (session != null) {
+                            // single user request
+                            String uid = dn.substring("uid=".length(), dn.indexOf(','));
+                            // first search in contact
+                            Map<String, Map<String, String>> persons = session.contactFindByUid(uid);
+
+                            // then in GAL
+                            if (persons.isEmpty()) {
+                                persons = session.galFind("AN", uid);
+
+                                Map<String, String> person = persons.get(uid.toLowerCase());
+                                // filter out non exact results
+                                if (persons.size() > 1 || person == null) {
+                                    persons = new HashMap<String, Map<String, String>>();
+                                    if (person != null) {
+                                        persons.put(uid.toLowerCase(), person);
+                                    }
+                                }
+                            }
+                            size = persons.size();
+                            sendPersons(currentMessageId, dn.substring(dn.indexOf(',')), persons, returningAttributes);
+                        } else {
+                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
+                        }
+                    } else {
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
+                    }
+                } else if (COMPUTER_CONTEXT.equals(dn)) {
+                    size = 1;
+                    // computer context for iCal
+                    sendComputerContext(currentMessageId, returningAttributes);
+                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn))) {
+                    if (session != null) {
+                        Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
+                        if (ldapFilter.isFullSearch()) {
+                            // append personal contacts first
+                            for (Map<String, String> person : session.contactFind(null).values()) {
+                                persons.put(person.get("uid"), person);
+                                if (persons.size() == sizeLimit) {
+                                    break;
+                                }
+                            }
+                            // full search
+                            for (char c = 'A'; c < 'Z'; c++) {
+                                if (!abandon && persons.size() < sizeLimit) {
+                                    for (Map<String, String> person : session.galFind("AN", String.valueOf(c)).values()) {
+                                        persons.put(person.get("AN"), person);
+                                        if (persons.size() == sizeLimit) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (persons.size() == sizeLimit) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            // append personal contacts first
+                            String filter = ldapFilter.getContactSearchFilter();
+
+                            // if ldapfilter is not a full search and filter is null,
+                            // ignored all attribute filters => return empty results
+                            if (ldapFilter.isFullSearch() || filter != null) {
+                                for (Map<String, String> person : session.contactFind(filter).values()) {
+                                    persons.put(person.get("uid"), person);
+
+                                    if (persons.size() == sizeLimit) {
+                                        break;
+                                    }
+                                }
+                                if (!abandon && persons.size() < sizeLimit) {
+                                    for (Map<String, String> person : ldapFilter.findInGAL(session).values()) {
+                                        if (persons.size() == sizeLimit) {
+                                            break;
+                                        }
+
+                                        persons.put(person.get("AN"), person);
+                                    }
+                                }
+                            }
+                        }
+
+                        size = persons.size();
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_FOUND_RESULTS", currentMessageId, size));
+                        sendPersons(currentMessageId, ", " + dn, persons, returningAttributes);
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_END", currentMessageId));
+                    } else {
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
+                    }
+                } else if (dn != null && dn.length() > 0) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
+                }
+
+                // iCal: do not send LDAP_SIZE_LIMIT_EXCEEDED on apple-computer search by cn with sizelimit 1
+                if (size > 1 && size == sizeLimit) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SIZE_LIMIT_EXCEEDED", currentMessageId));
+                    sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SIZE_LIMIT_EXCEEDED, "");
+                } else {
+                    DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SUCCESS", currentMessageId));
+                    sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
+                }
+            } catch (IOException e) {
+                DavGatewayTray.log(e);
+                try {
+                    sendErr(currentMessageId, LDAP_REP_RESULT, e);
+                } catch (IOException e2) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
+                }
+            } finally {
+                synchronized (searchThreadMap) {
+                    searchThreadMap.remove(currentMessageId);
+                }
+            }
+
+        }
+
+        /**
+         * Convert to LDAP attributes and send entry
+         *
+         * @param currentMessageId    current Message Id
+         * @param baseContext         request base context (BASE_CONTEXT or OD_BASE_CONTEXT)
+         * @param persons             persons Map
+         * @param returningAttributes returning attributes
+         * @throws IOException on error
+         */
+        protected void sendPersons(int currentMessageId, String baseContext, Map<String, Map<String, String>> persons, Set<String> returningAttributes) throws IOException {
+            boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.isEmpty();
+            boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
+            boolean returnAllAttributes = returningAttributes.isEmpty();
+            boolean needDetails = returnAllAttributes;
+            if (!needDetails) {
+                for (String attributeName : EXTENDED_ATTRIBUTES) {
+                    if (returningAttributes.contains(attributeName)) {
+                        needDetails = true;
+                        break;
+                    }
+                }
+            }
+            // iCal search, do not lookup details
+            if (iCalSearch) {
+                needDetails = false;
+            }
+
+            for (Map<String, String> person : persons.values()) {
+                if (abandon) {
+                    break;
+                }
+                returningAttributes.add("uid");
+
+                Map<String, Object> ldapPerson = new HashMap<String, Object>();
+
+                // convert GAL entries
+                if (person.get("AN") != null) {
+                    // add detailed information, only for GAL entries
+                    if (needDetails) {
+                        session.galLookup(person);
+                    }
+                    // Process all attributes that are mapped from exchange
+                    for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
+                        String ldapAttribute = entry.getKey();
+                        String exchangeAttribute = entry.getValue();
+                        String value = person.get(exchangeAttribute);
+                        // contactFind return ldap attributes directly
+                        if (value == null) {
+                            value = person.get(ldapAttribute);
+                        }
+                        if (value != null
+                                && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                            ldapPerson.put(ldapAttribute, value);
+                        }
+                    }
+                    // iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
+                    if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
+                        ldapPerson.put("sn", ldapPerson.get("cn"));
+                        ldapPerson.remove("cn");
+                    }
+
+                } else {
+                    // convert Contact entries
+                    for (Map.Entry<String, String> entry : person.entrySet()) {
+                        String contactAttribute = entry.getKey();
+                        // get converted attribute name
+                        String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
+                        // no conversion, use exchange attribute name
+                        if (ldapAttribute == null) {
+                            ldapAttribute = contactAttribute;
+                        }
+                        String value = entry.getValue();
+                        if (value != null
+                                && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                            ldapPerson.put(ldapAttribute, value);
+                        }
+                    }
+
+                }
+
+                // Process all attributes which have static mappings
+                for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
+                    String ldapAttribute = entry.getKey();
+                    String value = entry.getValue();
+
+                    if (value != null
+                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                        ldapPerson.put(ldapAttribute, value);
+                    }
+                }
+
+                if (needObjectClasses) {
+                    ldapPerson.put("objectClass", PERSON_OBJECT_CLASSES);
+                }
+
+                // iCal: copy email to apple-generateduid, encode @
+                if (returnAllAttributes || returningAttributes.contains("apple-generateduid")) {
+                    String mail = (String) ldapPerson.get("mail");
+                    if (mail != null) {
+                        ldapPerson.put("apple-generateduid", mail.replaceAll("@", "__AT__"));
+                    } else {
+                        // failover, should not happen
+                        ldapPerson.put("apple-generateduid", ldapPerson.get("uid"));
+                    }
+                }
+
+                // iCal: replace current user alias with login name
+                if (session.getAlias().equals(ldapPerson.get("uid"))) {
+                    if (returningAttributes.contains("uidnumber")) {
+                        ldapPerson.put("uidnumber", userName);
+                    }
+                }
+                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
+                sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
+            }
+
+        }
+
+    }
 }
