@@ -925,16 +925,16 @@ public class ImapConnection extends AbstractConnection {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
-                if ("\\Seen".equals(flag)) {
+                if ("\\Seen".equals(flag) && message.read) {
                     properties.put("read", "0");
                     message.read = false;
-                } else if ("\\Flagged".equals(flag)) {
+                } else if ("\\Flagged".equals(flag) && message.flagged) {
                     properties.put("flagged", "0");
                     message.flagged = false;
-                } else if ("\\Deleted".equals(flag)) {
+                } else if ("\\Deleted".equals(flag) && message.deleted) {
                     properties.put("deleted", null);
                     message.deleted = false;
-                } else if ("Junk".equals(flag)) {
+                } else if ("Junk".equals(flag) && message.junk) {
                     properties.put("junk", "0");
                     message.junk = false;
                 }
@@ -943,56 +943,100 @@ public class ImapConnection extends AbstractConnection {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
-                if ("\\Seen".equals(flag)) {
+                if ("\\Seen".equals(flag) && !message.read) {
                     properties.put("read", "1");
                     message.read = true;
-                } else if ("\\Deleted".equals(flag)) {
+                } else if ("\\Deleted".equals(flag) && !message.deleted) {
                     message.deleted = true;
                     properties.put("deleted", "1");
-                } else if ("\\Flagged".equals(flag)) {
+                } else if ("\\Flagged".equals(flag) && !message.flagged) {
                     properties.put("flagged", "2");
                     message.flagged = true;
-                } else if ("\\Answered".equals(flag)) {
+                } else if ("\\Answered".equals(flag) && !message.answered) {
                     properties.put("answered", "102");
                     message.answered = true;
-                } else if ("$Forwarded".equals(flag)) {
+                } else if ("$Forwarded".equals(flag) && !message.forwarded) {
                     properties.put("forwarded", "104");
                     message.forwarded = true;
-                } else if ("Junk".equals(flag)) {
+                } else if ("Junk".equals(flag) && !message.junk) {
                     properties.put("junk", "1");
                     message.junk = true;
                 }
             }
         } else if ("FLAGS".equalsIgnoreCase(action) || "FLAGS.SILENT".equalsIgnoreCase(action)) {
-            properties.put("read", "0");
-            message.read = false;
-            properties.put("flagged", "0");
-            message.flagged = false;
-            properties.put("junk", "0");
-            message.junk = false;
-            properties.put("deleted", null);
-            message.deleted = false;
+            // flag list with default values
+            boolean read = false;
+            boolean deleted = false;
+            boolean junk = false;
+            boolean flagged = false;
+            boolean answered = false;
+            boolean forwarded = false;
+            // set flags from new flag list
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
                 if ("\\Seen".equals(flag)) {
-                    properties.put("read", "1");
-                    message.read = true;
+                    read = true;
                 } else if ("\\Deleted".equals(flag)) {
-                    message.deleted = true;
-                    properties.put("deleted", "1");
+                    deleted = true;
                 } else if ("\\Flagged".equals(flag)) {
-                    properties.put("flagged", "2");
-                    message.flagged = true;
+                    flagged = true;
                 } else if ("\\Answered".equals(flag)) {
-                    properties.put("answered", "102");
-                    message.answered = true;
+                    answered = true;
                 } else if ("$Forwarded".equals(flag)) {
-                    properties.put("forwarded", "104");
-                    message.forwarded = true;
+                    forwarded = true;
                 } else if ("Junk".equals(flag)) {
+                    junk = true;
+                }
+            }
+            if (read != message.read) {
+                message.read = read;
+                if (message.read) {
+                    properties.put("read", "1");
+                } else {
+                    properties.put("read", "0");
+                }
+            }
+            if (deleted != message.deleted) {
+                message.deleted = deleted;
+                if (message.deleted) {
+                    properties.put("deleted", "1");
+                } else {
+                    properties.put("deleted", null);
+                }
+            }
+            if (flagged != message.flagged) {
+                message.flagged = flagged;
+                if (message.flagged) {
+                    properties.put("flagged", "2");
+                } else {
+                    properties.put("flagged", "0");
+                }
+            }
+            if (answered != message.answered) {
+                message.answered = answered;
+                if (message.answered) {
+                    properties.put("answered", "102");
+                } else if (!forwarded) {
+                    // remove property only if not forwarded
+                    properties.put("answered", null);
+                }
+            }
+            if (forwarded != message.forwarded) {
+                message.forwarded = forwarded;
+                if (message.forwarded) {
+                    properties.put("forwarded", "104");
+                } else if (!answered) {
+                    // remove property only if not answered
+                    properties.put("forwarded", null);
+                }
+            }
+            if (junk != message.junk) {
+                message.junk = junk;
+                if (message.junk) {
                     properties.put("junk", "1");
-                    message.junk = true;
+                } else {
+                    properties.put("junk", "0");
                 }
             }
         }
