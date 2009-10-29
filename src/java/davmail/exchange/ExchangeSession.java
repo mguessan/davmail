@@ -287,7 +287,7 @@ public class ExchangeSession {
             if (path.startsWith("/")) {
                 // path is absolute, replace method path
                 uri.setPath(path);
-            } else if (path.startsWith("http://") || path.startsWith("https://")){
+            } else if (path.startsWith("http://") || path.startsWith("https://")) {
                 return path;
             } else {
                 // relative path, build new path
@@ -1100,8 +1100,8 @@ public class ExchangeSession {
     /**
      * Create Exchange folder with given folder class.
      *
-     * @param folderName logical folder name
-     * @param folderClass folder class 
+     * @param folderName  logical folder name
+     * @param folderClass folder class
      * @throws IOException on error
      */
     public void createFolder(String folderName, String folderClass) throws IOException {
@@ -1351,6 +1351,11 @@ public class ExchangeSession {
         public boolean forwarded;
 
         /**
+         * Message content parsed in a MIME message.
+         */
+        protected MimeMessage mimeMessage;
+
+        /**
          * IMAP uid , unique in folder (x0e230003)
          *
          * @return IMAP uid
@@ -1451,6 +1456,15 @@ public class ExchangeSession {
                 }
                 method.releaseConnection();
             }
+        }
+
+        public MimeMessage getMimeMessage() throws IOException, MessagingException {
+            if (mimeMessage == null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                write(baos);
+                mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
+            }
+            return mimeMessage;
         }
 
         /**

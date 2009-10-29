@@ -30,11 +30,9 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimePart;
+import javax.mail.internet.*;
 import javax.mail.MessagingException;
+import javax.mail.Address;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -278,13 +276,7 @@ public class ImapConnection extends AbstractConnection {
                                             UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
-                                            while (uidRangeIterator.hasNext()) {
-                                                DavGatewayTray.switchIcon();
-                                                ExchangeSession.Message message = uidRangeIterator.next();
-                                                updateFlags(message, action, flags);
-                                                sendClient("* " + (uidRangeIterator.currentIndex) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
-                                            }
-                                            sendClient(commandId + " OK STORE completed");
+                                            handleStore(commandId, uidRangeIterator, action, flags);
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(tokens.nextToken());
@@ -333,6 +325,11 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " OK FETCH completed");
                                     }
 
+                                } else if ("store".equalsIgnoreCase(command)) {
+                                    RangeIterator rangeIterator = new RangeIterator(tokens.nextToken());
+                                    String action = tokens.nextToken();
+                                    String flags = tokens.nextToken();
+                                    handleStore(commandId, rangeIterator, action, flags);
 
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
@@ -506,6 +503,8 @@ public class ImapConnection extends AbstractConnection {
                 String param = paramTokens.nextToken();
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
+                } else if ("ENVELOPE".equals(param)) {
+                    appendEnvelope(buffer, message);
                 } else if ("BODYSTRUCTURE".equals(param)) {
                     if (parameters.indexOf("BODY.") >= 0) {
                         // Apple Mail: send structure with body, need exact RFC822.SIZE
@@ -596,6 +595,17 @@ public class ImapConnection extends AbstractConnection {
         sendClient(buffer.toString());
     }
 
+    protected void handleStore(String commandId, AbstractRangeIterator rangeIterator, String action, String flags) throws IOException {
+        while (rangeIterator.hasNext()) {
+            DavGatewayTray.switchIcon();
+            ExchangeSession.Message message = rangeIterator.next();
+            updateFlags(message, action, flags);
+            sendClient("* " + (rangeIterator.getCurrentIndex()) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
+        }
+        sendClient(commandId + " OK STORE completed");
+    }
+
+
     protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
         List<Long> uidList = new ArrayList<Long>();
         SearchConditions conditions = new SearchConditions();
@@ -642,13 +652,88 @@ public class ImapConnection extends AbstractConnection {
         return uidList;
     }
 
+    protected void appendEnvelope(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
+        buffer.append(" ENVELOPE (");
+
+        try {
+            MimeMessage mimeMessage = message.getMimeMessage();
+            // Fake envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
+            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Date"));
+            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Subject"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Sender", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Reply-To", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("CC", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To", ","));
+            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Messagee-Id"));
+
+        } catch (MessagingException me) {
+            DavGatewayTray.warn(me);
+            // send fake envelope
+            buffer.append(" nil nil nil nil nil nil nil nil nil nil");
+        }
+        buffer.append(')');
+    }
+
+    protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) {
+        buffer.append(' ');
+        if (value != null && value.length > 0) {
+            try {
+                buffer.append('"');
+                // TODO: replace with MimeUtility.unfold
+                buffer.append(MimeUtility.decodeText(value[0]).replaceAll("\r\n", ""));
+                buffer.append('"');
+            } catch (UnsupportedEncodingException e) {
+                DavGatewayTray.warn(e);
+                buffer.append("nil");
+            }
+        } else {
+            buffer.append("nil");
+        }
+    }
+
+    protected void appendMailEnvelopeHeader(StringBuilder buffer, String value) {
+        buffer.append(' ');
+        if (value != null) {
+            try {
+                InternetAddress[] addresses = InternetAddress.parseHeader(value, false);
+                buffer.append('(');
+                for (InternetAddress address : addresses) {
+                    buffer.append('(');
+                    String personal = address.getPersonal();
+                    if (personal != null) {
+                        buffer.append('"').append(personal).append('"');
+                    } else {
+                        buffer.append("nil");
+                    }
+                    buffer.append(" nil ");
+                    String mail = address.getAddress();
+                    int atIndex = mail.indexOf('@');
+                    if (atIndex >= 0) {
+                        buffer.append('"').append(mail.substring(0, atIndex)).append('"');
+                        buffer.append(' ');
+                        buffer.append('"').append(mail.substring(atIndex + 1)).append('"');
+                    } else {
+                        buffer.append("nil nil");
+                    }
+                    buffer.append(')');
+                }
+                buffer.append(')');
+            } catch (AddressException e) {
+                DavGatewayTray.warn(e);
+                buffer.append("nil");
+            }
+        } else {
+            buffer.append("nil");
+        }
+    }
+
     protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        message.write(baos);
 
         buffer.append(" BODYSTRUCTURE ");
         try {
-            MimeMessage mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
+            MimeMessage mimeMessage = message.getMimeMessage();
             Object mimeBody = mimeMessage.getContent();
             if (mimeBody instanceof MimeMultipart) {
                 buffer.append('(');
@@ -674,16 +759,12 @@ public class ImapConnection extends AbstractConnection {
             }
         } catch (UnsupportedEncodingException e) {
             DavGatewayTray.warn(e);
-            // dump message in log
-            DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", new String(baos.toByteArray())));
             // failover: send default bodystructure
-            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL ").append(baos.size()).append(" NIL)");
+            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
-            // dump message in log
-            DavGatewayTray.debug(new BundleMessage("LOG_MESSAGE", new String(baos.toByteArray())));
             // failover: send default bodystructure
-            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL ").append(baos.size()).append(" NIL)");
+            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
         }
     }
 
@@ -1138,9 +1219,16 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected class UIDRangeIterator implements Iterator<ExchangeSession.Message> {
-        final String[] ranges;
+    protected abstract class AbstractRangeIterator implements Iterator<ExchangeSession.Message> {
         int currentIndex;
+
+        protected int getCurrentIndex() {
+            return currentIndex;
+        }
+    }
+
+    protected class UIDRangeIterator extends AbstractRangeIterator {
+        final String[] ranges;
         int currentRangeIndex;
         long startUid;
         long endUid;
@@ -1219,9 +1307,8 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected class RangeIterator implements Iterator<ExchangeSession.Message> {
+    protected class RangeIterator extends AbstractRangeIterator {
         final String[] ranges;
-        int currentIndex;
         int currentRangeIndex;
         long startUid;
         long endUid;
