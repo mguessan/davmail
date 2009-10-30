@@ -4,13 +4,17 @@ import davmail.Settings;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 
 /**
- *
+ *  Test Exchange session
  */
 public class TestExchangeSession {
 
-    protected TestExchangeSession() {
+    private TestExchangeSession() {
     }
 
+    /**
+     * main method
+     * @param argv command line arg
+     */
     public static void main(String[] argv) {
         // register custom SSL Socket factory
         int currentArg = 0;
@@ -23,17 +27,10 @@ public class TestExchangeSession {
         // test auth
         try {
             ExchangeSessionFactory.checkConfig();
-            session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg++]);
+            session = ExchangeSessionFactory.getInstance(argv[currentArg++], argv[currentArg]);
 
             ExchangeSession.Folder folder = session.getFolder("INBOX");
-
-            long startTime = System.currentTimeMillis();
-            ExchangeSession.MessageList messageList = session.getAllMessageUidAndSize(folder.folderUrl);
-            System.out.println("******");
-            for (ExchangeSession.Message message : messageList) {
-                message.write(System.out);
-            }
-            System.out.println("Elapsed time " + (System.currentTimeMillis() - startTime) + " ms");
+            folder.loadMessages();
 
             //session.purgeOldestTrashAndSentMessages();
 
