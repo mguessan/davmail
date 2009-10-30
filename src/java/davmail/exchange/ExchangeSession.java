@@ -1474,6 +1474,13 @@ public class ExchangeSession {
         }
 
         /**
+         * Drop mime message to avoid keeping message content in memory.
+         */
+        public void dropMimeMessage() {
+            mimeMessage = null;
+        }
+
+        /**
          * Delete message.
          *
          * @throws IOException on error

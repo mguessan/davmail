@@ -30,16 +30,15 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpException;
 
-import javax.mail.internet.*;
 import javax.mail.MessagingException;
-import javax.mail.Address;
+import javax.mail.internet.*;
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.SocketException;
-import java.util.*;
-import java.text.SimpleDateFormat;
+import java.net.SocketTimeoutException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -497,7 +496,6 @@ public class ImapConnection extends AbstractConnection {
         StringBuilder buffer = new StringBuilder();
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         if (parameters != null) {
-            boolean bodystructure = false;
             StringTokenizer paramTokens = new StringTokenizer(parameters);
             while (paramTokens.hasMoreTokens()) {
                 String param = paramTokens.nextToken();
@@ -506,13 +504,7 @@ public class ImapConnection extends AbstractConnection {
                 } else if ("ENVELOPE".equals(param)) {
                     appendEnvelope(buffer, message);
                 } else if ("BODYSTRUCTURE".equals(param)) {
-                    if (parameters.indexOf("BODY.") >= 0) {
-                        // Apple Mail: send structure with body, need exact RFC822.SIZE
-                        bodystructure = true;
-                    } else {
-                        // thunderbird : send BODYSTRUCTURE
-                        appendBodyStructure(buffer, message);
-                    }
+                    appendBodyStructure(buffer, message);
                 } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                     try {
                         SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -529,11 +521,6 @@ public class ImapConnection extends AbstractConnection {
                     message.write(partOutputStream);
                     baos.close();
 
-                    if (bodystructure) {
-                        bodystructure = false;
-                        // Apple Mail: need to build full bodystructure
-                        appendBodyStructure(buffer, message);
-                    }
                     buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                     if ("BODY.PEEK[HEADER]".equals(param)) {
                         buffer.append(" BODY[HEADER] {");
@@ -568,11 +555,6 @@ public class ImapConnection extends AbstractConnection {
                     rfc822size = bodyOutputStream.size;
                     baos.close();
 
-                    if (bodystructure) {
-                        bodystructure = false;
-                        // Apple Mail: need to build full bodystructure
-                        appendBodyStructure(buffer, message);
-                    }
                     buffer.append(" RFC822.SIZE ").append(rfc822size).append(' ');
                     if ("BODY.PEEK[TEXT]".equals(param)) {
                         buffer.append("BODY[TEXT]");
@@ -593,6 +575,8 @@ public class ImapConnection extends AbstractConnection {
         }
         buffer.append(')');
         sendClient(buffer.toString());
+        // do not keep message content in memory
+        message.dropMimeMessage();
     }
 
     protected void handleStore(String commandId, AbstractRangeIterator rangeIterator, String action, String flags) throws IOException {
