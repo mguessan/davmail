@@ -366,10 +366,10 @@ public class ExchangeSession {
                         logonMethod.addParameter(name, value);
                     }
                     // custom login form
-                    if ("txtUserName".equals(name)) {
-                        userNameInput = "txtUserName";
-                    } else if ("txtUserPass".equals(name)) {
-                        passwordInput = "txtUserPass";
+                    if ("txtUserName".equals(name) || "userid".equals(name)) {
+                        userNameInput = name;
+                    } else if ("txtUserPass".equals(name) || "pw".equals(name)) {
+                        passwordInput = name;
                     } else if ("addr".equals(name)) {
                         // this is not a logon form but a redirect form
                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
@@ -450,6 +450,9 @@ public class ExchangeSession {
             throw new DavMailException("EXCEPTION_AUTHENTICATION_FORM_NOT_FOUND", initmethod.getURI());
         }
 
+        // make sure username and password fields are empty
+        ((PostMethod) logonMethod).removeParameter(userNameInput);
+        ((PostMethod) logonMethod).removeParameter(passwordInput);
         ((PostMethod) logonMethod).addParameter(userNameInput, userName);
         ((PostMethod) logonMethod).addParameter(passwordInput, password);
         ((PostMethod) logonMethod).addParameter("trusted", "4");
@@ -628,7 +631,7 @@ public class ExchangeSession {
             );
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
-            throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
+            throw new DavMailAuthenticationException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
     }
 
