@@ -173,8 +173,6 @@ public class ExchangeSession {
             boolean isBasicAuthentication = isBasicAuthentication(url);
 
             httpClient = DavGatewayHttpClientFacade.getInstance(url, userName, password);
-            // avoid 401 roundtrips
-            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
 
             // get webmail root url
             // providing credentials
@@ -194,6 +192,9 @@ public class ExchangeSession {
             } else {
                 method = formLogin(httpClient, method, userName, password);
             }
+
+            // avoid 401 roundtrips
+            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
 
             buildMailPath(method);
 
@@ -438,9 +439,6 @@ public class ExchangeSession {
             initmethod.releaseConnection();
         }
 
-        if (logonMethod == null) {
-            throw new DavMailException("EXCEPTION_AUTHENTICATION_FORM_NOT_FOUND", initmethod.getURI());
-        }
         return logonMethod;
     }
 
@@ -448,6 +446,10 @@ public class ExchangeSession {
         LOGGER.debug("Form based authentication detected");
 
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
+        if (logonMethod == null) {
+            throw new DavMailException("EXCEPTION_AUTHENTICATION_FORM_NOT_FOUND", initmethod.getURI());
+        }
+
         ((PostMethod) logonMethod).addParameter(userNameInput, userName);
         ((PostMethod) logonMethod).addParameter(passwordInput, password);
         ((PostMethod) logonMethod).addParameter("trusted", "4");
@@ -457,24 +459,53 @@ public class ExchangeSession {
         checkFormLoginQueryString(logonMethod);
 
         // workaround for post logon script redirect
-        if (httpClient.getState().getCookies().length == 0) {
+        if (!isAuthenticated()) {
+            // try to get new method from script based redirection
             logonMethod = buildLogonMethod(httpClient, logonMethod);
-            logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
-            checkFormLoginQueryString(logonMethod);
+
+            if (logonMethod != null) {
+                // if logonMethod is not null, try to follow redirection
+                logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
+                checkFormLoginQueryString(logonMethod);
+            } else {
+                // authentication failed
+                throwAuthenticationFailed();
+            }
         }
 
         return logonMethod;
+    }
+
+    /**
+     * Look for session cookies.
+     *
+     * @return true if session cookies are available
+     * @throws DavMailAuthenticationException on error
+     */
+    protected boolean isAuthenticated() throws DavMailAuthenticationException {
+        boolean authenticated = false;
+        for (Cookie cookie : httpClient.getState().getCookies()) {
+            if ("cadata".equals(cookie.getName()) || "sessionid".equals(cookie.getName())) {
+                authenticated = true;
+                break;
+            }
+        }
+        return authenticated;
     }
 
     protected void checkFormLoginQueryString(HttpMethod logonMethod) throws DavMailAuthenticationException {
         String queryString = logonMethod.getQueryString();
         if (queryString != null && queryString.contains("reason=2")) {
             logonMethod.releaseConnection();
-            if (this.userName != null && this.userName.contains("\\")) {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-            } else {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_RETRY");
-            }
+            throwAuthenticationFailed();
+        }
+    }
+
+    protected void throwAuthenticationFailed() throws DavMailAuthenticationException {
+        if (this.userName != null && this.userName.contains("\\")) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+        } else {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_RETRY");
         }
     }
 
@@ -1460,8 +1491,9 @@ public class ExchangeSession {
 
         /**
          * Load message content in a Mime message
+         *
          * @return mime message
-         * @throws IOException on error
+         * @throws IOException        on error
          * @throws MessagingException on error
          */
         public MimeMessage getMimeMessage() throws IOException, MessagingException {
