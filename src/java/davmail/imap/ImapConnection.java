@@ -655,7 +655,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
             // send fake envelope
-            buffer.append(" nil nil nil nil nil nil nil nil nil nil");
+            buffer.append(" NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL");
         }
         buffer.append(')');
     }
@@ -667,7 +667,7 @@ public class ImapConnection extends AbstractConnection {
             buffer.append(MimeUtility.unfold(value[0]));
             buffer.append('"');
         } else {
-            buffer.append("nil");
+            buffer.append("NIL");
         }
     }
 
@@ -683,9 +683,9 @@ public class ImapConnection extends AbstractConnection {
                     if (personal != null) {
                         buffer.append('"').append(MimeUtility.encodeText(personal)).append('"');
                     } else {
-                        buffer.append("nil");
+                        buffer.append("NIL");
                     }
-                    buffer.append(" nil ");
+                    buffer.append(" NIL ");
                     String mail = address.getAddress();
                     int atIndex = mail.indexOf('@');
                     if (atIndex >= 0) {
@@ -693,20 +693,20 @@ public class ImapConnection extends AbstractConnection {
                         buffer.append(' ');
                         buffer.append('"').append(mail.substring(atIndex + 1)).append('"');
                     } else {
-                        buffer.append("nil nil");
+                        buffer.append("NIL NIL");
                     }
                     buffer.append(')');
                 }
                 buffer.append(')');
             } catch (AddressException e) {
                 DavGatewayTray.warn(e);
-                buffer.append("nil");
+                buffer.append("NIL");
             } catch (UnsupportedEncodingException e) {
                 DavGatewayTray.warn(e);
-                buffer.append("nil");
+                buffer.append("NIL");
             }
         } else {
-            buffer.append("nil");
+            buffer.append("NIL");
         }
     }
 
