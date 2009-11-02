@@ -18,8 +18,6 @@
  */
 package davmail.exception;
 
-import davmail.BundleMessage;
-
 /**
  * I18 AuthenticationException subclass.
  */
@@ -37,6 +35,7 @@ public class DavMailAuthenticationException extends DavMailException {
      * Create a DavMail authentication exception with the given BundleMessage key and arguments.
      *
      * @param key message key
+     * @param arguments message values
      */
     public DavMailAuthenticationException(String key, Object... arguments) {
          super(key, arguments);

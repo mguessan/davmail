@@ -483,9 +483,8 @@ public class ExchangeSession {
      * Look for session cookies.
      *
      * @return true if session cookies are available
-     * @throws DavMailAuthenticationException on error
      */
-    protected boolean isAuthenticated() throws DavMailAuthenticationException {
+    protected boolean isAuthenticated() {
         boolean authenticated = false;
         for (Cookie cookie : httpClient.getState().getCookies()) {
             if ("cadata".equals(cookie.getName()) || "sessionid".equals(cookie.getName())) {
@@ -1095,7 +1094,7 @@ public class ExchangeSession {
      * @param currentFolder current folder
      * @return current folder or new refreshed folder
      * @throws IOException on error
-     * @deprecated no longer used: breaks Outlook IMAP
+     * @Deprecated no longer used: breaks Outlook IMAP
      */
     public Folder refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderName);
