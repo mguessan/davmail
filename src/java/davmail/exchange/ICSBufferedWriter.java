@@ -26,6 +26,17 @@ public class ICSBufferedWriter {
     final StringBuilder buffer = new StringBuilder();
 
     /**
+     * Write content to buffer, do not split lines.
+     *
+     * @param content ics content
+     */
+    public void write(String content) {
+        if (content != null) {
+            buffer.append(content);
+        }
+    }
+
+    /**
      * Write line to buffer, split lines at 75 characters.
      *
      * @param line ics event line

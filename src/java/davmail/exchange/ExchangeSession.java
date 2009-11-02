@@ -20,6 +20,7 @@ package davmail.exchange;
 
 import davmail.BundleMessage;
 import davmail.Settings;
+import davmail.util.StringUtil;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
@@ -1895,6 +1896,8 @@ public class ExchangeSession {
         boolean isAppleiCal = false;
         boolean hasAttendee = false;
         boolean hasCdoBusyStatus = false;
+        // detect ics event with empty timezone (all day from Lightning)
+        boolean hasTimezone = false;
         String transp = null;
         String validTimezoneId = null;
         String eventClass = null;
@@ -1957,6 +1960,8 @@ public class ExchangeSession {
                         }
                     } else if ("X-MICROSOFT-CDO-BUSYSTATUS".equals(key)) {
                         hasCdoBusyStatus = true;
+                    } else if ("BEGIN:VTIMEZONE".equals(line)) {
+                        hasTimezone = true;
                     }
                 }
             }
@@ -1981,6 +1986,10 @@ public class ExchangeSession {
                 if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
                     line = fixTimezoneId(line, validTimezoneId);
                 }
+                if (!fromServer && "BEGIN:VEVENT".equals(line) && !hasTimezone) {
+                    result.write(ExchangeSession.this.getVTimezone().timezoneBody);
+                    hasTimezone = true;
+                }
                 if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
                     line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
                 } else if (!fromServer && "END:VEVENT".equals(line)) {
@@ -2002,6 +2011,10 @@ public class ExchangeSession {
                     line = getAllDayLine(line);
                 } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
                     line = getAllDayLine(line);
+                } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTSTART") && line.startsWith("DTSTART;VALUE=DATE")) {
+                    line = "DTSTART;TZID=\""+ExchangeSession.this.getVTimezone().timezoneId+"\":" + line.substring(19) + "T000000";
+                } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTEND") && line.startsWith("DTEND;VALUE=DATE")) {
+                    line = "DTEND;TZID=\""+ExchangeSession.this.getVTimezone().timezoneId+"\":" + line.substring(17) + "T000000";
                 } else if (line.startsWith("TZID:") && validTimezoneId != null) {
                     line = "TZID:" + validTimezoneId;
                 } else if ("BEGIN:VEVENT".equals(line)) {
@@ -3158,6 +3171,66 @@ public class ExchangeSession {
                         .append(':').append(entry.getValue()).append((char) 13).append((char) 10);
             }
         }
+    }
+
+    protected final class VTimezone {
+        private String timezoneBody;
+        private String timezoneId;
+
+        /**
+         * create a fake event to get VTIMEZONE body
+         */
+        private void load() {
+            try {
+                // create temporary folder
+                String folderPath = ExchangeSession.this.getFolderPath("davmailtemp");
+                ExchangeSession.this.createCalendarFolder(folderPath);
+
+                PostMethod postMethod = new PostMethod(folderPath);
+                postMethod.addParameter("Cmd", "saveappt");
+                postMethod.addParameter("FORMTYPE", "appointment");
+                String fakeEventUrl = null;
+                try {
+                    // create fake event
+                    int statusCode = ExchangeSession.this.httpClient.executeMethod(postMethod);
+                    if (statusCode == HttpStatus.SC_OK) {
+                        fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                    }
+                } finally {
+                    postMethod.releaseConnection();
+                }
+                if (fakeEventUrl != null) {
+                    // get fake event body
+                    GetMethod getMethod = new GetMethod(URIUtil.encodePath(fakeEventUrl));
+                    getMethod.setRequestHeader("Translate", "f");
+                    try {
+                        ExchangeSession.this.httpClient.executeMethod(getMethod);
+                        timezoneBody = "BEGIN:VTIMEZONE" +
+                                StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
+                                "END:VTIMEZONE\r\n";
+                        timezoneId = StringUtil.getToken(timezoneBody, "TZID:", "\r\n");
+                    } finally {
+                        getMethod.releaseConnection();
+                    }
+                }
+
+                // delete temporary folder
+                ExchangeSession.this.deleteFolder("davmailtemp");
+            } catch (IOException e) {
+                LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
+            }
+        }
+    }
+
+    protected VTimezone vTimezone;
+
+    protected VTimezone getVTimezone() {
+        if (vTimezone == null) {
+            // need to load Timezone info from OWA
+            vTimezone = new VTimezone();
+            vTimezone.load();
+        }
+        return vTimezone;
     }
 
     /**
