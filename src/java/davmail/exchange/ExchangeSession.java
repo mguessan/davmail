@@ -1094,8 +1094,9 @@ public class ExchangeSession {
      * @param currentFolder current folder
      * @return current folder or new refreshed folder
      * @throws IOException on error
-     * @Deprecated no longer used: breaks Outlook IMAP
+     * @deprecated no longer used: breaks Outlook IMAP
      */
+    @Deprecated
     public Folder refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderName);
         if (currentFolder.contenttag == null || !currentFolder.contenttag.equals(newFolder.contenttag)) {
@@ -1331,7 +1332,7 @@ public class ExchangeSession {
     /**
      * Exchange message.
      */
-    public class Message implements Comparable {
+    public class Message implements Comparable<Message> {
         protected String messageUrl;
         /**
          * Message uid.
@@ -1549,8 +1550,8 @@ public class ExchangeSession {
          * @param message other message
          * @return imapUid comparison result
          */
-        public int compareTo(Object message) {
-            long compareValue = (imapUid - ((Message) message).imapUid);
+        public int compareTo(Message message) {
+            long compareValue = (imapUid - message.imapUid);
             if (compareValue > 0) {
                 return 1;
             } else if (compareValue < 0) {
