@@ -114,7 +114,7 @@ public class SmtpConnection extends AbstractConnection {
                         }
                     } else if ("RCPT".equalsIgnoreCase(command)) {
                         if (state == State.STARTMAIL || state == State.RECIPIENT) {
-                            if (line.startsWith("RCPT TO:")) {
+                            if (line.toUpperCase().startsWith("RCPT TO:")) {
                                 state = State.RECIPIENT;
                                 try {
                                     InternetAddress internetAddress = new InternetAddress(line.substring("RCPT TO:".length()));
