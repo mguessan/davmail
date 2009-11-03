@@ -26,7 +26,7 @@ public class StringUtil {
     }
 
     /**
-     * Return the characters between startDelimiter and endDelimiter or null.
+     * Return the substring between startDelimiter and endDelimiter or null.
      *
      * @param value          String value
      * @param startDelimiter start delimiter
@@ -46,5 +46,53 @@ public class StringUtil {
             }
         }
         return token;
+    }
+
+    /**
+     * Return the substring between startDelimiter and endDelimiter or null,
+     * look for last token in string.
+     *
+     * @param value          String value
+     * @param startDelimiter start delimiter
+     * @param endDelimiter   end delimiter
+     * @return token value
+     */
+    public static String getLastToken(String value, String startDelimiter, String endDelimiter) {
+        String token = null;
+        if (value != null) {
+            int startIndex = value.lastIndexOf(startDelimiter);
+            if (startIndex >= 0) {
+                startIndex += startDelimiter.length();
+                int endIndex = value.indexOf(endDelimiter, startIndex);
+                if (endIndex >= 0) {
+                    token = value.substring(startIndex, endIndex);
+                }
+            }
+        }
+        return token;
+    }
+
+    /**
+     * Return the substring between startDelimiter and endDelimiter with newToken.
+     *
+     * @param value          String value
+     * @param startDelimiter start delimiter
+     * @param endDelimiter   end delimiter
+     * @param newToken       new token value
+     * @return token value
+     */
+    public static String replaceToken(String value, String startDelimiter, String endDelimiter, String newToken) {
+        String result = null;
+        if (value != null) {
+            int startIndex = value.indexOf(startDelimiter);
+            if (startIndex >= 0) {
+                startIndex += startDelimiter.length();
+                int endIndex = value.indexOf(endDelimiter, startIndex);
+                if (endIndex >= 0) {
+                    result = value.substring(0, startIndex) + newToken + value.substring(endIndex);
+                }
+            }
+        }
+        return result;
     }
 }

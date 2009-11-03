@@ -393,42 +393,19 @@ public class ExchangeSession {
                         for (Object content : contents) {
                             if (content instanceof CommentToken) {
                                 String scriptValue = ((CommentToken) content).getCommentedContent();
-                                int sUrlIndex = scriptValue.indexOf("var a_sUrl = \"");
-                                int sLgnIndex = scriptValue.indexOf("var a_sLgn = \"");
-                                if (sUrlIndex >= 0 && sLgnIndex >= 0) {
-                                    sUrlIndex += "var a_sUrl = \"".length();
-                                    sLgnIndex += "var a_sLgn = \"".length();
-                                    int sUrlEndIndex = scriptValue.indexOf('\"', sUrlIndex);
-                                    int sLgnEndIndex = scriptValue.indexOf('\"', sLgnIndex);
-                                    if (sUrlEndIndex >= 0 && sLgnEndIndex >= 0) {
-                                        String pathQuery = scriptValue.substring(sLgnIndex, sLgnEndIndex) +
-                                                scriptValue.substring(sUrlIndex, sUrlEndIndex);
-                                        String src = getScriptBasedFormURL(initmethod, pathQuery);
-                                        LOGGER.debug("Detected script based logon, redirect to form at " + src);
-                                        HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
-                                        logonMethod = buildLogonMethod(httpClient, newInitMethod);
-                                    }
-                                } else {
-                                    sLgnIndex = scriptValue.indexOf("var a_sLgnQS = \"");
-                                    if (sUrlIndex >= 0 && sLgnIndex >= 0) {
-                                        sUrlIndex += "var a_sUrl = \"".length();
-                                        sLgnIndex += "var a_sLgnQS = \"".length();
-                                        int sUrlEndIndex = scriptValue.indexOf('\"', sUrlIndex);
-                                        int sLgnEndIndex = scriptValue.indexOf('\"', sLgnIndex);
-                                        if (sUrlEndIndex >= 0 && sLgnEndIndex >= 0) {
-                                            String pathQuery = scriptValue.substring(sLgnIndex, sLgnEndIndex) +
-                                                    scriptValue.substring(sUrlIndex, sUrlEndIndex);
-                                            String src = getScriptBasedFormURL(initmethod, pathQuery);
-                                            LOGGER.debug("Detected script based logon, redirect to form at " + src);
-                                            HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
-                                            logonMethod = buildLogonMethod(httpClient, newInitMethod);
-                                        }
-                                    }
+                                String sUrl = StringUtil.getToken(scriptValue, "var a_sUrl = \"", "\"");
+                                String sLgn = StringUtil.getToken(scriptValue, "var a_sLgn = \"", "\"");
+                                if (sLgn == null) {
+                                    sLgn = StringUtil.getToken(scriptValue, "var a_sLgnQS = \"", "\"");
+                                }
+                                if (sUrl != null && sLgn != null) {
+                                    String src = getScriptBasedFormURL(initmethod, sLgn + sUrl);
+                                    LOGGER.debug("Detected script based logon, redirect to form at " + src);
+                                    HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
+                                    logonMethod = buildLogonMethod(httpClient, newInitMethod);
                                 }
                             }
                         }
-
-
                     }
                 }
             }
@@ -2010,9 +1987,9 @@ public class ExchangeSession {
                 } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
                     line = getAllDayLine(line);
                 } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTSTART") && line.startsWith("DTSTART;VALUE=DATE")) {
-                    line = "DTSTART;TZID=\""+ExchangeSession.this.getVTimezone().timezoneId+"\":" + line.substring(19) + "T000000";
+                    line = "DTSTART;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(19) + "T000000";
                 } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTEND") && line.startsWith("DTEND;VALUE=DATE")) {
-                    line = "DTEND;TZID=\""+ExchangeSession.this.getVTimezone().timezoneId+"\":" + line.substring(17) + "T000000";
+                    line = "DTEND;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(17) + "T000000";
                 } else if (line.startsWith("TZID:") && validTimezoneId != null) {
                     line = "TZID:" + validTimezoneId;
                 } else if ("BEGIN:VEVENT".equals(line)) {
@@ -2136,13 +2113,7 @@ public class ExchangeSession {
     }
 
     protected String fixTimezoneId(String line, String validTimezoneId) {
-        int startIndex = line.indexOf("TZID=");
-        int endIndex = line.indexOf(':', startIndex + 5);
-        if (startIndex >= 0 && endIndex >= 0) {
-            return line.substring(0, startIndex + 5) + validTimezoneId + line.substring(endIndex);
-        } else {
-            return line;
-        }
+        return StringUtil.replaceToken(line, "TZID=", ":", validTimezoneId);
     }
 
     protected void splitExDate(ICSBufferedWriter result, String line) {
@@ -2225,16 +2196,12 @@ public class ExchangeSession {
     }
 
     protected String getICSMethod(String icsBody) {
-        int methodIndex = icsBody.indexOf("METHOD:");
-        if (methodIndex < 0) {
-            return "REQUEST";
+        String icsMethod = StringUtil.getToken(icsBody, "METHOD:", "\r");
+        if (icsMethod == null) {
+            // default method is REQUEST
+            icsMethod = "REQUEST";
         }
-        int startIndex = methodIndex + "METHOD:".length();
-        int endIndex = icsBody.indexOf('\r', startIndex);
-        if (endIndex < 0) {
-            return "REQUEST";
-        }
-        return icsBody.substring(startIndex, endIndex);
+        return icsMethod;
     }
 
     protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
@@ -3074,11 +3041,8 @@ public class ExchangeSession {
 
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            String body = getMethod.getResponseBodyAsString();
-            int startIndex = body.lastIndexOf("<a:fbdata>");
-            int endIndex = body.lastIndexOf("</a:fbdata>");
-            if (startIndex >= 0 && endIndex >= 0) {
-                String fbdata = body.substring(startIndex + "<a:fbdata>".length(), endIndex);
+            String fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
+            if (fbdata != null) {
                 freeBusy = new FreeBusy(icalDateFormat, startDate, fbdata);
             }
         } finally {

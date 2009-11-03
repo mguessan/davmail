@@ -19,17 +19,29 @@
 package davmail.util;
 
 import junit.framework.TestCase;
-import davmail.util.StringUtil;
 
 /**
  * Test StringUtil.
  */
 public class StringUtilTest extends TestCase {
+    /**
+     * Test get token
+     */
     public void testGetToken() {
         assertNull(StringUtil.getToken(null, null, null));
         assertNull(StringUtil.getToken(null, "\'", "\'"));
         assertNull(StringUtil.getToken("'test", "\'", "\'"));
         assertEquals("test", StringUtil.getToken("'test'", "'", "'"));
         assertEquals("test", StringUtil.getToken("value=\"test\"", "value=\"", "\""));
+    }
+
+    /**
+     * Test replace token
+     */
+    public void testReplaceToken() {
+        assertNull(StringUtil.replaceToken(null, null, null, null));
+        assertNull(StringUtil.replaceToken(null, null, null, "new"));
+        assertEquals("'new'", StringUtil.replaceToken("'old'", "'", "'", "new"));
+        assertEquals("value=\"new\"", StringUtil.replaceToken("value=\"old\"", "value=\"", "\"", "new"));
     }
 }
