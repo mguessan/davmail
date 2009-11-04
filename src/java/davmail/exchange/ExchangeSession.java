@@ -463,7 +463,7 @@ public class ExchangeSession {
     protected boolean isAuthenticated() {
         boolean authenticated = false;
         for (Cookie cookie : httpClient.getState().getCookies()) {
-            if ("cadata".equals(cookie.getName()) || "sessionid".equals(cookie.getName())) {
+            if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())) {
                 authenticated = true;
                 break;
             }
@@ -1022,6 +1022,11 @@ public class ExchangeSession {
      * @return folder path
      */
     public String getFolderPath(String folderName) {
+        // convert absolute IMAP path to relative path
+        if (folderName.startsWith("/")) {
+            folderName = folderName.substring(1);
+        }
+        
         String folderPath;
         if (folderName.startsWith("INBOX")) {
             folderPath = folderName.replaceFirst("INBOX", inboxUrl);
