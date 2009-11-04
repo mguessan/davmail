@@ -22,6 +22,7 @@ import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.DavGateway;
+import davmail.util.StringUtil;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
@@ -268,8 +269,22 @@ public class CaldavConnection extends AbstractConnection {
             int status = session.deleteEvent(request.getExchangeFolderPath(), lastPath);
             sendHttpResponse(status);
         } else if (request.isGet()) {
-            ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
-            sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
+            if (request.path.endsWith("/")) {
+                // GET request on a folder => build ics content of all folder events
+                String folderPath = request.getExchangeFolderPath();
+                List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
+                StringBuilder buffer = new StringBuilder();
+                buffer.append("BEGIN:VCALENDAR");
+                for (ExchangeSession.Event event : events) {
+                    String icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VCALENDAR", "END:VCALENDAR");
+                    buffer.append(icsContent);
+                }
+                buffer.append("END:VCALENDAR");
+                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(session.getFolderCtag(folderPath)), "text/calendar;charset=UTF-8", buffer.toString(), true);
+            } else {
+                ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
+                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
+            }
         } else if (request.isHead()) {
             // test event
             ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
@@ -1319,7 +1334,9 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 StringBuilder calendarPath = new StringBuilder();
                 for (int i = 0; i < endIndex; i++) {
-                    calendarPath.append('/').append(getPathElement(i));
+                    if (getPathElement(i).length() > 0) {
+                        calendarPath.append('/').append(getPathElement(i));
+                    }
                 }
                 return calendarPath.toString();
             }
