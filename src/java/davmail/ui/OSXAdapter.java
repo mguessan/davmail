@@ -29,7 +29,7 @@ public class OSXAdapter implements InvocationHandler {
     protected final Method targetMethod;
     protected final String proxySignature;
 
-    static Constructor<?> macOSXApplication;
+    static Object macOSXApplication;
 
     /**
      * Pass this method an Object and Method equipped to perform application shutdown logic.
@@ -135,7 +135,7 @@ public class OSXAdapter implements InvocationHandler {
     public static void setHandler(OSXAdapter adapter) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         Class<?> applicationClass = Class.forName("com.apple.eawt.Application");
         if (macOSXApplication == null) {
-            macOSXApplication = (Constructor<?>) applicationClass.getConstructor((Class[]) null).newInstance((Object[]) null);
+            macOSXApplication = applicationClass.getConstructor((Class[]) null).newInstance((Object[]) null);
         }
         Class applicationListenerClass = Class.forName("com.apple.eawt.ApplicationListener");
         Method addListenerMethod = applicationClass.getDeclaredMethod("addApplicationListener", new Class[]{applicationListenerClass});
