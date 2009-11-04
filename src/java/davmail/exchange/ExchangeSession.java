@@ -1022,11 +1022,6 @@ public class ExchangeSession {
      * @return folder path
      */
     public String getFolderPath(String folderName) {
-        // convert absolute IMAP path to relative path
-        if (folderName.startsWith("/")) {
-            folderName = folderName.substring(1);
-        }
-        
         String folderPath;
         if (folderName.startsWith("INBOX")) {
             folderPath = folderName.replaceFirst("INBOX", inboxUrl);
