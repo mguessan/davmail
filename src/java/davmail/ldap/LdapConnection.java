@@ -550,9 +550,6 @@ public class LdapConnection extends AbstractConnection {
         if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
             String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
             ldapFilter = new SimpleFilter(attributeName);
-            if (!"objectclass".equals(attributeName)) {
-                DavGatewayTray.warn(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", ldapFilter.toString()));
-            }
         } else {
             int[] seqSize = new int[1];
             int ldapFilterType = reqBer.parseSeq(seqSize);
@@ -1036,6 +1033,8 @@ public class LdapConnection extends AbstractConnection {
 
             if (operator == LDAP_FILTER_EQUALITY) {
                 buffer.append("='").append(value).append('\'');
+            } else if ("*".equals(value)) {
+                buffer.append(" is not null");
             } else {
                 buffer.append(" LIKE '");
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
@@ -1082,7 +1081,8 @@ public class LdapConnection extends AbstractConnection {
             String galFindAttributeName = getGalFindAttributeName();
 
             if (galFindAttributeName != null) {
-                Map<String, Map<String, String>> galPersons = session.galFind(galFindAttributeName, value);
+                // quick fix for cn=* filter
+                Map<String, Map<String, String>> galPersons = session.galFind(galFindAttributeName, "*".equals(value)?"A":value);
 
                 if (operator == LDAP_FILTER_EQUALITY) {
                     // Make sure only exact matches are returned
