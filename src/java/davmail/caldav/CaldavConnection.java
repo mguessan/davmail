@@ -273,14 +273,27 @@ public class CaldavConnection extends AbstractConnection {
                 // GET request on a folder => build ics content of all folder events
                 String folderPath = request.getExchangeFolderPath();
                 List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
-                StringBuilder buffer = new StringBuilder();
-                buffer.append("BEGIN:VCALENDAR");
+                ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
+                response.append("BEGIN:VCALENDAR\r\n");
+                response.append("VERSION:2.0\r\n");
+                response.append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN\r\n");
+                response.append("METHOD:PUBLISH\r\n");
+
                 for (ExchangeSession.Event event : events) {
-                    String icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VCALENDAR", "END:VCALENDAR");
-                    buffer.append(icsContent);
+                    String icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VTIMEZONE", "END:VCALENDAR");
+                    if (icsContent != null) {
+                        response.append("BEGIN:VTIMEZONE");
+                        response.append(icsContent);
+                    } else {
+                        icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VEVENT", "END:VCALENDAR");
+                        if (icsContent != null) {
+                            response.append("BEGIN:VEVENT");
+                            response.append(icsContent);
+                        }
+                    }
                 }
-                buffer.append("END:VCALENDAR");
-                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(session.getFolderCtag(folderPath)), "text/calendar;charset=UTF-8", buffer.toString(), true);
+                response.append("END:VCALENDAR");
+                response.close();
             } else {
                 ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
                 sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
@@ -931,13 +944,14 @@ public class CaldavConnection extends AbstractConnection {
     /**
      * Send Http response with given status in chunked mode.
      *
-     * @param status Http status
+     * @param status      Http status
+     * @param contentType MIME content type
      * @throws IOException on error
      */
-    public void sendChunkedHttpResponse(int status) throws IOException {
+    public void sendChunkedHttpResponse(int status, String contentType) throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Transfer-Encoding", "chunked");
-        sendHttpResponse(status, headers, "text/xml;charset=UTF-8", (byte[]) null, true);
+        sendHttpResponse(status, headers, contentType, (byte[]) null, true);
     }
 
     /**
@@ -1359,12 +1373,13 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
-     * Caldav response wrapper, content sent in chunked mode to avoid timeout
+     * Http chunked response.
      */
-    protected class CaldavResponse {
+    protected class ChunkedResponse {
         Writer writer;
+        String contentType;
 
-        protected CaldavResponse(int status) throws IOException {
+        protected ChunkedResponse(int status, String contentType) throws IOException {
             writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
                 @Override
                 public void write(byte[] data, int offset, int length) throws IOException {
@@ -1389,7 +1404,25 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient("");
                 }
             }), "UTF-8");
-            sendChunkedHttpResponse(status);
+            sendChunkedHttpResponse(status, contentType);
+        }
+
+        public void append(String data) throws IOException {
+            writer.write(data);
+        }
+
+        public void close() throws IOException {
+            writer.close();
+        }
+    }
+
+    /**
+     * Caldav response wrapper, content sent in chunked mode to avoid timeout
+     */
+    protected class CaldavResponse extends ChunkedResponse {
+
+        protected CaldavResponse(int status) throws IOException {
+            super(status, "text/xml;charset=UTF-8");
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         }
 
@@ -1487,10 +1520,6 @@ public class CaldavConnection extends AbstractConnection {
 
         public void endScheduleResponse() throws IOException {
             writer.write("</C:schedule-response>");
-        }
-
-        public void close() throws IOException {
-            writer.close();
         }
 
     }
