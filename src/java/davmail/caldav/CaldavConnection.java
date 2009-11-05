@@ -548,10 +548,12 @@ public class CaldavConnection extends AbstractConnection {
             List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
             appendEventsResponses(response, request, events);
-            // Send sub folders for multi-calendar support under iCal
-            List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
-            for (ExchangeSession.Folder folder : folderList) {
-                appendCalendar(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/') + 1));
+            // Send sub folders for multi-calendar support under iCal, except for public folders
+            if (!folderPath.startsWith("/public")) {
+                List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
+                for (ExchangeSession.Folder folder : folderList) {
+                    appendCalendar(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/') + 1));
+                }
             }
         }
         response.endMultistatus();
