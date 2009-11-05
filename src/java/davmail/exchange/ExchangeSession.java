@@ -2418,7 +2418,7 @@ public class ExchangeSession {
                 "Content-Transfer-Encoding: 8bit\r\n\r\n");
         writer.flush();
         baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
-        writer.write("------=_NextPart_");
+        writer.write("\r\n------=_NextPart_");
         writer.write(uid);
         writer.write("--\r\n");
         writer.close();
