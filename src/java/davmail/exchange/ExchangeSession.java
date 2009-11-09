@@ -3148,7 +3148,7 @@ public class ExchangeSession {
                 String folderPath = ExchangeSession.this.getFolderPath("davmailtemp");
                 ExchangeSession.this.createCalendarFolder(folderPath);
 
-                PostMethod postMethod = new PostMethod(folderPath);
+                PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
                 postMethod.addParameter("Cmd", "saveappt");
                 postMethod.addParameter("FORMTYPE", "appointment");
                 String fakeEventUrl = null;
@@ -3160,6 +3160,28 @@ public class ExchangeSession {
                     }
                 } finally {
                     postMethod.releaseConnection();
+                }
+                // failover for Exchange 2007, use PROPPATCH with forced timezone
+                if (fakeEventUrl == null) {
+                    ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
+                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), "urn:content-classes:appointment"));
+                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPM.Appointment"));
+                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("instancetype", Namespace.getNamespace("urn:schemas:calendar:")), "0"));
+                    // get forced timezone id from settings
+                    timezoneId = Settings.getProperty("davmail.timezoneId");
+                    if (timezoneId != null) {
+                        propertyList.add(new DefaultDavProperty(DavPropertyName.create("timezoneid", Namespace.getNamespace("urn:schemas:calendar:")), timezoneId));
+                    }
+                    String patchMethodUrl = URIUtil.encodePath(folderPath)+ '/' + UUID.randomUUID().toString() + ".EML";
+                    PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
+                    try {
+                        int statusCode = httpClient.executeMethod(patchMethod);
+                        if (statusCode == HttpStatus.SC_MULTI_STATUS) {
+                            fakeEventUrl = patchMethodUrl;
+                        }
+                    } finally {
+                        patchMethod.releaseConnection();
+                    }
                 }
                 if (fakeEventUrl != null) {
                     // get fake event body
