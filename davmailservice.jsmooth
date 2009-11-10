@@ -32,6 +32,8 @@
 <javaProperties>
 <name>sun.net.inetaddr.ttl</name>
 <value>60</value>
+<name>-Xrs</name>
+<value></value>
 </javaProperties>
 <mainClassName>davmail.DavGateway</mainClassName>
 <maximumMemoryHeap>268435456</maximumMemoryHeap>
@@ -56,7 +58,7 @@
 </skeletonProperties>
 <skeletonProperties>
 <key>Logfile</key>
-<value></value>
+<value>davmailservice.log</value>
 </skeletonProperties>
 <skeletonProperties>
 <key>Interactive</key>
