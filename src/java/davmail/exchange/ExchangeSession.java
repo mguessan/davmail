@@ -73,6 +73,7 @@ public class ExchangeSession {
     protected static final int FREE_BUSY_INTERVAL = 15;
 
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
+    protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
     protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
 
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
@@ -670,6 +671,7 @@ public class ExchangeSession {
 
     protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
         Message message = new Message();
+        LOGGER.debug("Found message href: "+responseEntity.getHref());
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
 
@@ -733,7 +735,9 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
-        PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePathQuery(message.messageUrl), buildProperties(properties)) {
+        String encodedMessageUrl = message.getEncodedMessageUrl();
+        LOGGER.debug("Updating message at "+encodedMessageUrl);
+        PropPatchMethod patchMethod = new PropPatchMethod(encodedMessageUrl, buildProperties(properties)) {
             @Override
             protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
                 // ignore response body, sometimes invalid with exchange mapi properties
@@ -790,15 +794,19 @@ public class ExchangeSession {
     public MessageList searchMessages(String folderName, String attributes, String conditions) throws IOException {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
-        String searchRequest = "Select " + attributes +
-                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderUrl + "\"')\n" +
-                "                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n";
-        if (conditions != null) {
-            searchRequest += conditions;
+        StringBuilder searchRequest = new StringBuilder();
+        searchRequest.append("Select ");
+        if (attributes != null && attributes.length() > 0) {
+            searchRequest.append(attributes);
         }
-        searchRequest += "       ORDER BY \"urn:schemas:httpmail:date\" ASC";
+        searchRequest.append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')\n")
+                .append("                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n");
+        if (conditions != null) {
+            searchRequest.append(conditions);
+        }
+        searchRequest.append("       ORDER BY \"urn:schemas:httpmail:date\" ASC");
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(folderUrl), searchRequest);
+                httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString());
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);
@@ -1150,9 +1158,8 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public void copyMessage(Message message, String targetFolder) throws IOException {
-        String messageUrl = message.messageUrl;
-        String targetPath = getFolderPath(targetFolder) + messageUrl.substring(messageUrl.lastIndexOf('/'));
-        CopyMethod method = new CopyMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(targetPath), false);
+        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + message.getEncodedMessageName();
+        CopyMethod method = new CopyMethod(message.getEncodedMessageUrl(), targetPath, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
@@ -1190,7 +1197,14 @@ public class ExchangeSession {
         }
     }
 
-    protected void moveToTrash(String encodedPath, String encodedMessageName) throws IOException {
+    protected void moveToTrash(String encodedMessageUrl) throws IOException {
+        int index = encodedMessageUrl.lastIndexOf('/');
+        if (index < 0) {
+            throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", encodedMessageUrl);
+        }
+        String encodedPath = encodedMessageUrl.substring(0, index);
+        String encodedMessageName = encodedMessageUrl.substring(index + 1);
+
         String source = encodedPath + '/' + encodedMessageName;
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + encodedMessageName;
         LOGGER.debug("Deleting : " + source + " to " + destination);
@@ -1384,6 +1398,29 @@ public class ExchangeSession {
         }
 
         /**
+         * Return encoded message url.
+         * @return encoded message url
+         * @throws URIException on error
+         */
+        public String getEncodedMessageUrl() throws URIException {
+            return URIUtil.encodePath(messageUrl);
+        }
+
+        /**
+         * Return encoded message name.
+         * @return encoded message name
+         * @throws IOException on error
+         */
+        public String getEncodedMessageName() throws IOException {
+            int index = messageUrl.lastIndexOf('/');
+            if (index < 0) {
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", messageUrl);
+            }
+
+            return URIUtil.encodePath(messageUrl.substring(index+1));
+        }
+
+        /**
          * Return message flags in IMAP format.
          *
          * @return IMAP flags
@@ -1421,7 +1458,9 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void write(OutputStream os) throws IOException {
-            GetMethod method = new GetMethod(URIUtil.encodePath(messageUrl));
+            String encodedMessageUrl = getEncodedMessageUrl();
+            LOGGER.debug("Getting message content at "+encodedMessageUrl);
+            GetMethod method = new GetMethod(encodedMessageUrl);
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
@@ -1497,7 +1536,7 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void delete() throws IOException {
-            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(messageUrl));
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, getEncodedMessageUrl());
         }
 
         /**
@@ -1511,13 +1550,7 @@ public class ExchangeSession {
             properties.put("read", "1");
             updateMessage(this, properties);
 
-            int index = messageUrl.lastIndexOf('/');
-            if (index < 0) {
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", messageUrl);
-            }
-            String encodedPath = URIUtil.encodePath(messageUrl.substring(0, index));
-            String encodedMessageName = URIUtil.encodePath(messageUrl.substring(index + 1));
-            ExchangeSession.this.moveToTrash(encodedPath, encodedMessageName);
+            ExchangeSession.this.moveToTrash(getEncodedMessageUrl());
         }
 
         /**
@@ -3172,7 +3205,7 @@ public class ExchangeSession {
                     if (timezoneId != null) {
                         propertyList.add(new DefaultDavProperty(DavPropertyName.create("timezoneid", Namespace.getNamespace("urn:schemas:calendar:")), timezoneId));
                     }
-                    String patchMethodUrl = URIUtil.encodePath(folderPath)+ '/' + UUID.randomUUID().toString() + ".EML";
+                    String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
                     PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
                     try {
                         int statusCode = httpClient.executeMethod(patchMethod);
