@@ -919,7 +919,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendUnauthorized() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\"');
-        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[]) null, false);
+        sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[]) null, true);
     }
 
     /**
@@ -1379,7 +1379,6 @@ public class CaldavConnection extends AbstractConnection {
      */
     protected class ChunkedResponse {
         Writer writer;
-        String contentType;
 
         protected ChunkedResponse(int status, String contentType) throws IOException {
             writer = new OutputStreamWriter(new BufferedOutputStream(new OutputStream() {
