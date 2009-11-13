@@ -675,6 +675,7 @@ public class ExchangeSession {
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
 
+        message.permanentUrl = getPropertyIfExists(properties, "permanenturl", SCHEMAS_EXCHANGE);
         message.size = getIntPropertyIfExists(properties, "x0e080003", SCHEMAS_MAPI_PROPTAG);
         message.uid = getPropertyIfExists(properties, "uid", Namespace.getNamespace("DAV:"));
         message.imapUid = getLongPropertyIfExists(properties, "x0e230003", SCHEMAS_MAPI_PROPTAG);
@@ -735,9 +736,7 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public void updateMessage(Message message, Map<String, String> properties) throws IOException {
-        String encodedMessageUrl = message.getEncodedMessageUrl();
-        LOGGER.debug("Updating message at "+encodedMessageUrl);
-        PropPatchMethod patchMethod = new PropPatchMethod(encodedMessageUrl, buildProperties(properties)) {
+        PropPatchMethod patchMethod = new PropPatchMethod(message.permanentUrl, buildProperties(properties)) {
             @Override
             protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
                 // ignore response body, sometimes invalid with exchange mapi properties
@@ -795,9 +794,9 @@ public class ExchangeSession {
         String folderUrl = getFolderPath(folderName);
         MessageList messages = new MessageList();
         StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select ");
+        searchRequest.append("Select \"http://schemas.microsoft.com/exchange/permanenturl\"");
         if (attributes != null && attributes.length() > 0) {
-            searchRequest.append(attributes);
+            searchRequest.append(',').append(attributes);
         }
         searchRequest.append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')\n")
                 .append("                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n");
@@ -1158,8 +1157,8 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public void copyMessage(Message message, String targetFolder) throws IOException {
-        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + message.getEncodedMessageName();
-        CopyMethod method = new CopyMethod(message.getEncodedMessageUrl(), targetPath, false);
+        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
+        CopyMethod method = new CopyMethod(message.permanentUrl, targetPath, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
@@ -1198,17 +1197,9 @@ public class ExchangeSession {
     }
 
     protected void moveToTrash(String encodedMessageUrl) throws IOException {
-        int index = encodedMessageUrl.lastIndexOf('/');
-        if (index < 0) {
-            throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", encodedMessageUrl);
-        }
-        String encodedPath = encodedMessageUrl.substring(0, index);
-        String encodedMessageName = encodedMessageUrl.substring(index + 1);
-
-        String source = encodedPath + '/' + encodedMessageName;
-        String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + encodedMessageName;
-        LOGGER.debug("Deleting : " + source + " to " + destination);
-        MoveMethod method = new MoveMethod(source, destination, false);
+        String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
+        LOGGER.debug("Deleting : " + encodedMessageUrl + " to " + destination);
+        MoveMethod method = new MoveMethod(encodedMessageUrl, destination, false);
         method.addRequestHeader("Allow-rename", "t");
 
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
@@ -1324,6 +1315,8 @@ public class ExchangeSession {
      */
     public class Message implements Comparable<Message> {
         protected String messageUrl;
+
+        protected String permanentUrl;
         /**
          * Message uid.
          */
@@ -1458,9 +1451,7 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void write(OutputStream os) throws IOException {
-            String encodedMessageUrl = getEncodedMessageUrl();
-            LOGGER.debug("Getting message content at "+encodedMessageUrl);
-            GetMethod method = new GetMethod(encodedMessageUrl);
+            GetMethod method = new GetMethod(permanentUrl);
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
@@ -1536,7 +1527,7 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void delete() throws IOException {
-            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, getEncodedMessageUrl());
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, permanentUrl);
         }
 
         /**
@@ -1550,7 +1541,7 @@ public class ExchangeSession {
             properties.put("read", "1");
             updateMessage(this, properties);
 
-            ExchangeSession.this.moveToTrash(getEncodedMessageUrl());
+            ExchangeSession.this.moveToTrash(permanentUrl);
         }
 
         /**
