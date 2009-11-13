@@ -79,6 +79,7 @@ public class ExchangeSession {
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
 
     static {
+        EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("permanenturl", SCHEMAS_EXCHANGE));
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.GETETAG);
     }
 
@@ -1594,6 +1595,7 @@ public class ExchangeSession {
      */
     public class Event {
         protected String href;
+        protected String permanentUrl;
         protected String etag;
 
         protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
@@ -1623,8 +1625,8 @@ public class ExchangeSession {
          */
         public String getICS() throws IOException {
             String result = null;
-            LOGGER.debug("Get event: " + href);
-            GetMethod method = new GetMethod(URIUtil.encodePath(href));
+            LOGGER.debug("Get event: " + permanentUrl);
+            GetMethod method = new GetMethod(permanentUrl);
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             try {
@@ -1651,9 +1653,9 @@ public class ExchangeSession {
                 baos.close();
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
             } catch (IOException e) {
-                LOGGER.warn("Unable to get event at " + href + ": " + e.getMessage());
+                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
             } catch (MessagingException e) {
-                LOGGER.warn("Unable to get event at " + href + ": " + e.getMessage());
+                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
             } finally {
                 method.releaseConnection();
             }
@@ -1694,7 +1696,7 @@ public class ExchangeSession {
     public List<Event> getEventMessages(String folderPath) throws IOException {
         List<Event> result;
         try {
-            String searchQuery = "Select \"DAV:getetag\"" +
+            String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\"" +
                     "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                     "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
                     "                AND (NOT \"" + scheduleStateProperty.getNamespace().getURI() + scheduleStateProperty.getName() + "\" = 'CALDAV:schedule-processed')\n" +
@@ -1728,7 +1730,7 @@ public class ExchangeSession {
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatSearchDate(cal.getTime()) + "'\n";
         }
 
-        String searchQuery = "Select \"DAV:getetag\"" +
+        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
                 "                       \"urn:schemas:calendar:instancetype\" = 1\n" +
@@ -1805,8 +1807,8 @@ public class ExchangeSession {
 
     protected Event buildEvent(MultiStatusResponse calendarResponse) throws URIException {
         Event event = new Event();
-        String href = calendarResponse.getHref();
-        event.href = URIUtil.decode(href);
+        event.href = URIUtil.decode(calendarResponse.getHref());
+        event.permanentUrl = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE); 
         event.etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
         return event;
     }
