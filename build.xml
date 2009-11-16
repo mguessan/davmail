@@ -286,4 +286,21 @@
             <fileset dir="target/site"/>
         </scp>
     </target>
+
+    <target name="upload-dist" depends="dist">
+        <mkdir dir="dist/${version}"/>
+        <move todir="dist/${version}">
+            <fileset dir="dist">
+                <include name="*${version}-*"/>
+            </fileset>
+        </move>
+
+        <scp todir="${username},davmail@frs.sourceforge.net:/home/frs/project/d/da/davmail/davmail"
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
+            <fileset dir="dist">
+                <include name="${version}/*"/>
+            </fileset>
+        </scp>
+    </target>
+
 </project>
