@@ -3031,7 +3031,7 @@ public class ExchangeSession {
      */
     public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
         attendee = replaceIcal4Principal(attendee);
-        if (attendee.startsWith("mailto:")) {
+        if (attendee.startsWith("mailto:") || attendee.startsWith("MAILTO:")) {
             attendee = attendee.substring("mailto:".length());
         }
 
