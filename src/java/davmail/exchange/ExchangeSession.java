@@ -2191,7 +2191,7 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public int sendEvent(String icsBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(draftsUrl + '/' + UUID.randomUUID().toString() + ".EML");
+        String messageUrl = draftsUrl + '/' + UUID.randomUUID().toString() + ".EML";
         int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
         if (status != HttpStatus.SC_CREATED) {
             return status;
@@ -2217,7 +2217,7 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public EventResult createOrUpdateEvent(String folderPath, String eventName, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = URIUtil.encodePath(folderPath + '/' + eventName);
+        String messageUrl = folderPath + '/' + eventName;
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
@@ -2337,7 +2337,7 @@ public class ExchangeSession {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         OutputStreamWriter writer = new OutputStreamWriter(baos, "ASCII");
         int status = 0;
-        PutMethod putmethod = new PutMethod(messageUrl);
+        PutMethod putmethod = new PutMethod(URIUtil.encodePath(messageUrl));
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Overwrite", "f");
         if (etag != null) {
