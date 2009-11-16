@@ -1,3 +1,110 @@
+** DavMail 3.6.0 released **
+This release contains a lot of enhancements, both bug fixes
+and new features from user feedback on 3.5.0, including improved
+Evolution LDAP support, LDAP abandon support (faster searches with
+Evolution and OSX), experimental windows service wrapper, improved
+form based authentication support and ENVELOPE IMAP command support.  
+I wish to thank Dan Foody for his valuable contributions on
+OSX Snow Leopard support (attendee completion in iCal and complex
+LDAP filters handling).
+Also added an architecture schema on DavMail home page to quickly
+describe DavMail features.
+
+LDAP:
+- LDAP: implement cn=* filter for Evolution
+- LDAP: run searches in separate threads to implement ABANDON, will make searches faster with some clients (Evolution and OSX address book)
+- LDAP: implement startsWith on Contact search, only objectclass=* is a full search
+- LDAP: fix for iCal4 attendee completion,  send localhost if current socket is local, else send fully qualified domain name
+- LDAP: major refactoring from Dan Foody to improve complex filters handling
+- LDAP: improve contact search, reencode uids to hex to avoid case sensitivity issues
+
+Documentation:
+- Doc: Set Dan Foody as main java contributor
+- Doc: improve DavMail logo
+- Doc: add new Logo, improve internet explorer compatibility
+- Doc: Add an architecture schema on site welcome page
+- Doc: Improve getting started documentation, explain Exchange 2003 and 2007 paths (/exchange/ and /owa/) 
+- Doc: fix site style
+- Doc: fix maven site title
+
+SMTP:
+- SMTP: fix by Marc Macenko, case sensitive RCPT TO: 
+- SMTP: allow lower case commands
+- SMTP: experimental: remove Content-Type on create message to avoid 406 not acceptable with some Exchange servers.
+
+Bugfixes:
+- Fix 2887947: Exchange server with a username hidden field
+
+Enhancements:
+- Check for released version in a separate thread and set timeout to ten seconds
+- Refactor message url encoding
+- Upgrade Jmooth wrappers, add -Xrs jvm option to davmailservice wrapper to avoid service stop on user session logout (http://sourceforge.net/projects/jsmooth/forums/forum/297041/topic/2370742)
+- Fix regression from revision 811
+- Refactor ExchangeSession, use StringUtil to simplify code
+- Remove username duplicate check, as formLogin now resets values before POST
+- Start refactoring: StringUtil class
+- Fix classpath in jsmooth wrappers to use new javamail
+- Allow custom form with userid/pw fields in form based authentication
+- Improve form based authentication, look for Exchange session cookies sessionid and cadata
+- Fix test
+- Upgrade JavaMail to 1.4.1
+- New create folder method
+- Fix FBA authentication, reset query string in getAbsoluteURI()
+- New abstract JUnit test case class
+- Detect redirect form instead of logon form, follow redirect to logon form
+- Add an upload-site ant task
+- Fixes from audit
+- Fix settings default values and update doc
+- Drop icon activity switches under 250ms to avoid fast flickering on OSX, add new switch icon in IMAP fetch iterations
+- Improve script based form redirect to handle more cases
+- Refactor ExchangeSession to allow independent session creation.
+- Allow directory in logFilePath settings, add /davmail.log suffix in this case
+- Allow follow redirects on /public GET requests
+
+Caldav:
+- Caldav: use permanenturl for Caldav to avoid encoding issues
+- Caldav: do not close connection on 401 authorization required, may help iCal authentication
+- Caldav: Additional Allday fix for Exchange 2007 and Outlook, implement a failover with a new davmail.timezoneId setting.
+- Caldav: fix regression on create event, missing CRLF in mime message
+- Caldav: Fix regression on public calendar folders linked to multiple calendar support for iCal
+- Caldav: use chunked response to send calendar folder content as ICS to avoid timeout
+- Caldav: Experimental GET ics on folder and fix regression on public folder access
+- Caldav: get current VTIMEZONE body from OWA to create Allday events compatible with Outlook. Users still need to select the same Timezone in Outlook and OWA.
+- Caldav: Fix Timezone value
+- Caldav: Create a new setting davmail.forceActiveSyncUpdate to let users choose to force ActiveSync event. Note: custom iCal or Lightning ICS properties are lost if this option is enabled.
+- Caldav: Some Exchange servers redirect to a different host for freebusy, use wide auth scope
+- Caldav: Another fix from Dan Foody: improve dumpICS debug option
+- Caldav: need to check session on each request, credentials may have changed or session expired
+- Caldav: fix regression after ActiveSync patch, PROPPATCH on contentClass removes all custom ICS properties
+- Caldav: improve getICSValue, do not return values inside VALARM section
+- Caldav: do not send events with a null instancetype (may be the cause of iCal failure)
+- CalDav: Send sub folders for multi-calendar support under iCal
+- Caldav: fix path translation to Exchange for calendars in sub folders under /calendar
+- Caldav: Added supported-calendar-component-set to calendar response
+- Caldav: added a debug trace when requested calendar is not user calendar (maybe shared, but often url mistake in Caldav client)
+- Caldav: fix Bug 2686125, PROPPATCH event after PUT to trigger activeSync PUSH, tested with iPhone 3 using activeSync
+
+IMAP:
+- IMAP: use permanenturl instead of href to avoid url encoding issues
+- IMAP: Revert convert absolute IMAP path to relative path, breaks Caldav
+- IMAP: Convert absolute IMAP path to relative path and detect ISA server cookie starting with cadata (instead of equals cadata)
+- IMAP: use upper case NIL in ENVELOPE
+- IMAP: improve MimeMessage handling, drop after fetch to avoid keeping full message in memory
+- IMAP: fix new ENVELOPE feature, must return encoded values
+- IMAP: implement store by id and ENVELOPE
+- IMAP: update message flag only if changed to avoid unneeded message uid bump, may fix Evolution and Apple Mail constant reload issue
+- IMAP: implement search by id
+- IMAP: send default BODYSTRUCTURE on MIME encoding error
+- IMAP: improve complex content-type handling in BODYSTRUCTURE
+- IMAP: fix deleted flag handling, switch to official Exchange IMAP property http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8570
+- IMAP: detect HttpNotFoundException on folder select
+- IMAP: improve public folder error handling
+- IMAP: fix space at end of folder name
+- IMAP: Fix regression on LIST INBOX
+- IMAP: experimental public folder access
+- IMAP: switch to http://schemas.microsoft.com/exchange/contentstate to handle deleted flag (DAV:isdeleted did not work with some Exchange servers).
+- IMAP: implement undelete message
+
 ** DavMail 3.5.0 released **
 This release improves OSX Snow Leopard support, thank to
 contributions from Dan Foody. Contact searches are also
