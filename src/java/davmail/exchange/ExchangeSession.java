@@ -1392,12 +1392,12 @@ public class ExchangeSession {
         }
 
         /**
-         * Return encoded message url.
-         * @return encoded message url
+         * Return permanent message url.
+         * @return permanent message url
          * @throws URIException on error
          */
-        public String getEncodedMessageUrl() throws URIException {
-            return URIUtil.encodePath(messageUrl);
+        public String getPermanentUrl() throws URIException {
+            return permanentUrl;
         }
 
         /**
@@ -1768,12 +1768,19 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public Event getEvent(String folderPath, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(folderPath + '/' + eventName);
+        String eventPath = folderPath + '/' + eventName;
         return getEvent(eventPath);
     }
 
-    protected Event getEvent(String eventPath) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, eventPath, 0, EVENT_REQUEST_PROPERTIES);
+    /**
+     * Get event by url
+     *
+     * @param eventPath Event path
+     * @return event object
+     * @throws IOException on error
+     */
+    public Event getEvent(String eventPath) throws IOException {
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(eventPath), 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
