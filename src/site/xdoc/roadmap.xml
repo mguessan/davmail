@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - RoadMap</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="DavMail RoadMap">
+            <p>DavMail features are now almost complete, yet there remains a lot of place
+                for improvement. The following section lists the expected new features
+                and enhancements in DavMail next versions.
+            </p>
+            <subsection name="3.6.1">
+                <p>
+                    <strong>Next bugfix release</strong>
+                </p>
+                <ul>
+                    <li>Fix bug 2898469: 404 when answering invitation</li>
+                    <li>Fix bug 2898669: Possibly wrong "MAILTO" when retrieving freebusy information</li>
+                </ul>
+            </subsection>
+            <subsection name="3.7.0">
+                <p>
+                    <strong>Next minor release</strong>
+                </p>
+                <ul>
+                    <li>Implement Caldav attachments
+                    </li>
+                    <li>Implement hide from Dock option on OSX</li>
+                    <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
+                        http://msexchangeteam.com/archive/2004/03/31/105275.aspx
+                    </li>
+                </ul>
+            </subsection>
+            <subsection name="4.0">
+                <p>
+                    <strong>Next major version</strong>
+                </p>
+                <ul>
+                    <li>Exchange 2010 support through EWS: Need a major refactoring of ExchangeSession
+                        to separate WebDav only stuff
+                    </li>
+                    <li>Replace BufferedReader with a dedicated InputStream to parse
+                        Caldav Requests, detect encoding in http headers
+                    </li>
+                    <li>Jsmooth Windows 64 bit wrappers</li>
+                    <li>Include Unix init.d script to help users use DavMail in server mode</li>
+                    <li>Implement custom authenticator interface to handle specific authentications
+                        (e.g. token based)
+                    </li>
+                </ul>
+            </subsection>
+        </section>
+    </body>
+</document>

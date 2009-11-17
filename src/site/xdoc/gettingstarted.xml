@@ -53,7 +53,7 @@
                 </tr>
                 <tr>
                     <td>Local LDAP port</td>
-                    <td>Local LDAP server port to configure in add directory (addresse book) client</td>
+                    <td>Local LDAP server port to configure in directory (addresse book) client</td>
                     <td>389</td>
                 </tr>
                 <tr>
