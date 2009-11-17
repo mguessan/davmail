@@ -21,7 +21,7 @@ package davmail.util;
 /**
  * Various string handling methods
  */
-public class StringUtil {
+public final class StringUtil {
     private StringUtil() {
     }
 
