@@ -465,7 +465,10 @@ public class ExchangeSession {
     protected boolean isAuthenticated() {
         boolean authenticated = false;
         for (Cookie cookie : httpClient.getState().getCookies()) {
-            if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())) {
+            // Exchange 2003 cookies
+            if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
+                    // Exchange 2007 cookie
+                    || "UserContext".equals(cookie.getName())) {
                 authenticated = true;
                 break;
             }
@@ -672,7 +675,7 @@ public class ExchangeSession {
 
     protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
         Message message = new Message();
-        LOGGER.debug("Found message href: "+responseEntity.getHref());
+        LOGGER.debug("Found message href: " + responseEntity.getHref());
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
 
@@ -1393,6 +1396,7 @@ public class ExchangeSession {
 
         /**
          * Return permanent message url.
+         *
          * @return permanent message url
          * @throws URIException on error
          */
@@ -1402,6 +1406,7 @@ public class ExchangeSession {
 
         /**
          * Return encoded message name.
+         *
          * @return encoded message name
          * @throws IOException on error
          */
@@ -1411,7 +1416,7 @@ public class ExchangeSession {
                 throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", messageUrl);
             }
 
-            return URIUtil.encodePath(messageUrl.substring(index+1));
+            return URIUtil.encodePath(messageUrl.substring(index + 1));
         }
 
         /**
@@ -1815,7 +1820,7 @@ public class ExchangeSession {
     protected Event buildEvent(MultiStatusResponse calendarResponse) throws URIException {
         Event event = new Event();
         event.href = URIUtil.decode(calendarResponse.getHref());
-        event.permanentUrl = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE); 
+        event.permanentUrl = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE);
         event.etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
         return event;
     }
