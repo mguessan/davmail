@@ -20,17 +20,30 @@
 
 package net.charabia.util.codec;
 
-import java.io.*;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+
+import javax.imageio.ImageIO;
+
 import net.charabia.util.io.BinaryInputStream;
-import java.awt.image.*;
-import java.awt.*;
 
 /**
  *
  * @author  Rodrigo Reyes
+ * @author  Riccardo Gerosa
  */
 public class IcoCodec
 {
+
+	static private byte[] PNG_SIGNATURE = new byte[] { -119, 80, 78, 71, 13, 10, 26, 10 };
+
     static public class IconDir
     {
         int idType;
@@ -63,7 +76,9 @@ public class IcoCodec
 	public IconEntry(BinaryInputStream in) throws IOException
 	{
 	    bWidth = in.readUByte();
+	    if (bWidth == 0) { bWidth = 256; }
 	    bHeight = in.readUByte();
+	    if (bHeight == 0) { bHeight = 256; }
 	    bColorCount = in.readUByte();
 	    bReserved = in.readUByte();
 	    wPlanes = in.readUShortLE();
@@ -77,7 +92,7 @@ public class IcoCodec
 	    StringBuffer buffer = new StringBuffer();
 	    buffer.append("{ bWidth="+bWidth+"\n");
 	    buffer.append("  bHeight="+bHeight+"\n");
-	    buffer.append("  bColorCount="+bColorCount+"\n");
+	    buffer.append("  bColorCount="+bColorCount+(bColorCount == 0 ? "(not paletted)":"")+"\n");
 	    buffer.append("  wPlanes="+wPlanes+"\n");
 	    buffer.append("  wBitCount="+wBitCount+"\n");
 	    buffer.append("  dwBytesInRes="+dwBytesInRes+"\n");
@@ -139,6 +154,68 @@ public class IcoCodec
 
     }
 
+    public static BufferedImage checkImageSize(BufferedImage img, int width, int height) {
+        int w = img.getWidth(null);
+        int h = img.getHeight(null);
+        if ((w == width) && (h == height))
+            return img;
+        return null;
+    }
+
+    static boolean isSquareSize(BufferedImage bufferedImage, int size) {
+        return bufferedImage.getWidth() == bufferedImage.getHeight() && bufferedImage.getWidth() == size;
+    }
+
+    static int getColorDepth(BufferedImage bufferedImage) {
+        return bufferedImage.getColorModel().getPixelSize();
+    }
+
+    static public BufferedImage getPreferredImage(File f) throws IOException {
+        BufferedImage selected = null;
+        BufferedImage[] orgimages = loadImages(f);
+        if (orgimages != null) {
+            // select first image
+            selected = orgimages[0];
+            for (int i = 1; (i < orgimages.length); i++) {
+                 // We prefer 32x32 pictures, then 64x64, then 16x16...
+                 if (isSquareSize(orgimages[i], 32)) {
+                     if (!isSquareSize(selected, 32) || getColorDepth(orgimages[i]) > getColorDepth(selected)) {
+                         selected = orgimages[i];
+                     }
+                 } else if (isSquareSize(orgimages[i], 64)) {
+                     if (!isSquareSize(selected, 32) ||
+                             (isSquareSize(selected, 64) && getColorDepth(orgimages[i]) > getColorDepth(selected))) {
+                         selected = orgimages[i];
+                     }
+
+                 } else if (isSquareSize(orgimages[i], 16)) {
+                     if ((!isSquareSize(selected, 32) && !isSquareSize(selected, 64)) ||
+                             (isSquareSize(selected, 16) && getColorDepth(orgimages[i]) > getColorDepth(selected))) {
+                         selected = orgimages[i];
+                     }
+                 }
+            }
+
+            if (selected == null) {
+                //
+                // If there is no 32x32, 64x64, nor 16x16, then we scale the
+                // biggest image to be 32x32... This should happen mainly when
+                // loading an image from a png of gif file, and in most case
+                // there is only one image on the array.
+                //
+                int maxsize = 0;
+                for (int i = 0; (i < orgimages.length) && (selected == null); i++) {
+                    int size = orgimages[i].getWidth(null) * orgimages[i].getHeight(null);
+                    if (size > maxsize) {
+                        maxsize = size;
+                        selected = orgimages[i];
+                    }
+                }
+            }
+        }
+        return selected;
+    }
+
     static public BufferedImage[] loadImages(File f) throws IOException
     {
 	InputStream istream = new FileInputStream(f);
@@ -146,7 +223,7 @@ public class IcoCodec
 	BinaryInputStream in = new BinaryInputStream(buffin);
 
 	try {
-	    in.mark(32000);
+	    in.mark(1024 * 1024);
 
 	    IconDir dir = new IconDir(in);
 	    //	    System.out.println("DIR = " + dir);
@@ -165,33 +242,61 @@ public class IcoCodec
 
 	    for (int i=0; i<dir.idCount; i++)
 		{
-		    in.reset();
+	    	in.reset();
+
+	    	boolean pngIcon = false;
+	    	if (entries[i].dwBytesInRes > PNG_SIGNATURE.length) {
+	    		// 		Check if this is a PNG icon (introduced in Windows Vista)
+	    		in.mark(1024 * 1024);
+			    in.skip(entries[i].dwImageOffset);
+			    byte[] signatureBuffer = new byte[PNG_SIGNATURE.length];
+			    in.read(signatureBuffer, 0, PNG_SIGNATURE.length);
+			    pngIcon = Arrays.equals(PNG_SIGNATURE, signatureBuffer);
+			    in.reset();
+	    	}
+	    	//		System.out.println("PNG Icon = " + pngIcon);
+
 		    in.skip(entries[i].dwImageOffset);
 
-		    IconHeader header = new IconHeader(in);
-		    //		    System.out.println("Header: " + header);
+		    BufferedImage image;
 
-		    long toskip = header.Size - 40;
-		    if (toskip>0)
-			in.skip((int)toskip);
+		    if (pngIcon) {
+		    	// This is a PNG icon (introduced in Windows Vista)
+		    	byte[] imageData = new byte[(int) entries[i].dwBytesInRes];
+		    	in.read(imageData, 0, (int) entries[i].dwBytesInRes);
+		    	ByteArrayInputStream imageDataBuffer = new ByteArrayInputStream(imageData);
+		    	image = ImageIO.read(imageDataBuffer);
+		    } else {
+		    	//		This is a standard icon (not PNG)
+			    IconHeader header = new IconHeader(in);
+			    //		    System.out.println("Header: " + header);
 
-		    //		    System.out.println("skipped data");
-		    BufferedImage image = new BufferedImage((int)header.Width, (int)header.Height/2,
-							    BufferedImage.TYPE_INT_ARGB);
+			    long toskip = header.Size - 40;
+			    if (toskip>0)
+				in.skip((int)toskip);
 
-		    switch(header.BitsPerPixel)
-			{
-			case 4:
-			case 8:
-			    loadPalettedImage(in, entries[i], header, image);
-			    break;
-            case 32:
-                load32bitsImage(in, entries[i], header, image);
-                break;
+			    //		System.out.println("skipped data");
 
-            default:
-			    throw new Exception("Unsupported ICO color depth: " + header.BitsPerPixel);
-			}
+
+			    switch(header.BitsPerPixel)
+				{
+				case 4:
+				case 8:
+                    image = new BufferedImage((int)header.Width, (int)header.Height/2,
+                                        BufferedImage.TYPE_BYTE_INDEXED);
+				    loadPalettedImage(in, entries[i], header, image);
+				    break;
+				case 24:
+				case 32:
+                    image = new BufferedImage((int)header.Width, (int)header.Height/2,
+                                        BufferedImage.TYPE_INT_ARGB);
+					//		This is a true-color icon (introduced in Windows XP)
+					loadTrueColorImage(in, entries[i], header, image);
+					break;
+				default:
+					throw new Exception("Unsupported ICO color depth: " + header.BitsPerPixel);
+				}
+		    }
 
 		    images[i] = image;
 		}
@@ -241,7 +346,7 @@ public class IcoCodec
 	//
 	// Set the image
 
-	int xorbytes = (((int)header.Height/2) * (int)header.Width);
+	//int xorbytes = (((int)header.Height/2) * (int)header.Width);
 	int readbytes = 0;
 
 	for (int y=(int)(header.Height/2)-1; y>=0; y--)
@@ -327,18 +432,78 @@ public class IcoCodec
 	//	System.out.println("AND data read (" + readbytes + " bytes total)");
     }
 
-    static private void load32bitsImage(BinaryInputStream in, IconEntry entry, IconHeader header, BufferedImage image) throws Exception {
-        for (int y = (int) ((header.Height) / 2) - 1; y >= 0; y--) {
-            for (int x = 0; x < header.Width; x++) {
-                byte alpha = in.readByte();
-                byte red = in.readByte();
-                byte green = in.readByte();
-                byte blue = in.readByte();
+    static private void loadTrueColorImage(BinaryInputStream in, IconEntry entry, IconHeader header, BufferedImage image) throws Exception
+    {
+	//	System.out.println("Loading image...");
 
-                int pix = (alpha &0xff) | (red &0xff) <<8 | (green &0xff) << 16 | (blue &0xff) << 24;
-                image.setRGB(x, y, pix);
-            }
-        }
+	//
+	// Set the image
+
+	//int xorbytes = (((int)header.Height/2) * (int)header.Width);
+	int readbytes = 0;
+
+	for (int y=(int)(header.Height/2)-1; y>=0; y--)
+	    {
+		for (int x=0; x<header.Width; x++)
+		    {
+			switch(header.BitsPerPixel)
+			    {
+			    case 32:
+				{
+				    int b = in.readUByte();
+				    int g = in.readUByte();
+				    int r = in.readUByte();
+				    int a = in.readUByte();
+				    readbytes++;
+
+				    image.setRGB(x, y, (a<<24) | (r<<16) | (g<<8) | b);
+				}
+				break;
+			    case 24:
+			    {
+				    int b = in.readUByte();
+				    int g = in.readUByte();
+				    int r = in.readUByte();
+				    readbytes++;
+
+				    image.setRGB(x, y, (0xFF<<24) | (r<<16) | (g<<8) | b);
+				}
+			    break;
+			    }
+		    }
+	    }
+	//		System.out.println("XOR data read (" + readbytes + " bytes)");
+
+    if (header.BitsPerPixel < 32) {
+		int height = (int)(header.Height/2);
+
+		int rowsize = (int)header.Width / 8;
+		if ((rowsize%4)>0)
+		    {
+			rowsize += 4 - (rowsize%4);
+		    }
+
+		//		System.out.println("rowsize = " + rowsize);
+		int[] andbytes = new int[rowsize * height ];
+
+		for (int i=0; i<andbytes.length; i++)
+		    andbytes[i] = in.readUByte();
+
+
+		for (int y=height-1; y>=0; y--)
+		    {
+			for (int x=0; x<header.Width; x++)
+			    {
+				int offset = ((height - (y+1))*rowsize) + (x/8);
+				if ( (andbytes[offset] & (1<<(7-x%8))) != 0)
+				    {
+					image.setRGB(x, y, 0);
+				    }
+			    }
+		    }
+	}
+
+	//	System.out.println("AND data read (" + readbytes + " bytes total)");
     }
 
     static public void main(String[]args) throws Exception

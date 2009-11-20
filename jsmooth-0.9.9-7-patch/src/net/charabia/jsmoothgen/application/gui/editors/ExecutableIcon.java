@@ -108,11 +108,10 @@ public class ExecutableIcon extends Editor
 		// Try to load with our ico codec...
 		//
 		try {
-		    java.awt.image.BufferedImage[] images = net.charabia.util.codec.IcoCodec.loadImages(iconfile);
-		    if ((images != null) && (images.length>0))
+		    java.awt.image.BufferedImage image = net.charabia.util.codec.IcoCodec.getPreferredImage(iconfile);
+		    if (image != null)
 			{
-			    java.awt.Image img = images[0];
-			    icon = new ImageIcon(img);
+			    icon = new ImageIcon(image);
 			}
 		} catch (java.io.IOException exc)
 		    {
