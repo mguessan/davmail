@@ -1738,6 +1738,8 @@ public class ExchangeSession {
         String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
+                // VTODO events have a null instancetype
+                "                       \"urn:schemas:calendar:instancetype\" is null OR" +
                 "                       \"urn:schemas:calendar:instancetype\" = 1\n" +
                 "                OR (\"urn:schemas:calendar:instancetype\" = 0\n" +
                 dateCondition +
