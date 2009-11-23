@@ -25,7 +25,6 @@ import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -40,7 +39,6 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -101,7 +99,7 @@ public final class DavGatewayHttpClientFacade {
             hostConfig.setHost(httpURI);
             // some Exchange servers redirect to a different host for freebusy, use wide auth scope
             AuthScope authScope = new AuthScope(null, -1);
-            httpClient.getState().setCredentials(authScope, new UsernamePasswordCredentials(userName, password));
+            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "", ""));
         } catch (URIException e) {
             throw new DavMailException("LOG_INVALID_URL", url);
         }
@@ -118,12 +116,6 @@ public final class DavGatewayHttpClientFacade {
         synchronized (LOCK) {
             httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
         }
-
-        ArrayList<String> authPrefs = new ArrayList<String>();
-        authPrefs.add(AuthPolicy.DIGEST);
-        authPrefs.add(AuthPolicy.BASIC);
-        // exclude the NTLM authentication scheme
-        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
