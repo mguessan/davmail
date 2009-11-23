@@ -39,7 +39,11 @@ public class PasswordPromptDialog extends JDialog {
      * @return user password as char array
      */
     public char[] getPassword() {
-        return password.clone();
+        if (password != null) {
+            return password.clone();
+        } else {
+            return "".toCharArray();
+        }
     }
 
     /**

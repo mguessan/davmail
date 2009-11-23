@@ -24,6 +24,7 @@ import davmail.util.StringUtil;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.DavGatewayOTPPrompt;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -69,6 +70,25 @@ public class ExchangeSession {
      * Reference GMT timezone to format dates
      */
     public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
+
+    protected static final Set<String> USER_NAME_FIELDS = new HashSet<String>();
+    static {
+        USER_NAME_FIELDS.add("username");
+        USER_NAME_FIELDS.add("txtUserName");
+        USER_NAME_FIELDS.add("userid");
+        USER_NAME_FIELDS.add("SafeWordUser");
+    }
+    protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
+    static {
+        PASSWORD_FIELDS.add("password");
+        PASSWORD_FIELDS.add("txtUserPass");
+        PASSWORD_FIELDS.add("pw");
+        PASSWORD_FIELDS.add("basicPassword");
+    }
+    protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
+    static {
+        TOKEN_FIELDS.add("SafeWordPassword");
+    }
 
     protected static final int FREE_BUSY_INTERVAL = 15;
 
@@ -367,14 +387,17 @@ public class ExchangeSession {
                         logonMethod.addParameter(name, value);
                     }
                     // custom login form
-                    if ("txtUserName".equals(name) || "userid".equals(name)) {
+                    if (USER_NAME_FIELDS.contains(name)) {
                         userNameInput = name;
-                    } else if ("txtUserPass".equals(name) || "pw".equals(name)) {
+                    } else if (PASSWORD_FIELDS.contains(name)) {
                         passwordInput = name;
                     } else if ("addr".equals(name)) {
                         // this is not a logon form but a redirect form
                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                    } else if (TOKEN_FIELDS.contains(name)) {
+                        // one time password, ask user
+                        logonMethod.addParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
                     }
                 }
             } else {
@@ -448,6 +471,10 @@ public class ExchangeSession {
                 // if logonMethod is not null, try to follow redirection
                 logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
                 checkFormLoginQueryString(logonMethod);
+                // also check cookies
+                if (!isAuthenticated()) {
+                    throwAuthenticationFailed();
+                }
             } else {
                 // authentication failed
                 throwAuthenticationFailed();
