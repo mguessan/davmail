@@ -27,14 +27,12 @@ import org.apache.commons.httpclient.params.HttpConnectionParams;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
-import sun.security.pkcs11.SunPKCS11;
 
 import javax.net.ssl.*;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -81,8 +79,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             if (pkcs11Config != null && pkcs11Config.length() > 0) {
                 pkcs11Buffer.append(pkcs11Config).append('\n');
             }
-            Provider p = new SunPKCS11(new ByteArrayInputStream(pkcs11Buffer.toString().getBytes()));
-            Security.addProvider(p);
+            SunPKCS11ProviderHandler.registerProvider(pkcs11Buffer.toString());
         }
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(/*KeyManagerFactory.getDefaultAlgorithm()*/"NewSunX509");
