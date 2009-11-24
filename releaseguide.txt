@@ -2,10 +2,10 @@ Release guide :
 - change version in build.xml and pom.xml, commit
 - update staging (clean checkout) directory
 - launch ant, check generated packages
-- upload packages with winscp to <user>,davmail@frs.sourceforge.net/home/frs/project/d/da/davmail
-- generate site : mvn site
-- upload site to <user>,davmail@web.sourceforge.net
-- create release on sourceforge, write notes, add files
+- upload packages: ant upload-dist
+- generate site: mvn site
+- upload site: ant upload-site
+- create releasenotes.txt, upload to sourceforge, attach to files
 - create news message
 - create tag in subversion
 - upload version.txt

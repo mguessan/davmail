@@ -1,3 +1,32 @@
+** DavMail 3.6.1 released **
+This is a bugfix release with fixed regressions from 3.6.0
+and a few enhancements from user feedback.
+
+Documentation:
+- Doc: switch download links to generic link
+- Doc: Update roadmap
+- Doc: add roadmap
+
+Bugfixes:
+- Fix regression in Form Based Authentication: detect Exchange 2007 UserContext cookie
+- Host is mandatory for NTLMScheme, get current hostname for proxy authentication
+
+Enhancements:
+- Experimental: reactivate NTLM authentication but leave authentication preemptive mode to allow basic authentication.
+- Move PKCS11 registration to a separate class to avoid ClassNotFoundException
+- Experimental OTP (token) based authentication
+- Vista png icons support for JSmooth
+- Fix from audit
+- New upload-dist ant task to upload new release files
+
+Caldav:
+- Caldav: failover for Exchange 2007 plus encoding issue, search event by displayname to get permanent Url
+- Caldav: Additional timezones
+- Caldav: Revert commit 765, VTODO events have a null instancetype
+- Caldav: additional timezone
+- Caldav: Remove MAILTO: in addition to mailto: in getFreeBusy
+- Caldav: Bug 2898469 do not UrlEncode draft url twice to avoid 404 not found on send event message
+
 ** DavMail 3.6.0 released **
 This release contains a lot of enhancements, both bug fixes
 and new features from user feedback on 3.5.0, including improved
