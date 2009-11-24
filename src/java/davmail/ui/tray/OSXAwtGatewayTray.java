@@ -26,6 +26,9 @@ import davmail.DavGateway;
  * Extended Awt tray with OSX extensions.
  */
 public class OSXAwtGatewayTray extends AwtGatewayTray {
+    protected static final String TRAY_ACTIVE_PNG = "osxtray2.png";
+    protected static final String TRAY_PNG = "osxtray.png";
+    protected static final String TRAYINACTIVE_PNG = "osxtrayinactive.png";
     /**
      * Exit DavMail Gateway.
      *
@@ -55,5 +58,20 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
         } catch (Exception e) {
             DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_OSXADAPTER"), e);
         }
+    }
+
+    @Override
+    protected String getTrayIconPath() {
+        return OSXAwtGatewayTray.TRAY_PNG;
+    }
+
+    @Override
+    protected String getTrayIconActivePath() {
+        return OSXAwtGatewayTray.TRAY_ACTIVE_PNG;
+    }
+
+    @Override
+    protected String getTrayIconInactivePath() {
+        return OSXAwtGatewayTray.TRAYINACTIVE_PNG;
     }
 }

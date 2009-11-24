@@ -262,8 +262,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         }
 
         image = DavGatewayTray.loadImage("tray.png");
-        image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY2_PNG);
-        inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAYINACTIVE_PNG);
+        image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
+        inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
         mainFrame = new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

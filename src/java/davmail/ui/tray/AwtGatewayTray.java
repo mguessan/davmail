@@ -38,9 +38,9 @@ import java.awt.event.ActionListener;
  * Tray icon handler based on java 1.6
  */
 public class AwtGatewayTray implements DavGatewayTrayInterface {
-    protected static final String TRAY2_PNG = "tray2.png";
+    protected static final String TRAY_ACTIVE_PNG = "tray2.png";
     protected static final String TRAY_PNG = "tray.png";
-    protected static final String TRAYINACTIVE_PNG = "trayinactive.png";
+    protected static final String TRAY_INACTIVE_PNG = "trayinactive.png";
 
     protected AwtGatewayTray() {
     }
@@ -186,9 +186,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();
-        image = DavGatewayTray.loadImage(TRAY_PNG);
-        image2 = DavGatewayTray.loadImage(TRAY2_PNG);
-        inactiveImage = DavGatewayTray.loadImage(TRAYINACTIVE_PNG);
+        image = DavGatewayTray.loadImage(getTrayIconPath());
+        image2 = DavGatewayTray.loadImage(getTrayIconActivePath());
+        inactiveImage = DavGatewayTray.loadImage(getTrayIconInactivePath());
 
         // create a popup menu
         PopupMenu popup = new PopupMenu();
@@ -280,5 +280,17 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         if (Settings.isFirstStart()) {
             settingsFrame.setVisible(true);
         }
+    }
+
+    protected String getTrayIconPath() {
+        return AwtGatewayTray.TRAY_PNG;
+    }
+
+    protected String getTrayIconActivePath() {
+        return AwtGatewayTray.TRAY_ACTIVE_PNG;
+    }
+
+    protected String getTrayIconInactivePath() {
+        return AwtGatewayTray.TRAY_INACTIVE_PNG;
     }
 }

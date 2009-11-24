@@ -192,10 +192,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         trayItem = new TrayItem(tray, SWT.NONE);
                         trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
-                        awtImage = DavGatewayTray.loadImage("tray.png");
-                        image = loadSwtImage("tray.png");
-                        image2 = loadSwtImage(AwtGatewayTray.TRAY2_PNG);
-                        inactiveImage = loadSwtImage(AwtGatewayTray.TRAYINACTIVE_PNG);
+                        awtImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
+                        image = loadSwtImage(AwtGatewayTray.TRAY_PNG);
+                        image2 = loadSwtImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
+                        inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
                         trayItem.setImage(image);
 
