@@ -2538,7 +2538,7 @@ public class ExchangeSession {
                 (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
             ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
             propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
-            PropPatchMethod propPatchMethod = new PropPatchMethod(messageUrl, propertyList);
+            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(messageUrl), propertyList);
             int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
             if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
                 LOGGER.warn("Unable to patch event to trigger activeSync push");
