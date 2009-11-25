@@ -72,20 +72,25 @@ public class ExchangeSession {
     public static final SimpleTimeZone GMT_TIMEZONE = new SimpleTimeZone(0, "GMT");
 
     protected static final Set<String> USER_NAME_FIELDS = new HashSet<String>();
+
     static {
         USER_NAME_FIELDS.add("username");
         USER_NAME_FIELDS.add("txtUserName");
         USER_NAME_FIELDS.add("userid");
         USER_NAME_FIELDS.add("SafeWordUser");
     }
+
     protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
+
     static {
         PASSWORD_FIELDS.add("password");
         PASSWORD_FIELDS.add("txtUserPass");
         PASSWORD_FIELDS.add("pw");
         PASSWORD_FIELDS.add("basicPassword");
     }
+
     protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
+
     static {
         TOKEN_FIELDS.add("SafeWordPassword");
     }
@@ -2361,14 +2366,16 @@ public class ExchangeSession {
             }
         }
         Participants participants = new Participants();
-        StringBuilder result = new StringBuilder();
-        for (String recipient : attendees) {
-            if (result.length() > 0) {
-                result.append(", ");
+        if (!attendees.isEmpty()) {
+            StringBuilder result = new StringBuilder();
+            for (String recipient : attendees) {
+                if (result.length() > 0) {
+                    result.append(", ");
+                }
+                result.append(recipient);
             }
-            result.append(recipient);
+            participants.attendees = result.toString();
         }
-        participants.attendees = result.toString();
         participants.organizer = organizer;
         return participants;
     }
@@ -2393,6 +2400,11 @@ public class ExchangeSession {
         writer.write("Content-Transfer-Encoding: 7bit\r\n" +
                 "Content-class: ");
         writer.write(contentClass);
+        writer.write("\r\n");
+        // append date
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss Z", Locale.ENGLISH);
+        writer.write("Date: ");
+        writer.write(formatter.format(new Date()));
         writer.write("\r\n");
         if ("urn:content-classes:calendarmessage".equals(contentClass)) {
             // need to parse attendees and organizer to build recipients
@@ -2423,16 +2435,21 @@ public class ExchangeSession {
             // need to parse attendees and organizer to build recipients
             Participants participants = getParticipants(icsBody, false);
             // storing appointment, full recipients header
+            writer.write("To: ");
             if (participants.attendees != null) {
-                writer.write("To: ");
                 writer.write(participants.attendees);
-                writer.write("\r\n");
+            } else {
+                writer.write(email);
             }
+
+            writer.write("\r\n");
+            writer.write("From: ");
             if (participants.organizer != null) {
-                writer.write("From: ");
                 writer.write(participants.organizer);
-                writer.write("\r\n");
+            } else {
+                writer.write(email);
             }
+            writer.write("\r\n");
             // if not organizer, set REPLYTIME to force Outlook in attendee mode
             if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
                 if (icsBody.indexOf("METHOD:") < 0) {
