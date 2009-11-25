@@ -25,6 +25,7 @@ import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -41,6 +42,9 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -116,6 +120,12 @@ public final class DavGatewayHttpClientFacade {
         synchronized (LOCK) {
             httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
         }
+
+        ArrayList<String> authPrefs = new ArrayList<String>();
+        authPrefs.add(AuthPolicy.DIGEST);
+        authPrefs.add(AuthPolicy.BASIC);
+        // exclude NTLM authentication scheme
+        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         String proxyHost = null;
@@ -355,6 +365,19 @@ public final class DavGatewayHttpClientFacade {
         return status;
     }
 
+    private static boolean hasNTLM(HttpClient httpClient) {
+        Object authPrefs = httpClient.getParams().getParameter(AuthPolicy.AUTH_SCHEME_PRIORITY);
+        return authPrefs instanceof List<?> && ((Collection) authPrefs).contains(AuthPolicy.NTLM);
+    }
+
+    private static void addNTLM(HttpClient httpClient) {
+        ArrayList<String> authPrefs = new ArrayList<String>();
+        authPrefs.add(AuthPolicy.NTLM);
+        authPrefs.add(AuthPolicy.DIGEST);
+        authPrefs.add(AuthPolicy.BASIC);
+        httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
+    }
+
     /**
      * Execute Get method, do not follow redirects.
      *
@@ -367,6 +390,12 @@ public final class DavGatewayHttpClientFacade {
         // do not follow redirects in expired sessions
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
+        if (status == HttpStatus.SC_UNAUTHORIZED   & !hasNTLM(httpClient)) {
+            method.releaseConnection();
+            LOGGER.debug("Received unauthorized at "+method.getURI()+", retrying with NTLM");
+            addNTLM(httpClient);
+            status = httpClient.executeMethod(method);
+        }
         if (status != HttpStatus.SC_OK) {
             LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
             throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
