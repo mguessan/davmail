@@ -515,7 +515,7 @@ public class ImapConnection extends AbstractConnection {
                     } catch (ParseException e) {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
-                } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER")) {
+                } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER") || "RFC822.HEADER".equals(param)) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0);
                     message.write(partOutputStream);
@@ -524,6 +524,8 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                     if ("BODY.PEEK[HEADER]".equals(param)) {
                         buffer.append(" BODY[HEADER] {");
+                    } else if ("RFC822.HEADER".equals(param)) {
+                        buffer.append(" RFC822.HEADER {");
                     } else {
                         buffer.append(" BODY[HEADER.FIELDS ()] {");
                     }
