@@ -30,6 +30,7 @@
             <item name="Home" href="/index.html"/>
             <item name="Download" href="http://sourceforge.net/projects/davmail/files/"/>
             <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
+            <item name="Roadmap" href="/roadmap.html"/>
             <item name="FAQ" href="/faq.html"/>
         </menu>
 
