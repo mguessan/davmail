@@ -1634,6 +1634,13 @@ public class ExchangeSession {
         protected String href;
         protected String permanentUrl;
         protected String etag;
+        protected String contentClass;
+        protected String noneMatch;
+        /**
+         * ICS content
+         */
+        protected String icsBody;
+
 
         protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
             MimePart bodyPart = null;
@@ -1720,6 +1727,624 @@ public class ExchangeSession {
          */
         public String getEtag() {
             return etag;
+        }
+
+        protected String fixTimezoneId(String line, String validTimezoneId) {
+            return StringUtil.replaceToken(line, "TZID=", ":", validTimezoneId);
+        }
+
+        protected void splitExDate(ICSBufferedWriter result, String line) {
+            int cur = line.lastIndexOf(':') + 1;
+            String start = line.substring(0, cur);
+
+            for (int next = line.indexOf(',', cur); next != -1; next = line.indexOf(',', cur)) {
+                String val = line.substring(cur, next);
+                result.writeLine(start + val);
+
+                cur = next + 1;
+            }
+
+            result.writeLine(start + line.substring(cur));
+        }
+
+        protected String getAllDayLine(String line) throws IOException {
+            int keyIndex = line.indexOf(';');
+            int valueIndex = line.lastIndexOf(':');
+            int valueEndIndex = line.lastIndexOf('T');
+            if (valueIndex < 0 || valueEndIndex < 0) {
+                throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
+            }
+            String dateValue = line.substring(valueIndex + 1, valueEndIndex);
+            String key = line.substring(0, Math.max(keyIndex, valueIndex));
+            return key + ";VALUE=DATE:" + dateValue;
+        }
+
+        protected String fixICS(String icsBody, boolean fromServer) throws IOException {
+            // first pass : detect
+            class AllDayState {
+                boolean isAllDay;
+                boolean hasCdoAllDay;
+                boolean isCdoAllDay;
+            }
+
+            dumpIndex++;
+            dumpICS(icsBody, fromServer, false);
+
+            // Convert event class from and to iCal
+            // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
+            boolean isAppleiCal = false;
+            boolean hasAttendee = false;
+            boolean hasCdoBusyStatus = false;
+            // detect ics event with empty timezone (all day from Lightning)
+            boolean hasTimezone = false;
+            String transp = null;
+            String validTimezoneId = null;
+            String eventClass = null;
+            String organizer = null;
+            String action = null;
+            boolean sound = false;
+
+            List<AllDayState> allDayStates = new ArrayList<AllDayState>();
+            AllDayState currentAllDayState = new AllDayState();
+            BufferedReader reader = null;
+            try {
+                reader = new ICSBufferedReader(new StringReader(icsBody));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    int index = line.indexOf(':');
+                    if (index >= 0) {
+                        String key = line.substring(0, index);
+                        String value = line.substring(index + 1);
+                        if ("DTSTART;VALUE=DATE".equals(key)) {
+                            currentAllDayState.isAllDay = true;
+                        } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
+                            currentAllDayState.hasCdoAllDay = true;
+                            currentAllDayState.isCdoAllDay = "TRUE".equals(value);
+                        } else if ("END:VEVENT".equals(line)) {
+                            allDayStates.add(currentAllDayState);
+                            currentAllDayState = new AllDayState();
+                        } else if ("PRODID".equals(key) && line.contains("iCal")) {
+                            // detect iCal created events
+                            isAppleiCal = true;
+                        } else if (isAppleiCal && "X-CALENDARSERVER-ACCESS".equals(key)) {
+                            eventClass = value;
+                        } else if (!isAppleiCal && "CLASS".equals(key)) {
+                            eventClass = value;
+                        } else if ("ACTION".equals(key)) {
+                            action = value;
+                        } else if ("ATTACH;VALUES=URI".equals(key)) {
+                            // This is a marker that this event has an alarm with sound
+                            sound = true;
+                            // Set the default sound to whatever this event contains
+                            // (under assumption that the user has the same sound set
+                            //  for all events)
+                            defaultSound = value;
+                        } else if (key.startsWith("ORGANIZER")) {
+                            if (value.startsWith("MAILTO:")) {
+                                organizer = value.substring(7);
+                            } else {
+                                organizer = value;
+                            }
+                        } else if (key.startsWith("ATTENDEE")) {
+                            hasAttendee = true;
+                        } else if ("TRANSP".equals(key)) {
+                            transp = value;
+                        } else if (line.startsWith("TZID:(GMT") ||
+                                // additional test for Outlook created recurring events
+                                line.startsWith("TZID:GMT ")) {
+                            try {
+                                validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
+                            } catch (MissingResourceException mre) {
+                                LOGGER.warn(new BundleMessage("LOG_INVALID_TIMEZONE", value));
+                            }
+                        } else if ("X-MICROSOFT-CDO-BUSYSTATUS".equals(key)) {
+                            hasCdoBusyStatus = true;
+                        } else if ("BEGIN:VTIMEZONE".equals(line)) {
+                            hasTimezone = true;
+                        }
+                    }
+                }
+            } finally {
+                if (reader != null) {
+                    reader.close();
+                }
+            }
+            // second pass : fix
+            int count = 0;
+            ICSBufferedWriter result = new ICSBufferedWriter();
+            try {
+                reader = new ICSBufferedReader(new StringReader(icsBody));
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    // remove empty properties
+                    if ("CLASS:".equals(line) || "LOCATION:".equals(line)) {
+                        continue;
+                    }
+                    // fix invalid exchange timezoneid
+                    if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
+                        line = fixTimezoneId(line, validTimezoneId);
+                    }
+                    if (!fromServer && "BEGIN:VEVENT".equals(line) && !hasTimezone) {
+                        result.write(ExchangeSession.this.getVTimezone().timezoneBody);
+                        hasTimezone = true;
+                    }
+                    if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
+                        line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
+                    } else if (!fromServer && "END:VEVENT".equals(line)) {
+                        if (!hasCdoBusyStatus) {
+                            result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
+                        }
+                        if (currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
+                            result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
+                        }
+                        // add organizer line to all events created in Exchange for active sync
+                        if (organizer == null) {
+                            result.writeLine("ORGANIZER:MAILTO:" + email);
+                        }
+                    } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
+                        line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
+                    } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
+                        line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
+                    } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART") && !line.startsWith("DTSTART;VALUE=DATE")) {
+                        line = getAllDayLine(line);
+                    } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
+                        line = getAllDayLine(line);
+                    } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTSTART") && line.startsWith("DTSTART;VALUE=DATE")) {
+                        line = "DTSTART;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(19) + "T000000";
+                    } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTEND") && line.startsWith("DTEND;VALUE=DATE")) {
+                        line = "DTEND;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(17) + "T000000";
+                    } else if (line.startsWith("TZID:") && validTimezoneId != null) {
+                        line = "TZID:" + validTimezoneId;
+                    } else if ("BEGIN:VEVENT".equals(line)) {
+                        currentAllDayState = allDayStates.get(count++);
+                    } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
+                        if (!isAppleiCal) {
+                            continue;
+                        } else {
+                            if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("CLASS:PRIVATE");
+                            } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("CLASS:CONFIDENTIAL");
+                            } else {
+                                result.writeLine("CLASS:" + eventClass);
+                            }
+                        }
+                    } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {
+                        // Apple iCal doesn't support EXDATE with multiple exceptions
+                        // on one line.  Split into multiple EXDATE entries (which is
+                        // also legal according to the caldav standard).
+                        splitExDate(result, line);
+                        continue;
+                    } else if (line.startsWith("X-ENTOURAGE_UUID:")) {
+                        // Apple iCal doesn't understand this key, and it's entourage
+                        // specific (i.e. not needed by any caldav client): strip it out
+                        continue;
+                    } else if (fromServer && line.startsWith("ATTENDEE;")
+                            && (line.indexOf(email) >= 0)) {
+                        // If this is coming from the server, strip out RSVP for this
+                        // user as an attendee where the partstat is something other
+                        // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
+                        // thinking the attendee has not replied
+
+                        int rsvpSuffix = line.indexOf("RSVP=TRUE;");
+                        int rsvpPrefix = line.indexOf(";RSVP=TRUE");
+
+                        if (((rsvpSuffix >= 0) || (rsvpPrefix >= 0))
+                                && (line.indexOf("PARTSTAT=") >= 0)
+                                && (line.indexOf("PARTSTAT=NEEDS-ACTION") < 0)) {
+
+                            // Strip out the "RSVP" line from the calendar entry
+                            if (rsvpSuffix >= 0) {
+                                line = line.substring(0, rsvpSuffix) + line.substring(rsvpSuffix + 10);
+                            } else {
+                                line = line.substring(0, rsvpPrefix) + line.substring(rsvpPrefix + 10);
+                            }
+
+                        }
+                    } else if (line.startsWith("ACTION:")) {
+                        if (fromServer && "DISPLAY".equals(action)) {
+                            // Use the default iCal alarm action instead
+                            // of the alarm Action exchange (and blackberry) understand.
+                            // This is a bit of a hack because we don't know what type
+                            // of alarm an iCal user really wants - but we know what the
+                            // default is, and can setup the default action type
+
+                            result.writeLine("ACTION:AUDIO");
+
+                            if (!sound) {
+                                // Add default sound into the audio alarm
+                                result.writeLine("ATTACH;VALUE=URI:" + defaultSound);
+                            }
+
+                            continue;
+                        } else if (!fromServer && "AUDIO".equals(action)) {
+                            // Use the alarm action that exchange (and blackberry) understand
+                            // (exchange and blackberry don't understand audio actions)
+
+                            result.writeLine("ACTION:DISPLAY");
+                            continue;
+                        }
+
+                        // Don't recognize this type of action: pass it through
+
+                    } else if (line.startsWith("CLASS:")) {
+                        if (isAppleiCal) {
+                            continue;
+                        } else {
+                            if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
+                            } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
+                            } else {
+                                result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
+                            }
+                        }
+                        // remove organizer line if user is organizer for iPhone
+                    } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
+                        continue;
+                    } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
+                        // Ignore organizer as attendee
+                        continue;
+                    } else if (!fromServer && line.startsWith("ATTENDEE")) {
+                        line = replaceIcal4Principal(line);
+                    }
+
+                    result.writeLine(line);
+                }
+            } finally {
+                reader.close();
+            }
+
+            String resultString = result.toString();
+            dumpICS(resultString, fromServer, true);
+
+            return result.toString();
+        }
+
+        protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
+            String logFileDirectory = Settings.getLogFileDirectory();
+
+            // additional setting to activate ICS dump (not available in GUI)
+            int dumpMax = Settings.getIntProperty("davmail.dumpICS");
+            if (dumpMax > 0) {
+                if (dumpIndex > dumpMax) {
+                    // Delete the oldest dump file
+                    final int oldest = dumpIndex - dumpMax;
+                    try {
+                        File[] oldestFiles = (new File(logFileDirectory)).listFiles(new FilenameFilter() {
+                            public boolean accept(File dir, String name) {
+                                if (name.endsWith(".ics")) {
+                                    int dashIndex = name.indexOf('-');
+                                    if (dashIndex > 0) {
+                                        try {
+                                            int fileIndex = Integer.parseInt(name.substring(0, dashIndex));
+                                            return fileIndex < oldest;
+                                        } catch (NumberFormatException nfe) {
+                                            // ignore
+                                        }
+                                    }
+                                }
+                                return false;
+                            }
+                        });
+                        for (File file : oldestFiles) {
+                            if (!file.delete()) {
+                                LOGGER.warn("Unable to delete " + file.getAbsolutePath());
+                            }
+                        }
+                    } catch (Exception ex) {
+                        LOGGER.warn("Error deleting ics dump: " + ex.getMessage());
+                    }
+                }
+
+                StringBuilder filePath = new StringBuilder();
+                filePath.append(logFileDirectory).append('/')
+                        .append(dumpIndex)
+                        .append(after ? "-to" : "-from")
+                        .append((after ^ fromServer) ? "-server" : "-client")
+                        .append(".ics");
+                if ((icsBody != null) && (icsBody.length() > 0)) {
+                    FileWriter fileWriter = null;
+                    try {
+                        fileWriter = new FileWriter(filePath.toString());
+                        fileWriter.write(icsBody);
+                    } catch (IOException e) {
+                        LOGGER.error(e);
+                    } finally {
+                        if (fileWriter != null) {
+                            try {
+                                fileWriter.close();
+                            } catch (IOException e) {
+                                LOGGER.error(e);
+                            }
+                        }
+                    }
+
+
+                }
+            }
+
+        }
+
+        protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
+            // only return values in VEVENT section, not VALARM
+            Stack<String> sectionStack = new Stack<String>();
+            BufferedReader reader = null;
+
+            try {
+                reader = new ICSBufferedReader(new StringReader(icsBody));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("BEGIN:")) {
+                        sectionStack.push(line);
+                    } else if (line.startsWith("END:") && !sectionStack.isEmpty()) {
+                        sectionStack.pop();
+                    } else if (!sectionStack.isEmpty() && "BEGIN:VEVENT".equals(sectionStack.peek()) && line.startsWith(prefix)) {
+                        return line.substring(prefix.length());
+                    }
+                }
+
+            } finally {
+                if (reader != null) {
+                    reader.close();
+                }
+            }
+
+            return defval;
+        }
+
+        protected String getICSSummary(String icsBody) throws IOException {
+            return getICSValue(icsBody, "SUMMARY:", BundleMessage.format("MEETING_REQUEST"));
+        }
+
+        protected String getICSDescription(String icsBody) throws IOException {
+            return getICSValue(icsBody, "DESCRIPTION:", "");
+        }
+
+        class Participants {
+            String attendees;
+            String organizer;
+        }
+
+        /**
+         * Parse ics event for attendees and organizer.
+         * For notifications, only include attendees with RSVP=TRUE or PARTSTAT=NEEDS-ACTION
+         *
+         * @param isNotification get only notified attendees
+         * @return participants
+         * @throws IOException on error
+         */
+        protected Participants getParticipants(boolean isNotification) throws IOException {
+            HashSet<String> attendees = new HashSet<String>();
+            String organizer = null;
+            BufferedReader reader = null;
+            try {
+                reader = new ICSBufferedReader(new StringReader(icsBody));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    int index = line.indexOf(':');
+                    if (index >= 0) {
+                        String key = line.substring(0, index);
+                        String value = line.substring(index + 1);
+                        int semiColon = key.indexOf(';');
+                        if (semiColon >= 0) {
+                            key = key.substring(0, semiColon);
+                        }
+                        if ("ORGANIZER".equals(key) || "ATTENDEE".equals(key)) {
+                            int colonIndex = value.indexOf(':');
+                            if (colonIndex >= 0) {
+                                value = value.substring(colonIndex + 1);
+                            }
+                            value = replaceIcal4Principal(value);
+                            if ("ORGANIZER".equals(key)) {
+                                organizer = value;
+                                // exclude current user and invalid values from recipients
+                                // also exclude no action attendees
+                            } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
+                                    && (!isNotification
+                                    || line.indexOf("RSVP=TRUE") >= 0
+                                    || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0)) {
+                                attendees.add(value);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                if (reader != null) {
+                    reader.close();
+                }
+            }
+            Participants participants = new Participants();
+            if (!attendees.isEmpty()) {
+                StringBuilder result = new StringBuilder();
+                for (String recipient : attendees) {
+                    if (result.length() > 0) {
+                        result.append(", ");
+                    }
+                    result.append(recipient);
+                }
+                participants.attendees = result.toString();
+            }
+            participants.organizer = organizer;
+            return participants;
+        }
+
+        protected String getICSMethod(String icsBody) {
+            String icsMethod = StringUtil.getToken(icsBody, "METHOD:", "\r");
+            if (icsMethod == null) {
+                // default method is REQUEST
+                icsMethod = "REQUEST";
+            }
+            return icsMethod;
+        }
+
+        protected EventResult createOrUpdate() throws IOException {
+            String boundary = UUID.randomUUID().toString();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            OutputStreamWriter writer = new OutputStreamWriter(baos, "ASCII");
+            int status = 0;
+            PutMethod putmethod = new PutMethod(URIUtil.encodePath(href));
+            putmethod.setRequestHeader("Translate", "f");
+            putmethod.setRequestHeader("Overwrite", "f");
+            if (etag != null) {
+                putmethod.setRequestHeader("If-Match", etag);
+            }
+            if (noneMatch != null) {
+                putmethod.setRequestHeader("If-None-Match", noneMatch);
+            }
+            putmethod.setRequestHeader("Content-Type", "message/rfc822");
+            String method = getICSMethod(icsBody);
+
+            writer.write("Content-Transfer-Encoding: 7bit\r\n" +
+                    "Content-class: ");
+            writer.write(contentClass);
+            writer.write("\r\n");
+            // append date
+            SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss Z", Locale.ENGLISH);
+            writer.write("Date: ");
+            writer.write(formatter.format(new Date()));
+            writer.write("\r\n");
+            if ("urn:content-classes:calendarmessage".equals(contentClass)) {
+                // need to parse attendees and organizer to build recipients
+                Participants participants = getParticipants(true);
+                String recipients;
+                if (email.equalsIgnoreCase(participants.organizer)) {
+                    // current user is organizer => notify all
+                    recipients = participants.attendees;
+                } else {
+                    // notify only organizer
+                    recipients = participants.organizer;
+                }
+
+                // Make sure invites have a proper subject line
+                writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
+
+                writer.write("To: ");
+                writer.write(recipients);
+                writer.write("\r\n");
+                // do not send notification if no recipients found
+                if (recipients.length() == 0) {
+                    status = HttpStatus.SC_NO_CONTENT;
+                }
+            } else {
+                // Make sure invites have a proper subject line
+                writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
+
+                // need to parse attendees and organizer to build recipients
+                Participants participants = getParticipants(false);
+                // storing appointment, full recipients header
+                writer.write("To: ");
+                if (participants.attendees != null) {
+                    writer.write(participants.attendees);
+                } else {
+                    writer.write(email);
+                }
+
+                writer.write("\r\n");
+                writer.write("From: ");
+                if (participants.organizer != null) {
+                    writer.write(participants.organizer);
+                } else {
+                    writer.write(email);
+                }
+                writer.write("\r\n");
+                // if not organizer, set REPLYTIME to force Outlook in attendee mode
+                if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
+                    if (icsBody.indexOf("METHOD:") < 0) {
+                        icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
+                    }
+                    if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
+                        icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
+                                getZuluDateFormat().format(new Date()) + "\r\nEND:VEVENT");
+                    }
+                }
+            }
+            writer.write("MIME-Version: 1.0\r\n" +
+                    "Content-Type: multipart/alternative;\r\n" +
+                    "\tboundary=\"----=_NextPart_");
+            writer.write(boundary);
+            writer.write("\"\r\n" +
+                    "\r\n" +
+                    "This is a multi-part message in MIME format.\r\n" +
+                    "\r\n" +
+                    "------=_NextPart_");
+            writer.write(boundary);
+
+            // Write a part of the message that contains the
+            // ICS description so that invites contain the description text
+            String description = getICSDescription(icsBody).replaceAll("\\\\[Nn]", "\r\n");
+
+            if (description.length() > 0) {
+                writer.write("\r\n" +
+                        "Content-Type: text/plain;\r\n" +
+                        "\tcharset=\"utf-8\"\r\n" +
+                        "content-transfer-encoding: 8bit\r\n" +
+                        "\r\n");
+                writer.flush();
+                baos.write(description.getBytes("UTF-8"));
+                writer.write("\r\n" +
+                        "------=_NextPart_" +
+                        boundary);
+
+            }
+
+            writer.write("\r\n" +
+                    "Content-class: ");
+            writer.write(contentClass);
+            writer.write("\r\n" +
+                    "Content-Type: text/calendar;\r\n" +
+                    "\tmethod=");
+            writer.write(method);
+            writer.write(";\r\n" +
+                    "\tcharset=\"utf-8\"\r\n" +
+                    "Content-Transfer-Encoding: 8bit\r\n\r\n");
+            writer.flush();
+            baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
+            writer.write("\r\n------=_NextPart_");
+            writer.write(boundary);
+            writer.write("--\r\n");
+            writer.close();
+            putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
+            try {
+                if (status == 0) {
+                    status = httpClient.executeMethod(putmethod);
+                    if (status == HttpURLConnection.HTTP_OK) {
+                        if (etag != null) {
+                            LOGGER.debug("Updated event " + href);
+                        } else {
+                            LOGGER.warn("Overwritten event " + href);
+                        }
+                    } else if (status != HttpURLConnection.HTTP_CREATED) {
+                        LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
+                    }
+                }
+            } finally {
+                putmethod.releaseConnection();
+            }
+            EventResult eventResult = new EventResult();
+            // 440 means forbidden on Exchange
+            if (status == 440) {
+                status = HttpStatus.SC_FORBIDDEN;
+            }
+            eventResult.status = status;
+            if (putmethod.getResponseHeader("GetETag") != null) {
+                eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+            }
+
+            // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
+            if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
+                    (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
+                ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
+                propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
+                PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), propertyList);
+                int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+                if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
+                    LOGGER.warn("Unable to patch event to trigger activeSync push");
+                }
+            }
+            return eventResult;
+
         }
     }
 
@@ -1862,314 +2487,6 @@ public class ExchangeSession {
     private static int dumpIndex;
     private String defaultSound = "Basso";
 
-    protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
-        String logFileDirectory = Settings.getLogFileDirectory();
-
-        // additional setting to activate ICS dump (not available in GUI)
-        int dumpMax = Settings.getIntProperty("davmail.dumpICS");
-        if (dumpMax > 0) {
-            if (dumpIndex > dumpMax) {
-                // Delete the oldest dump file
-                final int oldest = dumpIndex - dumpMax;
-                try {
-                    File[] oldestFiles = (new File(logFileDirectory)).listFiles(new FilenameFilter() {
-                        public boolean accept(File dir, String name) {
-                            if (name.endsWith(".ics")) {
-                                int dashIndex = name.indexOf('-');
-                                if (dashIndex > 0) {
-                                    try {
-                                        int fileIndex = Integer.parseInt(name.substring(0, dashIndex));
-                                        return fileIndex < oldest;
-                                    } catch (NumberFormatException nfe) {
-                                        // ignore
-                                    }
-                                }
-                            }
-                            return false;
-                        }
-                    });
-                    for (File file : oldestFiles) {
-                        if (!file.delete()) {
-                            LOGGER.warn("Unable to delete " + file.getAbsolutePath());
-                        }
-                    }
-                } catch (Exception ex) {
-                    LOGGER.warn("Error deleting ics dump: " + ex.getMessage());
-                }
-            }
-
-            StringBuilder filePath = new StringBuilder();
-            filePath.append(logFileDirectory).append('/')
-                    .append(dumpIndex)
-                    .append(after ? "-to" : "-from")
-                    .append((after ^ fromServer) ? "-server" : "-client")
-                    .append(".ics");
-            if ((icsBody != null) && (icsBody.length() > 0)) {
-                FileWriter fileWriter = null;
-                try {
-                    fileWriter = new FileWriter(filePath.toString());
-                    fileWriter.write(icsBody);
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                } finally {
-                    if (fileWriter != null) {
-                        try {
-                            fileWriter.close();
-                        } catch (IOException e) {
-                            LOGGER.error(e);
-                        }
-                    }
-                }
-
-
-            }
-        }
-
-    }
-
-    protected String fixICS(String icsBody, boolean fromServer) throws IOException {
-        // first pass : detect
-        class AllDayState {
-            boolean isAllDay;
-            boolean hasCdoAllDay;
-            boolean isCdoAllDay;
-        }
-
-        dumpIndex++;
-        dumpICS(icsBody, fromServer, false);
-
-        // Convert event class from and to iCal
-        // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
-        boolean isAppleiCal = false;
-        boolean hasAttendee = false;
-        boolean hasCdoBusyStatus = false;
-        // detect ics event with empty timezone (all day from Lightning)
-        boolean hasTimezone = false;
-        String transp = null;
-        String validTimezoneId = null;
-        String eventClass = null;
-        String organizer = null;
-        String action = null;
-        boolean sound = false;
-
-        List<AllDayState> allDayStates = new ArrayList<AllDayState>();
-        AllDayState currentAllDayState = new AllDayState();
-        BufferedReader reader = null;
-        try {
-            reader = new ICSBufferedReader(new StringReader(icsBody));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                int index = line.indexOf(':');
-                if (index >= 0) {
-                    String key = line.substring(0, index);
-                    String value = line.substring(index + 1);
-                    if ("DTSTART;VALUE=DATE".equals(key)) {
-                        currentAllDayState.isAllDay = true;
-                    } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
-                        currentAllDayState.hasCdoAllDay = true;
-                        currentAllDayState.isCdoAllDay = "TRUE".equals(value);
-                    } else if ("END:VEVENT".equals(line)) {
-                        allDayStates.add(currentAllDayState);
-                        currentAllDayState = new AllDayState();
-                    } else if ("PRODID".equals(key) && line.contains("iCal")) {
-                        // detect iCal created events
-                        isAppleiCal = true;
-                    } else if (isAppleiCal && "X-CALENDARSERVER-ACCESS".equals(key)) {
-                        eventClass = value;
-                    } else if (!isAppleiCal && "CLASS".equals(key)) {
-                        eventClass = value;
-                    } else if ("ACTION".equals(key)) {
-                        action = value;
-                    } else if ("ATTACH;VALUES=URI".equals(key)) {
-                        // This is a marker that this event has an alarm with sound
-                        sound = true;
-                        // Set the default sound to whatever this event contains
-                        // (under assumption that the user has the same sound set
-                        //  for all events)
-                        defaultSound = value;
-                    } else if (key.startsWith("ORGANIZER")) {
-                        if (value.startsWith("MAILTO:")) {
-                            organizer = value.substring(7);
-                        } else {
-                            organizer = value;
-                        }
-                    } else if (key.startsWith("ATTENDEE")) {
-                        hasAttendee = true;
-                    } else if ("TRANSP".equals(key)) {
-                        transp = value;
-                    } else if (line.startsWith("TZID:(GMT") ||
-                            // additional test for Outlook created recurring events
-                            line.startsWith("TZID:GMT ")) {
-                        try {
-                            validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
-                        } catch (MissingResourceException mre) {
-                            LOGGER.warn(new BundleMessage("LOG_INVALID_TIMEZONE", value));
-                        }
-                    } else if ("X-MICROSOFT-CDO-BUSYSTATUS".equals(key)) {
-                        hasCdoBusyStatus = true;
-                    } else if ("BEGIN:VTIMEZONE".equals(line)) {
-                        hasTimezone = true;
-                    }
-                }
-            }
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-        // second pass : fix
-        int count = 0;
-        ICSBufferedWriter result = new ICSBufferedWriter();
-        try {
-            reader = new ICSBufferedReader(new StringReader(icsBody));
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                // remove empty properties
-                if ("CLASS:".equals(line) || "LOCATION:".equals(line)) {
-                    continue;
-                }
-                // fix invalid exchange timezoneid
-                if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
-                    line = fixTimezoneId(line, validTimezoneId);
-                }
-                if (!fromServer && "BEGIN:VEVENT".equals(line) && !hasTimezone) {
-                    result.write(ExchangeSession.this.getVTimezone().timezoneBody);
-                    hasTimezone = true;
-                }
-                if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
-                    line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
-                } else if (!fromServer && "END:VEVENT".equals(line)) {
-                    if (!hasCdoBusyStatus) {
-                        result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
-                    }
-                    if (currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
-                        result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
-                    }
-                    // add organizer line to all events created in Exchange for active sync
-                    if (organizer == null) {
-                        result.writeLine("ORGANIZER:MAILTO:" + email);
-                    }
-                } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
-                    line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
-                } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
-                    line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
-                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART") && !line.startsWith("DTSTART;VALUE=DATE")) {
-                    line = getAllDayLine(line);
-                } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
-                    line = getAllDayLine(line);
-                } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTSTART") && line.startsWith("DTSTART;VALUE=DATE")) {
-                    line = "DTSTART;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(19) + "T000000";
-                } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTEND") && line.startsWith("DTEND;VALUE=DATE")) {
-                    line = "DTEND;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(17) + "T000000";
-                } else if (line.startsWith("TZID:") && validTimezoneId != null) {
-                    line = "TZID:" + validTimezoneId;
-                } else if ("BEGIN:VEVENT".equals(line)) {
-                    currentAllDayState = allDayStates.get(count++);
-                } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
-                    if (!isAppleiCal) {
-                        continue;
-                    } else {
-                        if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("CLASS:PRIVATE");
-                        } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("CLASS:CONFIDENTIAL");
-                        } else {
-                            result.writeLine("CLASS:" + eventClass);
-                        }
-                    }
-                } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {
-                    // Apple iCal doesn't support EXDATE with multiple exceptions
-                    // on one line.  Split into multiple EXDATE entries (which is
-                    // also legal according to the caldav standard).
-                    splitExDate(result, line);
-                    continue;
-                } else if (line.startsWith("X-ENTOURAGE_UUID:")) {
-                    // Apple iCal doesn't understand this key, and it's entourage
-                    // specific (i.e. not needed by any caldav client): strip it out
-                    continue;
-                } else if (fromServer && line.startsWith("ATTENDEE;")
-                        && (line.indexOf(email) >= 0)) {
-                    // If this is coming from the server, strip out RSVP for this
-                    // user as an attendee where the partstat is something other
-                    // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
-                    // thinking the attendee has not replied
-
-                    int rsvpSuffix = line.indexOf("RSVP=TRUE;");
-                    int rsvpPrefix = line.indexOf(";RSVP=TRUE");
-
-                    if (((rsvpSuffix >= 0) || (rsvpPrefix >= 0))
-                            && (line.indexOf("PARTSTAT=") >= 0)
-                            && (line.indexOf("PARTSTAT=NEEDS-ACTION") < 0)) {
-
-                        // Strip out the "RSVP" line from the calendar entry
-                        if (rsvpSuffix >= 0) {
-                            line = line.substring(0, rsvpSuffix) + line.substring(rsvpSuffix + 10);
-                        } else {
-                            line = line.substring(0, rsvpPrefix) + line.substring(rsvpPrefix + 10);
-                        }
-
-                    }
-                } else if (line.startsWith("ACTION:")) {
-                    if (fromServer && "DISPLAY".equals(action)) {
-                        // Use the default iCal alarm action instead
-                        // of the alarm Action exchange (and blackberry) understand.
-                        // This is a bit of a hack because we don't know what type
-                        // of alarm an iCal user really wants - but we know what the
-                        // default is, and can setup the default action type
-
-                        result.writeLine("ACTION:AUDIO");
-
-                        if (!sound) {
-                            // Add default sound into the audio alarm
-                            result.writeLine("ATTACH;VALUE=URI:" + defaultSound);
-                        }
-
-                        continue;
-                    } else if (!fromServer && "AUDIO".equals(action)) {
-                        // Use the alarm action that exchange (and blackberry) understand
-                        // (exchange and blackberry don't understand audio actions)
-
-                        result.writeLine("ACTION:DISPLAY");
-                        continue;
-                    }
-
-                    // Don't recognize this type of action: pass it through
-
-                } else if (line.startsWith("CLASS:")) {
-                    if (isAppleiCal) {
-                        continue;
-                    } else {
-                        if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
-                        } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
-                        } else {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
-                        }
-                    }
-                    // remove organizer line if user is organizer for iPhone
-                } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
-                    continue;
-                } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
-                    // Ignore organizer as attendee
-                    continue;
-                } else if (!fromServer && line.startsWith("ATTENDEE")) {
-                    line = replaceIcal4Principal(line);
-                }
-
-                result.writeLine(line);
-            }
-        } finally {
-            reader.close();
-        }
-
-        String resultString = result.toString();
-        dumpICS(resultString, fromServer, true);
-
-        return result.toString();
-    }
-
     /**
      * Replace iCal4 (Snow Leopard) principal paths with mailto expression
      *
@@ -2183,37 +2500,6 @@ public class ExchangeSession {
             return value;
         }
     }
-
-    protected String fixTimezoneId(String line, String validTimezoneId) {
-        return StringUtil.replaceToken(line, "TZID=", ":", validTimezoneId);
-    }
-
-    protected void splitExDate(ICSBufferedWriter result, String line) {
-        int cur = line.lastIndexOf(':') + 1;
-        String start = line.substring(0, cur);
-
-        for (int next = line.indexOf(',', cur); next != -1; next = line.indexOf(',', cur)) {
-            String val = line.substring(cur, next);
-            result.writeLine(start + val);
-
-            cur = next + 1;
-        }
-
-        result.writeLine(start + line.substring(cur));
-    }
-
-    protected String getAllDayLine(String line) throws IOException {
-        int keyIndex = line.indexOf(';');
-        int valueIndex = line.lastIndexOf(':');
-        int valueEndIndex = line.lastIndexOf('T');
-        if (valueIndex < 0 || valueEndIndex < 0) {
-            throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
-        }
-        String dateValue = line.substring(valueIndex + 1, valueEndIndex);
-        String key = line.substring(0, Math.max(keyIndex, valueIndex));
-        return key + ";VALUE=DATE:" + dateValue;
-    }
-
 
     /**
      * Event result object to hold HTTP status and event etag from an event creation/update.
@@ -2267,284 +2553,14 @@ public class ExchangeSession {
         return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
     }
 
-    protected String getICSMethod(String icsBody) {
-        String icsMethod = StringUtil.getToken(icsBody, "METHOD:", "\r");
-        if (icsMethod == null) {
-            // default method is REQUEST
-            icsMethod = "REQUEST";
-        }
-        return icsMethod;
-    }
-
-    protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
-        // only return values in VEVENT section, not VALARM
-        Stack<String> sectionStack = new Stack<String>();
-        BufferedReader reader = null;
-
-        try {
-            reader = new ICSBufferedReader(new StringReader(icsBody));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("BEGIN:")) {
-                    sectionStack.push(line);
-                } else if (line.startsWith("END:") && !sectionStack.isEmpty()) {
-                    sectionStack.pop();
-                } else if (!sectionStack.isEmpty() && "BEGIN:VEVENT".equals(sectionStack.peek()) && line.startsWith(prefix)) {
-                    return line.substring(prefix.length());
-                }
-            }
-
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-
-        return defval;
-    }
-
-    protected String getICSSummary(String icsBody) throws IOException {
-        return getICSValue(icsBody, "SUMMARY:", BundleMessage.format("MEETING_REQUEST"));
-    }
-
-    protected String getICSDescription(String icsBody) throws IOException {
-        return getICSValue(icsBody, "DESCRIPTION:", "");
-    }
-
-    static class Participants {
-        String attendees;
-        String organizer;
-    }
-
-    /**
-     * Parse ics event for attendees and organizer.
-     * For notifications, only include attendees with RSVP=TRUE or PARTSTAT=NEEDS-ACTION
-     *
-     * @param icsBody        ics event
-     * @param isNotification get only notified attendees
-     * @return participants
-     * @throws IOException on error
-     */
-    protected Participants getParticipants(String icsBody, boolean isNotification) throws IOException {
-        HashSet<String> attendees = new HashSet<String>();
-        String organizer = null;
-        BufferedReader reader = null;
-        try {
-            reader = new ICSBufferedReader(new StringReader(icsBody));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                int index = line.indexOf(':');
-                if (index >= 0) {
-                    String key = line.substring(0, index);
-                    String value = line.substring(index + 1);
-                    int semiColon = key.indexOf(';');
-                    if (semiColon >= 0) {
-                        key = key.substring(0, semiColon);
-                    }
-                    if ("ORGANIZER".equals(key) || "ATTENDEE".equals(key)) {
-                        int colonIndex = value.indexOf(':');
-                        if (colonIndex >= 0) {
-                            value = value.substring(colonIndex + 1);
-                        }
-                        value = replaceIcal4Principal(value);
-                        if ("ORGANIZER".equals(key)) {
-                            organizer = value;
-                            // exclude current user and invalid values from recipients
-                            // also exclude no action attendees
-                        } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
-                                && (!isNotification
-                                || line.indexOf("RSVP=TRUE") >= 0
-                                || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0)) {
-                            attendees.add(value);
-                        }
-                    }
-                }
-            }
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-        Participants participants = new Participants();
-        if (!attendees.isEmpty()) {
-            StringBuilder result = new StringBuilder();
-            for (String recipient : attendees) {
-                if (result.length() > 0) {
-                    result.append(", ");
-                }
-                result.append(recipient);
-            }
-            participants.attendees = result.toString();
-        }
-        participants.organizer = organizer;
-        return participants;
-    }
-
     protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        String uid = UUID.randomUUID().toString();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStreamWriter writer = new OutputStreamWriter(baos, "ASCII");
-        int status = 0;
-        PutMethod putmethod = new PutMethod(URIUtil.encodePath(messageUrl));
-        putmethod.setRequestHeader("Translate", "f");
-        putmethod.setRequestHeader("Overwrite", "f");
-        if (etag != null) {
-            putmethod.setRequestHeader("If-Match", etag);
-        }
-        if (noneMatch != null) {
-            putmethod.setRequestHeader("If-None-Match", noneMatch);
-        }
-        putmethod.setRequestHeader("Content-Type", "message/rfc822");
-        String method = getICSMethod(icsBody);
-
-        writer.write("Content-Transfer-Encoding: 7bit\r\n" +
-                "Content-class: ");
-        writer.write(contentClass);
-        writer.write("\r\n");
-        // append date
-        SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss Z", Locale.ENGLISH);
-        writer.write("Date: ");
-        writer.write(formatter.format(new Date()));
-        writer.write("\r\n");
-        if ("urn:content-classes:calendarmessage".equals(contentClass)) {
-            // need to parse attendees and organizer to build recipients
-            Participants participants = getParticipants(icsBody, true);
-            String recipients;
-            if (email.equalsIgnoreCase(participants.organizer)) {
-                // current user is organizer => notify all
-                recipients = participants.attendees;
-            } else {
-                // notify only organizer
-                recipients = participants.organizer;
-            }
-
-            // Make sure invites have a proper subject line
-            writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
-
-            writer.write("To: ");
-            writer.write(recipients);
-            writer.write("\r\n");
-            // do not send notification if no recipients found
-            if (recipients.length() == 0) {
-                status = HttpStatus.SC_NO_CONTENT;
-            }
-        } else {
-            // Make sure invites have a proper subject line
-            writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
-
-            // need to parse attendees and organizer to build recipients
-            Participants participants = getParticipants(icsBody, false);
-            // storing appointment, full recipients header
-            writer.write("To: ");
-            if (participants.attendees != null) {
-                writer.write(participants.attendees);
-            } else {
-                writer.write(email);
-            }
-
-            writer.write("\r\n");
-            writer.write("From: ");
-            if (participants.organizer != null) {
-                writer.write(participants.organizer);
-            } else {
-                writer.write(email);
-            }
-            writer.write("\r\n");
-            // if not organizer, set REPLYTIME to force Outlook in attendee mode
-            if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
-                if (icsBody.indexOf("METHOD:") < 0) {
-                    icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
-                }
-                if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
-                    icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
-                            getZuluDateFormat().format(new Date()) + "\r\nEND:VEVENT");
-                }
-            }
-        }
-        writer.write("MIME-Version: 1.0\r\n" +
-                "Content-Type: multipart/alternative;\r\n" +
-                "\tboundary=\"----=_NextPart_");
-        writer.write(uid);
-        writer.write("\"\r\n" +
-                "\r\n" +
-                "This is a multi-part message in MIME format.\r\n" +
-                "\r\n" +
-                "------=_NextPart_");
-        writer.write(uid);
-
-        // Write a part of the message that contains the
-        // ICS description so that invites contain the description text
-        String description = getICSDescription(icsBody).replaceAll("\\\\[Nn]", "\r\n");
-
-        if (description.length() > 0) {
-            writer.write("\r\n" +
-                    "Content-Type: text/plain;\r\n" +
-                    "\tcharset=\"utf-8\"\r\n" +
-                    "content-transfer-encoding: 8bit\r\n" +
-                    "\r\n");
-            writer.flush();
-            baos.write(description.getBytes("UTF-8"));
-            writer.write("\r\n" +
-                    "------=_NextPart_" +
-                    uid);
-
-        }
-
-        writer.write("\r\n" +
-                "Content-class: ");
-        writer.write(contentClass);
-        writer.write("\r\n" +
-                "Content-Type: text/calendar;\r\n" +
-                "\tmethod=");
-        writer.write(method);
-        writer.write(";\r\n" +
-                "\tcharset=\"utf-8\"\r\n" +
-                "Content-Transfer-Encoding: 8bit\r\n\r\n");
-        writer.flush();
-        baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
-        writer.write("\r\n------=_NextPart_");
-        writer.write(uid);
-        writer.write("--\r\n");
-        writer.close();
-        putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
-        try {
-            if (status == 0) {
-                status = httpClient.executeMethod(putmethod);
-                if (status == HttpURLConnection.HTTP_OK) {
-                    if (etag != null) {
-                        LOGGER.debug("Updated event " + messageUrl);
-                    } else {
-                        LOGGER.warn("Overwritten event " + messageUrl);
-                    }
-                } else if (status != HttpURLConnection.HTTP_CREATED) {
-                    LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
-                }
-            }
-        } finally {
-            putmethod.releaseConnection();
-        }
-        EventResult eventResult = new EventResult();
-        // 440 means forbidden on Exchange
-        if (status == 440) {
-            status = HttpStatus.SC_FORBIDDEN;
-        }
-        eventResult.status = status;
-        if (putmethod.getResponseHeader("GetETag") != null) {
-            eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
-        }
-
-        // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
-        if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
-                (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
-            ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
-            propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
-            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(messageUrl), propertyList);
-            int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
-            if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
-                LOGGER.warn("Unable to patch event to trigger activeSync push");
-            }
-        }
-        return eventResult;
+        Event event = new Event();
+        event.contentClass = contentClass;
+        event.icsBody = icsBody;
+        event.href = messageUrl;
+        event.etag = etag;
+        event.noneMatch = noneMatch;
+        return event.createOrUpdate();
     }
 
     /**
