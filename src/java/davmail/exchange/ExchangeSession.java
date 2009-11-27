@@ -20,11 +20,12 @@ package davmail.exchange;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.util.StringUtil;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
+import davmail.util.StringUtil;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -35,9 +36,12 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.jackrabbit.webdav.DavException;
+import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
+import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.*;
 import org.apache.jackrabbit.webdav.xml.Namespace;
@@ -1661,6 +1665,60 @@ public class ExchangeSession {
         }
 
         /**
+         * Load ICS content from MIME message input stream
+         *
+         * @param mimeInputStream mime message input stream
+         * @return mime message ics attachment body
+         * @throws IOException        on error
+         * @throws MessagingException on error
+         */
+        protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
+            String result = null;
+            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+            Object mimeBody = mimeMessage.getContent();
+            MimePart bodyPart;
+            if (mimeBody instanceof MimeMultipart) {
+                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
+            } else {
+                // no multipart, single body
+                bodyPart = mimeMessage;
+            }
+
+            if (bodyPart != null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.getDataHandler().writeTo(baos);
+                baos.close();
+                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+            }
+            return result;
+        }
+
+        final DavPropertyName PR_INTERNET_CONTENT = DavPropertyName.create("x66590102", SCHEMAS_MAPI_PROPTAG);
+
+        protected String getICSFromInternetContentProperty() throws IOException, DavException, MessagingException {
+            String result = null;
+            // PropFind PR_INTERNET_CONTENT
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(PR_INTERNET_CONTENT);
+            PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl), davPropertyNameSet, 0);
+            try {
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+                if (responses.getResponses().length > 0) {
+                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+                    DavProperty property = properties.get(PR_INTERNET_CONTENT);
+                    if (property != null) {
+                        byte[] byteArray = Base64.decodeBase64(((String) property.getValue()).getBytes());
+                        result = getICS(new ByteArrayInputStream(byteArray));
+                    }
+                }
+            } finally {
+                propFindMethod.releaseConnection();
+            }
+            return result;
+        }
+
+        /**
          * Load ICS content from Exchange server.
          * User Translate: f header to get MIME event content and get ICS attachment from it
          *
@@ -1670,38 +1728,26 @@ public class ExchangeSession {
         public String getICS() throws IOException {
             String result = null;
             LOGGER.debug("Get event: " + permanentUrl);
-            GetMethod method = new GetMethod(permanentUrl);
-            method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-            method.setRequestHeader("Translate", "f");
+            // try to get PR_INTERNET_CONTENT
             try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
-
-                MimeMessage mimeMessage = new MimeMessage(null, method.getResponseBodyAsStream());
-                Object mimeBody = mimeMessage.getContent();
-                MimePart bodyPart;
-                if (mimeBody instanceof MimeMultipart) {
-                    bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
-                } else {
-                    // no multipart, single body
-                    bodyPart = mimeMessage;
+                result = getICSFromInternetContentProperty();
+                if (result == null) {
+                    GetMethod method = new GetMethod(permanentUrl);
+                    method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+                    method.setRequestHeader("Translate", "f");
+                    try {
+                        DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
+                        result = getICS(method.getResponseBodyAsStream());
+                    } finally {
+                        method.releaseConnection();
+                    }
                 }
-
-                if (bodyPart == null) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    mimeMessage.getDataHandler().writeTo(baos);
-                    baos.close();
-                    throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
-                }
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bodyPart.getDataHandler().writeTo(baos);
-                baos.close();
-                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+            } catch (DavException e) {
+                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
             } catch (IOException e) {
                 LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
             } catch (MessagingException e) {
                 LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
-            } finally {
-                method.releaseConnection();
             }
             return result;
         }
@@ -2336,11 +2382,18 @@ public class ExchangeSession {
             if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
                     (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
                 ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
+                // Set contentclass to make ActiveSync happy
                 propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
+                // ... but also set PR_INTERNET_CONTENT to preserve custom properties
+                propertyList.add(new DefaultDavProperty(PR_INTERNET_CONTENT, new String(Base64.encodeBase64(baos.toByteArray()))));
                 PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), propertyList);
                 int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                 if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
                     LOGGER.warn("Unable to patch event to trigger activeSync push");
+                } else {
+                    // need to retrieve new etag
+                    Event newEvent = getEvent(href);
+                    eventResult.etag = newEvent.etag;
                 }
             }
             return eventResult;
@@ -2433,7 +2486,21 @@ public class ExchangeSession {
      */
     public Event getEvent(String folderPath, String eventName) throws IOException {
         String eventPath = folderPath + '/' + eventName;
-        return getEvent(eventPath);
+        Event event;
+        try {
+            event = getEvent(eventPath);
+        } catch (HttpNotFoundException hnfe) {
+            // failover for Exchange 2007 plus encoding issue
+            String decodedEventName = eventName.replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
+            ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
+            if (!messages.isEmpty()) {
+                event = getEvent(messages.get(0).getPermanentUrl());
+            } else {
+                throw hnfe;
+            }
+        }
+
+        return event;
     }
 
     /**
