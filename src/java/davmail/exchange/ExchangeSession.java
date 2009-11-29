@@ -1645,12 +1645,15 @@ public class ExchangeSession {
          */
         protected String icsBody;
 
+        protected boolean isCalendarContentType(String contentType) {
+           return contentType.startsWith("text/calendar") || contentType.startsWith("application/ics"); 
+        }
 
         protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
             MimePart bodyPart = null;
             for (int i = 0; i < multiPart.getCount(); i++) {
                 String contentType = multiPart.getBodyPart(i).getContentType();
-                if (contentType.startsWith("text/calendar") || contentType.startsWith("application/ics")) {
+                if (isCalendarContentType(contentType)) {
                     bodyPart = (MimePart) multiPart.getBodyPart(i);
                     break;
                 } else if (contentType.startsWith("multipart")) {
@@ -1676,10 +1679,10 @@ public class ExchangeSession {
             String result = null;
             MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
             Object mimeBody = mimeMessage.getContent();
-            MimePart bodyPart;
+            MimePart bodyPart = null;
             if (mimeBody instanceof MimeMultipart) {
                 bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
-            } else {
+            } else if (isCalendarContentType(mimeMessage.getContentType())){
                 // no multipart, single body
                 bodyPart = mimeMessage;
             }
@@ -1689,6 +1692,11 @@ public class ExchangeSession {
                 bodyPart.getDataHandler().writeTo(baos);
                 baos.close();
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.getDataHandler().writeTo(baos);
+                baos.close();
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
             }
             return result;
         }
