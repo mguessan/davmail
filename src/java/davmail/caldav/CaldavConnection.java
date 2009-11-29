@@ -24,7 +24,6 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
-import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
@@ -251,6 +250,7 @@ public class CaldavConnection extends AbstractConnection {
                 sendFreeBusy(request.getBody());
             } else {
                 int status = session.sendEvent(request.getBody());
+                // TODO: implement Itip response body
                 sendHttpResponse(status);
             }
         } else if (request.isPropFind()) {
@@ -614,18 +614,7 @@ public class CaldavConnection extends AbstractConnection {
                     if (eventName != null && eventName.length() > 0
                             && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
                         ExchangeSession.Event event;
-                        try {
-                            event = session.getEvent(folderPath, eventName);
-                        } catch (HttpNotFoundException hnfe) {
-                            // failover for Exchange 2007 plus encoding issue
-                            String decodedEventName = eventName.replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
-                            ExchangeSession.MessageList messages = session.searchMessages(folderPath, " AND \"DAV:displayname\"='"+decodedEventName+ '\'');
-                            if (!messages.isEmpty()) {
-                                event = session.getEvent(messages.get(0).getPermanentUrl());
-                            } else {
-                                throw hnfe;
-                            }
-                        }
+                        event = session.getEvent(folderPath, eventName);
                         appendEventResponse(response, request, event);
                     }
                 } catch (HttpException e) {
@@ -1002,6 +991,8 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
         sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events");
         SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+        // force GMT timezone
+        formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         String now = formatter.format(new Date());
         sendClient("Date: " + now);
         sendClient("Expires: " + now);
