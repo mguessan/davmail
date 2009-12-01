@@ -399,10 +399,26 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
-                                        currentFolder = session.getFolder(currentFolder.folderName);
-                                        currentFolder.loadMessages();
-                                        sendClient("* " + currentFolder.count() + " EXISTS");
-                                        sendClient("* " + currentFolder.count() + " RECENT");
+                                        ExchangeSession.MessageList currentMessages = currentFolder.messages;
+                                        if (session.refreshFolder(currentFolder)) {
+                                            // build new uid set
+                                            HashSet<Long> uidSet = new HashSet<Long>();
+                                            for (ExchangeSession.Message message : currentFolder.messages) {
+                                                uidSet.add(message.getImapUid());
+                                            }
+                                            // send expunge untagged response for removed IMAP message uids
+                                            // note: some STORE commands trigger a uid change in Exchange,
+                                            // thus those messages are expunged and reappear with a new uid
+                                            int index = 1;
+                                            for (ExchangeSession.Message message : currentMessages) {
+                                                if (!uidSet.contains(message.getImapUid())) {
+                                                    sendClient("* " + index + " EXPUNGE");
+                                                }
+                                                index++;
+                                            }
+                                            sendClient("* " + currentFolder.count() + " EXISTS");
+                                            sendClient("* " + currentFolder.count() + " RECENT");
+                                        }
                                     }
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("subscribe".equalsIgnoreCase(command) || "unsubscribe".equalsIgnoreCase(command)) {

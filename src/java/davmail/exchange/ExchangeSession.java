@@ -1115,22 +1115,24 @@ public class ExchangeSession {
      * Check folder ctag and reload messages as needed.
      *
      * @param currentFolder current folder
-     * @return current folder or new refreshed folder
+     * @return true if folder changed
      * @throws IOException on error
-     * @deprecated no longer used: breaks Outlook IMAP
      */
-    @Deprecated
-    public Folder refreshFolder(Folder currentFolder) throws IOException {
+    public boolean refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderName);
         if (currentFolder.contenttag == null || !currentFolder.contenttag.equals(newFolder.contenttag)) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Contenttag changed on " + currentFolder.folderName + ' '
                         + currentFolder.contenttag + " => " + newFolder.contenttag + ", reloading messages");
             }
-            newFolder.loadMessages();
-            return newFolder;
+            currentFolder.hasChildren = newFolder.hasChildren;
+            currentFolder.noInferiors = newFolder.noInferiors;
+            currentFolder.unreadCount = newFolder.unreadCount;
+            currentFolder.contenttag = newFolder.contenttag;
+            currentFolder.loadMessages();
+            return true;
         } else {
-            return currentFolder;
+            return false;
         }
     }
 
