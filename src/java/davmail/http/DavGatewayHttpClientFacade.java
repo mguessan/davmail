@@ -40,8 +40,6 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -150,20 +148,13 @@ public final class DavGatewayHttpClientFacade {
                 // detect ntlm authentication (windows domain name in user name)
                 int backslashindex = proxyUser.indexOf('\\');
                 if (backslashindex > 0) {
-                    // get local host name for NTLM authentication
-                    String host;
-                    try {
-                        host = InetAddress.getLocalHost().getHostName();
-                    } catch (UnknownHostException e) {
-                        host = "localhost";
-                    }
                     httpClient.getState().setProxyCredentials(authScope,
                             new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                    proxyPassword, host,
+                                    proxyPassword, "",
                                     proxyUser.substring(0, backslashindex)));
                 } else {
                     httpClient.getState().setProxyCredentials(authScope,
-                            new UsernamePasswordCredentials(proxyUser, proxyPassword));
+                            new NTCredentials(proxyUser, proxyPassword, "", ""));
                 }
             }
         }
