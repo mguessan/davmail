@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpServerErrorException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
@@ -153,6 +154,7 @@ public class ExchangeSession {
 
     protected static final DavPropertyName DEFAULT_SCHEDULE_STATE_PROPERTY = DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:"));
     protected DavPropertyName scheduleStateProperty = DEFAULT_SCHEDULE_STATE_PROPERTY;
+    protected static final DavPropertyName PR_INTERNET_CONTENT = DavPropertyName.create("x66590102", SCHEMAS_MAPI_PROPTAG);
 
     /**
      * Various standard mail boxes Urls
@@ -1530,6 +1532,9 @@ public class ExchangeSession {
                     isoWriter.write((char) 10);
                 }
                 isoWriter.flush();
+            } catch (HttpServerErrorException e) {
+                LOGGER.warn("Unable to retrieve message at: "+messageUrl);
+                throw e;
             } finally {
                 if (reader != null) {
                     try {
@@ -1648,7 +1653,7 @@ public class ExchangeSession {
         protected String icsBody;
 
         protected boolean isCalendarContentType(String contentType) {
-           return contentType.startsWith("text/calendar") || contentType.startsWith("application/ics"); 
+            return contentType.startsWith("text/calendar") || contentType.startsWith("application/ics");
         }
 
         protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
@@ -1678,13 +1683,13 @@ public class ExchangeSession {
          * @throws MessagingException on error
          */
         protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
-            String result = null;
+            String result;
             MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
             Object mimeBody = mimeMessage.getContent();
             MimePart bodyPart = null;
             if (mimeBody instanceof MimeMultipart) {
                 bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
-            } else if (isCalendarContentType(mimeMessage.getContentType())){
+            } else if (isCalendarContentType(mimeMessage.getContentType())) {
                 // no multipart, single body
                 bodyPart = mimeMessage;
             }
@@ -1703,7 +1708,6 @@ public class ExchangeSession {
             return result;
         }
 
-        final DavPropertyName PR_INTERNET_CONTENT = DavPropertyName.create("x66590102", SCHEMAS_MAPI_PROPTAG);
 
         protected String getICSFromInternetContentProperty() throws IOException, DavException, MessagingException {
             String result = null;
