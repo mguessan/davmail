@@ -1743,7 +1743,7 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public String getICS() throws IOException {
-            String result = null;
+            String result;
             LOGGER.debug("Get event: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
@@ -1760,13 +1760,19 @@ public class ExchangeSession {
                     }
                 }
             } catch (DavException e) {
-                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
+                throw buildHttpException(e);
             } catch (IOException e) {
-                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
+                throw buildHttpException(e);
             } catch (MessagingException e) {
-                LOGGER.warn("Unable to get event at " + permanentUrl + ": " + e.getMessage());
+                throw buildHttpException(e);
             }
             return result;
+        }
+
+        protected HttpException buildHttpException(Exception e) {
+            String message = "Unable to get event "+getName()+" at " + permanentUrl + ": " + e.getMessage();
+            LOGGER.warn(message);
+            return new HttpException(message);
         }
 
         /**
