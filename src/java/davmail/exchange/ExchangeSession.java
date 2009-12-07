@@ -465,9 +465,12 @@ public class ExchangeSession {
         // make sure username and password fields are empty
         ((PostMethod) logonMethod).removeParameter(userNameInput);
         ((PostMethod) logonMethod).removeParameter(passwordInput);
+        ((PostMethod) logonMethod).removeParameter("trusted");
+        ((PostMethod) logonMethod).removeParameter("flags");
         ((PostMethod) logonMethod).addParameter(userNameInput, userName);
         ((PostMethod) logonMethod).addParameter(passwordInput, password);
         ((PostMethod) logonMethod).addParameter("trusted", "4");
+        ((PostMethod) logonMethod).addParameter("flags", "4");
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
         // test form based authentication
