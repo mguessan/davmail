@@ -929,7 +929,15 @@ public class ImapConnection extends AbstractConnection {
             if ("message-id".equals(headerName) && !value.startsWith("<")) {
                 value = '<' + value + '>';
             }
-            conditions.append(operator).append("\"urn:schemas:mailheader:").append(headerName).append("\"='").append(value).append('\'');
+            String namespace;
+            if (headerName.startsWith("x-")) {
+                // look for extended headers in MAPI namespace
+                namespace = "http://schemas.microsoft.com/mapi/string/{00020386-0000-0000-C000-000000000046}/";
+            } else {
+                // look for standard properties in mailheader namespace
+                namespace = "urn:schemas:mailheader:";
+            }
+            conditions.append(operator).append('"').append(namespace).append(headerName).append("\"='").append(value).append('\'');
         } else if ("UID".equals(token)) {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {

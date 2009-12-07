@@ -713,7 +713,6 @@ public class ExchangeSession {
 
     protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
         Message message = new Message();
-        LOGGER.debug("Found message href: " + responseEntity.getHref());
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
 
@@ -735,6 +734,7 @@ public class ExchangeSession {
             message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
         }
 
+        LOGGER.debug("Found message IMAP uid: "+message.imapUid+" href: " + responseEntity.getHref()+" permanenturl:"+message.permanentUrl);
         return message;
     }
 
