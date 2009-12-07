@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpServerErrorException;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -389,14 +390,14 @@ public final class DavGatewayHttpClientFacade {
         }
         if (status != HttpStatus.SC_OK) {
             LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
-            throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
+            throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
         // check for expired session
         if (followRedirects) {
             String queryString = method.getQueryString();
             if (queryString != null && queryString.contains("reason=2")) {
                 LOGGER.warn("GET failed, session expired  at " + method.getURI() + ": " + method.getResponseBodyAsString());
-                throw new DavMailException("EXCEPTION_GET_FAILED", status, method.getURI());
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         }
     }
@@ -424,6 +425,8 @@ public final class DavGatewayHttpClientFacade {
             return new HttpForbiddenException(message.toString());
         } else if (status == HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
+        } else if (status == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+            return new HttpServerErrorException(message.toString());
         } else {
             return new HttpException(message.toString());
         }

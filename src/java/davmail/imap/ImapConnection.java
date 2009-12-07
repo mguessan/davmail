@@ -257,7 +257,12 @@ public class ImapConnection extends AbstractConnection {
                                                         while (uidRangeIterator.hasNext()) {
                                                             DavGatewayTray.switchIcon();
                                                             ExchangeSession.Message message = uidRangeIterator.next();
-                                                            handleFetch(message, uidRangeIterator.currentIndex, parameters);
+                                                            try {
+                                                                handleFetch(message, uidRangeIterator.currentIndex, parameters);
+                                                            } catch (IOException e) {
+                                                                DavGatewayTray.log(e);
+                                                                sendClient(commandId + " NO Unable to retrieve message: "+e.getMessage());
+                                                            }
                                                         }
                                                         sendClient(commandId + " OK UID FETCH completed");
                                                     }
@@ -319,7 +324,13 @@ public class ImapConnection extends AbstractConnection {
                                         while (rangeIterator.hasNext()) {
                                             DavGatewayTray.switchIcon();
                                             ExchangeSession.Message message = rangeIterator.next();
-                                            handleFetch(message, rangeIterator.currentIndex, parameters);
+                                            try {
+                                                handleFetch(message, rangeIterator.currentIndex, parameters);
+                                            } catch (IOException e) {
+                                                DavGatewayTray.log(e);
+                                                sendClient(commandId + " NO Unable to retrieve message: "+e.getMessage());
+                                            }
+
                                         }
                                         sendClient(commandId + " OK FETCH completed");
                                     }
