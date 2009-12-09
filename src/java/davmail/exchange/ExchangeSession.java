@@ -166,6 +166,7 @@ public class ExchangeSession {
     private String draftsUrl;
     private String calendarUrl;
     private String contactsUrl;
+    private String publicFolderUrl;
 
     /**
      * Base user mailboxes path (used to select folder)
@@ -232,7 +233,7 @@ public class ExchangeSession {
 
             buildMailPath(method);
 
-            // got base http mailbox http url
+            // get base http mailbox http urls
             getWellKnownFolders();
 
         } catch (DavMailAuthenticationException exc) {
@@ -642,13 +643,24 @@ public class ExchangeSession {
             draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
             calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
             contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
+
+            try {
+                PropFindMethod propFindMethod = new PropFindMethod("/public", CONTENT_TAG, 0);
+                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                publicFolderUrl = propFindMethod.getURI().getURI();
+            } catch (IOException e) {
+                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
+                // default public folder path
+                publicFolderUrl = "/public";
+            }
             LOGGER.debug("Inbox URL : " + inboxUrl +
                     " Trash URL : " + deleteditemsUrl +
                     " Sent URL : " + sentitemsUrl +
                     " Send URL : " + sendmsgUrl +
                     " Drafts URL : " + draftsUrl +
                     " Calendar URL : " + calendarUrl +
-                    " Contacts URL : " + contactsUrl
+                    " Contacts URL : " + contactsUrl +
+                    " Public folder URL : " + publicFolderUrl
             );
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
@@ -737,7 +749,7 @@ public class ExchangeSession {
             message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
         }
 
-        LOGGER.debug("Found message IMAP uid: "+message.imapUid+" href: " + responseEntity.getHref()+" permanenturl:"+message.permanentUrl);
+        LOGGER.debug("Found message IMAP uid: " + message.imapUid + " href: " + responseEntity.getHref() + " permanenturl:" + message.permanentUrl);
         return message;
     }
 
@@ -1086,7 +1098,7 @@ public class ExchangeSession {
         } else if (folderName.startsWith("calendar")) {
             folderPath = folderName.replaceFirst("calendar", calendarUrl);
         } else if (folderName.startsWith("public")) {
-            folderPath = '/' + folderName;
+            folderPath = publicFolderUrl + folderName.substring("public".length());
             // absolute folder path
         } else if (folderName.startsWith("/")) {
             folderPath = folderName;
@@ -1536,7 +1548,7 @@ public class ExchangeSession {
                 }
                 isoWriter.flush();
             } catch (HttpServerErrorException e) {
-                LOGGER.warn("Unable to retrieve message at: "+messageUrl);
+                LOGGER.warn("Unable to retrieve message at: " + messageUrl);
                 throw e;
             } finally {
                 if (reader != null) {
@@ -1770,7 +1782,7 @@ public class ExchangeSession {
         }
 
         protected HttpException buildHttpException(Exception e) {
-            String message = "Unable to get event "+getName()+" at " + permanentUrl + ": " + e.getMessage();
+            String message = "Unable to get event " + getName() + " at " + permanentUrl + ": " + e.getMessage();
             LOGGER.warn(message);
             return new HttpException(message);
         }
@@ -2803,7 +2815,11 @@ public class ExchangeSession {
      */
     public String getCmdBasePath() {
         if (mailPath == null) {
-            return "/public/";
+            if (publicFolderUrl == null) {
+                return "/public/";
+            } else {
+                return publicFolderUrl + '/';
+            }
         } else {
             return mailPath;
         }
@@ -3216,7 +3232,7 @@ public class ExchangeSession {
             } else {
                 endDate = icalDateFormat.parse(endDateValue);
             }
-            freebusyUrl = "/public/?cmd=freebusy" +
+            freebusyUrl = publicFolderUrl + "/?cmd=freebusy" +
                     "&start=" + exchangeZuluDateFormat.format(startDate) +
                     "&end=" + exchangeZuluDateFormat.format(endDate) +
                     "&interval=" + FREE_BUSY_INTERVAL +

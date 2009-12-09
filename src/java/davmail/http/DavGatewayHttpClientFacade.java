@@ -20,10 +20,7 @@ package davmail.http;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.exception.DavMailException;
-import davmail.exception.HttpForbiddenException;
-import davmail.exception.HttpNotFoundException;
-import davmail.exception.HttpServerErrorException;
+import davmail.exception.*;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -326,6 +323,15 @@ public final class DavGatewayHttpClientFacade {
         try {
             int status = httpClient.executeMethod(method);
 
+            // need to follow redirects (once) on public folders
+            if (isRedirect(status)) {
+                method.releaseConnection();
+                URI targetUri = new URI(method.getResponseHeader("Location").getValue(), true);
+                checkExpiredSession(targetUri.getQuery());
+                method.setURI(targetUri);
+                status = httpClient.executeMethod(method);
+            }
+
             if (status != HttpStatus.SC_MULTI_STATUS) {
                 throw buildHttpException(method);
             }
@@ -382,9 +388,9 @@ public final class DavGatewayHttpClientFacade {
         // do not follow redirects in expired sessions
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
-        if (status == HttpStatus.SC_UNAUTHORIZED   & !hasNTLM(httpClient)) {
+        if (status == HttpStatus.SC_UNAUTHORIZED & !hasNTLM(httpClient)) {
             method.releaseConnection();
-            LOGGER.debug("Received unauthorized at "+method.getURI()+", retrying with NTLM");
+            LOGGER.debug("Received unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
             status = httpClient.executeMethod(method);
         }
@@ -395,10 +401,18 @@ public final class DavGatewayHttpClientFacade {
         // check for expired session
         if (followRedirects) {
             String queryString = method.getQueryString();
+            checkExpiredSession(queryString);
             if (queryString != null && queryString.contains("reason=2")) {
                 LOGGER.warn("GET failed, session expired  at " + method.getURI() + ": " + method.getResponseBodyAsString());
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
+        }
+    }
+
+    private static void checkExpiredSession(String queryString) throws DavMailAuthenticationException {
+        if (queryString != null && queryString.contains("reason=2")) {
+            LOGGER.warn("Request failed, session expired  (reason=2) ");
+            throw new DavMailAuthenticationException("EXCEPTION_SESSION_EXPIRED");
         }
     }
 
