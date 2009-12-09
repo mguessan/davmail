@@ -1374,7 +1374,7 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder == null || subFolder.length() == 0) {
                 return getExchangeFolderPath();
             } else {
-                return session.buildCalendarPath(getPathElement(2), subFolder);
+                return getExchangeFolderPath()+'/'+subFolder;
             }
         }
     }
