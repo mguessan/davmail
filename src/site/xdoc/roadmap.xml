@@ -15,13 +15,12 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in DavMail next versions.
             </p>
-            <subsection name="3.6.1">
+            <subsection name="3.6.2">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
-                    <li>Fix bug 2898469: 404 when answering invitation</li>
-                    <li>Fix bug 2898669: Possibly wrong "MAILTO" when retrieving freebusy information</li>
+                    <li>Implement davmail.forceAudioAlarm with value</li>
                 </ul>
             </subsection>
             <subsection name="3.7.0">
@@ -29,8 +28,8 @@
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Implement Caldav attachments
-                    </li>
+                    <li>Implement default logon domain in davmail settings</li>
+                    <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>
                     <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
                         http://msexchangeteam.com/archive/2004/03/31/105275.aspx
