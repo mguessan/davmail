@@ -50,6 +50,14 @@
 <value>1</value>
 </skeletonProperties>
 <skeletonProperties>
+<key>SingleInstance</key>
+<value>0</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>JniSmooth</key>
+<value>0</value>
+</skeletonProperties>
+<skeletonProperties>
 <key>Debug</key>
 <value>0</value>
 </skeletonProperties>
