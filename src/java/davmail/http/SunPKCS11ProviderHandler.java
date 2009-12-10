@@ -27,7 +27,7 @@ import java.io.ByteArrayInputStream;
 /**
  * Add the SunPKCS11 Provider.
  */
-public class SunPKCS11ProviderHandler {
+public final class SunPKCS11ProviderHandler {
 
     private SunPKCS11ProviderHandler() {
     }

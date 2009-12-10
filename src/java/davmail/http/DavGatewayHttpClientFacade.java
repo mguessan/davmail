@@ -388,7 +388,7 @@ public final class DavGatewayHttpClientFacade {
         // do not follow redirects in expired sessions
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
-        if (status == HttpStatus.SC_UNAUTHORIZED & !hasNTLM(httpClient)) {
+        if (status == HttpStatus.SC_UNAUTHORIZED && !hasNTLM(httpClient)) {
             method.releaseConnection();
             LOGGER.debug("Received unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
