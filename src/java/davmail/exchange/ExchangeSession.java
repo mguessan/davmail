@@ -749,7 +749,18 @@ public class ExchangeSession {
             message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
         }
 
-        LOGGER.debug("Found message IMAP uid: " + message.imapUid + " href: " + responseEntity.getHref() + " permanenturl:" + message.permanentUrl);
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("Message");
+            if (message.imapUid != 0) {
+                buffer.append(" IMAP uid: ").append(message.imapUid);
+            }
+            if (message.uid != null) {
+                buffer.append(" uid: ").append(message.uid);
+            }
+            buffer.append(" href: ").append(responseEntity.getHref()).append(" permanenturl:").append(message.permanentUrl);
+            LOGGER.debug(buffer.toString());
+        }
         return message;
     }
 
@@ -1515,7 +1526,7 @@ public class ExchangeSession {
             try {
                 write(os, messageUrl);
             } catch (HttpNotFoundException e) {
-                LOGGER.debug("Message not found at: "+messageUrl+", retrying with permanenturl");
+                LOGGER.debug("Message not found at: " + messageUrl + ", retrying with permanenturl");
                 write(os, permanentUrl);
             }
         }
