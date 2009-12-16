@@ -1512,7 +1512,16 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void write(OutputStream os) throws IOException {
-            GetMethod method = new GetMethod(permanentUrl);
+            try {
+                write(os, messageUrl);
+            } catch (HttpNotFoundException e) {
+                LOGGER.debug("Message not found at: "+messageUrl+", retrying with permanenturl");
+                write(os, permanentUrl);
+            }
+        }
+
+        protected void write(OutputStream os, String url) throws IOException {
+            GetMethod method = new GetMethod(URIUtil.encodePath(url));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
