@@ -2321,11 +2321,12 @@ public class ExchangeSession {
                 // Make sure invites have a proper subject line
                 writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
 
-                writer.write("To: ");
-                writer.write(recipients);
-                writer.write("\r\n");
                 // do not send notification if no recipients found
-                if (recipients.length() == 0) {
+                if (recipients != null && recipients.length() > 0) {
+                    writer.write("To: ");
+                    writer.write(recipients);
+                    writer.write("\r\n");
+                } else {
                     status = HttpStatus.SC_NO_CONTENT;
                 }
             } else {
