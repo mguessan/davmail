@@ -41,6 +41,8 @@
         <svn svnkit="true">
             <wcversion path="."/>
         </svn>
+        <!-- failover value for revision -->
+        <property name="revision.max" value=""/>
         <property name="release" value="${version}-${revision.max}"/>
     </target>
 
@@ -171,6 +173,7 @@
     </target>
 
     <target name="dist" depends="compile">
+        <property name="release-name" value="${release}-trunk"/>
         <delete dir="dist"/>
         <mkdir dir="dist"/>
         <echo file="dist/version.txt" message="${release}"/>
@@ -178,7 +181,7 @@
             <manifest>
                 <section name="davmail/">
                     <attribute name="Implementation-Title" value="DavMail Gateway"/>
-                    <attribute name="Implementation-Version" value="${release}"/>
+                    <attribute name="Implementation-Version" value="${release-name}"/>
                     <attribute name="Implementation-Vendor" value="Mickael Guessant"/>
                 </section>
             </manifest>
@@ -201,7 +204,7 @@
         <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailservice.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
-        <zip file="dist/davmail-${release}.zip">
+        <zip file="dist/davmail-${release-name}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
@@ -225,10 +228,10 @@
                 <exclude name="swt*.jar"/>
             </fileset>
         </copy>
-        <jar destfile="dist/davmail-${release}.war">
+        <jar destfile="dist/davmail-${release-name}.war">
             <fileset dir="dist/web"/>
         </jar>
-        <tar tarfile="dist/davmail-linux-x86-${release}.tgz" compression="gzip">
+        <tar tarfile="dist/davmail-linux-x86-${release-name}.tgz" compression="gzip">
             <tarfileset prefix="davmail-linux-x86-${release}" dir="dist" filemode="755">
                 <include name="davmail.sh"/>
             </tarfileset>
@@ -242,7 +245,7 @@
                 <exclude name="lib/swt-*-win32-x86.jar"/>
             </tarfileset>
         </tar>
-        <tar tarfile="dist/davmail-linux-x86_64-${release}.tgz" compression="gzip">
+        <tar tarfile="dist/davmail-linux-x86_64-${release-name}.tgz" compression="gzip">
             <tarfileset prefix="davmail-linux-x86_64-${release}" dir="dist" filemode="755">
                 <include name="davmail.sh"/>
             </tarfileset>
@@ -260,8 +263,8 @@
         <antcall target="dist-deb"/>
         <antcall target="dist-osx"/>
         <!-- source package -->
-        <tar tarfile="dist/davmail-src-${release}.tgz" compression="gzip" longfile="gnu">
-            <tarfileset prefix="davmail-src-${release}" dir=".">
+        <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
+            <tarfileset prefix="davmail-src-${release-name}" dir=".">
                 <include name="**/*"/>
                 <exclude name="build.log"/>
                 <exclude name="dist/**"/>
@@ -277,7 +280,18 @@
                        replace="">
             <fileset dir="target/site"/>
         </replaceregexp>
-
+        <replaceregexp match="&lt;a href=&quot;http://sourceforge.net/projects/davmail&quot; id=&quot;bannerRight&quot;&gt;"
+                       replace="&lt;script type=&quot;text/javascript&quot;&gt;&lt;!-- ${line.separator}google_ad_client = &quot;pub-2649801308753286&quot;; ${line.separator}google_ad_slot = &quot;9322588211&quot;; ${line.separator}google_ad_width = 468; ${line.separator}google_ad_height = 60; ${line.separator}//--&gt;&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://pagead2.googlesyndication.com/pagead/show_ads.js&quot;&gt;&lt;/script&gt;${line.separator}&lt;a href=&quot;http://sourceforge.net/projects/davmail&quot; id=&quot;bannerRight&quot;&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
+        <replaceregexp match="&lt;h5&gt;Quick Links&lt;/h5&gt;"
+                       replace="&lt;h5 style=&quot;margin-bottom: 5px&quot;&gt;Search&lt;/h5&gt;&lt;form action=&quot;http://davmail.sourceforge.net/search.html&quot; id=&quot;cse-search-box&quot;&gt;&lt;div&gt;&lt;input type=&quot;hidden&quot; name=&quot;cx&quot; value=&quot;partner-pub-2649801308753286:4hjiaq-dcw4&quot; /&gt;&lt;input type=&quot;hidden&quot; name=&quot;cof&quot; value=&quot;FORID:10&quot; /&gt;&lt;input type=&quot;hidden&quot; name=&quot;ie&quot; value=&quot;UTF-8&quot; /&gt;&lt;input type=&quot;text&quot; name=&quot;q&quot; size=&quot;15&quot;/&gt;&lt;input type=&quot;image&quot; src=&quot;images/search.png&quot; style=&quot;margin-left: 5px;vertical-align: middle&quot; /&gt;&lt;/div&gt;&lt;/form&gt;&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/cse/brand?form=cse-search-box&amp;lang=fr&quot;&gt;&lt;/script&gt;&lt;h5&gt;Quick Links&lt;/h5&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
+        <replaceregexp match="&lt;h2&gt;Search&lt;a name=&quot;Search&quot;&gt;&lt;/a&gt;&lt;/h2&gt;"
+                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;&lt;script type=&quot;text/javascript&quot;&gt;var googleSearchIframeName = &quot;cse-search-results&quot;;var googleSearchFormName = &quot;cse-search-box&quot;;var googleSearchFrameWidth = 800;var googleSearchDomain = &quot;www.google.com&quot;;var googleSearchPath = &quot;/cse&quot;;&lt;/script&gt;&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;/&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
     </target>
 
     <target name='upload-site' depends="fix-site">
@@ -303,4 +317,8 @@
         </scp>
     </target>
 
+    <target name="release">
+        <property name="release-name" value="${release}"/>
+        <antcall taskname="dist"/>
+    </target>
 </project>
