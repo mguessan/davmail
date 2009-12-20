@@ -53,7 +53,7 @@ public final class DavGateway {
     private static final ArrayList<AbstractServer> SERVER_LIST = new ArrayList<AbstractServer>();
 
     /**
-     * Start the gateway, listen on spécified smtp and pop3 ports
+     * Start the gateway, listen on specified smtp and pop3 ports
      *
      * @param args command line parameter config file path
      */

@@ -36,7 +36,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
      *
      * @return true
      */
-    @SuppressWarnings({"SameReturnValue"})
+    @SuppressWarnings({"SameReturnValue", "UnusedDeclaration"})
     public boolean quit() {
         DavGateway.stop();
         // dispose frames

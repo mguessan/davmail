@@ -141,7 +141,7 @@ public class AbstractConnection extends Thread {
 
     /**
      * Read a line from the client connection.
-     * Log message to stdout
+     * Log message to logger
      *
      * @return command line or null
      * @throws IOException when unable to read line

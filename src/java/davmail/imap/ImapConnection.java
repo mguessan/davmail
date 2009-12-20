@@ -187,7 +187,7 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient("* " + currentFolder.count() + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
                                             if (currentFolder.count() == 0) {
-                                                sendClient("* OK [UIDNEXT " + 1 + ']');
+                                                sendClient("* OK [UIDNEXT 1]");
                                             } else {
                                                 sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
                                             }

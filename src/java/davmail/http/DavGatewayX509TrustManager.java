@@ -51,11 +51,11 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
     public DavGatewayX509TrustManager() throws NoSuchAlgorithmException, KeyStoreException {
         TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         factory.init((KeyStore) null);
-        TrustManager[] trustmanagers = factory.getTrustManagers();
-        if (trustmanagers.length == 0) {
+        TrustManager[] trustManagers = factory.getTrustManagers();
+        if (trustManagers.length == 0) {
             throw new NoSuchAlgorithmException("No trust manager found");
         }
-        this.standardTrustManager = (X509TrustManager) trustmanagers[0];
+        this.standardTrustManager = (X509TrustManager) trustManagers[0];
     }
 
     public void checkServerTrusted(X509Certificate[] x509Certificates, String authType) throws CertificateException {

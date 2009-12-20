@@ -103,13 +103,13 @@ public abstract class AbstractServer extends Thread {
 
                 // SSLContext is environment for implementing JSSE...
                 // create ServerSocketFactory
-                SSLContext sslc = SSLContext.getInstance("SSLv3");
+                SSLContext sslContext = SSLContext.getInstance("SSLv3");
 
-                // initialize sslc to work with key managers
-                sslc.init(kmf.getKeyManagers(), null, null);
+                // initialize sslContext to work with key managers
+                sslContext.init(kmf.getKeyManagers(), null, null);
 
-                // create ServerSocketFactory from sslc
-                serverSocketFactory = sslc.getServerSocketFactory();
+                // create ServerSocketFactory from sslContext
+                serverSocketFactory = sslContext.getServerSocketFactory();
             } catch (IOException ex) {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
             } catch (GeneralSecurityException ex) {

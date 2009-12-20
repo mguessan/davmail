@@ -26,15 +26,16 @@ import davmail.DavGateway;
  * Extended Awt tray with OSX extensions.
  */
 public class OSXAwtGatewayTray extends AwtGatewayTray {
-    protected static final String TRAY_ACTIVE_PNG = "osxtray2.png";
-    protected static final String TRAY_PNG = "osxtray.png";
-    protected static final String TRAYINACTIVE_PNG = "osxtrayinactive.png";
+    protected static final String OSX_TRAY_ACTIVE_PNG = "osxtray2.png";
+    protected static final String OSX_TRAY_PNG = "osxtray.png";
+    protected static final String OSX_TRAY_INACTIVE_PNG = "osxtrayinactive.png";
+
     /**
      * Exit DavMail Gateway.
      *
      * @return true
      */
-    @SuppressWarnings({"SameReturnValue"})
+    @SuppressWarnings({"SameReturnValue", "UnusedDeclaration"})
     public boolean quit() {
         DavGateway.stop();
         // dispose frames
@@ -62,16 +63,16 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
 
     @Override
     protected String getTrayIconPath() {
-        return OSXAwtGatewayTray.TRAY_PNG;
+        return OSXAwtGatewayTray.OSX_TRAY_PNG;
     }
 
     @Override
     protected String getTrayIconActivePath() {
-        return OSXAwtGatewayTray.TRAY_ACTIVE_PNG;
+        return OSXAwtGatewayTray.OSX_TRAY_ACTIVE_PNG;
     }
 
     @Override
     protected String getTrayIconInactivePath() {
-        return OSXAwtGatewayTray.TRAYINACTIVE_PNG;
+        return OSXAwtGatewayTray.OSX_TRAY_INACTIVE_PNG;
     }
 }

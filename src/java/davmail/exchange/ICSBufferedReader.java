@@ -24,7 +24,7 @@ import java.io.IOException;
 
 /**
  * ICS Buffered Reader.
- * Read events by line, handle multiline elements
+ * Read events by line, handle multiple line elements
  */
 public class ICSBufferedReader extends BufferedReader {
     protected String nextLine;

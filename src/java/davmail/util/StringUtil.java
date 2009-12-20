@@ -26,7 +26,7 @@ public final class StringUtil {
     }
 
     /**
-     * Return the substring between startDelimiter and endDelimiter or null.
+     * Return the sub string between startDelimiter and endDelimiter or null.
      *
      * @param value          String value
      * @param startDelimiter start delimiter
@@ -49,7 +49,7 @@ public final class StringUtil {
     }
 
     /**
-     * Return the substring between startDelimiter and endDelimiter or null,
+     * Return the sub string between startDelimiter and endDelimiter or null,
      * look for last token in string.
      *
      * @param value          String value
@@ -73,7 +73,7 @@ public final class StringUtil {
     }
 
     /**
-     * Return the substring between startDelimiter and endDelimiter with newToken.
+     * Return the sub string between startDelimiter and endDelimiter with newToken.
      *
      * @param value          String value
      * @param startDelimiter start delimiter

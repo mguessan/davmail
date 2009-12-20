@@ -102,6 +102,7 @@ public class OSXAdapter implements InvocationHandler {
      * @throws InstantiationException    on error
      * @throws IllegalAccessException    on error
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public static void setFileHandler(Object target, Method fileHandler) throws InvocationTargetException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         setHandler(new OSXAdapter("handleOpenFile", target, fileHandler) {
             // Override OSXAdapter.callTarget to send information on the

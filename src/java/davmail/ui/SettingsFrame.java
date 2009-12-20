@@ -256,21 +256,21 @@ public class SettingsFrame extends JFrame {
         return keyStorePanel;
     }
 
-    protected JPanel getSmartcardPanel() {
-        JPanel smartcardPanel = new JPanel(new GridLayout(2, 2));
-        smartcardPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
+    protected JPanel getSmartCardPanel() {
+        JPanel smartCardPanel = new JPanel(new GridLayout(2, 2));
+        smartCardPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
 
         pkcs11LibraryField = new JTextField(Settings.getProperty("davmail.ssl.pkcs11Library"), 17);
         pkcs11ConfigField = new JTextArea(2, 17);
         pkcs11ConfigField.setBorder(pkcs11LibraryField.getBorder());
         pkcs11ConfigField.setFont(pkcs11LibraryField.getFont());
 
-        addSettingComponent(smartcardPanel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
+        addSettingComponent(smartCardPanel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
                 BundleMessage.format("UI_PKCS11_LIBRARY_HELP"));
-        addSettingComponent(smartcardPanel, BundleMessage.format("UI_PKCS11_CONFIG"), pkcs11ConfigField,
+        addSettingComponent(smartCardPanel, BundleMessage.format("UI_PKCS11_CONFIG"), pkcs11ConfigField,
                 BundleMessage.format("UI_PKCS11_CONFIG_HELP"));
 
-        return smartcardPanel;
+        return smartCardPanel;
     }
 
     protected JPanel getNetworkSettingsPanel() {
@@ -422,7 +422,7 @@ public class SettingsFrame extends JFrame {
         encryptionPanel.setLayout(new BoxLayout(encryptionPanel, BoxLayout.Y_AXIS));
         encryptionPanel.add(getKeystorePanel());
         // empty panel
-        encryptionPanel.add(getSmartcardPanel());
+        encryptionPanel.add(getSmartCardPanel());
         tabbedPane.add(BundleMessage.format("UI_TAB_ENCRYPTION"), encryptionPanel);
 
         advancedPanel.add(getNetworkSettingsPanel());

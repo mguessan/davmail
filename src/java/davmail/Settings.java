@@ -94,7 +94,7 @@ public final class Settings {
                 try {
                     fileInputStream.close();
                 } catch (IOException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOGING_CONFIG_FILE"), e);
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
                 }
             }
         }

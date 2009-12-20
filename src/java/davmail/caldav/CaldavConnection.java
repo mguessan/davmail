@@ -887,7 +887,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendUnsupported(CaldavRequest request) throws IOException {
-        BundleMessage message = new BundleMessage("LOG_UNSUPORTED_REQUEST", request);
+        BundleMessage message = new BundleMessage("LOG_UNSUPPORTED_REQUEST", request);
         DavGatewayTray.error(message);
         sendErr(HttpStatus.SC_BAD_REQUEST, message.format());
     }

@@ -106,7 +106,7 @@ public final class ExchangeSessionFactory {
                 session = new ExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 ExchangeSession.LOGGER.debug("Created new session: " + session);
             }
-            // successfull login, put session in cache
+            // successful login, put session in cache
             synchronized (LOCK) {
                 POOL_MAP.put(poolKey, session);
             }
@@ -168,7 +168,7 @@ public final class ExchangeSessionFactory {
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
         HttpMethod testMethod = new GetMethod(url);
         try {
-            // get webmail root url (will not follow redirects)
+            // get webMail root url (will not follow redirects)
             testMethod.setFollowRedirects(false);
             testMethod.setDoAuthentication(false);
             int status = httpClient.executeMethod(testMethod);

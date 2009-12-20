@@ -92,8 +92,8 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
                         }
                     }
                 }));
-        ManagerFactoryParameters ksParams = new KeyStoreBuilderParameters(scBuilder);
-        keyManagerFactory.init(ksParams);
+        ManagerFactoryParameters keyStoreBuilderParameters = new KeyStoreBuilderParameters(scBuilder);
+        keyManagerFactory.init(keyStoreBuilderParameters);
 
         SSLContext context = SSLContext.getInstance("SSL");
         context.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{new DavGatewayX509TrustManager()}, null);
