@@ -1471,21 +1471,6 @@ public class ExchangeSession {
         }
 
         /**
-         * Return encoded message name.
-         *
-         * @return encoded message name
-         * @throws IOException on error
-         */
-        public String getEncodedMessageName() throws IOException {
-            int index = messageUrl.lastIndexOf('/');
-            if (index < 0) {
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_URL", messageUrl);
-            }
-
-            return URIUtil.encodePath(messageUrl.substring(index + 1));
-        }
-
-        /**
          * Return message flags in IMAP format.
          *
          * @return IMAP flags
@@ -1916,10 +1901,6 @@ public class ExchangeSession {
                         } else if ("ATTACH;VALUES=URI".equals(key)) {
                             // This is a marker that this event has an alarm with sound
                             sound = true;
-                            // Set the default sound to whatever this event contains
-                            // (under assumption that the user has the same sound set
-                            //  for all events)
-                            defaultSound = value;
                         } else if (key.startsWith("ORGANIZER")) {
                             if (value.startsWith("MAILTO:")) {
                                 organizer = value.substring(7);
@@ -2044,18 +2025,15 @@ public class ExchangeSession {
 
                         }
                     } else if (line.startsWith("ACTION:")) {
-                        if (fromServer && "DISPLAY".equals(action)) {
-                            // Use the default iCal alarm action instead
-                            // of the alarm Action exchange (and blackberry) understand.
-                            // This is a bit of a hack because we don't know what type
-                            // of alarm an iCal user really wants - but we know what the
-                            // default is, and can setup the default action type
-
+                        if (fromServer && "DISPLAY".equals(action)
+                                // convert DISPLAY to AUDIO only if user defined an alarm sound 
+                                && Settings.getProperty("davmail.caldavAlarmSound")!= null) {
+                            // Convert alarm to audio for iCal
                             result.writeLine("ACTION:AUDIO");
 
                             if (!sound) {
-                                // Add default sound into the audio alarm
-                                result.writeLine("ATTACH;VALUE=URI:" + defaultSound);
+                                // Add defined sound into the audio alarm
+                                result.writeLine("ATTACH;VALUE=URI:" + Settings.getProperty("davmail.caldavAlarmSound"));
                             }
 
                             continue;
@@ -2608,7 +2586,6 @@ public class ExchangeSession {
     }
 
     private static int dumpIndex;
-    private String defaultSound = "Basso";
 
     /**
      * Replace iCal4 (Snow Leopard) principal paths with mailto expression
