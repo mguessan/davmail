@@ -2027,7 +2027,7 @@ public class ExchangeSession {
                     } else if (line.startsWith("ACTION:")) {
                         if (fromServer && "DISPLAY".equals(action)
                                 // convert DISPLAY to AUDIO only if user defined an alarm sound 
-                                && Settings.getProperty("davmail.caldavAlarmSound")!= null) {
+                                && Settings.getProperty("davmail.caldavAlarmSound") != null) {
                             // Convert alarm to audio for iCal
                             result.writeLine("ACTION:AUDIO");
 
@@ -2479,7 +2479,7 @@ public class ExchangeSession {
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatSearchDate(cal.getTime()) + "'\n";
         }
 
-        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\"" +
+        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
                 // VTODO events have a null instancetype
@@ -2505,7 +2505,13 @@ public class ExchangeSession {
         List<Event> events = new ArrayList<Event>();
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(folderPath), searchQuery);
         for (MultiStatusResponse response : responses) {
-            events.add(buildEvent(response));
+            String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype", Namespace.getNamespace("urn:schemas:calendar:"));
+            Event event = buildEvent(response);
+            if (instancetype == null && event.getICS() == null) {
+                LOGGER.warn("Invalid event found at " + response.getHref());
+            } else {
+                events.add(event);
+            }
         }
         return events;
     }
