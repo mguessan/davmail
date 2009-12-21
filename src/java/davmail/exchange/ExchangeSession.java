@@ -2903,10 +2903,12 @@ public class ExchangeSession {
             }
             if (alias != null) {
                 buffer.append(alias);
-                buffer.append('@');
-                int dotIndex = hostName.indexOf('.');
-                if (dotIndex >= 0) {
-                    buffer.append(hostName.substring(dotIndex + 1));
+                if (alias.indexOf('@') < 0) {
+                    buffer.append('@');
+                    int dotIndex = hostName.indexOf('.');
+                    if (dotIndex >= 0) {
+                        buffer.append(hostName.substring(dotIndex + 1));
+                    }
                 }
             }
             email = buffer.toString();
