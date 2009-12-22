@@ -786,7 +786,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             // send user outbox
             if (request.hasProperty("schedule-outbox-URL")) {
-                response.appendHrefProperty("C:schedule-outbox-URL", "/users/"+session.getEmail()+"/outbox" );
+                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + session.getEmail() + "/outbox");
             }
         }
 
@@ -996,16 +996,18 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
-        String version = DavGateway.getCurrentVersion();
-        sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
-        sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events");
-        SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
-        // force GMT timezone
-        formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-        String now = formatter.format(new Date());
-        sendClient("Date: " + now);
-        sendClient("Expires: " + now);
-        sendClient("Cache-Control: private, max-age=0");
+        if (status != HttpStatus.SC_UNAUTHORIZED) {
+            String version = DavGateway.getCurrentVersion();
+            sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
+            sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events");
+            SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+            // force GMT timezone
+            formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+            String now = formatter.format(new Date());
+            sendClient("Date: " + now);
+            sendClient("Expires: " + now);
+            sendClient("Cache-Control: private, max-age=0");
+        }
         if (headers != null) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 sendClient(header.getKey() + ": " + header.getValue());
@@ -1383,7 +1385,7 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder == null || subFolder.length() == 0) {
                 return getExchangeFolderPath();
             } else {
-                return getExchangeFolderPath()+'/'+subFolder;
+                return getExchangeFolderPath() + '/' + subFolder;
             }
         }
     }
