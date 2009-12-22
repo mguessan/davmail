@@ -568,10 +568,15 @@ public class LdapConnection extends AbstractConnection {
             nestedFilter = new CompoundFilter(ldapFilterType);
 
             while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
+                if (reqBer.peekByte() == LDAP_FILTER_PRESENT) {
+                    String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
+                    nestedFilter.add(new SimpleFilter(attributeName));
+                } else {
                 int[] seqSize = new int[1];
                 int ldapFilterOperator = reqBer.parseSeq(seqSize);
                 int subEnd = reqBer.getParsePosition() + seqSize[0];
                 nestedFilter.add(parseNestedFilter(reqBer, ldapFilterOperator, subEnd));
+                }
             }
         } else {
             // simple filter
@@ -1082,7 +1087,7 @@ public class LdapConnection extends AbstractConnection {
 
             if (galFindAttributeName != null) {
                 // quick fix for cn=* filter
-                Map<String, Map<String, String>> galPersons = session.galFind(galFindAttributeName, "*".equals(value)?"A":value);
+                Map<String, Map<String, String>> galPersons = session.galFind(galFindAttributeName, "*".equals(value) ? "A" : value);
 
                 if (operator == LDAP_FILTER_EQUALITY) {
                     // Make sure only exact matches are returned
