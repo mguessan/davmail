@@ -780,13 +780,13 @@ public class CaldavConnection extends AbstractConnection {
                 response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + actualPrincipal + "/outbox");
             }
         } else {
-            // public calendar, send calendar href as inbox url
+            // public calendar, send root href as inbox url (always empty)
             if (request.hasProperty("schedule-inbox-URL")) {
-                response.appendHrefProperty("C:schedule-inbox-URL", '/' + prefix + '/' + actualPrincipal);
+                response.appendHrefProperty("C:schedule-inbox-URL", "/");
             }
-
+            // send user outbox
             if (request.hasProperty("schedule-outbox-URL")) {
-                response.appendHrefProperty("C:schedule-outbox-URL", '/' + prefix + '/' + actualPrincipal);
+                response.appendHrefProperty("C:schedule-outbox-URL", "/users/"+session.getEmail()+"/outbox" );
             }
         }
 
