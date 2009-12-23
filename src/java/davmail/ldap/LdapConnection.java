@@ -1045,7 +1045,7 @@ public class LdapConnection extends AbstractConnection {
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
                     buffer.append('%');
                 }
-                buffer.append(value);
+                buffer.append(value.replaceAll("'", "''"));
                 // endsWith not supported by exchange, always append %
                 buffer.append('%');
                 buffer.append('\'');
