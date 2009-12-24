@@ -55,7 +55,6 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
-import javax.mail.internet.MimeUtility;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -2183,6 +2182,7 @@ public class ExchangeSession {
 
         class Participants {
             String attendees;
+            String optionalAttendees;
             String organizer;
         }
 
@@ -2196,6 +2196,7 @@ public class ExchangeSession {
          */
         protected Participants getParticipants(boolean isNotification) throws IOException {
             HashSet<String> attendees = new HashSet<String>();
+            HashSet<String> optionalAttendees = new HashSet<String>();
             String organizer = null;
             BufferedReader reader = null;
             try {
@@ -2224,7 +2225,11 @@ public class ExchangeSession {
                                     && (!isNotification
                                     || line.indexOf("RSVP=TRUE") >= 0
                                     || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0)) {
-                                attendees.add(value);
+                                if (line.indexOf("ROLE=OPT-PARTICIPANT") >= 0) {
+                                    optionalAttendees.add(value);
+                                } else {
+                                    attendees.add(value);
+                                }
                             }
                         }
                     }
@@ -2235,16 +2240,8 @@ public class ExchangeSession {
                 }
             }
             Participants participants = new Participants();
-            if (!attendees.isEmpty()) {
-                StringBuilder result = new StringBuilder();
-                for (String recipient : attendees) {
-                    if (result.length() > 0) {
-                        result.append(", ");
-                    }
-                    result.append(recipient);
-                }
-                participants.attendees = result.toString();
-            }
+            participants.attendees = StringUtil.join(attendees, ", ");
+            participants.optionalAttendees = StringUtil.join(optionalAttendees, ", ");
             participants.organizer = organizer;
             return participants;
         }
@@ -2261,7 +2258,7 @@ public class ExchangeSession {
         protected EventResult createOrUpdate() throws IOException {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "ASCII");
+            MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
             int status = 0;
             PutMethod putmethod = new PutMethod(URIUtil.encodePath(href));
             putmethod.setRequestHeader("Translate", "f");
@@ -2275,60 +2272,51 @@ public class ExchangeSession {
             putmethod.setRequestHeader("Content-Type", "message/rfc822");
             String method = getICSMethod(icsBody);
 
-            writer.write("Content-Transfer-Encoding: 7bit\r\n" +
-                    "Content-class: ");
-            writer.write(contentClass);
-            writer.write("\r\n");
+            writer.writeHeader("Content-Transfer-Encoding", "7bit");
+            writer.writeHeader("Content-class", contentClass);
             // append date
-            SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss Z", Locale.ENGLISH);
-            writer.write("Date: ");
-            writer.write(formatter.format(new Date()));
-            writer.write("\r\n");
+            writer.writeHeader("Date", new Date());
+
+            // Make sure invites have a proper subject line
+            writer.writeHeader("Subject", getICSSummary(icsBody));
+
             if ("urn:content-classes:calendarmessage".equals(contentClass)) {
                 // need to parse attendees and organizer to build recipients
                 Participants participants = getParticipants(true);
-                String recipients;
                 if (email.equalsIgnoreCase(participants.organizer)) {
                     // current user is organizer => notify all
-                    recipients = participants.attendees;
+                    writer.writeHeader("To", participants.attendees);
+                    writer.writeHeader("Cc", participants.optionalAttendees);
+                    // do not send notification if no recipients found
+                   if (participants.attendees == null && participants.optionalAttendees == null) {
+                       status = HttpStatus.SC_NO_CONTENT;
+                   }
                 } else {
                     // notify only organizer
-                    recipients = participants.organizer;
+                    writer.writeHeader("To", participants.organizer);
+                    // do not send notification if no recipients found
+                   if (participants.organizer == null) {
+                       status = HttpStatus.SC_NO_CONTENT;
+                   }
                 }
 
-                // Make sure invites have a proper subject line
-                writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
-
-                // do not send notification if no recipients found
-                if (recipients != null && recipients.length() > 0) {
-                    writer.write("To: ");
-                    writer.write(recipients);
-                    writer.write("\r\n");
-                } else {
-                    status = HttpStatus.SC_NO_CONTENT;
-                }
             } else {
-                // Make sure invites have a proper subject line
-                writer.write("Subject: " + MimeUtility.encodeText(getICSSummary(icsBody), "UTF-8", null) + "\r\n");
-
                 // need to parse attendees and organizer to build recipients
                 Participants participants = getParticipants(false);
                 // storing appointment, full recipients header
-                writer.write("To: ");
                 if (participants.attendees != null) {
-                    writer.write(participants.attendees);
+                    writer.writeHeader("To", participants.attendees);
                 } else {
-                    writer.write(email);
+                    // use current user as attendee
+                    writer.writeHeader("To", email);
                 }
+                writer.writeHeader("Cc", participants.optionalAttendees);
 
-                writer.write("\r\n");
-                writer.write("From: ");
                 if (participants.organizer != null) {
-                    writer.write(participants.organizer);
+                    writer.writeHeader("From", participants.organizer);
                 } else {
-                    writer.write(email);
+                    writer.writeHeader("From", email);
                 }
-                writer.write("\r\n");
                 // if not organizer, set REPLYTIME to force Outlook in attendee mode
                 if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
                     if (icsBody.indexOf("METHOD:") < 0) {
@@ -2340,50 +2328,39 @@ public class ExchangeSession {
                     }
                 }
             }
-            writer.write("MIME-Version: 1.0\r\n" +
-                    "Content-Type: multipart/alternative;\r\n" +
-                    "\tboundary=\"----=_NextPart_");
-            writer.write(boundary);
-            writer.write("\"\r\n" +
-                    "\r\n" +
-                    "This is a multi-part message in MIME format.\r\n" +
-                    "\r\n" +
-                    "------=_NextPart_");
-            writer.write(boundary);
+            writer.writeHeader("MIME-Version", "1.0");
+            writer.writeHeader("Content-Type", "multipart/alternative;\r\n"+
+            "\tboundary=\"----=_NextPart_"+boundary+"\"");
+            writer.writeLn();
+            writer.writeLn("This is a multi-part message in MIME format.");
+            writer.writeLn();
+            writer.writeLn("------=_NextPart_"+boundary);
 
             // Write a part of the message that contains the
             // ICS description so that invites contain the description text
             String description = getICSDescription(icsBody).replaceAll("\\\\[Nn]", "\r\n");
 
             if (description.length() > 0) {
-                writer.write("\r\n" +
-                        "Content-Type: text/plain;\r\n" +
-                        "\tcharset=\"utf-8\"\r\n" +
-                        "content-transfer-encoding: 8bit\r\n" +
-                        "\r\n");
+                writer.writeHeader("Content-Type", "text/plain;\r\n" +
+                        "\tcharset=\"utf-8\"");
+                writer.writeHeader("content-transfer-encoding", "8bit");
+                writer.writeLn();
                 writer.flush();
                 baos.write(description.getBytes("UTF-8"));
-                writer.write("\r\n" +
-                        "------=_NextPart_" +
-                        boundary);
-
+                writer.writeLn();
+                writer.writeLn("------=_NextPart_"+boundary);
             }
-
-            writer.write("\r\n" +
-                    "Content-class: ");
-            writer.write(contentClass);
-            writer.write("\r\n" +
-                    "Content-Type: text/calendar;\r\n" +
-                    "\tmethod=");
-            writer.write(method);
-            writer.write(";\r\n" +
-                    "\tcharset=\"utf-8\"\r\n" +
-                    "Content-Transfer-Encoding: 8bit\r\n\r\n");
+            writer.writeHeader("Content-class", contentClass);
+            writer.writeHeader("Content-Type", "text/calendar;\r\n"+
+                    "\tmethod="+method+";\r\n"+
+                    "\tcharset=\"utf-8\""
+            );
+            writer.writeHeader("Content-Transfer-Encoding", "8bit");
+            writer.writeLn();
             writer.flush();
             baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
-            writer.write("\r\n------=_NextPart_");
-            writer.write(boundary);
-            writer.write("--\r\n");
+            writer.writeLn();
+            writer.writeLn("------=_NextPart_"+boundary+"--");
             writer.close();
             putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
             try {

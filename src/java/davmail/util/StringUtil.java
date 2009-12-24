@@ -18,6 +18,8 @@
  */
 package davmail.util;
 
+import java.util.Set;
+
 /**
  * Various string handling methods
  */
@@ -94,5 +96,27 @@ public final class StringUtil {
             }
         }
         return result;
+    }
+
+    /**
+     * Join values with given separator.
+     *
+     * @param values value set
+     * @param separator separator
+     * @return joined values
+     */
+    public static String join(Set<String> values, String separator) {
+        if (values != null && !values.isEmpty()) {
+            StringBuilder result = new StringBuilder();
+            for (String value : values) {
+                if (result.length() > 0) {
+                    result.append(separator);
+                }
+                result.append(value);
+            }
+            return result.toString();
+        } else {
+            return null;
+        }
     }
 }
