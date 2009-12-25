@@ -65,8 +65,9 @@
                     under Tools/Options/Advanced:
                 </p>
                 <source>
-calendar.debug.log=true
-calendar.debug.log.verbose=true</source>
+                    calendar.debug.log=true
+                    calendar.debug.log.verbose=true
+                </source>
 
                 <p>
                     <strong>Invalid notifications</strong>
@@ -85,49 +86,8 @@ calendar.debug.log.verbose=true</source>
                 <p>
                     <strong>How to build DavMail ?</strong>
                 </p>
-                <p>Building DavMail is quite simple:</p>
-                <ul>
-                    <li>Make sure you have Java 6 installed and set as current version by checking
-                        JAVA_HOME:
-                        <br/>
-                        <ul>
-                            <li>Unix/OSX:
-                                <source>echo $JAVA_HOME</source>
-                            </li>
-                            <li>Windows:
-                                <source>echo %JAVA_HOME%</source>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>Download and unzip ant from<a href="http://ant.apache.org/">ant.apache.org</a>,
-                        add ant/bin full path to the PATH environment variable
-                    </li>
-                    <li>Get DavMail source package from sourceforge and uncompress it:
-                        <source>tar xvzf davmail-src-*.tgz</source>
-                        <br/>
-                        or checkout trunk:
-                        <source>svn co http://davmail.svn.sourceforge.net/svnroot/davmail/trunk</source>
-                        <br/>
-                        or get and uncompress tarball from
-                        <a href="http://davmail.svn.sourceforge.net/viewvc/davmail/trunk">
-                            http://davmail.svn.sourceforge.net/viewvc/davmail/trunk
-                        </a>
-                    </li>
-                    <li>Additional step on Windows: Download and install NSIS from
-                        <a href="http://nsis.sourceforge.net">http://nsis.sourceforge.net</a>.
-                        Then get KillProcess plugin from
-                        <a href="http://www.esanu.name/software/index.php/nsis-kill-process/">
-                            http://www.esanu.name/software/index.php/nsis-kill-process/
-                        </a>
-                        or the nsis directory in DavMail source. Copy the processwork.dll
-                        library to NSIS plugin directory.
-                    </li>
-                    <li>Go into davmail directory root directory (which contains the build.xml file) and
-                        type:
-                        <source>ant</source>
-                    </li>
-                </ul>
-                <p>Packages are then available under dist
+                <p>See
+                    <a href="build.html">Building DavMail from source</a>
                 </p>
             </subsection>
         </section>

@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Download</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Download latest DavMail Gateway release">
+            <p>The right DavMail package choice depends on your operating system and
+                deployment (server or workstation).
+            </p>
+            <p>Please consider making a donation to help this project at
+                <a href="https://sourceforge.net/donate/index.php?group_id=184600"
+                   title="Donate">
+                    SourceForge Donation page
+                </a>
+            </p>
+
+            <subsection name="Workstation (personal) mode">
+                <ul>
+                    <li>
+                        <strong>Windows:</strong>
+                        Download installation package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup.exe
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="windowssetup.html">DavMail Setup on windows</a>
+                    </li>
+                    <li>
+                        <strong>Mac OS X:</strong>
+                        Download
+                        <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="macosxsetup.html">DavMail Setup on Mac OS X</a>
+                    </li>
+                    <li>
+                        <strong>Debian Linux (Ubuntu):</strong>
+                        Download debian package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail_<em>version</em>-1_all.deb
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="linuxsetup.html">DavMail Setup on linux</a>
+                    </li>
+                    <li>
+                        <strong>Linux (other):</strong>
+                        Download linux package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-linux-x86-<em>version</em>.tgz
+                        </a>
+                        , or 64 bits package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-linux-x86_64-
+                            <em>version</em>
+                            .tgz
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="linuxsetup.html">DavMail Setup on linux</a>
+                        <br/>
+                        Note: the only difference between 32 and 64 packages is the included SWT library.
+                    </li>
+                    <li>
+                        <strong>Other:</strong>
+                        Download platform independent package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="linuxsetup.html">DavMail Setup on linux</a>
+                        <br/>
+                    </li>
+                </ul>
+            </subsection>
+
+            <subsection name="Server (shared) mode">
+                <ul>
+                    <li>
+                        <strong>Standalone:</strong>
+                        Download platform independent package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="serversetup.html">DavMail Setup as a standalone server</a>
+                        <br/>
+                    </li>
+                    <li>
+                        <strong>Webapp:</strong>
+                        If you intend to run DavMail inside an application server, download webapp package
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.war
+                        </a>
+                        <br/>
+                        and follow instructions at
+                        <a href="serversetup.html">DavMail Setup as a JEE Web Application</a>
+                        (last section)
+                        <br/>
+                    </li>
+                </ul>
+            </subsection>
+
+            <subsection name="Build from source">
+                <p>
+                    Download source tarball
+                    <a href="http://sourceforge.net/projects/davmail/files/">davmail-src-<em>version</em>.tgz
+                    </a>
+                    <br/>
+                    and follow instructions at
+                    <a href="build.html">Building DavMail from source</a>
+                    <br/>
+                </p>
+            </subsection>
+        </section>
+
+    </body>
+</document>

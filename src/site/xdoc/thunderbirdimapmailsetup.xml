@@ -76,7 +76,7 @@
                 <p>Server name is localhost, edit port according to DavMail settings.
                     The connection must use authentication with Active Directory account and encryption is not needed.
                 </p>
-                <p>Proceeed to
+                <p>Proceed to
                     <a href="thunderbirdcalendarsetup.html">Thunderbird calendar setup</a>
                 </p>
             </subsection>

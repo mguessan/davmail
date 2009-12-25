@@ -7,7 +7,7 @@
     <bannerLeft>
         <name>DavMail Gateway</name>
         <src>images/davmailLogo.png</src>
-        <href>http://sourceforge.net/projects/davmail</href>
+        <href>http://davmail.sourceforge.net</href>
     </bannerLeft>
     <bannerRight>
         <name>SourceForge</name>
@@ -28,10 +28,11 @@
         </head>
         <menu name="Quick Links">
             <item name="Home" href="/index.html"/>
-            <item name="Download" href="http://sourceforge.net/projects/davmail/files/"/>
-            <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
+            <item name="Download" href="/download.html"/>
             <item name="Roadmap" href="/roadmap.html"/>
+            <item name="Build" href="/build.html"/>
             <item name="FAQ" href="/faq.html"/>
+            <item name="SourceForge site" href="http://sourceforge.net/projects/davmail"/>
         </menu>
 
         <menu name="DavMail Setup">

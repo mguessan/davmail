@@ -20,8 +20,9 @@ body {
 	padding:1px;
 }
 .section h3 {
-	background:#ECECEC;
-	font-size:15px;
+	margin-top: 0;
+    margin-bottom: 0;
+	font-size:16px;
 	font-weight:bold;
 }
 .section p {
@@ -31,10 +32,10 @@ body {
 
 
 .section table {
-	margin-left:10px;	
-	border-collapse: collapse;	
+	margin-left:10px;
+	border-collapse: collapse;
 }
-.small { 
+.small {
 	font-size:9px;
 }
 .source {
@@ -42,7 +43,7 @@ body {
 }
 .floatLeft {
 	float:left;
-} 
+}
 .notype {
 	list-style-type:none;
 	margin-left:10px;
@@ -57,9 +58,9 @@ a.download {
   color: white;
   font-weight: bold;
   padding: 8px;
-  -moz-border-radius: 8px; 
+  -moz-border-radius: 8px;
   -webkit-border-radius: 10px;
-  margin: 5px; 
+  margin: 5px;
 }
 a.donate {
  display: block;
@@ -67,9 +68,9 @@ a.donate {
   color: white;
   font-weight: bold;
   padding: 8px;
-  -moz-border-radius: 8px;  
+  -moz-border-radius: 8px;
   -webkit-border-radius: 10px;
-  margin: 5px; 
+  margin: 5px;
 }
 .about p {
   padding: 0;
