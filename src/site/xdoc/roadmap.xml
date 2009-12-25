@@ -21,6 +21,7 @@
                 </p>
                 <ul>
                     <li>Implement davmail.forceAudioAlarm with value</li>
+                    <li>Fix JavaMail client IMAP support</li>
                 </ul>
             </subsection>
             <subsection name="3.7.0">
@@ -34,6 +35,9 @@
                     <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
                         http://msexchangeteam.com/archive/2004/03/31/105275.aspx
                     </li>
+                    <li>Filter private events on shared calendars (Exchange bug)
+                    </li>
+                    <li>Implement MKCALENDAR</li>
                 </ul>
             </subsection>
             <subsection name="4.0">
