@@ -289,9 +289,14 @@
             <fileset dir="target/site"/>
         </replaceregexp>
         <replaceregexp match="&lt;h2&gt;Search&lt;a name=&quot;Search&quot;&gt;&lt;/a&gt;&lt;/h2&gt;"
-                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;&lt;script type=&quot;text/javascript&quot;&gt;var googleSearchIframeName = &quot;cse-search-results&quot;;var googleSearchFormName = &quot;cse-search-box&quot;;var googleSearchFrameWidth = 800;var googleSearchDomain = &quot;www.google.com&quot;;var googleSearchPath = &quot;/cse&quot;;&lt;/script&gt;&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;/&gt;">
+                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;${line.separator}var googleSearchIframeName = &quot;cse-search-results&quot;;${line.separator}var googleSearchFormName = &quot;cse-search-box&quot;;${line.separator}var googleSearchFrameWidth = 800;${line.separator}var googleSearchDomain = &quot;www.google.com&quot;;${line.separator}var googleSearchPath = &quot;/cse&quot;;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;/&gt;">
             <fileset dir="target/site"/>
         </replaceregexp>
+        <replaceregexp match="&lt;/div&gt;\r\n    &lt;div id=&quot;bodyColumn&quot;&gt;"
+                       replace="&lt;hr/&gt;&lt;div style=&quot;padding-left: 5px;padding-bottom: 5px&quot;&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;&lt;!--${line.separator}google_ad_client = &quot;pub-2649801308753286&quot;;${line.separator}/* 160x90, link block */${line.separator}google_ad_slot = &quot;3062827454&quot;;${line.separator}google_ad_width = 160;${line.separator}google_ad_height = 90;${line.separator}//--&gt;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://pagead2.googlesyndication.com/pagead/show_ads.js&quot;&gt;${line.separator}&lt;/script&gt;&lt;/div&gt;&lt;/div&gt;${line.separator}    &lt;div id=&quot;bodyColumn&quot;&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
+
     </target>
 
     <target name='upload-site' depends="fix-site">
