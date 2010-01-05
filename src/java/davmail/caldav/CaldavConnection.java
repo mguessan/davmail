@@ -780,8 +780,8 @@ public class CaldavConnection extends AbstractConnection {
                 response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + actualPrincipal + "/outbox");
             }
         } else {
-            // public calendar, send root href as inbox url (always empty)
-            if (request.hasProperty("schedule-inbox-URL")) {
+            // public calendar, send root href as inbox url (always empty) for Lightning
+            if (request.isLightning() && request.hasProperty("schedule-inbox-URL")) {
                 response.appendHrefProperty("C:schedule-inbox-URL", "/");
             }
             // send user outbox
@@ -1240,9 +1240,17 @@ public class CaldavConnection extends AbstractConnection {
             return getPathElement(getPathLength() - 1);
         }
 
-        protected boolean isIcal() {
+        protected boolean isIcal3() {
+            return isUserAgent("DAVKit/3");
+        }
+
+        protected boolean isLightning() {
+            return isUserAgent("Lightning/");
+        }
+
+        protected boolean isUserAgent(String key) {
             String userAgent = headers.get("user-agent");
-            return userAgent != null && userAgent.indexOf("DAVKit/3") >= 0;
+            return userAgent != null && userAgent.indexOf(key) >= 0;
         }
 
         public boolean isFreeBusy() {
@@ -1304,7 +1312,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
-                            if (isIcal()) {
+                            if (isIcal3()) {
                                 hrefs.add(streamReader.getText());
                             } else {
                                 hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getText())));
