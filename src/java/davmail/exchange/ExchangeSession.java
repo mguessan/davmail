@@ -1156,6 +1156,8 @@ public class ExchangeSession {
             currentFolder.noInferiors = newFolder.noInferiors;
             currentFolder.unreadCount = newFolder.unreadCount;
             currentFolder.contenttag = newFolder.contenttag;
+            // keep previous messages for Thunderbird workaround
+            currentFolder.previousMessages = newFolder.messages;
             currentFolder.loadMessages();
             return true;
         } else {
@@ -1315,7 +1317,11 @@ public class ExchangeSession {
          * Folder message list, empty before loadMessages call.
          */
         public ExchangeSession.MessageList messages;
-
+        /**
+         * Previous folder message list before refresh.
+         */
+        public ExchangeSession.MessageList previousMessages;
+        
         /**
          * Get IMAP folder flags.
          *
@@ -1356,16 +1362,6 @@ public class ExchangeSession {
          */
         public long getUidNext() {
             return messages.get(messages.size() - 1).getImapUid() + 1;
-        }
-
-        /**
-         * Get message uid at index.
-         *
-         * @param index message index
-         * @return message uid
-         */
-        public long getImapUid(int index) {
-            return messages.get(index).getImapUid();
         }
 
         /**
@@ -2288,16 +2284,16 @@ public class ExchangeSession {
                     writer.writeHeader("To", participants.attendees);
                     writer.writeHeader("Cc", participants.optionalAttendees);
                     // do not send notification if no recipients found
-                   if (participants.attendees == null && participants.optionalAttendees == null) {
-                       status = HttpStatus.SC_NO_CONTENT;
-                   }
+                    if (participants.attendees == null && participants.optionalAttendees == null) {
+                        status = HttpStatus.SC_NO_CONTENT;
+                    }
                 } else {
                     // notify only organizer
                     writer.writeHeader("To", participants.organizer);
                     // do not send notification if no recipients found
-                   if (participants.organizer == null) {
-                       status = HttpStatus.SC_NO_CONTENT;
-                   }
+                    if (participants.organizer == null) {
+                        status = HttpStatus.SC_NO_CONTENT;
+                    }
                 }
 
             } else {
@@ -2329,12 +2325,12 @@ public class ExchangeSession {
                 }
             }
             writer.writeHeader("MIME-Version", "1.0");
-            writer.writeHeader("Content-Type", "multipart/alternative;\r\n"+
-            "\tboundary=\"----=_NextPart_"+boundary+"\"");
+            writer.writeHeader("Content-Type", "multipart/alternative;\r\n" +
+                    "\tboundary=\"----=_NextPart_" + boundary + '\"');
             writer.writeLn();
             writer.writeLn("This is a multi-part message in MIME format.");
             writer.writeLn();
-            writer.writeLn("------=_NextPart_"+boundary);
+            writer.writeLn("------=_NextPart_" + boundary);
 
             // Write a part of the message that contains the
             // ICS description so that invites contain the description text
@@ -2348,11 +2344,11 @@ public class ExchangeSession {
                 writer.flush();
                 baos.write(description.getBytes("UTF-8"));
                 writer.writeLn();
-                writer.writeLn("------=_NextPart_"+boundary);
+                writer.writeLn("------=_NextPart_" + boundary);
             }
             writer.writeHeader("Content-class", contentClass);
-            writer.writeHeader("Content-Type", "text/calendar;\r\n"+
-                    "\tmethod="+method+";\r\n"+
+            writer.writeHeader("Content-Type", "text/calendar;\r\n" +
+                    "\tmethod=" + method + ";\r\n" +
                     "\tcharset=\"utf-8\""
             );
             writer.writeHeader("Content-Transfer-Encoding", "8bit");
@@ -2360,7 +2356,7 @@ public class ExchangeSession {
             writer.flush();
             baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
             writer.writeLn();
-            writer.writeLn("------=_NextPart_"+boundary+"--");
+            writer.writeLn("------=_NextPart_" + boundary + "--");
             writer.close();
             putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "message/rfc822"));
             try {
