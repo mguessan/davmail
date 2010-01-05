@@ -289,7 +289,7 @@
             <fileset dir="target/site"/>
         </replaceregexp>
         <replaceregexp match="&lt;h2&gt;Search&lt;a name=&quot;Search&quot;&gt;&lt;/a&gt;&lt;/h2&gt;"
-                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;${line.separator}var googleSearchIframeName = &quot;cse-search-results&quot;;${line.separator}var googleSearchFormName = &quot;cse-search-box&quot;;${line.separator}var googleSearchFrameWidth = 800;${line.separator}var googleSearchDomain = &quot;www.google.com&quot;;${line.separator}var googleSearchPath = &quot;/cse&quot;;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;/&gt;">
+                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;${line.separator}var googleSearchIframeName = &quot;cse-search-results&quot;;${line.separator}var googleSearchFormName = &quot;cse-search-box&quot;;${line.separator}var googleSearchFrameWidth = 800;${line.separator}var googleSearchDomain = &quot;www.google.com&quot;;${line.separator}var googleSearchPath = &quot;/cse&quot;;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;&gt;&lt;/script&gt;">
             <fileset dir="target/site"/>
         </replaceregexp>
         <replaceregexp match="&lt;/div&gt;\r\n    &lt;div id=&quot;bodyColumn&quot;&gt;"
