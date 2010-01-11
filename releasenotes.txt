@@ -1,3 +1,71 @@
+** DavMail 3.6.2 released **
+New bugfix release, with improved OSX tray icon, Kontact
+support, a new workaround for thunderbird IMAP no message error,
+public folders on a separate server support, improved ActiveSync
+support and some documentation enhancements.
+
+LDAP:
+- LDAP: fix bug 2919463, escape quotes in search filter
+- LDAP: fix Kontact ldap filter parsing, allow LDAP_FILTER_PRESENT in subfilter
+
+Documentation:
+- Doc: fix script replace
+- Doc: new download and build pages
+- Doc: update roadmap
+- Doc: update doc
+- Doc: add search icon
+- Doc: Update roadmap
+- Doc: Add roadmap to site menu
+
+IMAP:
+- IMAP: workaround for thunderbird random issue with no message found, keep previous message list to cope with recent message uid change.
+- IMAP: try to support public folders hosted on a separate server (302 redirect on PROPFIND)
+- IMAP: fix date parsing error, see bug 2878289
+- IMAP: fix 2878289, implement extended MIME header search in http://schemas.microsoft.com/mapi/string/{00020386-0000-0000-C000-000000000046}/ namespace
+- IMAP: improve error logging on 500 internal server error
+- IMAP: Improve error handling, do not fail on message retrieval error, just send error message
+- IMAP: implement EXPUNGE untagged response on NOOP to avoid NO message not found on Exchange message message uid change
+- IMAP: implement RFC822.HEADER for Sylpheed
+
+Caldav:
+- Caldav: do not send fake inbox for public calendars to iCal
+- Caldav: id 2900599, implement optional attendees in notifications
+- Caldav: fix bug 2896135, iCal login fails at iCal startup
+- Caldav: Send root instead of calendar href as inbox to fix iCal regression
+- Caldav: Exclude events with a null instancetype and no ICS content
+- Caldav: Workaround for Lightning 1.0pre public calendar, send calendar href as inbox/outbox urls
+- Caldav: Convert DISPLAY to AUDIO only if user defined an alarm sound in settings (davmail.caldavAlarmSound)
+- Caldav: fix NullPointerException in notifications
+- Caldav: Fix bug 2907350, multiple calendar support issue with iCal
+- Caldav: another timezone fix
+- Caldav: Improve error handling on invalid events
+- Caldav: another timezone fix
+- Caldav: do not return invalid message content
+- Caldav: move failover for Exchange 2007 plus encoding issue to Exchange session
+- Caldav: a brand new ActiveSync fix, set contentclass to make ActiveSync happy, but also set PR_INTERNET_CONTENT to preserve custom properties. Also get etag from updated event.
+- Caldav: major refactoring, move all ICS methods to Event inner class
+- Caldav: fix bug 2902358, encode messageUrl in PropPatch with forceActiveSyncUpdate=true
+- Caldav: improve MIME message headers in createOrUpdateEvent
+
+Bugfixes:
+- Fix last open session failover: do not append @hostname when alias contains @
+- Revert to message url as default, use permanentUrl as failover
+- Always use NTCredentials for proxy authorization
+- Another NTLM fix: activate NTLM only on 401 unauthorized in executeGetMethod
+
+Enhancements:
+- Fix from audit (spelling errors)
+- Add search page and change default package name for default svn builds
+- Improve message logging
+- Fixes from audit
+- Additional Jsmooth settings
+- Force flags parameter to 4 in Form Based Authentication
+- Jsmooth patch to allow -X jvm options
+
+OSX:
+- OSX: replace inverted active icon
+- OSX: new Mac OS X only icons
+
 ** DavMail 3.6.1 released **
 This is a bugfix release with fixed regressions from 3.6.0
 and a few enhancements from user feedback.
