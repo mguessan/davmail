@@ -306,7 +306,7 @@
         </scp>
     </target>
 
-    <target name="upload-dist" depends="dist">
+    <target name="upload-release" depends="release">
         <mkdir dir="dist/${version}"/>
         <move todir="dist/${version}">
             <fileset dir="dist">
@@ -322,8 +322,8 @@
         </scp>
     </target>
 
-    <target name="release">
+    <target name="release" depends="init">
         <property name="release-name" value="${release}"/>
-        <antcall taskname="dist"/>
+        <antcall target="dist"/>
     </target>
 </project>
