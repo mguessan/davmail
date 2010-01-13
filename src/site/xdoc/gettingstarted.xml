@@ -97,6 +97,21 @@
                     <td>password</td>
                 </tr>
                 <tr>
+                    <td>Client key store type</td>
+                    <td>Client certificate key store type, PKCS11 for smartcard, PKCS12 or JKS for certificate file</td>
+                    <td>PKCS11</td>
+                </tr>
+                <tr>
+                    <td>Client key store</td>
+                    <td>SSL client certificate key store file path</td>
+                    <td>path/to/keystore</td>
+                </tr>
+                <tr>
+                    <td>Client key store password</td>
+                    <td>Client key store password, leave empty for runtime prompt</td>
+                    <td>password</td>
+                </tr>
+                <tr>
                     <td>PKCS11 library</td>
                     <td>PKCS11 (smartcard) library path (.so or .dll)</td>
                     <td>softokn3.dll</td>
