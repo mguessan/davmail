@@ -128,6 +128,9 @@ public final class Settings {
         SETTINGS.put("davmail.ssl.keystoreFile", "");
         SETTINGS.put("davmail.ssl.keystorePass", "");
         SETTINGS.put("davmail.ssl.keyPass", "");
+        SETTINGS.put("davmail.ssl.clientKeystoreType", "");
+        SETTINGS.put("davmail.ssl.clientKeystoreFile", "");
+        SETTINGS.put("davmail.ssl.clientKeystorePass", "");
         SETTINGS.put("davmail.ssl.pkcs11Library", "");
         SETTINGS.put("davmail.ssl.pkcs11Config", "");
 

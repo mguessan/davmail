@@ -33,12 +33,14 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.security.*;
+import java.util.ArrayList;
 
 /**
  * Manual Socket Factory.
@@ -66,12 +68,36 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         }
     }
 
+    private KeyStore.ProtectionParameter getProtectionParameter(String password) {
+        if (password != null && password.length() > 0) {
+            // password provided: create a PasswordProtection
+            return new KeyStore.PasswordProtection(password.toCharArray());
+        } else {
+            // request password at runtime through a callback
+            return new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
+                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                    if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
+                        PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
+                        ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
+                    }
+                }
+            });
+        }
+    }
+
     private SSLContext sslcontext;
 
     private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
-        if (pkcs11Library != null && pkcs11Library.length() > 0) {
+
+        String clientKeystoreType = Settings.getProperty("davmail.ssl.clientKeystoreType");
+        // set default keystore type
+        if (clientKeystoreType == null || clientKeystoreType.length() == 0) {
+            clientKeystoreType = "PKCS11";
+        }
+
+        if (pkcs11Library != null && pkcs11Library.length() > 0 && "PKCS11".equals(clientKeystoreType)) {
             StringBuilder pkcs11Buffer = new StringBuilder();
             pkcs11Buffer.append("name=DavMail\n");
             pkcs11Buffer.append("library=").append(pkcs11Library).append('\n');
@@ -83,16 +109,23 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         }
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(/*KeyManagerFactory.getDefaultAlgorithm()*/"NewSunX509");
-        KeyStore.Builder scBuilder = KeyStore.Builder.newInstance("PKCS11", null,
-                new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
-                    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                        if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
-                            PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
-                            ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
-                        }
-                    }
-                }));
-        ManagerFactoryParameters keyStoreBuilderParameters = new KeyStoreBuilderParameters(scBuilder);
+
+        ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<KeyStore.Builder>();
+        // PKCS11 (smartcard) keystore with password callback
+        KeyStore.Builder scBuilder = KeyStore.Builder.newInstance("PKCS11", null, getProtectionParameter(null));
+        keyStoreBuilders.add(scBuilder);
+
+        String clientKeystoreFile = Settings.getProperty("davmail.ssl.clientKeystoreFile");
+        String clientKeystorePass = Settings.getProperty("davmail.ssl.clientKeystorePass");
+        if (clientKeystoreFile != null && clientKeystoreFile.length() > 0
+                && ("PKCS12".equals(clientKeystoreType) || "JKS".equals(clientKeystoreType))) {
+            // PKCS12 file based keystore
+            KeyStore.Builder fsBuilder = KeyStore.Builder.newInstance(clientKeystoreType, null,
+                    new File(clientKeystoreFile), getProtectionParameter(clientKeystorePass));
+            keyStoreBuilders.add(fsBuilder);
+        }
+
+        ManagerFactoryParameters keyStoreBuilderParameters = new KeyStoreBuilderParameters(keyStoreBuilders);
         keyManagerFactory.init(keyStoreBuilderParameters);
 
         SSLContext context = SSLContext.getInstance("SSL");
@@ -100,7 +133,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         return context;
     }
 
-    private SSLContext getSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException,    InvalidAlgorithmParameterException {
+    private SSLContext getSSLContext() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, InvalidAlgorithmParameterException {
         if (this.sslcontext == null) {
             this.sslcontext = createSSLContext();
         }

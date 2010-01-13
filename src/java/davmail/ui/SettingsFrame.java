@@ -29,6 +29,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 /**
  * DavMail settings frame
@@ -67,6 +69,9 @@ public class SettingsFrame extends JFrame {
     JPasswordField keystorePassField;
     JPasswordField keyPassField;
 
+    JComboBox clientKeystoreTypeCombo;
+    JTextField clientKeystoreFileField;
+    JPasswordField clientKeystorePassField;
     JTextField pkcs11LibraryField;
     JTextArea pkcs11ConfigField;
 
@@ -257,20 +262,53 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getSmartCardPanel() {
-        JPanel smartCardPanel = new JPanel(new GridLayout(2, 2));
-        smartCardPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
+        JPanel clientKeystorePanel = new JPanel(new GridLayout(2, 1));
+        clientKeystorePanel.setLayout(new BoxLayout(clientKeystorePanel, BoxLayout.Y_AXIS));
+        clientKeystorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
+
+        clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
+        clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
+        clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 17);
+        clientKeystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.clientKeystorePass"), 15);
 
         pkcs11LibraryField = new JTextField(Settings.getProperty("davmail.ssl.pkcs11Library"), 17);
         pkcs11ConfigField = new JTextArea(2, 17);
+        pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
         pkcs11ConfigField.setBorder(pkcs11LibraryField.getBorder());
         pkcs11ConfigField.setFont(pkcs11LibraryField.getFont());
 
-        addSettingComponent(smartCardPanel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
-                BundleMessage.format("UI_PKCS11_LIBRARY_HELP"));
-        addSettingComponent(smartCardPanel, BundleMessage.format("UI_PKCS11_CONFIG"), pkcs11ConfigField,
-                BundleMessage.format("UI_PKCS11_CONFIG_HELP"));
+        JPanel clientKeystoreTypePanel = new JPanel(new GridLayout(1, 2));
+        addSettingComponent(clientKeystoreTypePanel, BundleMessage.format("UI_CLIENT_KEY_STORE_TYPE"), clientKeystoreTypeCombo,
+                BundleMessage.format("UI_CLIENT_KEY_STORE_TYPE_HELP"));
+        clientKeystorePanel.add(clientKeystoreTypePanel);
 
-        return smartCardPanel;
+        final JPanel cardPanel = new JPanel(new CardLayout());
+        clientKeystorePanel.add(cardPanel);
+
+        JPanel clientKeystoreFilePanel = new JPanel(new GridLayout(2, 2));
+        addSettingComponent(clientKeystoreFilePanel, BundleMessage.format("UI_CLIENT_KEY_STORE"), clientKeystoreFileField,
+                BundleMessage.format("UI_CLIENT_KEY_STORE_HELP"));
+        addSettingComponent(clientKeystoreFilePanel, BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD"), clientKeystorePassField,
+                BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD_HELP"));
+        cardPanel.add(clientKeystoreFilePanel, "PKCS12");
+        cardPanel.add(clientKeystoreFilePanel, "JKS");
+
+        JPanel pkcs11Panel = new JPanel(new GridLayout(2, 2));
+        addSettingComponent(pkcs11Panel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
+                BundleMessage.format("UI_PKCS11_LIBRARY_HELP"));
+        addSettingComponent(pkcs11Panel, BundleMessage.format("UI_PKCS11_CONFIG"), pkcs11ConfigField,
+                BundleMessage.format("UI_PKCS11_CONFIG_HELP"));
+        cardPanel.add(pkcs11Panel, "PKCS11");
+
+        ((CardLayout)cardPanel.getLayout()).show(cardPanel, (String) clientKeystoreTypeCombo.getSelectedItem());
+
+        clientKeystoreTypeCombo.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent event) {
+                CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
+                cardLayout.show(cardPanel, (String) event.getItem());
+            }
+        });
+        return clientKeystorePanel;
     }
 
     protected JPanel getNetworkSettingsPanel() {
@@ -372,6 +410,7 @@ public class SettingsFrame extends JFrame {
         keystorePassField.setText(Settings.getProperty("davmail.ssl.keystorePass"));
         keyPassField.setText(Settings.getProperty("davmail.ssl.keyPass"));
 
+        clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
         pkcs11LibraryField.setText(Settings.getProperty("davmail.ssl.pkcs11Library"));
         pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
 
@@ -463,6 +502,9 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.ssl.keystorePass", String.valueOf(keystorePassField.getPassword()));
                 Settings.setProperty("davmail.ssl.keyPass", String.valueOf(keyPassField.getPassword()));
 
+                Settings.setProperty("davmail.ssl.clientKeystoreType", (String) clientKeystoreTypeCombo.getSelectedItem());
+                Settings.setProperty("davmail.ssl.clientKeystoreFile", clientKeystoreFileField.getText());
+                Settings.setProperty("davmail.ssl.clientKeystorePass", String.valueOf(clientKeystorePassField.getPassword()));
                 Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
                 Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
 
