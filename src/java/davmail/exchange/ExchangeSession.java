@@ -2481,7 +2481,13 @@ public class ExchangeSession {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype", Namespace.getNamespace("urn:schemas:calendar:"));
             Event event = buildEvent(response);
             if (instancetype == null && event.getICS() == null) {
-                LOGGER.warn("Invalid event found at " + response.getHref());
+                // check ics content
+                try {
+                    event.getICS();
+                } catch (IOException e) {
+                    // invalid event: exclude from list
+                    LOGGER.warn("Invalid event found at " + response.getHref(), e);
+                }
             } else {
                 events.add(event);
             }
