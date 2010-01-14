@@ -150,8 +150,20 @@ public class SmtpConnection extends AbstractConnection {
                             state = State.AUTHENTICATED;
                             sendClient("503 Bad sequence of commands");
                         }
-                    }
+                    } else if ("RSET".equalsIgnoreCase(command)) {
+                        recipients.clear();
 
+                        if (state == State.STARTMAIL ||
+                                state == State.RECIPIENT ||
+                                state == State.MAILDATA) {
+                            state = State.AUTHENTICATED;
+                        } else {
+                            state = State.INITIAL;
+                        }
+                        sendClient("250 OK Reset");
+                    } else {
+                        sendClient("500 Unrecognized command");
+                    }
                 } else {
                     sendClient("500 Unrecognized command");
                 }
@@ -164,7 +176,7 @@ public class SmtpConnection extends AbstractConnection {
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
-                sendClient("500 " + ((e.getMessage()==null)?e:e.getMessage()));
+                sendClient("500 " + ((e.getMessage() == null) ? e : e.getMessage()));
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
