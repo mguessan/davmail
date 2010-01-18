@@ -245,16 +245,11 @@ public class ImapConnection extends AbstractConnection {
                                                 if (ranges == null) {
                                                     sendClient(commandId + " BAD missing range parameter");
                                                 } else {
-                                                    UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, ranges);
                                                     String parameters = null;
                                                     if (tokens.hasMoreTokens()) {
                                                         parameters = tokens.nextToken();
                                                     }
-                                                    if (!uidRangeIterator.hasNext() && currentFolder.previousMessages != null) {
-                                                        // message not found in current list, try to get message
-                                                        // from previous list to handle recent uid change
-                                                        uidRangeIterator = new UIDRangeIterator(currentFolder.previousMessages, ranges);
-                                                    }
+                                                    UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, ranges);
                                                     while (uidRangeIterator.hasNext()) {
                                                         DavGatewayTray.switchIcon();
                                                         ExchangeSession.Message message = uidRangeIterator.next();
@@ -277,13 +272,13 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
-                                            UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
+                                            UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
                                             handleStore(commandId, uidRangeIterator, action, flags);
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
-                                                UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
+                                                UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                                 while (uidRangeIterator.hasNext()) {
                                                     DavGatewayTray.switchIcon();
@@ -1177,6 +1172,16 @@ public class ImapConnection extends AbstractConnection {
             result = result.substring(0, result.length() - 1);
         }
         return result;
+    }
+
+    protected UIDRangeIterator getUIDRangeIterator(ExchangeSession.Folder folder, String ranges) {
+        UIDRangeIterator uidRangeIterator = new UIDRangeIterator(folder.messages, ranges);
+        if (!uidRangeIterator.hasNext() && folder.previousMessages != null) {
+            // message not found in current list, try to get message
+            // from previous list to handle recent uid change
+            uidRangeIterator = new UIDRangeIterator(folder.previousMessages, ranges);
+        }
+        return uidRangeIterator;
     }
 
     /**
