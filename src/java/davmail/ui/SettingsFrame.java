@@ -333,6 +333,7 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
                 BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
+        networkSettingsPanel.setMaximumSize(networkSettingsPanel.getPreferredSize());
         return networkSettingsPanel;
     }
 
@@ -367,6 +368,8 @@ public class SettingsFrame extends JFrame {
         loggingPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LOGGING_LEVELS")));
         loggingPanel.add(logFilePathPanel);
         loggingPanel.add(loggingLevelPanel);
+
+        loggingPanel.setMaximumSize(loggingPanel.getPreferredSize());
         return loggingPanel;
     }
 
@@ -447,9 +450,6 @@ public class SettingsFrame extends JFrame {
 
         tabbedPane.add(BundleMessage.format("UI_TAB_MAIN"), mainPanel);
 
-        JPanel advancedPanel = new JPanel();
-        advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
-
         JPanel proxyPanel = new JPanel();
         proxyPanel.setLayout(new BoxLayout(proxyPanel, BoxLayout.Y_AXIS));
         proxyPanel.add(getProxyPanel());
@@ -464,8 +464,20 @@ public class SettingsFrame extends JFrame {
         encryptionPanel.add(getSmartCardPanel());
         tabbedPane.add(BundleMessage.format("UI_TAB_ENCRYPTION"), encryptionPanel);
 
+        JPanel loggingPanel = new JPanel();
+        loggingPanel.setLayout(new BoxLayout(loggingPanel, BoxLayout.Y_AXIS));
+        loggingPanel.add(getLoggingSettingsPanel());
+        // empty panel
+        loggingPanel.add(new JPanel());
+
+        tabbedPane.add(BundleMessage.format("UI_TAB_LOGGING"), loggingPanel);
+
+        JPanel advancedPanel = new JPanel();
+        advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
+
         advancedPanel.add(getNetworkSettingsPanel());
-        advancedPanel.add(getLoggingSettingsPanel());
+        // empty panel
+        advancedPanel.add(new JPanel());
 
         tabbedPane.add(BundleMessage.format("UI_TAB_ADVANCED"), advancedPanel);
 
