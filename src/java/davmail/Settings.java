@@ -64,6 +64,7 @@ public final class Settings {
      */
     public static synchronized void load(InputStream inputStream) throws IOException {
         SETTINGS.load(inputStream);
+        updateLoggingConfig();
     }
 
     /**
