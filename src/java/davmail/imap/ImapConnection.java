@@ -908,7 +908,7 @@ public class ImapConnection extends AbstractConnection {
             conditions.append(operator).append("\"urn:schemas:httpmail:read\" = False");
         } else if ("DELETED".equals(token)) {
             conditions.deleted = !operator.endsWith(" NOT ");
-        } else if ("UNDELETED".equals(token)) {
+        } else if ("UNDELETED".equals(token) || "NOT DELETED".equals(token)) {
             conditions.deleted = Boolean.FALSE;
         } else if ("FLAGGED".equals(token)) {
             conditions.flagged = Boolean.TRUE;
