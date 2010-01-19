@@ -2220,7 +2220,12 @@ public class ExchangeSession {
                             } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
                                     && (!isNotification
                                     || line.indexOf("RSVP=TRUE") >= 0
-                                    || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0)) {
+                                    || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0
+                                    // need to include other PARTSTATs participants for CANCEL notifications
+                                    || line.indexOf("PARTSTAT=ACCEPTED") >=0
+                                    || line.indexOf("PARTSTAT=DECLINED") >=0
+                                    || line.indexOf("PARTSTAT=TENTATIVE") >=0
+                                    )) {
                                 if (line.indexOf("ROLE=OPT-PARTICIPANT") >= 0) {
                                     optionalAttendees.add(value);
                                 } else {
