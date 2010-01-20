@@ -77,6 +77,11 @@
                     <td>false</td>
                 </tr>
                 <tr>
+                    <td>Caldav alarm sound</td>
+                    <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no conversion</td>
+                    <td>Basso</td>
+                </tr>
+                <tr>
                     <td>Key store type</td>
                     <td>Choose key store type</td>
                     <td>JKS</td>

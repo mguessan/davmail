@@ -81,6 +81,8 @@ public class SettingsFrame extends JFrame {
     JComboBox wireLoggingLevelField;
     JTextField logFilePathField;
 
+    JTextField caldavAlarmSoundField;
+
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
     }
@@ -236,6 +238,7 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PORT"), httpProxyPortField);
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_USER"), httpProxyUserField);
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PASSWORD"), httpProxyPasswordField);
+        updateMaximumSize(proxyPanel);
         return proxyPanel;
     }
 
@@ -257,7 +260,7 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_KEY_STORE_PASSWORD_HELP"));
         addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_PASSWORD"), keyPassField,
                 BundleMessage.format("UI_KEY_PASSWORD_HELP"));
-
+        updateMaximumSize(keyStorePanel);
         return keyStorePanel;
     }
 
@@ -308,6 +311,7 @@ public class SettingsFrame extends JFrame {
                 cardLayout.show(cardPanel, (String) event.getItem());
             }
         });
+        updateMaximumSize(clientKeystorePanel);
         return clientKeystorePanel;
     }
 
@@ -333,8 +337,22 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
                 BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
-        networkSettingsPanel.setMaximumSize(networkSettingsPanel.getPreferredSize());
+        updateMaximumSize(networkSettingsPanel);
         return networkSettingsPanel;
+    }
+
+    protected JPanel getOtherSettingsPanel() {
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(1, 2));
+        otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
+
+        caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
+
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
+                BundleMessage.format("UI_CALDAV_ALARM_SOUND_HELP"));
+        Dimension preferredSize = otherSettingsPanel.getPreferredSize();
+        preferredSize.width = Integer.MAX_VALUE;
+        updateMaximumSize(otherSettingsPanel);
+        return otherSettingsPanel;
     }
 
     protected JPanel getLoggingSettingsPanel() {
@@ -369,8 +387,14 @@ public class SettingsFrame extends JFrame {
         loggingPanel.add(logFilePathPanel);
         loggingPanel.add(loggingLevelPanel);
 
-        loggingPanel.setMaximumSize(loggingPanel.getPreferredSize());
+        updateMaximumSize(loggingPanel);
         return loggingPanel;
+    }
+
+    protected void updateMaximumSize(JPanel panel) {
+        Dimension preferredSize = panel.getPreferredSize();
+        preferredSize.width = Integer.MAX_VALUE;
+        panel.setMaximumSize(preferredSize);
     }
 
     /**
@@ -407,6 +431,8 @@ public class SettingsFrame extends JFrame {
         allowRemoteField.setSelected(Settings.getBooleanProperty(("davmail.allowRemote")));
         certHashField.setText(Settings.getProperty("davmail.server.certificate.hash"));
         disableUpdateCheck.setSelected(Settings.getBooleanProperty(("davmail.disableUpdateCheck")));
+
+        caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -460,8 +486,9 @@ public class SettingsFrame extends JFrame {
         JPanel encryptionPanel = new JPanel();
         encryptionPanel.setLayout(new BoxLayout(encryptionPanel, BoxLayout.Y_AXIS));
         encryptionPanel.add(getKeystorePanel());
-        // empty panel
         encryptionPanel.add(getSmartCardPanel());
+        // empty panel
+        encryptionPanel.add(new JPanel());
         tabbedPane.add(BundleMessage.format("UI_TAB_ENCRYPTION"), encryptionPanel);
 
         JPanel loggingPanel = new JPanel();
@@ -476,6 +503,7 @@ public class SettingsFrame extends JFrame {
         advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
 
         advancedPanel.add(getNetworkSettingsPanel());
+        advancedPanel.add(getOtherSettingsPanel());
         // empty panel
         advancedPanel.add(new JPanel());
 
@@ -509,6 +537,8 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
                 Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
+                Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
+
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
                 Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
                 Settings.setProperty("davmail.ssl.keystorePass", String.valueOf(keystorePassField.getPassword()));
