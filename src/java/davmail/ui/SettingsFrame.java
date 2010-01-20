@@ -82,6 +82,7 @@ public class SettingsFrame extends JFrame {
     JTextField logFilePathField;
 
     JTextField caldavAlarmSoundField;
+    JCheckBox forceActiveSyncUpdateField;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
@@ -342,13 +343,18 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(1, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(2, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
+        forceActiveSyncUpdateField = new JCheckBox();
+        forceActiveSyncUpdateField.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
 
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
                 BundleMessage.format("UI_CALDAV_ALARM_SOUND_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE"), forceActiveSyncUpdateField,
+                BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE_HELP"));
+
         Dimension preferredSize = otherSettingsPanel.getPreferredSize();
         preferredSize.width = Integer.MAX_VALUE;
         updateMaximumSize(otherSettingsPanel);
@@ -433,6 +439,7 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck.setSelected(Settings.getBooleanProperty(("davmail.disableUpdateCheck")));
 
         caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
+        forceActiveSyncUpdateField.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -537,7 +544,9 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
                 Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
+
                 Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
+                Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateField.isSelected()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
                 Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
