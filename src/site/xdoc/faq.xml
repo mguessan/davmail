@@ -56,6 +56,24 @@
                 </p>
             </subsection>
 
+            <subsection name="Exchange setup">
+                <p>
+                    <strong>What are the prerequisites on Exchange server side ?</strong>
+                </p>
+                <p>With Exchange 2003, you only need to have access to OWA (Outlook Web Access), Webdav, Address Book
+                    and public folders are always available. Unfortunately, this is not the case with Exchange 2007.
+                    You must make sure Webdav support is enabled on your server. You can test this by accessing
+                    https://mail.company.com/exchange, which should redirect to /owa. Another important service is the
+                    galfind (address book) access at /public/?Cmd=galfind
+                </p>
+                <p>
+                    <strong>Is Exchange 2010 supported ?</strong>
+                </p>
+                <p>Currently, the answer is no. As Microsoft decided to drop WebDav support in Exchange 2010, DavMail will
+                not work with this new version. New Exchange Web Service support compatible with Exchange 2010 is in the
+                roadmap, but not yet available.</p>
+            </subsection>
+
             <subsection name="Caldav (calendar)">
                 <p>
                     <strong>How do I detect errors in Thunderbird/Lightning calendar ?</strong>
