@@ -82,6 +82,11 @@
                     <td>Basso</td>
                 </tr>
                 <tr>
+                    <td>Default domain</td>
+                    <td>Default windows domain name</td>
+                    <td>DOMAIN</td>
+                </tr>
+                <tr>
                     <td>Key store type</td>
                     <td>Choose key store type</td>
                     <td>JKS</td>

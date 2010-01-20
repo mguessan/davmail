@@ -84,6 +84,12 @@ public final class ExchangeSessionFactory {
         ExchangeSession session = null;
         try {
             String baseUrl = Settings.getProperty("davmail.url");
+
+            // prepend default windows domain prefix
+            String defaultDomain = Settings.getProperty("davmail.defaultDomain");
+            if (userName.indexOf('\\') < 0 && defaultDomain != null && defaultDomain.length() > 0) {
+                userName = defaultDomain + '\\' + userName;
+            }
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
             synchronized (LOCK) {

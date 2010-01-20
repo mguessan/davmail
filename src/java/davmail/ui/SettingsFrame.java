@@ -83,6 +83,7 @@ public class SettingsFrame extends JFrame {
 
     JTextField caldavAlarmSoundField;
     JCheckBox forceActiveSyncUpdateField;
+    JTextField defaultDomainField;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
@@ -343,17 +344,20 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(2, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(3, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
         forceActiveSyncUpdateField = new JCheckBox();
         forceActiveSyncUpdateField.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
+        defaultDomainField = new JTextField(Settings.getProperty("davmail.defaultDomain"), 15);
 
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
                 BundleMessage.format("UI_CALDAV_ALARM_SOUND_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE"), forceActiveSyncUpdateField,
                 BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DEFAULT_DOMAIN"), defaultDomainField,
+                BundleMessage.format("UI_DEFAULT_DOMAIN_HELP"));
 
         Dimension preferredSize = otherSettingsPanel.getPreferredSize();
         preferredSize.width = Integer.MAX_VALUE;
@@ -440,6 +444,7 @@ public class SettingsFrame extends JFrame {
 
         caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
         forceActiveSyncUpdateField.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
+        defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -547,6 +552,7 @@ public class SettingsFrame extends JFrame {
 
                 Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
                 Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateField.isSelected()));
+                Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
                 Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
