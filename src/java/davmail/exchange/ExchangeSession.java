@@ -1157,7 +1157,7 @@ public class ExchangeSession {
             currentFolder.unreadCount = newFolder.unreadCount;
             currentFolder.contenttag = newFolder.contenttag;
             // keep previous messages for Thunderbird workaround
-            currentFolder.previousMessages = newFolder.messages;
+            currentFolder.previousMessages = currentFolder.messages;
             currentFolder.loadMessages();
             return true;
         } else {
