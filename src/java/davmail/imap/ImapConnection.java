@@ -147,6 +147,9 @@ public class ImapConnection extends AbstractConnection {
                                                     }
                                                     sendClient("* " + command + " (\\HasChildren) \"/\" \"/public\"");
                                                 }
+                                                if ("*%".equals(folderQuery)) {
+                                                    folderQuery = "*";
+                                                }
                                                 boolean recursive = folderQuery.endsWith("*") && !folderQuery.startsWith("/public");
                                                 sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive);
                                                 sendClient(commandId + " OK " + command + " completed");
