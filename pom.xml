@@ -68,6 +68,14 @@
             </roles>
         </contributor>
         <contributor>
+            <name>Gellule</name>
+            <email>gellule@users.sourceforge.net</email>
+            <url>https://sourceforge.net/users/gellule</url>
+            <roles>
+                <role>Java Contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
             <name>Henning Holtschneider</name>
             <email>hehol@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/hehol</url>
