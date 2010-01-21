@@ -209,8 +209,15 @@ public class ImapConnection extends AbstractConnection {
                                     } else {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
-                                } else if ("close".equalsIgnoreCase(command) || "expunge".equalsIgnoreCase(command)) {
-                                    expunge("close".equalsIgnoreCase(command));
+                                } else if ("expunge".equalsIgnoreCase(command)) {
+                                    expunge(false);
+                                    // need to refresh folder to avoid 404 errors
+                                    session.refreshFolder(currentFolder);
+                                    sendClient(commandId + " OK " + command + " completed");
+                                } else if ("close".equalsIgnoreCase(command)) {
+                                    expunge(true);
+                                    // deselect folder
+                                    currentFolder = null;
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
@@ -252,7 +259,7 @@ public class ImapConnection extends AbstractConnection {
                                                     if (tokens.hasMoreTokens()) {
                                                         parameters = tokens.nextToken();
                                                     }
-                                                    UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, ranges);
+                                                    UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, ranges);
                                                     while (uidRangeIterator.hasNext()) {
                                                         DavGatewayTray.switchIcon();
                                                         ExchangeSession.Message message = uidRangeIterator.next();
@@ -275,13 +282,13 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {
-                                            UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, tokens.nextToken());
+                                            UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
                                             String action = tokens.nextToken();
                                             String flags = tokens.nextToken();
                                             handleStore(commandId, uidRangeIterator, action, flags);
                                         } else if ("copy".equalsIgnoreCase(subcommand)) {
                                             try {
-                                                UIDRangeIterator uidRangeIterator = getUIDRangeIterator(currentFolder, tokens.nextToken());
+                                                UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                                 while (uidRangeIterator.hasNext()) {
                                                     DavGatewayTray.switchIcon();
@@ -648,7 +655,7 @@ public class ImapConnection extends AbstractConnection {
         if ("AND ()".equals(query)) {
             query = null;
         }
-        ExchangeSession.MessageList localMessages = session.searchMessages(currentFolder.folderName, query);
+        ExchangeSession.MessageList localMessages = currentFolder.searchMessages(query);
         int index = 1;
         for (ExchangeSession.Message message : localMessages) {
             if ((conditions.deleted == null || message.deleted == conditions.deleted)
@@ -1175,16 +1182,6 @@ public class ImapConnection extends AbstractConnection {
             result = result.substring(0, result.length() - 1);
         }
         return result;
-    }
-
-    protected UIDRangeIterator getUIDRangeIterator(ExchangeSession.Folder folder, String ranges) {
-        UIDRangeIterator uidRangeIterator = new UIDRangeIterator(folder.messages, ranges);
-        if (!uidRangeIterator.hasNext() && folder.previousMessages != null) {
-            // message not found in current list, try to get message
-            // from previous list to handle recent uid change
-            uidRangeIterator = new UIDRangeIterator(folder.previousMessages, ranges);
-        }
-        return uidRangeIterator;
     }
 
     /**

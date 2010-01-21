@@ -1156,8 +1156,6 @@ public class ExchangeSession {
             currentFolder.noInferiors = newFolder.noInferiors;
             currentFolder.unreadCount = newFolder.unreadCount;
             currentFolder.contenttag = newFolder.contenttag;
-            // keep previous messages for Thunderbird workaround
-            currentFolder.previousMessages = currentFolder.messages;
             currentFolder.loadMessages();
             return true;
         } else {
@@ -1204,7 +1202,7 @@ public class ExchangeSession {
             }
         };
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        // ok or alredy exists
+        // ok or already exists
         if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
@@ -1318,10 +1316,10 @@ public class ExchangeSession {
          */
         public ExchangeSession.MessageList messages;
         /**
-         * Previous folder message list before refresh.
+         * PermanentURL to UID map.
          */
-        public ExchangeSession.MessageList previousMessages;
-        
+        private final HashMap<String, Long> uidUrlHashMap = new HashMap<String, Long>();
+
         /**
          * Get IMAP folder flags.
          *
@@ -1343,7 +1341,46 @@ public class ExchangeSession {
          * @throws IOException on error
          */
         public void loadMessages() throws IOException {
-            messages = searchMessages(folderPath, "");
+            messages = ExchangeSession.this.searchMessages(folderPath, "");
+            fixUids(messages);
+        }
+
+        /**
+         * Search messages in folder matching query.
+         *
+         * @param query search query
+         * @return message list
+         * @throws IOException on error
+         */
+        public MessageList searchMessages(String query) throws IOException {
+            MessageList localMessages = ExchangeSession.this.searchMessages(folderName, query);
+            fixUids(localMessages);
+            return localMessages;
+        }
+
+        /**
+         * Restore previous uids changed by a PROPPATCH (flag change).
+         *
+         * @param messages message list
+         */
+        protected void fixUids(MessageList messages) {
+            boolean sortNeeded = false;
+            for (Message message : messages) {
+                if (uidUrlHashMap.containsKey(message.getPermanentUrl())) {
+                    long previousUid = uidUrlHashMap.get(message.getPermanentUrl());
+                    if (message.getImapUid() != previousUid) {
+                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message " + message.getPermanentUrl() + " (" + message.messageUrl + ')');
+                        message.setImapUid(previousUid);
+                        sortNeeded = true;
+                    }
+                } else {
+                    // add message to uid map
+                    uidUrlHashMap.put(message.getPermanentUrl(), message.getImapUid());
+                }
+            }
+            if (sortNeeded) {
+                Collections.sort(messages);
+            }
         }
 
         /**
@@ -1447,6 +1484,14 @@ public class ExchangeSession {
         }
 
         /**
+         * Set IMAP uid.
+         * @param imapUid new uid
+         */
+        public void setImapUid(long imapUid) {
+            this.imapUid = imapUid;
+        }
+
+        /**
          * Exchange uid.
          *
          * @return uid
@@ -1459,9 +1504,8 @@ public class ExchangeSession {
          * Return permanent message url.
          *
          * @return permanent message url
-         * @throws URIException on error
          */
-        public String getPermanentUrl() throws URIException {
+        public String getPermanentUrl() {
             return permanentUrl;
         }
 
@@ -2222,10 +2266,10 @@ public class ExchangeSession {
                                     || line.indexOf("RSVP=TRUE") >= 0
                                     || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0
                                     // need to include other PARTSTATs participants for CANCEL notifications
-                                    || line.indexOf("PARTSTAT=ACCEPTED") >=0
-                                    || line.indexOf("PARTSTAT=DECLINED") >=0
-                                    || line.indexOf("PARTSTAT=TENTATIVE") >=0
-                                    )) {
+                                    || line.indexOf("PARTSTAT=ACCEPTED") >= 0
+                                    || line.indexOf("PARTSTAT=DECLINED") >= 0
+                                    || line.indexOf("PARTSTAT=TENTATIVE") >= 0
+                            )) {
                                 if (line.indexOf("ROLE=OPT-PARTICIPANT") >= 0) {
                                     optionalAttendees.add(value);
                                 } else {
