@@ -280,23 +280,6 @@
                        replace="">
             <fileset dir="target/site"/>
         </replaceregexp>
-        <replaceregexp match="&lt;a href=&quot;http://sourceforge.net/projects/davmail&quot; id=&quot;bannerRight&quot;&gt;"
-                       replace="&lt;script type=&quot;text/javascript&quot;&gt;&lt;!-- ${line.separator}google_ad_client = &quot;pub-2649801308753286&quot;; ${line.separator}google_ad_slot = &quot;9322588211&quot;; ${line.separator}google_ad_width = 468; ${line.separator}google_ad_height = 60; ${line.separator}//--&gt;&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://pagead2.googlesyndication.com/pagead/show_ads.js&quot;&gt;&lt;/script&gt;${line.separator}&lt;a href=&quot;http://sourceforge.net/projects/davmail&quot; id=&quot;bannerRight&quot;&gt;">
-            <fileset dir="target/site"/>
-        </replaceregexp>
-        <replaceregexp match="&lt;h5&gt;Quick Links&lt;/h5&gt;"
-                       replace="&lt;h5 style=&quot;margin-bottom: 5px&quot;&gt;Search&lt;/h5&gt;&lt;form action=&quot;http://davmail.sourceforge.net/search.html&quot; id=&quot;cse-search-box&quot;&gt;&lt;div&gt;&lt;input type=&quot;hidden&quot; name=&quot;cx&quot; value=&quot;partner-pub-2649801308753286:4hjiaq-dcw4&quot; /&gt;&lt;input type=&quot;hidden&quot; name=&quot;cof&quot; value=&quot;FORID:10&quot; /&gt;&lt;input type=&quot;hidden&quot; name=&quot;ie&quot; value=&quot;UTF-8&quot; /&gt;&lt;input type=&quot;text&quot; name=&quot;q&quot; size=&quot;15&quot;/&gt;&lt;input type=&quot;image&quot; src=&quot;images/search.png&quot; style=&quot;margin-left: 5px;vertical-align: middle&quot; /&gt;&lt;/div&gt;&lt;/form&gt;&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/cse/brand?form=cse-search-box&amp;lang=fr&quot;&gt;&lt;/script&gt;&lt;h5&gt;Quick Links&lt;/h5&gt;">
-            <fileset dir="target/site"/>
-        </replaceregexp>
-        <replaceregexp match="&lt;h2&gt;Search&lt;a name=&quot;Search&quot;&gt;&lt;/a&gt;&lt;/h2&gt;"
-                       replace="&lt;div id=&quot;cse-search-results&quot;/&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;${line.separator}var googleSearchIframeName = &quot;cse-search-results&quot;;${line.separator}var googleSearchFormName = &quot;cse-search-box&quot;;${line.separator}var googleSearchFrameWidth = 800;${line.separator}var googleSearchDomain = &quot;www.google.com&quot;;${line.separator}var googleSearchPath = &quot;/cse&quot;;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://www.google.com/afsonline/show_afs_search.js&quot;&gt;&lt;/script&gt;">
-            <fileset dir="target/site"/>
-        </replaceregexp>
-        <replaceregexp match="&lt;/div&gt;\r\n    &lt;div id=&quot;bodyColumn&quot;&gt;"
-                       replace="&lt;hr/&gt;&lt;div style=&quot;padding-left: 5px;padding-bottom: 5px&quot;&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;&lt;!--${line.separator}google_ad_client = &quot;pub-2649801308753286&quot;;${line.separator}/* 160x90, link block */${line.separator}google_ad_slot = &quot;3062827454&quot;;${line.separator}google_ad_width = 160;${line.separator}google_ad_height = 90;${line.separator}//--&gt;${line.separator}&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot; src=&quot;http://pagead2.googlesyndication.com/pagead/show_ads.js&quot;&gt;${line.separator}&lt;/script&gt;&lt;/div&gt;&lt;/div&gt;${line.separator}    &lt;div id=&quot;bodyColumn&quot;&gt;">
-            <fileset dir="target/site"/>
-        </replaceregexp>
-
     </target>
 
     <target name='upload-site' depends="fix-site">
