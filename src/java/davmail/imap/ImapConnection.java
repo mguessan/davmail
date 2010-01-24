@@ -331,6 +331,8 @@ public class ImapConnection extends AbstractConnection {
                                             ExchangeSession.Message message = rangeIterator.next();
                                             try {
                                                 handleFetch(message, rangeIterator.currentIndex, parameters);
+                                            } catch (SocketException e) {
+                                                DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
                                             } catch (IOException e) {
                                                 DavGatewayTray.log(e);
                                                 sendClient(commandId + " NO Unable to retrieve message: " + e.getMessage());

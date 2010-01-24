@@ -1272,6 +1272,9 @@ public class LdapConnection extends AbstractConnection {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SUCCESS", currentMessageId));
                     sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_SUCCESS, "");
                 }
+            } catch (SocketException e) {
+                // client closed connection
+                DavGatewayTray.debug(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"));
             } catch (IOException e) {
                 DavGatewayTray.log(e);
                 try {
