@@ -15,12 +15,11 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in DavMail next versions.
             </p>
-            <subsection name="3.6.2">
+            <subsection name="3.6.3">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
-                    <li>Implement davmail.forceAudioAlarm with value</li>
                     <li>Fix JavaMail client IMAP support</li>
                 </ul>
             </subsection>
@@ -29,7 +28,6 @@
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Implement default logon domain in davmail settings</li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>
                     <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
