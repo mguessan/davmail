@@ -332,7 +332,8 @@ public class ImapConnection extends AbstractConnection {
                                             try {
                                                 handleFetch(message, rangeIterator.currentIndex, parameters);
                                             } catch (SocketException e) {
-                                                DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
+                                                // client closed connection, rethrow exception
+                                                throw e;
                                             } catch (IOException e) {
                                                 DavGatewayTray.log(e);
                                                 sendClient(commandId + " NO Unable to retrieve message: " + e.getMessage());
@@ -507,7 +508,7 @@ public class ImapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CONNECTION_ON_TIMEOUT"));
             }
         } catch (SocketException e) {
-            DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
+            DavGatewayTray.debug(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"));
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
