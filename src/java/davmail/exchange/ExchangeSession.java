@@ -1809,7 +1809,7 @@ public class ExchangeSession {
                     method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
                     method.setRequestHeader("Translate", "f");
                     try {
-                        DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
+                        DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
                         result = getICS(method.getResponseBodyAsStream());
                     } finally {
                         method.releaseConnection();
