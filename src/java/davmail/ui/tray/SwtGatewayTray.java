@@ -322,7 +322,13 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         if (image2 != null) {
                             image2.dispose();
                         }
-                        display.dispose();
+                        try {
+                            if (!display.isDisposed()) {
+                                display.dispose();
+                            }
+                        } catch (Exception e) {
+                            // already disposed
+                        }
                         // dispose AWT frames
                         settingsFrame.dispose();
                         aboutFrame.dispose();
