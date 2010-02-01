@@ -1,8 +1,8 @@
 Release guide :
 - change version in build.xml and pom.xml, commit
 - update staging (clean checkout) directory
-- launch ant, check generated packages
-- upload packages: ant upload-dist
+- launch ant release, check generated packages
+- upload packages: ant upload-release
 - generate site: mvn site
 - upload site: ant upload-site
 - create releasenotes.txt, upload to sourceforge, attach to files

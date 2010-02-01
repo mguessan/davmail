@@ -1,3 +1,44 @@
+** DavMail 3.6.3 released **
+Another bugfix release, mostly documentation updates, some regressions
+in 3.6.2 in error handling fixed, a new IMAP workaround to completely
+hide the uid change issue, emacs IMAP support and new UI settings for
+previously hidden parameters.
+
+Bug fix:
+- Fix logging settings handling in webapp mode
+
+Enhancements:
+- Improve error handling: detect SocketException to avoid client socket closed errors
+- Implement file based (PKCS12 and JKS) client certificates in addition to smartcard support
+
+Documentation:
+- Doc: update roadmap
+- Doc: remove replace token and search page
+- Doc: added Gellule as Java Contributor
+- Doc: add a security section in the FAQ
+- Doc: update FAQ with Exchange prerequisites details
+- Document client keystore file settings
+
+IMAP:
+- IMAP: brand new IMAP uid workaround and refresh folder on Expunge from Gellule
+- IMAP: implement LIST "" "*%" for emacs
+- IMAP: another fix for the message uid bump issue
+- IMAP: fix 2934922, implement (NOT DELETED) in search filter
+- IMAP: extend thunderbird changed uid workaround to all contexts
+
+GUI:
+- Add new setting davmail.defaultDomain to set default windows domain
+- Prepare new advanced options
+
+Caldav:
+- Caldav: add davmail.forceActiveSyncUpdate option to the settings frame
+- Caldav: add davmail.caldavAlarmSound option to the settings frame (used to force conversion of Caldav alarms to AUDIO supported by iCal)
+- Caldav: fix 2884864, send notifications to all participants on CANCEL
+- Caldav: Fix invalid event handling, exclude events from returned list
+
+SMTP:
+- SMTP: implement RSET (reset) command to avoid connection timeout with Evolution
+
 ** DavMail 3.6.2 released **
 New bugfix release, with improved OSX tray icon, Kontact
 support, a new workaround for thunderbird IMAP no message error,
