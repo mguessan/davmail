@@ -227,8 +227,10 @@ public class ExchangeSession {
                 method = formLogin(httpClient, method, userName, password);
             }
 
-            // avoid 401 roundtrips
-            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
+            // avoid 401 roundtrips, only if NTLM is disabled
+            if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+                httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
+            }
 
             buildMailPath(method);
 

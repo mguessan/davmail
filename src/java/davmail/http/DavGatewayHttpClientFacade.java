@@ -363,7 +363,12 @@ public final class DavGatewayHttpClientFacade {
         return status;
     }
 
-    private static boolean hasNTLM(HttpClient httpClient) {
+    /**
+     * Test if NTLM auth scheme is enabled.
+     * @param httpClient HttpClient instance
+     * @return true if NTLM is enabled
+     */
+    public static boolean hasNTLM(HttpClient httpClient) {
         Object authPrefs = httpClient.getParams().getParameter(AuthPolicy.AUTH_SCHEME_PRIORITY);
         return authPrefs instanceof List<?> && ((Collection) authPrefs).contains(AuthPolicy.NTLM);
     }
@@ -376,6 +381,19 @@ public final class DavGatewayHttpClientFacade {
         httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
     }
 
+    private static boolean acceptsNTLMOnly(GetMethod getMethod) {
+        Header authenticateHeader = null;
+        if (getMethod.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+            authenticateHeader = getMethod.getResponseHeader("Authenticate");
+        } else if (getMethod.getStatusCode() == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED) {
+           authenticateHeader = getMethod.getResponseHeader("Proxy-Authenticate"); 
+        }
+        // check authenticate header
+        return (authenticateHeader != null)
+                && (authenticateHeader.getElements().length == 1)
+                && ("NTLM".equals(authenticateHeader.getElements()[0].getName()));
+    }
+
     /**
      * Execute Get method, do not follow redirects.
      *
@@ -383,18 +401,20 @@ public final class DavGatewayHttpClientFacade {
      * @param method          Http method
      * @param followRedirects Follow redirects flag
      * @throws IOException on error
+     * @return Http status
      */
-    public static void executeGetMethod(HttpClient httpClient, GetMethod method, boolean followRedirects) throws IOException {
+    public static int executeGetMethod(HttpClient httpClient, GetMethod method, boolean followRedirects) throws IOException {
         // do not follow redirects in expired sessions
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
-        if (status == HttpStatus.SC_UNAUTHORIZED && !hasNTLM(httpClient)) {
+        if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+                && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
             method.releaseConnection();
-            LOGGER.debug("Received unauthorized at " + method.getURI() + ", retrying with NTLM");
+            LOGGER.debug("Received "+status+" unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
             status = httpClient.executeMethod(method);
         }
-        if (status != HttpStatus.SC_OK) {
+        if (status != HttpStatus.SC_OK && (followRedirects || !isRedirect(status))) {
             LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
@@ -407,6 +427,7 @@ public final class DavGatewayHttpClientFacade {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         }
+        return status;
     }
 
     private static void checkExpiredSession(String queryString) throws DavMailAuthenticationException {

@@ -20,16 +20,16 @@ package davmail.exchange;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.exception.DavMailException;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,6 +124,8 @@ public final class ExchangeSessionFactory {
             throw exc;
         } catch (DavMailException exc) {
             throw exc;
+        } catch (IllegalStateException exc) {
+            throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
         }
@@ -172,12 +174,11 @@ public final class ExchangeSessionFactory {
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
-        HttpMethod testMethod = new GetMethod(url);
+        GetMethod testMethod = new GetMethod(url);
         try {
             // get webMail root url (will not follow redirects)
-            testMethod.setFollowRedirects(false);
             testMethod.setDoAuthentication(false);
-            int status = httpClient.executeMethod(testMethod);
+            int status = DavGatewayHttpClientFacade.executeGetMethod(httpClient, testMethod, false);
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
                     && status != HttpStatus.SC_MOVED_TEMPORARILY && status != HttpStatus.SC_MOVED_PERMANENTLY) {
