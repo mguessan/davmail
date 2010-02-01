@@ -385,13 +385,23 @@ public class ExchangeSession {
         try {
             TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
             List forms = node.getElementListByName("form", true);
+            TagNode logonForm = null;
+            // select form
             if (forms.size() == 1) {
-                TagNode form = (TagNode) forms.get(0);
-                String logonMethodPath = form.getAttributeByName("action");
+                logonForm = (TagNode) forms.get(0);
+            } else if (forms.size() > 1) {
+                for (Object form : forms) {
+                    if ("logonForm".equals(((TagNode) form).getAttributeByName("name"))) {
+                        logonForm = ((TagNode) form);
+                    }
+                }
+            }
+            if (logonForm != null) {
+                String logonMethodPath = logonForm.getAttributeByName("action");
 
                 logonMethod = new PostMethod(getAbsoluteUri(initmethod, logonMethodPath));
 
-                List inputList = form.getElementListByName("input", true);
+                List inputList = logonForm.getElementListByName("input", true);
                 for (Object input : inputList) {
                     String type = ((TagNode) input).getAttributeByName("type");
                     String name = ((TagNode) input).getAttributeByName("name");
@@ -1487,6 +1497,7 @@ public class ExchangeSession {
 
         /**
          * Set IMAP uid.
+         *
          * @param imapUid new uid
          */
         public void setImapUid(long imapUid) {
