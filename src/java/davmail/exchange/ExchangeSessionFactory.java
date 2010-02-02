@@ -147,6 +147,7 @@ public final class ExchangeSessionFactory {
         ExchangeSession session = currentSession;
         try {
             if (session.isExpired()) {
+                ExchangeSession.LOGGER.debug("Session " + session + " expired, trying to open a new one");
                 session = null;
                 String baseUrl = Settings.getProperty("davmail.url");
                 PoolKey poolKey = new PoolKey(baseUrl, userName, password);
@@ -157,10 +158,10 @@ public final class ExchangeSessionFactory {
                 session = getInstance(userName, password);
             }
         } catch (DavMailAuthenticationException exc) {
-            throw exc;
-        } catch (DavMailException exc) {
+            ExchangeSession.LOGGER.debug("Unable to reopen session", exc);
             throw exc;
         } catch (Exception exc) {
+            ExchangeSession.LOGGER.debug("Unable to reopen session", exc);
             handleNetworkDown(exc);
         }
         return session;
