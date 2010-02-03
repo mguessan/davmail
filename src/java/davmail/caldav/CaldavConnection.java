@@ -608,8 +608,8 @@ public class CaldavConnection extends AbstractConnection {
             for (String href : request.getHrefs()) {
                 DavGatewayTray.debug(new BundleMessage("LOG_REPORT_EVENT", ++count, total));
                 DavGatewayTray.switchIcon();
+                String eventName = getEventFileNameFromPath(href);
                 try {
-                    String eventName = getEventFileNameFromPath(href);
                     // ignore cases for Sunbird
                     if (eventName != null && eventName.length() > 0
                             && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
@@ -618,7 +618,7 @@ public class CaldavConnection extends AbstractConnection {
                         appendEventResponse(response, request, event);
                     }
                 } catch (HttpException e) {
-                    DavGatewayTray.warn(new BundleMessage("LOG_EVENT_NOT_FOUND", href));
+                    DavGatewayTray.warn(new BundleMessage("LOG_EVENT_NOT_AVAILABLE", eventName, href));
                     notFound.add(href);
                 }
             }
