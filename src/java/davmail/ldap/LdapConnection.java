@@ -437,6 +437,7 @@ public class LdapConnection extends AbstractConnection {
                     bytesleft -= bytesread;
                 }
 
+                DavGatewayTray.switchIcon();
                 //Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
                 handleRequest(new BerDecoder(inbuf, 0, offset));
             }
