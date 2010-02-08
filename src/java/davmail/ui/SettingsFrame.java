@@ -295,8 +295,7 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_CLIENT_KEY_STORE_HELP"));
         addSettingComponent(clientKeystoreFilePanel, BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD"), clientKeystorePassField,
                 BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD_HELP"));
-        cardPanel.add(clientKeystoreFilePanel, "PKCS12");
-        cardPanel.add(clientKeystoreFilePanel, "JKS");
+        cardPanel.add(clientKeystoreFilePanel, "FILE");
 
         JPanel pkcs11Panel = new JPanel(new GridLayout(2, 2));
         addSettingComponent(pkcs11Panel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
@@ -305,12 +304,16 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_PKCS11_CONFIG_HELP"));
         cardPanel.add(pkcs11Panel, "PKCS11");
 
-        ((CardLayout)cardPanel.getLayout()).show(cardPanel, (String) clientKeystoreTypeCombo.getSelectedItem());
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, (String) clientKeystoreTypeCombo.getSelectedItem());
 
         clientKeystoreTypeCombo.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent event) {
                 CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
-                cardLayout.show(cardPanel, (String) event.getItem());
+                if ("PKCS11".equals((String) event.getItem())) {
+                    cardLayout.show(cardPanel, "PKCS11");
+                } else {
+                    cardLayout.show(cardPanel, "FILE");
+                }
             }
         });
         updateMaximumSize(clientKeystorePanel);
