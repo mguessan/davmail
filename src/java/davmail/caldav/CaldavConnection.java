@@ -504,7 +504,7 @@ public class CaldavConnection extends AbstractConnection {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendInbox(response, request, null);
-        if (request.getDepth() == 1) {
+        if (request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
             try {
                 DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
                 List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
