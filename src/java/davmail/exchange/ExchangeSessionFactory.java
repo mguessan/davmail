@@ -178,11 +178,10 @@ public final class ExchangeSessionFactory {
         GetMethod testMethod = new GetMethod(url);
         try {
             // get webMail root url (will not follow redirects)
-            testMethod.setDoAuthentication(false);
-            int status = DavGatewayHttpClientFacade.executeGetMethod(httpClient, testMethod, false);
+            int status = DavGatewayHttpClientFacade.executeTestMethod(httpClient, testMethod);
             ExchangeSession.LOGGER.debug("Test configuration status: " + status);
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_UNAUTHORIZED
-                    && status != HttpStatus.SC_MOVED_TEMPORARILY && status != HttpStatus.SC_MOVED_PERMANENTLY) {
+                    && !DavGatewayHttpClientFacade.isRedirect(status)) {
                 throw new DavMailException("EXCEPTION_CONNECTION_FAILED", url, status);
             }
             // session opened, future failure will mean network down

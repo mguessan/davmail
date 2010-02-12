@@ -414,6 +414,30 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
+     * Execute test method from checkConfig, with proxy credentials, but without Exchange credentials.
+     *
+     * @param httpClient      Http client instance
+     * @param method          Http method
+     * @param followRedirects Follow redirects flag
+     * @return Http status
+     * @throws IOException on error
+     */
+    public static int executeTestMethod(HttpClient httpClient, GetMethod method) throws IOException {
+          // do not follow redirects in expired sessions
+        method.setFollowRedirects(false);
+        int status = httpClient.executeMethod(method);
+        if (status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED
+                && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+            method.releaseConnection();
+            LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
+            addNTLM(httpClient);
+            status = httpClient.executeMethod(method);
+        }
+
+        return status;
+    }
+    
+    /**
      * Execute Get method, do not follow redirects.
      *
      * @param httpClient      Http client instance
