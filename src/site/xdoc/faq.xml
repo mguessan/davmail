@@ -54,6 +54,13 @@
                 <p>Your Exchange server expects HTTPS (secured) connections, use https instead of http in
                     OWA url.
                 </p>
+                <p>
+                    <strong>Where can I find DavMail settings file</strong>
+                </p>
+                <p>The default location for DavMail settings is a file named .davmail.properties in user home
+                folder. This file is hidden under Linux and OSX. On windows, the user home folder is under
+                <code>Document and Settings</code></p>
+
             </subsection>
 
             <subsection name="Exchange setup">
@@ -82,16 +89,23 @@
                     <strong>How do I secure DavMail connections ?</strong>
                 </p>
                 <p>Communication between DavMail and you Exchange server is secured by default as long as you access
-                    OWA over HTTPS. Communication between the messaging client and DavMail is <em>not</em> secured by
-                    default. This is not an issue in standalone mode as all communication is local, but you may want
-                    to improve this in server (shared) mode. This is quite simple: you just need to get a server
-                    certificate in PKCS12 or JKS format and add it in the key store section in DavMail settings,
-                    see <a href="gettingstarted.html">Getting started</a>. You need to choose the key store type in
-                    davmail.ssl.keystoreType: PKCS12 for .p12 file and JKS for java generated key stores. Then set the full
-                    path to your certificate file in davmail.ssl.keystoreFile and the certificate file password in
-                    davmail.ssl.keystorePass. You may also have a key password in addition to the file password, specify it
-                    in davmail.ssl.keyPass.
-                    This will switch all DavMail services to SSL mode: POP3S/IMAPS/SMTPS/HTTPS/LDAPS.
+                    OWA over HTTPS.
+                </p>
+                <p>Communication between the messaging client and DavMail is
+                    <em>not</em>
+                    secured by default. This is not an issue in standalone mode as all communication is local, but you
+                    may want
+                    to improve this in server (shared) mode.
+                </p>
+                <p>This is quite simple: you just need to get a server certificate in PKCS12 or JKS format and add it in
+                    the key store section in DavMail settings, see<a href="gettingstarted.html">Getting started</a>.
+                    You need to choose the key store type in davmail.ssl.keystoreType: PKCS12 for .p12 file and JKS for
+                    java generated key stores. Then set the full path to your certificate file in
+                    davmail.ssl.keystoreFile
+                    and the certificate file password in davmail.ssl.keystorePass. You may also have a key password in
+                    addition
+                    to the file password, specify it in davmail.ssl.keyPass. This will switch all DavMail services to
+                    SSL mode: POP3S/IMAPS/SMTPS/HTTPS/LDAPS.
                 </p>
 
                 <p>
@@ -110,9 +124,8 @@
                     on. To detect errors at this level, you may activate calendar log settings
                     under Tools/Options/Advanced:
                 </p>
-                <source>
-                    calendar.debug.log=true
-                    calendar.debug.log.verbose=true
+                <source>calendar.debug.log=true
+calendar.debug.log.verbose=true
                 </source>
 
                 <p>
