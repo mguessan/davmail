@@ -309,7 +309,7 @@ public class SettingsFrame extends JFrame {
         clientKeystoreTypeCombo.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent event) {
                 CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
-                if ("PKCS11".equals((String) event.getItem())) {
+                if ("PKCS11".equals(event.getItem())) {
                     cardLayout.show(cardPanel, "PKCS11");
                 } else {
                     cardLayout.show(cardPanel, "FILE");
