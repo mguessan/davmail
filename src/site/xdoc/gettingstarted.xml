@@ -77,6 +77,11 @@
                     <td>false</td>
                 </tr>
                 <tr>
+                    <td>Force Active Sync update</td>
+                    <td>Use double event update to trigger ActiveSync mobile phones sync</td>
+                    <td>false</td>
+                </tr>
+                <tr>
                     <td>Caldav alarm sound</td>
                     <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no conversion</td>
                     <td>Basso</td>
