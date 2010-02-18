@@ -80,6 +80,8 @@ public class SmtpConnection extends AbstractConnection {
                     } else if ("QUIT".equalsIgnoreCase(command)) {
                         sendClient("221 Closing connection");
                         break;
+                    } else if ("NOOP".equalsIgnoreCase(command)) {
+                        sendClient("250 OK");
                     } else if ("EHLO".equalsIgnoreCase(command)) {
                         sendClient("250-" + tokens.nextToken());
                         // inform server that AUTH is supported
