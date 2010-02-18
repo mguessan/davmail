@@ -157,7 +157,8 @@ public class SmtpConnection extends AbstractConnection {
 
                         if (state == State.STARTMAIL ||
                                 state == State.RECIPIENT ||
-                                state == State.MAILDATA) {
+                                state == State.MAILDATA ||
+                                state == State.AUTHENTICATED) {
                             state = State.AUTHENTICATED;
                         } else {
                             state = State.INITIAL;
