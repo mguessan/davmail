@@ -432,8 +432,9 @@ public class ImapConnection extends AbstractConnection {
                                             for (ExchangeSession.Message message : currentMessages) {
                                                 if (!uidSet.contains(message.getImapUid())) {
                                                     sendClient("* " + index + " EXPUNGE");
+                                                } else {
+                                                    index++;
                                                 }
-                                                index++;
                                             }
                                             sendClient("* " + currentFolder.count() + " EXISTS");
                                             sendClient("* " + currentFolder.count() + " RECENT");
@@ -1013,14 +1014,15 @@ public class ImapConnection extends AbstractConnection {
 
     protected void expunge(boolean silent) throws IOException {
         if (currentFolder.messages != null) {
-            int index = 0;
+            int index = 1;
             for (ExchangeSession.Message message : currentFolder.messages) {
-                index++;
                 if (message.deleted) {
                     message.delete();
                     if (!silent) {
                         sendClient("* " + index + " EXPUNGE");
                     }
+                } else {
+                    index++;
                 }
             }
         }
