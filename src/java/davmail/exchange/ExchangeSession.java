@@ -1809,9 +1809,9 @@ public class ExchangeSession {
          * User Translate: f header to get MIME event content and get ICS attachment from it
          *
          * @return ICS (iCalendar) event
-         * @throws IOException on error
+         * @throws HttpException on error
          */
-        public String getICS() throws IOException {
+        public String getICS() throws HttpException {
             String result;
             LOGGER.debug("Get event: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
@@ -2546,7 +2546,7 @@ public class ExchangeSession {
                 // check ics content
                 try {
                     event.getICS();
-                } catch (IOException e) {
+                } catch (HttpException e) {
                     // invalid event: exclude from list
                     LOGGER.warn("Invalid event found at " + response.getHref(), e);
                 }
