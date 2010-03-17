@@ -172,6 +172,32 @@
         </deb>
     </target>
 
+    <target name='dist-rpm'>
+        <taskdef name='rpm' classname='org.freecompany.redline.ant.RedlineTask'>
+            <classpath location="lib/ant-deb-0.0.1.jar"/>
+        </taskdef>
+
+        <rpm group='mail' name='davmail' version='${release}' destination='dist'>
+            <zipfileset dir="dist" prefix="usr/share/davmail">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <!-- exclude swt jars from package -->
+                <exclude name="lib/swt*.jar"/>
+            </zipfileset>
+            <zipfileset dir="src/bin" prefix="usr/bin" filemode="755">
+                <include name="davmail"/>
+            </zipfileset>
+            <zipfileset dir="dist" prefix="usr/share/davmail">
+                <include name="davmail.png"/>
+            </zipfileset>
+            <zipfileset dir="dist" prefix="usr/share/applications">
+                <include name="davmail.desktop"/>
+            </zipfileset>
+        </rpm>
+
+    </target>
+
+
     <target name="dist" depends="compile">
         <property name="release-name" value="${release}-trunk"/>
         <delete dir="dist"/>
@@ -261,6 +287,7 @@
         </tar>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
+        <antcall target="dist-rpm"/>
         <antcall target="dist-osx"/>
         <!-- source package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
