@@ -570,7 +570,7 @@ public class ImapConnection extends AbstractConnection {
                     os.write(baos.toByteArray());
                     os.flush();
                     buffer.setLength(0);
-                } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || "BODY.PEEK[TEXT]".equals(param)) {
+                } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || param.startsWith("BODY[TEXT]") || "BODY.PEEK[TEXT]".equals(param)) {
                     // parse buffer size
                     int startIndex = 0;
                     int ltIndex = param.indexOf('<');
@@ -820,14 +820,15 @@ public class ImapConnection extends AbstractConnection {
                 }
                 buffer.append(')');
             } else {
-                buffer.append(" ()");
+                buffer.append(" NIL");
             }
         }
         appendBodyStructureValue(buffer, bodyPart.getContentID());
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
         appendBodyStructureValue(buffer, bodyPart.getSize());
-        appendBodyStructureValue(buffer, bodyPart.getLineCount());
+		// line count not implemented in JavaMail, return 0
+        appendBodyStructureValue(buffer, 0);
         buffer.append(')');
     }
 
