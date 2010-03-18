@@ -655,15 +655,26 @@ public class ExchangeSession {
             calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
             contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
 
+            // default public folder path
+            publicFolderUrl = "/public";
+
+            // check public folder access
             try {
-                PropFindMethod propFindMethod = new PropFindMethod("/public", CONTENT_TAG, 0);
+                if (inboxUrl != null) {
+                    // try to build full public URI from inboxUrl
+                    URI publicUri = new URI(inboxUrl, false);
+                    publicUri.setPath("/public");
+                    publicFolderUrl = publicUri.getURI();
+                }
+                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, CONTENT_TAG, 0);
                 DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                // update public folder URI
                 publicFolderUrl = propFindMethod.getURI().getURI();
             } catch (IOException e) {
                 LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-                // default public folder path
                 publicFolderUrl = "/public";
             }
+
             LOGGER.debug("Inbox URL : " + inboxUrl +
                     " Trash URL : " + deleteditemsUrl +
                     " Sent URL : " + sentitemsUrl +
