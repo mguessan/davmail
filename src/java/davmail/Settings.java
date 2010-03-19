@@ -20,7 +20,7 @@ package davmail;
 
 import davmail.ui.tray.DavGatewayTray;
 
-import java.util.Properties;
+import java.util.*;
 import java.io.*;
 
 import org.apache.log4j.*;
@@ -34,7 +34,28 @@ public final class Settings {
     private Settings() {
     }
 
-    private static final Properties SETTINGS = new Properties();
+    private static final Properties SETTINGS = new Properties() {
+        @Override
+        public synchronized Enumeration<Object> keys() {
+            Enumeration keysEnumeration = super.keys();
+            TreeSet<String> sortedKeySet = new TreeSet<String>();
+            while (keysEnumeration.hasMoreElements()) {
+                sortedKeySet.add((String) keysEnumeration.nextElement());
+            }
+            final Iterator<String> sortedKeysIterator = sortedKeySet.iterator();
+            return new Enumeration<Object>() {
+
+                public boolean hasMoreElements() {
+                    return sortedKeysIterator.hasNext();
+                }
+
+                public Object nextElement() {
+                    return sortedKeysIterator.next();
+                }
+            };
+        }
+
+    };
     private static String configFilePath;
     private static boolean isFirstStart;
 
@@ -158,7 +179,7 @@ public final class Settings {
                 logFilePath = System.getProperty("user.home") + "/Library/Logs/DavMail/davmail.log";
             }
         } else {
-           File logFile = new File(logFilePath);
+            File logFile = new File(logFilePath);
             if (logFile.isDirectory()) {
                 logFilePath += "/davmail.log";
             }
