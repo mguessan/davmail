@@ -15,12 +15,13 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in DavMail next versions.
             </p>
-            <subsection name="3.6.3">
+            <subsection name="3.6.5">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
                     <li>Fix JavaMail client IMAP support</li>
+                    <li>Create a new RPM package with redline rpm ant task</li>
                 </ul>
             </subsection>
             <subsection name="3.7.0">
