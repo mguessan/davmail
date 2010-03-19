@@ -1904,7 +1904,7 @@ public class ExchangeSession {
                 throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
             }
             String dateValue = line.substring(valueIndex + 1, valueEndIndex);
-            String key = line.substring(0, Math.max(keyIndex, valueIndex));
+            String key = line.substring(0, Math.min(keyIndex, valueIndex));
             return key + ";VALUE=DATE:" + dateValue;
         }
 
