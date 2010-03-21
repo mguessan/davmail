@@ -2141,7 +2141,7 @@ public class ExchangeSession {
             String resultString = result.toString();
             dumpICS(resultString, fromServer, true);
 
-            return result.toString();
+            return resultString;
         }
 
         protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
@@ -2553,7 +2553,7 @@ public class ExchangeSession {
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype", Namespace.getNamespace("urn:schemas:calendar:"));
             Event event = buildEvent(response);
-            if (instancetype == null && event.getICS() == null) {
+            if (instancetype == null) {
                 // check ics content
                 try {
                     event.getICS();
