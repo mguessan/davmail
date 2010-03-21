@@ -280,7 +280,12 @@ public final class Settings {
      * @return property value
      */
     public static synchronized String getProperty(String property) {
-        return SETTINGS.getProperty(property);
+        String value = SETTINGS.getProperty(property);
+        // return null on empty value
+        if (value != null && value.length() == 0) {
+            value = null;
+        }
+        return value;
     }
 
     /**
