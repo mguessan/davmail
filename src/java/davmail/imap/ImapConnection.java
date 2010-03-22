@@ -679,7 +679,7 @@ public class ImapConnection extends AbstractConnection {
 
         try {
             MimeMessage mimeMessage = message.getMimeMessage();
-            // Fake envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
+            // Envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Date"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Subject"));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From", ","));
@@ -701,9 +701,17 @@ public class ImapConnection extends AbstractConnection {
     protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) {
         buffer.append(' ');
         if (value != null && value.length > 0) {
-            buffer.append('"');
-            buffer.append(MimeUtility.unfold(value[0]));
-            buffer.append('"');
+            String unfoldedValue = MimeUtility.unfold(value[0]);
+            if (unfoldedValue.indexOf('"') >= 0) {
+                buffer.append('{');
+                buffer.append(unfoldedValue.length());
+                buffer.append("}\r\n");
+                buffer.append(unfoldedValue);
+            } else {
+                buffer.append('"');
+                buffer.append(unfoldedValue);
+                buffer.append('"');
+            }
         } else {
             buffer.append("NIL");
         }
