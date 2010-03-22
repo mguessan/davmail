@@ -646,9 +646,6 @@ public class ImapConnection extends AbstractConnection {
                     os.write(baos.toByteArray());
                     os.flush();
                     buffer.setLength(0);
-
-                } else {
-                    throw new DavMailException("EXCEPTION_UNSUPPORTED_PARAMETER", param);
                 }
             }
         }
