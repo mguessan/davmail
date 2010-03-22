@@ -481,7 +481,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("UNSEEN ").append(folder.unreadCount).append(' ');
                                             }
                                         }
-                                        sendClient("* STATUS " + encodedFolderName + " (" + answer.toString().trim() + ')');
+                                        sendClient("* STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
                                     } catch (HttpException e) {
                                         sendClient(commandId + " NO folder not found");
