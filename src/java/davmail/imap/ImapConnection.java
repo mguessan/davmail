@@ -28,6 +28,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 
 import javax.mail.MessagingException;
@@ -528,7 +529,7 @@ public class ImapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException {
+    private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException {
         StringBuilder buffer = new StringBuilder();
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         if (parameters != null) {
@@ -608,6 +609,44 @@ public class ImapConnection extends AbstractConnection {
                     os.write(baos.toByteArray());
                     os.flush();
                     buffer.setLength(0);
+                } else if (param.startsWith("BODY[") && param.endsWith("]")) {
+                    int partIndex = 0;
+                    // try to parse message part index
+                    String partIndexString = StringUtil.getToken(param, "[", "]");
+                    if (partIndexString != null) {
+                        try {
+                            partIndex = Integer.parseInt(partIndexString);
+                        } catch (NumberFormatException e) {
+                            throw new DavMailException("EXCEPTION_UNSUPPORTED_PARAMETER", param);
+                        }
+                    }
+                    if (partIndex == 0) {
+                        throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                    }
+
+                    MimeMessage mimeMessage = message.getMimeMessage();
+                    Object mimeBody = mimeMessage.getContent();
+                    MimePart bodyPart;
+                    if (mimeBody instanceof MimeMultipart) {
+                        MimeMultipart multiPart = (MimeMultipart) mimeBody;
+                        bodyPart = (MimePart) multiPart.getBodyPart(partIndex - 1);
+                    } else if (partIndex == 1) {
+                        // no multipart, single body
+                        bodyPart = mimeMessage;
+                    } else {
+                        throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                    }
+
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    bodyPart.getDataHandler().writeTo(baos);
+                    baos.close();
+
+                    buffer.append(" {").append(baos.size()).append('}');
+                    sendClient(buffer.toString());
+                    os.write(baos.toByteArray());
+                    os.flush();
+                    buffer.setLength(0);
+
                 } else {
                     throw new DavMailException("EXCEPTION_UNSUPPORTED_PARAMETER", param);
                 }
@@ -837,7 +876,7 @@ public class ImapConnection extends AbstractConnection {
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
         appendBodyStructureValue(buffer, bodyPart.getSize());
-		// line count not implemented in JavaMail, return 0
+        // line count not implemented in JavaMail, return 0
         appendBodyStructureValue(buffer, 0);
         buffer.append(')');
     }
