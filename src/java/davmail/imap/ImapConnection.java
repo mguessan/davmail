@@ -609,7 +609,7 @@ public class ImapConnection extends AbstractConnection {
                     os.write(baos.toByteArray());
                     os.flush();
                     buffer.setLength(0);
-                } else if (param.startsWith("BODY[") && param.endsWith("]")) {
+                } else if (param.startsWith("BODY[")) {
                     int partIndex = 0;
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
