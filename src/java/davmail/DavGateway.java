@@ -196,9 +196,9 @@ public final class DavGateway {
         String version = null;
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
             BufferedReader versionReader = null;
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
             GetMethod getMethod = new GetMethod(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
             try {
+                HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
                 int status = httpClient.executeMethod(getMethod);
                 if (status == HttpStatus.SC_OK) {
                     versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));

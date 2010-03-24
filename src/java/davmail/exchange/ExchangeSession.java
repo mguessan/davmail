@@ -1585,7 +1585,7 @@ public class ExchangeSession {
             method.setRequestHeader("Translate", "f");
             BufferedReader reader = null;
             try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, false);
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
 
                 reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);

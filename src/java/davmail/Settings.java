@@ -139,6 +139,7 @@ public final class Settings {
         SETTINGS.put("davmail.caldavPastDelay", "90");
         SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
         SETTINGS.put("davmail.bindAddress", "");
+        SETTINGS.put("davmail.useSystemProxies", Boolean.TRUE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
         SETTINGS.put("davmail.proxyHost", "");
         SETTINGS.put("davmail.proxyPort", "");

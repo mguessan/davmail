@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exception.*;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
@@ -38,6 +39,7 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -70,14 +72,16 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Create a configured HttpClient instance.
      *
+     * @param url target url
      * @return httpClient
+     * @throws DavMailException on error
      */
-    public static HttpClient getInstance() {
+    public static HttpClient getInstance(String url) throws DavMailException {
         // create an HttpClient instance
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
-        configureClient(httpClient);
+        configureClient(httpClient, url);
         return httpClient;
     }
 
@@ -94,17 +98,10 @@ public final class DavGatewayHttpClientFacade {
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
-        HostConfiguration hostConfig = httpClient.getHostConfiguration();
-        try {
-            URI httpURI = new URI(url, true);
-            hostConfig.setHost(httpURI);
-            // some Exchange servers redirect to a different host for freebusy, use wide auth scope
-            AuthScope authScope = new AuthScope(null, -1);
-            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "", ""));
-        } catch (URIException e) {
-            throw new DavMailException("LOG_INVALID_URL", url);
-        }
-        configureClient(httpClient);
+        configureClient(httpClient, url);
+        // some Exchange servers redirect to a different host for freebusy, use wide auth scope
+        AuthScope authScope = new AuthScope(null, -1);
+        httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "", ""));
         return httpClient;
     }
 
@@ -112,8 +109,18 @@ public final class DavGatewayHttpClientFacade {
      * Update http client configuration (proxy)
      *
      * @param httpClient current Http client
+     * @param url        target url
+     * @throws DavMailException on error
      */
-    public static void configureClient(HttpClient httpClient) {
+    public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
+        try {
+            HostConfiguration hostConfig = httpClient.getHostConfiguration();
+            URI httpURI = new URI(url, true);
+            hostConfig.setHost(httpURI);
+        } catch (URIException e) {
+            throw new DavMailException("LOG_INVALID_URL", url);
+        }
+
         synchronized (LOCK) {
             httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
         }
@@ -127,12 +134,32 @@ public final class DavGatewayHttpClientFacade {
         }
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
+        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies");
         String proxyHost = null;
         int proxyPort = 0;
         String proxyUser = null;
         String proxyPassword = null;
 
-        if (enableProxy) {
+        if (useSystemProxies) {
+            // get proxy for url from system settings
+            System.setProperty("java.net.useSystemProxies", "true");
+            try {
+                List<Proxy> proxyList = ProxySelector.getDefault().select(new java.net.URI(url));
+                if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
+                    InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
+                    proxyHost = inetSocketAddress.getHostName();
+                    proxyPort = inetSocketAddress.getPort();
+
+                    // we may still need authentication credentials
+                    proxyUser = Settings.getProperty("davmail.proxyUser");
+                    proxyPassword = Settings.getProperty("davmail.proxyPassword");
+                }
+            } catch (URISyntaxException e) {
+                throw new DavMailException("LOG_INVALID_URL", url);
+            }
+
+
+        } else if (enableProxy) {
             proxyHost = Settings.getProperty("davmail.proxyHost");
             proxyPort = Settings.getIntProperty("davmail.proxyPort");
             proxyUser = Settings.getProperty("davmail.proxyUser");
@@ -172,7 +199,7 @@ public final class DavGatewayHttpClientFacade {
      */
     public static int getHttpStatus(String url) throws IOException {
         int status = 0;
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
+        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
         HttpMethod testMethod = new GetMethod(url);
         testMethod.setDoAuthentication(false);
         try {
@@ -387,6 +414,13 @@ public final class DavGatewayHttpClientFacade {
         needNTLM = true;
     }
 
+    /**
+     * Test method header for supported authentication mode,
+     * return true if Basic authentication is not available
+     *
+     * @param getMethod http method
+     * @return true if only NTLM is enabled
+     */
     public static boolean acceptsNTLMOnly(HttpMethod getMethod) {
         Header authenticateHeader = null;
         if (getMethod.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
@@ -416,14 +450,13 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Execute test method from checkConfig, with proxy credentials, but without Exchange credentials.
      *
-     * @param httpClient      Http client instance
-     * @param method          Http method
-     * @param followRedirects Follow redirects flag
+     * @param httpClient Http client instance
+     * @param method     Http method
      * @return Http status
      * @throws IOException on error
      */
     public static int executeTestMethod(HttpClient httpClient, GetMethod method) throws IOException {
-          // do not follow redirects in expired sessions
+        // do not follow redirects in expired sessions
         method.setFollowRedirects(false);
         int status = httpClient.executeMethod(method);
         if (status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED
@@ -436,7 +469,7 @@ public final class DavGatewayHttpClientFacade {
 
         return status;
     }
-    
+
     /**
      * Execute Get method, do not follow redirects.
      *
