@@ -174,7 +174,7 @@ public final class ExchangeSessionFactory {
      */
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance();
+        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
         GetMethod testMethod = new GetMethod(url);
         try {
             // get webMail root url (will not follow redirects)
