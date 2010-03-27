@@ -554,7 +554,7 @@ public class ImapConnection extends AbstractConnection {
                     }
                 } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER") || "RFC822.HEADER".equals(param)) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0);
+                    PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0, Integer.MAX_VALUE);
                     message.write(partOutputStream);
                     baos.close();
 
@@ -574,12 +574,13 @@ public class ImapConnection extends AbstractConnection {
                 } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || param.startsWith("BODY[TEXT]") || "BODY.PEEK[TEXT]".equals(param)) {
                     // parse buffer size
                     int startIndex = 0;
+                    int maxSize = Integer.MAX_VALUE;
                     int ltIndex = param.indexOf('<');
                     if (ltIndex >= 0) {
                         int dotIndex = param.indexOf('.', ltIndex);
                         if (dotIndex >= 0) {
                             startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
-                            // ignore buffer size
+                            maxSize = Integer.parseInt(param.substring(dotIndex+1, param.indexOf('>')));
                         }
                     }
 
@@ -589,7 +590,7 @@ public class ImapConnection extends AbstractConnection {
                     if ("BODY.PEEK[TEXT]".equals(param)) {
                         writeHeaders = false;
                     }
-                    PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex);
+                    PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex, maxSize);
                     message.write(bodyOutputStream);
                     rfc822size = bodyOutputStream.size;
                     baos.close();
@@ -601,7 +602,7 @@ public class ImapConnection extends AbstractConnection {
                         buffer.append("BODY[]");
                     }
                     // partial
-                    if (startIndex > 0) {
+                    if (startIndex > 0 || maxSize != Integer.MAX_VALUE) {
                         buffer.append('<').append(startIndex).append('>');
                     }
                     buffer.append(" {").append(baos.size()).append('}');
@@ -624,6 +625,18 @@ public class ImapConnection extends AbstractConnection {
                         throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
                     }
 
+                    // parse buffer size
+                    int startIndex = 0;
+                    int maxSize = Integer.MAX_VALUE;
+                    int ltIndex = param.indexOf('<');
+                    if (ltIndex >= 0) {
+                        int dotIndex = param.indexOf('.', ltIndex);
+                        if (dotIndex >= 0) {
+                            startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
+                            maxSize = Integer.parseInt(param.substring(dotIndex+1, param.indexOf('>')));
+                        }
+                    }
+
                     MimeMessage mimeMessage = message.getMimeMessage();
                     Object mimeBody = mimeMessage.getContent();
                     MimePart bodyPart;
@@ -638,9 +651,14 @@ public class ImapConnection extends AbstractConnection {
                     }
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    bodyPart.getDataHandler().writeTo(baos);
+                    bodyPart.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
                     baos.close();
 
+                    buffer.append(" BODY[").append(partIndexString).append(']');
+                    // partial
+                    if (startIndex > 0 || maxSize != Integer.MAX_VALUE) {
+                        buffer.append('<').append(startIndex).append('>');
+                    }
                     buffer.append(" {").append(baos.size()).append('}');
                     sendClient(buffer.toString());
                     os.write(baos.toByteArray());
@@ -1248,25 +1266,29 @@ public class ImapConnection extends AbstractConnection {
 
         private int state = START;
         private int size;
+        private int bufferSize;
         private final boolean writeHeaders;
         private final boolean writeBody;
         private final int startIndex;
+        private final int maxSize;
 
         private PartOutputStream(OutputStream os, boolean writeHeaders, boolean writeBody,
-                                 int startIndex) {
+                                 int startIndex, int maxSize) {
             super(os);
             this.writeHeaders = writeHeaders;
             this.writeBody = writeBody;
             this.startIndex = startIndex;
+            this.maxSize = maxSize;
         }
 
         @Override
         public void write(int b) throws IOException {
             size++;
             if (((state != BODY && writeHeaders) || (state == BODY && writeBody)) &&
-                    (size > startIndex)
+                    (size > startIndex) && (bufferSize < maxSize)
                     ) {
                 super.write(b);
+                bufferSize++;
             }
             if (state == START) {
                 if (b == '\r') {
@@ -1290,6 +1312,31 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     state = START;
                 }
+            }
+        }
+    }
+
+    /**
+     * Partial output stream, start at startIndex and write maxSize bytes.
+     */
+    private static final class PartialOutputStream extends FilterOutputStream {
+        private int size;
+        private int bufferSize;
+        private final int startIndex;
+        private final int maxSize;
+
+        private PartialOutputStream(OutputStream os, int startIndex, int maxSize) {
+            super(os);
+            this.startIndex = startIndex;
+            this.maxSize = maxSize;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            size++;
+            if ((size > startIndex) && (bufferSize < maxSize)) {
+                super.write(b);
+                bufferSize++;
             }
         }
     }
