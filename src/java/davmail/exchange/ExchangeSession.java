@@ -2525,6 +2525,12 @@ public class ExchangeSession {
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatSearchDate(cal.getTime()) + "'\n";
         }
 
+        String privateCondition = "";
+        if (!isSharedFolder(folderPath)) {
+            LOGGER.debug("Shared or public calendar: exclude private events");
+            privateCondition = "                AND \"http://schemas.microsoft.com/exchange/sensitivity\" = 0\n";
+        }
+
         String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
@@ -2534,6 +2540,7 @@ public class ExchangeSession {
                 "                OR (\"urn:schemas:calendar:instancetype\" = 0\n" +
                 dateCondition +
                 "                )) AND \"DAV:contentclass\" = 'urn:content-classes:appointment'\n" +
+                privateCondition +
                 "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
         return getEvents(folderPath, searchQuery);
     }
@@ -2553,6 +2560,7 @@ public class ExchangeSession {
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype", Namespace.getNamespace("urn:schemas:calendar:"));
             Event event = buildEvent(response);
+            //noinspection VariableNotUsedInsideIf
             if (instancetype == null) {
                 // check ics content
                 try {
@@ -2861,6 +2869,16 @@ public class ExchangeSession {
             buffer.append(folderName);
         }
         return buffer.toString();
+    }
+
+    /**
+     * Test if folderPath is inside user mailbox.
+     *
+     * @param folderPath absolute folder path
+     * @return true if folderPath is a public or shared folder
+     */
+    public boolean isSharedFolder(String folderPath) {
+        return !folderPath.startsWith(mailPath);
     }
 
     /**
