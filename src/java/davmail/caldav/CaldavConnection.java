@@ -421,12 +421,15 @@ public class CaldavConnection extends AbstractConnection {
         String ctag = "0";
         String etag = "0";
         String exchangeFolderPath = request.getExchangeFolderPath(subFolder);
-        try {
-            ctag = base64Encode(session.getFolderCtag(exchangeFolderPath));
-            etag = session.getFolderResourceTag(exchangeFolderPath);
-        } catch (HttpException e) {
-            // unauthorized access, probably an inbox on shared calendar
-            DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", exchangeFolderPath, e.getMessage()));
+        // do not try to access inbox on shared calendar
+        if (!session.isSharedFolder(exchangeFolderPath)) {
+            try {
+                ctag = base64Encode(session.getFolderCtag(exchangeFolderPath));
+                etag = session.getFolderResourceTag(exchangeFolderPath);
+            } catch (HttpException e) {
+                // unauthorized access, probably an inbox on shared calendar
+                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", exchangeFolderPath, e.getMessage()));
+            }
         }
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
@@ -504,7 +507,8 @@ public class CaldavConnection extends AbstractConnection {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         appendInbox(response, request, null);
-        if (request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
+		// do not try to access inbox on shared calendar
+        if (!session.isSharedFolder(request.getExchangeFolderPath(null)) && request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
             try {
                 DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
                 List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
