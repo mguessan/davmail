@@ -2491,10 +2491,11 @@ public class ExchangeSession {
     public List<Event> getEventMessages(String folderPath) throws IOException {
         List<Event> result;
         try {
-            String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\"" +
+            String scheduleStatePropertyName = scheduleStateProperty.getNamespace().getURI() + scheduleStateProperty.getName();
+            String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
                     "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                     "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
-                    "                AND (NOT \"" + scheduleStateProperty.getNamespace().getURI() + scheduleStateProperty.getName() + "\" = 'CALDAV:schedule-processed')\n" +
+                    "                AND (\""+scheduleStatePropertyName+"\" IS NULL OR NOT \"" + scheduleStatePropertyName + "\" = 'CALDAV:schedule-processed')\n" +
                     "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
             result = getEvents(folderPath, searchQuery);
         } catch (HttpException e) {
