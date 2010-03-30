@@ -2994,7 +2994,7 @@ public class ExchangeSession {
         }
     }
 
-    static final String MAILBOX_BASE = "cn=recipients/cn=";
+    static final String MAILBOX_BASE = "/cn=";
 
     protected String getAliasFromOptions(String path) {
         String result = null;
@@ -3010,7 +3010,7 @@ public class ExchangeSession {
             while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
             }
             if (line != null) {
-                int start = line.toLowerCase().indexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf('<', start);
                 result = line.substring(start, end);
             }
