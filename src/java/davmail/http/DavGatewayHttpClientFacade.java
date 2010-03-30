@@ -404,7 +404,11 @@ public final class DavGatewayHttpClientFacade {
         return authPrefs == null || (authPrefs instanceof List<?> && ((Collection) authPrefs).contains(AuthPolicy.NTLM));
     }
 
-    private static void addNTLM(HttpClient httpClient) {
+    /**
+     * Enable NTLM authentication on http client
+     * @param httpClient HttpClient instance
+     */
+    public static void addNTLM(HttpClient httpClient) {
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.NTLM);
         authPrefs.add(AuthPolicy.DIGEST);

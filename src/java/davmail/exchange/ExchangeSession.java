@@ -667,7 +667,15 @@ public class ExchangeSession {
                     publicFolderUrl = publicUri.getURI();
                 }
                 PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, CONTENT_TAG, 0);
-                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                try {
+                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                } catch (IOException e) {
+                    // workaround for NTLM authentication only on /public
+                    if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+                        DavGatewayHttpClientFacade.addNTLM(httpClient);
+                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                    }
+                }
                 // update public folder URI
                 publicFolderUrl = propFindMethod.getURI().getURI();
             } catch (IOException e) {
@@ -2495,7 +2503,7 @@ public class ExchangeSession {
             String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
                     "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                     "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
-                    "                AND (\""+scheduleStatePropertyName+"\" IS NULL OR NOT \"" + scheduleStatePropertyName + "\" = 'CALDAV:schedule-processed')\n" +
+                    "                AND (\"" + scheduleStatePropertyName + "\" IS NULL OR NOT \"" + scheduleStatePropertyName + "\" = 'CALDAV:schedule-processed')\n" +
                     "                ORDER BY \"urn:schemas:calendar:dtstart\" DESC\n";
             result = getEvents(folderPath, searchQuery);
         } catch (HttpException e) {
