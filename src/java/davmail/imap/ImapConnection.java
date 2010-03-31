@@ -538,6 +538,13 @@ public class ImapConnection extends AbstractConnection {
                 String param = paramTokens.nextToken();
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
+                } else if ("RFC822.SIZE".equals(param)) {
+                    MimeMessage mimeMessage = message.getMimeMessage();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    PartialOutputStream partOutputStream = new PartialOutputStream(baos, 0, 0);
+                    mimeMessage.writeTo(partOutputStream);
+                    baos.close();
+                    buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
                 } else if ("ENVELOPE".equals(param)) {
                     appendEnvelope(buffer, message);
                 } else if ("BODYSTRUCTURE".equals(param)) {
@@ -552,26 +559,13 @@ public class ImapConnection extends AbstractConnection {
                     } catch (ParseException e) {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
-                } else if ("BODY.PEEK[HEADER]".equals(param) || param.startsWith("BODY.PEEK[HEADER") || "RFC822.HEADER".equals(param)) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PartOutputStream partOutputStream = new PartOutputStream(baos, true, false, 0, Integer.MAX_VALUE);
-                    message.write(partOutputStream);
-                    baos.close();
-
-                    buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
-                    if ("BODY.PEEK[HEADER]".equals(param)) {
-                        buffer.append(" BODY[HEADER] {");
-                    } else if ("RFC822.HEADER".equals(param)) {
-                        buffer.append(" RFC822.HEADER {");
-                    } else {
-                        buffer.append(" BODY[HEADER.FIELDS ()] {");
+                } else if (param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
+                    // get full param
+                    if (param.indexOf('[') >= 0) {
+                        while (paramTokens.hasMoreTokens() && param.indexOf(']') < 0) {
+                            param += ' ' + paramTokens.nextToken();
+                        }
                     }
-                    buffer.append(baos.size()).append('}');
-                    sendClient(buffer.toString());
-                    os.write(baos.toByteArray());
-                    os.flush();
-                    buffer.setLength(0);
-                } else if (param.startsWith("BODY[]") || param.startsWith("BODY.PEEK[]") || param.startsWith("BODY[TEXT]") || "BODY.PEEK[TEXT]".equals(param)) {
                     // parse buffer size
                     int startIndex = 0;
                     int maxSize = Integer.MAX_VALUE;
@@ -580,81 +574,59 @@ public class ImapConnection extends AbstractConnection {
                         int dotIndex = param.indexOf('.', ltIndex);
                         if (dotIndex >= 0) {
                             startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
-                            maxSize = Integer.parseInt(param.substring(dotIndex+1, param.indexOf('>')));
+                            // do not implement maxSize to avoid downloading message multiple times
+                            //maxSize = Integer.parseInt(param.substring(dotIndex + 1, param.indexOf('>')));
                         }
                     }
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    boolean writeHeaders = true;
-                    int rfc822size;
-                    if ("BODY.PEEK[TEXT]".equals(param)) {
-                        writeHeaders = false;
-                    }
-                    PartOutputStream bodyOutputStream = new PartOutputStream(baos, writeHeaders, true, startIndex, maxSize);
-                    message.write(bodyOutputStream);
-                    rfc822size = bodyOutputStream.size;
-                    baos.close();
 
-                    buffer.append(" RFC822.SIZE ").append(rfc822size).append(' ');
-                    if ("BODY.PEEK[TEXT]".equals(param)) {
-                        buffer.append("BODY[TEXT]");
-                    } else {
-                        buffer.append("BODY[]");
-                    }
-                    // partial
-                    if (startIndex > 0 || maxSize != Integer.MAX_VALUE) {
-                        buffer.append('<').append(startIndex).append('>');
-                    }
-                    buffer.append(" {").append(baos.size()).append('}');
-                    sendClient(buffer.toString());
-                    os.write(baos.toByteArray());
-                    os.flush();
-                    buffer.setLength(0);
-                } else if (param.startsWith("BODY[") || param.startsWith("BODY.PEEK[")) {
+                    // load message
+                    MimeMessage mimeMessage = message.getMimeMessage();
                     int partIndex = 0;
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
-                    if (partIndexString != null) {
+                    if ("".equals(partIndexString)) {
+                        // write message with headers
+                        mimeMessage.writeTo(new PartialOutputStream(baos, startIndex, maxSize));
+                    } else if ("TEXT".equals(partIndexString)) {
+                        // write message without headers
+                        mimeMessage.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
+                    } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
+                        // write headers only
+                        mimeMessage.writeTo(new PartOutputStream(baos, true, false, startIndex, maxSize));
+                    } else {
+                        // try to parse part index
                         try {
                             partIndex = Integer.parseInt(partIndexString);
                         } catch (NumberFormatException e) {
                             throw new DavMailException("EXCEPTION_UNSUPPORTED_PARAMETER", param);
                         }
-                    }
-                    if (partIndex == 0) {
-                        throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                    }
 
-                    // parse buffer size
-                    int startIndex = 0;
-                    int maxSize = Integer.MAX_VALUE;
-                    int ltIndex = param.indexOf('<');
-                    if (ltIndex >= 0) {
-                        int dotIndex = param.indexOf('.', ltIndex);
-                        if (dotIndex >= 0) {
-                            startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
-                            maxSize = Integer.parseInt(param.substring(dotIndex+1, param.indexOf('>')));
+                        Object mimeBody = mimeMessage.getContent();
+                        MimePart bodyPart;
+                        if (mimeBody instanceof MimeMultipart) {
+                            MimeMultipart multiPart = (MimeMultipart) mimeBody;
+                            bodyPart = (MimePart) multiPart.getBodyPart(partIndex - 1);
+                        } else if (partIndex == 1) {
+                            // no multipart, single body
+                            bodyPart = mimeMessage;
+                        } else {
+                            throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
                         }
+                        // write selected part
+                        bodyPart.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
                     }
 
-                    MimeMessage mimeMessage = message.getMimeMessage();
-                    Object mimeBody = mimeMessage.getContent();
-                    MimePart bodyPart;
-                    if (mimeBody instanceof MimeMultipart) {
-                        MimeMultipart multiPart = (MimeMultipart) mimeBody;
-                        bodyPart = (MimePart) multiPart.getBodyPart(partIndex - 1);
-                    } else if (partIndex == 1) {
-                        // no multipart, single body
-                        bodyPart = mimeMessage;
-                    } else {
-                        throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                    }
-
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    bodyPart.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
                     baos.close();
 
-                    buffer.append(" BODY[").append(partIndexString).append(']');
+                    if ("RFC822.HEADER".equals(param)) {
+                        buffer.append(" RFC822.HEADER ");
+                    } else if (partIndexString.startsWith("HEADER.FIELDS")) {
+                        buffer.append(" BODY[HEADER.FIELDS ()]");
+                    } else {
+                        buffer.append(" BODY[").append(partIndexString).append(']');
+                    }
                     // partial
                     if (startIndex > 0 || maxSize != Integer.MAX_VALUE) {
                         buffer.append('<').append(startIndex).append('>');
