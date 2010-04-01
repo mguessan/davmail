@@ -133,10 +133,12 @@ public class ExchangeSession {
     protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
 
     static {
+        FOLDER_PROPERTIES.add(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")));
         FOLDER_PROPERTIES.add(DavPropertyName.create("hassubs"));
         FOLDER_PROPERTIES.add(DavPropertyName.create("nosubs"));
         FOLDER_PROPERTIES.add(DavPropertyName.create("unreadcount", URN_SCHEMAS_HTTPMAIL));
         FOLDER_PROPERTIES.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
+        FOLDER_PROPERTIES.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
     protected static final DavPropertyNameSet CONTENT_TAG = new DavPropertyNameSet();
@@ -969,10 +971,12 @@ public class ExchangeSession {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
         DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
+        folder.contentClass = getPropertyIfExists(properties, "contentclass", Namespace.getNamespace("DAV:"));
         folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", Namespace.getNamespace("DAV:")));
         folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", Namespace.getNamespace("DAV:")));
         folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
-        folder.contenttag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
+        folder.ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
+        folder.etag = getPropertyIfExists(properties, "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
 
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
@@ -1178,15 +1182,15 @@ public class ExchangeSession {
      */
     public boolean refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderName);
-        if (currentFolder.contenttag == null || !currentFolder.contenttag.equals(newFolder.contenttag)) {
+        if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Contenttag changed on " + currentFolder.folderName + ' '
-                        + currentFolder.contenttag + " => " + newFolder.contenttag + ", reloading messages");
+                        + currentFolder.ctag + " => " + newFolder.ctag + ", reloading messages");
             }
             currentFolder.hasChildren = newFolder.hasChildren;
             currentFolder.noInferiors = newFolder.noInferiors;
             currentFolder.unreadCount = newFolder.unreadCount;
-            currentFolder.contenttag = newFolder.contenttag;
+            currentFolder.ctag = newFolder.ctag;
             currentFolder.loadMessages();
             return true;
         } else {
@@ -1322,6 +1326,11 @@ public class ExchangeSession {
          * Logical (IMAP) folder path.
          */
         public String folderPath;
+
+        /**
+         * Folder content class.
+         */
+        public String contentClass;
         /**
          * Folder unread message count.
          */
@@ -1341,7 +1350,11 @@ public class ExchangeSession {
         /**
          * Folder content tag (to detect folder content changes).
          */
-        public String contenttag;
+        public String ctag;
+        /**
+         * Folder etag (to detect folder object changes).
+         */
+        public String etag;
         /**
          * Folder message list, empty before loadMessages call.
          */
@@ -1440,6 +1453,22 @@ public class ExchangeSession {
          */
         public Message get(int index) {
             return messages.get(index);
+        }
+
+        /**
+         * Calendar folder flag.
+         * @return true if this is a calendar folder
+         */
+        public boolean isCalendar() {
+             return "urn:content-classes:calendarfolder".equals(contentClass);
+        }
+
+        /**
+         * Contact folder flag.
+         * @return true if this is a calendar folder
+         */
+        public boolean isContact() {
+             return "urn:content-classes:contactfolder".equals(contentClass);
         }
     }
 
