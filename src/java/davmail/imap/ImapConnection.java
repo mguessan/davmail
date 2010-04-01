@@ -196,7 +196,7 @@ public class ImapConnection extends AbstractConnection {
                                                 sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
                                             }
                                             sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
-                                            sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
+                                            sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)]");
                                             if ("select".equalsIgnoreCase(command)) {
                                                 sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
                                             } else {
