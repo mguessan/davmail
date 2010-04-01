@@ -1,16 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
 		  http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-           version="2.5">
-     <description>
-        Ever wanted to get rid of Outlook ? DavMail is a POP/SMTP exchange gateway allowing
-        users to use any mail client (e.g. Thunderbird) with an Exchange server, even from the internet
-        through Outlook Web Access. DavMail gateway is implemented in java and should run on
-        any platform. Releases are tested on Windows and Linux (Ubuntu). MacOS support is currently
-        limited to server (headless) mode. Tested successfully with the Iphone (gateway running on a
-        server).
+         version="2.5">
+    <description>
+        Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/LDAP exchange gateway
+        allowing users to use any mail/calendar client (e.g. Thunderbird with Lightning or Apple iCal) with
+        an Exchange server, even from the internet or behind a firewall through Outlook Web Access.
+        DavMail now includes an LDAP gateway to Exchange global address book and user personal contacts
+        to allow recipient address completion in mail compose window and full calendar support
+        with attendees free/busy display.
+        The main goal of DavMail is to provide standard compliant protocols in front of proprietary
+        Exchange. This means LDAP for address book, SMTP to send messages, IMAP to browse messages
+        on the server in any folder, POP to retrieve inbox messages only and Caldav for calendar support.
+        Thus any standard compliant client can be used with Microsoft Exchange.
+        DavMail gateway is implemented in java and should run on any platform. Releases are tested on Windows,
+        Linux (Ubuntu) and Mac OSX. Tray does not work on MacOS and is replaced with a full frame.
+        Tested successfully with the Iphone (gateway running on a server).
+        DavMail gateway is implemented in java and should run on any platform. Releases are tested
+        on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
+        (gateway running on a server).
+
+        http://davmail.sourceforge.net
     </description>
     <listener>
         <listener-class>davmail.web.DavGatewayServletContextListener</listener-class>
