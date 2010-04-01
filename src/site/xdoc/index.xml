@@ -20,6 +20,8 @@
                             to allow recipient address completion in mail compose window and full calendar support
                             with attendees free/busy display.
                         </p>
+                        <p>DavMail will soon also support the CardDav protocol to sync address books. This new feature
+                        is sponsored by french <a href="http://www.defense.gouv.fr/dga/">DGA</a> through project <a href="http://www.trustedbird.org">Trustedbird</a></p>
                         <div style="width: 100%;text-align: center">
                             <img src="images/davmailArchitecture.png" alt="DavMail Architecture" width="550"
                                  height="364"/>
@@ -33,8 +35,6 @@
                             on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
                             (gateway running on a server).
                         </p>
-                        <p>DavMail will soon also support the CardDav protocol to sync address books. This new feature
-                        is sponsored by french <a href="http://www.defense.gouv.fr/dga/">DGA</a> through project <a href="http://www.trustedbird.org">Trustedbird</a></p>
                     </td>
                     <td>
                         <a class="download" href="download.html">
