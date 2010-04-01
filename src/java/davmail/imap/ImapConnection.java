@@ -535,6 +535,7 @@ public class ImapConnection extends AbstractConnection {
         if (parameters != null) {
             StringTokenizer paramTokens = new StringTokenizer(parameters);
             while (paramTokens.hasMoreTokens()) {
+                @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
                 String param = paramTokens.nextToken();
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
@@ -583,7 +584,6 @@ public class ImapConnection extends AbstractConnection {
 
                     // load message
                     MimeMessage mimeMessage = message.getMimeMessage();
-                    int partIndex = 0;
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
                     if ("".equals(partIndexString)) {
@@ -596,6 +596,7 @@ public class ImapConnection extends AbstractConnection {
                         // write headers only
                         mimeMessage.writeTo(new PartOutputStream(baos, true, false, startIndex, maxSize));
                     } else {
+                        int partIndex;
                         // try to parse part index
                         try {
                             partIndex = Integer.parseInt(partIndexString);
