@@ -1,3 +1,46 @@
+** DavMail 3.6.4 released **
+Well, yet another bugfix release, with improved IMAP support,
+SMTP enhancements to support Eudora, NTLM proxy authentication
+support and other bug fixes
+
+SMTP:
+- SMTP: fix 2953552, allow RSET in AUTHENTICATED state
+- SMTP: bug id 2953554, implement NOOP
+
+LDAP:
+- LDAP: Enable tray icon on LDAP connection
+
+Bug fixes:
+- Fix regression in 3.6.3: basic authentication broken in checkConfig
+- GUI: Fix client certificate setting switch
+
+Enhancements:
+- Change debian package dependence to accept openjdk-6-jre and libswt-gtk-3.5-java
+- Fix from audit
+- Improve log message on HTTP header error
+- Implement NTLM HTTP proxy support
+- Improve logging of expired sessions
+- Support multiple forms in form based authentication logon page
+- Catch error on SWT exit
+- Enable NTLM on Proxy-Authenticate return code with only NTLM available
+
+Documentation:
+- Doc: Document davmailservice.exe usage
+- Doc: Document Force ActiveSync setting in Getting Started
+- Doc: Add an FAQ entry on DavMail settings location
+- Doc: Update release notes and guide
+
+IMAP:
+- IMAP: new patch from Gellule to fix disappearing messages issue
+- IMAP: rethrow SocketException after error in handleFetch
+
+Caldav:
+- Caldav: new fix for invalid events
+- Caldav: add a hidden davmail.caldavDisableInbox to allow users to disable Caldav Inbox with Thunderbird 3 and Lightning
+- Caldav: improve broken events logging
+- Caldav: Follow redirects on GET with permanentUrl
+
+
 ** DavMail 3.6.3 released **
 Another bugfix release, mostly documentation updates, some regressions
 in 3.6.2 in error handling fixed, a new IMAP workaround to completely
