@@ -195,7 +195,7 @@ public class PopConnection extends AbstractConnection {
                                 try {
                                     int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
                                     sendOK("");
-                                    messages.get(messageNumber).write(os);
+                                    messages.get(messageNumber).write(os, true);
                                     sendClient("");
                                     sendClient(".");
                                 } catch (SocketException e) {
@@ -232,7 +232,7 @@ public class PopConnection extends AbstractConnection {
                                 int lines = Integer.valueOf(tokens.nextToken());
                                 ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
-                                m.write(new TopOutputStream(os, lines));
+                                m.write(new TopOutputStream(os, lines), true);
                                 sendClient("");
                                 sendClient(".");
                             } catch (NumberFormatException e) {

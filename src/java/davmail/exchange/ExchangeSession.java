@@ -1605,18 +1605,19 @@ public class ExchangeSession {
          * Write MIME message to os
          *
          * @param os output stream
+         * @param doubleDot replace '.' lines with '..' (POP protocol)
          * @throws IOException on error
          */
-        public void write(OutputStream os) throws IOException {
+        public void write(OutputStream os, boolean doubleDot) throws IOException {
             try {
-                write(os, messageUrl);
+                write(os, messageUrl, doubleDot);
             } catch (HttpNotFoundException e) {
                 LOGGER.debug("Message not found at: " + messageUrl + ", retrying with permanenturl");
-                write(os, permanentUrl);
+                write(os, permanentUrl, doubleDot);
             }
         }
 
-        protected void write(OutputStream os, String url) throws IOException {
+        protected void write(OutputStream os, String url, boolean doubleDot) throws IOException {
             GetMethod method = new GetMethod(URIUtil.encodePath(url));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
@@ -1628,7 +1629,7 @@ public class ExchangeSession {
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (".".equals(line)) {
+                    if (doubleDot && ".".equals(line)) {
                         line = "..";
                         // patch text/calendar to include utf-8 encoding
                     } else if ("Content-Type: text/calendar;".equals(line)) {
@@ -1677,7 +1678,7 @@ public class ExchangeSession {
         public MimeMessage getMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                write(baos);
+                write(baos, false);
                 mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
             }
             return mimeMessage;
