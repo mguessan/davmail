@@ -575,8 +575,7 @@ public class ImapConnection extends AbstractConnection {
                         int dotIndex = param.indexOf('.', ltIndex);
                         if (dotIndex >= 0) {
                             startIndex = Integer.parseInt(param.substring(ltIndex + 1, dotIndex));
-                            // do not implement maxSize to avoid downloading message multiple times
-                            //maxSize = Integer.parseInt(param.substring(dotIndex + 1, param.indexOf('>')));
+                            maxSize = Integer.parseInt(param.substring(dotIndex + 1, param.indexOf('>')));
                         }
                     }
 
@@ -610,7 +609,11 @@ public class ImapConnection extends AbstractConnection {
                             Object mimeBody = bodyPart.getContent();
                             if (mimeBody instanceof MimeMultipart) {
                                 MimeMultipart multiPart = (MimeMultipart) mimeBody;
-                                bodyPart = (MimePart) multiPart.getBodyPart(subPartIndex - 1);
+                                if (subPartIndex - 1 < multiPart.getCount()) {
+                                    bodyPart = (MimePart) multiPart.getBodyPart(subPartIndex - 1);
+                                } else {
+                                    throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                                }
                             } else if (subPartIndex != 1) {
                                 throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
                             }

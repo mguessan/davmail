@@ -909,6 +909,7 @@ public class ExchangeSession {
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);
+            message.messageList = messages;
             messages.add(message);
         }
         Collections.sort(messages);
@@ -1457,18 +1458,20 @@ public class ExchangeSession {
 
         /**
          * Calendar folder flag.
+         *
          * @return true if this is a calendar folder
          */
         public boolean isCalendar() {
-             return "urn:content-classes:calendarfolder".equals(contentClass);
+            return "urn:content-classes:calendarfolder".equals(contentClass);
         }
 
         /**
          * Contact folder flag.
+         *
          * @return true if this is a calendar folder
          */
         public boolean isContact() {
-             return "urn:content-classes:contactfolder".equals(contentClass);
+            return "urn:content-classes:contactfolder".equals(contentClass);
         }
     }
 
@@ -1476,8 +1479,17 @@ public class ExchangeSession {
      * Exchange message.
      */
     public class Message implements Comparable<Message> {
+        /**
+         * enclosing message list
+         */
+        protected MessageList messageList;
+        /**
+         * Message url.
+         */
         protected String messageUrl;
-
+        /**
+         * Message permanent url (does not change on message move).
+         */
         protected String permanentUrl;
         /**
          * Message uid.
@@ -1604,7 +1616,7 @@ public class ExchangeSession {
         /**
          * Write MIME message to os
          *
-         * @param os output stream
+         * @param os        output stream
          * @param doubleDot replace '.' lines with '..' (POP protocol)
          * @throws IOException on error
          */
@@ -1677,17 +1689,31 @@ public class ExchangeSession {
          */
         public MimeMessage getMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                write(baos, false);
-                mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
+                // try to get message content from cache
+                if (this.imapUid == messageList.cachedMessageImapUid) {
+                    mimeMessage = messageList.cachedMimeMessage;
+                    LOGGER.debug("Got message content for "+imapUid+" from cache");
+                } else {
+                    // load message
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    write(baos, false);
+                    mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
+                    LOGGER.debug("Dowloaded message content for "+imapUid+" ("+baos.size()+")");
+                }
             }
             return mimeMessage;
         }
 
         /**
-         * Drop mime message to avoid keeping message content in memory.
+         * Drop mime message to avoid keeping message content in memory,
+         * keep a single message in MessageList cache to handle chunked fetch.
          */
         public void dropMimeMessage() {
+            // update single message cache
+            if (mimeMessage != null) {
+                messageList.cachedMessageImapUid = imapUid;
+                messageList.cachedMimeMessage = mimeMessage;
+            }
             mimeMessage = null;
         }
 
@@ -1754,9 +1780,18 @@ public class ExchangeSession {
     }
 
     /**
-     * Message list
+     * Message list, includes a single messsage cache
      */
     public static class MessageList extends ArrayList<Message> {
+        /**
+         * Cached message content parsed in a MIME message.
+         */
+        protected MimeMessage cachedMimeMessage;
+        /**
+         * Cached message uid.
+         */
+        protected long cachedMessageImapUid;
+
     }
 
     /**
