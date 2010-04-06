@@ -596,26 +596,27 @@ public class ImapConnection extends AbstractConnection {
                         // write headers only
                         mimeMessage.writeTo(new PartOutputStream(baos, true, false, startIndex, maxSize));
                     } else {
-                        int partIndex;
-                        // try to parse part index
-                        try {
-                            partIndex = Integer.parseInt(partIndexString);
-                        } catch (NumberFormatException e) {
-                            throw new DavMailException("EXCEPTION_UNSUPPORTED_PARAMETER", param);
+                        MimePart bodyPart = mimeMessage;
+                        String[] partIndexStrings = partIndexString.split("\\.");
+                        for (String subPartIndexString:partIndexStrings) {
+                            int subPartIndex;
+                            // try to parse part index
+                            try {
+                                subPartIndex = Integer.parseInt(subPartIndexString);
+                            } catch (NumberFormatException e) {
+                                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                            }
+
+                            Object mimeBody = bodyPart.getContent();
+                            if (mimeBody instanceof MimeMultipart) {
+                                MimeMultipart multiPart = (MimeMultipart) mimeBody;
+                                bodyPart = (MimePart) multiPart.getBodyPart(subPartIndex - 1);
+                            } else if (subPartIndex != 1) {
+                                throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
+                            }
                         }
 
-                        Object mimeBody = mimeMessage.getContent();
-                        MimePart bodyPart;
-                        if (mimeBody instanceof MimeMultipart) {
-                            MimeMultipart multiPart = (MimeMultipart) mimeBody;
-                            bodyPart = (MimePart) multiPart.getBodyPart(partIndex - 1);
-                        } else if (partIndex == 1) {
-                            // no multipart, single body
-                            bodyPart = mimeMessage;
-                        } else {
-                            throw new DavMailException("EXCEPTION_INVALID_PARAMETER", param);
-                        }
-                        // write selected part
+                        // write selected part, without headers
                         bodyPart.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
                     }
 
