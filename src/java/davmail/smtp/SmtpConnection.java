@@ -97,8 +97,15 @@ public class SmtpConnection extends AbstractConnection {
                                 decodeCredentials(tokens.nextToken());
                                 authenticate();
                             } else if ("LOGIN".equalsIgnoreCase(authType)) {
-                                sendClient("334 " + base64Encode("Username:"));
-                                state = State.LOGIN;
+                                if (tokens.hasMoreTokens()) {
+                                    // user name sent on auth line
+                                    userName = base64Decode(tokens.nextToken());
+                                    sendClient("334 " + base64Encode("Password:"));
+                                    state = State.PASSWORD;
+                                } else {
+                                    sendClient("334 " + base64Encode("Username:"));
+                                    state = State.LOGIN;
+                                }
                             } else {
                                 sendClient("451 Error : unknown authentication type");
                             }

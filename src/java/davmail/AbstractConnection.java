@@ -151,6 +151,9 @@ public class AbstractConnection extends Thread {
         if (line != null) {
             if (line.startsWith("PASS")) {
                 DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_PASS"));
+                // SMTP LOGIN
+            } else if (line.startsWith("AUTH LOGIN ")) {
+                DavGatewayTray.debug(new BundleMessage("LOG_READ_CLIENT_AUTH_LOGIN"));
                 // IMAP LOGIN
             } else if (state == State.INITIAL && line.indexOf(' ') >= 0 &&
                     line.substring(line.indexOf(' ') + 1).startsWith("LOGIN")) {
