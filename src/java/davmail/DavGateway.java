@@ -141,8 +141,11 @@ public final class DavGateway {
         }
 
         final String currentVersion = getCurrentVersion();
-        DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING",
-                currentVersion == null ? "" : currentVersion, messages));
+        boolean showStartupBanner = Settings.getBooleanProperty("davmail.showStartupBanner", true);
+        if (showStartupBanner) {
+            DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING",
+                    currentVersion == null ? "" : currentVersion, messages));
+        }
         if (!errorMessages.isEmpty()) {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
         }
@@ -181,6 +184,7 @@ public final class DavGateway {
 
     /**
      * Get current DavMail version.
+     *
      * @return current version
      */
     public static String getCurrentVersion() {
@@ -190,6 +194,7 @@ public final class DavGateway {
 
     /**
      * Get latest released version from SourceForge.
+     *
      * @return latest version
      */
     public static String getReleasedVersion() {
@@ -203,7 +208,7 @@ public final class DavGateway {
                 if (status == HttpStatus.SC_OK) {
                     versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
                     version = versionReader.readLine();
-                    LOGGER.debug("DavMail released version: "+version);
+                    LOGGER.debug("DavMail released version: " + version);
                 }
             } catch (IOException e) {
                 DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));

@@ -148,7 +148,8 @@ public final class Settings {
         SETTINGS.put("davmail.server", Boolean.FALSE.toString());
         SETTINGS.put("davmail.server.certificate.hash", "");
         SETTINGS.put("davmail.caldavAlarmSound", "");
-        SETTINGS.put("davmail.forceActiveSyncUpdate", "Boolean.FALSE.toString()");
+        SETTINGS.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.showStartupBanner", Boolean.TRUE.toString());
         SETTINGS.put("davmail.ssl.keystoreType", "");
         SETTINGS.put("davmail.ssl.keystoreFile", "");
         SETTINGS.put("davmail.ssl.keystorePass", "");
@@ -342,6 +343,22 @@ public final class Settings {
     public static synchronized boolean getBooleanProperty(String property) {
         String propertyValue = SETTINGS.getProperty(property);
         return Boolean.parseBoolean(propertyValue);
+    }
+
+    /**
+     * Get a property value as boolean.
+     *
+     * @param property property name
+     * @param defaultValue default property value
+     * @return property value
+     */
+    public static synchronized boolean getBooleanProperty(String property, boolean defaultValue) {
+        boolean value = defaultValue;
+        String propertyValue = SETTINGS.getProperty(property);
+        if (propertyValue != null && propertyValue.length() > 0) {
+            value = Boolean.parseBoolean(propertyValue);
+        }
+        return value;
     }
 
     /**
