@@ -58,8 +58,9 @@
                     <strong>Where can I find DavMail settings file</strong>
                 </p>
                 <p>The default location for DavMail settings is a file named .davmail.properties in user home
-                folder. This file is hidden under Linux and OSX. On windows, the user home folder is under
-                <code>Document and Settings</code></p>
+                    folder. This file is hidden under Linux and OSX. On windows, the user home folder is under
+                    <code>Document and Settings</code>
+                </p>
 
             </subsection>
 
@@ -139,6 +140,28 @@ calendar.debug.log.verbose=true
                 </p>
                 <source>calendar.caldav.sched.enabled=true</source>
 
+            </subsection>
+
+            <subsection name="Mail">
+                <p>
+                    <strong>Timout errors during IMAP sync (broken pipe)</strong>
+                </p>
+                <p>If you Exchange server is too slow, you may get timeout errors during
+                    message fetch.
+                </p>
+                <p>To fix the problem in OSX Mail, go to your account setup under preferences.
+                    On the IMAP account having difficulty, go to the advanced tab. Where it says
+                    "keep copies for offline viewing", change it to "only messages I've read" or
+                    don't keep copies at all.
+                </p>
+                <p>Under Thunderbird, you can try to change IMAP timeout values
+                    (
+                    <code>mail.server.server<em>index</em>.timeout
+                    </code>
+                    and<code>mailnews.tcptimeout</code>)or avoid full
+                    mailbox sync: disable global search and indexer under advanced options and change
+                    Synchronization &amp; Storage options under Account Settings.
+                </p>
             </subsection>
 
             <subsection name="Build">
