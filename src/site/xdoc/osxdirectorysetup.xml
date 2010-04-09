@@ -16,7 +16,8 @@
             </p>
 
             <subsection name="Open Directory Utility">
-                <p>In OSX Finder, go to Utilities and launch Directory Utility:</p>
+                <p>In OSX Finder, go to Utilities and launch Directory Utility. Under OSX 10.6
+                Snow Leopard, Directory Utility is tucked away in /System/Library/CoreServices.</p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxDirectoryUtility1.png" alt=""/>
                 </div>
