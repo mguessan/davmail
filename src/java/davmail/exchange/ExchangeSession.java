@@ -1786,11 +1786,11 @@ public class ExchangeSession {
         /**
          * Cached message content parsed in a MIME message.
          */
-        protected MimeMessage cachedMimeMessage;
+        protected transient MimeMessage cachedMimeMessage;
         /**
          * Cached message uid.
          */
-        protected long cachedMessageImapUid;
+        protected transient long cachedMessageImapUid;
 
     }
 
@@ -1800,6 +1800,7 @@ public class ExchangeSession {
     public class Event {
         protected String href;
         protected String permanentUrl;
+        protected String displayName;
         protected String etag;
         protected String contentClass;
         protected String noneMatch;
@@ -2565,7 +2566,7 @@ public class ExchangeSession {
         List<Event> result;
         try {
             String scheduleStatePropertyName = scheduleStateProperty.getNamespace().getURI() + scheduleStateProperty.getName();
-            String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
+            String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\", \"DAV:displayname\"" +
                     "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                     "                WHERE \"DAV:contentclass\" = 'urn:content-classes:calendarmessage'\n" +
                     "                AND (\"" + scheduleStatePropertyName + "\" IS NULL OR NOT \"" + scheduleStatePropertyName + "\" = 'CALDAV:schedule-processed')\n" +
@@ -2605,7 +2606,7 @@ public class ExchangeSession {
             privateCondition = "                AND \"http://schemas.microsoft.com/exchange/sensitivity\" = 0\n";
         }
 
-        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\"" +
+        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"urn:schemas:calendar:instancetype\", \"DAV:displayname\"" +
                 "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
                 "                WHERE (" +
                 // VTODO events have a null instancetype
@@ -2641,7 +2642,7 @@ public class ExchangeSession {
                     event.getICS();
                 } catch (HttpException e) {
                     // invalid event: exclude from list
-                    LOGGER.warn("Invalid event found at " + response.getHref(), e);
+                    LOGGER.warn("Invalid event "+event.displayName+" found at " + response.getHref(), e);
                 }
             } else {
                 events.add(event);
@@ -2722,6 +2723,7 @@ public class ExchangeSession {
         event.href = URIUtil.decode(calendarResponse.getHref());
         event.permanentUrl = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE);
         event.etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
+        event.displayName = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
         return event;
     }
 
