@@ -2601,7 +2601,7 @@ public class ExchangeSession {
         }
 
         String privateCondition = "";
-        if (!isSharedFolder(folderPath)) {
+        if (isSharedFolder(folderPath)) {
             LOGGER.debug("Shared or public calendar: exclude private events");
             privateCondition = "                AND \"http://schemas.microsoft.com/exchange/sensitivity\" = 0\n";
         }
