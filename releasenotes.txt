@@ -1,3 +1,57 @@
+** DavMail 3.6.5 released **
+This release includes a major refactoring of the IMAP FETCH implementation
+to improve performance and provide RFC compliant partial fetch. The Carddav
+support sponsored by french DGA through project TrustedBird is now included
+in the roadmap. Private events filter on shared calendar is also available
+and DavMail can now retrieve proxy settings directly from system configuration.
+
+SMTP:
+- SMTP: implement AUTH LOGIN username (with optional initial-response, see RFC2554)
+
+IMAP:
+- IMAP: Keep a single message in MessageList cache to handle chunked fetch, reenable maxSize in ImapConnection.
+- IMAP: implement subparts partial fetch
+- IMAP: Fix message write, double dot only for POP, not IMAP
+- IMAP: Do not advertise not yet supported custom flags
+- IMAP: fix from audit
+- IMAP: major FETCH implementation refactoring, make code simpler and more efficient
+- IMAP: add BODY.PEEK[index] support
+- IMAP: improve partial fetch support
+- IMAP: fix 2962071, quote folder names in STATUS response
+- IMAP: allow partial part fetch
+- IMAP: fix regression on unknown parameter handling
+- IMAP: implement part fetch (BODY[1]) 
+- IMAP: detect unsupported parameter
+- IMAP: fix 2973213, escape quotes in subject
+- IMAP: fixes to improve JavaMail support
+
+Doc:
+- Doc: move CardDav reference before architecture schema
+- Doc: update project description in Maven pom and ant package
+- Doc: update project description and RoadMap, announce CardDav support sponsored by french DGA through project Trustedbird
+- Doc: update roadmap
+
+Enhancements:
+- Add a new setting to disable startup notification window (contribution from jsquyres)
+- Improve getAliasFromOptions to retrieve alias with custom dn
+- Workaround for NTLM authentication only on /public
+- Add a new setting to retrieve proxies from system configuration
+- Fix empty setting behavior: return null instead of empty string
+- Sort properties file
+- Fix new RPM ant task definition
+- Improve public folder url check
+- Experimental rpm package build
+
+Carddav:
+- Carddav: refactor folder handling code to prepart CardDav support
+
+Caldav:
+- Caldav: fix broken inbox, missing instancetype in search request and add is null in search query
+- Caldav: do not try to access inbox on shared calendar (to avoid 440 login timeout errors and session reset)
+- Caldav: exclude private events on shared or public calendar PROPFIND
+- Caldav: fix regression on invalid events handling, just warn on broken events
+- Caldav: drop timezone when converting allday events to client
+
 ** DavMail 3.6.4 released **
 Well, yet another bugfix release, with improved IMAP support,
 SMTP enhancements to support Eudora, NTLM proxy authentication
