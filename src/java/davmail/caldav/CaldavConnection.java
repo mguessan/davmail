@@ -239,7 +239,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void handleFolder(CaldavRequest request) throws IOException {
-        String lastPath = xmlDecodeName(request.getLastPath());
+        String lastPath = StringUtil.xmlDecode(request.getLastPath());
         // folder requests
         if (request.isPropFind() && "inbox".equals(lastPath)) {
             sendInbox(request);
@@ -335,7 +335,7 @@ public class CaldavConnection extends AbstractConnection {
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
-        String eventName = xmlEncodeName(event.getName());
+        String eventName = StringUtil.xmlEncode(event.getName());
         eventPath.append(URIUtil.encodeWithinQuery(eventName));
         response.startResponse(eventPath.toString());
         response.startPropstat();
@@ -602,7 +602,7 @@ public class CaldavConnection extends AbstractConnection {
         if (index < 0) {
             return null;
         } else {
-            return xmlDecodeName(path.substring(index + 1));
+            return StringUtil.xmlDecode(path.substring(index + 1));
         }
     }
 
@@ -1079,46 +1079,6 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
-     * Need to encode xml for iCal
-     *
-     * @param name decoded name
-     * @return name encoded name
-     */
-    protected String xmlEncodeName(String name) {
-        String result = name;
-        if (name.indexOf('&') >= 0) {
-            result = result.replaceAll("&", "&amp;");
-        }
-        if (name.indexOf('<') >= 0) {
-            result = result.replaceAll("<", "&lt;");
-        }
-        if (name.indexOf('>') >= 0) {
-            result = result.replaceAll(">", "&gt;");
-        }
-        return result;
-    }
-
-    /**
-     * Need to decode xml for iCal
-     *
-     * @param name encoded name
-     * @return name decoded name
-     */
-    protected String xmlDecodeName(String name) {
-        String result = name;
-        if (name.indexOf("&amp;") >= 0) {
-            result = result.replaceAll("&amp;", "&");
-        }
-        if (name.indexOf("&gt;") >= 0) {
-            result = result.replaceAll("&gt;", ">");
-        }
-        if (name.indexOf("&lt;") >= 0) {
-            result = result.replaceAll("&lt;", "<");
-        }
-        return result;
-    }
-
-    /**
      * Make sure + sign in URL is encoded.
      *
      * @param path URL path
@@ -1476,7 +1436,7 @@ public class CaldavConnection extends AbstractConnection {
         public void startResponse(String href) throws IOException {
             writer.write("<D:response>");
             writer.write("<D:href>");
-            writer.write(xmlEncodeName(href));
+            writer.write(StringUtil.xmlEncode(href));
             writer.write("</D:href>");
         }
 
@@ -1489,13 +1449,13 @@ public class CaldavConnection extends AbstractConnection {
             if (ics != null && ics.length() > 0) {
                 writer.write("<C:calendar-data xmlns:C=\"urn:ietf:params:xml:ns:caldav\"");
                 writer.write(" C:content-type=\"text/calendar\" C:version=\"2.0\">");
-                writer.write(ics.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
+                writer.write(StringUtil.xmlEncode(ics));
                 writer.write("</C:calendar-data>");
             }
         }
 
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
-            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(xmlEncodeName(propertyValue)) + "</D:href>");
+            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(StringUtil.xmlEncode(propertyValue)) + "</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {

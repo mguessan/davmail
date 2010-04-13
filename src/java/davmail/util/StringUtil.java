@@ -19,6 +19,7 @@
 package davmail.util;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Various string handling methods
@@ -101,7 +102,7 @@ public final class StringUtil {
     /**
      * Join values with given separator.
      *
-     * @param values value set
+     * @param values    value set
      * @param separator separator
      * @return joined values
      */
@@ -119,4 +120,53 @@ public final class StringUtil {
             return null;
         }
     }
+
+    private static final Pattern AMP_PATTERN = Pattern.compile("&");
+    private static final Pattern LT_PATTERN = Pattern.compile("<");
+    private static final Pattern GT_PATTERN = Pattern.compile(">");
+
+    private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
+    private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
+    private static final Pattern ENCODED_GT_PATTERN = Pattern.compile("&gt;");
+
+    /**
+     * Need to encode xml for iCal
+     *
+     * @param name decoded name
+     * @return name encoded name
+     */
+    public static String xmlEncode(String name) {
+        String result = name;
+        if (name.indexOf('&') >= 0) {
+            result = AMP_PATTERN.matcher(result).replaceAll("&amp;");
+        }
+        if (name.indexOf('<') >= 0) {
+            result = LT_PATTERN.matcher(result).replaceAll("&lt;");
+        }
+        if (name.indexOf('>') >= 0) {
+            result = GT_PATTERN.matcher(result).replaceAll("&gt;");
+        }
+        return result;
+    }
+
+    /**
+     * Need to decode xml for iCal
+     *
+     * @param name encoded name
+     * @return name decoded name
+     */
+    public static String xmlDecode(String name) {
+        String result = name;
+        if (name.indexOf("&amp;") >= 0) {
+            result = ENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
+        }
+        if (name.indexOf("&lt;") >= 0) {
+            result = ENCODED_LT_PATTERN.matcher(result).replaceAll("<");
+        }
+        if (name.indexOf("&gt;") >= 0) {
+            result = ENCODED_GT_PATTERN.matcher(result).replaceAll(">");
+        }
+        return result;
+    }
+
 }

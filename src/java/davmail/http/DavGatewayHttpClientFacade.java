@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.*;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthPolicy;
@@ -287,7 +288,7 @@ public final class DavGatewayHttpClientFacade {
     public static MultiStatusResponse[] executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
         String searchBody = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>" + searchRequest.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</d:sql>\n" +
+                "        <d:sql>" + StringUtil.xmlEncode(searchRequest) + "</d:sql>\n" +
                 "</d:searchrequest>";
         DavMethodBase searchMethod = new DavMethodBase(path) {
 

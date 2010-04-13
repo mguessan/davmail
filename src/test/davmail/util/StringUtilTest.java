@@ -44,4 +44,17 @@ public class StringUtilTest extends TestCase {
         assertEquals("'new'", StringUtil.replaceToken("'old'", "'", "'", "new"));
         assertEquals("value=\"new\"", StringUtil.replaceToken("value=\"old\"", "value=\"", "\"", "new"));
     }
+
+    /**
+     * Test Xml Encode
+     */
+    public void testXmlEncode() {
+        assertEquals("&amp;", StringUtil.xmlEncode("&"));
+        assertEquals("&lt;", StringUtil.xmlEncode("<"));
+        assertEquals("&gt;", StringUtil.xmlEncode(">"));
+        assertEquals("&", StringUtil.xmlDecode("&amp;"));
+        assertEquals("<", StringUtil.xmlDecode("&lt;"));
+        assertEquals(">", StringUtil.xmlDecode("&gt;"));
+        assertEquals("&lt;test&gt;", StringUtil.xmlEncode("<test>"));
+    }
 }
