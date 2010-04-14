@@ -2592,9 +2592,9 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> getAllEvents(String folderPath) throws IOException {
-        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay", Integer.MAX_VALUE);
+        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
         String dateCondition = "";
-        if (caldavPastDelay != Integer.MAX_VALUE) {
+        if (caldavPastDelay != 0) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
             dateCondition = "                AND \"urn:schemas:calendar:dtstart\" > '" + formatSearchDate(cal.getTime()) + "'\n";
