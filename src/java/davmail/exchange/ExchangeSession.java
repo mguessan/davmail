@@ -2916,7 +2916,7 @@ public class ExchangeSession {
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
         // other user calendar => replace principal folder name in mailPath
-        if (principal != null && !alias.equals(principal) && !email.equals(principal)) {
+        if (principal != null && !alias.equalsIgnoreCase(principal) && !email.equalsIgnoreCase(principal)) {
             LOGGER.debug("Detected shared calendar path for principal " + principal + ", user principal is " + email);
             int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
             if (index >= 0 && mailPath.endsWith("/")) {
@@ -2954,7 +2954,7 @@ public class ExchangeSession {
      * @return true if folderPath is a public or shared folder
      */
     public boolean isSharedFolder(String folderPath) {
-        return !folderPath.startsWith(mailPath);
+        return !folderPath.toLowerCase().startsWith(mailPath.toLowerCase());
     }
 
     /**
