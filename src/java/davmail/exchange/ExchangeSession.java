@@ -1698,7 +1698,7 @@ public class ExchangeSession {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     write(baos, false);
                     mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
-                    LOGGER.debug("Dowloaded message content for "+imapUid+" ("+baos.size()+")");
+                    LOGGER.debug("Downloaded message content for "+imapUid+" ("+baos.size()+ ')');
                 }
             }
             return mimeMessage;
@@ -1858,7 +1858,7 @@ public class ExchangeSession {
                 result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.getDataHandler().writeTo(baos);
+                mimeMessage.writeTo(baos);
                 baos.close();
                 throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
             }
@@ -1971,11 +1971,14 @@ public class ExchangeSession {
         }
 
         protected String getAllDayLine(String line) throws IOException {
-            int keyIndex = line.indexOf(';');
             int valueIndex = line.lastIndexOf(':');
             int valueEndIndex = line.lastIndexOf('T');
             if (valueIndex < 0 || valueEndIndex < 0) {
                 throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
+            }
+            int keyIndex = line.indexOf(';');
+            if (keyIndex == -1) {
+                keyIndex = valueIndex;
             }
             String dateValue = line.substring(valueIndex + 1, valueEndIndex);
             String key = line.substring(0, Math.min(keyIndex, valueIndex));
