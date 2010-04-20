@@ -567,11 +567,11 @@ public class ExchangeSession {
                 URL baseURL = new URL(mailBoxBaseHref);
                 mailPath = baseURL.getPath();
                 LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail(method.getURI().getHost(), method.getPath());
+                buildEmail(method.getURI().getHost());
                 LOGGER.debug("Current user email is " + email);
             } else {
                 // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(method.getURI().getHost(), method.getPath());
+                buildEmail(method.getURI().getHost());
                 mailPath = "/exchange/" + email + '/';
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
@@ -3013,9 +3013,8 @@ public class ExchangeSession {
      * Determine user email through various means.
      *
      * @param hostName   Exchange server host name for last failover
-     * @param methodPath current httpclient method path
      */
-    public void buildEmail(String hostName, String methodPath) {
+    public void buildEmail(String hostName) {
         // first try to get email from login name
         alias = getAliasFromLogin();
         email = getEmail(alias);
@@ -3031,17 +3030,17 @@ public class ExchangeSession {
         }
         if (email == null) {
             // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions(methodPath);
+            alias = getAliasFromOptions();
             email = getEmail(alias);
             // failover: get email from options
             if (alias != null && email == null) {
-                email = getEmailFromOptions(methodPath);
+                email = getEmailFromOptions();
             }
         }
         if (email == null) {
             LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
                     + " or " + getAliasFromMailPath()
-                    + " or " + getAliasFromOptions(methodPath)
+                    + " or " + getAliasFromOptions()
             );
             // last failover: build email from domain name and mailbox display name
             StringBuilder buffer = new StringBuilder();
@@ -3066,11 +3065,11 @@ public class ExchangeSession {
 
     static final String MAILBOX_BASE = "/cn=";
 
-    protected String getAliasFromOptions(String path) {
+    protected String getAliasFromOptions() {
         String result = null;
         // get user mail URL from html body
         BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
+        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
@@ -3100,11 +3099,11 @@ public class ExchangeSession {
         return result;
     }
 
-    protected String getEmailFromOptions(String path) {
+    protected String getEmailFromOptions() {
         String result = null;
         // get user mail URL from html body
         BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod(path + "?ae=Options&t=About");
+        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
