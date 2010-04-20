@@ -590,7 +590,7 @@ public class ImapConnection extends AbstractConnection {
                         mimeMessage.writeTo(new PartialOutputStream(baos, startIndex, maxSize));
                     } else if ("TEXT".equals(partIndexString)) {
                         // write message without headers
-                        mimeMessage.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
+                        mimeMessage.writeTo(new PartOutputStream(baos, false, true, startIndex, maxSize));
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // write headers only
                         mimeMessage.writeTo(new PartOutputStream(baos, true, false, startIndex, maxSize));
@@ -620,7 +620,7 @@ public class ImapConnection extends AbstractConnection {
                         }
 
                         // write selected part, without headers
-                        bodyPart.getDataHandler().writeTo(new PartialOutputStream(baos, startIndex, maxSize));
+                        bodyPart.writeTo(new PartOutputStream(baos, false, true, startIndex, maxSize));
                     }
 
                     baos.close();
