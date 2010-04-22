@@ -410,6 +410,9 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient HttpClient instance
      */
     public static void addNTLM(HttpClient httpClient) {
+        // register the jcifs based NTLMv2 implementation
+        AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
+        
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.NTLM);
         authPrefs.add(AuthPolicy.DIGEST);
