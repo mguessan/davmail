@@ -65,7 +65,7 @@ public class ImapConnection extends AbstractConnection {
         IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN] IMAP4rev1 DavMail server ready");
+            sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE] IMAP4rev1 DavMail server ready");
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?
@@ -84,7 +84,7 @@ public class ImapConnection extends AbstractConnection {
                             break;
                         }
                         if ("capability".equalsIgnoreCase(command)) {
-                            sendClient("* CAPABILITY IMAP4REV1 AUTH=LOGIN");
+                            sendClient("* CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE");
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
@@ -416,29 +416,29 @@ public class ImapConnection extends AbstractConnection {
                                     String messageName = UUID.randomUUID().toString();
                                     session.createMessage(folderName, messageName, properties, new String(buffer));
                                     sendClient(commandId + " OK APPEND completed");
+                                } else if ("idle".equalsIgnoreCase(command)) {
+                                    sendClient("+ idling ");
+                                    while (!in.ready()) {
+                                        ExchangeSession.MessageList currentMessages = currentFolder.messages;
+                                        if (session.refreshFolder(currentFolder)) {
+                                            handleRefresh(currentFolder, currentMessages);
+                                        }
+                                        // sleep 10 seconds
+                                       Thread.sleep(10000);
+                                    }
+                                    // read DONE line
+                                    line = readClient();
+                                    if ("DONE".equals(line)) {
+                                        sendClient(commandId + " OK " + command + " terminated");
+                                    } else {
+                                        sendClient(commandId + " BAD command unrecognized");
+                                    }
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
                                         ExchangeSession.MessageList currentMessages = currentFolder.messages;
                                         if (session.refreshFolder(currentFolder)) {
-                                            // build new uid set
-                                            HashSet<Long> uidSet = new HashSet<Long>();
-                                            for (ExchangeSession.Message message : currentFolder.messages) {
-                                                uidSet.add(message.getImapUid());
-                                            }
-                                            // send expunge untagged response for removed IMAP message uids
-                                            // note: some STORE commands trigger a uid change in Exchange,
-                                            // thus those messages are expunged and reappear with a new uid
-                                            int index = 1;
-                                            for (ExchangeSession.Message message : currentMessages) {
-                                                if (!uidSet.contains(message.getImapUid())) {
-                                                    sendClient("* " + index + " EXPUNGE");
-                                                } else {
-                                                    index++;
-                                                }
-                                            }
-                                            sendClient("* " + currentFolder.count() + " EXISTS");
-                                            sendClient("* " + currentFolder.count() + " RECENT");
+                                            handleRefresh(currentFolder, currentMessages);
                                         }
                                     }
                                     sendClient(commandId + " OK " + command + " completed");
@@ -527,6 +527,27 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    private void handleRefresh(ExchangeSession.Folder currentFolder, ExchangeSession.MessageList currentMessages) throws IOException {
+        // build new uid set
+        HashSet<Long> uidSet = new HashSet<Long>();
+        for (ExchangeSession.Message message : currentFolder.messages) {
+            uidSet.add(message.getImapUid());
+        }
+        // send expunge untagged response for removed IMAP message uids
+        // note: some STORE commands trigger a uid change in Exchange,
+        // thus those messages are expunged and reappear with a new uid
+        int index = 1;
+        for (ExchangeSession.Message message : currentMessages) {
+            if (!uidSet.contains(message.getImapUid())) {
+                sendClient("* " + index + " EXPUNGE");
+            } else {
+                index++;
+            }
+        }
+        sendClient("* " + currentFolder.count() + " EXISTS");
+        sendClient("* " + currentFolder.count() + " RECENT");
     }
 
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException {
