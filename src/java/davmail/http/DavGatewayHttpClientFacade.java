@@ -251,12 +251,20 @@ public final class DavGatewayHttpClientFacade {
         HttpMethod currentMethod = method;
         try {
             DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS", currentMethod.getURI()));
-            httpClient.executeMethod(currentMethod);
+            int status = httpClient.executeMethod(currentMethod);
+            // check NTLM
+            if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+                    && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+                LOGGER.debug("Received " + status + " unauthorized at " + currentMethod.getURI() + ", retrying with NTLM");
+                resetMethod(currentMethod);
+                addNTLM(httpClient);
+                status = httpClient.executeMethod(currentMethod);
+            }
             Header location = currentMethod.getResponseHeader("Location");
             int redirectCount = 0;
             while (redirectCount++ < 10
                     && location != null
-                    && isRedirect(currentMethod.getStatusCode())) {
+                    && isRedirect(status)) {
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(location.getValue());
                 currentMethod.setFollowRedirects(false);
@@ -469,7 +477,7 @@ public final class DavGatewayHttpClientFacade {
         int status = httpClient.executeMethod(method);
         if (status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED
                 && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
-            method.releaseConnection();
+            resetMethod(method);
             LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
             status = httpClient.executeMethod(method);
@@ -493,7 +501,7 @@ public final class DavGatewayHttpClientFacade {
         int status = httpClient.executeMethod(method);
         if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
                 && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
-            method.releaseConnection();
+            resetMethod(method);
             LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
             status = httpClient.executeMethod(method);
@@ -512,6 +520,13 @@ public final class DavGatewayHttpClientFacade {
             }
         }
         return status;
+    }
+
+    private static void resetMethod(HttpMethod method) {
+        // reset method state
+        method.releaseConnection();
+        method.getHostAuthState().invalidate();
+        method.getProxyAuthState().invalidate();
     }
 
     private static void checkExpiredSession(String queryString) throws DavMailAuthenticationException {
