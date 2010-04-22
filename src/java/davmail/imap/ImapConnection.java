@@ -40,6 +40,7 @@ import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -418,13 +419,20 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("idle".equalsIgnoreCase(command)) {
                                     sendClient("+ idling ");
+                                    // clear cache before going to idle mode
+                                    currentFolder.clearCache();
+                                    DavGatewayTray.resetIcon();
+                                    int count = 0;
                                     while (!in.ready()) {
-                                        ExchangeSession.MessageList currentMessages = currentFolder.messages;
-                                        if (session.refreshFolder(currentFolder)) {
-                                            handleRefresh(currentFolder, currentMessages);
+                                        if (++count >= 30) {
+                                            count = 0;
+                                            List<Long> previousImapUidList = currentFolder.getImapUidList();
+                                            if (session.refreshFolder(currentFolder)) {
+                                                handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                            }
                                         }
-                                        // sleep 10 seconds
-                                       Thread.sleep(10000);
+                                        // sleep 1 second
+                                       Thread.sleep(1000);
                                     }
                                     // read DONE line
                                     line = readClient();
@@ -436,9 +444,9 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
-                                        ExchangeSession.MessageList currentMessages = currentFolder.messages;
+                                        List<Long> previousImapUidList = currentFolder.getImapUidList();
                                         if (session.refreshFolder(currentFolder)) {
-                                            handleRefresh(currentFolder, currentMessages);
+                                            handleRefresh(previousImapUidList, currentFolder.getImapUidList());
                                         }
                                     }
                                     sendClient(commandId + " OK " + command + " completed");
@@ -529,18 +537,17 @@ public class ImapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    private void handleRefresh(ExchangeSession.Folder currentFolder, ExchangeSession.MessageList currentMessages) throws IOException {
-        // build new uid set
-        HashSet<Long> uidSet = new HashSet<Long>();
-        for (ExchangeSession.Message message : currentFolder.messages) {
-            uidSet.add(message.getImapUid());
-        }
-        // send expunge untagged response for removed IMAP message uids
-        // note: some STORE commands trigger a uid change in Exchange,
-        // thus those messages are expunged and reappear with a new uid
+    /**
+     * Send expunge untagged response for removed IMAP message uids.
+     * @param previousImapUidList uid list before refresh
+     * @param imapUidList uid list after refresh
+     * @throws IOException on error
+     */
+    private void handleRefresh(List<Long> previousImapUidList, List<Long> imapUidList) throws IOException {
+        //
         int index = 1;
-        for (ExchangeSession.Message message : currentMessages) {
-            if (!uidSet.contains(message.getImapUid())) {
+        for (long previousImapUid : previousImapUidList) {
+            if (!imapUidList.contains(previousImapUid)) {
                 sendClient("* " + index + " EXPUNGE");
             } else {
                 index++;

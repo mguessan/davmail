@@ -1457,10 +1457,22 @@ public class ExchangeSession {
         }
 
         /**
-         * Calendar folder flag.
-         *
-         * @return true if this is a calendar folder
+         * Get current folder messages imap uids
+         * @return imap uid list
          */
+        public List<Long> getImapUidList() {
+            ArrayList<Long> imapUidList = new ArrayList<Long>();
+            for (ExchangeSession.Message message : messages) {
+                imapUidList.add(message.getImapUid());
+            }
+            return imapUidList;
+        }
+
+            /**
+            * Calendar folder flag.
+            *
+            * @return true if this is a calendar folder
+            */
         public boolean isCalendar() {
             return "urn:content-classes:calendarfolder".equals(contentClass);
         }
@@ -1472,6 +1484,14 @@ public class ExchangeSession {
          */
         public boolean isContact() {
             return "urn:content-classes:contactfolder".equals(contentClass);
+        }
+
+        /**
+         * drop cached message
+         */
+        public void clearCache() {
+            messages.cachedMimeMessage = null;
+            messages.cachedMessageImapUid = 0;
         }
     }
 
