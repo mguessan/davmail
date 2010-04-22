@@ -126,7 +126,7 @@
                     under Tools/Options/Advanced:
                 </p>
                 <source>calendar.debug.log=true
-calendar.debug.log.verbose=true
+                    calendar.debug.log.verbose=true
                 </source>
 
                 <p>
@@ -161,6 +161,16 @@ calendar.debug.log.verbose=true
                     and<code>mailnews.tcptimeout</code>)or avoid full
                     mailbox sync: disable global search and indexer under advanced options and change
                     Synchronization &amp; Storage options under Account Settings.
+                </p>
+                <p>
+                    <strong>Message deleted over IMAP still visible through OWA</strong>
+                </p>
+                <p>Message move does not exist in IMAP, thus the move is a delete followed by a create.
+                    And a delete is not immediate with IMAP: you need to EXPUNGE the folder to actually
+                    delete a message.
+                </p>
+                <p>A workaround with Thunderbird is to set the property
+                    <code>mail.imap.expunge_after_delete=true</code>
                 </p>
             </subsection>
 
