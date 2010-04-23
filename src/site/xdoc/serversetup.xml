@@ -38,6 +38,7 @@
                 davmail.keepDelay=30
                 davmail.sentKeepDelay=90
                 davmail.caldavPastDelay=90
+                davmail.imapIdleDelay=
                 davmail.useSystemProxies=false
                 davmail.enableProxy=false
                 davmail.proxyHost=

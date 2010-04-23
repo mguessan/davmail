@@ -27,8 +27,10 @@
                 </tr>
                 <tr>
                     <td>OWA url</td>
-                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL<br/>
-                    Note: use /owa/ path for Exchange 2007, /exchange/ for older versions</td>
+                    <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL
+                        <br/>
+                        Note: use /owa/ path for Exchange 2007, /exchange/ for older versions
+                    </td>
                     <td>http://exchangeServer/owa/</td>
                 </tr>
                 <tr>
@@ -57,19 +59,27 @@
                     <td>389</td>
                 </tr>
                 <tr>
-                    <td>Keep Delay</td>
-                    <td>Number of days to keep messages in Exchange trash folder before actual deletion</td>
+                    <td>Keep Delay (POP)</td>
+                    <td>Number of days to keep messages in Exchange trash folder before actual deletion,
+                        only for POP service
+                    </td>
                     <td>30</td>
                 </tr>
                 <tr>
-                    <td>Sent Keep Delay</td>
-                    <td>Number of days to keep sent messages in Exchange sent folder</td>
+                    <td>Sent Keep Delay (POP)</td>
+                    <td>Number of days to keep sent messages in Exchange sent folder,
+                        only for POP service</td>
                     <td>90</td>
                 </tr>
                 <tr>
-                    <td>Calendar past events</td>
+                    <td>Calendar past events (Caldav)</td>
                     <td>Get events in the past not older than specified days count, leave empty for no limits</td>
                     <td>90</td>
+                </tr>
+                <tr>
+                    <td>IDLE folder monitor delay (IMAP):</td>
+                    <td>IMAP folder idle monitor delay in minutes, leave empty to disable IDLE support</td>
+                    <td>1</td>
                 </tr>
                 <tr>
                     <td>Allow remote connections</td>
@@ -88,7 +98,9 @@
                 </tr>
                 <tr>
                     <td>Caldav alarm sound</td>
-                    <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no conversion</td>
+                    <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no
+                        conversion
+                    </td>
                     <td>Basso</td>
                 </tr>
                 <tr>
@@ -99,7 +111,8 @@
                 <tr>
                     <td>Key store type</td>
                     <td>To encrypt communication between client and DavMail, create a server certificate,
-                        choose key store type and set key store path</td>
+                        choose key store type and set key store path
+                    </td>
                     <td>JKS</td>
                 </tr>
                 <tr>
@@ -121,7 +134,8 @@
                     <td>Client key store type</td>
                     <td>When the Exchange server requires mutual authentication,
                         choose client certificate key store type, PKCS11 for smartcard,
-                        PKCS12 or JKS for certificate file</td>
+                        PKCS12 or JKS for certificate file
+                    </td>
                     <td>PKCS11</td>
                 </tr>
                 <tr>

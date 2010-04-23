@@ -22,6 +22,7 @@ import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
 import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
@@ -61,12 +62,20 @@ public class ImapConnection extends AbstractConnection {
 
     @Override
     public void run() {
+        final String capabilities;
+        int imapIdleDelay = Settings.getIntProperty("davmail.imapIdleDelay") * 60;
+        if (imapIdleDelay > 0) {
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE";
+        } else {
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN";
+        }
+
         String line;
         String commandId = null;
         IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("* OK [CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE] IMAP4rev1 DavMail server ready");
+            sendClient("* OK ["+capabilities+"] IMAP4rev1 DavMail server ready");
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?
@@ -85,7 +94,7 @@ public class ImapConnection extends AbstractConnection {
                             break;
                         }
                         if ("capability".equalsIgnoreCase(command)) {
-                            sendClient("* CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE");
+                            sendClient("* "+capabilities);
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
@@ -417,14 +426,14 @@ public class ImapConnection extends AbstractConnection {
                                     String messageName = UUID.randomUUID().toString();
                                     session.createMessage(folderName, messageName, properties, new String(buffer));
                                     sendClient(commandId + " OK APPEND completed");
-                                } else if ("idle".equalsIgnoreCase(command)) {
+                                } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
                                     sendClient("+ idling ");
                                     // clear cache before going to idle mode
                                     currentFolder.clearCache();
                                     DavGatewayTray.resetIcon();
                                     int count = 0;
                                     while (!in.ready()) {
-                                        if (++count >= 30) {
+                                        if (++count >= imapIdleDelay) {
                                             count = 0;
                                             List<Long> previousImapUidList = currentFolder.getImapUidList();
                                             if (session.refreshFolder(currentFolder)) {
@@ -432,7 +441,7 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                         }
                                         // sleep 1 second
-                                       Thread.sleep(1000);
+                                        Thread.sleep(1000);
                                     }
                                     // read DONE line
                                     line = readClient();
@@ -539,8 +548,9 @@ public class ImapConnection extends AbstractConnection {
 
     /**
      * Send expunge untagged response for removed IMAP message uids.
+     *
      * @param previousImapUidList uid list before refresh
-     * @param imapUidList uid list after refresh
+     * @param imapUidList         uid list after refresh
      * @throws IOException on error
      */
     private void handleRefresh(List<Long> previousImapUidList, List<Long> imapUidList) throws IOException {
@@ -621,11 +631,11 @@ public class ImapConnection extends AbstractConnection {
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // write headers only
                         partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
-                        partInputStream =  message.getRawInputStream();
+                        partInputStream = message.getRawInputStream();
                     } else {
                         MimePart bodyPart = mimeMessage;
                         String[] partIndexStrings = partIndexString.split("\\.");
-                        for (String subPartIndexString:partIndexStrings) {
+                        for (String subPartIndexString : partIndexStrings) {
                             int subPartIndex;
                             // try to parse part index
                             try {
@@ -650,9 +660,9 @@ public class ImapConnection extends AbstractConnection {
                         // write selected part, without headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         if (bodyPart instanceof MimeMessage) {
-                            partInputStream = ((MimeMessage)bodyPart).getRawInputStream();
+                            partInputStream = ((MimeMessage) bodyPart).getRawInputStream();
                         } else {
-                            partInputStream = ((MimeBodyPart)bodyPart).getRawInputStream();
+                            partInputStream = ((MimeBodyPart) bodyPart).getRawInputStream();
                         }
                     }
 

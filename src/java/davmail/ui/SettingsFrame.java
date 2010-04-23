@@ -52,6 +52,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField keepDelayField;
     protected JTextField sentKeepDelayField;
     protected JTextField caldavPastDelayField;
+    protected JTextField imapIdleDelayField;
 
     JCheckBox useSystemProxiesField;
     JCheckBox enableProxyField;
@@ -194,12 +195,13 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getDelaysPanel() {
-        JPanel delaysPanel = new JPanel(new GridLayout(3, 2));
+        JPanel delaysPanel = new JPanel(new GridLayout(4, 2));
         delaysPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DELAYS")));
 
         keepDelayField = new JTextField(Settings.getProperty("davmail.keepDelay"), 4);
         sentKeepDelayField = new JTextField(Settings.getProperty("davmail.sentKeepDelay"), 4);
         caldavPastDelayField = new JTextField(Settings.getProperty("davmail.caldavPastDelay"), 4);
+        imapIdleDelayField = new JTextField(Settings.getProperty("davmail.imapIdleDelay"), 4);
 
         addSettingComponent(delaysPanel, BundleMessage.format("UI_KEEP_DELAY"), keepDelayField,
                 BundleMessage.format("UI_KEEP_DELAY_HELP"));
@@ -207,6 +209,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SENT_KEEP_DELAY_HELP"));
         addSettingComponent(delaysPanel, BundleMessage.format("UI_CALENDAR_PAST_EVENTS"), caldavPastDelayField,
                 BundleMessage.format("UI_CALENDAR_PAST_EVENTS_HELP"));
+        addSettingComponent(delaysPanel, BundleMessage.format("UI_IMAP_IDLE_DELAY"), imapIdleDelayField,
+                BundleMessage.format("UI_IMAP_IDLE_DELAY_HELP"));
         return delaysPanel;
     }
 
@@ -451,6 +455,7 @@ public class SettingsFrame extends JFrame {
         keepDelayField.setText(Settings.getProperty("davmail.keepDelay"));
         sentKeepDelayField.setText(Settings.getProperty("davmail.sentKeepDelay"));
         caldavPastDelayField.setText(Settings.getProperty("davmail.caldavPastDelay"));
+        imapIdleDelayField.setText(Settings.getProperty("davmail.imapIdleDelay"));        
         boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies");
         useSystemProxiesField.setSelected(useSystemProxies);
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
@@ -568,6 +573,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
                 Settings.setProperty("davmail.sentKeepDelay", sentKeepDelayField.getText());
                 Settings.setProperty("davmail.caldavPastDelay", caldavPastDelayField.getText());
+                Settings.setProperty("davmail.imapIdleDelay", imapIdleDelayField.getText());
                 Settings.setProperty("davmail.useSystemProxies", String.valueOf(useSystemProxiesField.isSelected()));
                 Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
                 Settings.setProperty("davmail.proxyHost", httpProxyField.getText());
