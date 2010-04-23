@@ -431,24 +431,29 @@ public class ImapConnection extends AbstractConnection {
                                     // clear cache before going to idle mode
                                     currentFolder.clearCache();
                                     DavGatewayTray.resetIcon();
-                                    int count = 0;
-                                    while (!in.ready()) {
-                                        if (++count >= imapIdleDelay) {
-                                            count = 0;
-                                            List<Long> previousImapUidList = currentFolder.getImapUidList();
-                                            if (session.refreshFolder(currentFolder)) {
-                                                handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                    try {
+                                        int count = 0;
+                                        while (!in.ready()) {
+                                            if (++count >= imapIdleDelay) {
+                                                count = 0;
+                                                List<Long> previousImapUidList = currentFolder.getImapUidList();
+                                                if (session.refreshFolder(currentFolder)) {
+                                                    handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                                }
                                             }
+                                            // sleep 1 second
+                                            Thread.sleep(1000);
                                         }
-                                        // sleep 1 second
-                                        Thread.sleep(1000);
-                                    }
-                                    // read DONE line
-                                    line = readClient();
-                                    if ("DONE".equals(line)) {
-                                        sendClient(commandId + " OK " + command + " terminated");
-                                    } else {
-                                        sendClient(commandId + " BAD command unrecognized");
+                                        // read DONE line
+                                        line = readClient();
+                                        if ("DONE".equals(line)) {
+                                            sendClient(commandId + " OK " + command + " terminated");
+                                        } else {
+                                            sendClient(commandId + " BAD command unrecognized");
+                                        }
+                                    } catch (IOException e) {
+                                        // client connection closed
+                                        throw new SocketException(e.getMessage());
                                     }
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
