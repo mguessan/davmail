@@ -611,8 +611,7 @@ public class SettingsFrame extends JFrame {
                 dispose();
                 Settings.save();
                 // restart listeners with new config
-                DavGateway.stop();
-                DavGateway.start();
+                DavGateway.restart();
             }
         };
         ok.addActionListener(save);

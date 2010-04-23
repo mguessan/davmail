@@ -168,18 +168,32 @@ public final class DavGateway {
      * Stop all listeners, shutdown connection pool and clear session cache.
      */
     public static void stop() {
-        for (AbstractServer server : SERVER_LIST) {
-            server.close();
-            try {
-                server.join();
-            } catch (InterruptedException e) {
-                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
-            }
-        }
+        DavGateway.stopServers();
         // close pooled connections
         DavGatewayHttpClientFacade.stop();
         // clear session cache
         ExchangeSessionFactory.reset();
+    }
+
+    /**
+     * Stop all listeners and clear session cache.
+     */
+    public static void restart() {
+        DavGateway.stopServers();
+        // clear session cache
+        ExchangeSessionFactory.reset();
+        DavGateway.start();
+    }
+
+    private static void stopServers() {
+        for (AbstractServer server : SERVER_LIST) {
+           server.close();
+           try {
+               server.join();
+           } catch (InterruptedException e) {
+               DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
+           }
+       }
     }
 
     /**
