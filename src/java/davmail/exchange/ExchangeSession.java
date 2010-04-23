@@ -63,6 +63,7 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -1649,15 +1650,32 @@ public class ExchangeSession {
             }
         }
 
+        protected boolean isGzipEncoded(HttpMethod method) {
+            Header[] contentEncodingHeaders = method.getResponseHeaders("Content-Encoding");
+            if (contentEncodingHeaders != null) {
+                for (Header header : contentEncodingHeaders) {
+                    if ("gzip".equals(header.getValue())) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         protected void write(OutputStream os, String url, boolean doubleDot) throws IOException {
             GetMethod method = new GetMethod(URIUtil.encodePath(url));
             method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
             method.setRequestHeader("Translate", "f");
+            method.setRequestHeader("Accept-Encoding", "gzip");
             BufferedReader reader = null;
             try {
                 DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
 
-                reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
+                if (isGzipEncoded(method)) {
+                    reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(method.getResponseBodyAsStream())));
+                } else {
+                    reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
+                }
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
                 String line;
                 while ((line = reader.readLine()) != null) {
