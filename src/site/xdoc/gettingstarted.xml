@@ -98,7 +98,8 @@
                 </tr>
                 <tr>
                     <td>Key store type</td>
-                    <td>Choose key store type</td>
+                    <td>To encrypt communication between client and DavMail, create a server certificate,
+                        choose key store type and set key store path</td>
                     <td>JKS</td>
                 </tr>
                 <tr>
@@ -118,7 +119,9 @@
                 </tr>
                 <tr>
                     <td>Client key store type</td>
-                    <td>Client certificate key store type, PKCS11 for smartcard, PKCS12 or JKS for certificate file</td>
+                    <td>When the Exchange server requires mutual authentication,
+                        choose client certificate key store type, PKCS11 for smartcard,
+                        PKCS12 or JKS for certificate file</td>
                     <td>PKCS11</td>
                 </tr>
                 <tr>
