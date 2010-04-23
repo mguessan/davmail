@@ -778,10 +778,6 @@ public class ExchangeSession {
         message.forwarded = "104".equals(x10810003);
         message.date = getPropertyIfExists(properties, "date", Namespace.getNamespace("urn:schemas:mailheader:"));
         message.deleted = "1".equals(getPropertyIfExists(properties, "deleted", Namespace.getNamespace("")));
-        message.messageId = getPropertyIfExists(properties, "message-id", Namespace.getNamespace("urn:schemas:mailheader:"));
-        if (message.messageId != null && message.messageId.startsWith("<") && message.messageId.endsWith(">")) {
-            message.messageId = message.messageId.substring(1, message.messageId.length() - 1);
-        }
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
@@ -879,7 +875,7 @@ public class ExchangeSession {
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
                 "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                ,\"urn:schemas:mailheader:message-id\", \"urn:schemas:httpmail:read\" " +
+                "                , \"urn:schemas:httpmail:read\" " +
                 "                ,\"http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8570\" as deleted, \"urn:schemas:mailheader:date\"", conditions);
     }
 
@@ -1528,10 +1524,6 @@ public class ExchangeSession {
          */
         public int size;
         /**
-         * Mail header message-id.
-         */
-        protected String messageId;
-        /**
          * Message date (urn:schemas:mailheader:date).
          */
         public String date;
@@ -1729,7 +1721,6 @@ public class ExchangeSession {
         /**
          * Load message content in a Mime message
          *
-         * @return mime message
          * @throws IOException        on error
          * @throws MessagingException on error
          */
