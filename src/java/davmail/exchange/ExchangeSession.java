@@ -55,6 +55,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -1459,6 +1460,7 @@ public class ExchangeSession {
 
         /**
          * Get current folder messages imap uids
+         *
          * @return imap uid list
          */
         public List<Long> getImapUidList() {
@@ -1469,11 +1471,11 @@ public class ExchangeSession {
             return imapUidList;
         }
 
-            /**
-            * Calendar folder flag.
-            *
-            * @return true if this is a calendar folder
-            */
+        /**
+         * Calendar folder flag.
+         *
+         * @return true if this is a calendar folder
+         */
         public boolean isCalendar() {
             return "urn:content-classes:calendarfolder".equals(contentClass);
         }
@@ -1491,6 +1493,7 @@ public class ExchangeSession {
          * drop cached message
          */
         public void clearCache() {
+            messages.cachedMimeBody = null;
             messages.cachedMimeMessage = null;
             messages.cachedMessageImapUid = 0;
         }
@@ -1561,6 +1564,11 @@ public class ExchangeSession {
          * Message flag: fowarded.
          */
         public boolean forwarded;
+
+        /**
+         * Unparsed message content.
+         */
+        protected SharedByteArrayInputStream mimeBody;
 
         /**
          * Message content parsed in a MIME message.
@@ -1725,22 +1733,61 @@ public class ExchangeSession {
          * @throws IOException        on error
          * @throws MessagingException on error
          */
-        public MimeMessage getMimeMessage() throws IOException, MessagingException {
+        protected void loadMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
                 // try to get message content from cache
                 if (this.imapUid == messageList.cachedMessageImapUid) {
+                    mimeBody = messageList.cachedMimeBody;
                     mimeMessage = messageList.cachedMimeMessage;
-                    LOGGER.debug("Got message content for "+imapUid+" from cache");
+                    LOGGER.debug("Got message content for " + imapUid + " from cache");
                 } else {
                     // load message
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     write(baos, false);
-                    mimeMessage = new MimeMessage(null, new ByteArrayInputStream(baos.toByteArray()));
-                    LOGGER.debug("Downloaded message content for "+imapUid+" ("+baos.size()+ ')');
+                    // load and parse message
+                    mimeBody = new SharedByteArrayInputStream(baos.toByteArray());
+                    mimeMessage = new MimeMessage(null, mimeBody);
+                    LOGGER.debug("Downloaded message content for " + imapUid + " (" + baos.size() + ')');
                 }
             }
+        }
+
+        /**
+         * Get message content as a Mime message.
+         *
+         * @return mime message
+         * @throws IOException        on error
+         * @throws MessagingException on error
+         */
+        public MimeMessage getMimeMessage() throws IOException, MessagingException {
+            loadMimeMessage();
             return mimeMessage;
         }
+
+        /**
+         * Get message body size.
+         * @return mime message size
+         * @throws IOException on error
+         * @throws MessagingException on error
+         */
+        public int getMimeMessageSize() throws IOException, MessagingException {
+            loadMimeMessage();
+            mimeBody.reset();
+            return mimeBody.available();
+        }
+
+        /**
+         * Get message body input stream.
+         * @return mime message InputStream
+         * @throws IOException on error
+         * @throws MessagingException on error
+         */
+        public InputStream getRawInputStream() throws IOException, MessagingException {
+            loadMimeMessage();
+            mimeBody.reset();
+            return mimeBody;
+        }
+
 
         /**
          * Drop mime message to avoid keeping message content in memory,
@@ -1750,6 +1797,7 @@ public class ExchangeSession {
             // update single message cache
             if (mimeMessage != null) {
                 messageList.cachedMessageImapUid = imapUid;
+                messageList.cachedMimeBody = mimeBody;
                 messageList.cachedMimeMessage = mimeMessage;
             }
             mimeMessage = null;
@@ -1829,6 +1877,10 @@ public class ExchangeSession {
          * Cached message uid.
          */
         protected transient long cachedMessageImapUid;
+        /**
+         * Cached unparsed message
+         */
+        protected transient SharedByteArrayInputStream cachedMimeBody;
 
     }
 
@@ -2683,7 +2735,7 @@ public class ExchangeSession {
                     event.getICS();
                 } catch (HttpException e) {
                     // invalid event: exclude from list
-                    LOGGER.warn("Invalid event "+event.displayName+" found at " + response.getHref(), e);
+                    LOGGER.warn("Invalid event " + event.displayName + " found at " + response.getHref(), e);
                 }
             } else {
                 events.add(event);
@@ -3050,7 +3102,7 @@ public class ExchangeSession {
     /**
      * Determine user email through various means.
      *
-     * @param hostName   Exchange server host name for last failover
+     * @param hostName Exchange server host name for last failover
      */
     public void buildEmail(String hostName) {
         // first try to get email from login name

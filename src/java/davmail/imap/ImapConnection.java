@@ -31,6 +31,7 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 
+import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.*;
 import java.io.*;
@@ -40,7 +41,6 @@ import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * Dav Gateway smtp connection implementation.
@@ -568,12 +568,7 @@ public class ImapConnection extends AbstractConnection {
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
-                    MimeMessage mimeMessage = message.getMimeMessage();
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PartialOutputStream partOutputStream = new PartialOutputStream(baos, 0, 0);
-                    mimeMessage.writeTo(partOutputStream);
-                    baos.close();
-                    buffer.append(" RFC822.SIZE ").append(partOutputStream.size);
+                    buffer.append(" RFC822.SIZE ").append(message.getMimeMessageSize());
                 } else if ("ENVELOPE".equals(param)) {
                     appendEnvelope(buffer, message);
                 } else if ("BODYSTRUCTURE".equals(param)) {
@@ -607,7 +602,9 @@ public class ImapConnection extends AbstractConnection {
                         }
                     }
 
+                    InputStream partInputStream = null;
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    OutputStream partOutputStream;
 
                     // load message
                     MimeMessage mimeMessage = message.getMimeMessage();
@@ -615,13 +612,16 @@ public class ImapConnection extends AbstractConnection {
                     String partIndexString = StringUtil.getToken(param, "[", "]");
                     if ("".equals(partIndexString)) {
                         // write message with headers
-                        mimeMessage.writeTo(new PartialOutputStream(baos, startIndex, maxSize));
+                        partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
+                        partInputStream = message.getRawInputStream();
                     } else if ("TEXT".equals(partIndexString)) {
                         // write message without headers
-                        mimeMessage.writeTo(new PartOutputStream(baos, false, true, startIndex, maxSize));
+                        partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
+                        partInputStream = mimeMessage.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // write headers only
-                        mimeMessage.writeTo(new PartOutputStream(baos, true, false, startIndex, maxSize));
+                        partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
+                        partInputStream =  message.getRawInputStream();
                     } else {
                         MimePart bodyPart = mimeMessage;
                         String[] partIndexStrings = partIndexString.split("\\.");
@@ -648,9 +648,22 @@ public class ImapConnection extends AbstractConnection {
                         }
 
                         // write selected part, without headers
-                        bodyPart.writeTo(new PartOutputStream(baos, false, true, startIndex, maxSize));
+                        partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
+                        if (bodyPart instanceof MimeMessage) {
+                            partInputStream = ((MimeMessage)bodyPart).getRawInputStream();
+                        } else {
+                            partInputStream = ((MimeBodyPart)bodyPart).getRawInputStream();
+                        }
                     }
 
+                    // copy selected content to baos
+                    byte[] bytes = new byte[8192];
+                    int length;
+                    while ((length = partInputStream.read(bytes)) > 0) {
+                        partOutputStream.write(bytes, 0, length);
+                    }
+                    partInputStream.close();
+                    partOutputStream.close();
                     baos.close();
 
                     if ("RFC822.HEADER".equals(param)) {
