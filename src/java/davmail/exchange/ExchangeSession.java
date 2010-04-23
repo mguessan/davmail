@@ -2724,6 +2724,8 @@ public class ExchangeSession {
                 // check ics content
                 try {
                     event.getICS();
+                    // getICS success => add event or task
+                    events.add(event);
                 } catch (HttpException e) {
                     // invalid event: exclude from list
                     LOGGER.warn("Invalid event " + event.displayName + " found at " + response.getHref(), e);
