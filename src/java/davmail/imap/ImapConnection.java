@@ -32,7 +32,6 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 
-import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.*;
 import java.io.*;
@@ -617,7 +616,7 @@ public class ImapConnection extends AbstractConnection {
                         }
                     }
 
-                    InputStream partInputStream = null;
+                    InputStream partInputStream;
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     OutputStream partOutputStream;
 
@@ -716,16 +715,14 @@ public class ImapConnection extends AbstractConnection {
         sendClient(commandId + " OK STORE completed");
     }
 
-
-    protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
-        List<Long> uidList = new ArrayList<Long>();
-        SearchConditions conditions = new SearchConditions();
-        conditions.append("AND (");
+    protected void buildConditions(SearchConditions conditions, IMAPTokenizer tokens) throws IOException {
         boolean or = false;
-
         while (tokens.hasMoreTokens()) {
-            String token = tokens.nextToken().toUpperCase();
-            if ("OR".equals(token)) {
+            String token = tokens.nextQuotedToken().toUpperCase();
+            if (token.startsWith("(") &&token.endsWith(")")) {
+                // quoted search param
+                buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() -1)));
+            } else if ("OR".equals(token)) {
                 or = true;
             } else if (token.startsWith("OR ")) {
                 or = true;
@@ -742,6 +739,14 @@ public class ImapConnection extends AbstractConnection {
                 appendSearchParam(operator, tokens, token, conditions);
             }
         }
+    }
+
+
+    protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
+        List<Long> uidList = new ArrayList<Long>();
+        SearchConditions conditions = new SearchConditions();
+        conditions.append("AND (");
+        buildConditions(conditions, tokens);
         conditions.append(")");
         String query = conditions.query.toString();
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", conditions.query));
@@ -749,14 +754,19 @@ public class ImapConnection extends AbstractConnection {
             query = null;
         }
         ExchangeSession.MessageList localMessages = currentFolder.searchMessages(query);
-        int index = 1;
-        for (ExchangeSession.Message message : localMessages) {
+        Iterator<ExchangeSession.Message> iterator;
+        if (conditions.uidRange != null) {
+            iterator = new UIDRangeIterator(localMessages, conditions.uidRange);
+        } else if (conditions.indexRange != null) {
+            iterator = new RangeIterator(localMessages, conditions.indexRange);
+        } else {
+            iterator = localMessages.iterator();
+        }
+        while (iterator.hasNext()) {
+            ExchangeSession.Message message = iterator.next();
             if ((conditions.deleted == null || message.deleted == conditions.deleted)
                     && (conditions.flagged == null || message.flagged == conditions.flagged)
-                    && (conditions.answered == null || message.answered == conditions.answered)
-                    && (conditions.startUid == 0 || message.getImapUid() >= conditions.startUid)
-                    && (conditions.startIndex == 0 || (index++ >= conditions.startIndex))
-                    ) {
+                    && (conditions.answered == null || message.answered == conditions.answered)) {
                 uidList.add(message.getImapUid());
             }
         }
@@ -967,8 +977,8 @@ public class ImapConnection extends AbstractConnection {
         Boolean flagged;
         Boolean answered;
         Boolean deleted;
-        long startUid;
-        int startIndex;
+        String indexRange;
+        String uidRange;
         final StringBuilder query = new StringBuilder();
 
         public StringBuilder append(String value) {
@@ -1049,20 +1059,14 @@ public class ImapConnection extends AbstractConnection {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {
                 // ignore: this is a noop filter
-            } else if (range.endsWith(":*")) {
-                conditions.startUid = Long.parseLong(range.substring(0, range.indexOf(':')));
             } else {
-                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", range);
+                conditions.uidRange = range;
             }
         } else if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
             // ignore
         } else if (token.indexOf(':') >= 0) {
             // range search
-            try {
-                conditions.startIndex = Integer.parseInt(token.substring(0, token.indexOf(':')));
-            } catch (NumberFormatException e) {
-                throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
-            }
+            conditions.indexRange = token;
         } else {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
         }
