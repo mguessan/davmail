@@ -32,21 +32,21 @@ public class DavMailException extends IOException {
     /**
      * Create a DavMail exception with the given BundleMessage key and arguments.
      *
-     * @param key message key
+     * @param key       message key
      * @param arguments message values
      */
     public DavMailException(String key, Object... arguments) {
-         this.message = new BundleMessage(key, arguments);
+        this.message = new BundleMessage(key, arguments);
     }
 
     /**
      * Get formatted message
      *
-     * @return formatted message
+     * @return english formatted message
      */
     @Override
     public String getMessage() {
-        return message.format();
+        return message.formatLog();
     }
 
     /**
@@ -57,15 +57,6 @@ public class DavMailException extends IOException {
      */
     public String getMessage(Locale locale) {
         return message.format(locale);
-    }
-
-    /**
-     * Get formatted message for logging.
-     *
-     * @return english formatted message
-     */
-    public String getLogMessage() {
-        return message.formatLog();
     }
 
     /**

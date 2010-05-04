@@ -242,7 +242,7 @@ public class ExchangeSession {
             getWellKnownFolders();
 
         } catch (DavMailAuthenticationException exc) {
-            LOGGER.error(exc.getLogMessage());
+            LOGGER.error(exc.getMessage());
             throw exc;
         } catch (UnknownHostException exc) {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
