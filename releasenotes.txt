@@ -1,3 +1,46 @@
+** DavMail 3.6.6 released **
+This release is mainly focused on IMAP enhancements, including IDLE (RFC2177)
+aka "Push Mail" support and other protocol compliance fixes, particularly on
+partial fetch. NTLMv2 is also supported thanks to the JCIFS library.
+
+Documentation:
+- Doc: update doc and roadmap
+- Doc: adjust settings message
+- Doc: improve server/client certificates description
+- Doc: new FAQ entry on message deleted over IMAP still visible through OWA
+- Doc: fix maven site generation
+
+IMAP:
+- IMAP: send BAD instead of BYE on exception
+- IMAP: fix 2992976, implement complex index and uid range in SEARCH
+- IMAP: Handle exception during IDLE
+- IMAP: add a new setting to enable/disable IDLE
+- IMAP: use getRawInputStream instead of writeTo to avoid MIME message changes, cache message body in SharedByteArrayInputStream
+- IMAP: poll folder every 30 seconds in IDLE mode, clear cached message
+- IMAP: implement IDLE extension (RFC2177)
+- IMAP: fix 2971184, do not decode content in partial fetch (replace getDataHandler with PartOutputStream)
+
+Enhancements:
+- Exclude redline lib from distribution packages
+- Use https in default Exchange url
+- Make sure log messages are not localized
+- Remove unused messageId field
+- Do not shutdown connection manager on restart
+- Allow Exchange server to use gzip compression
+- Sample SocketAppender configuration
+- Improve NTLM mode detection
+- JCIFS based NTLMv2 implementation
+- Hardcode /owa/ path in getAliasFromOptions and getEmailFromOptions for Exchange 2007, improve failure message
+- Improve xmlEncode, use compiled static patterns
+
+Caldav:
+- Caldav: fix 2992811, missing timezones
+- Caldav: fix 2991030 tasks disappeared
+- Caldav: add VTODO to supported-calendar-component-set response
+- Caldav: fix regression in getAllDayLine()
+- Caldav: make shared calendar test case insensitive
+- Caldav: 0 or no value in caldavPastDelay means no limit
+
 ** DavMail 3.6.5 released **
 This release includes a major refactoring of the IMAP FETCH implementation
 to improve performance and provide RFC compliant partial fetch. The Carddav
