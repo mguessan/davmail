@@ -128,7 +128,7 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS.put("davmail.url", "http://exchangeServer/exchange/");
+        SETTINGS.put("davmail.url", "https://exchangeServer/exchange/");
         SETTINGS.put("davmail.popPort", "1110");
         SETTINGS.put("davmail.imapPort", "1143");
         SETTINGS.put("davmail.smtpPort", "1025");
