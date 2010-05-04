@@ -74,7 +74,7 @@ public class ImapConnection extends AbstractConnection {
         IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("* OK ["+capabilities+"] IMAP4rev1 DavMail server ready");
+            sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail server ready");
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?
@@ -93,7 +93,7 @@ public class ImapConnection extends AbstractConnection {
                             break;
                         }
                         if ("capability".equalsIgnoreCase(command)) {
-                            sendClient("* "+capabilities);
+                            sendClient("* " + capabilities);
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
@@ -539,7 +539,7 @@ public class ImapConnection extends AbstractConnection {
                 if (commandId != null) {
                     sendClient(commandId + " BAD unable to handle request: " + message);
                 } else {
-                    sendClient("* BYE unable to handle request: " + message);
+                    sendClient("* BAD unable to handle request: " + message);
                 }
             } catch (IOException e2) {
                 DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
@@ -719,9 +719,9 @@ public class ImapConnection extends AbstractConnection {
         boolean or = false;
         while (tokens.hasMoreTokens()) {
             String token = tokens.nextQuotedToken().toUpperCase();
-            if (token.startsWith("(") &&token.endsWith(")")) {
+            if (token.startsWith("(") && token.endsWith(")")) {
                 // quoted search param
-                buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() -1)));
+                buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1)));
             } else if ("OR".equals(token)) {
                 or = true;
             } else if (token.startsWith("OR ")) {
