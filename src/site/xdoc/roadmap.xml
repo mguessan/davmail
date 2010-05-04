@@ -15,14 +15,14 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in DavMail next versions.
             </p>
-            <subsection name="3.6.5">
+            <subsection name="3.6.7">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
-                    <li>Fix JavaMail client IMAP support</li>
                     <li>Create a new RPM package with redline rpm ant task</li>
-                    <li>Filter private events on shared calendars (Exchange bug)</li>
+                    <li>Change the subject line when replying to invites</li>
+                    <li>Growl support on OSX</li>
                 </ul>
             </subsection>
             <subsection name="3.7.0">
@@ -31,7 +31,8 @@
                 </p>
                 <ul>
                     <li>Implement CardDav protocol to sync address books. This new feature
-                        is sponsored by the french DGA through project trustedbird
+                        is sponsored by <a href="http://www.defense.gouv.fr/dga/">French Defense / DGA</a>
+                        through project <a href="http://www.trustedbird.org">Trustedbird</a>
                     </li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>

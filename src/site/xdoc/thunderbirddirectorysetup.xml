@@ -20,11 +20,11 @@
                     <img src="images/thunderbirdDirectory1.png" alt=""/>
                 </div>
 
-                <p>Choose a name, host is always localhost, LDAP base context<code>ou=people</code>,
+                <p>Choose a name, host is always localhost, LDAP base context&#x20;<code>ou=people</code>,
                     adjust port to your settings and set user to your Active Directory account name,
                     i.e. domain\account. Leave other options to default values.
                 </p>
-                <p>You may also want to use this directory for mail completion in compoze window :
+                <p>You may also want to use this directory for mail completion in compose window :
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdDirectory2.png" alt=""/>
