@@ -227,6 +227,7 @@
                 <exclude name="jarbundler-*.jar"/>
                 <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
+                <exclude name="redline-*.jar"/>
             </fileset>
         </copy>
         <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
