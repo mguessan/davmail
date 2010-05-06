@@ -273,6 +273,10 @@ public class CaldavConnection extends AbstractConnection {
             if (request.path.endsWith("/")) {
                 // GET request on a folder => build ics content of all folder events
                 String folderPath = request.getExchangeFolderPath();
+                ExchangeSession.Folder folder = session.getFolder(folderPath);
+                if (folder.isContact()) {
+                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(session.getFolderResourceTag(folderPath)), "text/vcard", (byte[])null, true);
+                } else {
                 List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
                 ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
                 response.append("BEGIN:VCALENDAR\r\n");
@@ -281,12 +285,12 @@ public class CaldavConnection extends AbstractConnection {
                 response.append("METHOD:PUBLISH\r\n");
 
                 for (ExchangeSession.Event event : events) {
-                    String icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VTIMEZONE", "END:VCALENDAR");
+                    String icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VTIMEZONE", "END:VCALENDAR");
                     if (icsContent != null) {
                         response.append("BEGIN:VTIMEZONE");
                         response.append(icsContent);
                     } else {
-                        icsContent = StringUtil.getToken(event.getICS(), "BEGIN:VEVENT", "END:VCALENDAR");
+                        icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VEVENT", "END:VCALENDAR");
                         if (icsContent != null) {
                             response.append("BEGIN:VEVENT");
                             response.append(icsContent);
@@ -295,14 +299,15 @@ public class CaldavConnection extends AbstractConnection {
                 }
                 response.append("END:VCALENDAR");
                 response.close();
+                }
             } else {
-                ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
-                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", event.getICS(), true);
+                ExchangeSession.Item item = session.getItem(request.getExchangeFolderPath(), lastPath);
+                sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), item.getBody(), true);
             }
         } else if (request.isHead()) {
             // test event
-            ExchangeSession.Event event = session.getEvent(request.getExchangeFolderPath(), lastPath);
-            sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(event.getEtag()), "text/calendar;charset=UTF-8", (byte[]) null, true);
+            ExchangeSession.Item item = session.getItem(request.getExchangeFolderPath(), lastPath);
+            sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), (byte[]) null, true);
         } else {
             sendUnsupported(request);
         }
@@ -319,40 +324,54 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
+    private void appendContactsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Contact> contacts) throws IOException {
+        int size = contacts.size();
+        int count = 0;
+        for (ExchangeSession.Contact contact : contacts) {
+            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_CONTACT", ++count, size));
+            DavGatewayTray.switchIcon();
+            appendItemResponse(response, request, contact);
+        }
+    }
+
     protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Event> events) throws IOException {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
             DavGatewayTray.debug(new BundleMessage("LOG_LISTING_EVENT", ++count, size));
             DavGatewayTray.switchIcon();
-            appendEventResponse(response, request, event);
+            appendItemResponse(response, request, event);
         }
     }
 
-    protected void appendEventResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Event event) throws IOException {
+    protected void appendItemResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Item item) throws IOException {
         StringBuilder eventPath = new StringBuilder();
         eventPath.append(URIUtil.encodePath(request.getPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
-        String eventName = StringUtil.xmlEncode(event.getName());
-        eventPath.append(URIUtil.encodeWithinQuery(eventName));
+        String itemName = StringUtil.xmlEncode(item.getName());
+        eventPath.append(URIUtil.encodeWithinQuery(itemName));
         response.startResponse(eventPath.toString());
         response.startPropstat();
-        if (request.hasProperty("calendar-data")) {
-            response.appendCalendarData(event.getICS());
+        if (request.hasProperty("calendar-data") && item instanceof ExchangeSession.Event) {
+            response.appendCalendarData(item.getBody());
         }
         if (request.hasProperty("getcontenttype")) {
-            response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
+            if (item instanceof ExchangeSession.Event) {
+                response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
+            } else if (item instanceof ExchangeSession.Contact) {
+                response.appendProperty("D:getcontenttype", "text/vcard");
+            }
         }
         if (request.hasProperty("getetag")) {
-            response.appendProperty("D:getetag", event.getEtag());
+            response.appendProperty("D:getetag", item.getEtag());
         }
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", eventName);
+            response.appendProperty("D:displayname", itemName);
         }
         response.endPropStatOK();
         response.endResponse();
@@ -365,8 +384,9 @@ public class CaldavConnection extends AbstractConnection {
      * @param request   Caldav request
      * @param subFolder calendar folder path relative to request path
      * @throws IOException on error
+     * @return Exchange folder object
      */
-    public void appendFolder(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
+    public ExchangeSession.Folder appendFolder(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
         ExchangeSession.Folder folder = session.getFolder(request.getExchangeFolderPath(subFolder));
 
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
@@ -420,6 +440,7 @@ public class CaldavConnection extends AbstractConnection {
 
         response.endPropStatOK();
         response.endResponse();
+        return folder;
     }
 
     /**
@@ -560,17 +581,21 @@ public class CaldavConnection extends AbstractConnection {
         String folderPath = request.getExchangeFolderPath();
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        appendFolder(response, request, null);
+        ExchangeSession.Folder folder = appendFolder(response, request, null);
         if (request.getDepth() == 1) {
-            DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_EVENTS", folderPath));
-            List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
-            DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
-            appendEventsResponses(response, request, events);
-            // Send sub folders for multi-calendar support under iCal, except for public folders
-            if (!folderPath.startsWith("/public")) {
-                List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
-                for (ExchangeSession.Folder folder : folderList) {
-                    appendFolder(response, request, folder.folderPath.substring(folder.folderPath.indexOf('/') + 1));
+            if (folder.isContact()) {
+                appendContactsResponses(response, request, session.getAllContacts(folderPath));
+            } else {
+                DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_EVENTS", folderPath));
+                List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
+                DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
+                appendEventsResponses(response, request, events);
+                // Send sub folders for multi-calendar support under iCal, except for public folders
+                if (!folderPath.startsWith("/public")) {
+                    List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
+                    for (ExchangeSession.Folder subFolder : folderList) {
+                        appendFolder(response, request, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1));
+                    }
                 }
             }
         }
@@ -630,9 +655,9 @@ public class CaldavConnection extends AbstractConnection {
                     // ignore cases for Sunbird
                     if (eventName != null && eventName.length() > 0
                             && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
-                        ExchangeSession.Event event;
-                        event = session.getEvent(folderPath, eventName);
-                        appendEventResponse(response, request, event);
+                        ExchangeSession.Item item;
+                        item = session.getItem(folderPath, eventName);
+                        appendItemResponse(response, request, item);
                     }
                 } catch (HttpException e) {
                     DavGatewayTray.warn(new BundleMessage("LOG_EVENT_NOT_AVAILABLE", eventName, href));

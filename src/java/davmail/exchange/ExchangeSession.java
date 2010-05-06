@@ -106,12 +106,15 @@ public class ExchangeSession {
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
     protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
+    protected static final Namespace URN_SCHEMAS_CONTACTS = Namespace.getNamespace("urn:schemas:contacts:");
+
 
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
 
     static {
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("permanenturl", SCHEMAS_EXCHANGE));
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.GETETAG);
+        EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")));
     }
 
     protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
@@ -602,6 +605,15 @@ public class ExchangeSession {
             return null;
         } else {
             return (String) property.getValue();
+        }
+    }
+
+    protected String getPropertyIfExists(DavPropertySet properties, DavPropertyName davPropertyName, String defaultValue) {
+        String value = getPropertyIfExists(properties, davPropertyName);
+        if (value == null) {
+            return defaultValue;
+        } else {
+            return value;
         }
     }
 
@@ -1876,19 +1888,180 @@ public class ExchangeSession {
     }
 
     /**
-     * Calendar event object
+     * Generic folder item.
      */
-    public class Event {
+    public abstract class Item {
         protected String href;
         protected String permanentUrl;
         protected String displayName;
         protected String etag;
         protected String contentClass;
         protected String noneMatch;
+
+        /**
+         * Create empty Item.
+         */
+        public Item() {
+        }
+
+        /**
+         * Return item content type
+         * @return content type
+         */
+        public abstract String getContentType();
+
+        /**
+         * Retrieve item body from Exchange
+         * @return item body
+         * @throws HttpException on error
+         */
+        public abstract String getBody() throws HttpException;
+
+        /**
+         * Build Item instance from multistatusResponse info
+         * @param multiStatusResponse response
+         * @throws URIException on error
+         */
+        public Item(MultiStatusResponse multiStatusResponse) throws URIException {
+            href = URIUtil.decode(multiStatusResponse.getHref());
+            permanentUrl = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE);
+            etag = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
+            displayName = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
+        }
+
+        /**
+         * Get event name (file name part in URL).
+         *
+         * @return event name
+         */
+        public String getName() {
+            int index = href.lastIndexOf('/');
+            if (index >= 0) {
+                return href.substring(index + 1);
+            } else {
+                return href;
+            }
+        }
+
+        /**
+         * Get event etag (last change tag).
+         *
+         * @return event etag
+         */
+        public String getEtag() {
+            return etag;
+        }
+
+        protected HttpException buildHttpException(Exception e) {
+            String message = "Unable to get event " + getName() + " at " + permanentUrl + ": " + e.getMessage();
+            LOGGER.warn(message);
+            return new HttpException(message);
+        }
+    }
+    /**
+     * Calendar event object
+     */
+    public class Contact extends Item {
+        /**
+         * Build Contact instance from multistatusResponse info
+         * @param multiStatusResponse response
+         * @throws URIException on error
+         */
+        public Contact(MultiStatusResponse multiStatusResponse) throws URIException {
+            super(multiStatusResponse);
+        }
+
+        @Override
+        public String getContentType() {
+            return "text/vcard";
+        }
+
+        @Override
+        public String getBody() throws HttpException {
+            // first retrieve contact details
+            String result = null;
+
+            PropFindMethod propFindMethod = null;
+            try {
+                propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl));
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+                if (responses.getResponses().length > 0) {
+                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+
+                    ICSBufferedWriter writer = new ICSBufferedWriter();
+                    writer.writeLine("BEGIN:VCARD");
+                    writer.writeLine("VERSION:3.0");
+                    writer.write("UID:");
+                    writer.writeLine(URIUtil.encodePath(getName()));
+                    writer.write("FN:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), ""));
+                    // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
+                    writer.write("N:");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("middlename", URN_SCHEMAS_CONTACTS), ""));
+
+                    writer.write("TEL;TYPE=cell:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), ""));
+                    //writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("initials", URN_SCHEMAS_CONTACTS), ""));
+
+                    // The structured type value corresponds, in sequence, to the post office box; the extended address;
+                    // the street address; the locality (e.g., city); the region (e.g., state or province);
+                    // the postal code; the country name
+                    // ADR;TYPE=dom,home,postal,parcel:;;123 Main Street;Any Town;CA;91921-1234
+                    writer.write("ADR;TYPE=home:;;");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("homepostaladdress", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";;;");
+                    writer.newLine();
+                    writer.writeLine("END:VCARD");
+                    result = writer.toString();
+
+                }
+            } catch (DavException e) {
+                throw buildHttpException(e);
+            } catch (IOException e) {
+                throw buildHttpException(e);
+            } finally {
+                if (propFindMethod != null) {
+                propFindMethod.releaseConnection();
+                }
+            }
+            return result;
+                    
+        }
+    }
+
+    /**
+     * Calendar event object
+     */
+    public class Event extends Item {
         /**
          * ICS content
          */
         protected String icsBody;
+
+        /**
+         * Build Event instance from multistatusResponse info
+         * @param multiStatusResponse response
+         * @throws URIException on error
+         */
+        public Event(MultiStatusResponse multiStatusResponse) throws URIException {
+            super(multiStatusResponse);
+        }
+
+        /**
+         * Create empty event.
+         */
+        public Event() {
+        }
+
+        @Override
+        public String getContentType() {
+            return "text/calendar;charset=UTF-8";
+        }
 
         protected boolean isCalendarContentType(String contentType) {
             return contentType.startsWith("text/calendar") || contentType.startsWith("application/ics");
@@ -1977,7 +2150,8 @@ public class ExchangeSession {
          * @return ICS (iCalendar) event
          * @throws HttpException on error
          */
-        public String getICS() throws HttpException {
+        @Override
+        public String getBody() throws HttpException {
             String result;
             LOGGER.debug("Get event: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
@@ -2002,35 +2176,6 @@ public class ExchangeSession {
                 throw buildHttpException(e);
             }
             return result;
-        }
-
-        protected HttpException buildHttpException(Exception e) {
-            String message = "Unable to get event " + getName() + " at " + permanentUrl + ": " + e.getMessage();
-            LOGGER.warn(message);
-            return new HttpException(message);
-        }
-
-        /**
-         * Get event name (file name part in URL).
-         *
-         * @return event name
-         */
-        public String getName() {
-            int index = href.lastIndexOf('/');
-            if (index >= 0) {
-                return href.substring(index + 1);
-            } else {
-                return href;
-            }
-        }
-
-        /**
-         * Get event etag (last change tag).
-         *
-         * @return event etag
-         */
-        public String getEtag() {
-            return etag;
         }
 
         protected String fixTimezoneId(String line, String validTimezoneId) {
@@ -2630,13 +2775,45 @@ public class ExchangeSession {
                     LOGGER.warn("Unable to patch event to trigger activeSync push");
                 } else {
                     // need to retrieve new etag
-                    Event newEvent = getEvent(href);
-                    eventResult.etag = newEvent.etag;
+                    Item newItem = getItem(href);
+                    eventResult.etag = newItem.etag;
                 }
             }
             return eventResult;
 
         }
+    }
+
+    /**
+     * Search contacts in provided folder.
+     *
+     * @param folderPath Exchange folder path
+     * @return list of contacts
+     * @throws IOException on error
+     */
+    public List<Contact> getAllContacts(String folderPath) throws IOException {
+
+        String searchQuery = "Select \"DAV:getetag\", \"http://schemas.microsoft.com/exchange/permanenturl\", \"DAV:displayname\"" +
+                "                FROM Scope('SHALLOW TRAVERSAL OF \"" + folderPath + "\"')\n" +
+                "                WHERE \"DAV:contentclass\" = 'urn:content-classes:person'\n";
+        return getContacts(folderPath, searchQuery);
+    }
+
+    /**
+     * Search contacts in provided folder matching the search query.
+     *
+     * @param folderPath  Exchange folder path
+     * @param searchQuery Exchange search query
+     * @return list of contacts
+     * @throws IOException on error
+     */
+    protected List<Contact> getContacts(String folderPath, String searchQuery) throws IOException {
+        List<Contact> contacts = new ArrayList<Contact>();
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(folderPath), searchQuery);
+        for (MultiStatusResponse response : responses) {
+            contacts.add(new Contact(response));
+        }
+        return contacts;
     }
 
     /**
@@ -2718,13 +2895,13 @@ public class ExchangeSession {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(httpClient, URIUtil.encodePath(folderPath), searchQuery);
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype", Namespace.getNamespace("urn:schemas:calendar:"));
-            Event event = buildEvent(response);
+            Event event = new Event(response);
             //noinspection VariableNotUsedInsideIf
             if (instancetype == null) {
                 // check ics content
                 try {
-                    event.getICS();
-                    // getICS success => add event or task
+                    event.getBody();
+                    // getBody success => add event or task
                     events.add(event);
                 } catch (HttpException e) {
                     // invalid event: exclude from list
@@ -2738,45 +2915,53 @@ public class ExchangeSession {
     }
 
     /**
-     * Get event named eventName in folder
+     * Get item named eventName in folder
      *
      * @param folderPath Exchange folder path
-     * @param eventName  event name
+     * @param itemName  event name
      * @return event object
      * @throws IOException on error
      */
-    public Event getEvent(String folderPath, String eventName) throws IOException {
-        String eventPath = folderPath + '/' + eventName;
-        Event event;
+    public Item getItem(String folderPath, String itemName) throws IOException {
+        String itemPath = folderPath + '/' + itemName;
+        Item item;
         try {
-            event = getEvent(eventPath);
+            item = getItem(itemPath);
         } catch (HttpNotFoundException hnfe) {
             // failover for Exchange 2007 plus encoding issue
-            String decodedEventName = eventName.replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
+            String decodedEventName = itemName.replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
             ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
             if (!messages.isEmpty()) {
-                event = getEvent(messages.get(0).getPermanentUrl());
+                item = getItem(messages.get(0).getPermanentUrl());
             } else {
                 throw hnfe;
             }
         }
 
-        return event;
+        return item;
     }
 
     /**
-     * Get event by url
+     * Get item by url
      *
-     * @param eventPath Event path
+     * @param itemPath Event path
      * @return event object
      * @throws IOException on error
      */
-    public Event getEvent(String eventPath) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(eventPath), 0, EVENT_REQUEST_PROPERTIES);
+    public Item getItem(String itemPath) throws IOException {
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
-        return buildEvent(responses[0]);
+        String contentClass = getPropertyIfExists( responses[0].getProperties(HttpStatus.SC_OK), 
+                "contentclass", Namespace.getNamespace("DAV:"));
+        if ("urn:content-classes:person".equals(contentClass)) {
+            return new Contact(responses[0]);
+        } else if ("urn:content-classes:appointment".equals(contentClass)){
+            return new Event(responses[0]);
+        } else {
+            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+        }
     }
 
     /**
@@ -2802,15 +2987,6 @@ public class ExchangeSession {
             status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
         }
         return status;
-    }
-
-    protected Event buildEvent(MultiStatusResponse calendarResponse) throws URIException {
-        Event event = new Event();
-        event.href = URIUtil.decode(calendarResponse.getHref());
-        event.permanentUrl = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE);
-        event.etag = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
-        event.displayName = getPropertyIfExists(calendarResponse.getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
-        return event;
     }
 
     private static int dumpIndex;
