@@ -31,10 +31,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
@@ -2065,6 +2062,8 @@ public class ExchangeSession {
 
                     writer.write("TEL;TYPE=cell:");
                     writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write("TEL;TYPE=work:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), ""));
                     //writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("initials", URN_SCHEMAS_CONTACTS), ""));
 
                     // The structured type value corresponds, in sequence, to the post office box; the extended address;
@@ -2139,19 +2138,25 @@ public class ExchangeSession {
             if (noneMatch != null) {
                 propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
             }
-
             try {
                 status = httpClient.executeMethod(propPatchMethod);
                 if (status == HttpStatus.SC_MULTI_STATUS) {
-                    if (etag != null) {
-                        LOGGER.debug("Updated contact " + href);
-                    } else {
-                        LOGGER.warn("Overwritten contact " + href);
+                    MultiStatus responses = propPatchMethod.getResponseBodyAsMultiStatus();
+                    if (responses.getResponses().length > 0) {
+                        status = responses.getResponses()[0].getStatus()[0].getStatusCode();
                     }
-                    status = HttpStatus.SC_CREATED;
+
+                    if (status == HttpStatus.SC_CREATED) {
+                        LOGGER.debug("Created contact " + href);
+                    } else {
+                        LOGGER.debug("Updated contact " + href);
+                    }
                 } else {
                     LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
                 }
+            } catch (DavException e) {
+                LOGGER.error("Error in item create or update", e);
+                throw new IOException(e);
             } finally {
                 propPatchMethod.releaseConnection();
             }
@@ -2161,8 +2166,15 @@ public class ExchangeSession {
                 status = HttpStatus.SC_FORBIDDEN;
             }
             itemResult.status = status;
-            if (propPatchMethod.getResponseHeader("GetETag") != null) {
-                itemResult.etag = propPatchMethod.getResponseHeader("GetETag").getValue();
+            // need to retrieve new etag
+            HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(href));
+            try {
+                httpClient.executeMethod(headMethod);
+                if (headMethod.getResponseHeader("ETag") != null) {
+                    itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
+                }
+            } finally {
+                headMethod.releaseConnection();
             }
 
             return itemResult;
@@ -3048,6 +3060,19 @@ public class ExchangeSession {
     }
 
     /**
+     * convert vcf extension to EML.
+     * @param itemName item name
+     * @return EML item name
+     */
+    protected String convertItemNameToEML(String itemName) {
+        if (itemName.endsWith(".vcf")) {
+            return itemName.substring(0, itemName.length() - 3) + "EML";
+        } else {
+            return itemName;
+        }
+    }
+
+    /**
      * Get item named eventName in folder
      *
      * @param folderPath Exchange folder path
@@ -3056,19 +3081,12 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String itemPath;
-        // convert vcf extension to EML
-        if (itemName.endsWith(".vcf")) {
-            itemPath = folderPath + '/' + itemName.substring(0, itemName.length() - 3) + "EML";
-        } else {
-            itemPath = folderPath + '/' + itemName;
-        }
         Item item;
         try {
-            item = getItem(itemPath);
+            item = getItem(folderPath + '/' + convertItemNameToEML(itemName));
         } catch (HttpNotFoundException hnfe) {
             // failover for Exchange 2007 plus encoding issue
-            String decodedEventName = itemName.replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
+            String decodedEventName = convertItemNameToEML(itemName).replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
             ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
             if (!messages.isEmpty()) {
                 item = getItem(messages.get(0).getPermanentUrl());
@@ -3107,12 +3125,12 @@ public class ExchangeSession {
      * Delete event named eventName in folder
      *
      * @param folderPath Exchange folder path
-     * @param eventName  event name
+     * @param itemName  event name
      * @return HTTP status
      * @throws IOException on error
      */
-    public int deleteEvent(String folderPath, String eventName) throws IOException {
-        String eventPath = URIUtil.encodePath(folderPath + '/' + eventName);
+    public int deleteItem(String folderPath, String itemName) throws IOException {
+        String eventPath = URIUtil.encodePath(folderPath + '/' + convertItemNameToEML(itemName));
         int status;
         if (inboxUrl.endsWith(folderPath)) {
             // do not delete calendar messages, mark read and processed
