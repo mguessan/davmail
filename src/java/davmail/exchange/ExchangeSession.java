@@ -103,6 +103,7 @@ public class ExchangeSession {
 
     protected static final int FREE_BUSY_INTERVAL = 15;
 
+    protected static final Namespace DAV = Namespace.getNamespace("DAV:");
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
     protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
@@ -114,7 +115,7 @@ public class ExchangeSession {
     static {
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("permanenturl", SCHEMAS_EXCHANGE));
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.GETETAG);
-        EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")));
+        EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("contentclass", DAV));
     }
 
     protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
@@ -138,7 +139,7 @@ public class ExchangeSession {
     protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
 
     static {
-        FOLDER_PROPERTIES.add(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")));
+        FOLDER_PROPERTIES.add(DavPropertyName.create("contentclass", DAV));
         FOLDER_PROPERTIES.add(DavPropertyName.create("hassubs"));
         FOLDER_PROPERTIES.add(DavPropertyName.create("nosubs"));
         FOLDER_PROPERTIES.add(DavPropertyName.create("unreadcount", URN_SCHEMAS_HTTPMAIL));
@@ -779,7 +780,7 @@ public class ExchangeSession {
 
         message.permanentUrl = getPropertyIfExists(properties, "permanenturl", SCHEMAS_EXCHANGE);
         message.size = getIntPropertyIfExists(properties, "x0e080003", SCHEMAS_MAPI_PROPTAG);
-        message.uid = getPropertyIfExists(properties, "uid", Namespace.getNamespace("DAV:"));
+        message.uid = getPropertyIfExists(properties, "uid", DAV);
         message.imapUid = getLongPropertyIfExists(properties, "x0e230003", SCHEMAS_MAPI_PROPTAG);
         message.read = "1".equals(getPropertyIfExists(properties, "read", URN_SCHEMAS_HTTPMAIL));
         message.junk = "1".equals(getPropertyIfExists(properties, "x10830003", SCHEMAS_MAPI_PROPTAG));
@@ -982,9 +983,9 @@ public class ExchangeSession {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
         DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
-        folder.contentClass = getPropertyIfExists(properties, "contentclass", Namespace.getNamespace("DAV:"));
-        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", Namespace.getNamespace("DAV:")));
-        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", Namespace.getNamespace("DAV:")));
+        folder.contentClass = getPropertyIfExists(properties, "contentclass", DAV);
+        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", DAV));
+        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", DAV));
         folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
         folder.ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
         folder.etag = getPropertyIfExists(properties, "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
@@ -1769,8 +1770,9 @@ public class ExchangeSession {
 
         /**
          * Get message body size.
+         *
          * @return mime message size
-         * @throws IOException on error
+         * @throws IOException        on error
          * @throws MessagingException on error
          */
         public int getMimeMessageSize() throws IOException, MessagingException {
@@ -1781,8 +1783,9 @@ public class ExchangeSession {
 
         /**
          * Get message body input stream.
+         *
          * @return mime message InputStream
-         * @throws IOException on error
+         * @throws IOException        on error
          * @throws MessagingException on error
          */
         public InputStream getRawInputStream() throws IOException, MessagingException {
@@ -1897,21 +1900,38 @@ public class ExchangeSession {
         protected String etag;
         protected String contentClass;
         protected String noneMatch;
+        /**
+         * ICS content
+         */
+        protected String itemBody;
 
         /**
-         * Create empty Item.
+         * Build item instance.
+         *
+         * @param messageUrl   message url
+         * @param contentClass content class
+         * @param itemBody     item body
+         * @param etag         item etag
+         * @param noneMatch    none match flag
          */
-        public Item() {
+        public Item(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
+            this.href = messageUrl;
+            this.contentClass = contentClass;
+            this.itemBody = itemBody;
+            this.etag = etag;
+            this.noneMatch = noneMatch;
         }
 
         /**
          * Return item content type
+         *
          * @return content type
          */
         public abstract String getContentType();
 
         /**
          * Retrieve item body from Exchange
+         *
          * @return item body
          * @throws HttpException on error
          */
@@ -1919,14 +1939,15 @@ public class ExchangeSession {
 
         /**
          * Build Item instance from multistatusResponse info
+         *
          * @param multiStatusResponse response
          * @throws URIException on error
          */
         public Item(MultiStatusResponse multiStatusResponse) throws URIException {
             href = URIUtil.decode(multiStatusResponse.getHref());
             permanentUrl = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "permanenturl", SCHEMAS_EXCHANGE);
-            etag = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "getetag", Namespace.getNamespace("DAV:"));
-            displayName = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
+            etag = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "getetag", DAV);
+            displayName = getPropertyIfExists(multiStatusResponse.getProperties(HttpStatus.SC_OK), "displayname", DAV);
         }
 
         /**
@@ -1958,17 +1979,55 @@ public class ExchangeSession {
             return new HttpException(message);
         }
     }
+
     /**
      * Calendar event object
      */
     public class Contact extends Item {
         /**
          * Build Contact instance from multistatusResponse info
+         *
          * @param multiStatusResponse response
          * @throws URIException on error
          */
         public Contact(MultiStatusResponse multiStatusResponse) throws URIException {
             super(multiStatusResponse);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Contact(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
+            super(messageUrl.endsWith(".vcf") ? messageUrl.substring(0, messageUrl.length() - 3) + "EML" : messageUrl, contentClass, itemBody, etag, noneMatch);
+        }
+
+        /**
+         * Convert EML extension to vcf.
+         *
+         * @return item name
+         */
+        @Override
+        public String getName() {
+            String name = super.getName();
+            if (name.endsWith(".EML")) {
+                name = name.substring(0, name.length() - 3) + "vcf";
+            }
+            return name;
+        }
+
+        /**
+         * Compute vcard uid from name.
+         *
+         * @return uid
+         * @throws URIException on error
+         */
+        protected String getUid() throws URIException {
+            String uid = getName();
+            int dotIndex = uid.lastIndexOf('.');
+            if (dotIndex > 0) {
+                uid = uid.substring(0, dotIndex);
+            }
+            return URIUtil.encodePath(uid);
         }
 
         @Override
@@ -1993,7 +2052,7 @@ public class ExchangeSession {
                     writer.writeLine("BEGIN:VCARD");
                     writer.writeLine("VERSION:3.0");
                     writer.write("UID:");
-                    writer.writeLine(URIUtil.encodePath(getName()));
+                    writer.writeLine(getUid());
                     writer.write("FN:");
                     writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), ""));
                     // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
@@ -2026,25 +2085,98 @@ public class ExchangeSession {
                 throw buildHttpException(e);
             } finally {
                 if (propFindMethod != null) {
-                propFindMethod.releaseConnection();
+                    propFindMethod.releaseConnection();
                 }
             }
             return result;
-                    
+
+        }
+
+        protected List<DavProperty> buildProperties() throws IOException {
+            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+            list.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), contentClass));
+            list.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", SCHEMAS_EXCHANGE), "IPM.Contact"));
+
+            ICSBufferedReader reader = new ICSBufferedReader(new StringReader(itemBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int index = line.indexOf(':');
+                if (index >= 0) {
+                    String key = line.substring(0, index);
+                    String value = line.substring(index + 1);
+                    if ("FN".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), value));
+                        list.add(new DefaultDavProperty(DavPropertyName.create("subject", URN_SCHEMAS_HTTPMAIL), value));
+                        list.add(new DefaultDavProperty(DavPropertyName.create("fileas", URN_SCHEMAS_CONTACTS), value));
+
+                    } else if ("N".equals(key)) {
+                        String[] values = value.split(";");
+                        if (values.length > 0) {
+                            list.add(new DefaultDavProperty(DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), values[0]));
+                        }
+                        if (values.length > 1) {
+                            list.add(new DefaultDavProperty(DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), values[1]));
+                        }
+                    } else if ("TEL;TYPE=cell".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), value));
+                    } else if ("TEL;TYPE=work".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), value));
+                    } else if ("TEL;TYPE=home".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("homePhone", URN_SCHEMAS_CONTACTS), value));
+                    }
+                }
+            }
+            return list;
+        }
+
+        protected ItemResult createOrUpdate() throws IOException {
+            int status = 0;
+            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), buildProperties());
+            propPatchMethod.setRequestHeader("Translate", "f");
+            if (etag != null) {
+                propPatchMethod.setRequestHeader("If-Match", etag);
+            }
+            if (noneMatch != null) {
+                propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
+            }
+
+            try {
+                status = httpClient.executeMethod(propPatchMethod);
+                if (status == HttpStatus.SC_MULTI_STATUS) {
+                    if (etag != null) {
+                        LOGGER.debug("Updated contact " + href);
+                    } else {
+                        LOGGER.warn("Overwritten contact " + href);
+                    }
+                    status = HttpStatus.SC_CREATED;
+                } else {
+                    LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
+                }
+            } finally {
+                propPatchMethod.releaseConnection();
+            }
+            ItemResult itemResult = new ItemResult();
+            // 440 means forbidden on Exchange
+            if (status == 440) {
+                status = HttpStatus.SC_FORBIDDEN;
+            }
+            itemResult.status = status;
+            if (propPatchMethod.getResponseHeader("GetETag") != null) {
+                itemResult.etag = propPatchMethod.getResponseHeader("GetETag").getValue();
+            }
+
+            return itemResult;
+
         }
     }
 
     /**
-     * Calendar event object
+     * Calendar event object.
      */
     public class Event extends Item {
         /**
-         * ICS content
-         */
-        protected String icsBody;
-
-        /**
-         * Build Event instance from multistatusResponse info
+         * Build Event instance from response info.
+         *
          * @param multiStatusResponse response
          * @throws URIException on error
          */
@@ -2053,9 +2185,10 @@ public class ExchangeSession {
         }
 
         /**
-         * Create empty event.
+         * {@inheritDoc}
          */
-        public Event() {
+        public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
+            super(messageUrl, contentClass, itemBody, etag, noneMatch);
         }
 
         @Override
@@ -2567,7 +2700,7 @@ public class ExchangeSession {
             String organizer = null;
             BufferedReader reader = null;
             try {
-                reader = new ICSBufferedReader(new StringReader(icsBody));
+                reader = new ICSBufferedReader(new StringReader(itemBody));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     int index = line.indexOf(':');
@@ -2627,7 +2760,7 @@ public class ExchangeSession {
             return icsMethod;
         }
 
-        protected EventResult createOrUpdate() throws IOException {
+        protected ItemResult createOrUpdate() throws IOException {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
@@ -2642,7 +2775,7 @@ public class ExchangeSession {
                 putmethod.setRequestHeader("If-None-Match", noneMatch);
             }
             putmethod.setRequestHeader("Content-Type", "message/rfc822");
-            String method = getICSMethod(icsBody);
+            String method = getICSMethod(itemBody);
 
             writer.writeHeader("Content-Transfer-Encoding", "7bit");
             writer.writeHeader("Content-class", contentClass);
@@ -2650,7 +2783,7 @@ public class ExchangeSession {
             writer.writeHeader("Date", new Date());
 
             // Make sure invites have a proper subject line
-            writer.writeHeader("Subject", getICSSummary(icsBody));
+            writer.writeHeader("Subject", getICSSummary(itemBody));
 
             if ("urn:content-classes:calendarmessage".equals(contentClass)) {
                 // need to parse attendees and organizer to build recipients
@@ -2691,11 +2824,11 @@ public class ExchangeSession {
                 }
                 // if not organizer, set REPLYTIME to force Outlook in attendee mode
                 if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
-                    if (icsBody.indexOf("METHOD:") < 0) {
-                        icsBody = icsBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
+                    if (itemBody.indexOf("METHOD:") < 0) {
+                        itemBody = itemBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
                     }
-                    if (icsBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
-                        icsBody = icsBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
+                    if (itemBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
+                        itemBody = itemBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
                                 getZuluDateFormat().format(new Date()) + "\r\nEND:VEVENT");
                     }
                 }
@@ -2710,7 +2843,7 @@ public class ExchangeSession {
 
             // Write a part of the message that contains the
             // ICS description so that invites contain the description text
-            String description = getICSDescription(icsBody).replaceAll("\\\\[Nn]", "\r\n");
+            String description = getICSDescription(itemBody).replaceAll("\\\\[Nn]", "\r\n");
 
             if (description.length() > 0) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
@@ -2730,7 +2863,7 @@ public class ExchangeSession {
             writer.writeHeader("Content-Transfer-Encoding", "8bit");
             writer.writeLn();
             writer.flush();
-            baos.write(fixICS(icsBody, false).getBytes("UTF-8"));
+            baos.write(fixICS(itemBody, false).getBytes("UTF-8"));
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary + "--");
             writer.close();
@@ -2751,14 +2884,14 @@ public class ExchangeSession {
             } finally {
                 putmethod.releaseConnection();
             }
-            EventResult eventResult = new EventResult();
+            ItemResult itemResult = new ItemResult();
             // 440 means forbidden on Exchange
             if (status == 440) {
                 status = HttpStatus.SC_FORBIDDEN;
             }
-            eventResult.status = status;
+            itemResult.status = status;
             if (putmethod.getResponseHeader("GetETag") != null) {
-                eventResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+                itemResult.etag = putmethod.getResponseHeader("GetETag").getValue();
             }
 
             // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
@@ -2766,7 +2899,7 @@ public class ExchangeSession {
                     (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
                 ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
                 // Set contentclass to make ActiveSync happy
-                propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), contentClass));
+                propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), contentClass));
                 // ... but also set PR_INTERNET_CONTENT to preserve custom properties
                 propertyList.add(new DefaultDavProperty(PR_INTERNET_CONTENT, new String(Base64.encodeBase64(baos.toByteArray()))));
                 PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), propertyList);
@@ -2776,10 +2909,10 @@ public class ExchangeSession {
                 } else {
                     // need to retrieve new etag
                     Item newItem = getItem(href);
-                    eventResult.etag = newItem.etag;
+                    itemResult.etag = newItem.etag;
                 }
             }
-            return eventResult;
+            return itemResult;
 
         }
     }
@@ -2836,7 +2969,7 @@ public class ExchangeSession {
         } catch (HttpException e) {
             // failover to DAV:comment property on some Exchange servers
             if (DEFAULT_SCHEDULE_STATE_PROPERTY.equals(scheduleStateProperty)) {
-                scheduleStateProperty = DavPropertyName.create("comment", Namespace.getNamespace("DAV:"));
+                scheduleStateProperty = DavPropertyName.create("comment", DAV);
                 result = getEventMessages(folderPath);
             } else {
                 throw e;
@@ -2918,12 +3051,18 @@ public class ExchangeSession {
      * Get item named eventName in folder
      *
      * @param folderPath Exchange folder path
-     * @param itemName  event name
+     * @param itemName   event name
      * @return event object
      * @throws IOException on error
      */
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String itemPath = folderPath + '/' + itemName;
+        String itemPath;
+        // convert vcf extension to EML
+        if (itemName.endsWith(".vcf")) {
+            itemPath = folderPath + '/' + itemName.substring(0, itemName.length() - 3) + "EML";
+        } else {
+            itemPath = folderPath + '/' + itemName;
+        }
         Item item;
         try {
             item = getItem(itemPath);
@@ -2953,11 +3092,11 @@ public class ExchangeSession {
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
-        String contentClass = getPropertyIfExists( responses[0].getProperties(HttpStatus.SC_OK), 
-                "contentclass", Namespace.getNamespace("DAV:"));
+        String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK),
+                "contentclass", DAV);
         if ("urn:content-classes:person".equals(contentClass)) {
             return new Contact(responses[0]);
-        } else if ("urn:content-classes:appointment".equals(contentClass)){
+        } else if ("urn:content-classes:appointment".equals(contentClass)) {
             return new Event(responses[0]);
         } else {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
@@ -3008,7 +3147,7 @@ public class ExchangeSession {
     /**
      * Event result object to hold HTTP status and event etag from an event creation/update.
      */
-    public static class EventResult {
+    public static class ItemResult {
         /**
          * HTTP status
          */
@@ -3042,28 +3181,34 @@ public class ExchangeSession {
     }
 
     /**
-     * Create or update event on the Exchange server
+     * Create or update item (event or contact) on the Exchange server
      *
      * @param folderPath Exchange folder path
-     * @param eventName  event name
-     * @param icsBody    event body in iCalendar format
+     * @param itemName   event name
+     * @param itemBody   event body in iCalendar format
      * @param etag       previous event etag to detect concurrent updates
      * @param noneMatch  if-none-match header value
      * @return HTTP response event result (status and etag)
      * @throws IOException on error
      */
-    public EventResult createOrUpdateEvent(String folderPath, String eventName, String icsBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = folderPath + '/' + eventName;
-        return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", icsBody, etag, noneMatch);
+    public ItemResult createOrUpdateItem(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
+        String messageUrl = folderPath + '/' + itemName;
+        if (itemBody.startsWith("BEGIN:VCALENDAR")) {
+            return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", itemBody, etag, noneMatch);
+        } else if (itemBody.startsWith("BEGIN:VCARD")) {
+            return internalCreateOrUpdateContact(messageUrl, "urn:content-classes:person", itemBody, etag, noneMatch);
+        } else {
+            throw new IOException(BundleMessage.format("EXCEPTION_INVALID_MESSAGE_CONTENT", itemBody));
+        }
     }
 
-    protected EventResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        Event event = new Event();
-        event.contentClass = contentClass;
-        event.icsBody = icsBody;
-        event.href = messageUrl;
-        event.etag = etag;
-        event.noneMatch = noneMatch;
+    protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
+        Contact contact = new Contact(messageUrl, contentClass, icsBody, etag, noneMatch);
+        return contact.createOrUpdate();
+    }
+
+    protected ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
+        Event event = new Event(messageUrl, contentClass, icsBody, etag, noneMatch);
         return event.createOrUpdate();
     }
 
@@ -3156,7 +3301,7 @@ public class ExchangeSession {
             if (responses.length == 0) {
                 LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
             } else {
-                displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", Namespace.getNamespace("DAV:"));
+                displayName = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "displayname", DAV);
             }
         } catch (IOException e) {
             LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
@@ -3783,7 +3928,7 @@ public class ExchangeSession {
                 // failover for Exchange 2007, use PROPPATCH with forced timezone
                 if (fakeEventUrl == null) {
                     ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
-                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", Namespace.getNamespace("DAV:")), "urn:content-classes:appointment"));
+                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), "urn:content-classes:appointment"));
                     propertyList.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPM.Appointment"));
                     propertyList.add(new DefaultDavProperty(DavPropertyName.create("instancetype", Namespace.getNamespace("urn:schemas:calendar:")), "0"));
                     // get forced timezone id from settings

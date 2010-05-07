@@ -263,8 +263,8 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPut()) {
             String etag = request.getHeader("if-match");
             String noneMatch = request.getHeader("if-none-match");
-            ExchangeSession.EventResult eventResult = session.createOrUpdateEvent(request.getExchangeFolderPath(), lastPath, request.getBody(), etag, noneMatch);
-            sendHttpResponse(eventResult.status, buildEtagHeader(eventResult.etag), null, "", true);
+            ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getExchangeFolderPath(), lastPath, request.getBody(), etag, noneMatch);
+            sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);
 
         } else if (request.isDelete()) {
             int status = session.deleteEvent(request.getExchangeFolderPath(), lastPath);
