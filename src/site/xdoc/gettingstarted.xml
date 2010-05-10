@@ -92,6 +92,11 @@
                     <td>false</td>
                 </tr>
                 <tr>
+                    <td>IMAP auto expunge</td>
+                    <td>Delete messages immediately on the server over IMAP</td>
+                    <td>true</td>
+                </tr>
+                <tr>
                     <td>Display startup banner</td>
                     <td>Whether to show the initial startup notification window or not</td>
                     <td>true</td>

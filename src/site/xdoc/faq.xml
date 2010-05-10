@@ -172,6 +172,9 @@
                 <p>A workaround with Thunderbird is to set the property
                     <code>mail.imap.expunge_after_delete=true</code>
                 </p>
+                <p>New: a new setting is available in DavMail to delete messages immediately over IMAP:
+                    <code>davmail.imapAutoExpunge=true</code>
+                </p>
             </subsection>
 
             <subsection name="Build">

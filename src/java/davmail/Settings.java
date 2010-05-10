@@ -151,6 +151,7 @@ public final class Settings {
         SETTINGS.put("davmail.caldavAlarmSound", "");
         SETTINGS.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
         SETTINGS.put("davmail.showStartupBanner", Boolean.TRUE.toString());
+        SETTINGS.put("davmail.imapAutoExpunge", Boolean.TRUE.toString());
         SETTINGS.put("davmail.ssl.keystoreType", "");
         SETTINGS.put("davmail.ssl.keystoreFile", "");
         SETTINGS.put("davmail.ssl.keystorePass", "");

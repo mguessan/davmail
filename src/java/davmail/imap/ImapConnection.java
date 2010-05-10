@@ -220,9 +220,10 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD command unrecognized");
                                     }
                                 } else if ("expunge".equalsIgnoreCase(command)) {
-                                    expunge(false);
-                                    // need to refresh folder to avoid 404 errors
-                                    session.refreshFolder(currentFolder);
+                                    if (expunge(false)) {
+                                        // need to refresh folder to avoid 404 errors
+                                        session.refreshFolder(currentFolder);
+                                    }
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("close".equalsIgnoreCase(command)) {
                                     expunge(true);
@@ -712,6 +713,12 @@ public class ImapConnection extends AbstractConnection {
             updateFlags(message, action, flags);
             sendClient("* " + (rangeIterator.getCurrentIndex()) + " FETCH (UID " + message.getImapUid() + " FLAGS (" + (message.getImapFlags()) + "))");
         }
+        // auto expunge
+        if (Settings.getBooleanProperty("davmail.imapAutoExpunge")) {
+            if (expunge(false)) {
+                session.refreshFolder(currentFolder);
+            }
+        }
         sendClient(commandId + " OK STORE completed");
     }
 
@@ -1114,12 +1121,14 @@ public class ImapConnection extends AbstractConnection {
 
     }
 
-    protected void expunge(boolean silent) throws IOException {
+    protected boolean expunge(boolean silent) throws IOException {
+        boolean hasDeleted = false;
         if (currentFolder.messages != null) {
             int index = 1;
             for (ExchangeSession.Message message : currentFolder.messages) {
                 if (message.deleted) {
                     message.delete();
+                    hasDeleted = true;
                     if (!silent) {
                         sendClient("* " + index + " EXPUNGE");
                     }
@@ -1128,6 +1137,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             }
         }
+        return hasDeleted;
     }
 
     protected void updateFlags(ExchangeSession.Message message, String action, String flags) throws IOException {
