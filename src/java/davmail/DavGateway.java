@@ -75,7 +75,6 @@ public final class DavGateway {
                 public void run() {
                     DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                     DavGateway.stop();
-                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
                     stopped = true;
                 }
             });
@@ -173,6 +172,7 @@ public final class DavGateway {
         DavGatewayHttpClientFacade.stop();
         // clear session cache
         ExchangeSessionFactory.reset();
+        DavGatewayTray.info(new BundleMessage("LOG_GATEWAY_STOP"));
     }
 
     /**
