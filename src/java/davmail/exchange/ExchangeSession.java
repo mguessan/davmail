@@ -1713,8 +1713,17 @@ public class ExchangeSession {
                     isoWriter.write((char) 10);
                 }
                 isoWriter.flush();
-            } catch (HttpServerErrorException e) {
+            } catch (HttpException e) {
                 LOGGER.warn("Unable to retrieve message at: " + messageUrl);
+                if (Settings.getBooleanProperty("davmail.deleteBroken")
+                        && method.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    LOGGER.warn("Deleting broken message at: " + messageUrl + " permanentUrl: " + permanentUrl);
+                    try {
+                        this.delete();
+                    } catch (IOException ioe) {
+                        LOGGER.warn("Unable to delete broken message at: " + permanentUrl);
+                    }
+                }
                 throw e;
             } finally {
                 if (reader != null) {
@@ -3061,6 +3070,7 @@ public class ExchangeSession {
 
     /**
      * convert vcf extension to EML.
+     *
      * @param itemName item name
      * @return EML item name
      */
@@ -3125,7 +3135,7 @@ public class ExchangeSession {
      * Delete event named eventName in folder
      *
      * @param folderPath Exchange folder path
-     * @param itemName  event name
+     * @param itemName   event name
      * @return HTTP status
      * @throws IOException on error
      */
