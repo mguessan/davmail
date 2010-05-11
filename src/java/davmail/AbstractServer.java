@@ -92,14 +92,13 @@ public abstract class AbstractServer extends Thread {
                 // keystore for keys and certificates
                 // keystore and private keys should be password protected...
                 KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
-                keystore.load(keyStoreInputStream,
-                        Settings.getProperty("davmail.ssl.keystorePass").toCharArray());
+                keystore.load(keyStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.keystorePass"));
 
                 // KeyManagerFactory to create key managers
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
                 // initialize KMF to work with keystore
-                kmf.init(keystore, Settings.getProperty("davmail.ssl.keyPass").toCharArray());
+                kmf.init(keystore, Settings.getCharArrayProperty("davmail.ssl.keyPass"));
 
                 // SSLContext is environment for implementing JSSE...
                 // create ServerSocketFactory

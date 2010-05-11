@@ -293,6 +293,21 @@ public final class Settings {
     }
 
     /**
+     * Get a property value as char[].
+     *
+     * @param property property name
+     * @return property value
+     */
+    public static synchronized char[] getCharArrayProperty(String property) {
+        String propertyValue = Settings.getProperty(property);
+        char[] value = null;
+        if (propertyValue != null) {
+            value = propertyValue.toCharArray();
+        }
+        return value;
+    }
+
+    /**
      * Set a property value.
      *
      * @param property property name
@@ -350,7 +365,7 @@ public final class Settings {
     /**
      * Get a property value as boolean.
      *
-     * @param property property name
+     * @param property     property name
      * @param defaultValue default property value
      * @return property value
      */
