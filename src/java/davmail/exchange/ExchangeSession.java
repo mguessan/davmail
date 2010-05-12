@@ -23,7 +23,6 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
-import davmail.exception.HttpServerErrorException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
@@ -3091,12 +3090,14 @@ public class ExchangeSession {
      * @throws IOException on error
      */
     public Item getItem(String folderPath, String itemName) throws IOException {
+        String itemPath = folderPath + '/' + convertItemNameToEML(itemName);
         Item item;
         try {
-            item = getItem(folderPath + '/' + convertItemNameToEML(itemName));
+            item = getItem(itemPath);
         } catch (HttpNotFoundException hnfe) {
             // failover for Exchange 2007 plus encoding issue
             String decodedEventName = convertItemNameToEML(itemName).replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
+            LOGGER.debug("Item not found at "+itemPath+", search by displayname: '"+decodedEventName+ '\'');
             ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
             if (!messages.isEmpty()) {
                 item = getItem(messages.get(0).getPermanentUrl());
