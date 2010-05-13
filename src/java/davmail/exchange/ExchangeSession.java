@@ -3097,7 +3097,7 @@ public class ExchangeSession {
         } catch (HttpNotFoundException hnfe) {
             // failover for Exchange 2007 plus encoding issue
             String decodedEventName = convertItemNameToEML(itemName).replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
-            LOGGER.debug("Item not found at "+itemPath+", search by displayname: '"+decodedEventName+ '\'');
+            LOGGER.debug("Item not found at " + itemPath + ", search by displayname: '" + decodedEventName + '\'');
             ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
             if (!messages.isEmpty()) {
                 item = getItem(messages.get(0).getPermanentUrl());
@@ -3125,7 +3125,8 @@ public class ExchangeSession {
                 "contentclass", DAV);
         if ("urn:content-classes:person".equals(contentClass)) {
             return new Contact(responses[0]);
-        } else if ("urn:content-classes:appointment".equals(contentClass)) {
+        } else if ("urn:content-classes:appointment".equals(contentClass)
+                || "urn:content-classes:calendarmessage".equals(contentClass)) {
             return new Event(responses[0]);
         } else {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
