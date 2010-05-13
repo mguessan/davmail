@@ -47,7 +47,7 @@ import javax.swing.SwingUtilities;
 
 /**
  * Simple test class for Growl.
- * 
+ *
  * @author Michael Stringer
  * @version 0.1
  */
@@ -55,132 +55,138 @@ public class TestGrowl extends JFrame {
     private static final String APP_NAME = "Test Java App";
     private static final String NOTIF_3_CALLBACK = "Notif3";
 
+    /**
+     * Test Growl.
+     */
     public TestGrowl() {
-	super("Growl for Java");
-	setSize(320, 290);
+        super("Growl for Java");
+        setSize(320, 290);
 
-	buildComponents();
-	setVisible(true);
-	setDefaultCloseOperation(EXIT_ON_CLOSE);
+        buildComponents();
+        setVisible(true);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
     private void buildComponents() {
-	getContentPane().setLayout(new GridLayout(6, 1));
+        getContentPane().setLayout(new GridLayout(6, 1));
 
-	Action action = new AbstractAction("Register") {
-	    public void actionPerformed(ActionEvent ae) {
-		try {
-		    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
+        Action action = new AbstractAction("Register") {
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
 
-		    growl.addNotification("Test Notification 1", true);
-		    growl.addNotification("Test Notification 2", false);
-		    growl.addNotification("Test Notification 3", true);
+                    growl.addNotification("Test Notification 1", true);
+                    growl.addNotification("Test Notification 2", false);
+                    growl.addNotification("Test Notification 3", true);
 
-		    GrowlCallbackListener listener = new GrowlCallbackListener() {
-			public void notificationWasClicked(
-				final String clickContext) {
-			    SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-				    if (NOTIF_3_CALLBACK.equals(clickContext)) {
-					JOptionPane
-						.showMessageDialog(
-							TestGrowl.this,
-							"User clicked on 'Test Notification 3'");
-				    }
-				}
-			    });
-			}
-		    };
+                    GrowlCallbackListener listener = new GrowlCallbackListener() {
+                        public void notificationWasClicked(
+                                final String clickContext) {
+                            SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    if (NOTIF_3_CALLBACK.equals(clickContext)) {
+                                        JOptionPane
+                                                .showMessageDialog(
+                                                        TestGrowl.this,
+                                                        "User clicked on 'Test Notification 3'");
+                                    }
+                                }
+                            });
+                        }
+                    };
 
-		    growl.addCallbackListener(listener);
-		    growl.register();
-		} catch (GrowlException ge) {
-		    ge.printStackTrace();
-		}
-	    }
-	};
+                    growl.addCallbackListener(listener);
+                    growl.register();
+                } catch (GrowlException ge) {
+                    ge.printStackTrace();
+                }
+            }
+        };
 
-	getContentPane().add(new JButton(action));
+        getContentPane().add(new JButton(action));
 
-	action = new AbstractAction("Send 'Test Notification 1'") {
-	    public void actionPerformed(ActionEvent ae) {
-		try {
-		    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
+        action = new AbstractAction("Send 'Test Notification 1'") {
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
 
-		    growl.sendNotification("Test Notification 1",
-			    "Test Notif 1", "This is a test");
-		} catch (GrowlException ge) {
-		    ge.printStackTrace();
-		}
-	    }
-	};
-	getContentPane().add(new JButton(action));
+                    growl.sendNotification("Test Notification 1",
+                            "Test Notif 1", "This is a test");
+                } catch (GrowlException ge) {
+                    ge.printStackTrace();
+                }
+            }
+        };
+        getContentPane().add(new JButton(action));
 
-	action = new AbstractAction("Send 'Test Notification 2'") {
-	    public void actionPerformed(ActionEvent ae) {
-		try {
-		    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
-		    BufferedImage image = ImageIO.read(TestGrowl.class
-			    .getResource("/images/duke.gif"));
-		    growl.sendNotification("Test Notification 2",
-			    "Test Notif 2", "This is another test", image);
-		} catch (GrowlException ge) {
-		    ge.printStackTrace();
-		} catch (IOException e) {
-		    // TODO Auto-generated catch block
-		    e.printStackTrace();
-		}
-	    }
-	};
-	getContentPane().add(new JButton(action));
+        action = new AbstractAction("Send 'Test Notification 2'") {
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
+                    BufferedImage image = ImageIO.read(TestGrowl.class
+                            .getResource("/images/duke.gif"));
+                    growl.sendNotification("Test Notification 2",
+                            "Test Notif 2", "This is another test", image);
+                } catch (GrowlException ge) {
+                    ge.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        getContentPane().add(new JButton(action));
 
-	action = new AbstractAction("Test Callback 'Notification 3'") {
-	    public void actionPerformed(ActionEvent ae) {
-		try {
-		    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
+        action = new AbstractAction("Test Callback 'Notification 3'") {
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    Growl growl = GrowlUtils.getGrowlInstance(APP_NAME);
 
-		    growl.sendNotification("Test Notification 3",
-			    "Callback Test", "Click me - I dares you!", NOTIF_3_CALLBACK);
-		} catch (GrowlException ge) {
-		    ge.printStackTrace();
-		}
-	    }
-	};
-	getContentPane().add(new JButton(action));
+                    growl.sendNotification("Test Notification 3",
+                            "Callback Test", "Click me - I dares you!", NOTIF_3_CALLBACK);
+                } catch (GrowlException ge) {
+                    ge.printStackTrace();
+                }
+            }
+        };
+        getContentPane().add(new JButton(action));
 
-	action = new AbstractAction("Reg & Test App 2") {
-	    public void actionPerformed(ActionEvent ae) {
-		try {
-		    Growl growl = GrowlUtils.getGrowlInstance("Other App");
+        action = new AbstractAction("Reg & Test App 2") {
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    Growl growl = GrowlUtils.getGrowlInstance("Other App");
 
-		    growl.addNotification("A Notification", true);
+                    growl.addNotification("A Notification", true);
 
-		    BufferedImage image = ImageIO.read(TestGrowl.class
-			    .getResource("/images/duke.gif"));
-		    growl.setIcon(image);
+                    BufferedImage image = ImageIO.read(TestGrowl.class
+                            .getResource("/images/duke.gif"));
+                    growl.setIcon(image);
 
-		    growl.register();
-		    growl.sendNotification("A Notification", "Testin",
-			    "Blah de blah blah");
-		} catch (GrowlException ge) {
-		    ge.printStackTrace();
-		} catch (IOException e) {
-		    // TODO Auto-generated catch block
-		    e.printStackTrace();
-		}
-	    }
-	};
-	getContentPane().add(new JButton(action));
+                    growl.register();
+                    growl.sendNotification("A Notification", "Testin",
+                            "Blah de blah blah");
+                } catch (GrowlException ge) {
+                    ge.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        getContentPane().add(new JButton(action));
 
-	action = new AbstractAction("Exit") {
-	    public void actionPerformed(ActionEvent ae) {
-		System.exit(0);
-	    }
-	};
-	getContentPane().add(new JButton(action));
+        action = new AbstractAction("Exit") {
+            public void actionPerformed(ActionEvent ae) {
+                System.exit(0);
+            }
+        };
+        getContentPane().add(new JButton(action));
     }
 
-    public static final void main(String[] args) {
-	new TestGrowl();
+    /**
+     * Test growl.
+     * @param args args
+     */
+    public static void main(String[] args) {
+        //noinspection ResultOfObjectAllocationIgnored
+        new TestGrowl();
     }
 }

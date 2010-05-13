@@ -32,65 +32,65 @@ import java.util.Map;
 
 /**
  * Utility class for sending notifications using Growl.
- * 
+ *
  * @author Michael Stringer
  * @version 0.1
  */
 public final class GrowlUtils {
     private static final boolean GROWL_LOADED;
-    private static Map<String, Growl> instances = new HashMap<String, Growl>();
+    private static final Map<String, Growl> instances = new HashMap<String, Growl>();
 
     static {
-	boolean loaded = false;
-	try {
-	    System.loadLibrary("growl");
-	    loaded = true;
-	} catch (UnsatisfiedLinkError ule) {
-	    System.out.println("Failed to load Growl library");
-	}
+        boolean loaded = false;
+        try {
+            System.loadLibrary("growl");
+            loaded = true;
+        } catch (UnsatisfiedLinkError ule) {
+            // ignore: growl not available
+        }
 
-	GROWL_LOADED = loaded;
+        GROWL_LOADED = loaded;
     }
 
     /**
      * Utility method - should not be instantiated.
      */
     private GrowlUtils() {
-
     }
 
     /**
      * Gets a <code>Growl</code> instance to use for the specified application
      * name. Multiple calls to this method will return the same instance.
-     * 
-     * @param appName
-     *                The name of the application.
+     *
+     * @param appName The name of the application.
      * @return The <code>Growl</code> instance to use.
      */
     public static Growl getGrowlInstance(String appName) {
-	Growl instance = instances.get(appName);
+        synchronized (instances) {
+            Growl instance = instances.get(appName);
 
-	if (instance == null) {
-	    if (GROWL_LOADED) {
-		instance = new GrowlNative(appName);
-	    } else {
-		instance = new DummyGrowl();
-	    }
+            if (instance == null) {
+                if (GROWL_LOADED) {
+                    instance = new GrowlNative(appName);
+                } else {
+                    instance = new DummyGrowl();
+                }
 
-	    instances.put(appName, instance);
-	}
+                instances.put(appName, instance);
+            }
 
-	return instance;
+            return instance;
+        }
     }
 
     /**
      * Gets whether messages can be sent to Growl. If this returns
      * <code>false</code> then {@link #getGrowlInstance(String)} will return a
      * dummy object.
-     * 
+     *
      * @return <code>true</code> if messages can be sent to Growl.
      */
     public static boolean isGrowlLoaded() {
-	return GROWL_LOADED;
+        return GROWL_LOADED;
     }
 }

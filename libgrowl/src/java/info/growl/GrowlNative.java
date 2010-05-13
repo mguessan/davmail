@@ -37,175 +37,144 @@ import javax.imageio.ImageIO;
 
 /**
  * Growl notification implementation. This uses JNI to send messages to Growl.
- * 
+ *
  * @author Michael Stringer
  * @version 0.1
  */
 class GrowlNative implements Growl {
-    private String appName;
-    private List<NotificationType> notifications;
-    private List<GrowlCallbackListener> callbackListeners;
+    private final String appName;
+    private final List<NotificationType> notifications;
+    private final List<GrowlCallbackListener> callbackListeners;
     private byte[] imageData;
 
     private native void sendNotification(String appName, String name,
-	    String title, String message, String callbackContext, byte[] icon);
+                                         String title, String message, String callbackContext, byte[] icon);
 
     private native void registerApp(String appName, byte[] image,
-	    List<NotificationType> notifications);
+                                    List<NotificationType> notifications);
 
     /**
      * Creates a new <code>GrowlNative</code> instance for the specified
      * application name.
-     * 
-     * @param appName
-     *                The name of the application sending notifications.
+     *
+     * @param appName The name of the application sending notifications.
      */
     GrowlNative(String appName) {
-	notifications = new ArrayList<NotificationType>();
-	callbackListeners = new ArrayList<GrowlCallbackListener>();
-	this.appName = appName;
+        notifications = new ArrayList<NotificationType>();
+        callbackListeners = new ArrayList<GrowlCallbackListener>();
+        this.appName = appName;
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     void fireCallbacks(String callbackContext) {
-	for (GrowlCallbackListener listener : callbackListeners) {
-	    listener.notificationWasClicked(callbackContext);
-	}
+        for (GrowlCallbackListener listener : callbackListeners) {
+            listener.notificationWasClicked(callbackContext);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public void register() throws GrowlException {
-	registerApp(appName, imageData, notifications);
+        registerApp(appName, imageData, notifications);
     }
 
     /**
      * {@inheritDoc}
      */
     public void addNotification(String name, boolean enabledByDefault) {
-	notifications.add(new NotificationType(name, enabledByDefault));
+        notifications.add(new NotificationType(name, enabledByDefault));
     }
 
     /**
      * {@inheritDoc}
      */
     public void addCallbackListener(GrowlCallbackListener listener) {
-	callbackListeners.add(listener);
+        callbackListeners.add(listener);
     }
 
     /**
      * {@inheritDoc}
      */
     public void setIcon(RenderedImage icon) throws GrowlException {
-	try {
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ImageIO.write(icon, "png", baos);
+        imageData = convertImage(icon);
+    }
 
-	    imageData = baos.toByteArray();
-	} catch (IOException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	}
+    protected byte[] convertImage(RenderedImage icon) throws GrowlException {
+        if (icon == null) {
+            return null;
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(icon, "png", baos);
+        } catch (IOException ioe) {
+            throw new GrowlException("Failed to convert Image", ioe);
+        }
+        return baos.toByteArray();
     }
 
     /**
      * {@inheritDoc}
      */
     public void sendNotification(String name, String title, String body)
-	    throws GrowlException {
-	if (!notifications.contains(new NotificationType(name, false))) {
-	    System.out.println("contains: " + notifications);
-	    throw new GrowlException("Unregistered notification name [" + name
-		    + "]");
-	}
-	sendNotification(appName, name, title, body, null, null);
+            throws GrowlException {
+        sendNotification(name, title, body, null, null);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void sendNotification(String name, String title, String body,
-	    RenderedImage icon) throws GrowlException {
-	if (!notifications.contains(new NotificationType(name, false))) {
-	    System.out.println("contains: " + notifications);
-	    throw new GrowlException("Unregistered notification name [" + name
-		    + "]");
-	}
-
-	try {
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ImageIO.write(icon, "png", baos);
-
-	    byte[] image = baos.toByteArray();
-
-	    sendNotification(appName, name, title, body, null, image);
-	} catch (IOException ioe) {
-	    throw new GrowlException("Failed to convert Image", ioe);
-	}
+    public void sendNotification(String name, String title, String body, RenderedImage icon) throws GrowlException {
+        sendNotification(name, title, body, null, icon);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void sendNotification(String name, String title, String body,
-	    String callbackContext) throws GrowlException {
-	if (!notifications.contains(new NotificationType(name, false))) {
-	    System.out.println("contains: " + notifications);
-	    throw new GrowlException("Unregistered notification name [" + name
-		    + "]");
-	}
-
-	sendNotification(appName, name, title, body, callbackContext, null);
+    public void sendNotification(String name, String title, String body, String callbackContext) throws GrowlException {
+        sendNotification(name, title, body, callbackContext, null);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void sendNotification(String name, String title, String body,
-	    String callbackContext, RenderedImage icon) throws GrowlException {
-	if (!notifications.contains(new NotificationType(name, false))) {
-	    System.out.println("contains: " + notifications);
-	    throw new GrowlException("Unregistered notification name [" + name
-		    + "]");
-	}
+    public void sendNotification(String name, String title, String body, String callbackContext, RenderedImage icon)
+            throws GrowlException {
+        if (!notifications.contains(new NotificationType(name, false))) {
+            throw new GrowlException("Unregistered notification name [" + name + ']');
+        }
 
-	try {
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ImageIO.write(icon, "png", baos);
-
-	    byte[] image = baos.toByteArray();
-
-	    sendNotification(appName, name, title, body, callbackContext, image);
-	} catch (IOException ioe) {
-	    throw new GrowlException("Failed to convert Image", ioe);
-	}
+        sendNotification(appName, name, title, body, callbackContext, convertImage(icon));
     }
 
     private class NotificationType {
-	private String name;
-	private boolean enabledByDefault;
+        private final String name;
+        private final boolean enabledByDefault;
 
-	public NotificationType(String name, boolean enabledByDefault) {
-	    this.name = name;
-	    this.enabledByDefault = enabledByDefault;
-	}
+        private NotificationType(String name, boolean enabledByDefault) {
+            this.name = name;
+            this.enabledByDefault = enabledByDefault;
+        }
 
-	public String getName() {
-	    return name;
-	}
+        @SuppressWarnings({"UnusedDeclaration"})
+        public String getName() {
+            return name;
+        }
 
-	public boolean isEnabledByDefault() {
-	    return enabledByDefault;
-	}
+        @SuppressWarnings({"UnusedDeclaration"})
+        public boolean isEnabledByDefault() {
+            return enabledByDefault;
+        }
 
-	public boolean equals(Object other) {
-	    if (!(other instanceof NotificationType)) {
-		return false;
-	    }
+        @Override
+        public boolean equals(Object other) {
+            return (other instanceof NotificationType) &&
+                    name.equals(((NotificationType) other).name);
+        }
 
-	    NotificationType otherType = (NotificationType) other;
-
-	    return name.equals(otherType.name);
-	}
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
     }
 }
