@@ -63,8 +63,6 @@ public final class DavGatewayHttpClientFacade {
 
     static {
         DavGatewayHttpClientFacade.start();
-        // force XML response with Internet Explorer header
-        System.getProperties().setProperty("httpclient.useragent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)");
     }
 
     private DavGatewayHttpClientFacade() {
