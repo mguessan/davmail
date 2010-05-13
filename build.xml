@@ -98,6 +98,7 @@
                     stubfile="src/osx/davmail">
             <jarfileset dir="dist/lib">
                 <include name="*.jar"/>
+                <include name="*.jnilib"/>
                 <exclude name="swt*.jar"/>
             </jarfileset>
             <jarfileset dir="dist">
@@ -222,6 +223,7 @@
         <copy todir="dist/lib">
             <fileset dir="lib">
                 <include name="*.jar"/>
+                <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant-*.jar"/>
                 <exclude name="jarbundler-*.jar"/>
