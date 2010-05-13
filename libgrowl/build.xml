@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="UpdateTesting" default="build">
-
 	<property name="build.dir" value="build" />
 	<property name="classes.dir" value="${build.dir}/classes" />
 	<property name="target.dir" value="${build.dir}/dist" />
@@ -17,7 +16,7 @@
 	</target>
 
 	<target name="build-headers" depends="build-java">
-		<javah destdir="${src.native.dir}" classpath="${classes.dir}">
+		<javah destdir="${src.native.dir}" classpath="${classes.dir}" verbose="true">
 			<class name="info.growl.GrowlNative" />
 		</javah>
 	</target>
@@ -38,7 +37,15 @@
 
 	<target name="build-jar" depends="build-java, copy-resources">
 		<mkdir dir="${target.dir}" />
-		<jar destfile="${target.dir}/Growl.jar" basedir="${classes.dir}">
+		<jar destfile="${target.dir}/growl-${version}.jar" basedir="${classes.dir}">
+            <include name="info/growl/*.class"/>
+             <manifest>
+                <section name="info/growl/">
+                    <attribute name="Implementation-Title" value="Growl Native Wrapper"/>
+                    <attribute name="Implementation-Version" value="${version}"/>
+                    <attribute name="Implementation-Vendor" value="Michael Stringer"/>
+                </section>
+            </manifest>
 		</jar>
 	</target>
 
@@ -63,7 +70,7 @@
 	</target>
 	
 	<target name="run" depends="build">
-		<java classname="info.growl.test.TestGrowl" fork="true" dir="${target.dir}" classpath="${target.dir}/Growl.jar">
+		<java classname="info.growl.test.TestGrowl" fork="true" dir="${target.dir}" classpath="${classes.dir}">
 		<jvmarg line="-Djava.library.path=."/>
 		</java>
 	</target>
