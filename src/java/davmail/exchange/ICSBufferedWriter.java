@@ -49,9 +49,7 @@ public class ICSBufferedWriter {
             writeLine(line.substring(75));
         } else {
             buffer.append(line);
-            if (!"END:VCALENDAR".equals(line)) {
-                newLine();
-            }
+            newLine();
         }
     }
 
