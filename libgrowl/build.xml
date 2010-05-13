@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="UpdateTesting" default="build">
+
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="target.dir" value="${build.dir}/dist" />
+	<property name="javadoc.dir" value="${build.dir}/apidocs" />
+
+	<property name="src.java.dir" value="src/java" />
+	<property name="src.native.dir" value="src/native" />
+	<property name="src.resources.dir" value="src/resources" />
+
+	<target name="build-java">
+		<mkdir dir="${classes.dir}" />
+		<javac debug="true" destdir="${classes.dir}" srcdir="${src.java.dir}" />
+	</target>
+
+	<target name="build-headers" depends="build-java">
+		<javah destdir="${src.native.dir}" classpath="${classes.dir}">
+			<class name="info.growl.GrowlNative" />
+		</javah>
+	</target>
+
+	<target name="build-native">
+		<exec executable="make" dir="${src.native.dir}" failonerror="yes" />
+
+		<copy todir="${target.dir}">
+			<fileset dir="${src.native.dir}" includes="**/*.jnilib" />
+		</copy>
+	</target>
+
+	<target name="copy-resources">
+		<copy todir="${classes.dir}">
+			<fileset dir="${src.resources.dir}" includes="**/*" />
+		</copy>
+	</target>
+
+	<target name="build-jar" depends="build-java, copy-resources">
+		<mkdir dir="${target.dir}" />
+		<jar destfile="${target.dir}/Growl.jar" basedir="${classes.dir}">
+		</jar>
+	</target>
+
+	<target name="build" depends="build-jar,build-headers,build-native" />
+
+	<target name="javadoc" depends="build-jar">
+		<mkdir dir="${javadoc.dir}" />
+
+		<javadoc sourcepath="${src.java.dir}" destdir="${javadoc.dir}"
+			author="yes" header="Growl Java APIs" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete>
+			<fileset dir="${src.native.dir}" includes="**/info_growl_*.h" />
+		</delete>
+
+		<exec executable="make" dir="${src.native.dir}" failonerror="yes">
+			<arg line="clean" />
+		</exec>
+	</target>
+	
+	<target name="run" depends="build">
+		<java classname="info.growl.test.TestGrowl" fork="true" dir="${target.dir}" classpath="${target.dir}/Growl.jar">
+		<jvmarg line="-Djava.library.path=."/>
+		</java>
+	</target>
+</project>
