@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <project name="UpdateTesting" default="build">
+    <property name="version" value="0.2" />
 	<property name="build.dir" value="build" />
 	<property name="classes.dir" value="${build.dir}/classes" />
 	<property name="target.dir" value="${build.dir}/dist" />
@@ -37,7 +37,7 @@
 
 	<target name="build-jar" depends="build-java, copy-resources">
 		<mkdir dir="${target.dir}" />
-		<jar destfile="${target.dir}/growl-${version}.jar" basedir="${classes.dir}">
+		<jar destfile="${target.dir}/libgrowl-${version}.jar" basedir="${classes.dir}">
             <include name="info/growl/*.class"/>
              <manifest>
                 <section name="info/growl/">
