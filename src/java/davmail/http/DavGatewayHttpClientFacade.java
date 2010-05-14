@@ -438,7 +438,7 @@ public final class DavGatewayHttpClientFacade {
     public static boolean acceptsNTLMOnly(HttpMethod getMethod) {
         Header authenticateHeader = null;
         if (getMethod.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
-            authenticateHeader = getMethod.getResponseHeader("Authenticate");
+            authenticateHeader = getMethod.getResponseHeader("WWW-Authenticate");
         } else if (getMethod.getStatusCode() == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED) {
             authenticateHeader = getMethod.getResponseHeader("Proxy-Authenticate");
         }
@@ -452,8 +452,8 @@ public final class DavGatewayHttpClientFacade {
                 if ("NTLM".equalsIgnoreCase(headerElement.getName())) {
                     acceptNTLM = true;
                 }
-                if ("Basic".equalsIgnoreCase(headerElement.getName())) {
-                    acceptBasic = true;
+                if ("Basic realm".equalsIgnoreCase(headerElement.getName())) {
+                   acceptBasic = true;
                 }
             }
             return acceptNTLM && !acceptBasic;
