@@ -2742,14 +2742,19 @@ public class ExchangeSession {
                                 // exclude current user and invalid values from recipients
                                 // also exclude no action attendees
                             } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
+                                    // return all attendees for user calendar folder, filter for notifications
                                     && (!isNotification
-                                    || line.indexOf("RSVP=TRUE") >= 0
-                                    || line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0
-                                    // need to include other PARTSTATs participants for CANCEL notifications
-                                    || line.indexOf("PARTSTAT=ACCEPTED") >= 0
-                                    || line.indexOf("PARTSTAT=DECLINED") >= 0
-                                    || line.indexOf("PARTSTAT=TENTATIVE") >= 0
-                            )) {
+                                    // notify attendee if reply explicitly requested
+                                    || (line.indexOf("RSVP=TRUE") >= 0)
+                                    || (
+                                    // workaround for iCal bug: do not notify if reply explicitly not requested
+                                    !(line.indexOf("RSVP=FALSE") >= 0) &&
+                                            ((line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0
+                                                    // need to include other PARTSTATs participants for CANCEL notifications
+                                                    || line.indexOf("PARTSTAT=ACCEPTED") >= 0
+                                                    || line.indexOf("PARTSTAT=DECLINED") >= 0
+                                                    || line.indexOf("PARTSTAT=TENTATIVE") >= 0))
+                            ))) {
                                 if (line.indexOf("ROLE=OPT-PARTICIPANT") >= 0) {
                                     optionalAttendees.add(value);
                                 } else {
