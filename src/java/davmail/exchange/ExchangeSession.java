@@ -205,7 +205,7 @@ public class ExchangeSession {
      * @param password user password
      * @throws IOException on error
      */
-    ExchangeSession(String url, String userName, String password) throws IOException {
+    public ExchangeSession(String url, String userName, String password) throws IOException {
         this.userName = userName;
         try {
             boolean isBasicAuthentication = isBasicAuthentication(url);
