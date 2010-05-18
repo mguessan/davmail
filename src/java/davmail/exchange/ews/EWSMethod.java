@@ -31,6 +31,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -98,11 +99,11 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeShape(Writer writer) throws IOException {
         if (baseShape != null) {
             writer.write("<m:");
-            writer.write(getResponseItemName());
+            writer.write(getItemType());
             writer.write("Shape>");
             baseShape.write(writer);
             writer.write("</m:");
-            writer.write(getResponseItemName());
+            writer.write(getItemType());
             writer.write("Shape>");
         }
     }
@@ -168,7 +169,7 @@ public abstract class EWSMethod extends PostMethod {
         return inputFactory;
     }
 
-    class Item {
+    class Item extends HashMap {
         public String id;
         public String changeKey;
         public String displayName;
@@ -176,7 +177,7 @@ public abstract class EWSMethod extends PostMethod {
 
         @Override
         public String toString() {
-            return "type: " + type + " id: " + id + " changeKey:" + changeKey + " displayName:" + displayName;
+            return "type: " + type + " id: " + id + " changeKey:" + changeKey + " displayName:" + displayName + ' ' + super.toString();
         }
     }
 
@@ -185,7 +186,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected abstract String getMethodName();
 
-    protected abstract String getResponseItemName();
+    protected abstract String getItemType();
 
     protected abstract String getResponseItemId();
 
@@ -236,25 +237,48 @@ public abstract class EWSMethod extends PostMethod {
     protected Item handleItem(XMLStreamReader reader) throws XMLStreamException {
         Item item = new Item();
         item.type = reader.getLocalName();
-        int event = reader.getEventType();
         while (reader.hasNext() && !isEndTag(reader, item.type)) {
-            event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT && getResponseItemId().equals(reader.getLocalName())) {
-                for (int i = 0; i < reader.getAttributeCount(); i++) {
-                    if ("Id".equals(reader.getAttributeLocalName(i))) {
-                        item.id = reader.getAttributeValue(i);
-                    } else if ("ChangeKey".equals(reader.getAttributeLocalName(i))) {
-                        item.changeKey = reader.getAttributeValue(i);
-                    }
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                String value = null;
+                if (tagLocalName.endsWith("Id")) {
+                    value = getIdAttributeValue(reader);
                 }
-            } else {
-                String displayName = handleTag(reader, "DisplayName");
-                if (displayName != null) {
-                    item.displayName = displayName;
+                if (value == null) {
+                    value = getTagContent(reader);
+                }
+                if (value != null) {
+                    item.put(tagLocalName, value);
                 }
             }
         }
         return item;
+    }
+
+    private String getTagContent(XMLStreamReader reader) throws XMLStreamException {
+        String tagLocalName = reader.getLocalName();
+        while (reader.hasNext() && !(reader.getEventType() == XMLStreamConstants.END_ELEMENT)) {
+            reader.next();
+            if (reader.getEventType() == XMLStreamConstants.CHARACTERS) {
+                return reader.getText();
+            }
+        }
+        // empty tag
+        if (reader.hasNext()) {
+            return null;
+        } else {
+            throw new XMLStreamException("End element for " + tagLocalName + " not found");
+        }
+    }
+
+    protected String getIdAttributeValue(XMLStreamReader reader) throws XMLStreamException {
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            if ("Id".equals(reader.getAttributeLocalName(i))) {
+                return reader.getAttributeValue(i);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -275,9 +299,9 @@ public abstract class EWSMethod extends PostMethod {
                 }
 
             } catch (IOException e) {
-                logger.error("Error while parsing soap response: " + e);
+                logger.error("Error while parsing soap response: " + e, e);
             } catch (XMLStreamException e) {
-                logger.error("Error while parsing soap response: " + e);
+                logger.error("Error while parsing soap response: " + e, e);
             }
             if (errorDetail != null) {
                 logger.error(errorDetail);

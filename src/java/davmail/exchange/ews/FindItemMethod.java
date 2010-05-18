@@ -41,7 +41,7 @@ public class FindItemMethod extends EWSMethod {
     }
 
     @Override
-    protected String getResponseItemName() {
+    protected String getItemType() {
         return "Item";
     }
 

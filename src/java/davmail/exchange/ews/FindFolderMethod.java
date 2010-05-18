@@ -35,7 +35,7 @@ public class FindFolderMethod extends EWSMethod {
     }
 
     @Override
-    protected String getResponseItemName() {
+    protected String getItemType() {
         return "Folder";
     }
 
@@ -46,6 +46,6 @@ public class FindFolderMethod extends EWSMethod {
 
     @Override
     protected String getResponseCollectionName() {
-        return getResponseItemName()+"s";
+        return getItemType()+ 's';
     }
 }

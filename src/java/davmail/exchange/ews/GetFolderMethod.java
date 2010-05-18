@@ -18,9 +18,6 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * EWS GetFolder method.
  */
@@ -33,17 +30,17 @@ public class GetFolderMethod extends EWSMethod {
     }
 
     @Override
-    protected String getResponseItemName() {
+    protected String getItemType() {
         return "Folder";
     }
 
     @Override
     protected String getResponseItemId() {
-        return getResponseItemName()+"Id";
+        return getItemType()+"Id";
     }
 
     @Override
     protected String getResponseCollectionName() {
-        return getResponseItemName()+ 's';
+        return getItemType()+ 's';
     }
 }
