@@ -22,37 +22,37 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * EWS Find Item Method.
+ * Item or folder base shape.
  */
-public class FindItemMethod extends EWSMethod {
-    public FindItemMethod(FolderQueryTraversalType folderQueryTraversalType) {
-        this.traversal = folderQueryTraversalType;
+public final class BaseShapeType {
+    private final String value;
+
+    private BaseShapeType(String value) {
+        this.value = value;
     }
 
-    @Override
-    protected void writeSoapBody(Writer writer) throws IOException {
-        writeShape(writer);
-        writeParentFolderId(writer);
+    /**
+     * Write XML content to writer.
+     *
+     * @param writer writer
+     * @throws IOException on error
+     */
+    public void write(Writer writer) throws IOException {
+        writer.write("<t:BaseShape>");
+        writer.write(value);
+        writer.write("</t:BaseShape>");
     }
 
-    @Override
-    protected String getMethodName() {
-        return "FindItem";
-    }
-
-    @Override
-    protected String getResponseItemName() {
-        return "Item";
-    }
-
-    @Override
-    protected String getResponseItemId() {
-        return "ItemId";
-    }
-
-    @Override
-    protected String getResponseCollectionName() {
-        return "Items";
-    }
+    /**
+     * Return id only.
+     */
+    public static final BaseShapeType IdOnly = new BaseShapeType("IdOnly");
+    /**
+     * Return default properties.
+     */
+    public static final BaseShapeType Default = new BaseShapeType("Default");
+    /**
+     * Return all properties, except MAPI extended properties.
+     */
+    public static final BaseShapeType AllProperties = new BaseShapeType("AllProperties");
 }
-

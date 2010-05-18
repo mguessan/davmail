@@ -26,15 +26,7 @@ import java.io.Writer;
  */
 public class GetFolderMethod extends EWSMethod {
 
-
-    @Override
-    protected void generateSoapBody(Writer writer) throws IOException {
-        generateShape(writer);
-        writer.write("         <m:FolderIds>\n");
-        distinguishedFolderId.write(writer);
-        writer.write("         </m:FolderIds>\n");
-    }
-
+    
     @Override
     protected String getMethodName() {
         return "GetFolder";
@@ -48,5 +40,10 @@ public class GetFolderMethod extends EWSMethod {
     @Override
     protected String getResponseItemId() {
         return getResponseItemName()+"Id";
+    }
+
+    @Override
+    protected String getResponseCollectionName() {
+        return getResponseItemName()+ 's';
     }
 }

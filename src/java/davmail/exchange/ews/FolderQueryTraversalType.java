@@ -22,37 +22,33 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * EWS Find Item Method.
+ * Folder folderQueryTraversalType search mode.
  */
-public class FindItemMethod extends EWSMethod {
-    public FindItemMethod(FolderQueryTraversalType folderQueryTraversalType) {
-        this.traversal = folderQueryTraversalType;
+public final class FolderQueryTraversalType {
+    private final String value;
+
+    private FolderQueryTraversalType(String value) {
+        this.value = value;
     }
 
-    @Override
-    protected void writeSoapBody(Writer writer) throws IOException {
-        writeShape(writer);
-        writeParentFolderId(writer);
+    /**
+     * Write XML content to writer.
+     *
+     * @param writer writer
+     * @throws IOException on error
+     */
+    public void write(Writer writer) throws IOException {
+        writer.write(" Traversal=\"");
+        writer.write(value);
+        writer.write("\"");
     }
 
-    @Override
-    protected String getMethodName() {
-        return "FindItem";
-    }
-
-    @Override
-    protected String getResponseItemName() {
-        return "Item";
-    }
-
-    @Override
-    protected String getResponseItemId() {
-        return "ItemId";
-    }
-
-    @Override
-    protected String getResponseCollectionName() {
-        return "Items";
-    }
+    /**
+     * Search only in current folder.
+     */
+    public static final FolderQueryTraversalType Shallow = new FolderQueryTraversalType("Shallow");
+    /**
+     * Recursive search.
+     */
+    public static final FolderQueryTraversalType Deep = new FolderQueryTraversalType("Deep");
 }
-

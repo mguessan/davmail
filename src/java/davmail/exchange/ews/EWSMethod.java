@@ -39,62 +39,11 @@ import java.util.List;
 public abstract class EWSMethod extends PostMethod {
     protected static final Logger logger = Logger.getLogger(EWSMethod.class);
 
-    public static final class BaseShape {
-        private final String value;
+    protected FolderQueryTraversalType traversal;
+    protected BaseShapeType baseShape;
+    protected FolderIdType folderId;
+    protected FolderIdType parentFolderId;
 
-        private BaseShape(String value) {
-            this.value = value;
-        }
-
-        public void write(Writer writer) throws IOException {
-            writer.write("<t:BaseShape>");
-            writer.write(value);
-            writer.write("</t:BaseShape>");
-        }
-
-        public static final BaseShape IdOnly = new BaseShape("IdOnly");
-        public static final BaseShape Default = new BaseShape("Default");
-        public static final BaseShape AllProperties = new BaseShape("AllProperties");
-    }
-
-    public static final class DistinguishedFolderId {
-        private final String value;
-
-        private DistinguishedFolderId(String value) {
-            this.value = value;
-        }
-
-        public void write(Writer writer) throws IOException {
-            writer.write("<t:DistinguishedFolderId Id=\"");
-            writer.write(value);
-            writer.write("\"/>");
-        }
-
-        public static final DistinguishedFolderId msgfolderroot = new DistinguishedFolderId("msgfolderroot");
-        public static final DistinguishedFolderId inbox = new DistinguishedFolderId("inbox");
-        public static final DistinguishedFolderId publicfoldersroot = new DistinguishedFolderId("publicfoldersroot");
-    }
-
-    public static final class Traversal {
-        private final String value;
-
-        private Traversal(String value) {
-            this.value = value;
-        }
-
-        public void write(Writer writer) throws IOException {
-            writer.write(" Traversal=\"");
-            writer.write(value);
-            writer.write("\"");
-        }
-
-        public static final Traversal Shallow = new Traversal("Shallow");
-        public static final Traversal Deep = new Traversal("Deep");
-    }
-
-    protected Traversal traversal = null;
-    protected BaseShape baseShape;
-    protected DistinguishedFolderId distinguishedFolderId = DistinguishedFolderId.msgfolderroot;
 
     /**
      * Build EWS method
@@ -134,15 +83,19 @@ public abstract class EWSMethod extends PostMethod {
         return "POST";
     }
 
-    protected void setBaseShape(BaseShape baseShape) {
-        this.baseShape = baseShape;
+    protected void setBaseShape(BaseShapeType baseShapeType) {
+        this.baseShape = baseShapeType;
     }
 
-    protected void setDistinguishedFolderId(DistinguishedFolderId distinguishedFolderId) {
-        this.distinguishedFolderId = distinguishedFolderId;
+    protected void setFolderId(FolderIdType folderId) {
+        this.folderId = folderId;
     }
 
-    protected void generateShape(Writer writer) throws IOException {
+    protected void setParentFolderId(FolderIdType folderId) {
+        this.parentFolderId = folderId;
+    }
+
+    protected void writeShape(Writer writer) throws IOException {
         if (baseShape != null) {
             writer.write("<m:");
             writer.write(getResponseItemName());
@@ -151,6 +104,22 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("</m:");
             writer.write(getResponseItemName());
             writer.write("Shape>");
+        }
+    }
+
+    protected void writeFolderId(Writer writer) throws IOException {
+        if (folderId != null) {
+            writer.write("<m:FolderIds>");
+            folderId.write(writer);
+            writer.write("</m:FolderIds>");
+        }
+    }
+
+    protected void writeParentFolderId(Writer writer) throws IOException {
+        if (parentFolderId != null) {
+            writer.write("<m:ParentFolderIds>");
+            parentFolderId.write(writer);
+            writer.write("</m:ParentFolderIds>");
         }
     }
 
@@ -168,7 +137,7 @@ public abstract class EWSMethod extends PostMethod {
                 traversal.write(writer);
             }
             writer.write(">");
-            generateSoapBody(writer);
+            writeSoapBody(writer);
             writer.write("</m:");
             writer.write(getMethodName());
             writer.write(">");
@@ -181,7 +150,11 @@ public abstract class EWSMethod extends PostMethod {
         return baos.toByteArray();
     }
 
-    protected abstract void generateSoapBody(Writer writer) throws IOException;
+    protected void writeSoapBody(Writer writer) throws IOException {
+        writeShape(writer);
+        writeParentFolderId(writer);
+        writeFolderId(writer);
+    }
 
     /**
      * Build a new XMLInputFactory.
@@ -199,10 +172,11 @@ public abstract class EWSMethod extends PostMethod {
         public String id;
         public String changeKey;
         public String displayName;
+        public String type;
 
         @Override
         public String toString() {
-            return "id: " + id + " changeKey:" + changeKey + " displayName:" + displayName;
+            return "type: " + type + " id: " + id + " changeKey:" + changeKey + " displayName:" + displayName;
         }
     }
 
@@ -214,6 +188,8 @@ public abstract class EWSMethod extends PostMethod {
     protected abstract String getResponseItemName();
 
     protected abstract String getResponseItemId();
+
+    protected abstract String getResponseCollectionName();
 
     public List<Item> getResponseItems() {
         return responseItems;
@@ -245,31 +221,40 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    protected boolean isStartTag(XMLStreamReader reader) {
+        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT);
+    }
+
+    protected boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
+        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+    }
+
+    protected boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
+        return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+    }
+
     protected Item handleItem(XMLStreamReader reader) throws XMLStreamException {
-        Item result = null;
+        Item item = new Item();
+        item.type = reader.getLocalName();
         int event = reader.getEventType();
-        if (event == XMLStreamConstants.START_ELEMENT && getResponseItemName().equals(reader.getLocalName())) {
-            result = new Item();
-            while (reader.hasNext() &&
-                    !((event == XMLStreamConstants.END_ELEMENT && getResponseItemName().equals(reader.getLocalName())))) {
-                event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT && getResponseItemId().equals(reader.getLocalName())) {
-                    for (int i = 0; i < reader.getAttributeCount(); i++) {
-                        if ("Id".equals(reader.getAttributeLocalName(i))) {
-                            result.id = reader.getAttributeValue(i);
-                        } else if ("ChangeKey".equals(reader.getAttributeLocalName(i))) {
-                            result.changeKey = reader.getAttributeValue(i);
-                        }
+        while (reader.hasNext() && !isEndTag(reader, item.type)) {
+            event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT && getResponseItemId().equals(reader.getLocalName())) {
+                for (int i = 0; i < reader.getAttributeCount(); i++) {
+                    if ("Id".equals(reader.getAttributeLocalName(i))) {
+                        item.id = reader.getAttributeValue(i);
+                    } else if ("ChangeKey".equals(reader.getAttributeLocalName(i))) {
+                        item.changeKey = reader.getAttributeValue(i);
                     }
-                } else {
-                    String displayName = handleTag(reader, "DisplayName");
-                    if (displayName != null) {
-                        result.displayName = displayName;
-                    }
+                }
+            } else {
+                String displayName = handleTag(reader, "DisplayName");
+                if (displayName != null) {
+                    item.displayName = displayName;
                 }
             }
         }
-        return result;
+        return item;
     }
 
     @Override
@@ -282,11 +267,10 @@ public abstract class EWSMethod extends PostMethod {
                 XMLInputFactory xmlInputFactory = getXmlInputFactory();
                 reader = xmlInputFactory.createXMLStreamReader(getResponseBodyAsStream());
                 while (reader.hasNext()) {
-                    int event = reader.next();
+                    reader.next();
                     handleErrors(reader);
-                    Item item = handleItem(reader);
-                    if (item != null) {
-                        responseItems.add(item);
+                    if (isStartTag(reader, getResponseCollectionName())) {
+                        handleItems(reader);
                     }
                 }
 
@@ -299,6 +283,16 @@ public abstract class EWSMethod extends PostMethod {
                 logger.error(errorDetail);
             }
         }
+    }
+
+    private void handleItems(XMLStreamReader reader) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, getResponseCollectionName())) {
+            reader.next();
+            if (isStartTag(reader)) {
+                responseItems.add(handleItem(reader));
+            }
+        }
+
     }
 
 }

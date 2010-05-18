@@ -22,37 +22,19 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * EWS Find Item Method.
+ * Folder Id.
  */
-public class FindItemMethod extends EWSMethod {
-    public FindItemMethod(FolderQueryTraversalType folderQueryTraversalType) {
-        this.traversal = folderQueryTraversalType;
+public class FolderIdType {
+    protected final String value;
+
+    public FolderIdType(String value) {
+        this.value = value;
     }
 
-    @Override
-    protected void writeSoapBody(Writer writer) throws IOException {
-        writeShape(writer);
-        writeParentFolderId(writer);
+    public void write(Writer writer) throws IOException {
+        writer.write("<t:FolderId Id=\"");
+        writer.write(value);
+        writer.write("\"/>");
     }
-
-    @Override
-    protected String getMethodName() {
-        return "FindItem";
-    }
-
-    @Override
-    protected String getResponseItemName() {
-        return "Item";
-    }
-
-    @Override
-    protected String getResponseItemId() {
-        return "ItemId";
-    }
-
-    @Override
-    protected String getResponseCollectionName() {
-        return "Items";
-    }
+    
 }
-
