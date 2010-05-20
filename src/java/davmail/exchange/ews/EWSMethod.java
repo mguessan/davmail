@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
 import org.apache.commons.httpclient.HttpState;
@@ -47,12 +48,15 @@ public abstract class EWSMethod extends PostMethod {
     protected FolderIdType folderId;
     protected FolderIdType parentFolderId;
     protected ItemIdType itemId;
-    protected HashSet<FieldURI> additionalProperties = null;
+    protected HashSet<FieldURI> additionalProperties;
 
     protected final String itemType;
     protected final String methodName;
     protected final String responseCollectionName;
 
+    protected byte[] mimeContent;
+    protected List<Item> responseItems;
+    protected String errorDetail;
 
     /**
      * Build EWS method
@@ -215,11 +219,20 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-    protected List<Item> responseItems;
-    protected String errorDetail;
-
     public List<Item> getResponseItems() {
         return responseItems;
+    }
+
+    public Item getResponseItem() {
+        if (responseItems != null && responseItems.size() == 1) {
+            return responseItems.get(0);
+        } else {
+            return null;
+        }
+    }
+
+    public byte[] getMimeContent() {
+        return mimeContent;
     }
 
     protected String handleTag(XMLStreamReader reader, String localName) throws XMLStreamException {
@@ -270,6 +283,8 @@ public abstract class EWSMethod extends PostMethod {
                 String value = null;
                 if ("ExtendedProperty".equals(tagLocalName)) {
                     addExtendedPropertyValue(reader, item);
+                } else if (tagLocalName.endsWith("MimeContent")) {
+                    handleMimeContent(reader);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -286,10 +301,15 @@ public abstract class EWSMethod extends PostMethod {
         return item;
     }
 
+    protected void handleMimeContent(XMLStreamReader reader) throws XMLStreamException {
+        byte[] base64MimeContent = reader.getElementText().getBytes();
+        mimeContent = Base64.decodeBase64(base64MimeContent);
+    }
+
     protected void addExtendedPropertyValue(XMLStreamReader reader, Item item) throws XMLStreamException {
         String propertyTag = null;
         String propertyValue = null;
-         while (reader.hasNext() && !(isEndTag(reader, "ExtendedProperty"))) {
+        while (reader.hasNext() && !(isEndTag(reader, "ExtendedProperty"))) {
             reader.next();
             if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();

@@ -22,10 +22,10 @@ package davmail.exchange.ews;
  * Get Item method.
  */
 public class GetItemMethod extends EWSMethod {
-    public GetItemMethod(BaseShapeType baseShape, FolderIdType folderId, boolean includeMimeContent) {
+    public GetItemMethod(BaseShapeType baseShape, ItemIdType itemId, boolean includeMimeContent) {
         super("Item", "GetItem");
         this.baseShape = baseShape;
-        this.folderId = folderId;
+        this.itemId = itemId;
         this.includeMimeContent = includeMimeContent;
     }
 
