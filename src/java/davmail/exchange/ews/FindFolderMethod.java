@@ -24,28 +24,10 @@ package davmail.exchange.ews;
 public class FindFolderMethod extends EWSMethod {
 
     public FindFolderMethod(FolderQueryTraversalType traversal, BaseShapeType baseShape, FolderIdType parentFolderId) {
+        super("Folder", "FindFolder");
         this.traversal = traversal;
         this.baseShape = baseShape;
         this.parentFolderId = parentFolderId;
     }
-
-    @Override
-    protected String getMethodName() {
-        return "FindFolder";
-    }
-
-    @Override
-    protected String getItemType() {
-        return "Folder";
-    }
-
-    @Override
-    protected String getResponseItemId() {
-        return "FolderId";
-    }
-
-    @Override
-    protected String getResponseCollectionName() {
-        return getItemType()+ 's';
-    }
+   
 }

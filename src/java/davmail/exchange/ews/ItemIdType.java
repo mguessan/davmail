@@ -22,14 +22,45 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * EWS Find Item Method.
+ * Item id.
  */
-public class FindItemMethod extends EWSMethod {
-    public FindItemMethod(FolderQueryTraversalType traversal, BaseShapeType baseShape, FolderIdType parentFolderId) {
-        super("Item", "FindItem");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
-        this.parentFolderId = parentFolderId;
+public class ItemIdType {
+    protected final String id;
+    protected String changeKey;
+
+    /**
+     * Create Item id.
+     *
+     * @param id        item id
+     * @param changeKey item change key
+     */
+    public ItemIdType(String id, String changeKey) {
+        this.id = id;
+        this.changeKey = changeKey;
+    }
+
+    /**
+     * Create Item id.
+     *
+     * @param id        item id
+     */
+    public ItemIdType(String id) {
+        this.id = id;
+    }
+
+    /**
+     * Write item id as XML.
+     * 
+     * @param writer
+     * @throws IOException
+     */
+    public void write(Writer writer) throws IOException {
+        writer.write("<t:ItemId Id=\"");
+        writer.write(id);
+        if (changeKey != null) {
+            writer.write("\" ChangeKey=\"");
+            writer.write(changeKey);
+        }
+        writer.write("\"/>");
     }
 }
-

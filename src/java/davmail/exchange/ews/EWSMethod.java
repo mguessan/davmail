@@ -32,6 +32,7 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -42,15 +43,25 @@ public abstract class EWSMethod extends PostMethod {
 
     protected FolderQueryTraversalType traversal;
     protected BaseShapeType baseShape;
+    protected boolean includeMimeContent;
     protected FolderIdType folderId;
     protected FolderIdType parentFolderId;
+    protected ItemIdType itemId;
+    protected HashSet<FieldURI> additionalProperties = null;
+
+    protected final String itemType;
+    protected final String methodName;
+    protected final String responseCollectionName;
 
 
     /**
      * Build EWS method
      */
-    public EWSMethod() {
+    public EWSMethod(String itemType, String methodName) {
         super("/ews/exchange.asmx");
+        this.itemType = itemType;
+        this.methodName = methodName;
+        responseCollectionName = itemType + 's';
         setRequestEntity(new RequestEntity() {
             byte[] content;
 
@@ -96,15 +107,40 @@ public abstract class EWSMethod extends PostMethod {
         this.parentFolderId = folderId;
     }
 
+    protected void addAdditionalProperty(FieldURI additionalProperty) {
+        if (additionalProperties == null) {
+            additionalProperties = new HashSet<FieldURI>();
+        }
+        additionalProperties.add(additionalProperty);
+    }
+
     protected void writeShape(Writer writer) throws IOException {
         if (baseShape != null) {
             writer.write("<m:");
-            writer.write(getItemType());
+            writer.write(itemType);
             writer.write("Shape>");
             baseShape.write(writer);
+            if (additionalProperties != null) {
+                writer.write("<t:AdditionalProperties>");
+                for (FieldURI fieldURI : additionalProperties) {
+                    fieldURI.write(writer);
+                }
+                writer.write("</t:AdditionalProperties>");
+            }
+            if (includeMimeContent) {
+                writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
+            }
             writer.write("</m:");
-            writer.write(getItemType());
+            writer.write(itemType);
             writer.write("Shape>");
+        }
+    }
+
+    protected void writeItemId(Writer writer) throws IOException {
+        if (itemId != null) {
+            writer.write("<m:ItemIds>");
+            itemId.write(writer);
+            writer.write("</m:ItemIds>");
         }
     }
 
@@ -133,14 +169,14 @@ public abstract class EWSMethod extends PostMethod {
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
                     "<soap:Body>");
             writer.write("<m:");
-            writer.write(getMethodName());
+            writer.write(methodName);
             if (traversal != null) {
                 traversal.write(writer);
             }
             writer.write(">");
             writeSoapBody(writer);
             writer.write("</m:");
-            writer.write(getMethodName());
+            writer.write(methodName);
             writer.write(">");
             writer.write("</soap:Body>" +
                     "</soap:Envelope>");
@@ -153,6 +189,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeSoapBody(Writer writer) throws IOException {
         writeShape(writer);
+        writeItemId(writer);
         writeParentFolderId(writer);
         writeFolderId(writer);
     }
@@ -169,28 +206,17 @@ public abstract class EWSMethod extends PostMethod {
         return inputFactory;
     }
 
-    class Item extends HashMap {
-        public String id;
-        public String changeKey;
-        public String displayName;
+    class Item extends HashMap<String, String> {
         public String type;
 
         @Override
         public String toString() {
-            return "type: " + type + " id: " + id + " changeKey:" + changeKey + " displayName:" + displayName + ' ' + super.toString();
+            return "type: " + type + ' ' + super.toString();
         }
     }
 
     protected List<Item> responseItems;
     protected String errorDetail;
-
-    protected abstract String getMethodName();
-
-    protected abstract String getItemType();
-
-    protected abstract String getResponseItemId();
-
-    protected abstract String getResponseCollectionName();
 
     public List<Item> getResponseItems() {
         return responseItems;
@@ -242,18 +268,41 @@ public abstract class EWSMethod extends PostMethod {
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
-                if (tagLocalName.endsWith("Id")) {
-                    value = getIdAttributeValue(reader);
-                }
-                if (value == null) {
-                    value = getTagContent(reader);
-                }
-                if (value != null) {
-                    item.put(tagLocalName, value);
+                if ("ExtendedProperty".equals(tagLocalName)) {
+                    addExtendedPropertyValue(reader, item);
+                } else {
+                    if (tagLocalName.endsWith("Id")) {
+                        value = getAttributeValue(reader, "Id");
+                    }
+                    if (value == null) {
+                        value = getTagContent(reader);
+                    }
+                    if (value != null) {
+                        item.put(tagLocalName, value);
+                    }
                 }
             }
         }
         return item;
+    }
+
+    protected void addExtendedPropertyValue(XMLStreamReader reader, Item item) throws XMLStreamException {
+        String propertyTag = null;
+        String propertyValue = null;
+         while (reader.hasNext() && !(isEndTag(reader, "ExtendedProperty"))) {
+            reader.next();
+            if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if (tagLocalName.equals("ExtendedFieldURI")) {
+                    propertyTag = getAttributeValue(reader, "PropertyTag");
+                } else if (tagLocalName.equals("Value")) {
+                    propertyValue = reader.getElementText();
+                }
+            }
+        }
+        if ((propertyTag != null) && (propertyValue != null)) {
+            item.put(propertyTag, propertyValue);
+        }
     }
 
     private String getTagContent(XMLStreamReader reader) throws XMLStreamException {
@@ -272,9 +321,9 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-    protected String getIdAttributeValue(XMLStreamReader reader) throws XMLStreamException {
+    protected String getAttributeValue(XMLStreamReader reader, String attributeName) throws XMLStreamException {
         for (int i = 0; i < reader.getAttributeCount(); i++) {
-            if ("Id".equals(reader.getAttributeLocalName(i))) {
+            if (attributeName.equals(reader.getAttributeLocalName(i))) {
                 return reader.getAttributeValue(i);
             }
         }
@@ -293,7 +342,7 @@ public abstract class EWSMethod extends PostMethod {
                 while (reader.hasNext()) {
                     reader.next();
                     handleErrors(reader);
-                    if (isStartTag(reader, getResponseCollectionName())) {
+                    if (isStartTag(reader, responseCollectionName)) {
                         handleItems(reader);
                     }
                 }
@@ -310,7 +359,7 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     private void handleItems(XMLStreamReader reader) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, getResponseCollectionName())) {
+        while (reader.hasNext() && !isEndTag(reader, responseCollectionName)) {
             reader.next();
             if (isStartTag(reader)) {
                 responseItems.add(handleItem(reader));

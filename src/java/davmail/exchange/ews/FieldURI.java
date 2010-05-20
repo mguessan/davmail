@@ -18,15 +18,14 @@
  */
 package davmail.exchange.ews;
 
-/**
- * EWS GetFolder method.
- */
-public class GetFolderMethod extends EWSMethod {
+import java.io.IOException;
+import java.io.Writer;
 
-    public GetFolderMethod(BaseShapeType baseShape, FolderIdType folderId) {
-        super("Folder", "GetFolder");
-        this.baseShape = baseShape;
-        this.folderId = folderId;
-    }
+/**
+ * Field URI.
+ */
+public interface FieldURI {
+
+    public void write(Writer writer) throws IOException;
 
 }

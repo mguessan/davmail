@@ -19,14 +19,13 @@
 package davmail.exchange.ews;
 
 /**
- * EWS GetFolder method.
+ * Delete Item method.
  */
-public class GetFolderMethod extends EWSMethod {
-
-    public GetFolderMethod(BaseShapeType baseShape, FolderIdType folderId) {
-        super("Folder", "GetFolder");
-        this.baseShape = baseShape;
+public class DeleteItemMethod extends EWSMethod {
+    public DeleteItemMethod(FolderIdType folderId, ItemIdType itemId) {
+        super("Item", "DeleteItem");
         this.folderId = folderId;
+        this.itemId = itemId;
     }
 
 }

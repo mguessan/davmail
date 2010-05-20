@@ -19,14 +19,14 @@
 package davmail.exchange.ews;
 
 /**
- * EWS GetFolder method.
+ * Get Item method.
  */
-public class GetFolderMethod extends EWSMethod {
-
-    public GetFolderMethod(BaseShapeType baseShape, FolderIdType folderId) {
-        super("Folder", "GetFolder");
+public class GetItemMethod extends EWSMethod {
+    public GetItemMethod(BaseShapeType baseShape, FolderIdType folderId, boolean includeMimeContent) {
+        super("Item", "GetItem");
         this.baseShape = baseShape;
         this.folderId = folderId;
+        this.includeMimeContent = includeMimeContent;
     }
 
 }

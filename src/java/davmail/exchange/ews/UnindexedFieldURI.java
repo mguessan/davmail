@@ -18,15 +18,25 @@
  */
 package davmail.exchange.ews;
 
-/**
- * EWS GetFolder method.
- */
-public class GetFolderMethod extends EWSMethod {
+import java.io.IOException;
+import java.io.Writer;
 
-    public GetFolderMethod(BaseShapeType baseShape, FolderIdType folderId) {
-        super("Folder", "GetFolder");
-        this.baseShape = baseShape;
-        this.folderId = folderId;
+/**
+ * Unindexed Field URI
+ */
+public class UnindexedFieldURI implements FieldURI {
+    protected String fieldURI;
+
+    public UnindexedFieldURI(String fieldURI) {
+        this.fieldURI = fieldURI;
     }
 
+    public void write(Writer writer) throws IOException {
+        writer.write("<t:FieldURI FieldURI=\"");
+        writer.write(fieldURI);
+        writer.write("\"/>");
+    }
+
+    public static final UnindexedFieldURI DATE_TIME_SENT = new UnindexedFieldURI("item:DateTimeSent");
+    
 }
