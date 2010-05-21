@@ -19,15 +19,12 @@
 package davmail.exchange.ews;
 
 /**
- * EWS Find Folder.
+ * Delete Folder method.
  */
-public class FindFolderMethod extends EWSMethod {
-
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
-        super("Folder", "FindFolder");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
-        this.parentFolderId = parentFolderId;
+public class DeleteFolderMethod extends EWSMethod {
+    public DeleteFolderMethod(FolderId folderId) {
+        super("Folder", "DeleteFolder");
+        this.folderId = folderId;
+        this.deleteType = Disposal.HARD_DELETE;
     }
-   
 }

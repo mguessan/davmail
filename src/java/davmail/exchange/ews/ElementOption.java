@@ -22,19 +22,30 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * Folder Id.
+ * Generic element option.
  */
-public class FolderIdType {
-    protected final String value;
-
-    public FolderIdType(String value) {
-        this.value = value;
+public class ElementOption extends Option {
+    /**
+     * Create element option.
+     *
+     * @param name  element tag name
+     * @param value element value
+     */
+    protected ElementOption(String name, String value) {
+        super(name, value);
     }
 
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void write(Writer writer) throws IOException {
-        writer.write("<t:FolderId Id=\"");
+        writer.write('<');
+        writer.write(name);
+        writer.write('>');
         writer.write(value);
-        writer.write("\"/>");
+        writer.write("</");
+        writer.write(name);
+        writer.write('>');
     }
-    
 }

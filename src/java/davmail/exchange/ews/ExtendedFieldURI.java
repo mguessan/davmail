@@ -48,5 +48,7 @@ public class ExtendedFieldURI implements FieldURI {
     public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI("0x1090", "Integer");
     public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI("0x0E07", "Integer");
     public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI("0x1081", "Integer");
+    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10F3", "String");
+
 }
 

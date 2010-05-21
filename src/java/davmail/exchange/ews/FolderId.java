@@ -18,16 +18,37 @@
  */
 package davmail.exchange.ews;
 
-/**
- * EWS Find Folder.
- */
-public class FindFolderMethod extends EWSMethod {
+import java.io.IOException;
+import java.io.Writer;
 
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
-        super("Folder", "FindFolder");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
-        this.parentFolderId = parentFolderId;
+/**
+ * Folder Id.
+ */
+public class FolderId extends Option {
+
+    protected FolderId(String name, String value) {
+        super(name, value);
     }
-   
+
+    /**
+     * Create FolderId option
+     *
+     * @param value id value
+     */
+    public FolderId(String value) {
+        super("t:FolderId", value);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void write(Writer writer) throws IOException {
+        writer.write('<');
+        writer.write(name);
+        writer.write(" Id=\"");
+        writer.write(value);
+        writer.write("\"/>");
+    }
+
 }

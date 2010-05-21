@@ -18,14 +18,11 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * EWS Find Item Method.
  */
 public class FindItemMethod extends EWSMethod {
-    public FindItemMethod(FolderQueryTraversalType traversal, BaseShapeType baseShape, FolderIdType parentFolderId) {
+    public FindItemMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
         super("Item", "FindItem");
         this.traversal = traversal;
         this.baseShape = baseShape;

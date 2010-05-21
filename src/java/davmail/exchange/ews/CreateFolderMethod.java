@@ -19,15 +19,12 @@
 package davmail.exchange.ews;
 
 /**
- * EWS Find Folder.
+ * Create Folder method.
  */
-public class FindFolderMethod extends EWSMethod {
-
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
-        super("Folder", "FindFolder");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
+public class CreateFolderMethod extends EWSMethod {
+    public CreateFolderMethod(FolderId parentFolderId, Item item) {
+        super("Folder", "CreateFolder");
         this.parentFolderId = parentFolderId;
+        this.item = item;
     }
-   
 }

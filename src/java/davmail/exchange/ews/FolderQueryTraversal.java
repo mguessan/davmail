@@ -22,45 +22,33 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * Item id.
+ * Folder folderQueryTraversalType search mode.
  */
-public class ItemIdType {
-    protected final String id;
-    protected String changeKey;
+public final class FolderQueryTraversal {
+    private final String value;
 
-    /**
-     * Create Item id.
-     *
-     * @param id        item id
-     * @param changeKey item change key
-     */
-    public ItemIdType(String id, String changeKey) {
-        this.id = id;
-        this.changeKey = changeKey;
+    private FolderQueryTraversal(String value) {
+        this.value = value;
     }
 
     /**
-     * Create Item id.
+     * Write XML content to writer.
      *
-     * @param id        item id
-     */
-    public ItemIdType(String id) {
-        this.id = id;
-    }
-
-    /**
-     * Write item id as XML.
-     * 
-     * @param writer
-     * @throws IOException
+     * @param writer writer
+     * @throws IOException on error
      */
     public void write(Writer writer) throws IOException {
-        writer.write("<t:ItemId Id=\"");
-        writer.write(id);
-        if (changeKey != null) {
-            writer.write("\" ChangeKey=\"");
-            writer.write(changeKey);
-        }
-        writer.write("\"/>");
+        writer.write(" Traversal=\"");
+        writer.write(value);
+        writer.write("\"");
     }
+
+    /**
+     * Search only in current folder.
+     */
+    public static final FolderQueryTraversal SHALLOW = new FolderQueryTraversal("Shallow");
+    /**
+     * Recursive search.
+     */
+    public static final FolderQueryTraversal DEEP = new FolderQueryTraversal("Deep");
 }

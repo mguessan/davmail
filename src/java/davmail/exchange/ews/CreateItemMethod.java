@@ -18,37 +18,13 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
- * Folder folderQueryTraversalType search mode.
+ * Create Item method.
  */
-public final class FolderQueryTraversalType {
-    private final String value;
-
-    private FolderQueryTraversalType(String value) {
-        this.value = value;
+public class CreateItemMethod extends EWSMethod {
+      public CreateItemMethod(FolderId parentFolderId, EWSMethod.Item item) {
+        super("Folder", "CreateFolder");
+        this.parentFolderId = parentFolderId;
+        this.item = item;
     }
-
-    /**
-     * Write XML content to writer.
-     *
-     * @param writer writer
-     * @throws IOException on error
-     */
-    public void write(Writer writer) throws IOException {
-        writer.write(" Traversal=\"");
-        writer.write(value);
-        writer.write("\"");
-    }
-
-    /**
-     * Search only in current folder.
-     */
-    public static final FolderQueryTraversalType Shallow = new FolderQueryTraversalType("Shallow");
-    /**
-     * Recursive search.
-     */
-    public static final FolderQueryTraversalType Deep = new FolderQueryTraversalType("Deep");
 }

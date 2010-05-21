@@ -18,16 +18,18 @@
  */
 package davmail.exchange.ews;
 
-/**
- * EWS Find Folder.
- */
-public class FindFolderMethod extends EWSMethod {
+import java.io.IOException;
+import java.io.Writer;
 
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
-        super("Folder", "FindFolder");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
-        this.parentFolderId = parentFolderId;
+/**
+ * Disposal.
+ */
+public class Disposal extends AttributeOption {
+    private Disposal(String value) {
+        super("DeleteType", value);
     }
-   
+
+    public static final Disposal HARD_DELETE = new Disposal("HardDelete");
+    public static final Disposal SOFT_DELETE = new Disposal("SoftDelete");
+    public static final Disposal MOVE_TO_DELETED_ITEMS = new Disposal("MoveToDeletedItems");
 }

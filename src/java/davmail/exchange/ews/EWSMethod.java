@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import com.wutka.dtd.DTDOutput;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
@@ -31,10 +32,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * EWS SOAP method.
@@ -42,13 +40,14 @@ import java.util.List;
 public abstract class EWSMethod extends PostMethod {
     protected static final Logger logger = Logger.getLogger(EWSMethod.class);
 
-    protected FolderQueryTraversalType traversal;
-    protected BaseShapeType baseShape;
+    protected FolderQueryTraversal traversal;
+    protected BaseShape baseShape;
     protected boolean includeMimeContent;
-    protected FolderIdType folderId;
-    protected FolderIdType parentFolderId;
-    protected ItemIdType itemId;
+    protected FolderId folderId;
+    protected FolderId parentFolderId;
+    protected ItemId itemId;
     protected HashSet<FieldURI> additionalProperties;
+    protected Disposal deleteType;
 
     protected final String itemType;
     protected final String methodName;
@@ -57,6 +56,7 @@ public abstract class EWSMethod extends PostMethod {
     protected byte[] mimeContent;
     protected List<Item> responseItems;
     protected String errorDetail;
+    protected Item item;
 
     /**
      * Build EWS method
@@ -99,15 +99,15 @@ public abstract class EWSMethod extends PostMethod {
         return "POST";
     }
 
-    protected void setBaseShape(BaseShapeType baseShapeType) {
-        this.baseShape = baseShapeType;
+    protected void setBaseShape(BaseShape baseShape) {
+        this.baseShape = baseShape;
     }
 
-    protected void setFolderId(FolderIdType folderId) {
+    protected void setFolderId(FolderId folderId) {
         this.folderId = folderId;
     }
 
-    protected void setParentFolderId(FolderIdType folderId) {
+    protected void setParentFolderId(FolderId folderId) {
         this.parentFolderId = folderId;
     }
 
@@ -158,9 +158,21 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeParentFolderId(Writer writer) throws IOException {
         if (parentFolderId != null) {
-            writer.write("<m:ParentFolderIds>");
+            writer.write("<m:ParentFolderId");if (item == null) {writer.write("s");}writer.write(">");
             parentFolderId.write(writer);
-            writer.write("</m:ParentFolderIds>");
+            writer.write("</m:ParentFolderId");if (item == null) {writer.write("s");}writer.write(">");
+        }
+    }
+
+    protected void writeItem(Writer writer) throws IOException {
+        if (item != null) {
+            writer.write("<m:");
+            writer.write(itemType);
+            writer.write("s>");
+            item.write(writer);
+            writer.write("</m:");
+            writer.write(itemType);
+            writer.write("s>");
         }
     }
 
@@ -176,6 +188,9 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(methodName);
             if (traversal != null) {
                 traversal.write(writer);
+            }
+            if (deleteType != null) {
+                deleteType.write(writer);
             }
             writer.write(">");
             writeSoapBody(writer);
@@ -196,6 +211,7 @@ public abstract class EWSMethod extends PostMethod {
         writeItemId(writer);
         writeParentFolderId(writer);
         writeFolderId(writer);
+        writeItem(writer);
     }
 
     /**
@@ -210,12 +226,36 @@ public abstract class EWSMethod extends PostMethod {
         return inputFactory;
     }
 
-    class Item extends HashMap<String, String> {
+    public static class Item extends HashMap<String, String> {
         public String type;
 
         @Override
         public String toString() {
             return "type: " + type + ' ' + super.toString();
+        }
+
+        /**
+         * Write XML content to writer.
+         *
+         * @param writer writer
+         * @throws IOException on error
+         */
+        public void write(Writer writer) throws IOException {
+            writer.write("<t:");
+            writer.write(type);
+            writer.write(">");
+            for (Map.Entry<String, String> mapEntry : this.entrySet()) {
+                writer.write("<t:");
+                writer.write(mapEntry.getKey());
+                writer.write(">");
+                writer.write(mapEntry.getValue());
+                writer.write("</t:");
+                writer.write(mapEntry.getKey());
+                writer.write(">");
+            }
+            writer.write("</t:");
+            writer.write(type);
+            writer.write(">");
         }
     }
 
@@ -252,12 +292,11 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void handleErrors(XMLStreamReader reader) throws XMLStreamException {
         String result = handleTag(reader, "ResponseCode");
-        if (result != null && !"NoError".equals(result)) {
+        if (errorDetail == null && result != null && !"NoError".equals(result)) {
             errorDetail = result;
         }
-        result = handleTag(reader, "faultstring");
-        if (result != null) {
-            errorDetail = result;
+        if (isStartTag(reader, "faultstring")) {
+            errorDetail = reader.getElementText();
         }
     }
 

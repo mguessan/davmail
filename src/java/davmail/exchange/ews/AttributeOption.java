@@ -18,16 +18,27 @@
  */
 package davmail.exchange.ews;
 
-/**
- * EWS Find Folder.
- */
-public class FindFolderMethod extends EWSMethod {
+import java.io.IOException;
+import java.io.Writer;
 
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
-        super("Folder", "FindFolder");
-        this.traversal = traversal;
-        this.baseShape = baseShape;
-        this.parentFolderId = parentFolderId;
+/**
+ * Generic attribute option.
+ */
+public abstract class AttributeOption extends Option {
+
+    protected AttributeOption(String name, String value) {
+        super(name, value);
     }
-   
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void write(Writer writer) throws IOException {
+        writer.write(" ");
+        writer.write(name);
+        writer.write("=\"");
+        writer.write(value);
+        writer.write("\"");
+    }
 }

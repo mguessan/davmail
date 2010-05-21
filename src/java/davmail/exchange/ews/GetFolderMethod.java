@@ -23,7 +23,7 @@ package davmail.exchange.ews;
  */
 public class GetFolderMethod extends EWSMethod {
 
-    public GetFolderMethod(BaseShapeType baseShape, FolderIdType folderId) {
+    public GetFolderMethod(BaseShape baseShape, FolderId folderId) {
         super("Folder", "GetFolder");
         this.baseShape = baseShape;
         this.folderId = folderId;

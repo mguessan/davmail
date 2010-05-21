@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * Item or folder base shape.
+ * MessageDisposition flag.
  */
-public final class BaseShapeType {
+public class MessageDisposition {
     private final String value;
 
-    private BaseShapeType(String value) {
+    private MessageDisposition(String value) {
         this.value = value;
     }
 
@@ -35,24 +35,15 @@ public final class BaseShapeType {
      * Write XML content to writer.
      *
      * @param writer writer
-     * @throws IOException on error
+     * @throws java.io.IOException on error
      */
     public void write(Writer writer) throws IOException {
-        writer.write("<t:BaseShape>");
+        writer.write(" MessageDisposition=\"");
         writer.write(value);
-        writer.write("</t:BaseShape>");
+        writer.write("\"");
     }
 
-    /**
-     * Return id only.
-     */
-    public static final BaseShapeType IdOnly = new BaseShapeType("IdOnly");
-    /**
-     * Return default properties.
-     */
-    public static final BaseShapeType Default = new BaseShapeType("Default");
-    /**
-     * Return all properties, except MAPI extended properties.
-     */
-    public static final BaseShapeType AllProperties = new BaseShapeType("AllProperties");
+    public static final MessageDisposition SaveOnly = new MessageDisposition("SaveOnly");
+    public static final MessageDisposition SendOnly = new MessageDisposition("SendOnly");
+    public static final MessageDisposition SendAndSaveCopy = new MessageDisposition("SendAndSaveCopy");
 }
