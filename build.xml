@@ -167,6 +167,7 @@
                 <include name="*.jar"/>
                 <!-- exclude swt jars from debian package -->
                 <exclude name="lib/swt*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
             <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
                 <include name="davmail"/>
@@ -191,6 +192,7 @@
                 <include name="*.jar"/>
                 <!-- exclude swt jars from package -->
                 <exclude name="lib/swt*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </zipfileset>
             <zipfileset dir="src/bin" prefix="usr/bin" filemode="755">
                 <include name="davmail"/>
@@ -248,6 +250,7 @@
                 <include name="davmail.sh"/>
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </fileset>
         </zip>
         <copy todir="dist/web">
@@ -262,6 +265,7 @@
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant*.jar"/>
                 <exclude name="swt*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </fileset>
         </copy>
         <jar destfile="dist/davmail-${release-name}.war">
@@ -279,6 +283,7 @@
                 <exclude name="lib/swt-*-gtk-linux-x86_64.jar"/>
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
                 <exclude name="lib/swt-*-win32-x86.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
         </tar>
         <tar tarfile="dist/davmail-linux-x86_64-${release-name}.tgz" compression="gzip">
@@ -293,6 +298,7 @@
                 <exclude name="lib/swt-*-gtk-linux-x86.jar"/>
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
                 <exclude name="lib/swt-*-win32-x86.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
         </tar>
         <antcall target="dist-nsis"/>
