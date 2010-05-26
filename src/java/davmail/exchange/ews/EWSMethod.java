@@ -58,6 +58,9 @@ public abstract class EWSMethod extends PostMethod {
     protected String errorDetail;
     protected Item item;
 
+    protected SearchExpression searchExpression;
+
+
     /**
      * Build EWS method
      */
@@ -118,6 +121,10 @@ public abstract class EWSMethod extends PostMethod {
         additionalProperties.add(additionalProperty);
     }
 
+    protected void setSearchExpression(SearchExpression searchExpression) {
+        this.searchExpression = searchExpression;
+    }
+
     protected void writeShape(Writer writer) throws IOException {
         if (baseShape != null) {
             writer.write("<m:");
@@ -158,9 +165,17 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeParentFolderId(Writer writer) throws IOException {
         if (parentFolderId != null) {
-            writer.write("<m:ParentFolderId");if (item == null) {writer.write("s");}writer.write(">");
+            writer.write("<m:ParentFolderId");
+            if (item == null) {
+                writer.write("s");
+            }
+            writer.write(">");
             parentFolderId.write(writer);
-            writer.write("</m:ParentFolderId");if (item == null) {writer.write("s");}writer.write(">");
+            writer.write("</m:ParentFolderId");
+            if (item == null) {
+                writer.write("s");
+            }
+            writer.write(">");
         }
     }
 
@@ -173,6 +188,14 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("</m:");
             writer.write(itemType);
             writer.write("s>");
+        }
+    }
+
+    protected void writeRestriction(Writer writer) throws IOException {
+        if (searchExpression != null) {
+            writer.write("<m:Restriction>");
+            searchExpression.write(writer);
+            writer.write("</m:Restriction>");
         }
     }
 
@@ -208,6 +231,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeSoapBody(Writer writer) throws IOException {
         writeShape(writer);
+        writeRestriction(writer);
         writeItemId(writer);
         writeParentFolderId(writer);
         writeFolderId(writer);
