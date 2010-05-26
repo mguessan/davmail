@@ -24,23 +24,10 @@ import java.io.Writer;
 /**
  * MessageDisposition flag.
  */
-public class MessageDisposition {
-    private final String value;
+public class MessageDisposition extends AttributeOption {
 
     private MessageDisposition(String value) {
-        this.value = value;
-    }
-
-    /**
-     * Write XML content to writer.
-     *
-     * @param writer writer
-     * @throws java.io.IOException on error
-     */
-    public void write(Writer writer) throws IOException {
-        writer.write(" MessageDisposition=\"");
-        writer.write(value);
-        writer.write("\"");
+        super("MessageDisposition", value);
     }
 
     public static final MessageDisposition SaveOnly = new MessageDisposition("SaveOnly");

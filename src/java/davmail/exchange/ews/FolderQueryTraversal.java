@@ -24,23 +24,10 @@ import java.io.Writer;
 /**
  * Folder folderQueryTraversalType search mode.
  */
-public final class FolderQueryTraversal {
-    private final String value;
+public final class FolderQueryTraversal extends AttributeOption {
 
     private FolderQueryTraversal(String value) {
-        this.value = value;
-    }
-
-    /**
-     * Write XML content to writer.
-     *
-     * @param writer writer
-     * @throws IOException on error
-     */
-    public void write(Writer writer) throws IOException {
-        writer.write(" Traversal=\"");
-        writer.write(value);
-        writer.write("\"");
+        super("Traversal", value);
     }
 
     /**

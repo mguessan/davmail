@@ -25,10 +25,16 @@ import java.io.Writer;
  * Extended MAPI property.
  */
 public class ExtendedFieldURI implements FieldURI {
-    protected final String propertyTag;
-    protected final String propertyType;
+    protected enum PropertyType {
+        ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
+        Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
+        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
+    }
 
-    public ExtendedFieldURI(String propertyTag, String propertyType) {
+    protected final String propertyTag;
+    protected final PropertyType propertyType;
+
+    public ExtendedFieldURI(String propertyTag, PropertyType propertyType) {
         this.propertyTag = propertyTag;
         this.propertyType = propertyType;
     }
@@ -37,18 +43,18 @@ public class ExtendedFieldURI implements FieldURI {
         writer.write("<t:ExtendedFieldURI PropertyTag=\"");
         writer.write(propertyTag);
         writer.write("\" PropertyType=\"");
-        writer.write(propertyType);
+        writer.write(propertyType.toString());
         writer.write("\"/>");
     }
 
-    public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI("0x0FF6", "Binary");
-    public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI("0x0E08", "Integer");
-    public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI("0x0E23", "Integer");
-    public static final ExtendedFieldURI JUNK_FLAG = new ExtendedFieldURI("0x1083", "Integer");
-    public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI("0x1090", "Integer");
-    public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI("0x0E07", "Integer");
-    public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI("0x1081", "Integer");
-    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10F3", "String");
+    public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI("0x0FF6", PropertyType.Binary);
+    public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI("0x0E08", PropertyType.Integer);
+    public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI("0x0E23", PropertyType.Integer);
+    public static final ExtendedFieldURI JUNK_FLAG = new ExtendedFieldURI("0x1083", PropertyType.Integer);
+    public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI("0x1090", PropertyType.Integer);
+    public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI("0x0E07", PropertyType.Integer);
+    public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI("0x1081", PropertyType.Integer);
+    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10F3", PropertyType.String);
 
 }
 
