@@ -99,7 +99,8 @@
                     to improve this in server (shared) mode.
                 </p>
                 <p>This is quite simple: you just need to get a server certificate in PKCS12 or JKS format and add it in
-                    the key store section in DavMail settings, see&#x20;<a href="gettingstarted.html">Getting started</a>.
+                    the key store section in DavMail settings, see&#x20;<a href="gettingstarted.html">Getting
+                        started</a>.
                     You need to choose the key store type in davmail.ssl.keystoreType: PKCS12 for .p12 file and JKS for
                     java generated key stores. Then set the full path to your certificate file in
                     davmail.ssl.keystoreFile
@@ -174,6 +175,17 @@
                 </p>
                 <p>New: a new setting is available in DavMail to delete messages immediately over IMAP:
                     <code>davmail.imapAutoExpunge=true</code>
+                </p>
+                <p>
+                    <strong>Sent messages encoding issue with Thunderbird</strong>
+                </p>
+                <p>If special characters appear replaced with ? in sent messages, set
+                    <code>mail.strictly_mime</code>
+                    advanced option.
+                    Go to Tools/Options/Advanced/General/Config Editor and look for a preference
+                    with name<code>mail.strictly_mime</code>, set value to
+                    <code>true</code>
+                    to send messages as quoted-printable.
                 </p>
             </subsection>
 
