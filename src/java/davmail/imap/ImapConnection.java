@@ -1436,6 +1436,8 @@ public class ImapConnection extends AbstractConnection {
                         endUid = startUid;
                         startUid = swap;
                     }
+                } else if ("*".equals(currentRange)){
+                    startUid = endUid = messages.get(messages.size()-1).getImapUid();
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
@@ -1517,6 +1519,8 @@ public class ImapConnection extends AbstractConnection {
                         endUid = startUid;
                         startUid = swap;
                     }
+                } else if ("*".equals(currentRange)){
+                    startUid = endUid = messages.size();
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
