@@ -18,6 +18,7 @@
  */
 package davmail.exchange;
 
+import davmail.exchange.dav.DavExchangeSession;
 import junit.framework.TestCase;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ public class AbstractExchangeSessionTestCase extends TestCase {
             // open session, get username and password from davmail.properties
             // Note: those properties should *not* exist in normal production mode,
             // they are not used by DavMail, just by this test case
-            session = new ExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
+            session = new DavExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
         }
     }
 

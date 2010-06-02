@@ -55,7 +55,6 @@ import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -65,7 +64,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Exchange session through Outlook Web Access (DAV)
  */
-public class ExchangeSession {
+public abstract class ExchangeSession {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
     /**
@@ -162,22 +161,22 @@ public class ExchangeSession {
     /**
      * Various standard mail boxes Urls
      */
-    private String inboxUrl;
-    private String deleteditemsUrl;
-    private String sentitemsUrl;
-    private String sendmsgUrl;
-    private String draftsUrl;
-    private String calendarUrl;
-    private String contactsUrl;
-    private String publicFolderUrl;
+    protected String inboxUrl;
+    protected String deleteditemsUrl;
+    protected String sentitemsUrl;
+    protected String sendmsgUrl;
+    protected String draftsUrl;
+    protected String calendarUrl;
+    protected String contactsUrl;
+    protected String publicFolderUrl;
 
     /**
      * Base user mailboxes path (used to select folder)
      */
-    private String mailPath;
-    private String email;
+    protected String mailPath;
+    protected String email;
     private String alias;
-    private final HttpClient httpClient;
+    protected final HttpClient httpClient;
 
     private final String userName;
 
@@ -236,10 +235,7 @@ public class ExchangeSession {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 
-            buildMailPath(method);
-
-            // get base http mailbox http urls
-            getWellKnownFolders();
+            buildSessionInfo(method);
 
         } catch (DavMailAuthenticationException exc) {
             LOGGER.error(exc.getMessage());
@@ -549,52 +545,7 @@ public class ExchangeSession {
         }
     }
 
-    static final String BASE_HREF = "<base href=\"";
-
-    protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
-        // find base url
-        String line;
-
-        // get user mail URL from html body (multi frame)
-        BufferedReader mainPageReader = null;
-        try {
-            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-            //noinspection StatementWithEmptyBody
-            while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) {
-            }
-            if (line != null) {
-                int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
-                int end = line.indexOf('\"', start);
-                String mailBoxBaseHref = line.substring(start, end);
-                URL baseURL = new URL(mailBoxBaseHref);
-                mailPath = baseURL.getPath();
-                LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail(method.getURI().getHost());
-                LOGGER.debug("Current user email is " + email);
-            } else {
-                // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(method.getURI().getHost());
-                mailPath = "/exchange/" + email + '/';
-                LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Error parsing main page at " + method.getPath(), e);
-        } finally {
-            if (mainPageReader != null) {
-                try {
-                    mainPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing main page at " + method.getPath());
-                }
-            }
-            method.releaseConnection();
-        }
-
-
-        if (mailPath == null || email == null) {
-            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
-        }
-    }
+    protected abstract void buildSessionInfo(HttpMethod method) throws DavMailException;
 
     protected String getPropertyIfExists(DavPropertySet properties, String name, Namespace namespace) {
         DavProperty property = properties.get(name, namespace);
@@ -647,67 +598,6 @@ public class ExchangeSession {
             return null;
         } else {
             return URIUtil.decode((String) property.getValue());
-        }
-    }
-
-    protected void getWellKnownFolders() throws DavMailException {
-        // Retrieve well known URLs
-        MultiStatusResponse[] responses;
-        try {
-            responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                    httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
-            if (responses.length == 0) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
-            }
-            DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
-            inboxUrl = getURIPropertyIfExists(properties, "inbox", URN_SCHEMAS_HTTPMAIL);
-            deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems", URN_SCHEMAS_HTTPMAIL);
-            sentitemsUrl = getURIPropertyIfExists(properties, "sentitems", URN_SCHEMAS_HTTPMAIL);
-            sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg", URN_SCHEMAS_HTTPMAIL);
-            draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
-            calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
-            contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
-
-            // default public folder path
-            publicFolderUrl = "/public";
-
-            // check public folder access
-            try {
-                if (inboxUrl != null) {
-                    // try to build full public URI from inboxUrl
-                    URI publicUri = new URI(inboxUrl, false);
-                    publicUri.setPath("/public");
-                    publicFolderUrl = publicUri.getURI();
-                }
-                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, CONTENT_TAG, 0);
-                try {
-                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                } catch (IOException e) {
-                    // workaround for NTLM authentication only on /public
-                    if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
-                        DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                    }
-                }
-                // update public folder URI
-                publicFolderUrl = propFindMethod.getURI().getURI();
-            } catch (IOException e) {
-                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-                publicFolderUrl = "/public";
-            }
-
-            LOGGER.debug("Inbox URL : " + inboxUrl +
-                    " Trash URL : " + deleteditemsUrl +
-                    " Sent URL : " + sentitemsUrl +
-                    " Send URL : " + sendmsgUrl +
-                    " Drafts URL : " + draftsUrl +
-                    " Calendar URL : " + calendarUrl +
-                    " Contacts URL : " + contactsUrl +
-                    " Public folder URL : " + publicFolderUrl
-            );
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-            throw new DavMailAuthenticationException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
     }
 
