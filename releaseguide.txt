@@ -6,7 +6,7 @@ Release guide :
 - generate site: mvn site
 - upload site: ant upload-site
 - create releasenotes.txt, upload to sourceforge, attach to files
-- create news message
+- create news message at https://sourceforge.net/news/admin/?group_id=184600
 - create tag in subversion
 - upload version.txt
 - send user mailing list message
