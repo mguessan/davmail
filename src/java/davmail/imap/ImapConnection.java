@@ -287,8 +287,12 @@ public class ImapConnection extends AbstractConnection {
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
                                             List<Long> uidList = handleSearch(tokens);
-                                            for (long uid : uidList) {
-                                                sendClient("* SEARCH " + uid);
+                                            if (uidList.isEmpty()) {
+                                                sendClient("* SEARCH");
+                                            } else {
+                                                for (long uid : uidList) {
+                                                    sendClient("* SEARCH " + uid);
+                                                }
                                             }
                                             sendClient(commandId + " OK SEARCH completed");
 
@@ -319,11 +323,15 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO no folder selected");
                                     } else {
                                         List<Long> uidList = handleSearch(tokens);
-                                        int currentIndex = 0;
-                                        for (ExchangeSession.Message message : currentFolder.messages) {
-                                            currentIndex++;
-                                            if (uidList.contains(message.getImapUid())) {
-                                                sendClient("* SEARCH " + currentIndex);
+                                        if (uidList.isEmpty()) {
+                                            sendClient("* SEARCH");
+                                        } else {
+                                            int currentIndex = 0;
+                                            for (ExchangeSession.Message message : currentFolder.messages) {
+                                                currentIndex++;
+                                                if (uidList.contains(message.getImapUid())) {
+                                                    sendClient("* SEARCH " + currentIndex);
+                                                }
                                             }
                                         }
                                         sendClient(commandId + " OK SEARCH completed");
