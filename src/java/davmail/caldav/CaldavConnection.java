@@ -226,6 +226,9 @@ public class CaldavConnection extends AbstractConnection {
                 // send back principal on search
             } else if (request.isReport() && request.isPathLength(3)) {
                 sendPrincipal(request, "users", session.getEmail());
+            // iCal current-user-principal request
+            } else if (request.isPropFind() && request.isPathLength(3)) {
+                sendPrincipalsFolder(request);
             } else {
                 sendUnsupported(request);
             }
@@ -693,6 +696,27 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
+     * Send principals folder.
+     *
+     * @param request Caldav request
+     * @throws IOException on error
+     */
+    public void sendPrincipalsFolder(CaldavRequest request) throws IOException {
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
+        response.startMultistatus();
+        response.startResponse(URIUtil.encodePath(request.getPath()));
+        response.startPropstat();
+
+        if (request.hasProperty("current-user-principal")) {
+            response.appendHrefProperty("D:current-user-principal", "/principals/users/" + session.getEmail());
+        }
+        response.endPropStatOK();
+        response.endResponse();
+        response.endMultistatus();
+        response.close();
+    }
+
+    /**
      * Send user response for request.
      *
      * @param request Caldav request
@@ -739,7 +763,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startPropstat();
 
         if (request.hasProperty("principal-collection-set")) {
-            response.appendHrefProperty("D:principal-collection-set", "/principals/users/" + session.getEmail());
+            response.appendHrefProperty("D:principal-collection-set", "/principals/users/");
         }
         if (request.hasProperty("displayname")) {
             response.appendProperty("D:displayname", "ROOT");
@@ -848,16 +872,16 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
-            response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + "/");
+            response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + '/');
         }
 
         if ("users".equals(prefix)) {
             if (request.hasProperty("schedule-inbox-URL")) {
-                response.appendHrefProperty("C:schedule-inbox-URL", "/users/" + actualPrincipal + "/inbox");
+                response.appendHrefProperty("C:schedule-inbox-URL", "/users/" + actualPrincipal + "/inbox/");
             }
 
             if (request.hasProperty("schedule-outbox-URL")) {
-                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + actualPrincipal + "/outbox");
+                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + actualPrincipal + "/outbox/");
             }
         } else {
             // public calendar, send root href as inbox url (always empty) for Lightning
@@ -866,7 +890,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             // send user outbox
             if (request.hasProperty("schedule-outbox-URL")) {
-                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + session.getEmail() + "/outbox");
+                response.appendHrefProperty("C:schedule-outbox-URL", "/users/" + session.getEmail() + "/outbox/");
             }
         }
 
