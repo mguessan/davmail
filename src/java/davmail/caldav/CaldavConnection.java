@@ -399,8 +399,8 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("resourcetype")) {
             if (folder.isContact()) {
-                response.appendProperty("D:resourcetype", "CD=\"urn:ietf:params:xml:ns:carddav\"", "<D:collection/>" +
-                        "<CD:addressbook/>");
+                response.appendProperty("D:resourcetype", "<D:collection/>" +
+                        "<E:addressbook/>");
             } else if (folder.isCalendar()) {
                 response.appendProperty("D:resourcetype", "<D:collection/>" + "<C:calendar/>");
             } else {
@@ -719,6 +719,7 @@ public class CaldavConnection extends AbstractConnection {
             appendInbox(response, request, "inbox");
             appendOutbox(response, request, "outbox");
             appendFolder(response, request, "calendar");
+            appendFolder(response, request, "contacts");
         }
         response.endResponse();
         response.endMultistatus();
@@ -1398,28 +1399,7 @@ public class CaldavConnection extends AbstractConnection {
          * @throws IOException on error
          */
         public String getExchangeFolderPath() throws IOException {
-            int endIndex;
-            if (isFolder()) {
-                endIndex = getPathLength();
-            } else {
-                endIndex = getPathLength() - 1;
-            }
-            if ("users".equals(getPathElement(1))) {
-                StringBuilder calendarPath = new StringBuilder();
-                calendarPath.append(getPathElement(3));
-                for (int i = 4; i < endIndex; i++) {
-                    calendarPath.append('/').append(getPathElement(i));
-                }
-                return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
-            } else {
-                StringBuilder calendarPath = new StringBuilder();
-                for (int i = 0; i < endIndex; i++) {
-                    if (getPathElement(i).length() > 0) {
-                        calendarPath.append('/').append(getPathElement(i));
-                    }
-                }
-                return calendarPath.toString();
-            }
+            return getExchangeFolderPath(null);
         }
 
         /**
@@ -1430,10 +1410,38 @@ public class CaldavConnection extends AbstractConnection {
          * @throws IOException on error
          */
         public String getExchangeFolderPath(String subFolder) throws IOException {
-            if (subFolder == null || subFolder.length() == 0) {
-                return getExchangeFolderPath();
+            int endIndex;
+            if (isFolder()) {
+                endIndex = getPathLength();
             } else {
-                return getExchangeFolderPath() + '/' + subFolder;
+                endIndex = getPathLength() - 1;
+            }
+            if ("users".equals(getPathElement(1))) {
+                StringBuilder calendarPath = new StringBuilder();
+                if (getPathLength() > 3) {
+                    calendarPath.append(getPathElement(3));
+                }
+                for (int i = 4; i < endIndex; i++) {
+                    calendarPath.append('/').append(getPathElement(i));
+                }
+                if (subFolder != null && subFolder.length() > 0) {
+                    if (calendarPath.length() > 0) {
+                        calendarPath.append('/');
+                    }
+                    calendarPath.append(subFolder);
+                }
+                return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
+            } else {
+                StringBuilder calendarPath = new StringBuilder();
+                for (int i = 0; i < endIndex; i++) {
+                    if (getPathElement(i).length() > 0) {
+                        calendarPath.append('/').append(getPathElement(i));
+                    }
+                }
+                if (subFolder != null && subFolder.length() > 0) {
+                    calendarPath.append('/').append(subFolder);
+                }
+                return calendarPath.toString();
             }
         }
     }

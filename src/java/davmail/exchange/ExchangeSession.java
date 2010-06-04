@@ -1040,6 +1040,8 @@ public abstract class ExchangeSession {
             folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
         } else if (folderName.startsWith("calendar")) {
             folderPath = folderName.replaceFirst("calendar", calendarUrl);
+        } else if (folderName.startsWith("contacts")) {
+            folderPath = folderName.replaceFirst("contacts", contactsUrl);
         } else if (folderName.startsWith("public")) {
             folderPath = publicFolderUrl + folderName.substring("public".length());
             // absolute folder path
@@ -3260,9 +3262,16 @@ public abstract class ExchangeSession {
             buffer.append(mailPath);
         }
 
-        if (folderName != null && folderName.startsWith("calendar")) {
-            // replace 'calendar' folder name with i18n name
-            buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
+        if (folderName != null && (folderName.startsWith("calendar") || folderName.startsWith("contacts")
+                // OSX address book name
+                || folderName.startsWith("addressbook"))) {
+            if (folderName.startsWith("calendar")) {
+                // replace 'calendar' folder name with i18n name
+                buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
+            } else {
+                // replace 'contacts' folder name with i18n name
+                buffer.append(contactsUrl.substring(contactsUrl.lastIndexOf('/') + 1));
+            }
 
             // sub calendar folder => append sub folder name
             int index = folderName.indexOf('/');
