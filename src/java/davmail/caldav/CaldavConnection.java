@@ -212,6 +212,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         } else if (request.isPath(1, "public")) {
             handleFolder(request);
+        } else if (request.isPath(1, "directory")) {
+            sendDirectory(request);
         } else {
             sendUnsupported(request);
         }
@@ -357,6 +359,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("calendar-data") && item instanceof ExchangeSession.Event) {
             response.appendCalendarData(item.getBody());
         }
+        if (request.hasProperty("address-data") && item instanceof ExchangeSession.Contact) {
+            response.appendContactData(item.getBody());
+        }
         if (request.hasProperty("getcontenttype")) {
             if (item instanceof ExchangeSession.Event) {
                 response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
@@ -436,6 +441,10 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("supported-calendar-component-set") && folder.isCalendar()) {
             response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/><C:comp name=\"VTODO\"/>");
+        }
+
+        if (request.hasProperty("current-user-privilege-set")) {
+            response.appendProperty("D:current-user-privilege-set", "<D:privilege><D:read/><D:write/></D:privilege>");
         }
 
         response.endPropStatOK();
@@ -668,6 +677,7 @@ public class CaldavConnection extends AbstractConnection {
             events = session.getEventMessages(request.getExchangeFolderPath());
             appendEventsResponses(response, request, events);
         } else {
+            // TODO: handle contacts ?
             events = session.getAllEvents(request.getExchangeFolderPath());
             appendEventsResponses(response, request, events);
         }
@@ -736,6 +746,9 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype", "<D:collection/>");
         }
+        if (request.hasProperty("current-user-principal")) {
+            response.appendHrefProperty("D:current-user-principal", "/principals/users/" + session.getEmail());
+        }
         response.endPropStatOK();
         response.endResponse();
         if (request.depth == 1) {
@@ -782,6 +795,26 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
+     * Send caldav response for /directory/ request.
+     *
+     * @param request Caldav request
+     * @throws IOException on error
+     */
+    public void sendDirectory(CaldavRequest request) throws IOException {
+        CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
+        response.startMultistatus();
+        response.startResponse("/directory/");
+        response.startPropstat();
+        if (request.hasProperty("current-user-privilege-set")) {
+            response.appendProperty("D:current-user-privilege-set", "<D:privilege><D:read/></D:privilege>");
+        }
+        response.endPropStatOK();
+        response.endResponse();
+        response.endMultistatus();
+        response.close();
+    }
+
+    /**
      * Send Caldav principal response.
      *
      * @param request   Caldav request
@@ -811,6 +844,10 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("calendar-user-address-set") && "users".equals(prefix)) {
             response.appendHrefProperty("C:calendar-user-address-set", "mailto:" + actualPrincipal);
+        }
+
+        if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
+            response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + "/");
         }
 
         if ("users".equals(prefix)) {
@@ -1300,7 +1337,8 @@ public class CaldavConnection extends AbstractConnection {
                         currentElement = streamReader.getLocalName();
                         if ("prop".equals(currentElement)) {
                             inProperties = true;
-                        } else if ("calendar-multiget".equals(currentElement)) {
+                        } else if ("calendar-multiget".equals(currentElement)
+                                || "addressbook-multiget".equals(currentElement)) {
                             isMultiGet = true;
                         } else if (inProperties) {
                             properties.add(currentElement);
@@ -1455,7 +1493,7 @@ public class CaldavConnection extends AbstractConnection {
 
 
         public void startMultistatus() throws IOException {
-            writer.write("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">");
+            writer.write("<D:multistatus xmlns:D=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:E=\"urn:ietf:params:xml:ns:carddav\">");
         }
 
         public void startResponse(String href) throws IOException {
@@ -1478,6 +1516,15 @@ public class CaldavConnection extends AbstractConnection {
                 writer.write("</C:calendar-data>");
             }
         }
+
+        public void appendContactData(String vcard) throws IOException {
+            if (vcard != null && vcard.length() > 0) {
+                writer.write("<E:address-data>");
+                writer.write(StringUtil.xmlEncode(vcard));
+                writer.write("</E:address-data>");
+            }
+        }
+
 
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
             appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(StringUtil.xmlEncode(propertyValue)) + "</D:href>");
