@@ -2358,6 +2358,18 @@ public abstract class ExchangeSession {
                     if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
                         line = fixTimezoneId(line, validTimezoneId);
                     }
+                    if (fromServer && line.startsWith("PRODID:") && eventClass != null) {
+                        result.writeLine(line);
+                        // set global calendarserver access for iCal 4
+                        if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
+                        } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
+                        } else if (eventClass != null) {
+                            result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
+                        }
+                        continue;
+                    }
                     if (!fromServer && "BEGIN:VEVENT".equals(line) && !hasTimezone) {
                         result.write(ExchangeSession.this.getVTimezone().timezoneBody);
                         hasTimezone = true;
@@ -2375,6 +2387,15 @@ public abstract class ExchangeSession {
                         if (organizer == null) {
                             result.writeLine("ORGANIZER:MAILTO:" + email);
                         }
+                        if (isAppleiCal) {
+                            if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("CLASS:PRIVATE");
+                            } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
+                                result.writeLine("CLASS:CONFIDENTIAL");
+                            } else {
+                                result.writeLine("CLASS:" + eventClass);
+                            }
+                        }
                     } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
                         line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
                     } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
@@ -2391,18 +2412,9 @@ public abstract class ExchangeSession {
                         line = "TZID:" + validTimezoneId;
                     } else if ("BEGIN:VEVENT".equals(line)) {
                         currentAllDayState = allDayStates.get(count++);
+                    // remove calendarserver access
                     } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
-                        if (!isAppleiCal) {
-                            continue;
-                        } else {
-                            if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("CLASS:PRIVATE");
-                            } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("CLASS:CONFIDENTIAL");
-                            } else {
-                                result.writeLine("CLASS:" + eventClass);
-                            }
-                        }
+                        continue;
                     } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {
                         // Apple iCal doesn't support EXDATE with multiple exceptions
                         // on one line.  Split into multiple EXDATE entries (which is
@@ -2459,9 +2471,10 @@ public abstract class ExchangeSession {
                         // Don't recognize this type of action: pass it through
 
                     } else if (line.startsWith("CLASS:")) {
-                        if (isAppleiCal) {
+                        if (!fromServer && isAppleiCal) {
                             continue;
                         } else {
+                            // still set calendarserver access inside event for iCal 3
                             if ("PRIVATE".equalsIgnoreCase(eventClass)) {
                                 result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
                             } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
