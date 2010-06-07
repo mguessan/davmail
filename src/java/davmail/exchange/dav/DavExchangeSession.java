@@ -170,7 +170,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected class MultiCondition extends ExchangeSession.MultiCondition {
+    protected static class MultiCondition extends ExchangeSession.MultiCondition {
         protected MultiCondition(Operator operator, Condition... condition) {
             super(operator, condition);
         }
@@ -191,6 +191,20 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected static class NotCondition extends ExchangeSession.NotCondition {
+        protected NotCondition(Condition condition) {
+            super(condition);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            boolean first = true;
+            buffer.append("( Not ");
+            condition.appendTo(buffer);
+            buffer.append(')');
+        }
+    }
+
     static final Map<String, String> attributeMap = new HashMap<String, String>();
 
     static {
@@ -204,7 +218,7 @@ public class DavExchangeSession extends ExchangeSession {
         operatorMap.put(Operator.IsEqualTo, "=");
     }
 
-    protected class AttributeCondition extends ExchangeSession.AttributeCondition {
+    protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
         }
@@ -225,6 +239,11 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected Condition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
+    }
+
+    @Override
+    protected Condition not(Condition condition) {
+        return new NotCondition(condition);
     }
 
     @Override

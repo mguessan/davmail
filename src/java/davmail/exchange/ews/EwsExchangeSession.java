@@ -68,7 +68,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    protected class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {
+    protected static class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {
         protected MultiCondition(Operator operator, Condition... condition) {
             super(operator, condition);
         }
@@ -85,13 +85,28 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
+    protected static class NotCondition extends ExchangeSession.NotCondition implements SearchExpression {
+        protected NotCondition(Condition condition) {
+            super(condition);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("<t:Not>");
+
+            condition.appendTo(buffer);
+
+            buffer.append("</t:Not>");
+        }
+    }
+
     static final Map<String, FieldURI> attributeMap = new HashMap<String, FieldURI>();
 
     static {
         attributeMap.put("folderclass", ExtendedFieldURI.PR_CONTAINER_CLASS);
     }
 
-    protected class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
+    protected static class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
         }
@@ -120,6 +135,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    protected Condition not(Condition condition) {
+        return new NotCondition(condition);
+    }
+
+    @Override
     protected AttributeCondition equals(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
@@ -127,6 +147,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item.get("FolderId"));
+        folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getPropertyTag());
         folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
         // TODO: implement ctag
         folder.ctag = String.valueOf(System.currentTimeMillis());
@@ -142,7 +163,6 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
-
         List<ExchangeSession.Folder> folders = new ArrayList<ExchangeSession.Folder>();
         appendSubFolders(folders, folderPath, getFolderId(folderPath), condition, recursive);
         return folders;
@@ -155,6 +175,7 @@ public class EwsExchangeSession extends ExchangeSession {
         findFolderMethod.setSearchExpression((SearchExpression) condition);
         findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
         findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
+        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_CONTAINER_CLASS);
         try {
             httpClient.executeMethod(findFolderMethod);
         } finally {
@@ -198,10 +219,18 @@ public class EwsExchangeSession extends ExchangeSession {
         return folder;
     }
 
+    protected static final String PUBLIC_ROOT = "/public";
 
     private FolderId getFolderId(String folderPath) throws IOException {
-        FolderId currentFolderId = DistinguishedFolderId.MSGFOLDERROOT;
-        String[] folderNames = folderPath.split("/");
+        String[] folderNames;
+        FolderId currentFolderId;
+        if (folderPath.startsWith("/public")) {
+            currentFolderId  = DistinguishedFolderId.PUBLICFOLDERSROOT;
+            folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
+        } else {
+            currentFolderId  = DistinguishedFolderId.MSGFOLDERROOT;
+           folderNames = folderPath.split("/");
+        }
         for (String folderName : folderNames) {
             if ("INBOX".equals(folderName)) {
                 currentFolderId = DistinguishedFolderId.INBOX;

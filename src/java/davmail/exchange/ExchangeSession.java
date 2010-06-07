@@ -821,7 +821,7 @@ public abstract class ExchangeSession {
         public abstract void appendTo(StringBuilder buffer);
     }
 
-    protected abstract class AttributeCondition extends Condition {
+    protected abstract static class AttributeCondition extends Condition {
         protected String attributeName;
         protected Operator operator;
         protected String value;
@@ -833,13 +833,21 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected abstract class MultiCondition extends Condition {
+    protected abstract static class MultiCondition extends Condition {
         protected Operator operator;
         protected Condition[] conditions;
 
-        protected MultiCondition(Operator operator, Condition... condition) {
+        protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
-            conditions = condition;
+            this.conditions = conditions;
+        }
+    }
+
+    protected abstract static class NotCondition extends Condition {
+        protected Condition condition;
+
+        protected NotCondition(Condition condition) {
+            this.condition = condition;
         }
     }
 
@@ -847,10 +855,13 @@ public abstract class ExchangeSession {
 
     protected abstract Condition or(Condition... condition);
 
+    protected abstract Condition not(Condition condition);
+
     protected abstract AttributeCondition equals(String attributeName, String value);
 
     /**
-     * Search folders under given folder.
+     * Search mail and generic folders under given folder.
+     * Exclude calendar and contacts folders
      *
      * @param folderName Exchange folder name
      * @param recursive  deep search if true
@@ -858,8 +869,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        // "(\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')"
-        return getSubFolders(folderName, equals("folderclass", "IPF.Note"), recursive);
+        return getSubFolders(folderName, or(equals("folderclass", "IPF.Note"), equals("folderclass", "IPF")), recursive);
     }
 
     /**
@@ -871,7 +881,6 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
-        // "\"DAV:contentclass\"='urn:content-classes:calendarfolder'"
         return getSubFolders(folderName, equals("folderclass", "IPF.Appointment"), recursive);
     }
 

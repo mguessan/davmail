@@ -210,6 +210,9 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
                     "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" " +
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
+                    "<soap:Header>" +
+                    "<t:RequestServerVersion Version=\"Exchange2007_SP1\"/>" +
+                    "</soap:Header>"+
                     "<soap:Body>");
             writer.write("<m:");
             writer.write(methodName);
