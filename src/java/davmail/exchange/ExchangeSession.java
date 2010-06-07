@@ -846,67 +846,7 @@ public abstract class ExchangeSession {
      * @return list of folders
      * @throws IOException on error
      */
-    public List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException {
-        String mode = recursive ? "DEEP" : "SHALLOW";
-        List<Folder> folders = new ArrayList<Folder>();
-        StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\", \"DAV:hassubs\"," +
-                "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderName)).append("\"')\n" +
-                " WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n");
-        if (filter != null && filter.length() > 0) {
-            searchRequest.append("                      AND ").append(filter);
-        }
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest.toString());
-
-        for (MultiStatusResponse response : responses) {
-            folders.add(buildFolder(response));
-        }
-        return folders;
-    }
-
-    protected Folder buildFolder(MultiStatusResponse entity) throws IOException {
-        String href = URIUtil.decode(entity.getHref());
-        Folder folder = new Folder();
-        DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
-        folder.contentClass = getPropertyIfExists(properties, "contentclass", DAV);
-        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", DAV));
-        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", DAV));
-        folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
-        folder.ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-        folder.etag = getPropertyIfExists(properties, "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-
-        // replace well known folder names
-        if (href.startsWith(inboxUrl)) {
-            folder.folderPath = href.replaceFirst(inboxUrl, "INBOX");
-        } else if (href.startsWith(sentitemsUrl)) {
-            folder.folderPath = href.replaceFirst(sentitemsUrl, "Sent");
-        } else if (href.startsWith(draftsUrl)) {
-            folder.folderPath = href.replaceFirst(draftsUrl, "Drafts");
-        } else if (href.startsWith(deleteditemsUrl)) {
-            folder.folderPath = href.replaceFirst(deleteditemsUrl, "Trash");
-        } else {
-            int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
-            if (index >= 0) {
-                if (index + mailPath.length() > href.length()) {
-                    folder.folderPath = "";
-                } else {
-                    folder.folderPath = href.substring(index + mailPath.length());
-                }
-            } else {
-                try {
-                    URI folderURI = new URI(href, false);
-                    folder.folderPath = folderURI.getPath();
-                } catch (URIException e) {
-                    throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
-                }
-            }
-        }
-        if (folder.folderPath.endsWith("/")) {
-            folder.folderPath = folder.folderPath.substring(0, folder.folderPath.length() - 1);
-        }
-        return folder;
-    }
+    public abstract List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException;
 
     /**
      * Delete oldest messages in trash.
@@ -1062,16 +1002,7 @@ public abstract class ExchangeSession {
      * @return Folder object
      * @throws IOException on error
      */
-    public Folder getFolder(String folderName) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderName)), 0, FOLDER_PROPERTIES);
-        Folder folder = null;
-        if (responses.length > 0) {
-            folder = buildFolder(responses[0]);
-            folder.folderName = folderName;
-        }
-        return folder;
-    }
+    public abstract Folder getFolder(String folderName) throws IOException;
 
     /**
      * Check folder ctag and reload messages as needed.
@@ -2412,7 +2343,7 @@ public abstract class ExchangeSession {
                         line = "TZID:" + validTimezoneId;
                     } else if ("BEGIN:VEVENT".equals(line)) {
                         currentAllDayState = allDayStates.get(count++);
-                    // remove calendarserver access
+                        // remove calendarserver access
                     } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
                         continue;
                     } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {

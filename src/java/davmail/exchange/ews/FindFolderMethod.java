@@ -23,11 +23,31 @@ package davmail.exchange.ews;
  */
 public class FindFolderMethod extends EWSMethod {
 
+    /**
+     * Find Exchange Folder.
+     *
+     * @param traversal      traversal type
+     * @param baseShape      base shape
+     * @param parentFolderId parent folder id
+     */
     public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
         super("Folder", "FindFolder");
         this.traversal = traversal;
         this.baseShape = baseShape;
         this.parentFolderId = parentFolderId;
     }
-   
+
+    /**
+     * Find Exchange Folder.
+     *
+     * @param traversal        traversal type
+     * @param baseShape        base shape
+     * @param parentFolderId   parent folder id
+     * @param searchExpression search expression
+     */
+    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId,
+                            SearchExpression searchExpression) {
+        this(traversal, baseShape, parentFolderId);
+        this.searchExpression = searchExpression;
+    }
 }
