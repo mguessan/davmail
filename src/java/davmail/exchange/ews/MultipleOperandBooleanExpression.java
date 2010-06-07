@@ -22,14 +22,32 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * EWS Search Expression.
+ * Boolean search expression
  */
-public interface SearchExpression {
-    /**
-     * Write XML content to writer.
-     *
-     * @param writer writer
-     * @throws IOException on error
-     */
-    public void write(Writer writer) throws IOException;
+public class MultipleOperandBooleanExpression implements SearchExpression {
+    public enum Operator {
+        And, Or, Not
+    }
+
+    private SearchExpression[] searchExpressions;
+    private Operator operator;
+
+    public MultipleOperandBooleanExpression(Operator operator, SearchExpression... searchExpressions) {
+        this.searchExpressions = searchExpressions;
+        this.operator = operator;
+    }
+
+    public void write(Writer writer) throws IOException {
+        writer.write("<t:");
+        writer.write(operator.toString());
+        writer.write(">");
+
+        for (SearchExpression searchExpression : searchExpressions) {
+            searchExpression.write(writer);
+        }
+
+        writer.write("</t:");
+        writer.write(operator.toString());
+        writer.write(">");
+    }
 }

@@ -24,7 +24,7 @@ import java.io.Writer;
 /**
  * Two operand expression.
  */
-public class TwoOperandExpression extends SearchExpression {
+public class TwoOperandExpression implements SearchExpression {
     protected enum Operator {
         IsEqualTo, IsNotEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsLessThanOrEqualTo
     }
@@ -46,7 +46,6 @@ public class TwoOperandExpression extends SearchExpression {
         this.value = value;
     }
 
-    @Override
     public void write(Writer writer) throws IOException {
         writer.write("<t:");
         writer.write(operator.toString());
