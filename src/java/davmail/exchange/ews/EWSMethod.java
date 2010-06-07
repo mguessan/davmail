@@ -133,9 +133,11 @@ public abstract class EWSMethod extends PostMethod {
             baseShape.write(writer);
             if (additionalProperties != null) {
                 writer.write("<t:AdditionalProperties>");
+                StringBuilder buffer = new StringBuilder();
                 for (FieldURI fieldURI : additionalProperties) {
-                    fieldURI.write(writer);
+                    fieldURI.appendTo(buffer);
                 }
+                writer.write(buffer.toString());
                 writer.write("</t:AdditionalProperties>");
             }
             if (includeMimeContent) {
@@ -194,7 +196,9 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeRestriction(Writer writer) throws IOException {
         if (searchExpression != null) {
             writer.write("<m:Restriction>");
-            searchExpression.write(writer);
+            StringBuilder buffer = new StringBuilder();
+            searchExpression.appendTo(buffer);
+            writer.write(buffer.toString());
             writer.write("</m:Restriction>");
         }
     }
@@ -280,6 +284,15 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("</t:");
             writer.write(type);
             writer.write(">");
+        }
+
+        public int getInt(String key) {
+            int result = 0;
+            String value = get(key);
+            if (value != null && value.length() > 0) {
+                result = Integer.parseInt(value);
+            }
+            return result;
         }
     }
 

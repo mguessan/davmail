@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import davmail.util.StringUtil;
+
 import java.io.IOException;
 import java.io.Writer;
 
@@ -46,19 +48,15 @@ public class TwoOperandExpression implements SearchExpression {
         this.value = value;
     }
 
-    public void write(Writer writer) throws IOException {
-        writer.write("<t:");
-        writer.write(operator.toString());
-        writer.write(">");
-        fieldURI.write(writer);
+    public void appendTo(StringBuilder buffer) {
+        buffer.append("<t:").append(operator.toString()).append('>');
+        fieldURI.appendTo(buffer);
 
-        writer.write("<t:FieldURIOrConstant><t:Constant Value=\"");
-        writer.write(value);
-        writer.write("\"/></t:FieldURIOrConstant>");
+        buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
+        buffer.append(StringUtil.xmlEncode(value));
+        buffer.append("\"/></t:FieldURIOrConstant>");
 
-        writer.write("</t:");
-        writer.write(operator.toString());
-        writer.write(">");
+        buffer.append("</t:").append(operator.toString()).append('>');
     }
 
 }

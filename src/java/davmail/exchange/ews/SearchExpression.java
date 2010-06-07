@@ -25,11 +25,5 @@ import java.io.Writer;
  * EWS Search Expression.
  */
 public interface SearchExpression {
-    /**
-     * Write XML content to writer.
-     *
-     * @param writer writer
-     * @throws IOException on error
-     */
-    public void write(Writer writer) throws IOException;
+     public void appendTo(StringBuilder buffer);
 }

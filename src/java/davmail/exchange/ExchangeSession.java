@@ -813,6 +813,42 @@ public abstract class ExchangeSession {
         return messages;
     }
 
+    protected enum Operator {
+        Or, And, Not, IsEqualTo
+    }
+
+    protected abstract static class Condition {
+        public abstract void appendTo(StringBuilder buffer);
+    }
+
+    protected abstract class AttributeCondition extends Condition {
+        protected String attributeName;
+        protected Operator operator;
+        protected String value;
+
+        protected AttributeCondition(String attributeName, Operator operator, String value) {
+            this.attributeName = attributeName;
+            this.operator = operator;
+            this.value = value;
+        }
+    }
+
+    protected abstract class MultiCondition extends Condition {
+        protected Operator operator;
+        protected Condition[] conditions;
+
+        protected MultiCondition(Operator operator, Condition... condition) {
+            this.operator = operator;
+            conditions = condition;
+        }
+    }
+
+    protected abstract Condition and(Condition... condition);
+
+    protected abstract Condition or(Condition... condition);
+
+    protected abstract AttributeCondition equals(String attributeName, String value);
+
     /**
      * Search folders under given folder.
      *
@@ -822,7 +858,8 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        return getSubFolders(folderName, "(\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')", recursive);
+        // "(\"DAV:contentclass\"='urn:content-classes:mailfolder' OR \"DAV:contentclass\"='urn:content-classes:folder')"
+        return getSubFolders(folderName, equals("folderclass", "IPF.Note"), recursive);
     }
 
     /**
@@ -834,19 +871,20 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
-        return getSubFolders(folderName, "\"DAV:contentclass\"='urn:content-classes:calendarfolder'", recursive);
+        // "\"DAV:contentclass\"='urn:content-classes:calendarfolder'"
+        return getSubFolders(folderName, equals("folderclass", "IPF.Appointment"), recursive);
     }
 
     /**
      * Search folders under given folder matching filter.
      *
      * @param folderName Exchange folder name
-     * @param filter     search filter
+     * @param condition  search filter
      * @param recursive  deep search if true
      * @return list of folders
      * @throws IOException on error
      */
-    public abstract List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException;
+    public abstract List<Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException;
 
     /**
      * Delete oldest messages in trash.
@@ -1159,9 +1197,9 @@ public abstract class ExchangeSession {
         public String folderPath;
 
         /**
-         * Folder content class.
+         * Folder class (PR_CONTAINER_CLASS).
          */
-        public String contentClass;
+        public String folderClass;
         /**
          * Folder unread message count.
          */
@@ -1305,7 +1343,7 @@ public abstract class ExchangeSession {
          * @return true if this is a calendar folder
          */
         public boolean isCalendar() {
-            return "urn:content-classes:calendarfolder".equals(contentClass);
+            return "IPF.Appointment".equals(folderClass);
         }
 
         /**
@@ -1314,7 +1352,7 @@ public abstract class ExchangeSession {
          * @return true if this is a calendar folder
          */
         public boolean isContact() {
-            return "urn:content-classes:contactfolder".equals(contentClass);
+            return "IPF.Contact".equals(folderClass);
         }
 
         /**

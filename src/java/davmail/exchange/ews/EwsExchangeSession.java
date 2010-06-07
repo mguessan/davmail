@@ -18,12 +18,20 @@
  */
 package davmail.exchange.ews;
 
+import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
+import davmail.http.DavGatewayHttpClientFacade;
+import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.HeadMethod;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * EWS Exchange adapter.
@@ -31,7 +39,7 @@ import java.util.List;
  */
 public class EwsExchangeSession extends ExchangeSession {
 
-    protected class EwsFolder extends Folder {
+    protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
     }
 
@@ -45,39 +53,147 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
         // nothing to do, mailPath not used in EWS mode
+        // check EWS access
+        HttpMethod headMethod = new HeadMethod("/ews/services.wsdl");
+        try {
+            headMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, headMethod);
+            if (headMethod.getStatusCode() != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(headMethod);
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+        } finally {
+            headMethod.releaseConnection();
+        }
+    }
+
+    protected class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {
+        protected MultiCondition(Operator operator, Condition... condition) {
+            super(operator, condition);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("<t:").append(operator.toString()).append('>');
+
+            for (Condition condition : conditions) {
+                condition.appendTo(buffer);
+            }
+
+            buffer.append("</t:").append(operator.toString()).append('>');
+        }
+    }
+
+    static final Map<String, FieldURI> attributeMap = new HashMap<String, FieldURI>();
+
+    static {
+        attributeMap.put("folderclass", ExtendedFieldURI.PR_CONTAINER_CLASS);
+    }
+
+    protected class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
+        protected AttributeCondition(String attributeName, Operator operator, String value) {
+            super(attributeName, operator, value);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("<t:").append(operator.toString()).append('>');
+            attributeMap.get(attributeName).appendTo(buffer);
+
+            buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("\"/></t:FieldURIOrConstant>");
+
+            buffer.append("</t:").append(operator.toString()).append('>');
+        }
+    }
+
+    @Override
+    protected Condition and(Condition... condition) {
+        return new MultiCondition(Operator.And, condition);
+    }
+
+    @Override
+    protected Condition or(Condition... condition) {
+        return new MultiCondition(Operator.Or, condition);
+    }
+
+    @Override
+    protected AttributeCondition equals(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
+    }
+
+    protected Folder buildFolder(EWSMethod.Item item) {
+        Folder folder = new Folder();
+        folder.folderId = new FolderId(item.get("FolderId"));
+        folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
+        // TODO: implement ctag
+        folder.ctag = String.valueOf(System.currentTimeMillis());
+        // TODO: implement contentClass, noInferiors
+        folder.unreadCount = item.getInt("UnreadCount");
+        folder.hasChildren = item.getInt("ChildFolderCount") != 0;
+        // noInferiors not implemented
+        return folder;
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException {
-        // TODO
-        throw new UnsupportedOperationException();
+    public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
+
+        List<ExchangeSession.Folder> folders = new ArrayList<ExchangeSession.Folder>();
+        appendSubFolders(folders, folderPath, getFolderId(folderPath), condition, recursive);
+        return folders;
+    }
+
+    protected void appendSubFolders(List<ExchangeSession.Folder> folders,
+                                    String parentFolderPath, FolderId parentFolderId,
+                                    Condition condition, boolean recursive) throws IOException {
+        FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW, BaseShape.ALL_PROPERTIES, parentFolderId);
+        findFolderMethod.setSearchExpression((SearchExpression) condition);
+        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
+        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
+        try {
+            httpClient.executeMethod(findFolderMethod);
+        } finally {
+            findFolderMethod.releaseConnection();
+        }
+        for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
+            Folder folder = buildFolder(item);
+            if (parentFolderPath.length() > 0) {
+                folder.folderPath = parentFolderPath + '/' + item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
+            } else {
+                folder.folderPath = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
+            }
+            folders.add(folder);
+            if (recursive && folder.hasChildren) {
+                appendSubFolders(folders, folder.folderPath, folder.folderId, condition, recursive);
+            }
+        }
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public Folder getFolder(String folderPath) throws IOException {
+    public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ALL_PROPERTIES, getFolderId(folderPath));
         getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
         getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
         //getFolderMethod.addAdditionalProperty(new ExtendedFieldURI("0x65E2", ExtendedFieldURI.PropertyType.Binary));
         //getFolderMethod.addAdditionalProperty(new ExtendedFieldURI("00062040-0000-0000-C000-000000000046", 0x8A23, ExtendedFieldURI.PropertyType.SystemTime));
-
-        httpClient.executeMethod(getFolderMethod);
+        try {
+            httpClient.executeMethod(getFolderMethod);
+        } finally {
+            getFolderMethod.releaseConnection();
+        }
         EWSMethod.Item item = getFolderMethod.getResponseItem();
-        EwsFolder folder = null;
+        Folder folder = null;
         if (item != null) {
-            folder = new EwsFolder();
-            folder.folderId = new FolderId(item.get("FolderId"));
-            folder.folderName = folderPath;
-            folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
-            // TODO: implement ctag
-            folder.ctag = String.valueOf(System.currentTimeMillis());
-            // TODO: implement contentClass, unreadCount, hasChildren, noInferiors
+            folder = buildFolder(item);
+            folder.folderPath = folderPath;
         }
         return folder;
     }
@@ -95,7 +211,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 currentFolderId = DistinguishedFolderId.DRAFTS;
             } else if ("Trash".equals(folderName)) {
                 currentFolderId = DistinguishedFolderId.DELETEDITEMS;
-            } else {
+            } else if (folderName.length() > 0) {
                 currentFolderId = getSubFolderByName(currentFolderId, folderName);
             }
         }
@@ -110,9 +226,14 @@ public class EwsExchangeSession extends ExchangeSession {
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
                         ExtendedFieldURI.PR_URL_COMP_NAME, folderName)
         );
-        httpClient.executeMethod(findFolderMethod);
+        try {
+            httpClient.executeMethod(findFolderMethod);
+        } finally {
+            findFolderMethod.releaseConnection();
+        }
         EWSMethod.Item item = findFolderMethod.getResponseItem();
-        return new FolderId(item.get("Id"));
+        // TODO: handle not found error
+        return new FolderId(item.get("FolderId"));
     }
 
 }

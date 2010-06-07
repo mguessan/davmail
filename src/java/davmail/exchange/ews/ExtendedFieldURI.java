@@ -51,26 +51,18 @@ public class ExtendedFieldURI implements FieldURI {
         return propertyTag;
     }
 
-    public void write(Writer writer) throws IOException {
-        writer.write("<t:ExtendedFieldURI ");
+    public void appendTo(StringBuilder buffer) {
+        buffer.append("<t:ExtendedFieldURI ");
         if (propertyTag != null) {
-            writer.write("PropertyTag=\"");
-            writer.write(propertyTag);
-            writer.write("\" ");
+            buffer.append("PropertyTag=\"").append(propertyTag).append("\" ");
         }
         if (propertySetId != null) {
-            writer.write("PropertySetId=\"");
-            writer.write(propertySetId);
-            writer.write("\" ");
+            buffer.append("PropertySetId=\"").append(propertySetId).append("\" ");
         }
         if (propertyId != 0) {
-            writer.write("PropertyId=\"");
-            writer.write(String.valueOf(propertyId));
-            writer.write("\" ");
+            buffer.append("PropertyId=\"").append(String.valueOf(propertyId)).append("\" ");
         }
-        writer.write("PropertyType=\"");
-        writer.write(propertyType.toString());
-        writer.write("\"/>");
+        buffer.append("PropertyType=\"").append(propertyType.toString()).append("\"/>");
     }
 
     public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI("0x0FF6", PropertyType.Binary);
@@ -80,7 +72,8 @@ public class ExtendedFieldURI implements FieldURI {
     public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI("0x1090", PropertyType.Integer);
     public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI("0x0E07", PropertyType.Integer);
     public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI("0x1081", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10F3", PropertyType.String);
+    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10f3", PropertyType.String);
+    public static final ExtendedFieldURI PR_CONTAINER_CLASS = new ExtendedFieldURI("0x3613", PropertyType.String);
 
     public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI("0x3008", PropertyType.SystemTime);
 

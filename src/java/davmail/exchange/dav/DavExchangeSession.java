@@ -37,7 +37,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Webdav Exchange adapter.
@@ -168,16 +170,79 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected class MultiCondition extends ExchangeSession.MultiCondition {
+        protected MultiCondition(Operator operator, Condition... condition) {
+            super(operator, condition);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            boolean first = true;
+            buffer.append('(');
+            for (Condition condition : conditions) {
+                if (first) {
+                    first = false;
+                } else {
+                    buffer.append(' ').append(operator).append(' ');
+                }
+                condition.appendTo(buffer);
+            }
+            buffer.append(')');
+        }
+    }
+
+    static final Map<String, String> attributeMap = new HashMap<String, String>();
+
+    static {
+        attributeMap.put("folderclass", "http://schemas.microsoft.com/exchange/outlookfolderclass");
+        attributeMap.put("contentclass", "DAV:contentclass");
+    }
+
+    static final Map<Operator, String> operatorMap = new HashMap<Operator, String>();
+
+    static {
+        operatorMap.put(Operator.IsEqualTo, "=");
+    }
+
+    protected class AttributeCondition extends ExchangeSession.AttributeCondition {
+        protected AttributeCondition(String attributeName, Operator operator, String value) {
+            super(attributeName, operator, value);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append('"').append(attributeMap.get(attributeName)).append('"');
+            buffer.append(operatorMap.get(operator));
+            buffer.append('\'').append(value).append('\'');
+        }
+    }
+
+    @Override
+    protected Condition and(Condition... condition) {
+        return new MultiCondition(Operator.And, condition);
+    }
+
+    @Override
+    protected Condition or(Condition... condition) {
+        return new MultiCondition(Operator.Or, condition);
+    }
+
+    @Override
+    protected AttributeCondition equals(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
+    }
+
+
     protected Folder buildFolder(MultiStatusResponse entity) throws IOException {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
         DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
-        folder.contentClass = getPropertyIfExists(properties, "contentclass", DAV);
+        folder.folderClass = getPropertyIfExists(properties, "outlookfolderclass", SCHEMAS_EXCHANGE);
         folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", DAV));
         folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", DAV));
         folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
         folder.ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-        folder.etag = getPropertyIfExists(properties, "resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
+        folder.etag = getPropertyIfExists(properties, "x30080040", SCHEMAS_MAPI_PROPTAG);
 
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
@@ -230,15 +295,17 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public List<Folder> getSubFolders(String folderName, String filter, boolean recursive) throws IOException {
+    public List<Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
         String mode = recursive ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
         StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\"," +
+        searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\", \"http://schemas.microsoft.com/exchange/outlookfolderclass\", " +
+                "\"http://schemas.microsoft.com/repl/contenttag\", \"http://schemas.microsoft.com/mapi/proptag/x30080040\", " +
                 "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderName)).append("\"')\n" +
                 " WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n");
-        if (filter != null && filter.length() > 0) {
-            searchRequest.append("                      AND ").append(filter);
+        if (condition != null) {
+            searchRequest.append("                      AND ");
+            condition.appendTo(searchRequest);
         }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest.toString());
@@ -248,5 +315,5 @@ public class DavExchangeSession extends ExchangeSession {
         }
         return folders;
     }
-    
+
 }

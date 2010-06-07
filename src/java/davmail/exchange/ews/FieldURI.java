@@ -26,6 +26,6 @@ import java.io.Writer;
  */
 public interface FieldURI {
 
-    public void write(Writer writer) throws IOException;
+    public void appendTo(StringBuilder buffer);
 
 }

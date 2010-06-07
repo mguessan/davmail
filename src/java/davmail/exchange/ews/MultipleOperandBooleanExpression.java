@@ -37,17 +37,13 @@ public class MultipleOperandBooleanExpression implements SearchExpression {
         this.operator = operator;
     }
 
-    public void write(Writer writer) throws IOException {
-        writer.write("<t:");
-        writer.write(operator.toString());
-        writer.write(">");
+    public void appendTo(StringBuilder buffer) {
+        buffer.append("<t:").append(operator.toString()).append('>');
 
         for (SearchExpression searchExpression : searchExpressions) {
-            searchExpression.write(writer);
+            searchExpression.appendTo(buffer);
         }
 
-        writer.write("</t:");
-        writer.write(operator.toString());
-        writer.write(">");
+        buffer.append("</t:").append(operator.toString()).append('>');
     }
 }

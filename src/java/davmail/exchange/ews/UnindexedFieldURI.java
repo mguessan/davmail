@@ -31,12 +31,10 @@ public class UnindexedFieldURI implements FieldURI {
         this.fieldURI = fieldURI;
     }
 
-    public void write(Writer writer) throws IOException {
-        writer.write("<t:FieldURI FieldURI=\"");
-        writer.write(fieldURI);
-        writer.write("\"/>");
+    public void appendTo(StringBuilder buffer) {
+        buffer.append("<t:FieldURI FieldURI=\"").append(fieldURI).append("\"/>");
     }
 
     public static final UnindexedFieldURI DATE_TIME_SENT = new UnindexedFieldURI("item:DateTimeSent");
-    
+
 }
