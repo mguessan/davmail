@@ -18,10 +18,12 @@
  */
 package davmail.exchange.dav;
 
+import davmail.BundleMessage;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
@@ -29,6 +31,9 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
+import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 
@@ -36,16 +41,25 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Webdav Exchange adapter.
  * Compatible with Exchange 2003 and 2007 with webdav available.
  */
 public class DavExchangeSession extends ExchangeSession {
+    protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
+
+    static {
+        WELL_KNOWN_FOLDERS.add(Field.get("inbox").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("deleteditems").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("sentitems").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("sendmsg").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("drafts").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("calendar").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("contacts").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.get("outbox").davPropertyName);
+    }
 
     /**
      * @inheritDoc
@@ -109,6 +123,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected String getURIPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
+        DavProperty property = properties.get(Field.get(alias).davPropertyName);
+        if (property == null) {
+            return null;
+        } else {
+            return URIUtil.decode((String) property.getValue());
+        }
+    }
+
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
         MultiStatusResponse[] responses;
@@ -119,14 +142,14 @@ public class DavExchangeSession extends ExchangeSession {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
             }
             DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
-            inboxUrl = getURIPropertyIfExists(properties, "inbox", URN_SCHEMAS_HTTPMAIL);
-            deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems", URN_SCHEMAS_HTTPMAIL);
-            sentitemsUrl = getURIPropertyIfExists(properties, "sentitems", URN_SCHEMAS_HTTPMAIL);
-            sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg", URN_SCHEMAS_HTTPMAIL);
-            draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
-            calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
-            contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
-            outboxUrl = getURIPropertyIfExists(properties, "outbox", URN_SCHEMAS_HTTPMAIL);
+            inboxUrl = getURIPropertyIfExists(properties, "inbox");
+            deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems");
+            sentitemsUrl = getURIPropertyIfExists(properties, "sentitems");
+            sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg");
+            draftsUrl = getURIPropertyIfExists(properties, "drafts");
+            calendarUrl = getURIPropertyIfExists(properties, "calendar");
+            contactsUrl = getURIPropertyIfExists(properties, "contacts");
+            outboxUrl = getURIPropertyIfExists(properties, "outbox");
             // junk folder not available over webdav
 
             // default public folder path
@@ -208,17 +231,16 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    static final Map<String, String> attributeMap = new HashMap<String, String>();
-
-    static {
-        attributeMap.put("folderclass", "http://schemas.microsoft.com/exchange/outlookfolderclass");
-        attributeMap.put("contentclass", "DAV:contentclass");
-    }
-
     static final Map<Operator, String> operatorMap = new HashMap<Operator, String>();
 
     static {
-        operatorMap.put(Operator.IsEqualTo, "=");
+        operatorMap.put(Operator.IsEqualTo, " = ");
+        operatorMap.put(Operator.IsGreaterThanOrEqualTo, " >= ");
+        operatorMap.put(Operator.IsGreaterThan, " > ");
+        operatorMap.put(Operator.IsLessThan, " < ");
+        operatorMap.put(Operator.Like, " like ");
+        operatorMap.put(Operator.IsNull, " is null");
+
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
@@ -228,37 +250,71 @@ public class DavExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            buffer.append('"').append(attributeMap.get(attributeName)).append('"');
+            buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
             buffer.append(operatorMap.get(operator));
-            buffer.append('\'').append(value).append('\'');
+            buffer.append('\'');
+            if (Operator.Like == operator) {
+                buffer.append('%');
+            }
+            buffer.append(value);
+            if (Operator.Like == operator) {
+                buffer.append('%');
+            }
+            buffer.append('\'');
         }
     }
 
-    protected static class IsNullCondition extends ExchangeSession.IsNullCondition {
-        protected IsNullCondition(String attributeName) {
-            super(attributeName);
+    protected static class HeaderCondition extends AttributeCondition {
+
+        protected HeaderCondition(String attributeName, Operator operator, String value) {
+            super(attributeName, operator, value);
         }
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            buffer.append('"').append(attributeMap.get(attributeName)).append('"');
-            buffer.append(" is null");
+            buffer.append('"').append(Field.getHeader(attributeName)).append('"');
+            buffer.append(operatorMap.get(operator));
+            buffer.append('\'');
+            if (Operator.Like == operator) {
+                buffer.append('%');
+            }
+            buffer.append(value);
+            if (Operator.Like == operator) {
+                buffer.append('%');
+            }
+            buffer.append('\'');
+        }
+    }
+
+    protected static class MonoCondition extends ExchangeSession.MonoCondition {
+        protected MonoCondition(String attributeName, Operator operator) {
+            super(attributeName, operator);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
+            buffer.append(operatorMap.get(operator));
         }
     }
 
     @Override
-    public Condition and(Condition... condition) {
+    public MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    public Condition or(Condition... condition) {
+    public MultiCondition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
     @Override
     public Condition not(Condition condition) {
-        return new NotCondition(condition);
+        if (condition == null) {
+            return null;
+        } else {
+            return new NotCondition(condition);
+        }
     }
 
     @Override
@@ -267,8 +323,43 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public Condition headerEquals(String headerName, String value) {
+        return new HeaderCondition(headerName, Operator.IsEqualTo, value);
+    }
+
+    @Override
+    public Condition gte(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsGreaterThanOrEqualTo, value);
+    }
+
+    @Override
+    public Condition lt(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsLessThan, value);
+    }
+
+    @Override
+    public Condition gt(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsGreaterThan, value);
+    }
+
+    @Override
+    public Condition like(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.Like, value);
+    }
+
+    @Override
     public Condition isNull(String attributeName) {
-        return new IsNullCondition(attributeName);
+        return new MonoCondition(attributeName, Operator.IsNull);
+    }
+
+    @Override
+    public Condition isTrue(String attributeName) {
+        return new MonoCondition(attributeName, Operator.IsTrue);
+    }
+
+    @Override
+    public Condition isFalse(String attributeName) {
+        return new MonoCondition(attributeName, Operator.IsFalse);
     }
 
 
@@ -348,7 +439,7 @@ public class DavExchangeSession extends ExchangeSession {
                 "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderName)).append("\"')\n" +
                 " WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n");
         if (condition != null) {
-            searchRequest.append("                      AND ");
+            searchRequest.append(" AND ");
             condition.appendTo(searchRequest);
         }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
@@ -364,4 +455,98 @@ public class DavExchangeSession extends ExchangeSession {
         return folders;
     }
 
+    protected String getPropertyIfExists(DavPropertySet properties, String name) {
+        DavProperty property = properties.get(name, EMPTY);
+        if (property == null) {
+            return null;
+        } else {
+            return (String) property.getValue();
+        }
+    }
+
+    protected int getIntPropertyIfExists(DavPropertySet properties, String name) {
+        DavProperty property = properties.get(name, EMPTY);
+        if (property == null) {
+            return 0;
+        } else {
+            return Integer.parseInt((String) property.getValue());
+        }
+    }
+
+    protected long getLongPropertyIfExists(DavPropertySet properties, String name) {
+        DavProperty property = properties.get(name, EMPTY);
+        if (property == null) {
+            return 0;
+        } else {
+            return Long.parseLong((String) property.getValue());
+        }
+    }
+
+
+    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
+        Message message = new Message();
+        message.messageUrl = URIUtil.decode(responseEntity.getHref());
+        DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
+
+        message.permanentUrl = getPropertyIfExists(properties, "permanenturl");
+        message.size = getIntPropertyIfExists(properties, "messageSize");
+        message.uid = getPropertyIfExists(properties, "uid");
+        message.imapUid = getLongPropertyIfExists(properties, "imapUid");
+        message.read = "1".equals(getPropertyIfExists(properties, "read"));
+        message.junk = "1".equals(getPropertyIfExists(properties, "junk"));
+        message.flagged = "2".equals(getPropertyIfExists(properties, "flagStatus"));
+        message.draft = "9".equals(getPropertyIfExists(properties, "messageFlags"));
+        String lastVerbExecuted = getPropertyIfExists(properties, "lastVerbExecuted");
+        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
+        message.forwarded = "104".equals(lastVerbExecuted);
+        message.date = getPropertyIfExists(properties, "date");
+        message.deleted = "1".equals(getPropertyIfExists(properties, "deleted"));
+
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("Message");
+            if (message.imapUid != 0) {
+                buffer.append(" IMAP uid: ").append(message.imapUid);
+            }
+            if (message.uid != null) {
+                buffer.append(" uid: ").append(message.uid);
+            }
+            buffer.append(" href: ").append(responseEntity.getHref()).append(" permanenturl:").append(message.permanentUrl);
+            LOGGER.debug(buffer.toString());
+        }
+        return message;
+    }
+
+    @Override
+    public MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException {
+        String folderUrl = getFolderPath(folderName);
+        MessageList messages = new MessageList();
+        StringBuilder searchRequest = new StringBuilder();
+        searchRequest.append("Select \"http://schemas.microsoft.com/exchange/permanenturl\" as permanenturl");
+        if (attributes != null) {
+            for (String attribute : attributes) {
+                Field field = Field.get(attribute);
+                searchRequest.append(",\"").append(field.getUri()).append("\" as ").append(field.getAlias());
+            }
+        }
+        searchRequest.append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')\n")
+                .append("                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n");
+        if (condition != null) {
+            searchRequest.append(" AND ");
+            condition.appendTo(searchRequest);
+        }
+        // TODO order by ImapUid
+        //searchRequest.append("       ORDER BY \"urn:schemas:httpmail:date\" ASC");
+        DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
+                httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString());
+
+        for (MultiStatusResponse response : responses) {
+            Message message = buildMessage(response);
+            message.messageList = messages;
+            messages.add(message);
+        }
+        Collections.sort(messages);
+        return messages;
+    }
 }

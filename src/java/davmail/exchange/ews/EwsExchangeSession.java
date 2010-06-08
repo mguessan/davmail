@@ -86,6 +86,12 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
+    @Override
+    public MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
     protected static class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {
         protected MultiCondition(Operator operator, Condition... condition) {
             super(operator, condition);
@@ -111,9 +117,7 @@ public class EwsExchangeSession extends ExchangeSession {
         @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:Not>");
-
             condition.appendTo(buffer);
-
             buffer.append("</t:Not>");
         }
     }
@@ -122,6 +126,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     static {
         attributeMap.put("folderclass", ExtendedFieldURI.PR_CONTAINER_CLASS);
+        attributeMap.put("read", ExtendedFieldURI.PR_READ);
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
@@ -129,10 +134,18 @@ public class EwsExchangeSession extends ExchangeSession {
             super(attributeName, operator, value);
         }
 
+        protected FieldURI getFieldURI(String attributeName) {
+            FieldURI fieldURI = attributeMap.get(attributeName);
+            if (fieldURI == null) {
+                throw new IllegalArgumentException("Unknown field: " + attributeName);
+            }
+            return fieldURI;
+        }
+
         @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:").append(operator.toString()).append('>');
-            attributeMap.get(attributeName).appendTo(buffer);
+            getFieldURI(attributeName).appendTo(buffer);
 
             buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
             buffer.append(StringUtil.xmlEncode(value));
@@ -142,9 +155,24 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-     protected static class IsNullCondition extends ExchangeSession.IsNullCondition implements SearchExpression {
+    protected static class HeaderCondition extends AttributeCondition {
+
+        protected HeaderCondition(String attributeName, Operator operator, String value) {
+            super(attributeName, operator, value);
+        }
+
+        @Override
+        protected FieldURI getFieldURI(String attributeName) {
+            return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+        }
+
+    }
+
+    protected static class IsNullCondition extends ExchangeSession.Condition implements SearchExpression {
+        protected String attributeName;
+
         protected IsNullCondition(String attributeName) {
-            super(attributeName);
+            this.attributeName = attributeName;
         }
 
         @Override
@@ -156,12 +184,12 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Condition and(Condition... condition) {
+    public MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    public Condition or(Condition... condition) {
+    public MultiCondition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
@@ -176,8 +204,43 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public Condition headerEquals(String headerName, String value) {
+        return new HeaderCondition(headerName, Operator.IsEqualTo, value);
+    }
+
+    @Override
+    public Condition gte(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsGreaterThanOrEqualTo, value);
+    }
+
+    @Override
+    public Condition lt(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsLessThan, value);
+    }
+
+    @Override
+    public Condition gt(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsGreaterThan, value);
+    }
+
+    @Override
+    public Condition like(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.Like, value);
+    }
+
+    @Override
     public Condition isNull(String attributeName) {
         return new IsNullCondition(attributeName);
+    }
+
+    @Override
+    public Condition isTrue(String attributeName) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "True");
+    }
+
+    @Override
+    public Condition isFalse(String attributeName) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "False");
     }
 
     protected Folder buildFolder(EWSMethod.Item item) {

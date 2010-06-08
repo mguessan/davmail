@@ -109,6 +109,7 @@ public abstract class ExchangeSession {
     protected static final String UNSENT = "Unsent Messages";
 
 
+    protected static final Namespace EMPTY = Namespace.getNamespace("");
     protected static final Namespace DAV = Namespace.getNamespace("DAV:");
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
@@ -124,18 +125,6 @@ public abstract class ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add(DavPropertyName.create("contentclass", DAV));
     }
 
-    protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
-
-    static {
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("inbox", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("deleteditems", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("sentitems", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("sendmsg", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("drafts", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("calendar", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("contacts", URN_SCHEMAS_HTTPMAIL));
-        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("outbox", URN_SCHEMAS_HTTPMAIL));
-    }
 
     protected static final DavPropertyNameSet DISPLAY_NAME = new DavPropertyNameSet();
 
@@ -605,15 +594,6 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected String getURIPropertyIfExists(DavPropertySet properties, String name, Namespace namespace) throws URIException {
-        DavProperty property = properties.get(name, namespace);
-        if (property == null) {
-            return null;
-        } else {
-            return URIUtil.decode((String) property.getValue());
-        }
-    }
-
     /**
      * Create message in specified folder.
      * Will overwrite an existing message with same subject in the same folder
@@ -670,40 +650,6 @@ public abstract class ExchangeSession {
                 patchMethod.releaseConnection();
             }
         }
-    }
-
-    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
-        Message message = new Message();
-        message.messageUrl = URIUtil.decode(responseEntity.getHref());
-        DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
-
-        message.permanentUrl = getPropertyIfExists(properties, "permanenturl", SCHEMAS_EXCHANGE);
-        message.size = getIntPropertyIfExists(properties, "x0e080003", SCHEMAS_MAPI_PROPTAG);
-        message.uid = getPropertyIfExists(properties, "uid", DAV);
-        message.imapUid = getLongPropertyIfExists(properties, "x0e230003", SCHEMAS_MAPI_PROPTAG);
-        message.read = "1".equals(getPropertyIfExists(properties, "read", URN_SCHEMAS_HTTPMAIL));
-        message.junk = "1".equals(getPropertyIfExists(properties, "x10830003", SCHEMAS_MAPI_PROPTAG));
-        message.flagged = "2".equals(getPropertyIfExists(properties, "x10900003", SCHEMAS_MAPI_PROPTAG));
-        message.draft = "9".equals(getPropertyIfExists(properties, "x0E070003", SCHEMAS_MAPI_PROPTAG));
-        String x10810003 = getPropertyIfExists(properties, "x10810003", SCHEMAS_MAPI_PROPTAG);
-        message.answered = "102".equals(x10810003) || "103".equals(x10810003);
-        message.forwarded = "104".equals(x10810003);
-        message.date = getPropertyIfExists(properties, "date", Namespace.getNamespace("urn:schemas:mailheader:"));
-        message.deleted = "1".equals(getPropertyIfExists(properties, "deleted", Namespace.getNamespace("")));
-
-        if (LOGGER.isDebugEnabled()) {
-            StringBuilder buffer = new StringBuilder();
-            buffer.append("Message");
-            if (message.imapUid != 0) {
-                buffer.append(" IMAP uid: ").append(message.imapUid);
-            }
-            if (message.uid != null) {
-                buffer.append(" uid: ").append(message.uid);
-            }
-            buffer.append(" href: ").append(responseEntity.getHref()).append(" permanenturl:").append(message.permanentUrl);
-            LOGGER.debug(buffer.toString());
-        }
-        return message;
     }
 
     protected List<DavProperty> buildProperties(Map<String, String> properties) {
@@ -763,6 +709,13 @@ public abstract class ExchangeSession {
         }
     }
 
+    protected static final List<String> POP_MESSAGE_ATTRIBUTES = new ArrayList<String>();
+
+    static {
+        POP_MESSAGE_ATTRIBUTES.add("uid");
+        POP_MESSAGE_ATTRIBUTES.add("messageSize");
+    }
+
     /**
      * Return folder message list with id and size only (for POP3 listener).
      *
@@ -771,24 +724,46 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public MessageList getAllMessageUidAndSize(String folderName) throws IOException {
-        return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"", "");
+        return searchMessages(folderName, POP_MESSAGE_ATTRIBUTES, null);
+    }
+
+    protected static final List<String> IMAP_MESSAGE_ATTRIBUTES = new ArrayList<String>();
+
+    static {
+        IMAP_MESSAGE_ATTRIBUTES.add("uid");
+        IMAP_MESSAGE_ATTRIBUTES.add("messageSize");
+        IMAP_MESSAGE_ATTRIBUTES.add("imapUid");
+        IMAP_MESSAGE_ATTRIBUTES.add("junk");
+        IMAP_MESSAGE_ATTRIBUTES.add("flagStatus");
+        IMAP_MESSAGE_ATTRIBUTES.add("messageFlags");
+        IMAP_MESSAGE_ATTRIBUTES.add("lastVerbExecuted");
+        IMAP_MESSAGE_ATTRIBUTES.add("read");
+        IMAP_MESSAGE_ATTRIBUTES.add("deleted");
+        IMAP_MESSAGE_ATTRIBUTES.add("date");
+    }
+
+    /**
+     * Get all folder messages.
+     *
+     * @param folderName Exchange folder name
+     * @param condition  search filter
+     * @return message list
+     * @throws IOException on error
+     */
+    public MessageList searchMessages(String folderName) throws IOException {
+        return searchMessages(folderName, IMAP_MESSAGE_ATTRIBUTES, null);
     }
 
     /**
      * Search folder for messages matching conditions, with attributes needed by IMAP listener.
      *
      * @param folderName Exchange folder name
-     * @param conditions conditions string in Exchange SQL syntax
+     * @param condition  search filter
      * @return message list
      * @throws IOException on error
      */
-    public MessageList searchMessages(String folderName, String conditions) throws IOException {
-        return searchMessages(folderName, "\"DAV:uid\", \"http://schemas.microsoft.com/mapi/proptag/x0e080003\"" +
-                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0e230003\"" +
-                "                ,\"http://schemas.microsoft.com/mapi/proptag/x10830003\", \"http://schemas.microsoft.com/mapi/proptag/x10900003\"" +
-                "                ,\"http://schemas.microsoft.com/mapi/proptag/x0E070003\", \"http://schemas.microsoft.com/mapi/proptag/x10810003\"" +
-                "                , \"urn:schemas:httpmail:read\" " +
-                "                ,\"http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8570\" as deleted, \"urn:schemas:mailheader:date\"", conditions);
+    public MessageList searchMessages(String folderName, Condition condition) throws IOException {
+        return searchMessages(folderName, IMAP_MESSAGE_ATTRIBUTES, condition);
     }
 
     /**
@@ -800,41 +775,17 @@ public abstract class ExchangeSession {
      * @return message list
      * @throws IOException on error
      */
-    public MessageList searchMessages(String folderName, String attributes, String conditions) throws IOException {
-        String folderUrl = getFolderPath(folderName);
-        MessageList messages = new MessageList();
-        StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"http://schemas.microsoft.com/exchange/permanenturl\"");
-        if (attributes != null && attributes.length() > 0) {
-            searchRequest.append(',').append(attributes);
-        }
-        searchRequest.append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')\n")
-                .append("                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n");
-        if (conditions != null) {
-            searchRequest.append(conditions);
-        }
-        searchRequest.append("       ORDER BY \"urn:schemas:httpmail:date\" ASC");
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString());
-
-        for (MultiStatusResponse response : responses) {
-            Message message = buildMessage(response);
-            message.messageList = messages;
-            messages.add(message);
-        }
-        Collections.sort(messages);
-        return messages;
-    }
+    public abstract MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException;
 
     protected enum Operator {
-        Or, And, Not, IsEqualTo
+        Or, And, Not, IsEqualTo, Like, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsNull, IsTrue, IsFalse
     }
 
-    protected abstract static class Condition {
+    public abstract static class Condition {
         public abstract void appendTo(StringBuilder buffer);
     }
 
-    protected abstract static class AttributeCondition extends Condition {
+    public abstract static class AttributeCondition extends Condition {
         protected String attributeName;
         protected Operator operator;
         protected String value;
@@ -846,17 +797,23 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected abstract static class MultiCondition extends Condition {
+    public abstract static class MultiCondition extends Condition {
         protected Operator operator;
-        protected Condition[] conditions;
+        protected List<Condition> conditions;
 
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
-            this.conditions = conditions;
+            this.conditions = Arrays.asList(conditions);
+        }
+
+        public void append(Condition condition) {
+            if (condition != null) {
+                conditions.add(condition);
+            }
         }
     }
 
-    protected abstract static class NotCondition extends Condition {
+    public abstract static class NotCondition extends Condition {
         protected Condition condition;
 
         protected NotCondition(Condition condition) {
@@ -864,23 +821,39 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected abstract static class IsNullCondition extends Condition {
-         protected String attributeName;
+    public abstract static class MonoCondition extends Condition {
+        protected String attributeName;
+        protected Operator operator;
 
-        protected IsNullCondition(String attributeName) {
+        protected MonoCondition(String attributeName, Operator operator) {
             this.attributeName = attributeName;
+            this.operator = operator;
         }
     }
 
-    public abstract Condition and(Condition... condition);
+    public abstract MultiCondition and(Condition... condition);
 
-    public abstract Condition or(Condition... condition);
+    public abstract MultiCondition or(Condition... condition);
 
     public abstract Condition not(Condition condition);
 
     public abstract Condition equals(String attributeName, String value);
 
+    public abstract Condition headerEquals(String headerName, String value);
+
+    public abstract Condition gte(String attributeName, String value);
+
+    public abstract Condition gt(String attributeName, String value);
+
+    public abstract Condition lt(String attributeName, String value);
+
+    public abstract Condition like(String attributeName, String value);
+
     public abstract Condition isNull(String attributeName);
+
+    public abstract Condition isTrue(String attributeName);
+
+    public abstract Condition isFalse(String attributeName);
 
     /**
      * Search mail and generic folders under given folder.
@@ -1288,19 +1261,19 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void loadMessages() throws IOException {
-            messages = ExchangeSession.this.searchMessages(folderPath, "");
+            messages = ExchangeSession.this.searchMessages(folderPath, null);
             fixUids(messages);
         }
 
         /**
          * Search messages in folder matching query.
          *
-         * @param query search query
+         * @param condition search query
          * @return message list
          * @throws IOException on error
          */
-        public MessageList searchMessages(String query) throws IOException {
-            MessageList localMessages = ExchangeSession.this.searchMessages(folderName, query);
+        public MessageList searchMessages(Condition condition) throws IOException {
+            MessageList localMessages = ExchangeSession.this.searchMessages(folderName, condition);
             fixUids(localMessages);
             return localMessages;
         }
@@ -1406,23 +1379,23 @@ public abstract class ExchangeSession {
         /**
          * enclosing message list
          */
-        protected MessageList messageList;
+        public MessageList messageList;
         /**
          * Message url.
          */
-        protected String messageUrl;
+        public String messageUrl;
         /**
          * Message permanent url (does not change on message move).
          */
-        protected String permanentUrl;
+        public String permanentUrl;
         /**
          * Message uid.
          */
-        protected String uid;
+        public String uid;
         /**
          * Message IMAP uid, unique in folder (x0e230003).
          */
-        protected long imapUid;
+        public long imapUid;
         /**
          * MAPI message size.
          */
@@ -3011,7 +2984,7 @@ public abstract class ExchangeSession {
             // failover for Exchange 2007 plus encoding issue
             String decodedEventName = convertItemNameToEML(itemName).replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
             LOGGER.debug("Item not found at " + itemPath + ", search by displayname: '" + decodedEventName + '\'');
-            ExchangeSession.MessageList messages = searchMessages(folderPath, " AND \"DAV:displayname\"='" + decodedEventName + '\'');
+            ExchangeSession.MessageList messages = searchMessages(folderPath, equals("displayname", decodedEventName));
             if (!messages.isEmpty()) {
                 item = getItem(messages.get(0).getPermanentUrl());
             } else {

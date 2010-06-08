@@ -31,20 +31,32 @@ public class ExtendedFieldURI implements FieldURI {
         ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
     }
 
+    protected static enum DistinguishedPropertySetType {
+        Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
+    }
+
+
     protected String propertyTag;
+    protected DistinguishedPropertySetType distinguishedPropertySetId;
     protected String propertySetId;
+    protected String propertyName;
     protected int propertyId;
-    protected final PropertyType propertyType;
+    protected PropertyType propertyType;
 
     public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType) {
-        this.propertyTag = "0x"+Integer.toHexString(intPropertyTag);
+        this.propertyTag = "0x" + Integer.toHexString(intPropertyTag);
         this.propertyType = propertyType;
     }
 
-    public ExtendedFieldURI(String propertySetId, int propertyId, PropertyType propertyType) {
-        this.propertySetId = propertySetId;
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, int propertyId, PropertyType propertyType) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyId = propertyId;
         this.propertyType = propertyType;
+    }
+
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
+        this.propertyName = propertyName;
     }
 
     public String getPropertyTag() {
@@ -56,13 +68,21 @@ public class ExtendedFieldURI implements FieldURI {
         if (propertyTag != null) {
             buffer.append("PropertyTag=\"").append(propertyTag).append("\" ");
         }
+        if (distinguishedPropertySetId != null) {
+            buffer.append("DistinguishedPropertySetId=\"").append(distinguishedPropertySetId).append("\" ");
+        }
         if (propertySetId != null) {
             buffer.append("PropertySetId=\"").append(propertySetId).append("\" ");
+        }
+        if (propertyName != null) {
+            buffer.append("propertyName=\"").append(propertyName).append("\" ");
         }
         if (propertyId != 0) {
             buffer.append("PropertyId=\"").append(String.valueOf(propertyId)).append("\" ");
         }
-        buffer.append("PropertyType=\"").append(propertyType.toString()).append("\"/>");
+        if (propertyType != null) {
+            buffer.append("PropertyType=\"").append(propertyType.toString()).append("\"/>");
+        }
     }
 
     public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI(0xff6, PropertyType.Binary);
@@ -77,6 +97,8 @@ public class ExtendedFieldURI implements FieldURI {
 
     public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI(0x3008, PropertyType.SystemTime);
 
+    // message properties
+    public static final ExtendedFieldURI PR_READ = new ExtendedFieldURI(0xe69, PropertyType.Boolean);
 
 }
 

@@ -730,45 +730,36 @@ public class ImapConnection extends AbstractConnection {
         sendClient(commandId + " OK STORE completed");
     }
 
-    protected void buildConditions(SearchConditions conditions, IMAPTokenizer tokens) throws IOException {
-        boolean or = false;
+    protected ExchangeSession.Condition buildConditions(SearchConditions conditions, IMAPTokenizer tokens) throws IOException {
+        ExchangeSession.MultiCondition condition = null;
         while (tokens.hasMoreTokens()) {
             String token = tokens.nextQuotedToken().toUpperCase();
             if (token.startsWith("(") && token.endsWith(")")) {
                 // quoted search param
-                buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1)));
-            } else if ("OR".equals(token)) {
-                or = true;
-            } else if (token.startsWith("OR ")) {
-                or = true;
-                appendOrSearchParams(token, conditions);
-            } else {
-                String operator;
-                if (conditions.query.length() == 5) {
-                    operator = "";
-                } else if (or) {
-                    operator = " OR ";
-                } else {
-                    operator = " AND ";
+                if (condition == null) {
+                    condition = session.and();
                 }
-                appendSearchParam(operator, tokens, token, conditions);
+                condition.append(buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1))));
+            } else if ("OR".equals(token)) {
+                condition = session.or();
+            } else if (token.startsWith("OR ")) {
+                condition = appendOrSearchParams(token, conditions);
+            } else {
+                if (condition == null) {
+                    condition = session.and();
+                }
+                condition.append(appendSearchParam(tokens, token, conditions));
             }
         }
+        return condition;
     }
 
 
     protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
         List<Long> uidList = new ArrayList<Long>();
         SearchConditions conditions = new SearchConditions();
-        conditions.append("AND (");
-        buildConditions(conditions, tokens);
-        conditions.append(")");
-        String query = conditions.query.toString();
-        DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", conditions.query));
-        if ("AND ()".equals(query)) {
-            query = null;
-        }
-        ExchangeSession.MessageList localMessages = currentFolder.searchMessages(query);
+        ExchangeSession.Condition condition = buildConditions(conditions, tokens);
+        ExchangeSession.MessageList localMessages = currentFolder.searchMessages(condition);
         Iterator<ExchangeSession.Message> iterator;
         if (conditions.uidRange != null) {
             iterator = new UIDRangeIterator(localMessages, conditions.uidRange);
@@ -988,63 +979,60 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
+    /**
+     * client side search conditions
+     */
     static final class SearchConditions {
         Boolean flagged;
         Boolean answered;
         Boolean deleted;
         String indexRange;
         String uidRange;
-        final StringBuilder query = new StringBuilder();
-
-        public StringBuilder append(String value) {
-            return query.append(value);
-        }
     }
 
-    protected void appendOrSearchParams(String token, SearchConditions conditions) throws IOException {
+    protected ExchangeSession.MultiCondition appendOrSearchParams(String token, SearchConditions conditions) throws IOException {
+        ExchangeSession.MultiCondition orCondition = session.or();
         IMAPTokenizer innerTokens = new IMAPTokenizer(token);
         innerTokens.nextToken();
-        boolean first = true;
         while (innerTokens.hasMoreTokens()) {
             String innerToken = innerTokens.nextToken();
-            String operator = "";
-            if (!first) {
-                operator = " OR ";
-            }
-            first = false;
-            appendSearchParam(operator, innerTokens, innerToken, conditions);
+            orCondition.append(appendSearchParam(innerTokens, innerToken, conditions));
         }
-
+        return orCondition;
     }
 
-    protected void appendSearchParam(String operator, StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+    protected ExchangeSession.Condition appendSearchParam(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
-            appendSearchParam(operator + " NOT ", tokens, tokens.nextToken(), conditions);
+            String nextToken = tokens.nextToken();
+            if ("DELETED".equals(token)) {
+                conditions.deleted = Boolean.FALSE;
+            } else {
+                return session.not(appendSearchParam(tokens, nextToken, conditions));
+            }
         } else if (token.startsWith("OR ")) {
-            appendOrSearchParams(token, conditions);
+            return appendOrSearchParams(token, conditions);
         } else if ("SUBJECT".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:httpmail:subject\" LIKE '%").append(tokens.nextToken()).append("%'");
+            return session.like("subject", tokens.nextToken());
         } else if ("BODY".equals(token)) {
-            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x01000001E\" LIKE '%").append(tokens.nextToken()).append("%'");
+            return session.like("body", tokens.nextToken());
         } else if ("FROM".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:mailheader:from\" LIKE '%").append(tokens.nextToken()).append("%'");
+            return session.like("from", tokens.nextToken());
         } else if ("TO".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:mailheader:to\" LIKE '%").append(tokens.nextToken()).append("%'");
+            return session.like("to", tokens.nextToken());
         } else if ("CC".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:mailheader:cc\" LIKE '%").append(tokens.nextToken()).append("%'");
+            return session.like("cc", tokens.nextToken());
         } else if ("LARGER".equals(token)) {
-            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" &gt;= ").append(Long.parseLong(tokens.nextToken())).append("");
+            return session.gte("messageSize", tokens.nextToken());
         } else if ("SMALLER".equals(token)) {
-            conditions.append(operator).append("\"http://schemas.microsoft.com/mapi/proptag/x0e080003\" < ").append(Long.parseLong(tokens.nextToken())).append("");
+            return session.lt("messageSize", tokens.nextToken());
         } else if (token.startsWith("SENT") || "SINCE".equals(token) || "BEFORE".equals(token)) {
-            conditions.append(operator);
-            appendDateSearchParam(tokens, token, conditions);
+            return appendDateSearchParam(tokens, token);
         } else if ("SEEN".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:httpmail:read\" = True");
+            return session.isTrue("read");
         } else if ("UNSEEN".equals(token) || "NEW".equals(token)) {
-            conditions.append(operator).append("\"urn:schemas:httpmail:read\" = False");
+            return session.isFalse("read");
         } else if ("DELETED".equals(token)) {
-            conditions.deleted = !operator.endsWith(" NOT ");
+            conditions.deleted = Boolean.TRUE;
         } else if ("UNDELETED".equals(token) || "NOT DELETED".equals(token)) {
             conditions.deleted = Boolean.FALSE;
         } else if ("FLAGGED".equals(token)) {
@@ -1061,15 +1049,7 @@ public class ImapConnection extends AbstractConnection {
             if ("message-id".equals(headerName) && !value.startsWith("<")) {
                 value = '<' + value + '>';
             }
-            String namespace;
-            if (headerName.startsWith("x-")) {
-                // look for extended headers in MAPI namespace
-                namespace = "http://schemas.microsoft.com/mapi/string/{00020386-0000-0000-C000-000000000046}/";
-            } else {
-                // look for standard properties in mailheader namespace
-                namespace = "urn:schemas:mailheader:";
-            }
-            conditions.append(operator).append('"').append(namespace).append(headerName).append("\"='").append(value).append('\'');
+            return session.headerEquals(headerName, value);
         } else if ("UID".equals(token)) {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {
@@ -1085,9 +1065,11 @@ public class ImapConnection extends AbstractConnection {
         } else {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", token);
         }
+        // client side search token
+        return null;
     }
 
-    protected void appendDateSearchParam(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+    protected ExchangeSession.Condition appendDateSearchParam(StringTokenizer tokens, String token) throws IOException {
         Date startDate;
         Date endDate;
         SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
@@ -1106,27 +1088,21 @@ public class ImapConnection extends AbstractConnection {
         }
         String searchAttribute;
         if (token.startsWith("SENT")) {
-            searchAttribute = "urn:schemas:httpmail:date";
+            searchAttribute = "date";
         } else {
-            searchAttribute = "DAV:getlastmodified";
+            searchAttribute = "lastmodified";
         }
 
         if (token.endsWith("ON")) {
-            conditions.append("(\"").append(searchAttribute).append("\" > '")
-                    .append(dateFormatter.format(startDate))
-                    .append("' AND \"").append(searchAttribute).append("\" < '")
-                    .append(dateFormatter.format(endDate))
-                    .append("')");
+            return session.and(session.gt(searchAttribute, dateFormatter.format(startDate)),
+                    session.lt(searchAttribute, dateFormatter.format(endDate)));
         } else if (token.endsWith("BEFORE")) {
-            conditions.append("\"").append(searchAttribute).append("\" < '")
-                    .append(dateFormatter.format(startDate))
-                    .append('\'');
+            return session.lt(searchAttribute, dateFormatter.format(startDate));
         } else if (token.endsWith("SINCE")) {
-            conditions.append("\"").append(searchAttribute).append("\" >= '")
-                    .append(dateFormatter.format(startDate))
-                    .append('\'');
+            return session.gte(searchAttribute, dateFormatter.format(startDate));
+        } else {
+            throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
-
     }
 
     protected boolean expunge(boolean silent) throws IOException {
@@ -1436,8 +1412,8 @@ public class ImapConnection extends AbstractConnection {
                         endUid = startUid;
                         startUid = swap;
                     }
-                } else if ("*".equals(currentRange)){
-                    startUid = endUid = messages.get(messages.size()-1).getImapUid();
+                } else if ("*".equals(currentRange)) {
+                    startUid = endUid = messages.get(messages.size() - 1).getImapUid();
                 } else {
                     startUid = endUid = convertToLong(currentRange);
                 }
@@ -1519,7 +1495,7 @@ public class ImapConnection extends AbstractConnection {
                         endUid = startUid;
                         startUid = swap;
                     }
-                } else if ("*".equals(currentRange)){
+                } else if ("*".equals(currentRange)) {
                     startUid = endUid = messages.size();
                 } else {
                     startUid = endUid = convertToLong(currentRange);
