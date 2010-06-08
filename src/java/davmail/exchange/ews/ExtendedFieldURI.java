@@ -36,8 +36,8 @@ public class ExtendedFieldURI implements FieldURI {
     protected int propertyId;
     protected final PropertyType propertyType;
 
-    public ExtendedFieldURI(String propertyTag, PropertyType propertyType) {
-        this.propertyTag = propertyTag;
+    public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType) {
+        this.propertyTag = "0x"+Integer.toHexString(intPropertyTag);
         this.propertyType = propertyType;
     }
 
@@ -65,17 +65,17 @@ public class ExtendedFieldURI implements FieldURI {
         buffer.append("PropertyType=\"").append(propertyType.toString()).append("\"/>");
     }
 
-    public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI("0x0FF6", PropertyType.Binary);
-    public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI("0x0E08", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI("0x0E23", PropertyType.Integer);
-    public static final ExtendedFieldURI JUNK_FLAG = new ExtendedFieldURI("0x1083", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI("0x1090", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI("0x0E07", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI("0x1081", PropertyType.Integer);
-    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI("0x10f3", PropertyType.String);
-    public static final ExtendedFieldURI PR_CONTAINER_CLASS = new ExtendedFieldURI("0x3613", PropertyType.String);
+    public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI(0xff6, PropertyType.Binary);
+    public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI(0xe08, PropertyType.Integer);
+    public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI(0xe23, PropertyType.Integer);
+    public static final ExtendedFieldURI JUNK_FLAG = new ExtendedFieldURI(0x1083, PropertyType.Integer);
+    public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI(0x1090, PropertyType.Integer);
+    public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI(0x0e07, PropertyType.Integer);
+    public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI(0x1081, PropertyType.Integer);
+    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI(0x10f3, PropertyType.String);
+    public static final ExtendedFieldURI PR_CONTAINER_CLASS = new ExtendedFieldURI(0x3613, PropertyType.String);
 
-    public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI("0x3008", PropertyType.SystemTime);
+    public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI(0x3008, PropertyType.SystemTime);
 
 
 }
