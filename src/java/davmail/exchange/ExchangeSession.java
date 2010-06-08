@@ -98,6 +98,17 @@ public abstract class ExchangeSession {
 
     protected static final int FREE_BUSY_INTERVAL = 15;
 
+    protected static final String PUBLIC_ROOT = "/public";
+    protected static final String CALENDAR = "calendar";
+    protected static final String CONTACTS = "contacts";
+    protected static final String INBOX = "INBOX";
+    protected static final String SENT = "Sent";
+    protected static final String DRAFTS = "Drafts";
+    protected static final String TRASH = "Trash";
+    protected static final String JUNK = "Junk";
+    protected static final String UNSENT = "Unsent Messages";
+
+
     protected static final Namespace DAV = Namespace.getNamespace("DAV:");
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
@@ -123,6 +134,7 @@ public abstract class ExchangeSession {
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("drafts", URN_SCHEMAS_HTTPMAIL));
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("calendar", URN_SCHEMAS_HTTPMAIL));
         WELL_KNOWN_FOLDERS.add(DavPropertyName.create("contacts", URN_SCHEMAS_HTTPMAIL));
+        WELL_KNOWN_FOLDERS.add(DavPropertyName.create("outbox", URN_SCHEMAS_HTTPMAIL));
     }
 
     protected static final DavPropertyNameSet DISPLAY_NAME = new DavPropertyNameSet();
@@ -168,6 +180,7 @@ public abstract class ExchangeSession {
     protected String draftsUrl;
     protected String calendarUrl;
     protected String contactsUrl;
+    protected String outboxUrl;
     protected String publicFolderUrl;
 
     /**
@@ -851,13 +864,23 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected abstract Condition and(Condition... condition);
+    protected abstract static class IsNullCondition extends Condition {
+         protected String attributeName;
 
-    protected abstract Condition or(Condition... condition);
+        protected IsNullCondition(String attributeName) {
+            this.attributeName = attributeName;
+        }
+    }
 
-    protected abstract Condition not(Condition condition);
+    public abstract Condition and(Condition... condition);
 
-    protected abstract AttributeCondition equals(String attributeName, String value);
+    public abstract Condition or(Condition... condition);
+
+    public abstract Condition not(Condition condition);
+
+    public abstract Condition equals(String attributeName, String value);
+
+    public abstract Condition isNull(String attributeName);
 
     /**
      * Search mail and generic folders under given folder.
@@ -869,7 +892,9 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        return getSubFolders(folderName, or(equals("folderclass", "IPF.Note"), equals("folderclass", "IPF")), recursive);
+        return getSubFolders(folderName,
+                or(equals("folderclass", "IPF.Note"), isNull("folderclass")),
+                recursive);
     }
 
     /**
@@ -1017,18 +1042,18 @@ public abstract class ExchangeSession {
      */
     public String getFolderPath(String folderName) {
         String folderPath;
-        if (folderName.startsWith("INBOX")) {
-            folderPath = folderName.replaceFirst("INBOX", inboxUrl);
-        } else if (folderName.startsWith("Trash")) {
-            folderPath = folderName.replaceFirst("Trash", deleteditemsUrl);
-        } else if (folderName.startsWith("Drafts")) {
-            folderPath = folderName.replaceFirst("Drafts", draftsUrl);
-        } else if (folderName.startsWith("Sent")) {
-            folderPath = folderName.replaceFirst("Sent", sentitemsUrl);
-        } else if (folderName.startsWith("calendar")) {
-            folderPath = folderName.replaceFirst("calendar", calendarUrl);
-        } else if (folderName.startsWith("contacts")) {
-            folderPath = folderName.replaceFirst("contacts", contactsUrl);
+        if (folderName.startsWith(INBOX)) {
+            folderPath = folderName.replaceFirst(INBOX, inboxUrl);
+        } else if (folderName.startsWith(TRASH)) {
+            folderPath = folderName.replaceFirst(TRASH, deleteditemsUrl);
+        } else if (folderName.startsWith(DRAFTS)) {
+            folderPath = folderName.replaceFirst(DRAFTS, draftsUrl);
+        } else if (folderName.startsWith(SENT)) {
+            folderPath = folderName.replaceFirst(SENT, sentitemsUrl);
+        } else if (folderName.startsWith(CALENDAR)) {
+            folderPath = folderName.replaceFirst(CALENDAR, calendarUrl);
+        } else if (folderName.startsWith(CONTACTS)) {
+            folderPath = folderName.replaceFirst(CONTACTS, contactsUrl);
         } else if (folderName.startsWith("public")) {
             folderPath = publicFolderUrl + folderName.substring("public".length());
             // absolute folder path

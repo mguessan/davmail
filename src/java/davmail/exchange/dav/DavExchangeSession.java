@@ -126,16 +126,18 @@ public class DavExchangeSession extends ExchangeSession {
             draftsUrl = getURIPropertyIfExists(properties, "drafts", URN_SCHEMAS_HTTPMAIL);
             calendarUrl = getURIPropertyIfExists(properties, "calendar", URN_SCHEMAS_HTTPMAIL);
             contactsUrl = getURIPropertyIfExists(properties, "contacts", URN_SCHEMAS_HTTPMAIL);
+            outboxUrl = getURIPropertyIfExists(properties, "outbox", URN_SCHEMAS_HTTPMAIL);
+            // junk folder not available over webdav
 
             // default public folder path
-            publicFolderUrl = "/public";
+            publicFolderUrl = PUBLIC_ROOT;
 
             // check public folder access
             try {
                 if (inboxUrl != null) {
                     // try to build full public URI from inboxUrl
                     URI publicUri = new URI(inboxUrl, false);
-                    publicUri.setPath("/public");
+                    publicUri.setPath(PUBLIC_ROOT);
                     publicFolderUrl = publicUri.getURI();
                 }
                 PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, CONTENT_TAG, 0);
@@ -155,14 +157,15 @@ public class DavExchangeSession extends ExchangeSession {
                 publicFolderUrl = "/public";
             }
 
-            LOGGER.debug("Inbox URL : " + inboxUrl +
-                    " Trash URL : " + deleteditemsUrl +
-                    " Sent URL : " + sentitemsUrl +
-                    " Send URL : " + sendmsgUrl +
-                    " Drafts URL : " + draftsUrl +
-                    " Calendar URL : " + calendarUrl +
-                    " Contacts URL : " + contactsUrl +
-                    " Public folder URL : " + publicFolderUrl
+            LOGGER.debug("Inbox URL: " + inboxUrl +
+                    " Trash URL: " + deleteditemsUrl +
+                    " Sent URL: " + sentitemsUrl +
+                    " Send URL: " + sendmsgUrl +
+                    " Drafts URL: " + draftsUrl +
+                    " Calendar URL: " + calendarUrl +
+                    " Contacts URL: " + contactsUrl +
+                    " Outbox URL: " + outboxUrl +
+                    " Public folder URL: " + publicFolderUrl
             );
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
@@ -231,24 +234,41 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected static class IsNullCondition extends ExchangeSession.IsNullCondition {
+        protected IsNullCondition(String attributeName) {
+            super(attributeName);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append('"').append(attributeMap.get(attributeName)).append('"');
+            buffer.append(" is null");
+        }
+    }
+
     @Override
-    protected Condition and(Condition... condition) {
+    public Condition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    protected Condition or(Condition... condition) {
+    public Condition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
     @Override
-    protected Condition not(Condition condition) {
+    public Condition not(Condition condition) {
         return new NotCondition(condition);
     }
 
     @Override
-    protected AttributeCondition equals(String attributeName, String value) {
+    public Condition equals(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
+    }
+
+    @Override
+    public Condition isNull(String attributeName) {
+        return new IsNullCondition(attributeName);
     }
 
 
@@ -265,13 +285,17 @@ public class DavExchangeSession extends ExchangeSession {
 
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
-            folder.folderPath = href.replaceFirst(inboxUrl, "INBOX");
+            folder.folderPath = href.replaceFirst(inboxUrl, INBOX);
         } else if (href.startsWith(sentitemsUrl)) {
-            folder.folderPath = href.replaceFirst(sentitemsUrl, "Sent");
+            folder.folderPath = href.replaceFirst(sentitemsUrl, SENT);
         } else if (href.startsWith(draftsUrl)) {
-            folder.folderPath = href.replaceFirst(draftsUrl, "Drafts");
+            folder.folderPath = href.replaceFirst(draftsUrl, DRAFTS);
         } else if (href.startsWith(deleteditemsUrl)) {
-            folder.folderPath = href.replaceFirst(deleteditemsUrl, "Trash");
+            folder.folderPath = href.replaceFirst(deleteditemsUrl, TRASH);
+        } else if (href.startsWith(calendarUrl)) {
+            folder.folderPath = href.replaceFirst(calendarUrl, CALENDAR);
+        } else if (href.startsWith(contactsUrl)) {
+            folder.folderPath = href.replaceFirst(contactsUrl, CONTACTS);
         } else {
             int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
             if (index >= 0) {
@@ -315,7 +339,8 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public List<Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
-        String mode = recursive ? "DEEP" : "SHALLOW";
+        boolean isPublic = folderName.startsWith("/public");
+        String mode = (!isPublic && recursive) ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\", \"http://schemas.microsoft.com/exchange/outlookfolderclass\", " +
@@ -330,7 +355,11 @@ public class DavExchangeSession extends ExchangeSession {
                 httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest.toString());
 
         for (MultiStatusResponse response : responses) {
+            Folder folder = buildFolder(response);
             folders.add(buildFolder(response));
+            if (isPublic && recursive) {
+                getSubFolders(folder.folderPath, condition, recursive);
+            }
         }
         return folders;
     }

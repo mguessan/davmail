@@ -39,6 +39,8 @@ import java.util.Map;
  */
 public class EwsExchangeSession extends ExchangeSession {
 
+    protected Map<String, String> folderIdMap;
+
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
     }
@@ -65,6 +67,22 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         } finally {
             headMethod.releaseConnection();
+        }
+
+        try {
+            folderIdMap = new HashMap<String, String>();
+            // load actual well known folder ids
+            folderIdMap.put(getFolder(INBOX).folderId.value, INBOX);
+            folderIdMap.put(getFolder(CALENDAR).folderId.value, CALENDAR);
+            folderIdMap.put(getFolder(CONTACTS).folderId.value, CONTACTS);
+            folderIdMap.put(getFolder(SENT).folderId.value, SENT);
+            folderIdMap.put(getFolder(DRAFTS).folderId.value, DRAFTS);
+            folderIdMap.put(getFolder(TRASH).folderId.value, TRASH);
+            folderIdMap.put(getFolder(JUNK).folderId.value, JUNK);
+            folderIdMap.put(getFolder(UNSENT).folderId.value, UNSENT);
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
     }
 
@@ -124,24 +142,42 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
+     protected static class IsNullCondition extends ExchangeSession.IsNullCondition implements SearchExpression {
+        protected IsNullCondition(String attributeName) {
+            super(attributeName);
+        }
+
+        @Override
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("<t:Not><t:Exists>");
+            attributeMap.get(attributeName).appendTo(buffer);
+            buffer.append("</t:Exists></t:Not>");
+        }
+    }
+
     @Override
-    protected Condition and(Condition... condition) {
+    public Condition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    protected Condition or(Condition... condition) {
+    public Condition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
     @Override
-    protected Condition not(Condition condition) {
+    public Condition not(Condition condition) {
         return new NotCondition(condition);
     }
 
     @Override
-    protected AttributeCondition equals(String attributeName, String value) {
+    public Condition equals(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
+    }
+
+    @Override
+    public Condition isNull(String attributeName) {
+        return new IsNullCondition(attributeName);
     }
 
     protected Folder buildFolder(EWSMethod.Item item) {
@@ -151,7 +187,6 @@ public class EwsExchangeSession extends ExchangeSession {
         folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
         // TODO: implement ctag
         folder.ctag = String.valueOf(System.currentTimeMillis());
-        // TODO: implement contentClass, noInferiors
         folder.unreadCount = item.getInt("UnreadCount");
         folder.hasChildren = item.getInt("ChildFolderCount") != 0;
         // noInferiors not implemented
@@ -185,6 +220,8 @@ public class EwsExchangeSession extends ExchangeSession {
             Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
                 folder.folderPath = parentFolderPath + '/' + item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
+            } else if (folderIdMap.get(folder.folderId.value) != null) {
+                folder.folderPath = folderIdMap.get(folder.folderId.value);
             } else {
                 folder.folderPath = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
             }
@@ -199,7 +236,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
+    public EwsExchangeSession.Folder getFolder(String folderPath) throws IOException {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ALL_PROPERTIES, getFolderId(folderPath));
         getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
         getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
@@ -219,28 +256,43 @@ public class EwsExchangeSession extends ExchangeSession {
         return folder;
     }
 
-    protected static final String PUBLIC_ROOT = "/public";
 
     private FolderId getFolderId(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        if (folderPath.startsWith("/public")) {
-            currentFolderId  = DistinguishedFolderId.PUBLICFOLDERSROOT;
+        if (folderPath.startsWith(PUBLIC_ROOT)) {
+            currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
+        } else if (folderPath.startsWith(INBOX)) {
+            currentFolderId = DistinguishedFolderId.INBOX;
+            folderNames = folderPath.substring(INBOX.length()).split("/");
+        } else if (folderPath.startsWith(CALENDAR)) {
+            currentFolderId = DistinguishedFolderId.CALENDAR;
+            folderNames = folderPath.substring(CALENDAR.length()).split("/");
+        } else if (folderPath.startsWith(CONTACTS)) {
+            currentFolderId = DistinguishedFolderId.CONTACTS;
+            folderNames = folderPath.substring(CONTACTS.length()).split("/");
+        } else if (folderPath.startsWith(SENT)) {
+            currentFolderId = DistinguishedFolderId.SENTITEMS;
+            folderNames = folderPath.substring(SENT.length()).split("/");
+        } else if (folderPath.startsWith(DRAFTS)) {
+            currentFolderId = DistinguishedFolderId.DRAFTS;
+            folderNames = folderPath.substring(DRAFTS.length()).split("/");
+        } else if (folderPath.startsWith(TRASH)) {
+            currentFolderId = DistinguishedFolderId.DELETEDITEMS;
+            folderNames = folderPath.substring(TRASH.length()).split("/");
+        } else if (folderPath.startsWith(JUNK)) {
+            currentFolderId = DistinguishedFolderId.JUNKEMAIL;
+            folderNames = folderPath.substring(JUNK.length()).split("/");
+        } else if (folderPath.startsWith(UNSENT)) {
+            currentFolderId = DistinguishedFolderId.OUTBOX;
+            folderNames = folderPath.substring(UNSENT.length()).split("/");
         } else {
-            currentFolderId  = DistinguishedFolderId.MSGFOLDERROOT;
-           folderNames = folderPath.split("/");
+            currentFolderId = DistinguishedFolderId.MSGFOLDERROOT;
+            folderNames = folderPath.split("/");
         }
         for (String folderName : folderNames) {
-            if ("INBOX".equals(folderName)) {
-                currentFolderId = DistinguishedFolderId.INBOX;
-            } else if ("Sent".equals(folderName)) {
-                currentFolderId = DistinguishedFolderId.SENTITEMS;
-            } else if ("Drafts".equals(folderName)) {
-                currentFolderId = DistinguishedFolderId.DRAFTS;
-            } else if ("Trash".equals(folderName)) {
-                currentFolderId = DistinguishedFolderId.DELETEDITEMS;
-            } else if (folderName.length() > 0) {
+            if (folderName.length() > 0) {
                 currentFolderId = getSubFolderByName(currentFolderId, folderName);
             }
         }
@@ -261,7 +313,9 @@ public class EwsExchangeSession extends ExchangeSession {
             findFolderMethod.releaseConnection();
         }
         EWSMethod.Item item = findFolderMethod.getResponseItem();
-        // TODO: handle not found error
+        if (item == null) {
+            throw new DavMailException("EXCEPTION_FOLDER_NOT_FOUND", folderName);
+        }
         return new FolderId(item.get("FolderId"));
     }
 
