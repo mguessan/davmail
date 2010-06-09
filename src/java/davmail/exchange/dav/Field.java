@@ -19,6 +19,7 @@
 package davmail.exchange.dav;
 
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 
 import java.util.HashMap;
@@ -94,11 +95,14 @@ public class Field {
         createField("flagStatus", 0x1090, PropertyType.Integer);//PR_FLAG_STATUS
         createField("messageFlags", 0x0e07, PropertyType.Integer);//PR_MESSAGE_FLAGS
         createField("lastVerbExecuted", 0x1081, PropertyType.Integer);//PR_LAST_VERB_EXECUTED
+        createField("iconIndex", 0x1080, PropertyType.Integer);//PR_ICON_INDEX        
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570);
-        createField(URN_SCHEMAS_HTTPMAIL, "date"); //PR_CLIENT_SUBMIT_TIME, 0x0039
+        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Integer);
+        createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
+        createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
 
         // IMAP search
 
@@ -125,6 +129,12 @@ public class Field {
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag) {
         String name = '{' + distinguishedPropertySetMap.get(propertySetType) + "}/0x" + Integer.toHexString(propertyTag);
+        Field field = new Field(alias, SCHEMAS_MAPI_ID, name);
+        fieldMap.put(field.alias, field);
+    }
+
+    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, PropertyType propertyType) {
+        String name = '{' + distinguishedPropertySetMap.get(propertySetType) + "}/_x" +propertyTypeMap.get(propertyType)+"_x"+Integer.toHexString(propertyTag);
         Field field = new Field(alias, SCHEMAS_MAPI_ID, name);
         fieldMap.put(field.alias, field);
     }
@@ -184,5 +194,9 @@ public class Field {
     public static Field getHeader(String headerName) {
         String name = '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/" + headerName;
         return new Field(SCHEMAS_MAPI_STRING, name);
+    }
+
+    public static DefaultDavProperty createDavProperty(String alias, String value) {
+        return new DefaultDavProperty(Field.get(alias).davPropertyName, value);
     }
 }
