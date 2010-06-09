@@ -601,13 +601,32 @@ public abstract class ExchangeSession {
      */
     public abstract void updateMessage(Message message, Map<String, String> properties) throws IOException;
 
+
+    /**
+     * Delete Exchange message.
+     *
+     * @param message Exchange message
+     * @throws IOException on error
+     */
+    public abstract void deleteMessage(Message message) throws IOException;
+
     /**
      * Send message to recipients, properties contains bcc recipients and other non MIME flags.
-     * @param properties additional message properties
+     *
+     * @param properties  additional message properties
      * @param messageBody MIME message body
      * @throws IOException on error
      */
     public abstract void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException;
+
+    /**
+     * Create message MIME body reader;
+     *
+     * @param message Exchange message
+     * @return message body reader
+     * @throws IOException on error
+     */
+    protected abstract BufferedReader getContentReader(Message message) throws IOException;
 
     protected static final List<String> POP_MESSAGE_ATTRIBUTES = new ArrayList<String>();
 
@@ -1345,40 +1364,8 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void write(OutputStream os, boolean doubleDot) throws IOException {
+            BufferedReader reader = getContentReader(this);
             try {
-                write(os, messageUrl, doubleDot);
-            } catch (HttpNotFoundException e) {
-                LOGGER.debug("Message not found at: " + messageUrl + ", retrying with permanenturl");
-                write(os, permanentUrl, doubleDot);
-            }
-        }
-
-        protected boolean isGzipEncoded(HttpMethod method) {
-            Header[] contentEncodingHeaders = method.getResponseHeaders("Content-Encoding");
-            if (contentEncodingHeaders != null) {
-                for (Header header : contentEncodingHeaders) {
-                    if ("gzip".equals(header.getValue())) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        protected void write(OutputStream os, String url, boolean doubleDot) throws IOException {
-            GetMethod method = new GetMethod(URIUtil.encodePath(url));
-            method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-            method.setRequestHeader("Translate", "f");
-            method.setRequestHeader("Accept-Encoding", "gzip");
-            BufferedReader reader = null;
-            try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-
-                if (isGzipEncoded(method)) {
-                    reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(method.getResponseBodyAsStream())));
-                } else {
-                    reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-                }
                 OutputStreamWriter isoWriter = new OutputStreamWriter(os);
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -1406,27 +1393,12 @@ public abstract class ExchangeSession {
                     isoWriter.write((char) 10);
                 }
                 isoWriter.flush();
-            } catch (HttpException e) {
-                LOGGER.warn("Unable to retrieve message at: " + messageUrl);
-                if (Settings.getBooleanProperty("davmail.deleteBroken")
-                        && method.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                    LOGGER.warn("Deleting broken message at: " + messageUrl + " permanentUrl: " + permanentUrl);
-                    try {
-                        this.delete();
-                    } catch (IOException ioe) {
-                        LOGGER.warn("Unable to delete broken message at: " + permanentUrl);
-                    }
-                }
-                throw e;
             } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        LOGGER.warn("Error closing message input stream", e);
-                    }
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    LOGGER.warn("Error closing message input stream", e);
                 }
-                method.releaseConnection();
             }
         }
 
@@ -1515,7 +1487,7 @@ public abstract class ExchangeSession {
          */
         public void delete() throws IOException {
             LOGGER.debug("Delete " + permanentUrl + " (" + messageUrl + ")");
-            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, permanentUrl);
+            deleteMessage(this);
         }
 
         /**

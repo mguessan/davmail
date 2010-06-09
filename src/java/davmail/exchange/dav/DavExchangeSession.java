@@ -19,13 +19,16 @@
 package davmail.exchange.dav;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -36,13 +39,12 @@ import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.*;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Webdav Exchange adapter.
@@ -737,6 +739,15 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    public void deleteMessage(Message message) throws IOException {
+         LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ")");
+            DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, message.permanentUrl);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
         String messageName = UUID.randomUUID().toString();
 
@@ -748,6 +759,76 @@ public class DavExchangeSession extends ExchangeSession {
         if (status != HttpStatus.SC_OK) {
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
+    }
+
+    protected boolean isGzipEncoded(HttpMethod method) {
+        Header[] contentEncodingHeaders = method.getResponseHeaders("Content-Encoding");
+        if (contentEncodingHeaders != null) {
+            for (Header header : contentEncodingHeaders) {
+                if ("gzip".equals(header.getValue())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    protected BufferedReader getContentReader(Message message) throws IOException {
+        BufferedReader reader = null;
+        try {
+            reader = getContentReader(message, message.messageUrl);
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
+            reader = getContentReader(message, message.permanentUrl);
+        }
+        return reader;
+    }
+
+    protected BufferedReader getContentReader(Message message, String url) throws IOException {
+        final GetMethod method = new GetMethod(URIUtil.encodePath(message.permanentUrl));
+        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+        method.setRequestHeader("Translate", "f");
+        method.setRequestHeader("Accept-Encoding", "gzip");
+
+        BufferedReader reader = null;
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+            InputStreamReader inputStreamReader;
+            if (isGzipEncoded(method)) {
+                inputStreamReader = new InputStreamReader(new GZIPInputStream(method.getResponseBodyAsStream()));
+            } else {
+                inputStreamReader = new InputStreamReader(method.getResponseBodyAsStream());
+            }
+            reader = new BufferedReader(inputStreamReader) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        method.releaseConnection();
+                    }
+                }
+            };
+
+        } catch (HttpException e) {
+            method.releaseConnection();
+            LOGGER.warn("Unable to retrieve message at: " + message.messageUrl);
+            if (Settings.getBooleanProperty("davmail.deleteBroken")
+                    && method.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                LOGGER.warn("Deleting broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl);
+                try {
+                    message.delete();
+                } catch (IOException ioe) {
+                    LOGGER.warn("Unable to delete broken message at: " + message.permanentUrl);
+                }
+            }
+            throw e;
+        }
+        return reader;
     }
 
     /**

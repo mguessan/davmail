@@ -27,7 +27,10 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.NoRouteToHostException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +53,11 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     public EwsExchangeSession(String url, String userName, String password) throws IOException {
         super(url, userName, password);
+    }
+
+    @Override
+    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
@@ -87,8 +95,36 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public void updateMessage(Message message, Map<String, String> properties) throws IOException {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public void deleteMessage(Message message) throws IOException {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    protected BufferedReader getContentReader(Message message) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException {
-        // TODO
         throw new UnsupportedOperationException();
     }
 
@@ -317,6 +353,46 @@ public class EwsExchangeSession extends ExchangeSession {
             folder.folderPath = folderPath;
         }
         return folder;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void createFolder(String folderName, String folderClass) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void deleteFolder(String folderName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void copyMessage(Message message, String targetFolder) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void moveFolder(String folderName, String targetName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    protected void moveToTrash(Message message) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
 
