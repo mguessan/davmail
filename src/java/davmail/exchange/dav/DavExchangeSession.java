@@ -433,17 +433,29 @@ public class DavExchangeSession extends ExchangeSession {
         return folder;
     }
 
+    protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
+
+    static {
+        FOLDER_PROPERTIES.add(Field.get("folderclass").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.get("hassubs").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.get("nosubs").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.get("unreadcount").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.get("contenttag").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.get("lastmodified").davPropertyName);
+    }
+    
+
     /**
      * @inheritDoc
      */
     @Override
-    public Folder getFolder(String folderName) throws IOException {
+    public Folder getFolder(String folderPath) throws IOException {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderName)), 0, FOLDER_PROPERTIES);
+                httpClient, URIUtil.encodePath(getFolderPath(folderPath)), 0, FOLDER_PROPERTIES);
         Folder folder = null;
         if (responses.length > 0) {
             folder = buildFolder(responses[0]);
-            folder.folderName = folderName;
+            folder.folderPath = folderPath;
         }
         return folder;
     }
@@ -601,8 +613,8 @@ public class DavExchangeSession extends ExchangeSession {
                 searchRequest.append(",\"").append(field.getUri()).append("\" as ").append(field.getAlias());
             }
         }
-        searchRequest.append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')\n")
-                .append("                WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False\n");
+        searchRequest.append(" FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')")
+                .append(" WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False");
         if (condition != null) {
             searchRequest.append(" AND ");
             condition.appendTo(searchRequest);

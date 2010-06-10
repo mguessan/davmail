@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import java.util.Set;
+
 /**
  * EWS Find Folder.
  */
@@ -29,12 +31,14 @@ public class FindFolderMethod extends EWSMethod {
      * @param traversal      traversal type
      * @param baseShape      base shape
      * @param parentFolderId parent folder id
+     * @param additionalProperties folder properties
      */
-    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
+    public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId, Set<FieldURI> additionalProperties) {
         super("Folder", "FindFolder");
         this.traversal = traversal;
         this.baseShape = baseShape;
         this.parentFolderId = parentFolderId;
+        this.additionalProperties = additionalProperties;
     }
 
     /**
@@ -43,11 +47,12 @@ public class FindFolderMethod extends EWSMethod {
      * @param traversal        traversal type
      * @param baseShape        base shape
      * @param parentFolderId   parent folder id
+     * @param additionalProperties folder properties
      * @param searchExpression search expression
      */
     public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId,
-                            SearchExpression searchExpression) {
-        this(traversal, baseShape, parentFolderId);
+                            Set<FieldURI> additionalProperties, SearchExpression searchExpression) {
+        this(traversal, baseShape, parentFolderId, additionalProperties);
         this.searchExpression = searchExpression;
     }
 }

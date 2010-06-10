@@ -46,7 +46,7 @@ public abstract class EWSMethod extends PostMethod {
     protected FolderId folderId;
     protected FolderId parentFolderId;
     protected ItemId itemId;
-    protected HashSet<FieldURI> additionalProperties;
+    protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
 
     protected final String itemType;
@@ -119,6 +119,10 @@ public abstract class EWSMethod extends PostMethod {
             additionalProperties = new HashSet<FieldURI>();
         }
         additionalProperties.add(additionalProperty);
+    }
+
+    protected void setAdditionalProperties(Set<FieldURI> additionalProperties) {
+        this.additionalProperties = additionalProperties;
     }
 
     protected void setSearchExpression(SearchExpression searchExpression) {
@@ -297,6 +301,16 @@ public abstract class EWSMethod extends PostMethod {
             }
             return result;
         }
+
+        public boolean getBoolean(String key) {
+            boolean result = false;
+            String value = get(key);
+            if (value != null && value.length() > 0) {
+                result = Boolean.parseBoolean(value);
+            }
+            return result;
+        }
+
     }
 
     public List<Item> getResponseItems() {

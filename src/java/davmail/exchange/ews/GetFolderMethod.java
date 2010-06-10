@@ -18,15 +18,18 @@
  */
 package davmail.exchange.ews;
 
+import java.util.Set;
+
 /**
  * EWS GetFolder method.
  */
 public class GetFolderMethod extends EWSMethod {
 
-    public GetFolderMethod(BaseShape baseShape, FolderId folderId) {
+    public GetFolderMethod(BaseShape baseShape, FolderId folderId, Set<FieldURI> additionalProperties) {
         super("Folder", "GetFolder");
         this.baseShape = baseShape;
         this.folderId = folderId;
+        this.additionalProperties = additionalProperties;
     }
 
 }

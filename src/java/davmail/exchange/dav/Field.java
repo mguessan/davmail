@@ -29,34 +29,6 @@ import java.util.Map;
  * WebDav Field
  */
 public class Field {
-    protected static final Namespace DAV = Namespace.getNamespace("DAV:");
-    protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
-    protected static final Namespace URN_SCHEMAS_MAILHEADER = Namespace.getNamespace("urn:schemas:mailheader:");
-
-    protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
-    protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
-    protected static final Namespace SCHEMAS_MAPI_ID = Namespace.getNamespace("http://schemas.microsoft.com/mapi/id/");
-    protected static final Namespace SCHEMAS_MAPI_STRING = Namespace.getNamespace("http://schemas.microsoft.com/mapi/string/");
-    protected static final Namespace URN_SCHEMAS_CONTACTS = Namespace.getNamespace("urn:schemas:contacts:");
-
-    protected static enum PropertyType {
-        ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
-        Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
-        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
-    }
-
-    protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
-
-    static {
-        propertyTypeMap.put(PropertyType.Integer, "0003");
-        propertyTypeMap.put(PropertyType.Boolean, "000b");
-        propertyTypeMap.put(PropertyType.SystemTime, "0040");
-        propertyTypeMap.put(PropertyType.String, "001f");
-    }
-
-    protected static enum DistinguishedPropertySetType {
-        Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
-    }
 
     protected static final Map<DistinguishedPropertySetType, String> distinguishedPropertySetMap = new HashMap<DistinguishedPropertySetType, String>();
 
@@ -71,6 +43,44 @@ public class Field {
         distinguishedPropertySetMap.put(DistinguishedPropertySetType.Task, "00062003-0000-0000-c000-000000000046");
     }
 
+    protected static final Namespace DAV = Namespace.getNamespace("DAV:");
+    protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
+    protected static final Namespace URN_SCHEMAS_MAILHEADER = Namespace.getNamespace("urn:schemas:mailheader:");
+
+    protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
+    protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
+    protected static final Namespace SCHEMAS_MAPI_ID = Namespace.getNamespace("http://schemas.microsoft.com/mapi/id/");
+    protected static final Namespace SCHEMAS_MAPI_STRING = Namespace.getNamespace("http://schemas.microsoft.com/mapi/string/");
+    protected static final Namespace SCHEMAS_REPL = Namespace.getNamespace("http://schemas.microsoft.com/repl/");
+    protected static final Namespace URN_SCHEMAS_CONTACTS = Namespace.getNamespace("urn:schemas:contacts:");
+
+    protected static final Namespace SCHEMAS_MAPI_STRING_INTERNET_HEADERS =
+            Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
+                    '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/");
+
+
+    protected static enum PropertyType {
+        ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
+        Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
+        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray,
+        Custom
+    }
+
+    protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
+
+    static {
+        propertyTypeMap.put(PropertyType.Integer, "0003");
+        propertyTypeMap.put(PropertyType.Boolean, "000b");
+        propertyTypeMap.put(PropertyType.SystemTime, "0040");
+        propertyTypeMap.put(PropertyType.String, "001f");
+        propertyTypeMap.put(PropertyType.Custom, "0030");
+    }
+
+    protected static enum DistinguishedPropertySetType {
+        Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
+    }
+
+
     protected static final Map<String, Field> fieldMap = new HashMap<String, Field>();
 
     static {
@@ -84,8 +94,13 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "contacts");
         createField(URN_SCHEMAS_HTTPMAIL, "outbox");
 
+
         // folder
         createField("folderclass", SCHEMAS_EXCHANGE, "outlookfolderclass");
+        createField(DAV, "hassubs");
+        createField(DAV, "nosubs");
+        createField(URN_SCHEMAS_HTTPMAIL, "unreadcount");
+        createField(SCHEMAS_REPL, "contenttag");
 
         // POP and IMAP message
         createField(DAV, "uid");
@@ -99,7 +114,8 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570);
-        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Integer);
+        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Custom);
+        // http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8506 private
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
         createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
@@ -134,8 +150,10 @@ public class Field {
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, PropertyType propertyType) {
-        String name = '{' + distinguishedPropertySetMap.get(propertySetType) + "}/_x" +propertyTypeMap.get(propertyType)+"_x"+Integer.toHexString(propertyTag);
-        Field field = new Field(alias, SCHEMAS_MAPI_ID, name);
+        String name = "_x" + propertyTypeMap.get(propertyType) + "_x" + Integer.toHexString(propertyTag);
+
+        Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name);
         fieldMap.put(field.alias, field);
     }
 
@@ -160,7 +178,7 @@ public class Field {
     public Field(String alias, Namespace namespace, String name) {
         davPropertyName = DavPropertyName.create(name, namespace);
         this.alias = alias;
-        this.uri = namespace.getURI()+name;
+        this.uri = namespace.getURI() + name;
     }
 
     public String getUri() {
@@ -192,8 +210,7 @@ public class Field {
      * @return field
      */
     public static Field getHeader(String headerName) {
-        String name = '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/" + headerName;
-        return new Field(SCHEMAS_MAPI_STRING, name);
+        return new Field(SCHEMAS_MAPI_STRING_INTERNET_HEADERS, headerName);
     }
 
     public static DefaultDavProperty createDavProperty(String alias, String value) {

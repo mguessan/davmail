@@ -36,7 +36,6 @@ import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
-import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
@@ -59,7 +58,6 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Exchange session through Outlook Web Access (DAV)
@@ -130,17 +128,6 @@ public abstract class ExchangeSession {
 
     static {
         DISPLAY_NAME.add(DavPropertyName.DISPLAYNAME);
-    }
-
-    protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
-
-    static {
-        FOLDER_PROPERTIES.add(DavPropertyName.create("contentclass", DAV));
-        FOLDER_PROPERTIES.add(DavPropertyName.create("hassubs"));
-        FOLDER_PROPERTIES.add(DavPropertyName.create("nosubs"));
-        FOLDER_PROPERTIES.add(DavPropertyName.create("unreadcount", URN_SCHEMAS_HTTPMAIL));
-        FOLDER_PROPERTIES.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
-        FOLDER_PROPERTIES.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
     }
 
     protected static final DavPropertyNameSet CONTENT_TAG = new DavPropertyNameSet();
@@ -965,16 +952,17 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public boolean refreshFolder(Folder currentFolder) throws IOException {
-        Folder newFolder = getFolder(currentFolder.folderName);
+        Folder newFolder = getFolder(currentFolder.folderPath);
         if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Contenttag changed on " + currentFolder.folderName + ' '
+                LOGGER.debug("Contenttag changed on " + currentFolder.folderPath + ' '
                         + currentFolder.ctag + " => " + newFolder.ctag + ", reloading messages");
             }
             currentFolder.hasChildren = newFolder.hasChildren;
             currentFolder.noInferiors = newFolder.noInferiors;
             currentFolder.unreadCount = newFolder.unreadCount;
             currentFolder.ctag = newFolder.ctag;
+            currentFolder.etag = newFolder.etag;
             currentFolder.loadMessages();
             return true;
         } else {
@@ -1065,10 +1053,6 @@ public abstract class ExchangeSession {
          */
         public boolean noInferiors;
         /**
-         * Requested folder name
-         */
-        public String folderName;
-        /**
          * Folder content tag (to detect folder content changes).
          */
         public String ctag;
@@ -1118,7 +1102,7 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public MessageList searchMessages(Condition condition) throws IOException {
-            MessageList localMessages = ExchangeSession.this.searchMessages(folderName, condition);
+            MessageList localMessages = ExchangeSession.this.searchMessages(folderPath, condition);
             fixUids(localMessages);
             return localMessages;
         }

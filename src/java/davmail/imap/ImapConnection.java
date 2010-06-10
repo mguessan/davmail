@@ -465,7 +465,7 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
-                                        DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderName));
+                                        DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderPath));
                                         List<Long> previousImapUidList = currentFolder.getImapUidList();
                                         if (session.refreshFolder(currentFolder)) {
                                             handleRefresh(previousImapUidList, currentFolder.getImapUidList());

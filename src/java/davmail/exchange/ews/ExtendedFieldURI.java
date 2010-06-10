@@ -96,6 +96,9 @@ public class ExtendedFieldURI implements FieldURI {
     public static final ExtendedFieldURI PR_CONTAINER_CLASS = new ExtendedFieldURI(0x3613, PropertyType.String);
 
     public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI(0x3008, PropertyType.SystemTime);
+    public static final ExtendedFieldURI PR_LOCAL_COMMIT_TIME_MAX = new ExtendedFieldURI(0x670a, PropertyType.SystemTime);
+    public static final ExtendedFieldURI PR_SUBFOLDERS = new ExtendedFieldURI(0x360a, PropertyType.Boolean);
+    public static final ExtendedFieldURI PR_CONTENT_UNREAD = new ExtendedFieldURI(0x3603, PropertyType.Integer);
 
     // message properties
     public static final ExtendedFieldURI PR_READ = new ExtendedFieldURI(0xe69, PropertyType.Boolean);

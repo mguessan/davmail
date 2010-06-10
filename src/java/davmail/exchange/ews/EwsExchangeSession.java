@@ -31,10 +31,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * EWS Exchange adapter.
@@ -57,7 +54,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        // TODO: implement
+        return false;
     }
 
     @Override
@@ -279,15 +277,24 @@ public class EwsExchangeSession extends ExchangeSession {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, "False");
     }
 
+    protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<FieldURI>();
+    static {
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_URL_COMP_NAME);
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_CONTAINER_CLASS);
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX);
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_CONTENT_UNREAD);
+        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_SUBFOLDERS);
+    }
+
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item.get("FolderId"));
         folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getPropertyTag());
         folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
-        // TODO: implement ctag
-        folder.ctag = String.valueOf(System.currentTimeMillis());
-        folder.unreadCount = item.getInt("UnreadCount");
-        folder.hasChildren = item.getInt("ChildFolderCount") != 0;
+        folder.ctag = item.get(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX.getPropertyTag());
+        folder.unreadCount = item.getInt(ExtendedFieldURI.PR_CONTENT_UNREAD.getPropertyTag());
+        folder.hasChildren = item.getBoolean(ExtendedFieldURI.PR_SUBFOLDERS.getPropertyTag());
         // noInferiors not implemented
         return folder;
     }
@@ -305,11 +312,8 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
-        FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW, BaseShape.ALL_PROPERTIES, parentFolderId);
-        findFolderMethod.setSearchExpression((SearchExpression) condition);
-        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
-        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
-        findFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_CONTAINER_CLASS);
+        FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
+                BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression)condition);
         try {
             httpClient.executeMethod(findFolderMethod);
         } finally {
@@ -336,11 +340,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public EwsExchangeSession.Folder getFolder(String folderPath) throws IOException {
-        GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ALL_PROPERTIES, getFolderId(folderPath));
-        getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_URL_COMP_NAME);
-        getFolderMethod.addAdditionalProperty(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
-        //getFolderMethod.addAdditionalProperty(new ExtendedFieldURI("0x65E2", ExtendedFieldURI.PropertyType.Binary));
-        //getFolderMethod.addAdditionalProperty(new ExtendedFieldURI("00062040-0000-0000-C000-000000000046", 0x8A23, ExtendedFieldURI.PropertyType.SystemTime));
+        GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, getFolderId(folderPath), FOLDER_PROPERTIES);
         try {
             httpClient.executeMethod(getFolderMethod);
         } finally {
@@ -443,6 +443,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 FolderQueryTraversal.SHALLOW,
                 BaseShape.ID_ONLY,
                 parentFolderId,
+                FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
                         ExtendedFieldURI.PR_URL_COMP_NAME, folderName)
         );
