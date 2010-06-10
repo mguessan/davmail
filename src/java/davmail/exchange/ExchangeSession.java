@@ -1867,8 +1867,12 @@ public abstract class ExchangeSession {
             return "text/calendar;charset=UTF-8";
         }
 
+        protected static final String TEXT_CALENDAR = "text/calendar";
+        protected static final String APPLICATION_ICS = "application/ics";
+
         protected boolean isCalendarContentType(String contentType) {
-            return contentType.startsWith("text/calendar") || contentType.startsWith("application/ics");
+            return TEXT_CALENDAR.regionMatches(true, 0, contentType, 0, TEXT_CALENDAR.length()) ||
+                    APPLICATION_ICS.regionMatches(true, 0, contentType, 0, APPLICATION_ICS.length());
         }
 
         protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
