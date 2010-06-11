@@ -31,6 +31,7 @@ import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
@@ -495,7 +496,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     public void createFolder(String folderName, String folderClass) throws IOException {
         String folderPath = getFolderPath(folderName);
-        ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
         list.add(Field.createDavProperty("folderclass", folderClass));
         // standard MkColMethod does not take properties, override PropPatchMethod instead
         PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
@@ -634,8 +635,8 @@ public class DavExchangeSession extends ExchangeSession {
         return messages;
     }
 
-    protected List<DavProperty> buildProperties(Map<String, String> properties) {
-        ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+    protected List<DavConstants> buildProperties(Map<String, String> properties) {
+        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
                 list.add(Field.createDavProperty("read", entry.getValue()));

@@ -18,6 +18,7 @@
  */
 package davmail.exchange.dav;
 
+import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
 import org.apache.jackrabbit.webdav.xml.Namespace;
@@ -213,7 +214,12 @@ public class Field {
         return new Field(SCHEMAS_MAPI_STRING_INTERNET_HEADERS, headerName);
     }
 
-    public static DefaultDavProperty createDavProperty(String alias, String value) {
-        return new DefaultDavProperty(Field.get(alias).davPropertyName, value);
+    public static DavConstants createDavProperty(String alias, String value) {
+        if (value == null) {
+            // return DavPropertyName to remove property
+            return Field.get(alias).davPropertyName;
+        } else {
+            return new DefaultDavProperty(Field.get(alias).davPropertyName, value);
+        }
     }
 }
