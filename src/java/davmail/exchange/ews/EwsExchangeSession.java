@@ -278,6 +278,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<FieldURI>();
+
     static {
         FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_URL_COMP_NAME);
         FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
@@ -313,7 +314,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
         FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
-                BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression)condition);
+                BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
         try {
             httpClient.executeMethod(findFolderMethod);
         } finally {
@@ -392,6 +393,31 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     protected void moveToTrash(Message message) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected List<Contact> searchContacts(String folderName, List<String> attributes, Condition condition) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected List<Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Item getItem(String folderPath, String itemName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         throw new UnsupportedOperationException();
     }
 

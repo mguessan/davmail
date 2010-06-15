@@ -54,6 +54,7 @@ public class Field {
     protected static final Namespace SCHEMAS_MAPI_STRING = Namespace.getNamespace("http://schemas.microsoft.com/mapi/string/");
     protected static final Namespace SCHEMAS_REPL = Namespace.getNamespace("http://schemas.microsoft.com/repl/");
     protected static final Namespace URN_SCHEMAS_CONTACTS = Namespace.getNamespace("urn:schemas:contacts:");
+    protected static final Namespace URN_SCHEMAS_CALENDAR = Namespace.getNamespace("urn:schemas:calendar:");
 
     protected static final Namespace SCHEMAS_MAPI_STRING_INTERNET_HEADERS =
             Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
@@ -74,6 +75,7 @@ public class Field {
         propertyTypeMap.put(PropertyType.Boolean, "000b");
         propertyTypeMap.put(PropertyType.SystemTime, "0040");
         propertyTypeMap.put(PropertyType.String, "001f");
+        propertyTypeMap.put(PropertyType.Binary, "0102");
         propertyTypeMap.put(PropertyType.Custom, "0030");
     }
 
@@ -133,9 +135,21 @@ public class Field {
 
         createField("lastmodified", 0x3008, PropertyType.SystemTime);//PR_LAST_MODIFICATION_TIME DAV:getlastmodified
 
-
         // failover search
         createField(DAV, "displayname");
+
+        // items
+        createField("etag", DAV, "getetag");
+
+        // calendar
+        createField(SCHEMAS_EXCHANGE, "permanenturl");
+        createField(URN_SCHEMAS_CALENDAR, "instancetype");
+        createField(URN_SCHEMAS_CALENDAR, "dtstart");
+        createField(SCHEMAS_EXCHANGE, "sensitivity");
+        createField("processed", 0x65e8, PropertyType.Boolean);//PR_MESSAGE_PROCESSED
+
+        createField(DAV, "contentclass");
+        createField("internetContent", 0x6659, PropertyType.Binary);
     }
 
     protected static void createField(String alias, int propertyTag, PropertyType propertyType) {
