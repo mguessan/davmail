@@ -742,6 +742,8 @@ public abstract class ExchangeSession {
 
     public abstract Condition equals(String attributeName, String value);
 
+    public abstract Condition equals(String attributeName, int value);
+
     public abstract Condition headerEquals(String headerName, String value);
 
     public abstract Condition gte(String attributeName, String value);
@@ -2586,7 +2588,7 @@ public abstract class ExchangeSession {
     public List<Event> getEventMessages(String folderPath) throws IOException {
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(equals("contentclass", "urn:content-classes:calendarmessage"),
-                        isFalse("processed")));
+                        or(isNull("processed"), isFalse("processed"))));
     }
 
     /**
@@ -2614,8 +2616,8 @@ public abstract class ExchangeSession {
 
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(or(isNull("instancetype"),
-                        equals("instancetype", "1"),
-                        and(equals("instancetype", "0"), dateCondition)),
+                        equals("instancetype", 1),
+                        and(equals("instancetype", 0), dateCondition)),
                         equals("contentclass", "urn:content-classes:appointment"),
                         privateCondition));
     }

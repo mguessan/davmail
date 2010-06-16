@@ -238,6 +238,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public Condition equals(String attributeName, int value) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, String.valueOf(value));
+    }
+
+    @Override
     public Condition headerEquals(String headerName, String value) {
         return new HeaderCondition(headerName, Operator.IsEqualTo, value);
     }

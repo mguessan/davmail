@@ -272,19 +272,29 @@ public class DavExchangeSession extends ExchangeSession {
         operatorMap.put(Operator.IsLessThan, " < ");
         operatorMap.put(Operator.Like, " like ");
         operatorMap.put(Operator.IsNull, " is null");
-        operatorMap.put(Operator.IsFalse, " is false");
+        operatorMap.put(Operator.IsFalse, " = false");
+        operatorMap.put(Operator.IsTrue, " = true");
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
+        protected boolean isIntValue = false;
+
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
+        }
+
+        protected AttributeCondition(String attributeName, Operator operator, int value) {
+            super(attributeName, operator, String.valueOf(value));
+            isIntValue = true;
         }
 
         @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
             buffer.append(operatorMap.get(operator));
-            buffer.append('\'');
+            if (!isIntValue) {
+                buffer.append('\'');
+            }
             if (Operator.Like == operator) {
                 buffer.append('%');
             }
@@ -292,7 +302,9 @@ public class DavExchangeSession extends ExchangeSession {
             if (Operator.Like == operator) {
                 buffer.append('%');
             }
-            buffer.append('\'');
+            if (!isIntValue) {
+                buffer.append('\'');
+            }
         }
     }
 
@@ -351,6 +363,11 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public Condition equals(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
+    }
+
+    @Override
+    public Condition equals(String attributeName, int value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
 
@@ -428,9 +445,9 @@ public class DavExchangeSession extends ExchangeSession {
         public Event(MultiStatusResponse multiStatusResponse) throws URIException {
             href = URIUtil.decode(multiStatusResponse.getHref());
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
-            permanentUrl = getPropertyIfExists(properties, "permanenturl", SCHEMAS_EXCHANGE);
-            etag = getPropertyIfExists(properties, "getetag", DAV);
-            displayName = getPropertyIfExists(properties, "displayname", DAV);
+            permanentUrl = getPropertyIfExists(properties, "permanenturl");
+            etag = getPropertyIfExists(properties, "etag");
+            displayName = getPropertyIfExists(properties, "displayname");
         }
 
         public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
@@ -651,8 +668,8 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected String getPropertyIfExists(DavPropertySet properties, String name) {
-        DavProperty property = properties.get(name, EMPTY);
+    protected String getPropertyIfExists(DavPropertySet properties, String alias) {
+        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
             return null;
         } else {
@@ -660,8 +677,8 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected int getIntPropertyIfExists(DavPropertySet properties, String name) {
-        DavProperty property = properties.get(name, EMPTY);
+    protected int getIntPropertyIfExists(DavPropertySet properties, String alias) {
+        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
             return 0;
         } else {
@@ -669,8 +686,8 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected long getLongPropertyIfExists(DavPropertySet properties, String name) {
-        DavProperty property = properties.get(name, EMPTY);
+    protected long getLongPropertyIfExists(DavPropertySet properties, String alias) {
+        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
             return 0;
         } else {
@@ -768,14 +785,15 @@ public class DavExchangeSession extends ExchangeSession {
     public MultiStatusResponse[] searchItems(String folderName, List<String> attributes, Condition condition) throws IOException {
         String folderUrl = getFolderPath(folderName);
         StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"http://schemas.microsoft.com/exchange/permanenturl\" as permanenturl");
+        searchRequest.append("SELECT ")
+                .append(Field.getRequestPropertyString("permanenturl"));
         if (attributes != null) {
             for (String attribute : attributes) {
                 Field field = Field.get(attribute);
-                searchRequest.append(",\"").append(field.getUri()).append("\" as ").append(field.getAlias());
+                searchRequest.append(',').append(Field.getRequestPropertyString(field.getAlias()));
             }
         }
-        searchRequest.append(" FROM Scope('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')")
+        searchRequest.append(" FROM SCOPE('SHALLOW TRAVERSAL OF \"").append(folderUrl).append("\"')")
                 .append(" WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False");
         if (condition != null) {
             searchRequest.append(" AND ");

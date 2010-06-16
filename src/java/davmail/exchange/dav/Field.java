@@ -61,6 +61,9 @@ public class Field {
                     '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/");
 
 
+    /**
+     * Property type list from EWS
+     */
     protected static enum PropertyType {
         ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
         Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
@@ -116,7 +119,7 @@ public class Field {
         createField("iconIndex", 0x1080, PropertyType.Integer);//PR_ICON_INDEX        
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
-        createField("deleted", DistinguishedPropertySetType.Common, 0x8570);
+        createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted");
         createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Custom);
         // http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8506 private
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
@@ -158,9 +161,9 @@ public class Field {
         fieldMap.put(field.alias, field);
     }
 
-    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag) {
+    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
         String name = '{' + distinguishedPropertySetMap.get(propertySetType) + "}/0x" + Integer.toHexString(propertyTag);
-        Field field = new Field(alias, SCHEMAS_MAPI_ID, name);
+        Field field = new Field(alias, SCHEMAS_MAPI_ID, name, responseAlias);
         fieldMap.put(field.alias, field);
     }
 
@@ -185,15 +188,25 @@ public class Field {
     protected final DavPropertyName davPropertyName;
     protected final String alias;
     protected final String uri;
+    protected final String requestPropertyString;
 
     public Field(Namespace namespace, String name) {
         this(name, namespace, name);
     }
 
     public Field(String alias, Namespace namespace, String name) {
+        this(alias, namespace, name, null);
+    }
+
+    public Field(String alias, Namespace namespace, String name, String responseAlias) {
         davPropertyName = DavPropertyName.create(name, namespace);
         this.alias = alias;
         this.uri = namespace.getURI() + name;
+        if (responseAlias == null) {
+            this.requestPropertyString = '"' + uri + '"';
+        } else {
+            this.requestPropertyString = '"' + uri + "\" as " + responseAlias;
+        }
     }
 
     public String getUri() {
@@ -235,5 +248,14 @@ public class Field {
         } else {
             return new DefaultDavProperty(Field.get(alias).davPropertyName, value);
         }
+    }
+
+
+    public static DavPropertyName getResponsePropertyName(String alias) {
+        return Field.get(alias).davPropertyName;
+    }
+
+    public static String getRequestPropertyString(String alias) {
+        return Field.get(alias).requestPropertyString;
     }
 }
