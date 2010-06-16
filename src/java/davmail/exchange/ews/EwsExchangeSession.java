@@ -417,6 +417,16 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public int deleteItem(String folderPath, String itemName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int sendEvent(String icsBody) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         throw new UnsupportedOperationException();
     }

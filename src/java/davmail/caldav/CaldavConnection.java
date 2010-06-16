@@ -280,7 +280,7 @@ public class CaldavConnection extends AbstractConnection {
                 String folderPath = request.getExchangeFolderPath();
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
-                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(session.getFolderResourceTag(folderPath)), "text/vcard", (byte[])null, true);
+                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[])null, true);
                 } else {
                 List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
                 ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
@@ -470,8 +470,9 @@ public class CaldavConnection extends AbstractConnection {
         // do not try to access inbox on shared calendar
         if (!session.isSharedFolder(exchangeFolderPath)) {
             try {
-                ctag = base64Encode(session.getFolderCtag(exchangeFolderPath));
-                etag = session.getFolderResourceTag(exchangeFolderPath);
+                ExchangeSession.Folder folder = session.getFolder(exchangeFolderPath);
+                ctag = base64Encode(folder.ctag);
+                etag = base64Encode(folder.etag);
             } catch (HttpException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", exchangeFolderPath, e.getMessage()));
@@ -735,8 +736,9 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:displayname", request.getLastPath());
         }
         if (request.hasProperty("getctag")) {
+            ExchangeSession.Folder  rootFolder = session.getFolder("");
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    base64Encode(session.getFolderCtag(request.getExchangeFolderPath())));
+                    base64Encode(rootFolder.ctag));
         }
         response.endPropStatOK();
         if (request.getDepth() == 1) {

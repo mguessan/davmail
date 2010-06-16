@@ -24,15 +24,20 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.ICSBufferedReader;
+import davmail.exchange.ICSBufferedWriter;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.DavException;
+import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
@@ -41,6 +46,10 @@ import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.*;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -421,9 +430,9 @@ public class DavExchangeSession extends ExchangeSession {
         public Contact(MultiStatusResponse multiStatusResponse) throws URIException {
             href = URIUtil.decode(multiStatusResponse.getHref());
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
-            permanentUrl = getPropertyIfExists(properties, "permanenturl", SCHEMAS_EXCHANGE);
-            etag = getPropertyIfExists(properties, "getetag", DAV);
-            displayName = getPropertyIfExists(properties, "displayname", DAV);
+            permanentUrl = getPropertyIfExists(properties, "permanenturl");
+            etag = getPropertyIfExists(properties, "etag");
+            displayName = getPropertyIfExists(properties, "displayname");
         }
 
         /**
@@ -431,6 +440,155 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public Contact(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
             super(messageUrl, contentClass, itemBody, etag, noneMatch);
+        }
+
+        @Override
+        public String getBody() throws HttpException {
+            // first retrieve contact details
+            String result = null;
+
+            PropFindMethod propFindMethod = null;
+            try {
+                propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl));
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+                if (responses.getResponses().length > 0) {
+                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+
+                    ICSBufferedWriter writer = new ICSBufferedWriter();
+                    writer.writeLine("BEGIN:VCARD");
+                    writer.writeLine("VERSION:3.0");
+                    writer.write("UID:");
+                    writer.writeLine(getUid());
+                    writer.write("FN:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), ""));
+                    // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
+                    writer.write("N:");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("middlename", URN_SCHEMAS_CONTACTS), ""));
+
+                    writer.write("TEL;TYPE=cell:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write("TEL;TYPE=work:");
+                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), ""));
+                    //writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("initials", URN_SCHEMAS_CONTACTS), ""));
+
+                    // The structured type value corresponds, in sequence, to the post office box; the extended address;
+                    // the street address; the locality (e.g., city); the region (e.g., state or province);
+                    // the postal code; the country name
+                    // ADR;TYPE=dom,home,postal,parcel:;;123 Main Street;Any Town;CA;91921-1234
+                    writer.write("ADR;TYPE=home:;;");
+                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("homepostaladdress", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(";;;");
+                    writer.newLine();
+                    writer.writeLine("END:VCARD");
+                    result = writer.toString();
+
+                }
+            } catch (DavException e) {
+                throw buildHttpException(e);
+            } catch (IOException e) {
+                throw buildHttpException(e);
+            } finally {
+                if (propFindMethod != null) {
+                    propFindMethod.releaseConnection();
+                }
+            }
+            return result;
+
+        }
+
+        protected List<DavProperty> buildProperties() throws IOException {
+            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+            list.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), contentClass));
+            list.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", SCHEMAS_EXCHANGE), "IPM.Contact"));
+
+            ICSBufferedReader reader = new ICSBufferedReader(new StringReader(itemBody));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int index = line.indexOf(':');
+                if (index >= 0) {
+                    String key = line.substring(0, index);
+                    String value = line.substring(index + 1);
+                    if ("FN".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), value));
+                        list.add(new DefaultDavProperty(DavPropertyName.create("subject", URN_SCHEMAS_HTTPMAIL), value));
+                        list.add(new DefaultDavProperty(DavPropertyName.create("fileas", URN_SCHEMAS_CONTACTS), value));
+
+                    } else if ("N".equals(key)) {
+                        String[] values = value.split(";");
+                        if (values.length > 0) {
+                            list.add(new DefaultDavProperty(DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), values[0]));
+                        }
+                        if (values.length > 1) {
+                            list.add(new DefaultDavProperty(DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), values[1]));
+                        }
+                    } else if ("TEL;TYPE=cell".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), value));
+                    } else if ("TEL;TYPE=work".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), value));
+                    } else if ("TEL;TYPE=home".equals(key)) {
+                        list.add(new DefaultDavProperty(DavPropertyName.create("homePhone", URN_SCHEMAS_CONTACTS), value));
+                    }
+                }
+            }
+            return list;
+        }
+
+        public ItemResult createOrUpdate() throws IOException {
+            int status = 0;
+            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), buildProperties());
+            propPatchMethod.setRequestHeader("Translate", "f");
+            if (etag != null) {
+                propPatchMethod.setRequestHeader("If-Match", etag);
+            }
+            if (noneMatch != null) {
+                propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
+            }
+            try {
+                status = httpClient.executeMethod(propPatchMethod);
+                if (status == HttpStatus.SC_MULTI_STATUS) {
+                    MultiStatus responses = propPatchMethod.getResponseBodyAsMultiStatus();
+                    if (responses.getResponses().length > 0) {
+                        status = responses.getResponses()[0].getStatus()[0].getStatusCode();
+                    }
+
+                    if (status == HttpStatus.SC_CREATED) {
+                        LOGGER.debug("Created contact " + href);
+                    } else {
+                        LOGGER.debug("Updated contact " + href);
+                    }
+                } else {
+                    LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
+                }
+            } catch (DavException e) {
+                LOGGER.error("Error in item create or update", e);
+                throw new IOException(e);
+            } finally {
+                propPatchMethod.releaseConnection();
+            }
+            ItemResult itemResult = new ItemResult();
+            // 440 means forbidden on Exchange
+            if (status == 440) {
+                status = HttpStatus.SC_FORBIDDEN;
+            }
+            itemResult.status = status;
+            // need to retrieve new etag
+            HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(href));
+            try {
+                httpClient.executeMethod(headMethod);
+                if (headMethod.getResponseHeader("ETag") != null) {
+                    itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
+                }
+            } finally {
+                headMethod.releaseConnection();
+            }
+
+            return itemResult;
+
         }
 
     }
@@ -452,6 +610,99 @@ public class DavExchangeSession extends ExchangeSession {
 
         public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
             super(messageUrl, contentClass, itemBody, etag, noneMatch);
+        }
+
+        /**
+         * Load ICS content from MIME message input stream
+         *
+         * @param mimeInputStream mime message input stream
+         * @return mime message ics attachment body
+         * @throws IOException        on error
+         * @throws javax.mail.MessagingException on error
+         */
+        protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
+            String result;
+            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+            Object mimeBody = mimeMessage.getContent();
+            MimePart bodyPart = null;
+            if (mimeBody instanceof MimeMultipart) {
+                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
+            } else if (isCalendarContentType(mimeMessage.getContentType())) {
+                // no multipart, single body
+                bodyPart = mimeMessage;
+            }
+
+            if (bodyPart != null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.getDataHandler().writeTo(baos);
+                baos.close();
+                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.writeTo(baos);
+                baos.close();
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
+            }
+            return result;
+        }
+
+
+        protected String getICSFromInternetContentProperty() throws IOException, DavException, MessagingException {
+            String result = null;
+            // PropFind PR_INTERNET_CONTENT
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(PR_INTERNET_CONTENT);
+            PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl), davPropertyNameSet, 0);
+            try {
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+                if (responses.getResponses().length > 0) {
+                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+                    DavProperty property = properties.get(PR_INTERNET_CONTENT);
+                    if (property != null) {
+                        byte[] byteArray = Base64.decodeBase64(((String) property.getValue()).getBytes());
+                        result = getICS(new ByteArrayInputStream(byteArray));
+                    }
+                }
+            } finally {
+                propFindMethod.releaseConnection();
+            }
+            return result;
+        }
+
+        /**
+         * Load ICS content from Exchange server.
+         * User Translate: f header to get MIME event content and get ICS attachment from it
+         *
+         * @return ICS (iCalendar) event
+         * @throws HttpException on error
+         */
+        @Override
+        public String getBody() throws HttpException {
+            String result;
+            LOGGER.debug("Get event: " + permanentUrl);
+            // try to get PR_INTERNET_CONTENT
+            try {
+                result = getICSFromInternetContentProperty();
+                if (result == null) {
+                    GetMethod method = new GetMethod(permanentUrl);
+                    method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+                    method.setRequestHeader("Translate", "f");
+                    try {
+                        DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+                        result = getICS(method.getResponseBodyAsStream());
+                    } finally {
+                        method.releaseConnection();
+                    }
+                }
+            } catch (DavException e) {
+                throw buildHttpException(e);
+            } catch (IOException e) {
+                throw buildHttpException(e);
+            } catch (MessagingException e) {
+                throw buildHttpException(e);
+            }
+            return result;
         }
 
         protected ItemResult createOrUpdate(byte[] messageContent) throws IOException {
@@ -519,12 +770,13 @@ public class DavExchangeSession extends ExchangeSession {
         String href = URIUtil.decode(entity.getHref());
         Folder folder = new Folder();
         DavPropertySet properties = entity.getProperties(HttpStatus.SC_OK);
-        folder.folderClass = getPropertyIfExists(properties, "outlookfolderclass", SCHEMAS_EXCHANGE);
-        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs", DAV));
-        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs", DAV));
-        folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount", URN_SCHEMAS_HTTPMAIL);
-        folder.ctag = getPropertyIfExists(properties, "contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/"));
-        folder.etag = getPropertyIfExists(properties, "x30080040", SCHEMAS_MAPI_PROPTAG);
+        folder.displayName = getPropertyIfExists(properties, "displayname");
+        folder.folderClass = getPropertyIfExists(properties, "folderclass");
+        folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs"));
+        folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs"));
+        folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount");
+        folder.ctag = getPropertyIfExists(properties, "contenttag");
+        folder.etag = getPropertyIfExists(properties, "lastmodified");
 
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
@@ -565,12 +817,13 @@ public class DavExchangeSession extends ExchangeSession {
     protected static final DavPropertyNameSet FOLDER_PROPERTIES = new DavPropertyNameSet();
 
     static {
-        FOLDER_PROPERTIES.add(Field.get("folderclass").davPropertyName);
-        FOLDER_PROPERTIES.add(Field.get("hassubs").davPropertyName);
-        FOLDER_PROPERTIES.add(Field.get("nosubs").davPropertyName);
-        FOLDER_PROPERTIES.add(Field.get("unreadcount").davPropertyName);
-        FOLDER_PROPERTIES.add(Field.get("contenttag").davPropertyName);
-        FOLDER_PROPERTIES.add(Field.get("lastmodified").davPropertyName);
+        FOLDER_PROPERTIES.add(Field.getPropertyName("displayname"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("folderclass"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("hassubs"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("nosubs"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("unreadcount"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("contenttag"));
+        FOLDER_PROPERTIES.add(Field.getPropertyName("lastmodified"));
     }
 
 
@@ -669,7 +922,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected String getPropertyIfExists(DavPropertySet properties, String alias) {
-        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
+        DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return null;
         } else {
@@ -678,7 +931,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected int getIntPropertyIfExists(DavPropertySet properties, String alias) {
-        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
+        DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return 0;
         } else {
@@ -687,7 +940,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected long getLongPropertyIfExists(DavPropertySet properties, String alias) {
-        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
+        DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return 0;
         } else {
@@ -837,6 +1090,40 @@ public class DavExchangeSession extends ExchangeSession {
         return item;
     }
 
+    @Override
+    public int sendEvent(String icsBody) throws IOException {
+        String messageUrl = draftsUrl + '/' + UUID.randomUUID().toString() + ".EML";
+        int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
+        if (status != HttpStatus.SC_CREATED) {
+            return status;
+        } else {
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(sendmsgUrl), true);
+            status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
+            if (status != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
+            }
+            return status;
+        }
+    }
+
+    @Override
+    public int deleteItem(String folderPath, String itemName) throws IOException {
+        String eventPath = URIUtil.encodePath(folderPath + '/' + convertItemNameToEML(itemName));
+        int status;
+        if (inboxUrl.endsWith(folderPath)) {
+            // do not delete calendar messages, mark read and processed
+            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
+            list.add(new DefaultDavProperty(scheduleStateProperty, "CALDAV:schedule-processed"));
+            list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
+            PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
+            DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
+            status = HttpStatus.SC_OK;
+        } else {
+            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        }
+        return status;
+    }
+
     /**
      * Get item by url
      *
@@ -849,8 +1136,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (responses.length == 0) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
         }
-        String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK),
-                "contentclass", DAV);
+        String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "contentclass");
         if ("urn:content-classes:person".equals(contentClass)) {
             return new Contact(responses[0]);
         } else if ("urn:content-classes:appointment".equals(contentClass)
@@ -861,11 +1147,13 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    @Override
     public ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         Event event = new Event(messageUrl, contentClass, icsBody, etag, noneMatch);
         return event.createOrUpdate();
     }
 
+    @Override
     protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         Contact contact = new Contact(messageUrl, contentClass, icsBody, etag, noneMatch);
         return contact.createOrUpdate();

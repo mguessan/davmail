@@ -251,7 +251,7 @@ public class Field {
     }
 
 
-    public static DavPropertyName getResponsePropertyName(String alias) {
+    public static DavPropertyName getPropertyName(String alias) {
         return Field.get(alias).davPropertyName;
     }
 

@@ -53,7 +53,7 @@ public class ICSBufferedWriter {
         }
     }
 
-    protected void newLine() {
+    public void newLine() {
         buffer.append((char) 13).append((char) 10);
     }
 
