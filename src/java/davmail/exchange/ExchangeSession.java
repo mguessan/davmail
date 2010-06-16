@@ -30,18 +30,13 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
-import org.apache.jackrabbit.webdav.DavException;
-import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
-import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
-import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
-import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
-import org.apache.jackrabbit.webdav.property.*;
-import org.apache.jackrabbit.webdav.xml.Namespace;
+import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyIterator;
+import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
@@ -105,37 +100,6 @@ public abstract class ExchangeSession {
     protected static final String TRASH = "Trash";
     protected static final String JUNK = "Junk";
     protected static final String UNSENT = "Unsent Messages";
-
-
-    protected static final Namespace EMPTY = Namespace.getNamespace("");
-    protected static final Namespace DAV = Namespace.getNamespace("DAV:");
-    protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
-    protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
-    protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
-    protected static final Namespace URN_SCHEMAS_CONTACTS = Namespace.getNamespace("urn:schemas:contacts:");
-
-
-    protected static final DavPropertyNameSet DISPLAY_NAME = new DavPropertyNameSet();
-
-    static {
-        DISPLAY_NAME.add(DavPropertyName.DISPLAYNAME);
-    }
-
-    protected static final DavPropertyNameSet CONTENT_TAG = new DavPropertyNameSet();
-
-    static {
-        CONTENT_TAG.add(DavPropertyName.create("contenttag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
-    }
-
-    protected static final DavPropertyNameSet RESOURCE_TAG = new DavPropertyNameSet();
-
-    static {
-        RESOURCE_TAG.add(DavPropertyName.create("resourcetag", Namespace.getNamespace("http://schemas.microsoft.com/repl/")));
-    }
-
-    protected static final DavPropertyName DEFAULT_SCHEDULE_STATE_PROPERTY = DavPropertyName.create("schedule-state", Namespace.getNamespace("CALDAV:"));
-    protected DavPropertyName scheduleStateProperty = DEFAULT_SCHEDULE_STATE_PROPERTY;
-    protected static final DavPropertyName PR_INTERNET_CONTENT = DavPropertyName.create("x66590102", SCHEMAS_MAPI_PROPTAG);
 
     /**
      * Various standard mail boxes Urls
@@ -512,33 +476,6 @@ public abstract class ExchangeSession {
     }
 
     protected abstract void buildSessionInfo(HttpMethod method) throws DavMailException;
-
-    protected String getPropertyIfExists(DavPropertySet properties, DavPropertyName davPropertyName, String defaultValue) {
-        String value = getPropertyIfExists(properties, davPropertyName);
-        if (value == null) {
-            return defaultValue;
-        } else {
-            return value;
-        }
-    }
-
-    protected String getPropertyIfExists(DavPropertySet properties, DavPropertyName davPropertyName) {
-        DavProperty property = properties.get(davPropertyName);
-        if (property == null) {
-            return null;
-        } else {
-            return (String) property.getValue();
-        }
-    }
-
-    protected int getIntPropertyIfExists(DavPropertySet properties, String name, Namespace namespace) {
-        DavProperty property = properties.get(name, namespace);
-        if (property == null) {
-            return 0;
-        } else {
-            return Integer.parseInt((String) property.getValue());
-        }
-    }
 
     /**
      * Create message in specified folder.
@@ -3130,75 +3067,10 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected final class VTimezone {
-        private String timezoneBody;
-        private String timezoneId;
+    public final class VTimezone {
+        public String timezoneBody;
+        public String timezoneId;
 
-        /**
-         * create a fake event to get VTIMEZONE body
-         */
-        private void load() {
-            try {
-                // create temporary folder
-                String folderPath = ExchangeSession.this.getFolderPath("davmailtemp");
-                ExchangeSession.this.createCalendarFolder(folderPath);
-
-                PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
-                postMethod.addParameter("Cmd", "saveappt");
-                postMethod.addParameter("FORMTYPE", "appointment");
-                String fakeEventUrl = null;
-                try {
-                    // create fake event
-                    int statusCode = ExchangeSession.this.httpClient.executeMethod(postMethod);
-                    if (statusCode == HttpStatus.SC_OK) {
-                        fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
-                    }
-                } finally {
-                    postMethod.releaseConnection();
-                }
-                // failover for Exchange 2007, use PROPPATCH with forced timezone
-                if (fakeEventUrl == null) {
-                    ArrayList<DavProperty> propertyList = new ArrayList<DavProperty>();
-                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), "urn:content-classes:appointment"));
-                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", Namespace.getNamespace("http://schemas.microsoft.com/exchange/")), "IPM.Appointment"));
-                    propertyList.add(new DefaultDavProperty(DavPropertyName.create("instancetype", Namespace.getNamespace("urn:schemas:calendar:")), "0"));
-                    // get forced timezone id from settings
-                    timezoneId = Settings.getProperty("davmail.timezoneId");
-                    if (timezoneId != null) {
-                        propertyList.add(new DefaultDavProperty(DavPropertyName.create("timezoneid", Namespace.getNamespace("urn:schemas:calendar:")), timezoneId));
-                    }
-                    String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
-                    PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
-                    try {
-                        int statusCode = httpClient.executeMethod(patchMethod);
-                        if (statusCode == HttpStatus.SC_MULTI_STATUS) {
-                            fakeEventUrl = patchMethodUrl;
-                        }
-                    } finally {
-                        patchMethod.releaseConnection();
-                    }
-                }
-                if (fakeEventUrl != null) {
-                    // get fake event body
-                    GetMethod getMethod = new GetMethod(URIUtil.encodePath(fakeEventUrl));
-                    getMethod.setRequestHeader("Translate", "f");
-                    try {
-                        ExchangeSession.this.httpClient.executeMethod(getMethod);
-                        timezoneBody = "BEGIN:VTIMEZONE" +
-                                StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
-                                "END:VTIMEZONE\r\n";
-                        timezoneId = StringUtil.getToken(timezoneBody, "TZID:", "\r\n");
-                    } finally {
-                        getMethod.releaseConnection();
-                    }
-                }
-
-                // delete temporary folder
-                ExchangeSession.this.deleteFolder("davmailtemp");
-            } catch (IOException e) {
-                LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
-            }
-        }
     }
 
     protected VTimezone vTimezone;
@@ -3206,11 +3078,12 @@ public abstract class ExchangeSession {
     protected VTimezone getVTimezone() {
         if (vTimezone == null) {
             // need to load Timezone info from OWA
-            vTimezone = new VTimezone();
-            vTimezone.load();
+            loadVtimezone();
         }
         return vTimezone;
     }
+
+    protected abstract void loadVtimezone();
 
     /**
      * Return internal HttpClient instance

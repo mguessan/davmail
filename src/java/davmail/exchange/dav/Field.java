@@ -125,6 +125,8 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
         createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
+        createField(URN_SCHEMAS_HTTPMAIL, "datereceived");//PR_MESSAGE_DELIVERY_TIME, 0x0E06
+
 
         // IMAP search
 
@@ -149,10 +151,28 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "instancetype");
         createField(URN_SCHEMAS_CALENDAR, "dtstart");
         createField(SCHEMAS_EXCHANGE, "sensitivity");
+        createField(URN_SCHEMAS_CALENDAR, "timezoneid");
         createField("processed", 0x65e8, PropertyType.Boolean);//PR_MESSAGE_PROCESSED
 
         createField(DAV, "contentclass");
         createField("internetContent", 0x6659, PropertyType.Binary);
+
+        // contact
+
+        createField(SCHEMAS_EXCHANGE, "outlookmessageclass");
+        createField(URN_SCHEMAS_HTTPMAIL, "subject");
+
+        createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001
+        createField(URN_SCHEMAS_CONTACTS, "sn"); // PR_SURNAME 0x3A11
+        createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06
+        createField(URN_SCHEMAS_CONTACTS, "middlename"); // PR_MIDDLE_NAME 0x3A44
+        createField(URN_SCHEMAS_CONTACTS, "mobile"); // PR_MOBILE_TELEPHONE_NUMBER 0x3A1C
+        createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08
+        createField(URN_SCHEMAS_CONTACTS, "homepostaladdress"); // 0x0000801A DistinguishedPropertySetType.Address
+        createField(URN_SCHEMAS_CONTACTS, "fileas"); // urn:schemas:contacts:fileas PS_PUBLIC_STRINGS
+        createField(URN_SCHEMAS_CONTACTS, "homePhone"); // PR_HOME_TELEPHONE_NUMBER 0x3A09
+
+
     }
 
     protected static void createField(String alias, int propertyTag, PropertyType propertyType) {

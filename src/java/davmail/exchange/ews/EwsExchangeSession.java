@@ -436,6 +436,11 @@ public class EwsExchangeSession extends ExchangeSession {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    protected void loadVtimezone() {
+        throw new UnsupportedOperationException();
+    }
+
 
     private FolderId getFolderId(String folderPath) throws IOException {
         String[] folderNames;

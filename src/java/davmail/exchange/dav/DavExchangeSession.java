@@ -28,12 +28,10 @@ import davmail.exchange.ICSBufferedReader;
 import davmail.exchange.ICSBufferedWriter;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.DavException;
@@ -178,7 +176,9 @@ public class DavExchangeSession extends ExchangeSession {
                     publicUri.setPath(PUBLIC_ROOT);
                     publicFolderUrl = publicUri.getURI();
                 }
-                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, CONTENT_TAG, 0);
+                DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+                davPropertyNameSet.add(Field.getPropertyName("displayname"));
+                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
                 try {
                     DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
                 } catch (IOException e) {
@@ -218,8 +218,7 @@ public class DavExchangeSession extends ExchangeSession {
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         boolean isExpired = false;
         try {
-            DavGatewayHttpClientFacade.executePropFindMethod(
-                    httpClient, URIUtil.encodePath(inboxUrl), 0, DISPLAY_NAME);
+            getFolder("");
         } catch (UnknownHostException exc) {
             throw exc;
         } catch (NoRouteToHostException exc) {
@@ -461,19 +460,19 @@ public class DavExchangeSession extends ExchangeSession {
                     writer.write("UID:");
                     writer.writeLine(getUid());
                     writer.write("FN:");
-                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), ""));
+                    writer.writeLine(getPropertyIfExists(properties, "cn"));
                     // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
                     writer.write("N:");
-                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(getPropertyIfExists(properties, "sn"));
                     writer.write(";");
-                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(getPropertyIfExists(properties, "givenName"));
                     writer.write(";");
-                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("middlename", URN_SCHEMAS_CONTACTS), ""));
+                    writer.writeLine(getPropertyIfExists(properties, "middlename"));
 
                     writer.write("TEL;TYPE=cell:");
-                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), ""));
+                    writer.writeLine(getPropertyIfExists(properties, "mobile"));
                     writer.write("TEL;TYPE=work:");
-                    writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), ""));
+                    writer.writeLine(getPropertyIfExists(properties, "telephoneNumber"));
                     //writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("initials", URN_SCHEMAS_CONTACTS), ""));
 
                     // The structured type value corresponds, in sequence, to the post office box; the extended address;
@@ -481,7 +480,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // the postal code; the country name
                     // ADR;TYPE=dom,home,postal,parcel:;;123 Main Street;Any Town;CA;91921-1234
                     writer.write("ADR;TYPE=home:;;");
-                    writer.write(getPropertyIfExists(properties, DavPropertyName.create("homepostaladdress", URN_SCHEMAS_CONTACTS), ""));
+                    writer.write(getPropertyIfExists(properties, "homepostaladdress"));
                     writer.write(";;;");
                     writer.newLine();
                     writer.writeLine("END:VCARD");
@@ -501,10 +500,10 @@ public class DavExchangeSession extends ExchangeSession {
 
         }
 
-        protected List<DavProperty> buildProperties() throws IOException {
-            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
-            list.add(new DefaultDavProperty(DavPropertyName.create("contentclass", DAV), contentClass));
-            list.add(new DefaultDavProperty(DavPropertyName.create("outlookmessageclass", SCHEMAS_EXCHANGE), "IPM.Contact"));
+        protected List<DavConstants> buildProperties() throws IOException {
+            ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+            list.add(Field.createDavProperty("contentClass", contentClass));
+            list.add(Field.createDavProperty("outlookmessageclass", "IPM.Contact"));
 
             ICSBufferedReader reader = new ICSBufferedReader(new StringReader(itemBody));
             String line;
@@ -514,24 +513,24 @@ public class DavExchangeSession extends ExchangeSession {
                     String key = line.substring(0, index);
                     String value = line.substring(index + 1);
                     if ("FN".equals(key)) {
-                        list.add(new DefaultDavProperty(DavPropertyName.create("cn", URN_SCHEMAS_CONTACTS), value));
-                        list.add(new DefaultDavProperty(DavPropertyName.create("subject", URN_SCHEMAS_HTTPMAIL), value));
-                        list.add(new DefaultDavProperty(DavPropertyName.create("fileas", URN_SCHEMAS_CONTACTS), value));
+                        list.add(Field.createDavProperty("cn", value));
+                        list.add(Field.createDavProperty("subject", value));
+                        list.add(Field.createDavProperty("fileas", value));
 
                     } else if ("N".equals(key)) {
                         String[] values = value.split(";");
                         if (values.length > 0) {
-                            list.add(new DefaultDavProperty(DavPropertyName.create("sn", URN_SCHEMAS_CONTACTS), values[0]));
+                            list.add(Field.createDavProperty("sn", values[0]));
                         }
                         if (values.length > 1) {
-                            list.add(new DefaultDavProperty(DavPropertyName.create("givenName", URN_SCHEMAS_CONTACTS), values[1]));
+                            list.add(Field.createDavProperty("givenName", values[1]));
                         }
                     } else if ("TEL;TYPE=cell".equals(key)) {
-                        list.add(new DefaultDavProperty(DavPropertyName.create("mobile", URN_SCHEMAS_CONTACTS), value));
+                        list.add(Field.createDavProperty("mobile", value));
                     } else if ("TEL;TYPE=work".equals(key)) {
-                        list.add(new DefaultDavProperty(DavPropertyName.create("telephoneNumber", URN_SCHEMAS_CONTACTS), value));
+                        list.add(Field.createDavProperty("telephoneNumber", value));
                     } else if ("TEL;TYPE=home".equals(key)) {
-                        list.add(new DefaultDavProperty(DavPropertyName.create("homePhone", URN_SCHEMAS_CONTACTS), value));
+                        list.add(Field.createDavProperty("homePhone", value));
                     }
                 }
             }
@@ -617,7 +616,7 @@ public class DavExchangeSession extends ExchangeSession {
          *
          * @param mimeInputStream mime message input stream
          * @return mime message ics attachment body
-         * @throws IOException        on error
+         * @throws IOException                   on error
          * @throws javax.mail.MessagingException on error
          */
         protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
@@ -651,16 +650,16 @@ public class DavExchangeSession extends ExchangeSession {
             String result = null;
             // PropFind PR_INTERNET_CONTENT
             DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-            davPropertyNameSet.add(PR_INTERNET_CONTENT);
+            davPropertyNameSet.add(Field.getPropertyName("internetContent"));
             PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl), davPropertyNameSet, 0);
             try {
                 DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
                 MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
                 if (responses.getResponses().length > 0) {
                     DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
-                    DavProperty property = properties.get(PR_INTERNET_CONTENT);
-                    if (property != null) {
-                        byte[] byteArray = Base64.decodeBase64(((String) property.getValue()).getBytes());
+                    String propertyValue = getPropertyIfExists(properties, "internetContent");
+                    if (propertyValue != null) {
+                        byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes());
                         result = getICS(new ByteArrayInputStream(byteArray));
                     }
                 }
@@ -1112,9 +1111,9 @@ public class DavExchangeSession extends ExchangeSession {
         int status;
         if (inboxUrl.endsWith(folderPath)) {
             // do not delete calendar messages, mark read and processed
-            ArrayList<DavProperty> list = new ArrayList<DavProperty>();
-            list.add(new DefaultDavProperty(scheduleStateProperty, "CALDAV:schedule-processed"));
-            list.add(new DefaultDavProperty(DavPropertyName.create("read", URN_SCHEMAS_HTTPMAIL), "1"));
+            ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+            list.add(Field.createDavProperty("processed", "1"));
+            list.add(Field.createDavProperty("read", "1"));
             PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
             DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
             status = HttpStatus.SC_OK;
@@ -1153,6 +1152,75 @@ public class DavExchangeSession extends ExchangeSession {
         return event.createOrUpdate();
     }
 
+    /**
+     * create a fake event to get VTIMEZONE body
+     */
+    @Override
+    protected void loadVtimezone() {
+        try {
+            VTimezone vTimezone = new VTimezone();
+            // create temporary folder
+            String folderPath = getFolderPath("davmailtemp");
+            createCalendarFolder(folderPath);
+
+            PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
+            postMethod.addParameter("Cmd", "saveappt");
+            postMethod.addParameter("FORMTYPE", "appointment");
+            String fakeEventUrl = null;
+            try {
+                // create fake event
+                int statusCode = httpClient.executeMethod(postMethod);
+                if (statusCode == HttpStatus.SC_OK) {
+                    fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                }
+            } finally {
+                postMethod.releaseConnection();
+            }
+            // failover for Exchange 2007, use PROPPATCH with forced timezone
+            if (fakeEventUrl == null) {
+                ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                propertyList.add(Field.createDavProperty("contentclass", "urn:content-classes:appointment"));
+                propertyList.add(Field.createDavProperty("outlookmessageclass", "IPM.Appointment"));
+                propertyList.add(Field.createDavProperty("instancetype", "0"));
+                // get forced timezone id from settings
+                vTimezone.timezoneId = Settings.getProperty("davmail.timezoneId");
+                if (vTimezone.timezoneId != null) {
+                    propertyList.add(Field.createDavProperty("timezoneid", vTimezone.timezoneId));
+                }
+                String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
+                PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
+                try {
+                    int statusCode = httpClient.executeMethod(patchMethod);
+                    if (statusCode == HttpStatus.SC_MULTI_STATUS) {
+                        fakeEventUrl = patchMethodUrl;
+                    }
+                } finally {
+                    patchMethod.releaseConnection();
+                }
+            }
+            if (fakeEventUrl != null) {
+                // get fake event body
+                GetMethod getMethod = new GetMethod(URIUtil.encodePath(fakeEventUrl));
+                getMethod.setRequestHeader("Translate", "f");
+                try {
+                    httpClient.executeMethod(getMethod);
+                    vTimezone.timezoneBody = "BEGIN:VTIMEZONE" +
+                            StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
+                            "END:VTIMEZONE\r\n";
+                    vTimezone.timezoneId = StringUtil.getToken(vTimezone.timezoneBody, "TZID:", "\r\n");
+                } finally {
+                    getMethod.releaseConnection();
+                }
+            }
+
+            // delete temporary folder
+            deleteFolder("davmailtemp");
+            this.vTimezone = vTimezone;
+        } catch (IOException e) {
+            LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
+        }
+    }
+
     @Override
     protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
         Contact contact = new Contact(messageUrl, contentClass, icsBody, etag, noneMatch);
@@ -1186,7 +1254,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // TODO: need to test this
                 list.add(Field.createDavProperty("writedeleted", entry.getValue()));
             } else if ("datereceived".equals(entry.getKey())) {
-                list.add(new DefaultDavProperty(DavPropertyName.create("datereceived", URN_SCHEMAS_HTTPMAIL), entry.getValue()));
+                list.add(Field.createDavProperty("datereceived", entry.getValue()));
             }
         }
         return list;
