@@ -44,6 +44,7 @@ public class Field {
         distinguishedPropertySetMap.put(DistinguishedPropertySetType.Task, "00062003-0000-0000-c000-000000000046");
     }
 
+    protected static final Namespace EMPTY = Namespace.getNamespace("");
     protected static final Namespace DAV = Namespace.getNamespace("DAV:");
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace URN_SCHEMAS_MAILHEADER = Namespace.getNamespace("urn:schemas:mailheader:");
@@ -253,6 +254,8 @@ public class Field {
     protected final String alias;
     protected final String uri;
     protected final String requestPropertyString;
+    protected final DavPropertyName responsePropertyName;
+
 
     public Field(Namespace namespace, String name) {
         this(name, namespace, name);
@@ -268,8 +271,10 @@ public class Field {
         this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
             this.requestPropertyString = '"' + uri + '"';
+            this.responsePropertyName = davPropertyName;
         } else {
             this.requestPropertyString = '"' + uri + "\" as " + responseAlias;
+            this.responsePropertyName = DavPropertyName.create(responseAlias, EMPTY);
         }
     }
 
@@ -321,5 +326,9 @@ public class Field {
 
     public static String getRequestPropertyString(String alias) {
         return Field.get(alias).requestPropertyString;
+    }
+
+    public static DavPropertyName getResponsePropertyName(String alias) {
+        return Field.get(alias).responsePropertyName;
     }
 }

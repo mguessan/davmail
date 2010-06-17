@@ -926,7 +926,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected String getPropertyIfExists(DavPropertySet properties, String alias) {
-        DavProperty property = properties.get(Field.getPropertyName(alias));
+        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
             return null;
         } else {
@@ -1256,7 +1256,6 @@ public class DavExchangeSession extends ExchangeSession {
             } else if ("draft".equals(entry.getKey())) {
                 list.add(Field.createDavProperty("messageFlags", entry.getValue()));
             } else if ("deleted".equals(entry.getKey())) {
-                // TODO: need to test this
                 list.add(Field.createDavProperty("writedeleted", entry.getValue()));
             } else if ("datereceived".equals(entry.getKey())) {
                 list.add(Field.createDavProperty("datereceived", entry.getValue()));
