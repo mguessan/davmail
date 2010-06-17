@@ -130,13 +130,13 @@ public class Field {
 
         // IMAP search
 
-        createField(URN_SCHEMAS_HTTPMAIL, "subject");
+        createField(URN_SCHEMAS_HTTPMAIL, "subject"); // DistinguishedPropertySetType.InternetHeaders/Subject/String
         //createField("subject", 0x0037, PropertyType.String);//PR_SUBJECT
         createField("body", 0x1000, PropertyType.String);//PR_BODY
         createField(URN_SCHEMAS_HTTPMAIL, "from");
         //createField("from", DistinguishedPropertySetType.PublicStrings, 0x001f);//urn:schemas:httpmail:from
-        createField(URN_SCHEMAS_MAILHEADER, "to");
-        createField(URN_SCHEMAS_MAILHEADER, "cc");
+        createField(URN_SCHEMAS_MAILHEADER, "to"); // DistinguishedPropertySetType.InternetHeaders/To/String
+        createField(URN_SCHEMAS_MAILHEADER, "cc"); // DistinguishedPropertySetType.InternetHeaders/To/String
 
         createField("lastmodified", 0x3008, PropertyType.SystemTime);//PR_LAST_MODIFICATION_TIME DAV:getlastmodified
 
@@ -148,11 +148,11 @@ public class Field {
 
         // calendar
         createField(SCHEMAS_EXCHANGE, "permanenturl");
-        createField(URN_SCHEMAS_CALENDAR, "instancetype");
-        createField(URN_SCHEMAS_CALENDAR, "dtstart");
-        createField(SCHEMAS_EXCHANGE, "sensitivity");
-        createField(URN_SCHEMAS_CALENDAR, "timezoneid");
-        createField("processed", 0x65e8, PropertyType.Boolean);//PR_MESSAGE_PROCESSED
+        createField(URN_SCHEMAS_CALENDAR, "instancetype"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:instancetype/Integer
+        createField(URN_SCHEMAS_CALENDAR, "dtstart"); // 0x10C3 SystemTime
+        createField(SCHEMAS_EXCHANGE, "sensitivity"); // PR_SENSITIVITY 0x0036 Integer
+        createField(URN_SCHEMAS_CALENDAR, "timezoneid"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezoneid/Integer
+        createField("processed", 0x65e8, PropertyType.Boolean);// PR_MESSAGE_PROCESSED
 
         createField(DAV, "contentclass");
         createField("internetContent", 0x6659, PropertyType.Binary);
@@ -162,16 +162,60 @@ public class Field {
         createField(SCHEMAS_EXCHANGE, "outlookmessageclass");
         createField(URN_SCHEMAS_HTTPMAIL, "subject");
 
-        createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001
-        createField(URN_SCHEMAS_CONTACTS, "sn"); // PR_SURNAME 0x3A11
-        createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06
         createField(URN_SCHEMAS_CONTACTS, "middlename"); // PR_MIDDLE_NAME 0x3A44
-        createField(URN_SCHEMAS_CONTACTS, "mobile"); // PR_MOBILE_TELEPHONE_NUMBER 0x3A1C
-        createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08
-        createField(URN_SCHEMAS_CONTACTS, "homepostaladdress"); // 0x0000801A DistinguishedPropertySetType.Address
         createField(URN_SCHEMAS_CONTACTS, "fileas"); // urn:schemas:contacts:fileas PS_PUBLIC_STRINGS
-        createField(URN_SCHEMAS_CONTACTS, "homePhone"); // PR_HOME_TELEPHONE_NUMBER 0x3A09
 
+        createField("id", 0x0ff6, PropertyType.Binary); // PR_INSTANCE_KEY http://support.microsoft.com/kb/320749
+
+        createField(URN_SCHEMAS_CONTACTS, "homepostaladdress"); // homeAddress DistinguishedPropertySetType.Address/0x0000801A/String
+        createField(URN_SCHEMAS_CONTACTS, "otherpostaladdress"); // otherAddress DistinguishedPropertySetType.Address/0x0000801C/String
+        createField(URN_SCHEMAS_CONTACTS, "mailingaddressid"); // postalAddressId DistinguishedPropertySetType.Address/0x00008022/String
+        createField(URN_SCHEMAS_CONTACTS, "workaddress"); // workAddress DistinguishedPropertySetType.Address/0x0000801B/String
+
+        createField(URN_SCHEMAS_CONTACTS, "alternaterecipient"); // alternaterecipient DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:alternaterecipient/String
+
+        createField(SCHEMAS_EXCHANGE, "extensionattribute1"); // DistinguishedPropertySetType.Address/0x0000804F/String
+        createField(SCHEMAS_EXCHANGE, "extensionattribute2"); // DistinguishedPropertySetType.Address/0x00008050/String
+        createField(SCHEMAS_EXCHANGE, "extensionattribute3"); // DistinguishedPropertySetType.Address/0x00008051/String
+        createField(SCHEMAS_EXCHANGE, "extensionattribute4"); // DistinguishedPropertySetType.Address/0x00008052/String
+
+        createField(URN_SCHEMAS_CONTACTS, "bday"); // PR_BIRTHDAY 0x3A42 SystemTime
+        createField(URN_SCHEMAS_CONTACTS, "businesshomepage"); // PR_BUSINESS_HOME_PAGE 0x3A51 String
+        createField(URN_SCHEMAS_CONTACTS, "c"); // country DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:c/String
+        createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001 String
+        createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.PublicStrings/0x00008049/String
+        createField(URN_SCHEMAS_CONTACTS, "department"); // PR_DEPARTMENT_NAME 0x3A18 String
+        createField(URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
+        createField(URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
+        createField(URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
+        createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
+        createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
+        createField(URN_SCHEMAS_CONTACTS, "homeCity"); // PR_HOME_ADDRESS_CITY 0x3A59 String
+        createField(URN_SCHEMAS_CONTACTS, "homeCountry"); // PR_HOME_ADDRESS_COUNTRY 0x3A5A String
+        createField(URN_SCHEMAS_CONTACTS, "homePhone"); // PR_HOME_TELEPHONE_NUMBER 0x3A09 String
+        createField(URN_SCHEMAS_CONTACTS, "homePostalCode"); // PR_HOME_ADDRESS_POSTAL_CODE 0x3A5B String
+        createField(URN_SCHEMAS_CONTACTS, "homeState"); // PR_HOME_ADDRESS_STATE_OR_PROVINCE 0x3A5C String
+        createField(URN_SCHEMAS_CONTACTS, "homeStreet"); // PR_HOME_ADDRESS_STREET 0x3A5D String
+        createField(URN_SCHEMAS_CONTACTS, "l"); // workAddressCity DistinguishedPropertySetType.Address/0x00008046/String
+        createField(URN_SCHEMAS_CONTACTS, "manager"); // PR_MANAGER_NAME 0x3A4E String
+        createField(URN_SCHEMAS_CONTACTS, "mobile"); // PR_MOBILE_TELEPHONE_NUMBER 0x3A1C String
+        createField(URN_SCHEMAS_CONTACTS, "namesuffix"); // PR_GENERATION 0x3A05 String
+        createField(URN_SCHEMAS_CONTACTS, "nickname"); // PR_NICKNAME 0x3A4F String
+        createField(URN_SCHEMAS_CONTACTS, "o"); // PR_OTHER_ADDRESS_CITY 0x3A5F String
+        createField(URN_SCHEMAS_CONTACTS, "pager"); // PR_PAGER_TELEPHONE_NUMBER 0x3A21 String
+        createField(URN_SCHEMAS_CONTACTS, "personaltitle"); // PR_DISPLAY_NAME_PREFIX 0x3A45 String
+        createField(URN_SCHEMAS_CONTACTS, "postalcode"); // workAddressPostalCode DistinguishedPropertySetType.Address/0x00008048/String
+        createField(URN_SCHEMAS_CONTACTS, "postofficebox"); // workAddressPostOfficeBox DistinguishedPropertySetType.Address/0x0000804A/String
+        createField(URN_SCHEMAS_CONTACTS, "profession"); // PR_PROFESSION 0x3A46 String
+        createField(URN_SCHEMAS_CONTACTS, "roomnumber"); // PR_OFFICE_LOCATION 0x3A19 String
+        createField(URN_SCHEMAS_CONTACTS, "secretarycn"); // PR_ASSISTANT 0x3A30 String
+        createField(URN_SCHEMAS_CONTACTS, "sn"); // PR_SURNAME 0x3A11 String
+        createField(URN_SCHEMAS_CONTACTS, "spousecn"); // PR_SPOUSE_NAME 0x3A48 String
+        createField(URN_SCHEMAS_CONTACTS, "st"); // workAddressState DistinguishedPropertySetType.Address/0x00008047/String
+        createField(URN_SCHEMAS_CONTACTS, "street"); // workAddressStreet DistinguishedPropertySetType.Address/0x00008045/String
+        createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08 String
+        createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
+        createField(URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
 
     }
 
