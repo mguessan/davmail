@@ -307,7 +307,7 @@ public class DavExchangeSession extends ExchangeSession {
                 buffer.append('%');
             }
             buffer.append(value);
-            if (Operator.Like == operator) {
+            if (Operator.Like == operator || Operator.StartsWith == operator) {
                 buffer.append('%');
             }
             if (!isIntValue) {
@@ -402,6 +402,11 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public Condition like(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.Like, value);
+    }
+
+    @Override
+    public Condition startsWith(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.StartsWith, value);
     }
 
     @Override

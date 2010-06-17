@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exchange.dav.Field;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
@@ -600,7 +601,8 @@ public abstract class ExchangeSession {
     public abstract MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException;
 
     protected enum Operator {
-        Or, And, Not, IsEqualTo, Like, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsNull, IsTrue, IsFalse
+        Or, And, Not, IsEqualTo,  IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsNull, IsTrue, IsFalse,
+        Like, StartsWith, Contains
     }
 
     public abstract static class Condition {
@@ -628,7 +630,7 @@ public abstract class ExchangeSession {
             this.conditions = Arrays.asList(conditions);
         }
 
-        public void append(Condition condition) {
+        public void add(Condition condition) {
             if (condition != null) {
                 conditions.add(condition);
             }
@@ -672,6 +674,8 @@ public abstract class ExchangeSession {
     public abstract Condition lt(String attributeName, String value);
 
     public abstract Condition like(String attributeName, String value);
+
+    public abstract Condition startsWith(String attributeName, String value);
 
     public abstract Condition isNull(String attributeName);
 
@@ -2755,7 +2759,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public Map<String, Map<String, String>> contactFindByUid(String uid) throws IOException {
-        return contactFind(DAV_UID_FILTER + uid + '\'');
+        return contactFind(equals("uid", uid));
     }
 
     static final String DAV_UID_FILTER = "\"DAV:uid\"='";
@@ -2767,13 +2771,15 @@ public abstract class ExchangeSession {
      * @return List of users
      * @throws IOException on error
      */
-    public Map<String, Map<String, String>> contactFind(String searchFilter) throws IOException {
+    public Map<String, Map<String, String>> contactFind(Condition condition) throws IOException {
         // uid value in search filter (hex value)
         String filterUid = null;
         // base64 encoded uid value
         String actualFilterUid = null;
 
+        // TODO: move to LDAP code 
         // replace hex encoded uid with base64 uid
+        /*
         if (searchFilter != null) {
             int uidStart = searchFilter.indexOf(DAV_UID_FILTER);
             if (uidStart >= 0) {
@@ -2789,52 +2795,63 @@ public abstract class ExchangeSession {
                 }
             }
         }
+        */
+
+        List<String> attributes = new ArrayList<String>();
+        attributes.add("extensionattribute1");
+        attributes.add("extensionattribute2");
+        attributes.add("extensionattribute3");
+        attributes.add("extensionattribute4");
+        attributes.add("bday");
+        attributes.add("businesshomepage");
+        attributes.add("c");
+        attributes.add("cn");
+        attributes.add("co");
+        attributes.add("department");
+        attributes.add("email1");
+        attributes.add("email2");
+        attributes.add("facsimiletelephonenumber");
+        attributes.add("givenName");
+        attributes.add("homeCity");
+        attributes.add("homeCountry");
+        attributes.add("homePhone");
+        attributes.add("homePostalCode");
+        attributes.add("homeState");
+        attributes.add("homeStreet");
+        attributes.add("l");
+        attributes.add("manager");
+        attributes.add("mobile");
+        attributes.add("namesuffix");
+        attributes.add("nickname");
+        attributes.add("o");
+        attributes.add("pager");
+        attributes.add("personaltitle");
+        attributes.add("postalcode");
+        attributes.add("postofficebox");
+        attributes.add("profession");
+        attributes.add("roomnumber");
+        attributes.add("secretarycn");
+        attributes.add("sn");
+        attributes.add("spousecn");
+        attributes.add("st");
+        attributes.add("street");
+        attributes.add("telephoneNumber");
+        attributes.add("title");
+        attributes.add("textdescription");
+
         StringBuilder searchRequest = new StringBuilder();
-        searchRequest.append("Select \"DAV:uid\", " +
-                "\"http://schemas.microsoft.com/exchange/extensionattribute1\"," +
-                "\"http://schemas.microsoft.com/exchange/extensionattribute2\"," +
-                "\"http://schemas.microsoft.com/exchange/extensionattribute3\"," +
-                "\"http://schemas.microsoft.com/exchange/extensionattribute4\"," +
-                "\"urn:schemas:contacts:bday\"," +
-                "\"urn:schemas:contacts:businesshomepage\"," +
-                "\"urn:schemas:contacts:c\"," +
-                "\"urn:schemas:contacts:cn\"," +
-                "\"urn:schemas:contacts:co\"," +
-                "\"urn:schemas:contacts:department\"," +
-                "\"urn:schemas:contacts:email1\"," +
-                "\"urn:schemas:contacts:email2\"," +
-                "\"urn:schemas:contacts:facsimiletelephonenumber\"," +
-                "\"urn:schemas:contacts:givenName\"," +
-                "\"urn:schemas:contacts:homeCity\"," +
-                "\"urn:schemas:contacts:homeCountry\"," +
-                "\"urn:schemas:contacts:homePhone\"," +
-                "\"urn:schemas:contacts:homePostalCode\"," +
-                "\"urn:schemas:contacts:homeState\"," +
-                "\"urn:schemas:contacts:homeStreet\"," +
-                "\"urn:schemas:contacts:l\"," +
-                "\"urn:schemas:contacts:manager\"," +
-                "\"urn:schemas:contacts:mobile\"," +
-                "\"urn:schemas:contacts:namesuffix\"," +
-                "\"urn:schemas:contacts:nickname\"," +
-                "\"urn:schemas:contacts:o\"," +
-                "\"urn:schemas:contacts:pager\"," +
-                "\"urn:schemas:contacts:personaltitle\"," +
-                "\"urn:schemas:contacts:postalcode\"," +
-                "\"urn:schemas:contacts:postofficebox\"," +
-                "\"urn:schemas:contacts:profession\"," +
-                "\"urn:schemas:contacts:roomnumber\"," +
-                "\"urn:schemas:contacts:secretarycn\"," +
-                "\"urn:schemas:contacts:sn\"," +
-                "\"urn:schemas:contacts:spousecn\"," +
-                "\"urn:schemas:contacts:st\"," +
-                "\"urn:schemas:contacts:street\"," +
-                "\"urn:schemas:contacts:telephoneNumber\"," +
-                "\"urn:schemas:contacts:title\"," +
-                "\"urn:schemas:httpmail:textdescription\"")
-                .append("                FROM Scope('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')\n")
-                .append("                WHERE \"DAV:contentclass\" = 'urn:content-classes:person' \n");
-        if (searchFilter != null && searchFilter.length() > 0) {
-            searchRequest.append("                AND ").append(searchFilter);
+        searchRequest.append("SELECT ");
+        if (attributes != null) {
+            for (String attribute : attributes) {
+                Field field = Field.get(attribute);
+                searchRequest.append(',').append(Field.getRequestPropertyString(field.getAlias()));
+            }
+        }
+        searchRequest.append(" FROM SCOPE('SHALLOW TRAVERSAL OF \"").append(contactsUrl).append("\"')")
+                .append(" WHERE \"DAV:contentclass\" = 'urn:content-classes:person'");
+        if (condition != null) {
+            searchRequest.append(" AND ");
+            condition.appendTo(searchRequest);
         }
         LOGGER.debug("contactFind: " + searchRequest);
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
@@ -2889,7 +2906,7 @@ public abstract class ExchangeSession {
             }
         }
 
-        LOGGER.debug("contactFind " + ((searchFilter == null) ? "" : searchFilter) + ": " + results.size() + " result(s)");
+        LOGGER.debug("contactFind " + searchRequest + ": " + results.size() + " result(s)");
         return results;
     }
 

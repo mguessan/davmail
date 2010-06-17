@@ -18,32 +18,24 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
- * Generic attribute option.
+ * Contains search mode.
  */
-public abstract class AttributeOption extends Option {
-
-    protected AttributeOption(String name, String value) {
-        super(name, value);
+public class ContainmentMode extends AttributeOption {
+    private ContainmentMode(String value) {
+        super("ContainmentMode", value);
     }
-
-    public void appendTo(StringBuilder buffer) {
-        buffer.append(' ').append(name).append("=\"").append(value).append('"');
-    }
-
 
     /**
-     * @inheritDoc
+     * Full String.
      */
-    @Override
-    public void write(Writer writer) throws IOException {
-        writer.write(" ");
-        writer.write(name);
-        writer.write("=\"");
-        writer.write(value);
-        writer.write("\"");
-    }
+    public static final ContainmentMode FullString = new ContainmentMode("FullString");
+    /**
+     * Starts with.
+     */
+    public static final ContainmentMode Prefixed = new ContainmentMode("Prefixed");
+
+    public static final ContainmentMode Substring = new ContainmentMode("Substring");
+    public static final ContainmentMode PrefixOnWords = new ContainmentMode("PrefixOnWords");
+    public static final ContainmentMode ExactPhrase = new ContainmentMode("ExactPhrase");
 }

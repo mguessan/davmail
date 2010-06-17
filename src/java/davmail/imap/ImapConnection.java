@@ -739,7 +739,7 @@ public class ImapConnection extends AbstractConnection {
                 if (condition == null) {
                     condition = session.and();
                 }
-                condition.append(buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1))));
+                condition.add(buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1))));
             } else if ("OR".equals(token)) {
                 condition = session.or();
             } else if (token.startsWith("OR ")) {
@@ -748,7 +748,7 @@ public class ImapConnection extends AbstractConnection {
                 if (condition == null) {
                     condition = session.and();
                 }
-                condition.append(appendSearchParam(tokens, token, conditions));
+                condition.add(appendSearchParam(tokens, token, conditions));
             }
         }
         return condition;
@@ -996,7 +996,7 @@ public class ImapConnection extends AbstractConnection {
         innerTokens.nextToken();
         while (innerTokens.hasMoreTokens()) {
             String innerToken = innerTokens.nextToken();
-            orCondition.append(appendSearchParam(innerTokens, innerToken, conditions));
+            orCondition.add(appendSearchParam(innerTokens, innerToken, conditions));
         }
         return orCondition;
     }

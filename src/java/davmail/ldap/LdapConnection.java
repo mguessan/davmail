@@ -573,10 +573,10 @@ public class LdapConnection extends AbstractConnection {
                     String attributeName = reqBer.parseStringWithTag(LDAP_FILTER_PRESENT, isLdapV3(), null).toLowerCase();
                     nestedFilter.add(new SimpleFilter(attributeName));
                 } else {
-                int[] seqSize = new int[1];
-                int ldapFilterOperator = reqBer.parseSeq(seqSize);
-                int subEnd = reqBer.getParsePosition() + seqSize[0];
-                nestedFilter.add(parseNestedFilter(reqBer, ldapFilterOperator, subEnd));
+                    int[] seqSize = new int[1];
+                    int ldapFilterOperator = reqBer.parseSeq(seqSize);
+                    int subEnd = reqBer.getParsePosition() + seqSize[0];
+                    nestedFilter.add(parseNestedFilter(reqBer, ldapFilterOperator, subEnd));
                 }
             }
         } else {
@@ -774,7 +774,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     static interface LdapFilter {
-        String getContactSearchFilter();
+        ExchangeSession.Condition getContactSearchFilter();
 
         Map<String, Map<String, String>> findInGAL(ExchangeSession session) throws IOException;
 
@@ -785,7 +785,7 @@ public class LdapConnection extends AbstractConnection {
         boolean isMatch(Map<String, String> person);
     }
 
-    static class CompoundFilter implements LdapFilter {
+    class CompoundFilter implements LdapFilter {
         final Set<LdapFilter> criteria = new HashSet<LdapFilter>();
         final int type;
 
@@ -843,35 +843,21 @@ public class LdapConnection extends AbstractConnection {
          *
          * @return contact search filter
          */
-        public String getContactSearchFilter() {
-            StringBuilder buffer = new StringBuilder();
+        public ExchangeSession.Condition getContactSearchFilter() {
+            ExchangeSession.MultiCondition condition;
             String op;
 
             if (type == LDAP_FILTER_OR) {
-                op = " OR ";
+                condition = session.or();
             } else {
-                op = " AND ";
+                condition = session.and();
             }
 
-            buffer.append('(');
             for (LdapFilter child : criteria) {
-                String childFilter = child.getContactSearchFilter();
-
-                if (childFilter != null) {
-                    if (buffer.length() > 1) {
-                        buffer.append(op);
-                    }
-                    buffer.append(childFilter);
-                }
+                condition.add(child.getContactSearchFilter());
             }
 
-            // empty filter
-            if (buffer.length() == 1) {
-                return null;
-            }
-
-            buffer.append(')');
-            return buffer.toString();
+            return condition;
         }
 
         /**
@@ -956,7 +942,7 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    static class SimpleFilter implements LdapFilter {
+    class SimpleFilter implements LdapFilter {
         static final String STAR = "*";
         final String attributeName;
         final String value;
@@ -1026,32 +1012,28 @@ public class LdapConnection extends AbstractConnection {
             return buffer.toString();
         }
 
-        public String getContactSearchFilter() {
-            StringBuilder buffer;
+        public ExchangeSession.Condition getContactSearchFilter() {
             String contactAttributeName = getContactAttributeName();
 
             if (canIgnore || (contactAttributeName == null)) {
                 return null;
             }
 
-            buffer = new StringBuilder();
-            buffer.append('"').append(contactAttributeName).append('"');
+            ExchangeSession.Condition condition;
 
             if (operator == LDAP_FILTER_EQUALITY) {
-                buffer.append("='").append(value).append('\'');
+                condition = session.equals(contactAttributeName, value);
             } else if ("*".equals(value)) {
-                buffer.append(" is not null");
+                condition = session.not(session.isNull(contactAttributeName));
             } else {
-                buffer.append(" LIKE '");
+                // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
-                    buffer.append('%');
+                    condition = session.like(contactAttributeName, value);
+                } else {
+                    condition = session.startsWith(contactAttributeName, value);
                 }
-                buffer.append(value.replaceAll("'", "''"));
-                // endsWith not supported by exchange, always append %
-                buffer.append('%');
-                buffer.append('\'');
             }
-            return buffer.toString();
+            return condition;
         }
 
         public boolean isMatch(Map<String, String> person) {
@@ -1230,7 +1212,7 @@ public class LdapConnection extends AbstractConnection {
                             }
                         } else {
                             // append personal contacts first
-                            String filter = ldapFilter.getContactSearchFilter();
+                            ExchangeSession.Condition filter = ldapFilter.getContactSearchFilter();
 
                             // if ldapfilter is not a full search and filter is null,
                             // ignored all attribute filters => return empty results

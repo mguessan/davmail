@@ -164,8 +164,18 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
+        protected ContainmentMode containmentMode;
+        protected ContainmentComparison containmentComparison;
+
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
+        }
+
+        protected AttributeCondition(String attributeName, Operator operator, String value,
+                                     ContainmentMode containmentMode, ContainmentComparison containmentComparison) {
+            super(attributeName, operator, value);
+            this.containmentMode = containmentMode;
+            this.containmentComparison = containmentComparison;
         }
 
         protected FieldURI getFieldURI(String attributeName) {
@@ -178,7 +188,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            buffer.append("<t:").append(operator.toString()).append('>');
+            buffer.append("<t:").append(operator.toString());
+            if (containmentMode != null) {
+                containmentMode.appendTo(buffer);
+            }
+            if (containmentComparison != null) {
+                containmentComparison.appendTo(buffer);
+            }
+            buffer.append('>');
             getFieldURI(attributeName).appendTo(buffer);
 
             buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
@@ -264,7 +281,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition like(String attributeName, String value) {
-        return new AttributeCondition(attributeName, Operator.Like, value);
+        return new AttributeCondition(attributeName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
+    }
+
+    @Override
+    public Condition startsWith(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.Contains, value, ContainmentMode.Prefixed, ContainmentComparison.IgnoreCase);
     }
 
     @Override
