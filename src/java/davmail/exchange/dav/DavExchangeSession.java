@@ -437,6 +437,12 @@ public class DavExchangeSession extends ExchangeSession {
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
+            for (String attributeName : CONTACT_ATTRIBUTES) {
+                String value = getPropertyIfExists(properties, attributeName);
+                if (value != null) {
+                    put(attributeName, value);
+                }
+            }
         }
 
         /**
