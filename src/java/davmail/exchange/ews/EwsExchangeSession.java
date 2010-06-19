@@ -459,6 +459,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public String buildCalendarPath(String principal, String folderName) throws IOException {
+          throw new UnsupportedOperationException();
+    }
+
+    @Override
     protected void loadVtimezone() {
         throw new UnsupportedOperationException();
     }

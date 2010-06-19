@@ -75,6 +75,102 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
+     * Various standard mail boxes Urls
+     */
+    protected String inboxUrl;
+    protected String deleteditemsUrl;
+    protected String sentitemsUrl;
+    protected String sendmsgUrl;
+    protected String draftsUrl;
+    protected String calendarUrl;
+    protected String contactsUrl;
+    protected String outboxUrl;
+
+    /**
+     * Convert logical or relative folder path to absolute folder path.
+     *
+     * @param folderName folder name
+     * @return folder path
+     */
+    public String getFolderPath(String folderName) {
+        String folderPath;
+        if (folderName.startsWith(INBOX)) {
+            folderPath = folderName.replaceFirst(INBOX, inboxUrl);
+        } else if (folderName.startsWith(TRASH)) {
+            folderPath = folderName.replaceFirst(TRASH, deleteditemsUrl);
+        } else if (folderName.startsWith(DRAFTS)) {
+            folderPath = folderName.replaceFirst(DRAFTS, draftsUrl);
+        } else if (folderName.startsWith(SENT)) {
+            folderPath = folderName.replaceFirst(SENT, sentitemsUrl);
+        } else if (folderName.startsWith(CALENDAR)) {
+            folderPath = folderName.replaceFirst(CALENDAR, calendarUrl);
+        } else if (folderName.startsWith(CONTACTS)) {
+            folderPath = folderName.replaceFirst(CONTACTS, contactsUrl);
+        } else if (folderName.startsWith("public")) {
+            folderPath = publicFolderUrl + folderName.substring("public".length());
+            // absolute folder path
+        } else if (folderName.startsWith("/")) {
+            folderPath = folderName;
+        } else {
+            folderPath = mailPath + folderName;
+        }
+        return folderPath;
+    }
+
+    /**
+     * Build Caldav calendar path for principal and folder name.
+     * - prefix is current user mailbox path if principal is current user,
+     * else prefix is parent folder of current user mailbox path followed by principal
+     * - suffix according to well known folder names (internationalized on Exchange)
+     *
+     * @param principal  calendar principal
+     * @param folderName requested folder name
+     * @return Exchange folder path
+     * @throws IOException on error
+     */
+    public String buildCalendarPath(String principal, String folderName) throws IOException {
+        StringBuilder buffer = new StringBuilder();
+        // other user calendar => replace principal folder name in mailPath
+        if (principal != null && !alias.equalsIgnoreCase(principal) && !email.equalsIgnoreCase(principal)) {
+            LOGGER.debug("Detected shared calendar path for principal " + principal + ", user principal is " + email);
+            int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
+            if (index >= 0 && mailPath.endsWith("/")) {
+                buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
+            } else {
+                throw new DavMailException("EXCEPTION_INVALID_MAIL_PATH", mailPath);
+            }
+        } else if (principal != null) {
+            buffer.append(mailPath);
+        }
+
+        if (folderName != null && (folderName.startsWith("calendar") || folderName.startsWith("contacts")
+                // OSX address book name
+                || folderName.startsWith("addressbook"))) {
+            if (folderName.startsWith("calendar")) {
+                // replace 'calendar' folder name with i18n name
+                buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
+            } else {
+                // replace 'contacts' folder name with i18n name
+                buffer.append(contactsUrl.substring(contactsUrl.lastIndexOf('/') + 1));
+            }
+
+            // sub calendar folder => append sub folder name
+            int index = folderName.indexOf('/');
+            if (index >= 0) {
+                buffer.append(folderName.substring(index));
+            }
+            // replace 'inbox' folder name with i18n name
+        } else if ("inbox".equals(folderName)) {
+            buffer.append(inboxUrl.substring(inboxUrl.lastIndexOf('/') + 1));
+            // append folder name without replace (public folder)
+        } else if (folderName != null && folderName.length() > 0) {
+            buffer.append(folderName);
+        }
+        return buffer.toString();
+    }
+
+
+    /**
      * @inheritDoc
      */
     public DavExchangeSession(String url, String userName, String password) throws IOException {
