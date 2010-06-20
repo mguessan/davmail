@@ -86,6 +86,16 @@ public class DavExchangeSession extends ExchangeSession {
     protected String contactsUrl;
     protected String outboxUrl;
 
+    protected String inboxName;
+    protected String deleteditemsName;
+    protected String sentitemsName;
+    protected String draftsName;
+    protected String calendarName;
+    protected String contactsName;
+    protected String outboxName;
+
+    protected static final String USERS = "/users/";
+
     /**
      * Convert logical or relative folder path to absolute folder path.
      *
@@ -94,20 +104,49 @@ public class DavExchangeSession extends ExchangeSession {
      */
     public String getFolderPath(String folderName) {
         String folderPath;
+        // IMAP path
         if (folderName.startsWith(INBOX)) {
-            folderPath = folderName.replaceFirst(INBOX, inboxUrl);
+            folderPath = mailPath + inboxName + folderName.substring(INBOX.length());
         } else if (folderName.startsWith(TRASH)) {
-            folderPath = folderName.replaceFirst(TRASH, deleteditemsUrl);
+            folderPath = mailPath + deleteditemsName + folderName.substring(TRASH.length());
         } else if (folderName.startsWith(DRAFTS)) {
-            folderPath = folderName.replaceFirst(DRAFTS, draftsUrl);
+            folderPath = mailPath + draftsName + folderName.substring(DRAFTS.length());
         } else if (folderName.startsWith(SENT)) {
-            folderPath = folderName.replaceFirst(SENT, sentitemsUrl);
-        } else if (folderName.startsWith(CALENDAR)) {
-            folderPath = folderName.replaceFirst(CALENDAR, calendarUrl);
-        } else if (folderName.startsWith(CONTACTS)) {
-            folderPath = folderName.replaceFirst(CONTACTS, contactsUrl);
+            folderPath = mailPath + sentitemsName + folderName.substring(SENT.length());
         } else if (folderName.startsWith("public")) {
             folderPath = publicFolderUrl + folderName.substring("public".length());
+
+        // caldav path
+        } else if (folderName.startsWith(USERS)) {
+            // get requested principal
+            String principal = null;
+            String localPath;
+            int principalIndex = folderName.indexOf('/', USERS.length());
+            if (principalIndex >= 0) {
+                principal = folderName.substring(USERS.length(), principalIndex);
+                localPath = folderName.substring(USERS.length() + principal.length() + 1);
+                if (localPath.startsWith(LOWER_CASE_INBOX)) {
+                    localPath = inboxName + localPath.substring(LOWER_CASE_INBOX.length());
+                } else if (localPath.startsWith(CALENDAR)) {
+                    localPath = calendarName + localPath.substring(CALENDAR.length());
+                } else if (localPath.startsWith(CONTACTS) ) {
+                    localPath = contactsName + localPath.substring(CONTACTS.length());
+                } else if (localPath.startsWith(ADDRESSBOOK) ) {
+                    localPath = contactsName + localPath.substring(ADDRESSBOOK.length());
+                }
+            } else {
+                principal = folderName.substring(USERS.length());
+                localPath = "";
+            }
+            if (principal.length() == 0) {
+                folderPath = rootPath;
+            } else if (alias.equalsIgnoreCase(principal) || email.equalsIgnoreCase(principal)) {
+                folderPath = mailPath + localPath;
+            } else {
+                LOGGER.debug("Detected shared path for principal " + principal + ", user principal is " + email);
+                folderPath = rootPath + principal + '/' + localPath;
+            }
+
             // absolute folder path
         } else if (folderName.startsWith("/")) {
             folderPath = folderName;
@@ -127,6 +166,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @param folderName requested folder name
      * @return Exchange folder path
      * @throws IOException on error
+     * @deprecated user getFolderPath instead
      */
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
@@ -213,6 +253,7 @@ public class DavExchangeSession extends ExchangeSession {
                 mailPath = "/exchange/" + email + '/';
                 LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
             }
+            rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
         } catch (IOException e) {
             LOGGER.error("Error parsing main page at " + method.getPath(), e);
         } finally {
@@ -241,6 +282,22 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    // return last folder name from url
+
+    protected String getFolderName(String url) {
+        if (url != null) {
+            if (url.endsWith("/")) {
+                return url.substring(url.lastIndexOf('/', url.length() - 2) + 1);
+            } else if (url.indexOf('/') > 0) {
+                return url.substring(url.lastIndexOf('/') + 1);
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
         MultiStatusResponse[] responses;
@@ -252,13 +309,20 @@ public class DavExchangeSession extends ExchangeSession {
             }
             DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
             inboxUrl = getURIPropertyIfExists(properties, "inbox");
+            inboxName = getFolderName(inboxUrl);
             deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems");
+            deleteditemsName = getFolderName(deleteditemsUrl);
             sentitemsUrl = getURIPropertyIfExists(properties, "sentitems");
+            sentitemsName = getFolderName(sentitemsUrl);
             sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg");
             draftsUrl = getURIPropertyIfExists(properties, "drafts");
+            draftsName = getFolderName(draftsUrl);
             calendarUrl = getURIPropertyIfExists(properties, "calendar");
+            calendarName = getFolderName(calendarUrl);
             contactsUrl = getURIPropertyIfExists(properties, "contacts");
+            contactsName = getFolderName(contactsUrl);
             outboxUrl = getURIPropertyIfExists(properties, "outbox");
+            outboxName = getFolderName(outboxUrl);
             // junk folder not available over webdav
 
             // default public folder path

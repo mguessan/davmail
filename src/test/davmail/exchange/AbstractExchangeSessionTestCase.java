@@ -19,8 +19,10 @@
 package davmail.exchange;
 
 import davmail.exchange.dav.DavExchangeSession;
+import davmail.exchange.ews.EwsExchangeSession;
 import junit.framework.TestCase;
 
+import java.io.File;
 import java.io.IOException;
 
 import davmail.Settings;
@@ -41,8 +43,13 @@ public class AbstractExchangeSessionTestCase extends TestCase {
     @Override
     public void setUp() throws IOException {
         if (session == null) {
-            // Load current user settings
             if (url == null) {
+                // try to load settings from current folder davmail.properties
+                File file = new File("davmail.properties");
+                if (file.exists()) {
+                    Settings.setConfigFilePath("davmail.properties");
+                }
+                // Load current settings
                 Settings.load();
             } else {
                 Settings.setDefaultSettings();
@@ -60,7 +67,11 @@ public class AbstractExchangeSessionTestCase extends TestCase {
             // open session, get username and password from davmail.properties
             // Note: those properties should *not* exist in normal production mode,
             // they are not used by DavMail, just by this test case
-            session = new DavExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
+            if (Settings.getBooleanProperty("davmail.enableEws")) {
+                session = new EwsExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
+            } else {
+                session = new DavExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
+            }
         }
     }
 

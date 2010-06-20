@@ -89,7 +89,9 @@ public abstract class ExchangeSession {
     protected static final String PUBLIC_ROOT = "/public";
     protected static final String CALENDAR = "calendar";
     protected static final String CONTACTS = "contacts";
+    protected static final String ADDRESSBOOK = "addressbook";
     protected static final String INBOX = "INBOX";
+    protected static final String LOWER_CASE_INBOX = "inbox";
     protected static final String SENT = "Sent";
     protected static final String DRAFTS = "Drafts";
     protected static final String TRASH = "Trash";
@@ -102,6 +104,7 @@ public abstract class ExchangeSession {
      * Base user mailboxes path (used to select folder)
      */
     protected String mailPath;
+    protected String rootPath;
     protected String email;
     protected String alias;
     protected final HttpClient httpClient;
