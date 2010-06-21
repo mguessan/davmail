@@ -280,7 +280,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Condition like(String attributeName, String value) {
+    public Condition contains(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
     }
 

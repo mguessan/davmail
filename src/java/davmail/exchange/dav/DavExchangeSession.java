@@ -517,7 +517,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Condition like(String attributeName, String value) {
+    public Condition contains(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.Like, value);
     }
 

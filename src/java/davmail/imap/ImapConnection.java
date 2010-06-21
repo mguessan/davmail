@@ -1012,15 +1012,15 @@ public class ImapConnection extends AbstractConnection {
         } else if (token.startsWith("OR ")) {
             return appendOrSearchParams(token, conditions);
         } else if ("SUBJECT".equals(token)) {
-            return session.like("subject", tokens.nextToken());
+            return session.contains("subject", tokens.nextToken());
         } else if ("BODY".equals(token)) {
-            return session.like("body", tokens.nextToken());
+            return session.contains("body", tokens.nextToken());
         } else if ("FROM".equals(token)) {
-            return session.like("from", tokens.nextToken());
+            return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {
-            return session.like("to", tokens.nextToken());
+            return session.contains("to", tokens.nextToken());
         } else if ("CC".equals(token)) {
-            return session.like("cc", tokens.nextToken());
+            return session.contains("cc", tokens.nextToken());
         } else if ("LARGER".equals(token)) {
             return session.gte("messageSize", tokens.nextToken());
         } else if ("SMALLER".equals(token)) {

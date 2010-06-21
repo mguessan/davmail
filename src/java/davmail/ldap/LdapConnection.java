@@ -1028,7 +1028,7 @@ public class LdapConnection extends AbstractConnection {
             } else {
                 // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
-                    condition = session.like(contactAttributeName, value);
+                    condition = session.contains(contactAttributeName, value);
                 } else {
                     condition = session.startsWith(contactAttributeName, value);
                 }

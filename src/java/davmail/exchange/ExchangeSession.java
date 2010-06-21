@@ -554,13 +554,12 @@ public abstract class ExchangeSession {
     /**
      * Get all folder messages.
      *
-     * @param folderName Exchange folder name
-     * @param condition  search filter
+     * @param folderPath Exchange folder name
      * @return message list
      * @throws IOException on error
      */
-    public MessageList searchMessages(String folderName) throws IOException {
-        return searchMessages(folderName, IMAP_MESSAGE_ATTRIBUTES, null);
+    public MessageList searchMessages(String folderPath) throws IOException {
+        return searchMessages(folderPath, IMAP_MESSAGE_ATTRIBUTES, null);
     }
 
     /**
@@ -580,7 +579,7 @@ public abstract class ExchangeSession {
      *
      * @param folderName Exchange folder name
      * @param attributes requested Webdav attributes
-     * @param conditions conditions string in Exchange SQL syntax
+     * @param condition  search filter
      * @return message list
      * @throws IOException on error
      */
@@ -591,10 +590,21 @@ public abstract class ExchangeSession {
         Like, StartsWith, Contains
     }
 
+    /**
+     * Exchange search filter.
+     */
     public abstract static class Condition {
+        /**
+         * Append condition to buffer.
+         *
+         * @param buffer search filter buffer
+         */
         public abstract void appendTo(StringBuilder buffer);
     }
 
+    /**
+     * Attribute condition.
+     */
     public abstract static class AttributeCondition extends Condition {
         protected String attributeName;
         protected Operator operator;
@@ -607,6 +617,9 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * Multiple condition.
+     */
     public abstract static class MultiCondition extends Condition {
         protected Operator operator;
         protected List<Condition> conditions;
@@ -616,6 +629,11 @@ public abstract class ExchangeSession {
             this.conditions = Arrays.asList(conditions);
         }
 
+        /**
+         * Add a new condition.
+         *
+         * @param condition single condition
+         */
         public void add(Condition condition) {
             if (condition != null) {
                 conditions.add(condition);
@@ -623,6 +641,9 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * Not condition.
+     */
     public abstract static class NotCondition extends Condition {
         protected Condition condition;
 
@@ -631,6 +652,9 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * Single search filter condition.
+     */
     public abstract static class MonoCondition extends Condition {
         protected String attributeName;
         protected Operator operator;
@@ -641,32 +665,124 @@ public abstract class ExchangeSession {
         }
     }
 
+    /**
+     * And search filter.
+     *
+     * @param condition search conditions
+     * @return condition
+     */
     public abstract MultiCondition and(Condition... condition);
 
+    /**
+     * Or search filter.
+     *
+     * @param condition search conditions
+     * @return condition
+     */
     public abstract MultiCondition or(Condition... condition);
 
+    /**
+     * Not search filter.
+     *
+     * @param condition search condition
+     * @return condition
+     */
     public abstract Condition not(Condition condition);
 
+    /**
+     * Equals condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition equals(String attributeName, String value);
 
+    /**
+     * Equals condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition equals(String attributeName, int value);
 
+    /**
+     * MIME header equals condition.
+     *
+     * @param headerName MIME header name
+     * @param value      attribute value
+     * @return condition
+     */
     public abstract Condition headerEquals(String headerName, String value);
 
+    /**
+     * Greater than or equals condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition gte(String attributeName, String value);
 
+    /**
+     * Greater than condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition gt(String attributeName, String value);
 
+    /**
+     * Lower than condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition lt(String attributeName, String value);
 
-    public abstract Condition like(String attributeName, String value);
+    /**
+     * Contains condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
+    public abstract Condition contains(String attributeName, String value);
 
+    /**
+     * Starts with condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
     public abstract Condition startsWith(String attributeName, String value);
 
+    /**
+     * Is null condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @return condition
+     */
     public abstract Condition isNull(String attributeName);
 
+    /**
+     * Is true condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @return condition
+     */
     public abstract Condition isTrue(String attributeName);
 
+    /**
+     * Is false condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @return condition
+     */
     public abstract Condition isFalse(String attributeName);
 
     /**
@@ -1345,7 +1461,7 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void delete() throws IOException {
-            LOGGER.debug("Delete " + permanentUrl + " (" + messageUrl + ")");
+            LOGGER.debug("Delete " + permanentUrl + " (" + messageUrl + ')');
             deleteMessage(this);
         }
 
@@ -1424,10 +1540,16 @@ public abstract class ExchangeSession {
     /**
      * Generic folder item.
      */
-    public abstract class Item extends HashMap<String, String> {
+    public abstract static class Item extends HashMap<String, String> {
         protected String href;
         protected String permanentUrl;
+        /**
+         * Display name.
+         */
         public String displayName;
+        /**
+         * item etag
+         */
         public String etag;
         protected String contentClass;
         protected String noneMatch;
@@ -1507,7 +1629,7 @@ public abstract class ExchangeSession {
     /**
      * Calendar event object
      */
-    public abstract class Contact extends Item {
+    public abstract static class Contact extends Item {
 
         /**
          * @inheritDoc
@@ -2074,6 +2196,12 @@ public abstract class ExchangeSession {
             return icsMethod;
         }
 
+        /**
+         * Create or update item
+         *
+         * @return action result
+         * @throws IOException on error
+         */
         public ItemResult createOrUpdate() throws IOException {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -2204,20 +2332,21 @@ public abstract class ExchangeSession {
      * @return list of contacts
      * @throws IOException on error
      */
-    public List<ExchangeSession.Contact> getAllContacts(String folderName) throws IOException {
-        return searchContacts(folderName, ITEM_PROPERTIES, equals("contentclass", "urn:content-classes:person"));
+    public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
+        return searchContacts(folderPath, ITEM_PROPERTIES, equals("contentclass", "urn:content-classes:person"));
     }
 
 
     /**
      * Search contacts in provided folder matching the search query.
      *
-     * @param folderPath  Exchange folder path
-     * @param searchQuery Exchange search query
+     * @param folderPath Exchange folder path
+     * @param attributes requested attributes
+     * @param condition  Exchange search query
      * @return list of contacts
      * @throws IOException on error
      */
-    protected abstract List<Contact> searchContacts(String folderName, List<String> attributes, Condition condition) throws IOException;
+    protected abstract List<Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException;
 
     /**
      * Search calendar messages in provided folder.
@@ -2267,8 +2396,9 @@ public abstract class ExchangeSession {
     /**
      * Search calendar events or messages in provided folder matching the search query.
      *
-     * @param folderPath  Exchange folder path
-     * @param searchQuery Exchange search query
+     * @param folderPath Exchange folder path
+     * @param attributes requested attributes
+     * @param condition  Exchange search query
      * @return list of calendar messages as Event objects
      * @throws IOException on error
      */
@@ -2663,7 +2793,7 @@ public abstract class ExchangeSession {
         return contactFind(equals("uid", uid));
     }
 
-    public static final List<String> CONTACT_ATTRIBUTES = new ArrayList<String>();
+    protected static final List<String> CONTACT_ATTRIBUTES = new ArrayList<String>();
 
     static {
         CONTACT_ATTRIBUTES.add("extensionattribute1");
@@ -2712,7 +2842,7 @@ public abstract class ExchangeSession {
     /**
      * Search users in contacts folder
      *
-     * @param searchFilter search filter
+     * @param condition search filter
      * @return List of users
      * @throws IOException on error
      */
@@ -2969,8 +3099,17 @@ public abstract class ExchangeSession {
         }
     }
 
-    public final class VTimezone {
+    /**
+     * Timezone structure
+     */
+    public static final class VTimezone {
+        /**
+         * Timezone iCalendar body
+         */
         public String timezoneBody;
+        /**
+         * Timezone id
+         */
         public String timezoneId;
 
     }
