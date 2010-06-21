@@ -98,34 +98,34 @@ public class DavExchangeSession extends ExchangeSession {
     protected static final String USERS = "/users/";
 
     /**
-     * Convert logical or relative folder path to absolute folder path.
+     * Convert logical or relative folder path to exchange folder path.
      *
-     * @param folderName folder name
+     * @param folderPath folder name
      * @return folder path
      */
-    public String getFolderPath(String folderName) {
-        String folderPath;
+    public String getFolderPath(String folderPath) {
+        String exchangeFolderPath;
         // IMAP path
-        if (folderName.startsWith(INBOX)) {
-            folderPath = mailPath + inboxName + folderName.substring(INBOX.length());
-        } else if (folderName.startsWith(TRASH)) {
-            folderPath = mailPath + deleteditemsName + folderName.substring(TRASH.length());
-        } else if (folderName.startsWith(DRAFTS)) {
-            folderPath = mailPath + draftsName + folderName.substring(DRAFTS.length());
-        } else if (folderName.startsWith(SENT)) {
-            folderPath = mailPath + sentitemsName + folderName.substring(SENT.length());
-        } else if (folderName.startsWith("public")) {
-            folderPath = publicFolderUrl + folderName.substring("public".length());
+        if (folderPath.startsWith(INBOX)) {
+            exchangeFolderPath = mailPath + inboxName + folderPath.substring(INBOX.length());
+        } else if (folderPath.startsWith(TRASH)) {
+            exchangeFolderPath = mailPath + deleteditemsName + folderPath.substring(TRASH.length());
+        } else if (folderPath.startsWith(DRAFTS)) {
+            exchangeFolderPath = mailPath + draftsName + folderPath.substring(DRAFTS.length());
+        } else if (folderPath.startsWith(SENT)) {
+            exchangeFolderPath = mailPath + sentitemsName + folderPath.substring(SENT.length());
+        } else if (folderPath.startsWith("public")) {
+            exchangeFolderPath = publicFolderUrl + folderPath.substring("public".length());
 
             // caldav path
-        } else if (folderName.startsWith(USERS)) {
+        } else if (folderPath.startsWith(USERS)) {
             // get requested principal
             String principal;
             String localPath;
-            int principalIndex = folderName.indexOf('/', USERS.length());
+            int principalIndex = folderPath.indexOf('/', USERS.length());
             if (principalIndex >= 0) {
-                principal = folderName.substring(USERS.length(), principalIndex);
-                localPath = folderName.substring(USERS.length() + principal.length() + 1);
+                principal = folderPath.substring(USERS.length(), principalIndex);
+                localPath = folderPath.substring(USERS.length() + principal.length() + 1);
                 if (localPath.startsWith(LOWER_CASE_INBOX)) {
                     localPath = inboxName + localPath.substring(LOWER_CASE_INBOX.length());
                 } else if (localPath.startsWith(CALENDAR)) {
@@ -136,81 +136,37 @@ public class DavExchangeSession extends ExchangeSession {
                     localPath = contactsName + localPath.substring(ADDRESSBOOK.length());
                 }
             } else {
-                principal = folderName.substring(USERS.length());
+                principal = folderPath.substring(USERS.length());
                 localPath = "";
             }
             if (principal.length() == 0) {
-                folderPath = rootPath;
+                exchangeFolderPath = rootPath;
             } else if (alias.equalsIgnoreCase(principal) || email.equalsIgnoreCase(principal)) {
-                folderPath = mailPath + localPath;
+                exchangeFolderPath = mailPath + localPath;
             } else {
                 LOGGER.debug("Detected shared path for principal " + principal + ", user principal is " + email);
-                folderPath = rootPath + principal + '/' + localPath;
+                exchangeFolderPath = rootPath + principal + '/' + localPath;
             }
 
             // absolute folder path
-        } else if (folderName.startsWith("/")) {
-            folderPath = folderName;
+        } else if (folderPath.startsWith("/")) {
+            exchangeFolderPath = folderPath;
         } else {
-            folderPath = mailPath + folderName;
+            exchangeFolderPath = mailPath + folderPath;
         }
-        return folderPath;
+        return exchangeFolderPath;
     }
 
     /**
-     * Build Caldav calendar path for principal and folder name.
-     * - prefix is current user mailbox path if principal is current user,
-     * else prefix is parent folder of current user mailbox path followed by principal
-     * - suffix according to well known folder names (internationalized on Exchange)
+     * Test if folderPath is inside user mailbox.
      *
-     * @param principal  calendar principal
-     * @param folderName requested folder name
-     * @return Exchange folder path
-     * @throws IOException on error
-     * @deprecated user getFolderPath instead
+     * @param folderPath absolute folder path
+     * @return true if folderPath is a public or shared folder
      */
     @Override
-    public String buildCalendarPath(String principal, String folderName) throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        // other user calendar => replace principal folder name in mailPath
-        if (principal != null && !alias.equalsIgnoreCase(principal) && !email.equalsIgnoreCase(principal)) {
-            LOGGER.debug("Detected shared calendar path for principal " + principal + ", user principal is " + email);
-            int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
-            if (index >= 0 && mailPath.endsWith("/")) {
-                buffer.append(mailPath.substring(0, index + 1)).append(principal).append('/');
-            } else {
-                throw new DavMailException("EXCEPTION_INVALID_MAIL_PATH", mailPath);
-            }
-        } else if (principal != null) {
-            buffer.append(mailPath);
-        }
-
-        if (folderName != null && (folderName.startsWith("calendar") || folderName.startsWith("contacts")
-                // OSX address book name
-                || folderName.startsWith("addressbook"))) {
-            if (folderName.startsWith("calendar")) {
-                // replace 'calendar' folder name with i18n name
-                buffer.append(calendarUrl.substring(calendarUrl.lastIndexOf('/') + 1));
-            } else {
-                // replace 'contacts' folder name with i18n name
-                buffer.append(contactsUrl.substring(contactsUrl.lastIndexOf('/') + 1));
-            }
-
-            // sub calendar folder => append sub folder name
-            int index = folderName.indexOf('/');
-            if (index >= 0) {
-                buffer.append(folderName.substring(index));
-            }
-            // replace 'inbox' folder name with i18n name
-        } else if ("inbox".equals(folderName)) {
-            buffer.append(inboxUrl.substring(inboxUrl.lastIndexOf('/') + 1));
-            // append folder name without replace (public folder)
-        } else if (folderName != null && folderName.length() > 0) {
-            buffer.append(folderName);
-        }
-        return buffer.toString();
+    public boolean isSharedFolder(String folderPath) {
+        return !getFolderPath(folderPath).toLowerCase().startsWith(mailPath.toLowerCase());
     }
-
 
     /**
      * @inheritDoc
@@ -1037,21 +993,21 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public List<Folder> getSubFolders(String folderName, Condition condition, boolean recursive) throws IOException {
-        boolean isPublic = folderName.startsWith("/public");
+    public List<Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
+        boolean isPublic = folderPath.startsWith("/public");
         String mode = (!isPublic && recursive) ? "DEEP" : "SHALLOW";
         List<Folder> folders = new ArrayList<Folder>();
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("Select \"DAV:nosubs\", \"DAV:hassubs\", \"http://schemas.microsoft.com/exchange/outlookfolderclass\", " +
                 "\"http://schemas.microsoft.com/repl/contenttag\", \"http://schemas.microsoft.com/mapi/proptag/x30080040\", " +
-                "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderName)).append("\"')\n" +
+                "\"urn:schemas:httpmail:unreadcount\" FROM Scope('").append(mode).append(" TRAVERSAL OF \"").append(getFolderPath(folderPath)).append("\"')\n" +
                 " WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = True \n");
         if (condition != null) {
             searchRequest.append(" AND ");
             condition.appendTo(searchRequest);
         }
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderName)), searchRequest.toString());
+                httpClient, URIUtil.encodePath(getFolderPath(folderPath)), searchRequest.toString());
 
         for (MultiStatusResponse response : responses) {
             Folder folder = buildFolder(response);
@@ -1067,12 +1023,11 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void createFolder(String folderName, String folderClass) throws IOException {
-        String folderPath = getFolderPath(folderName);
+    public void createFolder(String folderPath, String folderClass) throws IOException {
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
         list.add(Field.createDavProperty("folderclass", folderClass));
         // standard MkColMethod does not take properties, override PropPatchMethod instead
-        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(folderPath), list) {
+        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), list) {
             @Override
             public String getName() {
                 return "MKCOL";
@@ -1089,18 +1044,17 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void deleteFolder(String folderName) throws IOException {
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(folderName)));
+    public void deleteFolder(String folderPath) throws IOException {
+        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(folderPath)));
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public void moveFolder(String folderName, String targetName) throws IOException {
-        String folderPath = getFolderPath(folderName);
-        String targetPath = getFolderPath(targetName);
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(folderPath), URIUtil.encodePath(targetPath), false);
+    public void moveFolder(String folderPath, String targetPath) throws IOException {
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(folderPath)),
+                URIUtil.encodePath(getFolderPath(targetPath)), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -1176,9 +1130,9 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException {
+    public MessageList searchMessages(String folderPath, List<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        MultiStatusResponse[] responses = searchItems(folderName, attributes, condition);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition);
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);
@@ -1193,9 +1147,9 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    protected List<ExchangeSession.Contact> searchContacts(String folderName, List<String> attributes, Condition condition) throws IOException {
+    protected List<ExchangeSession.Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        MultiStatusResponse[] responses = searchItems(folderName, attributes, condition);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition);
         for (MultiStatusResponse response : responses) {
             contacts.add(new Contact(response));
         }
@@ -1203,9 +1157,9 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected List<ExchangeSession.Event> searchEvents(String folderName, List<String> attributes, Condition condition) throws IOException {
+    protected List<ExchangeSession.Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
-        MultiStatusResponse[] responses = searchItems(folderName, attributes, condition);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition);
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype");
             Event event = new Event(response);
@@ -1227,8 +1181,8 @@ public class DavExchangeSession extends ExchangeSession {
         return events;
     }
 
-    protected MultiStatusResponse[] searchItems(String folderName, List<String> attributes, Condition condition) throws IOException {
-        String folderUrl = getFolderPath(folderName);
+    protected MultiStatusResponse[] searchItems(String folderPath, List<String> attributes, Condition condition) throws IOException {
+        String folderUrl = getFolderPath(folderPath);
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("SELECT ")
                 .append(Field.getRequestPropertyString("permanenturl"));
@@ -1263,7 +1217,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String itemPath = folderPath + '/' + convertItemNameToEML(itemName);
+        String itemPath = getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName);
         Item item;
         try {
             item = getItem(itemPath);

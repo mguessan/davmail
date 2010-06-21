@@ -2430,27 +2430,12 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Build Caldav calendar path for principal and folder name.
-     * - prefix is current user mailbox path if principal is current user,
-     * else prefix is parent folder of current user mailbox path followed by principal
-     * - suffix according to well known folder names (internationalized on Exchange)
-     *
-     * @param principal  calendar principal
-     * @param folderName requested folder name
-     * @return Exchange folder path
-     * @throws IOException on error
-     */
-    public abstract String buildCalendarPath(String principal, String folderName) throws IOException;
-
-    /**
      * Test if folderPath is inside user mailbox.
      *
      * @param folderPath absolute folder path
      * @return true if folderPath is a public or shared folder
      */
-    public boolean isSharedFolder(String folderPath) {
-        return !folderPath.toLowerCase().startsWith(mailPath.toLowerCase());
-    }
+    public abstract boolean isSharedFolder(String folderPath);
 
     /**
      * Build base path for cmd commands (galfind, gallookup).

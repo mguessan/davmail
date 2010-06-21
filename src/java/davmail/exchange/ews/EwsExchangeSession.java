@@ -459,8 +459,8 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public String buildCalendarPath(String principal, String folderName) throws IOException {
-          throw new UnsupportedOperationException();
+    public boolean isSharedFolder(String folderPath) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -226,7 +226,7 @@ public class CaldavConnection extends AbstractConnection {
                 // send back principal on search
             } else if (request.isReport() && request.isPathLength(3)) {
                 sendPrincipal(request, "users", session.getEmail());
-            // iCal current-user-principal request
+                // iCal current-user-principal request
             } else if (request.isPropFind() && request.isPathLength(3)) {
                 sendPrincipalsFolder(request);
             } else {
@@ -268,50 +268,50 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPut()) {
             String etag = request.getHeader("if-match");
             String noneMatch = request.getHeader("if-none-match");
-            ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getExchangeFolderPath(), lastPath, request.getBody(), etag, noneMatch);
+            ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getFolderPath(), lastPath, request.getBody(), etag, noneMatch);
             sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);
 
         } else if (request.isDelete()) {
-            int status = session.deleteItem(request.getExchangeFolderPath(), lastPath);
+            int status = session.deleteItem(request.getFolderPath(), lastPath);
             sendHttpResponse(status);
         } else if (request.isGet()) {
             if (request.path.endsWith("/")) {
                 // GET request on a folder => build ics content of all folder events
-                String folderPath = request.getExchangeFolderPath();
+                String folderPath = request.getFolderPath();
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
-                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[])null, true);
+                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[]) null, true);
                 } else {
-                List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
-                ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
-                response.append("BEGIN:VCALENDAR\r\n");
-                response.append("VERSION:2.0\r\n");
-                response.append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN\r\n");
-                response.append("METHOD:PUBLISH\r\n");
+                    List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
+                    ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
+                    response.append("BEGIN:VCALENDAR\r\n");
+                    response.append("VERSION:2.0\r\n");
+                    response.append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN\r\n");
+                    response.append("METHOD:PUBLISH\r\n");
 
-                for (ExchangeSession.Event event : events) {
-                    String icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VTIMEZONE", "END:VCALENDAR");
-                    if (icsContent != null) {
-                        response.append("BEGIN:VTIMEZONE");
-                        response.append(icsContent);
-                    } else {
-                        icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VEVENT", "END:VCALENDAR");
+                    for (ExchangeSession.Event event : events) {
+                        String icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VTIMEZONE", "END:VCALENDAR");
                         if (icsContent != null) {
-                            response.append("BEGIN:VEVENT");
+                            response.append("BEGIN:VTIMEZONE");
                             response.append(icsContent);
+                        } else {
+                            icsContent = StringUtil.getToken(event.getBody(), "BEGIN:VEVENT", "END:VCALENDAR");
+                            if (icsContent != null) {
+                                response.append("BEGIN:VEVENT");
+                                response.append(icsContent);
+                            }
                         }
                     }
-                }
-                response.append("END:VCALENDAR");
-                response.close();
+                    response.append("END:VCALENDAR");
+                    response.close();
                 }
             } else {
-                ExchangeSession.Item item = session.getItem(request.getExchangeFolderPath(), lastPath);
+                ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
                 sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), item.getBody(), true);
             }
         } else if (request.isHead()) {
             // test event
-            ExchangeSession.Item item = session.getItem(request.getExchangeFolderPath(), lastPath);
+            ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
             sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), (byte[]) null, true);
         } else {
             sendUnsupported(request);
@@ -391,11 +391,11 @@ public class CaldavConnection extends AbstractConnection {
      * @param response  Caldav response
      * @param request   Caldav request
      * @param subFolder calendar folder path relative to request path
-     * @throws IOException on error
      * @return Exchange folder object
+     * @throws IOException on error
      */
     public ExchangeSession.Folder appendFolder(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        ExchangeSession.Folder folder = session.getFolder(request.getExchangeFolderPath(subFolder));
+        ExchangeSession.Folder folder = session.getFolder(request.getFolderPath(subFolder));
 
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
@@ -466,16 +466,16 @@ public class CaldavConnection extends AbstractConnection {
     public void appendInbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
         String ctag = "0";
         String etag = "0";
-        String exchangeFolderPath = request.getExchangeFolderPath(subFolder);
+        String folderPath = request.getFolderPath(subFolder);
         // do not try to access inbox on shared calendar
-        if (!session.isSharedFolder(exchangeFolderPath)) {
+        if (!session.isSharedFolder(folderPath)) {
             try {
-                ExchangeSession.Folder folder = session.getFolder(exchangeFolderPath);
+                ExchangeSession.Folder folder = session.getFolder(folderPath);
                 ctag = base64Encode(folder.ctag);
                 etag = base64Encode(folder.etag);
             } catch (HttpException e) {
                 // unauthorized access, probably an inbox on shared calendar
-                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", exchangeFolderPath, e.getMessage()));
+                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
             }
         }
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
@@ -555,15 +555,15 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendInbox(response, request, null);
         // do not try to access inbox on shared calendar
-        if (!session.isSharedFolder(request.getExchangeFolderPath(null)) && request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
+        if (!session.isSharedFolder(request.getFolderPath(null)) && request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
             try {
                 DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
-                List<ExchangeSession.Event> events = session.getEventMessages(request.getExchangeFolderPath());
+                List<ExchangeSession.Event> events = session.getEventMessages(request.getFolderPath());
                 DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_MESSAGES", events.size()));
                 appendEventsResponses(response, request, events);
             } catch (HttpException e) {
                 // unauthorized access, probably an inbox on shared calendar
-                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", request.getExchangeFolderPath(), e.getMessage()));
+                DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", request.getFolderPath(), e.getMessage()));
             }
         }
         response.endMultistatus();
@@ -591,7 +591,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendFolder(CaldavRequest request) throws IOException {
-        String folderPath = request.getExchangeFolderPath();
+        String folderPath = request.getFolderPath();
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         ExchangeSession.Folder folder = appendFolder(response, request, null);
@@ -651,7 +651,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void reportEvents(CaldavRequest request) throws IOException {
-        String folderPath = request.getExchangeFolderPath();
+        String folderPath = request.getFolderPath();
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
 
@@ -678,11 +678,11 @@ public class CaldavConnection extends AbstractConnection {
                 }
             }
         } else if (request.isPath(1, "users") && request.isPath(3, "inbox")) {
-            events = session.getEventMessages(request.getExchangeFolderPath());
+            events = session.getEventMessages(request.getFolderPath());
             appendEventsResponses(response, request, events);
         } else {
             // TODO: handle contacts ?
-            events = session.getAllEvents(request.getExchangeFolderPath());
+            events = session.getAllEvents(request.getFolderPath());
             appendEventsResponses(response, request, events);
         }
 
@@ -736,7 +736,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:displayname", request.getLastPath());
         }
         if (request.hasProperty("getctag")) {
-            ExchangeSession.Folder  rootFolder = session.getFolder("");
+            ExchangeSession.Folder rootFolder = session.getFolder("");
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
                     base64Encode(rootFolder.ctag));
         }
@@ -1419,56 +1419,40 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         /**
-         * Translate request path to Exchange folder path.
+         * Get request folder path.
          *
          * @return exchange folder path
          * @throws IOException on error
          */
-        public String getExchangeFolderPath() throws IOException {
-            return getExchangeFolderPath(null);
+        public String getFolderPath() throws IOException {
+            return getFolderPath(null);
         }
 
         /**
-         * Translate request path with subFolder to Exchange folder path.
+         * Get request folder path with subFolder.
          *
-         * @param subFolder sub folder name
-         * @return exchange folder path
+         * @param subFolder sub folder path
+         * @return folder path
          * @throws IOException on error
          */
-        public String getExchangeFolderPath(String subFolder) throws IOException {
+        public String getFolderPath(String subFolder) throws IOException {
             int endIndex;
             if (isFolder()) {
                 endIndex = getPathLength();
             } else {
                 endIndex = getPathLength() - 1;
             }
-            if ("users".equals(getPathElement(1))) {
-                StringBuilder calendarPath = new StringBuilder();
-                if (getPathLength() > 3) {
-                    calendarPath.append(getPathElement(3));
-                }
-                for (int i = 4; i < endIndex; i++) {
+
+            StringBuilder calendarPath = new StringBuilder();
+            for (int i = 0; i < endIndex; i++) {
+                if (getPathElement(i).length() > 0) {
                     calendarPath.append('/').append(getPathElement(i));
                 }
-                if (subFolder != null && subFolder.length() > 0) {
-                    if (calendarPath.length() > 0) {
-                        calendarPath.append('/');
-                    }
-                    calendarPath.append(subFolder);
-                }
-                return session.buildCalendarPath(getPathElement(2), calendarPath.toString());
-            } else {
-                StringBuilder calendarPath = new StringBuilder();
-                for (int i = 0; i < endIndex; i++) {
-                    if (getPathElement(i).length() > 0) {
-                        calendarPath.append('/').append(getPathElement(i));
-                    }
-                }
-                if (subFolder != null && subFolder.length() > 0) {
-                    calendarPath.append('/').append(subFolder);
-                }
-                return calendarPath.toString();
             }
+            if (subFolder != null && subFolder.length() > 0) {
+                calendarPath.append('/').append(subFolder);
+            }
+            return calendarPath.toString();
         }
     }
 
