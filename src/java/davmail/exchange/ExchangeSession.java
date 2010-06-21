@@ -1564,7 +1564,7 @@ public abstract class ExchangeSession {
     public abstract class Event extends Item {
 
         /**
-         * {@inheritDoc}
+         * @inheritDoc
          */
         public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
             super(messageUrl, contentClass, itemBody, etag, noneMatch);

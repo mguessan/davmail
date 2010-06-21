@@ -41,8 +41,9 @@ import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
-import org.apache.jackrabbit.webdav.property.*;
-import org.apache.jackrabbit.webdav.xml.Namespace;
+import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.property.DavPropertySet;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -116,10 +117,10 @@ public class DavExchangeSession extends ExchangeSession {
         } else if (folderName.startsWith("public")) {
             folderPath = publicFolderUrl + folderName.substring("public".length());
 
-        // caldav path
+            // caldav path
         } else if (folderName.startsWith(USERS)) {
             // get requested principal
-            String principal = null;
+            String principal;
             String localPath;
             int principalIndex = folderName.indexOf('/', USERS.length());
             if (principalIndex >= 0) {
@@ -129,9 +130,9 @@ public class DavExchangeSession extends ExchangeSession {
                     localPath = inboxName + localPath.substring(LOWER_CASE_INBOX.length());
                 } else if (localPath.startsWith(CALENDAR)) {
                     localPath = calendarName + localPath.substring(CALENDAR.length());
-                } else if (localPath.startsWith(CONTACTS) ) {
+                } else if (localPath.startsWith(CONTACTS)) {
                     localPath = contactsName + localPath.substring(CONTACTS.length());
-                } else if (localPath.startsWith(ADDRESSBOOK) ) {
+                } else if (localPath.startsWith(ADDRESSBOOK)) {
                     localPath = contactsName + localPath.substring(ADDRESSBOOK.length());
                 }
             } else {
@@ -168,6 +169,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @throws IOException on error
      * @deprecated user getFolderPath instead
      */
+    @Override
     public String buildCalendarPath(String principal, String folderName) throws IOException {
         StringBuilder buffer = new StringBuilder();
         // other user calendar => replace principal folder name in mailPath
@@ -424,8 +426,7 @@ public class DavExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            boolean first = true;
-            buffer.append("( Not ");
+            buffer.append("(Not ");
             condition.appendTo(buffer);
             buffer.append(')');
         }
@@ -445,7 +446,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
-        protected boolean isIntValue = false;
+        protected boolean isIntValue;
 
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
@@ -511,12 +512,12 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MultiCondition and(Condition... condition) {
+    public ExchangeSession.MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    public MultiCondition or(Condition... condition) {
+    public ExchangeSession.MultiCondition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
@@ -584,6 +585,9 @@ public class DavExchangeSession extends ExchangeSession {
         return new MonoCondition(attributeName, Operator.IsFalse);
     }
 
+    /**
+     * @inheritDoc
+     */
     public class Contact extends ExchangeSession.Contact {
         /**
          * Build Contact instance from multistatusResponse info
@@ -708,6 +712,12 @@ public class DavExchangeSession extends ExchangeSession {
             return list;
         }
 
+        /**
+         * Create or update contact
+         *
+         * @return action result
+         * @throws IOException on error
+         */
         public ItemResult createOrUpdate() throws IOException {
             int status = 0;
             PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), buildProperties());
@@ -763,6 +773,9 @@ public class DavExchangeSession extends ExchangeSession {
 
     }
 
+    /**
+     * @inheritDoc
+     */
     public class Event extends ExchangeSession.Event {
         /**
          * Build Event instance from response info.
@@ -778,6 +791,10 @@ public class DavExchangeSession extends ExchangeSession {
             displayName = getPropertyIfExists(properties, "displayname");
         }
 
+
+        /**
+         * @inheritDoc
+         */
         public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
             super(messageUrl, contentClass, itemBody, etag, noneMatch);
         }
@@ -787,8 +804,8 @@ public class DavExchangeSession extends ExchangeSession {
          *
          * @param mimeInputStream mime message input stream
          * @return mime message ics attachment body
-         * @throws IOException                   on error
-         * @throws javax.mail.MessagingException on error
+         * @throws IOException        on error
+         * @throws MessagingException on error
          */
         protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
             String result;
@@ -875,6 +892,10 @@ public class DavExchangeSession extends ExchangeSession {
             return result;
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         protected ItemResult createOrUpdate(byte[] messageContent) throws IOException {
             PutMethod putmethod = new PutMethod(URIUtil.encodePath(href));
             putmethod.setRequestHeader("Translate", "f");
@@ -1045,6 +1066,7 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * @inheritDoc
      */
+    @Override
     public void createFolder(String folderName, String folderClass) throws IOException {
         String folderPath = getFolderPath(folderName);
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
@@ -1205,7 +1227,7 @@ public class DavExchangeSession extends ExchangeSession {
         return events;
     }
 
-    public MultiStatusResponse[] searchItems(String folderName, List<String> attributes, Condition condition) throws IOException {
+    protected MultiStatusResponse[] searchItems(String folderName, List<String> attributes, Condition condition) throws IOException {
         String folderUrl = getFolderPath(folderName);
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("SELECT ")
@@ -1319,8 +1341,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        Event event = new Event(messageUrl, contentClass, icsBody, etag, noneMatch);
-        return event.createOrUpdate();
+        return new Event(messageUrl, contentClass, icsBody, etag, noneMatch).createOrUpdate();
     }
 
     /**
@@ -1329,7 +1350,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected void loadVtimezone() {
         try {
-            VTimezone vTimezone = new VTimezone();
+            VTimezone userTimezone = new VTimezone();
             // create temporary folder
             String folderPath = getFolderPath("davmailtemp");
             createCalendarFolder(folderPath);
@@ -1354,9 +1375,9 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyList.add(Field.createDavProperty("outlookmessageclass", "IPM.Appointment"));
                 propertyList.add(Field.createDavProperty("instancetype", "0"));
                 // get forced timezone id from settings
-                vTimezone.timezoneId = Settings.getProperty("davmail.timezoneId");
-                if (vTimezone.timezoneId != null) {
-                    propertyList.add(Field.createDavProperty("timezoneid", vTimezone.timezoneId));
+                userTimezone.timezoneId = Settings.getProperty("davmail.timezoneId");
+                if (userTimezone.timezoneId != null) {
+                    propertyList.add(Field.createDavProperty("timezoneid", userTimezone.timezoneId));
                 }
                 String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
                 PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
@@ -1375,10 +1396,10 @@ public class DavExchangeSession extends ExchangeSession {
                 getMethod.setRequestHeader("Translate", "f");
                 try {
                     httpClient.executeMethod(getMethod);
-                    vTimezone.timezoneBody = "BEGIN:VTIMEZONE" +
+                    userTimezone.timezoneBody = "BEGIN:VTIMEZONE" +
                             StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
                             "END:VTIMEZONE\r\n";
-                    vTimezone.timezoneId = StringUtil.getToken(vTimezone.timezoneBody, "TZID:", "\r\n");
+                    userTimezone.timezoneId = StringUtil.getToken(userTimezone.timezoneBody, "TZID:", "\r\n");
                 } finally {
                     getMethod.releaseConnection();
                 }
@@ -1386,7 +1407,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             // delete temporary folder
             deleteFolder("davmailtemp");
-            this.vTimezone = vTimezone;
+            this.vTimezone = userTimezone;
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }
@@ -1394,8 +1415,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        Contact contact = new Contact(messageUrl, contentClass, icsBody, etag, noneMatch);
-        return contact.createOrUpdate();
+        return new Contact(messageUrl, contentClass, icsBody, etag, noneMatch).createOrUpdate();
     }
 
     protected List<DavConstants> buildProperties(Map<String, String> properties) {
@@ -1516,7 +1536,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void deleteMessage(Message message) throws IOException {
-        LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ")");
+        LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ')');
         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, message.permanentUrl);
     }
 
@@ -1554,7 +1574,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     protected BufferedReader getContentReader(Message message) throws IOException {
-        BufferedReader reader = null;
+        BufferedReader reader;
         try {
             reader = getContentReader(message, message.messageUrl);
         } catch (HttpNotFoundException e) {
@@ -1565,12 +1585,12 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected BufferedReader getContentReader(Message message, String url) throws IOException {
-        final GetMethod method = new GetMethod(URIUtil.encodePath(message.permanentUrl));
+        final GetMethod method = new GetMethod(URIUtil.encodePath(url));
         method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");
 
-        BufferedReader reader = null;
+        BufferedReader reader;
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
             InputStreamReader inputStreamReader;
