@@ -2796,6 +2796,7 @@ public abstract class ExchangeSession {
     protected static final List<String> CONTACT_ATTRIBUTES = new ArrayList<String>();
 
     static {
+        CONTACT_ATTRIBUTES.add("uid");
         CONTACT_ATTRIBUTES.add("extensionattribute1");
         CONTACT_ATTRIBUTES.add("extensionattribute2");
         CONTACT_ATTRIBUTES.add("extensionattribute3");
@@ -2836,6 +2837,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("telephoneNumber");
         CONTACT_ATTRIBUTES.add("title");
         CONTACT_ATTRIBUTES.add("textdescription");
+        CONTACT_ATTRIBUTES.add("im");
     }
 
 
@@ -2884,18 +2886,12 @@ public abstract class ExchangeSession {
                 String propertyName = contactEntry.getKey();
                 String propertyValue = contactEntry.getValue();
                 if ("uid".equals(propertyName)) {
+                    // TODO: move to LDAP ?
                     // uid is base64, reencode to hex
                     propertyValue = new String(Hex.encodeHex(Base64.decodeBase64(propertyValue.getBytes())));
                     // if actualFilterUid is not null, exclude non exact match
                     if (actualFilterUid != null && !filterUid.equals(propertyValue)) {
                         propertyValue = null;
-                    }
-                } else if (propertyName.startsWith("email")) {
-                    if (propertyValue != null && propertyValue.startsWith("\"")) {
-                        int endIndex = propertyValue.indexOf('\"', 1);
-                        if (endIndex > 0) {
-                            propertyValue = propertyValue.substring(1, endIndex);
-                        }
                     }
                 } else if ("bday".equals(propertyName)) {
                     SimpleDateFormat parser = getExchangeZuluDateFormatMillisecond();

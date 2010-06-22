@@ -186,9 +186,13 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001 String
         createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.PublicStrings/0x00008049/String
         createField(URN_SCHEMAS_CONTACTS, "department"); // PR_DEPARTMENT_NAME 0x3A18 String
-        createField(URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
-        createField(URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
-        createField(URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
+        // email with display name
+        //createField(URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
+        //createField(URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
+        //createField(URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
+        createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1EmailAddress
+        createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2EmailAddress
+        createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3EmailAddress
         createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
         createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
         createField(URN_SCHEMAS_CONTACTS, "homeCity"); // PR_HOME_ADDRESS_CITY 0x3A59 String
@@ -217,6 +221,7 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08 String
         createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
         createField(URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
+        createField("im", DistinguishedPropertySetType.Address, 0x8062, "im"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
 
     }
 
@@ -227,8 +232,16 @@ public class Field {
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
-        String name = '{' + distinguishedPropertySetMap.get(propertySetType) + "}/0x" + Integer.toHexString(propertyTag);
-        Field field = new Field(alias, SCHEMAS_MAPI_ID, name, responseAlias);
+        String name;
+        if (propertySetType == DistinguishedPropertySetType.Address) {
+            // Address namespace expects integer names
+            name = String.valueOf(propertyTag);
+        } else {
+            // Common namespace expects hex names
+            name = "0x" + Integer.toHexString(propertyTag);
+        }
+        Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias);
         fieldMap.put(field.alias, field);
     }
 
