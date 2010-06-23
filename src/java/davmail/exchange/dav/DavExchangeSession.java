@@ -1135,7 +1135,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderPath, List<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"),condition), FolderQueryTraversal.Shallow);
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);
@@ -1152,7 +1152,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected List<ExchangeSession.Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"),condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             contacts.add(new Contact(response));
         }
@@ -1162,7 +1162,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected List<ExchangeSession.Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"),condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype");
             Event event = new Event(response);
@@ -1196,7 +1196,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
         }
         searchRequest.append(" FROM SCOPE('").append(folderQueryTraversal).append(" TRAVERSAL OF \"").append(folderUrl).append("\"')")
-                .append(" WHERE \"DAV:ishidden\" = False AND \"DAV:isfolder\" = False");
+                .append(" WHERE \"DAV:ishidden\" = False");
         if (condition != null) {
             searchRequest.append(" AND ");
             condition.appendTo(searchRequest);

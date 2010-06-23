@@ -109,6 +109,8 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "unreadcount");
         createField(SCHEMAS_REPL, "contenttag");
 
+        createField(DAV, "isfolder");
+
         // POP and IMAP message
         createField(DAV, "uid");
         createField("messageSize", 0x0e08, PropertyType.Integer);//PR_MESSAGE_SIZE
