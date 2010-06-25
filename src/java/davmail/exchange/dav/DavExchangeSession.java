@@ -1257,7 +1257,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public int deleteItem(String folderPath, String itemName) throws IOException {
-        String eventPath = URIUtil.encodePath(folderPath + '/' + convertItemNameToEML(itemName));
+        String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
         int status;
         if (inboxUrl.endsWith(folderPath)) {
             // do not delete calendar messages, mark read and processed
