@@ -225,6 +225,13 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", DistinguishedPropertySetType.Address, 0x8062, "im"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
 
+        // OWA settings
+        createField("messageclass", 0x001a, PropertyType.String);
+        createField("roamingxmlstream", 0x7c08, PropertyType.Binary);
+        createField("roamingdictionary", 0x7c07, PropertyType.Binary);
+
+
+        createField(DAV, "ishidden");
     }
 
     protected static void createField(String alias, int propertyTag, PropertyType propertyType) {
@@ -316,10 +323,10 @@ public class Field {
     }
 
     /**
-     * Get Mime header fieks.
+     * Get Mime header field.
      *
-     * @param alias field alias
-     * @return field
+     * @param headerName header name
+     * @return field object
      */
     public static Field getHeader(String headerName) {
         return new Field(SCHEMAS_MAPI_STRING_INTERNET_HEADERS, headerName);
