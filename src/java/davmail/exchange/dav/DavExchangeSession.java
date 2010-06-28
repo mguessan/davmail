@@ -1097,6 +1097,19 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected byte[] getBinaryPropertyIfExists(DavPropertySet properties, String alias) {
+        byte[] property = null;
+        String base64Property = getPropertyIfExists(properties, alias);
+        if (base64Property != null) {
+            try {
+                property = Base64.decodeBase64(base64Property.getBytes("ASCII"));
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.warn(e);
+            }
+        }
+        return property;
+    }
+
 
     protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
         Message message = new Message();
@@ -1135,7 +1148,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderPath, List<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"),condition), FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);
@@ -1152,7 +1165,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected List<ExchangeSession.Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"),condition), FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             contacts.add(new Contact(response));
         }
@@ -1162,7 +1175,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected List<ExchangeSession.Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"),condition), FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype");
             Event event = new Event(response);
@@ -1330,8 +1343,14 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyList.add(Field.createDavProperty("contentclass", "urn:content-classes:appointment"));
                 propertyList.add(Field.createDavProperty("outlookmessageclass", "IPM.Appointment"));
                 propertyList.add(Field.createDavProperty("instancetype", "0"));
+
                 // get forced timezone id from settings
                 userTimezone.timezoneId = Settings.getProperty("davmail.timezoneId");
+                if (userTimezone.timezoneId == null) {
+                    // get timezoneid from OWA settings
+                    userTimezone.timezoneId = getTimezoneIdFromExchange();
+                }
+                // without a timezoneId, use Exchange timezone 
                 if (userTimezone.timezoneId != null) {
                     propertyList.add(Field.createDavProperty("timezoneid", userTimezone.timezoneId));
                 }
@@ -1367,6 +1386,40 @@ public class DavExchangeSession extends ExchangeSession {
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }
+    }
+
+    protected String getTimezoneIdFromExchange() {
+        String timezoneId = null;
+
+        try {
+            ArrayList<String> attributes = new ArrayList<String>();
+            attributes.add("roamingdictionary");
+
+            MultiStatusResponse[] responses = searchItems("/users/" + getEmail() + "/NON_IPM_SUBTREE", attributes, equals("messageclass", "IPM.Configuration.OWA.UserOptions"), DavExchangeSession.FolderQueryTraversal.Deep);
+            if (responses.length == 1) {
+                byte[] roamingdictionary = getBinaryPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "roamingdictionary");
+                if (roamingdictionary != null) {
+                    String roamingdictionaryString = new String(roamingdictionary, "UTF-8");
+                    int startIndex = roamingdictionaryString.lastIndexOf("18-");
+                    if (startIndex >= 0) {
+                        int endIndex = roamingdictionaryString.indexOf('"', startIndex);
+                        if (endIndex >= 0) {
+                            String timezoneName = roamingdictionaryString.substring(startIndex + 3, endIndex);
+                            try {
+                                timezoneId = ResourceBundle.getBundle("timezoneids").getString(timezoneName);
+                            } catch (MissingResourceException mre) {
+                                LOGGER.warn("Invalid timezone name: " + timezoneName);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
+        } catch (IOException e) {
+            LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
+        }
+        return timezoneId;
     }
 
     @Override

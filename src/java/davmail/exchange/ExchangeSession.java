@@ -2316,7 +2316,7 @@ public abstract class ExchangeSession {
 
     }
 
-    protected static final List<String> ITEM_PROPERTIES = new ArrayList<String>();
+    public static final List<String> ITEM_PROPERTIES = new ArrayList<String>();
 
     static {
         ITEM_PROPERTIES.add("etag");
@@ -3110,9 +3110,9 @@ public abstract class ExchangeSession {
 
     }
 
-    protected VTimezone vTimezone;
+    public VTimezone vTimezone;
 
-    protected VTimezone getVTimezone() {
+    public VTimezone getVTimezone() {
         if (vTimezone == null) {
             // need to load Timezone info from OWA
             loadVtimezone();
