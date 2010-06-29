@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import davmail.Settings;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import org.apache.log4j.Level;
 
 /**
  * Exchange session test case.
@@ -59,13 +60,15 @@ public class AbstractExchangeSessionTestCase extends TestCase {
                 Settings.setProperty("davmail.password", password);
             }
 
-            //Settings.setProperty("davmail.enableEws", "true");
 
             DavGatewaySSLProtocolSocketFactory.register();
             // force server mode
             Settings.setProperty("davmail.server", "true");
+
             // enable WIRE debug log
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+            // enable EWS support
+            //Settings.setProperty("davmail.enableEws", "true");
 
             // open session, get username and password from davmail.properties
             // Note: those properties should *not* exist in normal production mode,

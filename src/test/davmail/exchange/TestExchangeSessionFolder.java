@@ -55,9 +55,12 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
     }
 
     public void testMoveFolder() throws IOException {
+        session.deleteFolder("target");
+        session.deleteFolder("tomove");
         session.createMessageFolder("tomove");
-        session.moveFolder("tomove", "test/moved");
-        session.deleteFolder("test/moved");
+        session.createMessageFolder("target");
+        session.moveFolder("tomove", "target/moved");
+        session.deleteFolder("target");
     }
 
     public void testDeleteFolder() throws IOException {

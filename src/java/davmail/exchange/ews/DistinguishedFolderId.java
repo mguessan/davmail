@@ -24,7 +24,7 @@ package davmail.exchange.ews;
 public class DistinguishedFolderId extends FolderId {
 
     private DistinguishedFolderId(String value) {
-        super("t:DistinguishedFolderId", value);
+        super("t:DistinguishedFolderId", value, null);
     }
 
     public static final DistinguishedFolderId CALENDAR = new DistinguishedFolderId("calendar");

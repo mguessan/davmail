@@ -85,6 +85,22 @@ public class ExtendedFieldURI implements FieldURI {
         }
     }
 
+    public void appendValue(StringBuilder buffer, String itemType, String value) {
+        appendTo(buffer);
+        buffer.append("<t:");
+        buffer.append(itemType);
+        buffer.append('>');
+        buffer.append("<t:ExtendedProperty>");
+        appendTo(buffer);
+        buffer.append("<t:Value>");
+        buffer.append(value);
+        buffer.append("</t:Value>");
+        buffer.append("</t:ExtendedProperty>");
+        buffer.append("</t:");
+        buffer.append(itemType);
+        buffer.append('>');
+    }
+
     public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI(0xff6, PropertyType.Binary);
     public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI(0xe08, PropertyType.Integer);
     public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI(0xe23, PropertyType.Integer);

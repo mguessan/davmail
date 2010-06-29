@@ -18,24 +18,13 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
- * Field URI.
+ * Create Folder method.
  */
-public interface FieldURI {
-
-    /**
-     * Append field to buffer
-     * @param buffer current buffer
-     */
-    public void appendTo(StringBuilder buffer);
-
-    /**
-     * Append updated field value to buffer
-     * @param buffer current buffer
-     */
-    public void appendValue(StringBuilder buffer, String itemType, String value);
-
+public class MoveFolderMethod extends EWSMethod {
+    public MoveFolderMethod(FolderId folderId, FolderId toFolderId) {
+        super("Folder", "MoveFolder");
+        this.folderId = folderId;
+        this.toFolderId = toFolderId;
+    }
 }

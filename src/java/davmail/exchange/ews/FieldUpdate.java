@@ -22,40 +22,20 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * Folder Id.
+ * Field update
  */
-public class FolderId extends Option {
-    protected String changeKey;
+public class FieldUpdate {
+    FieldURI fieldURI;
+    String value;
 
-    protected FolderId(String name, String value, String changeKey) {
-        super(name, value);
-        this.changeKey = changeKey;
+    public FieldUpdate(FieldURI fieldURI, String value) {
+        this.fieldURI = fieldURI;
+        this.value = value;
     }
 
-    /**
-     * Create FolderId option
-     *
-     * @param value id value
-     */
-    public FolderId(String value, String changeKey) {
-        super("t:FolderId", value);
-        this.changeKey = changeKey;
+    public void write(String itemType, Writer writer) throws IOException {
+        StringBuilder buffer = new StringBuilder();
+        fieldURI.appendValue(buffer, itemType, value);
+        writer.write(buffer.toString());
     }
-
-    /**
-     * @inheritDoc
-     */
-    @Override
-    public void write(Writer writer) throws IOException {
-        writer.write('<');
-        writer.write(name);
-        writer.write(" Id=\"");
-        writer.write(value);
-        if (changeKey != null) {
-            writer.write("\" ChangeKey=\"");
-            writer.write(changeKey);
-        }
-        writer.write("\"/>");
-    }
-
 }

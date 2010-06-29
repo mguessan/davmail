@@ -35,4 +35,21 @@ public class IndexedFieldURI implements FieldURI {
         buffer.append("\" FieldIndex=\"").append(fieldIndex);
         buffer.append("\"/>");
     }
+
+    public void appendValue(StringBuilder buffer, String itemType, String value) {
+        appendTo(buffer);
+        buffer.append("<t:");
+        buffer.append(itemType);
+        buffer.append('>');
+        buffer.append("<t:");
+        buffer.append(fieldIndex);
+        buffer.append('>');
+        buffer.append(value);
+        buffer.append("</t:");
+        buffer.append(fieldIndex);
+        buffer.append('>');
+        buffer.append("</t:");
+        buffer.append(itemType);
+        buffer.append('>');
+    }
 }

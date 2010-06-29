@@ -45,6 +45,22 @@ public class EwsExchangeSession extends ExchangeSession {
         public FolderId folderId;
     }
 
+    protected class FolderPath {
+        protected String parentPath;
+        protected String folderName;
+
+        protected FolderPath(String folderPath) {
+            int slashIndex = folderPath.lastIndexOf('/');
+            if (slashIndex < 0) {
+                parentPath = "";
+                folderName = folderPath;
+            } else {
+                parentPath = folderPath.substring(0, slashIndex);
+                folderName = folderPath.substring(slashIndex + 1);
+            }
+        }
+    }
+
     /**
      * @inheritDoc
      */
@@ -317,7 +333,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
-        folder.folderId = new FolderId(item.get("FolderId"));
+        folder.folderId = new FolderId(item.get("FolderId"), item.get("ChangeKey"));
+        folder.displayName = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
         folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getPropertyTag());
         folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
         folder.ctag = item.get(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX.getPropertyTag());
@@ -342,11 +359,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                     Condition condition, boolean recursive) throws IOException {
         FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
                 BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
-        try {
-            httpClient.executeMethod(findFolderMethod);
-        } finally {
-            findFolderMethod.releaseConnection();
-        }
+        executeMethod(findFolderMethod);
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
             Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
@@ -369,11 +382,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public EwsExchangeSession.Folder getFolder(String folderPath) throws IOException {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, getFolderId(folderPath), FOLDER_PROPERTIES);
-        try {
-            httpClient.executeMethod(getFolderMethod);
-        } finally {
-            getFolderMethod.releaseConnection();
-        }
+        executeMethod(getFolderMethod);
         EWSMethod.Item item = getFolderMethod.getResponseItem();
         Folder folder = null;
         if (item != null) {
@@ -387,16 +396,28 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void createFolder(String folderName, String folderClass) throws IOException {
-        throw new UnsupportedOperationException();
+    public void createFolder(String folderPath, String folderClass) throws IOException {
+        FolderPath path = new FolderPath(folderPath);
+        EWSMethod.Item folder = new EWSMethod.Item();
+        folder.type = "Folder";
+        folder.put("DisplayName", path.folderName);
+        folder.put("FolderClass", folderClass);
+        CreateFolderMethod createFolderMethod = new CreateFolderMethod(getFolderId(path.parentPath), folder);
+        executeMethod(createFolderMethod);
     }
 
     /**
      * @inheritDoc
      */
     @Override
-    public void deleteFolder(String folderName) throws IOException {
-        throw new UnsupportedOperationException();
+    public void deleteFolder(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        if (folderId != null) {
+            DeleteFolderMethod deleteFolderMethod = new DeleteFolderMethod(folderId);
+            executeMethod(deleteFolderMethod);
+        } else {
+            LOGGER.debug("Folder "+folderPath+" not found");
+        }
     }
 
     /**
@@ -411,8 +432,24 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void moveFolder(String folderName, String targetName) throws IOException {
-        throw new UnsupportedOperationException();
+    public void moveFolder(String folderPath, String targetFolderPath) throws IOException {
+        FolderPath path = new FolderPath(folderPath);
+        FolderPath targetPath = new FolderPath(targetFolderPath);
+        FolderId folderId = getFolderId(folderPath);
+        FolderId toFolderId = getFolderId(targetPath.parentPath);
+        toFolderId.changeKey = null;
+        // move folder
+        if (!path.parentPath.equals(targetPath.parentPath)) {
+            MoveFolderMethod moveFolderMethod = new MoveFolderMethod(folderId, toFolderId);
+            executeMethod(moveFolderMethod);
+        }
+        // rename folder
+        if (!path.folderName.equals(targetPath.folderName)) {
+            Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+            updates.add(new FieldUpdate(UnindexedFieldURI.FOLDER_DISPLAYNAME, targetPath.folderName));
+            UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(folderId, updates);
+            executeMethod(updateFolderMethod);
+        }
     }
 
     /**
@@ -470,6 +507,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
 
     private FolderId getFolderId(String folderPath) throws IOException {
+        FolderId folderId = getFolderIdIfExists(folderPath);
+        if (folderId == null) {
+            throw new DavMailException("EXCEPTION_FOLDER_NOT_FOUND", folderPath);
+        }
+        return folderId;
+    }
+
+    private FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
         if (folderPath.startsWith(PUBLIC_ROOT)) {
@@ -506,12 +551,16 @@ public class EwsExchangeSession extends ExchangeSession {
         for (String folderName : folderNames) {
             if (folderName.length() > 0) {
                 currentFolderId = getSubFolderByName(currentFolderId, folderName);
+                if (currentFolderId == null) {
+                    break;
+                }
             }
         }
         return currentFolderId;
     }
 
     protected FolderId getSubFolderByName(FolderId parentFolderId, String folderName) throws IOException {
+        FolderId folderId = null;
         FindFolderMethod findFolderMethod = new FindFolderMethod(
                 FolderQueryTraversal.SHALLOW,
                 BaseShape.ID_ONLY,
@@ -520,16 +569,23 @@ public class EwsExchangeSession extends ExchangeSession {
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
                         ExtendedFieldURI.PR_URL_COMP_NAME, folderName)
         );
-        try {
-            httpClient.executeMethod(findFolderMethod);
-        } finally {
-            findFolderMethod.releaseConnection();
-        }
+        executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
-        if (item == null) {
-            throw new DavMailException("EXCEPTION_FOLDER_NOT_FOUND", folderName);
+        if (item != null) {
+            folderId = new FolderId(item.get("FolderId"), item.get("ChangeKey"));
         }
-        return new FolderId(item.get("FolderId"));
+        return folderId;
+    }
+
+    protected int executeMethod(EWSMethod ewsMethod) throws IOException {
+        int status;
+        try {
+            status = httpClient.executeMethod(ewsMethod);
+            ewsMethod.checkSuccess();
+        } finally {
+            ewsMethod.releaseConnection();
+        }
+        return status;
     }
 
 }

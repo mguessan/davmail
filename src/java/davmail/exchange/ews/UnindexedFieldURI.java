@@ -25,16 +25,41 @@ import java.io.Writer;
  * Unindexed Field URI
  */
 public class UnindexedFieldURI implements FieldURI {
-    protected String fieldURI;
+    protected final String fieldURI;
+    protected final String fieldName;
 
     public UnindexedFieldURI(String fieldURI) {
         this.fieldURI = fieldURI;
+        int colonIndex = fieldURI.indexOf(':');
+        if (colonIndex < 0) {
+            fieldName = fieldURI;
+        } else {
+            fieldName = fieldURI.substring(colonIndex+1);
+        }
     }
 
     public void appendTo(StringBuilder buffer) {
         buffer.append("<t:FieldURI FieldURI=\"").append(fieldURI).append("\"/>");
     }
 
+    public void appendValue(StringBuilder buffer, String itemType, String value) {
+        appendTo(buffer);
+        buffer.append("<t:");
+        buffer.append(itemType);
+        buffer.append('>');
+        buffer.append("<t:");
+        buffer.append(fieldName);
+        buffer.append('>');
+        buffer.append(value);
+        buffer.append("</t:");
+        buffer.append(fieldName);
+        buffer.append('>');
+        buffer.append("</t:");
+        buffer.append(itemType);
+        buffer.append('>');
+    }
+
     public static final UnindexedFieldURI DATE_TIME_SENT = new UnindexedFieldURI("item:DateTimeSent");
+    public static final UnindexedFieldURI FOLDER_DISPLAYNAME = new UnindexedFieldURI("folder:DisplayName");
 
 }

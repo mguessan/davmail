@@ -18,10 +18,10 @@
  */
 package davmail.exchange.ews;
 
-import com.wutka.dtd.DTDOutput;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpState;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -44,10 +44,13 @@ public abstract class EWSMethod extends PostMethod {
     protected BaseShape baseShape;
     protected boolean includeMimeContent;
     protected FolderId folderId;
+    protected FolderId toFolderId;
     protected FolderId parentFolderId;
     protected ItemId itemId;
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
+
+    protected Set<FieldUpdate> updates;
 
     protected final String itemType;
     protected final String methodName;
@@ -163,9 +166,21 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeFolderId(Writer writer) throws IOException {
         if (folderId != null) {
-            writer.write("<m:FolderIds>");
+            if (updates == null) {
+                writer.write("<m:FolderIds>");
+            }
             folderId.write(writer);
-            writer.write("</m:FolderIds>");
+            if (updates == null) {
+                writer.write("</m:FolderIds>");
+            }
+        }
+    }
+
+    protected void writeToFolderId(Writer writer) throws IOException {
+        if (toFolderId != null) {
+            writer.write("<m:ToFolderId>");
+            toFolderId.write(writer);
+            writer.write("</m:ToFolderId>");
         }
     }
 
@@ -207,6 +222,47 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    protected void startChanges(Writer writer) throws IOException {
+        if (updates != null) {
+            writer.write("<m:");
+            writer.write(itemType);
+            writer.write("Changes>");
+            writer.write("<t:");
+            writer.write(itemType);
+            writer.write("Change>");
+        }
+    }
+
+    protected void writeUpdates(Writer writer) throws IOException {
+        if (updates != null) {
+            writer.write("<t:Updates>");
+            for (FieldUpdate fieldUpdate : updates) {
+                writer.write("<t:Set");
+                writer.write(itemType);
+                writer.write("Field>");
+
+                fieldUpdate.write(itemType, writer);
+
+                writer.write("</t:Set");
+                writer.write(itemType);
+                writer.write("Field>");
+            }
+            writer.write("</t:Updates>");
+        }
+    }
+
+
+    protected void endChanges(Writer writer) throws IOException {
+        if (updates != null) {
+            writer.write("</t:");
+            writer.write(itemType);
+            writer.write("Change>");
+            writer.write("</m:");
+            writer.write(itemType);
+            writer.write("Changes>");
+        }
+    }
+
     protected byte[] generateSoapEnvelope() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
@@ -216,7 +272,7 @@ public abstract class EWSMethod extends PostMethod {
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
                     "<soap:Header>" +
                     "<t:RequestServerVersion Version=\"Exchange2007_SP1\"/>" +
-                    "</soap:Header>"+
+                    "</soap:Header>" +
                     "<soap:Body>");
             writer.write("<m:");
             writer.write(methodName);
@@ -241,12 +297,16 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void writeSoapBody(Writer writer) throws IOException {
+        startChanges(writer);
         writeShape(writer);
         writeRestriction(writer);
         writeItemId(writer);
         writeParentFolderId(writer);
+        writeToFolderId(writer);
         writeFolderId(writer);
         writeItem(writer);
+        writeUpdates(writer);
+        endChanges(writer);
     }
 
     /**
@@ -313,11 +373,19 @@ public abstract class EWSMethod extends PostMethod {
 
     }
 
-    public List<Item> getResponseItems() {
+    public void checkSuccess() throws EWSException {
+        if (errorDetail != null) {
+            throw new EWSException(errorDetail);
+        }
+    }
+
+    public List<Item> getResponseItems() throws EWSException {
+        checkSuccess();
         return responseItems;
     }
 
-    public Item getResponseItem() {
+    public Item getResponseItem() throws EWSException {
+        checkSuccess();
         if (responseItems != null && responseItems.size() == 1) {
             return responseItems.get(0);
         } else {
@@ -325,7 +393,8 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-    public byte[] getMimeContent() {
+    public byte[] getMimeContent() throws EWSException {
+        checkSuccess();
         return mimeContent;
     }
 
@@ -381,6 +450,8 @@ public abstract class EWSMethod extends PostMethod {
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
+                        // get change key
+                        item.put("ChangeKey", getAttributeValue(reader, "ChangeKey"));
                     }
                     if (value == null) {
                         value = getTagContent(reader);

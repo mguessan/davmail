@@ -19,43 +19,17 @@
 package davmail.exchange.ews;
 
 import java.io.IOException;
-import java.io.Writer;
 
 /**
- * Folder Id.
+ * EWS Exception
  */
-public class FolderId extends Option {
-    protected String changeKey;
-
-    protected FolderId(String name, String value, String changeKey) {
-        super(name, value);
-        this.changeKey = changeKey;
-    }
-
+public class EWSException extends IOException {
     /**
-     * Create FolderId option
+     * Create EWS Exception with detailed error message
      *
-     * @param value id value
+     * @param message error message
      */
-    public FolderId(String value, String changeKey) {
-        super("t:FolderId", value);
-        this.changeKey = changeKey;
+    public EWSException(String message) {
+        super(message);
     }
-
-    /**
-     * @inheritDoc
-     */
-    @Override
-    public void write(Writer writer) throws IOException {
-        writer.write('<');
-        writer.write(name);
-        writer.write(" Id=\"");
-        writer.write(value);
-        if (changeKey != null) {
-            writer.write("\" ChangeKey=\"");
-            writer.write(changeKey);
-        }
-        writer.write("\"/>");
-    }
-
 }
