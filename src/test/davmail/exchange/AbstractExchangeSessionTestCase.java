@@ -58,6 +58,9 @@ public class AbstractExchangeSessionTestCase extends TestCase {
                 Settings.setProperty("davmail.username", username);
                 Settings.setProperty("davmail.password", password);
             }
+
+            //Settings.setProperty("davmail.enableEws", "true");
+
             DavGatewaySSLProtocolSocketFactory.register();
             // force server mode
             Settings.setProperty("davmail.server", "true");

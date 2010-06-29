@@ -53,6 +53,7 @@ import java.util.*;
  * Exchange session through Outlook Web Access (DAV)
  */
 public abstract class ExchangeSession {
+
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
     /**
@@ -975,6 +976,16 @@ public abstract class ExchangeSession {
      */
     public void createCalendarFolder(String folderName) throws IOException {
         createFolder(folderName, "IPF.Appointment");
+    }
+
+    /**
+     * Create Exchange contact folder.
+     *
+     * @param folderName logical folder name
+     * @throws IOException on error
+     */
+    public void createContactFolder(String folderName) throws IOException {
+        createFolder(folderName, "IPF.Contact");
     }
 
     /**
