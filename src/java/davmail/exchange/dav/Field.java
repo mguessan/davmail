@@ -75,7 +75,7 @@ public class Field {
     protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
 
     static {
-        propertyTypeMap.put(PropertyType.Integer, "0003");
+        propertyTypeMap.put(PropertyType.Long, "0003");
         propertyTypeMap.put(PropertyType.Boolean, "000b");
         propertyTypeMap.put(PropertyType.SystemTime, "0040");
         propertyTypeMap.put(PropertyType.String, "001f");
@@ -113,18 +113,18 @@ public class Field {
 
         // POP and IMAP message
         createField(DAV, "uid");
-        createField("messageSize", 0x0e08, PropertyType.Integer);//PR_MESSAGE_SIZE
-        createField("imapUid", 0x0e23, PropertyType.Integer);//PR_INTERNET_ARTICLE_NUMBER
-        createField("junk", 0x1083, PropertyType.Integer);
-        createField("flagStatus", 0x1090, PropertyType.Integer);//PR_FLAG_STATUS
-        createField("messageFlags", 0x0e07, PropertyType.Integer);//PR_MESSAGE_FLAGS
-        createField("lastVerbExecuted", 0x1081, PropertyType.Integer);//PR_LAST_VERB_EXECUTED
-        createField("iconIndex", 0x1080, PropertyType.Integer);//PR_ICON_INDEX        
+        createField("messageSize", 0x0e08, PropertyType.Long);//PR_MESSAGE_SIZE
+        createField("imapUid", 0x0e23, PropertyType.Long);//PR_INTERNET_ARTICLE_NUMBER
+        createField("junk", 0x1083, PropertyType.Long);
+        createField("flagStatus", 0x1090, PropertyType.Long);//PR_FLAG_STATUS
+        createField("messageFlags", 0x0e07, PropertyType.Long);//PR_MESSAGE_FLAGS
+        createField("lastVerbExecuted", 0x1081, PropertyType.Long);//PR_LAST_VERB_EXECUTED
+        createField("iconIndex", 0x1080, PropertyType.Long);//PR_ICON_INDEX
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted");
         createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Custom);
-        // http://schemas.microsoft.com/mapi/id/{00062008-0000-0000-C000-000000000046}/0x8506 private
+
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
         createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
@@ -225,11 +225,14 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", DistinguishedPropertySetType.Address, 0x8062, "im"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
 
+        // contact private flags
+        createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
+        createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE=2, SENSITIVITY_NONE = 0
+
         // OWA settings
         createField("messageclass", 0x001a, PropertyType.String);
         createField("roamingxmlstream", 0x7c08, PropertyType.Binary);
         createField("roamingdictionary", 0x7c07, PropertyType.Binary);
-
 
         createField(DAV, "ishidden");
     }
