@@ -627,7 +627,8 @@ public abstract class ExchangeSession {
 
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
-            this.conditions = Arrays.asList(conditions);
+            this.conditions = new ArrayList<Condition>();
+            this.conditions.addAll(Arrays.asList(conditions));
         }
 
         /**
