@@ -45,7 +45,7 @@ public class EwsExchangeSession extends ExchangeSession {
         public FolderId folderId;
     }
 
-    protected class FolderPath {
+    protected static class FolderPath {
         protected String parentPath;
         protected String folderName;
 
@@ -94,14 +94,14 @@ public class EwsExchangeSession extends ExchangeSession {
         try {
             folderIdMap = new HashMap<String, String>();
             // load actual well known folder ids
-            folderIdMap.put(getFolder(INBOX).folderId.value, INBOX);
-            folderIdMap.put(getFolder(CALENDAR).folderId.value, CALENDAR);
-            folderIdMap.put(getFolder(CONTACTS).folderId.value, CONTACTS);
-            folderIdMap.put(getFolder(SENT).folderId.value, SENT);
-            folderIdMap.put(getFolder(DRAFTS).folderId.value, DRAFTS);
-            folderIdMap.put(getFolder(TRASH).folderId.value, TRASH);
-            folderIdMap.put(getFolder(JUNK).folderId.value, JUNK);
-            folderIdMap.put(getFolder(UNSENT).folderId.value, UNSENT);
+            folderIdMap.put(internalGetFolder(INBOX).folderId.value, INBOX);
+            folderIdMap.put(internalGetFolder(CALENDAR).folderId.value, CALENDAR);
+            folderIdMap.put(internalGetFolder(CONTACTS).folderId.value, CONTACTS);
+            folderIdMap.put(internalGetFolder(SENT).folderId.value, SENT);
+            folderIdMap.put(internalGetFolder(DRAFTS).folderId.value, DRAFTS);
+            folderIdMap.put(internalGetFolder(TRASH).folderId.value, TRASH);
+            folderIdMap.put(internalGetFolder(JUNK).folderId.value, JUNK);
+            folderIdMap.put(internalGetFolder(UNSENT).folderId.value, UNSENT);
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
@@ -147,7 +147,6 @@ public class EwsExchangeSession extends ExchangeSession {
             super(operator, condition);
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:").append(operator.toString()).append('>');
 
@@ -164,7 +163,6 @@ public class EwsExchangeSession extends ExchangeSession {
             super(condition);
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:Not>");
             condition.appendTo(buffer);
@@ -202,7 +200,6 @@ public class EwsExchangeSession extends ExchangeSession {
             return fieldURI;
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:").append(operator.toString());
             if (containmentMode != null) {
@@ -235,14 +232,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
     }
 
-    protected static class IsNullCondition extends ExchangeSession.Condition implements SearchExpression {
+    protected static class IsNullCondition implements ExchangeSession.Condition, SearchExpression {
         protected String attributeName;
 
         protected IsNullCondition(String attributeName) {
             this.attributeName = attributeName;
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:Not><t:Exists>");
             attributeMap.get(attributeName).appendTo(buffer);
@@ -251,12 +247,12 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MultiCondition and(Condition... condition) {
+    public ExchangeSession.MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
     }
 
     @Override
-    public MultiCondition or(Condition... condition) {
+    public ExchangeSession.MultiCondition or(Condition... condition) {
         return new MultiCondition(Operator.Or, condition);
     }
 
@@ -380,7 +376,18 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public EwsExchangeSession.Folder getFolder(String folderPath) throws IOException {
+    public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
+        return internalGetFolder(folderPath);
+    }
+
+    /**
+     * Get folder by path.
+     *
+     * @param folderPath folder path
+     * @return folder object
+     * @throws IOException on error
+     */
+    protected EwsExchangeSession.Folder internalGetFolder(String folderPath) throws IOException {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, getFolderId(folderPath), FOLDER_PROPERTIES);
         executeMethod(getFolderMethod);
         EWSMethod.Item item = getFolderMethod.getResponseItem();
@@ -416,7 +423,7 @@ public class EwsExchangeSession extends ExchangeSession {
             DeleteFolderMethod deleteFolderMethod = new DeleteFolderMethod(folderId);
             executeMethod(deleteFolderMethod);
         } else {
-            LOGGER.debug("Folder "+folderPath+" not found");
+            LOGGER.debug("Folder " + folderPath + " not found");
         }
     }
 
