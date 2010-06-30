@@ -183,31 +183,31 @@ public abstract class ExchangeSession {
         LOGGER.debug("Session " + this + " created");
     }
 
-    protected String formatSearchDate(Date date) {
+    protected static String formatSearchDate(Date date) {
         SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
         dateFormatter.setTimeZone(GMT_TIMEZONE);
         return dateFormatter.format(date);
     }
 
-    protected SimpleDateFormat getZuluDateFormat() {
+    protected static SimpleDateFormat getZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYYMMDD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
 
-    protected SimpleDateFormat getExchangeZuluDateFormat() {
+    protected static SimpleDateFormat getExchangeZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
 
-    protected SimpleDateFormat getExchangeZuluDateFormatMillisecond() {
+    protected static SimpleDateFormat getExchangeZuluDateFormatMillisecond() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_SSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
 
-    protected Date parseDate(String dateString) throws ParseException {
+    protected static Date parseDate(String dateString) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat.parse(dateString);
@@ -594,7 +594,7 @@ public abstract class ExchangeSession {
     /**
      * Exchange search filter.
      */
-    public abstract static class Condition {
+    public static interface Condition {
         /**
          * Append condition to buffer.
          *
@@ -606,7 +606,7 @@ public abstract class ExchangeSession {
     /**
      * Attribute condition.
      */
-    public abstract static class AttributeCondition extends Condition {
+    public abstract static class AttributeCondition implements Condition {
         protected String attributeName;
         protected Operator operator;
         protected String value;
@@ -621,7 +621,7 @@ public abstract class ExchangeSession {
     /**
      * Multiple condition.
      */
-    public abstract static class MultiCondition extends Condition {
+    public abstract static class MultiCondition implements Condition {
         protected Operator operator;
         protected List<Condition> conditions;
 
@@ -645,7 +645,7 @@ public abstract class ExchangeSession {
     /**
      * Not condition.
      */
-    public abstract static class NotCondition extends Condition {
+    public abstract static class NotCondition implements Condition {
         protected Condition condition;
 
         protected NotCondition(Condition condition) {
@@ -656,7 +656,7 @@ public abstract class ExchangeSession {
     /**
      * Single search filter condition.
      */
-    public abstract static class MonoCondition extends Condition {
+    public abstract static class MonoCondition implements Condition {
         protected String attributeName;
         protected Operator operator;
 
@@ -1689,6 +1689,70 @@ public abstract class ExchangeSession {
             return "text/vcard";
         }
 
+
+        @Override
+        public String getBody() throws HttpException {
+            // build RFC 2426 VCard from contact information
+            VCardWriter writer = new VCardWriter();
+            writer.startCard();
+            writer.appendProperty("UID", getUid());
+            // common name
+            writer.appendProperty("FN", get("cn"));
+            // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
+            writer.appendProperty("N", get("sn"), get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
+            
+            writer.appendProperty("TEL;TYPE=cell", get("mobile"));
+            writer.appendProperty("TEL;TYPE=work", get("telephoneNumber"));
+            writer.appendProperty("TEL;TYPE=home", get("homePhone"));
+            writer.appendProperty("TEL;TYPE=fax", get("facsimiletelephonenumber"));
+            writer.appendProperty("TEL;TYPE=pager", get("pager"));
+
+            // The structured type value corresponds, in sequence, to the post office box; the extended address;
+            // the street address; the locality (e.g., city); the region (e.g., state or province);
+            // the postal code; the country name
+            writer.appendProperty("ADR;TYPE=home",
+                    null, null, get("homeStreet"), get("homeCity"), get("homeState"), get("homePostalCode"), get("homeCountry"));
+            writer.appendProperty("ADR;TYPE=work",
+                    get("postofficebox"), get("roomnumber"), get("street"), get("l"), get("st"), get("postalcode"), get("co"));
+
+            writer.appendProperty("EMAIL;TYPE=work", get("email1"));
+            writer.appendProperty("EMAIL;TYPE=home", get("email2"));
+            writer.appendProperty("EMAIL;TYPE=other", get("email3"));
+
+            writer.appendProperty("ORG", get("o"), get("department"));
+            writer.appendProperty("URL;WORK", get("businesshomepage"));
+            writer.appendProperty("TITLE", get("title"));
+            writer.appendProperty("NOTE", get("textdescription"));
+
+            writer.appendProperty("CUSTOM1", get("extensionattribute1"));
+            writer.appendProperty("CUSTOM2", get("extensionattribute2"));
+            writer.appendProperty("CUSTOM3", get("extensionattribute3"));
+            writer.appendProperty("CUSTOM4", get("extensionattribute4"));
+
+            writer.appendProperty("ROLE", get("profession"));
+            writer.appendProperty("NICKNAME", get("nickname"));
+            writer.appendProperty("X-AIM", get("im"));
+
+            writer.appendProperty("BDAY", get("bday"));
+
+            writer.appendProperty("X-EVOLUTION-ASSISTANT", get("secretarycn"));
+            writer.appendProperty("X-EVOLUTION-MANAGER", get("manager"));
+            writer.appendProperty("X-EVOLUTION-SPOUSE", get("spousecn"));
+
+
+
+            String lastModified = get("lastmodified");
+            if (lastModified != null) {
+                try {
+                    writer.appendProperty("REV", getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(lastModified)));
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid date: "+lastModified);
+                }
+            }
+            writer.endCard();
+            return writer.toString();
+        }
+
     }
 
     /**
@@ -2344,7 +2408,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, ITEM_PROPERTIES, equals("contentclass", "urn:content-classes:person"));
+        return searchContacts(folderPath, ITEM_PROPERTIES, equals("outlookmessageclass", "IPM.Contact"));
     }
 
 
@@ -2368,7 +2432,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> getEventMessages(String folderPath) throws IOException {
         return searchEvents(folderPath, ITEM_PROPERTIES,
-                and(equals("contentclass", "urn:content-classes:calendarmessage"),
+                and(equals("outlookmessageclass", "IPM.Schedule.Meeting.Request"),
                         or(isNull("processed"), isFalse("processed"))));
     }
 
@@ -2399,7 +2463,7 @@ public abstract class ExchangeSession {
                 and(or(isNull("instancetype"),
                         equals("instancetype", 1),
                         and(equals("instancetype", 0), dateCondition)),
-                        equals("contentclass", "urn:content-classes:appointment"),
+                        equals("outlookmessageclass", "IPM.Appointment"),
                         privateCondition));
     }
 
@@ -2820,6 +2884,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("department");
         CONTACT_ATTRIBUTES.add("email1");
         CONTACT_ATTRIBUTES.add("email2");
+        CONTACT_ATTRIBUTES.add("email3");
         CONTACT_ATTRIBUTES.add("facsimiletelephonenumber");
         CONTACT_ATTRIBUTES.add("givenName");
         CONTACT_ATTRIBUTES.add("homeCity");
@@ -2849,6 +2914,8 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("title");
         CONTACT_ATTRIBUTES.add("textdescription");
         CONTACT_ATTRIBUTES.add("im");
+        CONTACT_ATTRIBUTES.add("middlename");
+        CONTACT_ATTRIBUTES.add("lastmodified");
     }
 
 
@@ -2887,7 +2954,7 @@ public abstract class ExchangeSession {
 
         Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
 
-        List<Contact> contacts = searchContacts(CONTACTS, CONTACT_ATTRIBUTES, and(equals("contentclass", "urn:content-classes:person"), condition));
+        List<Contact> contacts = searchContacts(CONTACTS, CONTACT_ATTRIBUTES, and(equals("outlookmessageclass", "IPM.Contact"), condition));
 
         Map<String, String> item;
         for (Contact contact : contacts) {

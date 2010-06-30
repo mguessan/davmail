@@ -25,7 +25,6 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ICSBufferedReader;
-import davmail.exchange.ICSBufferedWriter;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
@@ -357,7 +356,6 @@ public class DavExchangeSession extends ExchangeSession {
             super(operator, condition);
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             boolean first = true;
 
@@ -384,7 +382,6 @@ public class DavExchangeSession extends ExchangeSession {
             super(condition);
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append("(Not ");
             condition.appendTo(buffer);
@@ -417,7 +414,6 @@ public class DavExchangeSession extends ExchangeSession {
             isIntValue = true;
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
             buffer.append(operatorMap.get(operator));
@@ -464,7 +460,6 @@ public class DavExchangeSession extends ExchangeSession {
             super(attributeName, operator);
         }
 
-        @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
             buffer.append(operatorMap.get(operator));
@@ -576,68 +571,9 @@ public class DavExchangeSession extends ExchangeSession {
             super(messageUrl, contentClass, itemBody, etag, noneMatch);
         }
 
-        @Override
-        public String getBody() throws HttpException {
-            // first retrieve contact details
-            String result = null;
-
-            PropFindMethod propFindMethod = null;
-            try {
-                propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl));
-                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
-                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
-                if (responses.getResponses().length > 0) {
-                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
-
-                    ICSBufferedWriter writer = new ICSBufferedWriter();
-                    writer.writeLine("BEGIN:VCARD");
-                    writer.writeLine("VERSION:3.0");
-                    writer.write("UID:");
-                    writer.writeLine(getUid());
-                    writer.write("FN:");
-                    writer.writeLine(getPropertyIfExists(properties, "cn"));
-                    // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
-                    writer.write("N:");
-                    writer.write(getPropertyIfExists(properties, "sn"));
-                    writer.write(";");
-                    writer.write(getPropertyIfExists(properties, "givenName"));
-                    writer.write(";");
-                    writer.writeLine(getPropertyIfExists(properties, "middlename"));
-
-                    writer.write("TEL;TYPE=cell:");
-                    writer.writeLine(getPropertyIfExists(properties, "mobile"));
-                    writer.write("TEL;TYPE=work:");
-                    writer.writeLine(getPropertyIfExists(properties, "telephoneNumber"));
-                    //writer.writeLine(getPropertyIfExists(properties, DavPropertyName.create("initials", URN_SCHEMAS_CONTACTS), ""));
-
-                    // The structured type value corresponds, in sequence, to the post office box; the extended address;
-                    // the street address; the locality (e.g., city); the region (e.g., state or province);
-                    // the postal code; the country name
-                    // ADR;TYPE=dom,home,postal,parcel:;;123 Main Street;Any Town;CA;91921-1234
-                    writer.write("ADR;TYPE=home:;;");
-                    writer.write(getPropertyIfExists(properties, "homepostaladdress"));
-                    writer.write(";;;");
-                    writer.newLine();
-                    writer.writeLine("END:VCARD");
-                    result = writer.toString();
-
-                }
-            } catch (DavException e) {
-                throw buildHttpException(e);
-            } catch (IOException e) {
-                throw buildHttpException(e);
-            } finally {
-                if (propFindMethod != null) {
-                    propFindMethod.releaseConnection();
-                }
-            }
-            return result;
-
-        }
-
         protected List<DavConstants> buildProperties() throws IOException {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-            list.add(Field.createDavProperty("contentClass", contentClass));
+            list.add(Field.createDavProperty("contentclass", contentClass));
             list.add(Field.createDavProperty("outlookmessageclass", "IPM.Contact"));
 
             ICSBufferedReader reader = new ICSBufferedReader(new StringReader(itemBody));
@@ -1299,7 +1235,9 @@ public class DavExchangeSession extends ExchangeSession {
         }
         String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "contentclass");
         if ("urn:content-classes:person".equals(contentClass)) {
-            return new Contact(responses[0]);
+            // retrieve Contact properties
+            // TODO: need to check list size
+            return searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", itemPath.substring(itemPath.lastIndexOf('/')+1))).get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
                 || "urn:content-classes:calendarmessage".equals(contentClass)) {
             return new Event(responses[0]);

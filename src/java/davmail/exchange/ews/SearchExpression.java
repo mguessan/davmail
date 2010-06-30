@@ -18,12 +18,14 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * EWS Search Expression.
  */
 public interface SearchExpression {
-     public void appendTo(StringBuilder buffer);
+    /**
+     * Append search expression to buffer.
+     *
+     * @param buffer search buffer
+     */
+    public void appendTo(StringBuilder buffer);
 }

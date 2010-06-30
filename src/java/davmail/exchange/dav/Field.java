@@ -69,7 +69,7 @@ public class Field {
         ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
         Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
         ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray,
-        Custom
+        String10
     }
 
     protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
@@ -78,9 +78,9 @@ public class Field {
         propertyTypeMap.put(PropertyType.Long, "0003");
         propertyTypeMap.put(PropertyType.Boolean, "000b");
         propertyTypeMap.put(PropertyType.SystemTime, "0040");
-        propertyTypeMap.put(PropertyType.String, "001f");
+        propertyTypeMap.put(PropertyType.String, "001f"); // 001f is PT_UNICODE_STRING, 001E is PT_STRING
         propertyTypeMap.put(PropertyType.Binary, "0102");
-        propertyTypeMap.put(PropertyType.Custom, "0030");
+        propertyTypeMap.put(PropertyType.String10, "0030"); // decimal PT_STRING
     }
 
     protected static enum DistinguishedPropertySetType {
@@ -123,7 +123,7 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted");
-        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.Custom);
+        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.String10);
 
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
@@ -141,10 +141,11 @@ public class Field {
         createField(URN_SCHEMAS_MAILHEADER, "to"); // DistinguishedPropertySetType.InternetHeaders/To/String
         createField(URN_SCHEMAS_MAILHEADER, "cc"); // DistinguishedPropertySetType.InternetHeaders/To/String
 
-        createField("lastmodified", 0x3008, PropertyType.SystemTime);//PR_LAST_MODIFICATION_TIME DAV:getlastmodified
+        createField("lastmodified", DAV, "getlastmodified"); // PR_LAST_MODIFICATION_TIME 0x3008 SystemTime
 
         // failover search
         createField(DAV, "displayname");
+        createField("urlcompname", 0x10f3, PropertyType.String); //PR_URL_COMP_NAME
 
         // items
         createField("etag", DAV, "getetag");
