@@ -18,58 +18,25 @@
  */
 package davmail.exchange;
 
+import davmail.AbstractDavMailTestCase;
+import davmail.Settings;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
-import junit.framework.TestCase;
 
-import java.io.File;
 import java.io.IOException;
-
-import davmail.Settings;
-import davmail.http.DavGatewaySSLProtocolSocketFactory;
-import org.apache.log4j.Level;
 
 /**
  * Exchange session test case.
  * Open a session to default DavMail server as found in user davmail.properties,
  * except if url is not null
  */
-public class AbstractExchangeSessionTestCase extends TestCase {
-    protected static String url;
-    protected static String certificateHash;
-    protected static String username;
-    protected static String password;
+public class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
     protected static ExchangeSession session;
 
     @Override
     public void setUp() throws IOException {
+        super.setUp();
         if (session == null) {
-            if (url == null) {
-                // try to load settings from current folder davmail.properties
-                File file = new File("davmail.properties");
-                if (file.exists()) {
-                    Settings.setConfigFilePath("davmail.properties");
-                }
-                // Load current settings
-                Settings.load();
-            } else {
-                Settings.setDefaultSettings();
-                Settings.setProperty("davmail.url", url);
-                Settings.setProperty("davmail.server.certificate.hash", certificateHash);
-                Settings.setProperty("davmail.username", username);
-                Settings.setProperty("davmail.password", password);
-            }
-
-
-            DavGatewaySSLProtocolSocketFactory.register();
-            // force server mode
-            Settings.setProperty("davmail.server", "true");
-
-            // enable WIRE debug log
-            //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-            // enable EWS support
-            //Settings.setProperty("davmail.enableEws", "true");
-
             // open session, get username and password from davmail.properties
             // Note: those properties should *not* exist in normal production mode,
             // they are not used by DavMail, just by this test case

@@ -1005,7 +1005,8 @@ public class ImapConnection extends AbstractConnection {
         if ("NOT".equals(token)) {
             String nextToken = tokens.nextToken();
             if ("DELETED".equals(token)) {
-                conditions.deleted = Boolean.FALSE;
+                // conditions.deleted = Boolean.FALSE;
+                return session.isNull("deleted");
             } else {
                 return session.not(appendSearchParam(tokens, nextToken, conditions));
             }
@@ -1032,9 +1033,11 @@ public class ImapConnection extends AbstractConnection {
         } else if ("UNSEEN".equals(token) || "NEW".equals(token)) {
             return session.isFalse("read");
         } else if ("DELETED".equals(token)) {
-            conditions.deleted = Boolean.TRUE;
+            // conditions.deleted = Boolean.TRUE;
+            return session.equals("deleted", "1");
         } else if ("UNDELETED".equals(token) || "NOT DELETED".equals(token)) {
-            conditions.deleted = Boolean.FALSE;
+            // conditions.deleted = Boolean.FALSE;
+            return session.isNull("deleted");
         } else if ("FLAGGED".equals(token)) {
             conditions.flagged = Boolean.TRUE;
         } else if ("UNFLAGGED".equals(token) || "NEW".equals(token)) {

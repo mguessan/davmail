@@ -18,8 +18,9 @@
  */
 package davmail.imap;
 
+import davmail.AbstractDavMailTestCase;
+import davmail.DavGateway;
 import davmail.Settings;
-import davmail.exchange.AbstractExchangeSessionTestCase;
 
 import java.io.*;
 import java.net.Socket;
@@ -27,7 +28,7 @@ import java.net.Socket;
 /**
  * IMAP tests, an instance of DavMail Gateway must be available
  */
-public class TestImap extends AbstractExchangeSessionTestCase {
+public class TestImap extends AbstractDavMailTestCase {
     static Socket clientSocket;
     static BufferedWriter socketWriter;
     static BufferedReader socketReader;
@@ -50,6 +51,8 @@ public class TestImap extends AbstractExchangeSessionTestCase {
     public void setUp() throws IOException {
         super.setUp();
         if (clientSocket == null) {
+            // start gateway
+            DavGateway.start();
             clientSocket = new Socket("localhost", Settings.getIntProperty("davmail.imapPort"));
             socketWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             socketReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -71,6 +74,16 @@ public class TestImap extends AbstractExchangeSessionTestCase {
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 
+    public void testFetchFlags() throws IOException {
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testStoreDelete() throws IOException {
+        writeLine(". UID STORE 10 +FLAGS (\\Deleted)");
+        readFullAnswer(".");
+    }
+
     public void testUidSearchDeleted() throws IOException {
         writeLine(". UID SEARCH UNDELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
@@ -79,6 +92,11 @@ public class TestImap extends AbstractExchangeSessionTestCase {
     public void testUidSearchUndeleted() throws IOException {
         writeLine(". UID SEARCH DELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testStoreUndelete() throws IOException {
+        writeLine(". UID STORE 10 -FLAGS (\\Deleted)");
+        readFullAnswer(".");
     }
 
     public void testLogout() throws IOException {
