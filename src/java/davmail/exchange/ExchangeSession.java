@@ -25,8 +25,6 @@ import davmail.exception.DavMailException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -1099,9 +1097,9 @@ public abstract class ExchangeSession {
          */
         public ExchangeSession.MessageList messages;
         /**
-         * PermanentURL to UID map.
+         * Permanent uid (PR_SEARCH_KEY) to IMAP UID map.
          */
-        private final HashMap<String, Long> uidUrlHashMap = new HashMap<String, Long>();
+        private final HashMap<String, Long> uidToImapUidMap = new HashMap<String, Long>();
 
         /**
          * Get IMAP folder flags.
@@ -1149,16 +1147,16 @@ public abstract class ExchangeSession {
         protected void fixUids(MessageList messages) {
             boolean sortNeeded = false;
             for (Message message : messages) {
-                if (uidUrlHashMap.containsKey(message.getPermanentUrl())) {
-                    long previousUid = uidUrlHashMap.get(message.getPermanentUrl());
+                if (uidToImapUidMap.containsKey(message.getUid())) {
+                    long previousUid = uidToImapUidMap.get(message.getUid());
                     if (message.getImapUid() != previousUid) {
-                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message " + message.getPermanentUrl() + " (" + message.messageUrl + ')');
+                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message uid " + message.getUid());
                         message.setImapUid(previousUid);
                         sortNeeded = true;
                     }
                 } else {
                     // add message to uid map
-                    uidUrlHashMap.put(message.getPermanentUrl(), message.getImapUid());
+                    uidToImapUidMap.put(message.getUid(), message.getImapUid());
                 }
             }
             if (sortNeeded) {
