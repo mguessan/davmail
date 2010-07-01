@@ -117,6 +117,10 @@ public class DavExchangeSession extends ExchangeSession {
             exchangeFolderPath = mailPath + draftsName + folderPath.substring(DRAFTS.length());
         } else if (folderPath.startsWith(SENT)) {
             exchangeFolderPath = mailPath + sentitemsName + folderPath.substring(SENT.length());
+        } else if (folderPath.startsWith(CONTACTS)) {
+            exchangeFolderPath = mailPath + contactsName + folderPath.substring(CONTACTS.length());
+        } else if (folderPath.startsWith(CALENDAR)) {
+            exchangeFolderPath = mailPath + calendarName + folderPath.substring(CALENDAR.length());
         } else if (folderPath.startsWith("public")) {
             exchangeFolderPath = publicFolderUrl + folderPath.substring("public".length());
 
@@ -415,9 +419,13 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
+            Field field = Field.get(attributeName);
+            buffer.append('"').append(field.getUri()).append('"');
             buffer.append(operatorMap.get(operator));
-            if (!isIntValue) {
+            //noinspection VariableNotUsedInsideIf
+            if (field.cast != null) {
+                buffer.append("CAST (\"");
+            } else if (!isIntValue) {
                 buffer.append('\'');
             }
             if (Operator.Like == operator) {
@@ -427,7 +435,9 @@ public class DavExchangeSession extends ExchangeSession {
             if (Operator.Like == operator || Operator.StartsWith == operator) {
                 buffer.append('%');
             }
-            if (!isIntValue) {
+            if (field.cast != null) {
+                buffer.append("\" as '").append(field.cast).append("')");
+            } else if (!isIntValue) {
                 buffer.append('\'');
             }
         }
@@ -901,7 +911,7 @@ public class DavExchangeSession extends ExchangeSession {
         return folder;
     }
 
-    protected static final List<String> FOLDER_PROPERTIES = new ArrayList<String>();
+    protected static final Set<String> FOLDER_PROPERTIES = new HashSet<String>();
 
     static {
         FOLDER_PROPERTIES.add("displayname");
@@ -1082,7 +1092,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MessageList searchMessages(String folderPath, List<String> attributes, Condition condition) throws IOException {
+    public MessageList searchMessages(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
 
@@ -1099,9 +1109,11 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    protected List<ExchangeSession.Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException {
+    public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes,
+                and(equals("outlookmessageclass", "IPM.Contact"), isFalse("isfolder"), isFalse("ishidden"), condition),
+                FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             contacts.add(new Contact(response));
         }
@@ -1109,7 +1121,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected List<ExchangeSession.Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
+    protected List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
@@ -1133,7 +1145,7 @@ public class DavExchangeSession extends ExchangeSession {
         return events;
     }
 
-    protected MultiStatusResponse[] searchItems(String folderPath, List<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
+    protected MultiStatusResponse[] searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
         String folderUrl = getFolderPath(folderPath);
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("SELECT ")
@@ -1237,7 +1249,7 @@ public class DavExchangeSession extends ExchangeSession {
         if ("urn:content-classes:person".equals(contentClass)) {
             // retrieve Contact properties
             // TODO: need to check list size
-            return searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", itemPath.substring(itemPath.lastIndexOf('/')+1))).get(0);
+            return searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", itemPath.substring(itemPath.lastIndexOf('/') + 1))).get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
                 || "urn:content-classes:calendarmessage".equals(contentClass)) {
             return new Event(responses[0]);
@@ -1330,7 +1342,7 @@ public class DavExchangeSession extends ExchangeSession {
         String timezoneId = null;
 
         try {
-            ArrayList<String> attributes = new ArrayList<String>();
+            Set<String> attributes = new HashSet<String>();
             attributes.add("roamingdictionary");
 
             MultiStatusResponse[] responses = searchItems("/users/" + getEmail() + "/NON_IPM_SUBTREE", attributes, equals("messageclass", "IPM.Configuration.OWA.UserOptions"), DavExchangeSession.FolderQueryTraversal.Deep);

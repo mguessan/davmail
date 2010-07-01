@@ -18,6 +18,10 @@
  */
 package davmail.util;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
+
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -167,6 +171,35 @@ public final class StringUtil {
             result = ENCODED_GT_PATTERN.matcher(result).replaceAll(">");
         }
         return result;
+    }
+
+    /**
+     * Convert base64 value to hex.
+     *
+     * @param value base64 value
+     * @return hex value
+     */
+    public static String base64ToHex(String value) {
+        String hexValue = null;
+        if (value != null) {
+            hexValue = new String(Hex.encodeHex(Base64.decodeBase64(value.getBytes())));
+        }
+        return hexValue;
+    }
+
+    /**
+     * Convert hex value to base64.
+     *
+     * @param value hex value
+     * @return base64 value
+     * @throws DecoderException on error
+     */
+    public static String hexToBase64(String value) throws DecoderException {
+        String base64Value = null;
+        if (value != null) {
+            base64Value = new String(Base64.encodeBase64(Hex.decodeHex(value.toCharArray())));
+        }
+        return base64Value;
     }
 
 }

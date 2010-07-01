@@ -18,6 +18,7 @@
  */
 package davmail.exchange.dav;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
@@ -111,8 +112,10 @@ public class Field {
 
         createField(DAV, "isfolder");
 
+        // item id, do not use DAV:uid, see http://support.microsoft.com/kb/320749
+        createField("uid", 0x300b, PropertyType.Binary); // PR_SEARCH_KEY
+
         // POP and IMAP message
-        createField(DAV, "uid");
         createField("messageSize", 0x0e08, PropertyType.Long);//PR_MESSAGE_SIZE
         createField("imapUid", 0x0e23, PropertyType.Long);//PR_INTERNET_ARTICLE_NUMBER
         createField("junk", 0x1083, PropertyType.Long);
@@ -238,9 +241,22 @@ public class Field {
         createField(DAV, "ishidden");
     }
 
+    protected static String toHexString(int propertyTag) {
+        String hexValue = Integer.toHexString(propertyTag);
+        while (hexValue.length() < 4) {
+            hexValue = '0' + hexValue;
+        }
+        return hexValue;
+    }
+
     protected static void createField(String alias, int propertyTag, PropertyType propertyType) {
-        String name = 'x' + Integer.toHexString(propertyTag) + propertyTypeMap.get(propertyType);
-        Field field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name);
+        String name = 'x' + toHexString(propertyTag) + propertyTypeMap.get(propertyType);
+        Field field;
+        if (propertyType == PropertyType.Binary) {
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64");
+        } else {
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name);
+        }
         fieldMap.put(field.alias, field);
     }
 
@@ -251,15 +267,15 @@ public class Field {
             name = String.valueOf(propertyTag);
         } else {
             // Common namespace expects hex names
-            name = "0x" + Integer.toHexString(propertyTag);
+            name = "0x" + toHexString(propertyTag);
         }
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null);
         fieldMap.put(field.alias, field);
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, PropertyType propertyType) {
-        String name = "_x" + propertyTypeMap.get(propertyType) + "_x" + Integer.toHexString(propertyTag);
+        String name = "_x" + propertyTypeMap.get(propertyType) + "_x" + toHexString(propertyTag);
 
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
                 '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name);
@@ -281,6 +297,7 @@ public class Field {
     protected final String uri;
     protected final String requestPropertyString;
     protected final DavPropertyName responsePropertyName;
+    protected final String cast;
 
 
     public Field(Namespace namespace, String name) {
@@ -288,10 +305,10 @@ public class Field {
     }
 
     public Field(String alias, Namespace namespace, String name) {
-        this(alias, namespace, name, null);
+        this(alias, namespace, name, null, null);
     }
 
-    public Field(String alias, Namespace namespace, String name, String responseAlias) {
+    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast) {
         davPropertyName = DavPropertyName.create(name, namespace);
         this.alias = alias;
         this.uri = namespace.getURI() + name;
@@ -302,6 +319,7 @@ public class Field {
             this.requestPropertyString = '"' + uri + "\" as " + responseAlias;
             this.responsePropertyName = DavPropertyName.create(responseAlias, EMPTY);
         }
+        this.cast = cast;
     }
 
     public String getUri() {

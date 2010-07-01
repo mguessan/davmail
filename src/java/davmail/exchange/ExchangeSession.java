@@ -89,7 +89,7 @@ public abstract class ExchangeSession {
 
     protected static final String PUBLIC_ROOT = "/public";
     protected static final String CALENDAR = "calendar";
-    protected static final String CONTACTS = "contacts";
+    public static final String CONTACTS = "contacts";
     protected static final String ADDRESSBOOK = "addressbook";
     protected static final String INBOX = "INBOX";
     protected static final String LOWER_CASE_INBOX = "inbox";
@@ -513,7 +513,7 @@ public abstract class ExchangeSession {
      */
     protected abstract BufferedReader getContentReader(Message message) throws IOException;
 
-    protected static final List<String> POP_MESSAGE_ATTRIBUTES = new ArrayList<String>();
+    protected static final Set<String> POP_MESSAGE_ATTRIBUTES = new HashSet<String>();
 
     static {
         POP_MESSAGE_ATTRIBUTES.add("uid");
@@ -531,7 +531,7 @@ public abstract class ExchangeSession {
         return searchMessages(folderName, POP_MESSAGE_ATTRIBUTES, null);
     }
 
-    protected static final List<String> IMAP_MESSAGE_ATTRIBUTES = new ArrayList<String>();
+    protected static final Set<String> IMAP_MESSAGE_ATTRIBUTES = new HashSet<String>();
 
     static {
         IMAP_MESSAGE_ATTRIBUTES.add("uid");
@@ -546,7 +546,7 @@ public abstract class ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add("date");
     }
 
-    protected static final List<String> UID_MESSAGE_ATTRIBUTES = new ArrayList<String>();
+    protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<String>();
 
     static {
         UID_MESSAGE_ATTRIBUTES.add("uid");
@@ -584,7 +584,7 @@ public abstract class ExchangeSession {
      * @return message list
      * @throws IOException on error
      */
-    public abstract MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException;
+    public abstract MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException;
 
     protected enum Operator {
         Or, And, Not, IsEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsNull, IsTrue, IsFalse,
@@ -1701,7 +1701,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("FN", get("cn"));
             // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
             writer.appendProperty("N", get("sn"), get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
-            
+
             writer.appendProperty("TEL;TYPE=cell", get("mobile"));
             writer.appendProperty("TEL;TYPE=work", get("telephoneNumber"));
             writer.appendProperty("TEL;TYPE=home", get("homePhone"));
@@ -1741,13 +1741,12 @@ public abstract class ExchangeSession {
             writer.appendProperty("X-EVOLUTION-SPOUSE", get("spousecn"));
 
 
-
             String lastModified = get("lastmodified");
             if (lastModified != null) {
                 try {
                     writer.appendProperty("REV", getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(lastModified)));
                 } catch (ParseException e) {
-                    LOGGER.warn("Invalid date: "+lastModified);
+                    LOGGER.warn("Invalid date: " + lastModified);
                 }
             }
             writer.endCard();
@@ -2392,7 +2391,7 @@ public abstract class ExchangeSession {
 
     }
 
-    public static final List<String> ITEM_PROPERTIES = new ArrayList<String>();
+    public static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
 
     static {
         ITEM_PROPERTIES.add("etag");
@@ -2422,7 +2421,7 @@ public abstract class ExchangeSession {
      * @return list of contacts
      * @throws IOException on error
      */
-    protected abstract List<Contact> searchContacts(String folderPath, List<String> attributes, Condition condition) throws IOException;
+    public abstract List<Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException;
 
     /**
      * Search calendar messages in provided folder.
@@ -2478,7 +2477,7 @@ public abstract class ExchangeSession {
      * @return list of calendar messages as Event objects
      * @throws IOException on error
      */
-    protected abstract List<Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException;
+    protected abstract List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException;
 
     /**
      * convert vcf extension to EML.
@@ -2858,18 +2857,7 @@ public abstract class ExchangeSession {
         return results;
     }
 
-    /**
-     * Search users in contacts folder by uid.
-     *
-     * @param uid unique id
-     * @return List of users
-     * @throws IOException on error
-     */
-    public Map<String, Map<String, String>> contactFindByUid(String uid) throws IOException {
-        return contactFind(equals("uid", uid));
-    }
-
-    protected static final List<String> CONTACT_ATTRIBUTES = new ArrayList<String>();
+    public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<String>();
 
     static {
         CONTACT_ATTRIBUTES.add("uid");
@@ -2917,87 +2905,6 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("im");
         CONTACT_ATTRIBUTES.add("middlename");
         CONTACT_ATTRIBUTES.add("lastmodified");
-    }
-
-
-    /**
-     * Search users in contacts folder
-     *
-     * @param condition search filter
-     * @return List of users
-     * @throws IOException on error
-     */
-    public Map<String, Map<String, String>> contactFind(Condition condition) throws IOException {
-        // uid value in search filter (hex value)
-        String filterUid = null;
-        // base64 encoded uid value
-        String actualFilterUid = null;
-
-        // TODO: move to LDAP code 
-        // replace hex encoded uid with base64 uid
-        /*
-        if (searchFilter != null) {
-            int uidStart = searchFilter.indexOf(DAV_UID_FILTER);
-            if (uidStart >= 0) {
-                int uidEnd = searchFilter.indexOf('\'', uidStart + DAV_UID_FILTER.length());
-                if (uidEnd >= 0) {
-                    try {
-                        filterUid = searchFilter.substring(uidStart + DAV_UID_FILTER.length(), uidEnd);
-                        actualFilterUid = new String(Base64.encodeBase64(Hex.decodeHex(filterUid.toCharArray())));
-                        searchFilter = searchFilter.substring(0, uidStart + DAV_UID_FILTER.length()) + actualFilterUid + searchFilter.substring(uidEnd);
-                    } catch (DecoderException e) {
-                        // ignore, this is not an hex uid
-                    }
-                }
-            }
-        }
-        */
-
-        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
-
-        List<Contact> contacts = searchContacts(CONTACTS, CONTACT_ATTRIBUTES, and(equals("outlookmessageclass", "IPM.Contact"), condition));
-
-        Map<String, String> item;
-        for (Contact contact : contacts) {
-            item = new HashMap<String, String>();
-
-            for (Map.Entry<String, String> contactEntry : contact.entrySet()) {
-                String propertyName = contactEntry.getKey();
-                String propertyValue = contactEntry.getValue();
-                if ("uid".equals(propertyName)) {
-                    // TODO: move to LDAP ?
-                    // uid is base64, reencode to hex
-                    propertyValue = new String(Hex.encodeHex(Base64.decodeBase64(propertyValue.getBytes())));
-                    // if actualFilterUid is not null, exclude non exact match
-                    if (actualFilterUid != null && !filterUid.equals(propertyValue)) {
-                        propertyValue = null;
-                    }
-                } else if ("bday".equals(propertyName)) {
-                    SimpleDateFormat parser = getExchangeZuluDateFormatMillisecond();
-                    try {
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTime(parser.parse(propertyValue));
-                        item.put("birthday", String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
-                        item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH) + 1));
-                        item.put("birthyear", String.valueOf(calendar.get(Calendar.YEAR)));
-                        propertyValue = null;
-                    } catch (ParseException e) {
-                        throw new IOException(e);
-                    }
-                } else if ("textdescription".equals(propertyName) && " \n".equals(propertyValue)) {
-                    propertyValue = null;
-                }
-                if (propertyValue != null && propertyValue.length() > 0) {
-                    item.put(propertyName, propertyValue);
-                }
-            }
-            if (item.get("uid") != null) {
-                results.put(item.get("uid"), item);
-            }
-        }
-
-        LOGGER.debug("contactFind: " + results.size() + " result(s)");
-        return results;
     }
 
     /**

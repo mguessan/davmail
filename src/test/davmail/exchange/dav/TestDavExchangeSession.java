@@ -54,6 +54,9 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         assertEquals(mailPath + davSession.sentitemsName, davSession.getFolderPath("Sent"));
         assertEquals(mailPath + davSession.draftsName, davSession.getFolderPath("Drafts"));
 
+        assertEquals(mailPath + davSession.contactsName, davSession.getFolderPath("contacts"));
+        assertEquals(mailPath + davSession.calendarName, davSession.getFolderPath("calendar"));
+
         assertEquals(mailPath + davSession.inboxName + "/test", davSession.getFolderPath("INBOX/test"));
         assertEquals(mailPath + davSession.deleteditemsName + "/test", davSession.getFolderPath("Trash/test"));
         assertEquals(mailPath + davSession.sentitemsName + "/test", davSession.getFolderPath("Sent/test"));
@@ -99,7 +102,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     }
 
     public void testGetCategoryList() throws IOException {
-        ArrayList<String> attributes = new ArrayList<String>();
+        Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
         MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow);
@@ -109,7 +112,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     }
 
     public void testGetCalendarOptions() throws IOException {
-        ArrayList<String> attributes = new ArrayList<String>();
+        Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
         MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow);
@@ -119,7 +122,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     }
 
     public void testAllHidden() throws IOException {
-        ArrayList<String> attributes = new ArrayList<String>();
+        Set<String> attributes = new HashSet<String>();
         attributes.add("messageclass");
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
@@ -139,7 +142,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     }
 
     public void testNonIpmSubtree() throws IOException {
-        ArrayList<String> attributes = new ArrayList<String>();
+        Set<String> attributes = new HashSet<String>();
         attributes.add("messageclass");
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");

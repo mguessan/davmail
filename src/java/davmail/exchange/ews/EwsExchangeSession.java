@@ -138,7 +138,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public MessageList searchMessages(String folderName, List<String> attributes, Condition condition) throws IOException {
+    public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -468,12 +468,12 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected List<Contact> searchContacts(String folderName, List<String> attributes, Condition condition) throws IOException {
+    public List<Contact> searchContacts(String folderName, Set<String> attributes, Condition condition) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected List<Event> searchEvents(String folderPath, List<String> attributes, Condition condition) throws IOException {
+    protected List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         throw new UnsupportedOperationException();
     }
 

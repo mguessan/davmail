@@ -28,6 +28,10 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.StringUtil;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -35,6 +39,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -1021,16 +1027,26 @@ public class LdapConnection extends AbstractConnection {
 
             ExchangeSession.Condition condition;
 
+            // convert hex uid to base64
+            String actualValue = value;
+            if ("uid".equals(contactAttributeName)) {
+                try {
+                    actualValue = StringUtil.hexToBase64(value);
+                } catch (DecoderException e) {
+                    // ignore, this is not an hex uid
+                }
+            }
+
             if (operator == LDAP_FILTER_EQUALITY) {
-                condition = session.equals(contactAttributeName, value);
-            } else if ("*".equals(value)) {
+                condition = session.equals(contactAttributeName, actualValue);
+            } else if ("*".equals(actualValue)) {
                 condition = session.not(session.isNull(contactAttributeName));
             } else {
                 // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
-                    condition = session.contains(contactAttributeName, value);
+                    condition = session.contains(contactAttributeName, actualValue);
                 } else {
-                    condition = session.startsWith(contactAttributeName, value);
+                    condition = session.startsWith(contactAttributeName, actualValue);
                 }
             }
             return condition;
@@ -1157,11 +1173,17 @@ public class LdapConnection extends AbstractConnection {
                         if (session != null) {
                             // single user request
                             String uid = dn.substring("uid=".length(), dn.indexOf(','));
+                            Map<String, Map<String, String>> persons = null;
+
                             // first search in contact
-                            Map<String, Map<String, String>> persons = session.contactFindByUid(uid);
+                            try {
+                                persons = contactFind(session.equals("uid", StringUtil.hexToBase64(uid)), returningAttributes);
+                            } catch (DecoderException e) {
+                                // ignore, this is not an hex uid
+                            }
 
                             // then in GAL
-                            if (persons.isEmpty()) {
+                            if (persons == null || persons.isEmpty()) {
                                 persons = session.galFind("AN", uid);
 
                                 Map<String, String> person = persons.get(uid.toLowerCase());
@@ -1190,7 +1212,7 @@ public class LdapConnection extends AbstractConnection {
                         Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
                         if (ldapFilter.isFullSearch()) {
                             // append personal contacts first
-                            for (Map<String, String> person : session.contactFind(null).values()) {
+                            for (Map<String, String> person : contactFind(null, returningAttributes).values()) {
                                 persons.put(person.get("uid"), person);
                                 if (persons.size() == sizeLimit) {
                                     break;
@@ -1217,7 +1239,7 @@ public class LdapConnection extends AbstractConnection {
                             // if ldapfilter is not a full search and filter is null,
                             // ignored all attribute filters => return empty results
                             if (ldapFilter.isFullSearch() || filter != null) {
-                                for (Map<String, String> person : session.contactFind(filter).values()) {
+                                for (Map<String, String> person : contactFind(filter, returningAttributes).values()) {
                                     persons.put(person.get("uid"), person);
 
                                     if (persons.size() == sizeLimit) {
@@ -1272,6 +1294,63 @@ public class LdapConnection extends AbstractConnection {
             }
 
         }
+
+        /**
+         * Search users in contacts folder
+         *
+         * @param condition search filter
+         * @return List of users
+         * @throws IOException on error
+         */
+        public Map<String, Map<String, String>> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes) throws IOException {
+            Set<String> ldapReturningAttributes;
+            if (returningAttributes != null && !returningAttributes.isEmpty()) {
+                ldapReturningAttributes = new HashSet<String>();
+                // always return uid
+                ldapReturningAttributes.add("uid");
+                for (String attribute : returningAttributes) {
+                     if (!"objectclass".equals(attribute)) {
+                         ldapReturningAttributes.add(attribute);
+                     }
+                }
+            } else {
+               ldapReturningAttributes = ExchangeSession.CONTACT_ATTRIBUTES; 
+            }
+
+            Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+
+            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ldapReturningAttributes, condition);
+
+            for (ExchangeSession.Contact contact : contacts) {
+                // TODO convert values
+                /*
+                    if ("bday".equals(propertyName)) {
+                        SimpleDateFormat parser = getExchangeZuluDateFormatMillisecond();
+                        try {
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTime(parser.parse(propertyValue));
+                            item.put("birthday", String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
+                            item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH) + 1));
+                            item.put("birthyear", String.valueOf(calendar.get(Calendar.YEAR)));
+                            propertyValue = null;
+                        } catch (ParseException e) {
+                            throw new IOException(e);
+                        }
+                    } else if ("textdescription".equals(propertyName) && " \n".equals(propertyValue)) {
+                        propertyValue = null;
+                    }
+                    */
+                if (contact.get("uid") != null) {
+                    // convert uid to hex
+                    String hexUid = StringUtil.base64ToHex(contact.get("uid"));
+                    contact.put("uid", hexUid);
+                    results.put(hexUid, contact);
+                }
+            }
+
+            return results;
+        }
+
 
         /**
          * Convert to LDAP attributes and send entry
