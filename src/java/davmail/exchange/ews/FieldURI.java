@@ -38,4 +38,11 @@ public interface FieldURI {
      */
     public void appendValue(StringBuilder buffer, String itemType, String value);
 
+    /**
+     * Property name in EWS response.
+     *
+     * @return property name
+     */
+    public String getResponseName();
+
 }

@@ -362,6 +362,16 @@ public abstract class EWSMethod extends PostMethod {
             return result;
         }
 
+        public long getLong(String key) {
+            long result = 0;
+            String value = get(key);
+            if (value != null && value.length() > 0) {
+                result = Long.parseLong(value);
+            }
+            return result;
+        }
+
+
         public boolean getBoolean(String key) {
             boolean result = false;
             String value = get(key);

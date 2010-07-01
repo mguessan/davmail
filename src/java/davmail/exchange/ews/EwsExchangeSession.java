@@ -25,6 +25,7 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
 import java.io.BufferedReader;
@@ -38,6 +39,21 @@ import java.util.*;
  * Compatible with Exchange 2007 and hopefully 2010.
  */
 public class EwsExchangeSession extends ExchangeSession {
+
+    protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
+
+    static {
+        FIELD_MAP.put("uid", new ExtendedFieldURI(0x300b, ExtendedFieldURI.PropertyType.Binary));
+        FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("read", new ExtendedFieldURI(0x0e69, ExtendedFieldURI.PropertyType.Boolean));
+        FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Long));
+        FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
+    }
 
     protected Map<String, String> folderIdMap;
 
@@ -137,9 +153,58 @@ public class EwsExchangeSession extends ExchangeSession {
         throw new UnsupportedOperationException();
     }
 
+    protected Message buildMessage(EWSMethod.Item response) throws URIException {
+        Message message = new Message();
+
+
+        message.size = response.getInt(FIELD_MAP.get("messageSize").getResponseName());
+        message.uid = response.get(FIELD_MAP.get("uid").getResponseName());
+        message.imapUid = response.getLong(FIELD_MAP.get("imapUid").getResponseName());
+        message.read = response.getBoolean(FIELD_MAP.get("read").getResponseName());
+        message.junk = response.getBoolean(FIELD_MAP.get("junk").getResponseName());
+        message.flagged = "2".equals(response.get(FIELD_MAP.get("flagStatus").getResponseName()));
+        message.draft = "9".equals(response.get(FIELD_MAP.get("messageFlags").getResponseName()));
+        String lastVerbExecuted = response.get(FIELD_MAP.get("lastVerbExecuted").getResponseName());
+        message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
+        message.forwarded = "104".equals(lastVerbExecuted);
+        message.date = response.get(FIELD_MAP.get("date").getResponseName());
+        message.deleted = "1".equals(response.get(FIELD_MAP.get("deleted").getResponseName()));
+
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("Message");
+            if (message.imapUid != 0) {
+                buffer.append(" IMAP uid: ").append(message.imapUid);
+            }
+            if (message.uid != null) {
+                buffer.append(" uid: ").append(message.uid);
+            }
+            LOGGER.debug(buffer.toString());
+        }
+        return message;
+    }
+
     @Override
-    public MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException {
-        throw new UnsupportedOperationException();
+    public MessageList searchMessages(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+        MessageList messages = new MessageList();
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW);
+
+        for (EWSMethod.Item response : responses) {
+            Message message = buildMessage(response);
+            message.messageList = messages;
+            messages.add(message);
+        }
+        Collections.sort(messages);
+        return messages;
+    }
+
+    protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
+        FindItemMethod findItemMethod = new FindItemMethod(FolderQueryTraversal.SHALLOW, BaseShape.ID_ONLY, getFolderId(folderPath));
+        for (String attribute : attributes) {
+            findItemMethod.addAdditionalProperty(FIELD_MAP.get(attribute));
+        }
+        executeMethod(findItemMethod);
+        return findItemMethod.getResponseItems();
     }
 
     protected static class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {

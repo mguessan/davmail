@@ -52,4 +52,8 @@ public class IndexedFieldURI implements FieldURI {
         buffer.append(itemType);
         buffer.append('>');
     }
+
+    public String getResponseName() {
+        return fieldIndex;
+    }
 }
