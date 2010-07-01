@@ -53,6 +53,8 @@ public class EwsExchangeSession extends ExchangeSession {
         FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
+
+        FIELD_MAP.put("folderclass", new ExtendedFieldURI(0x3613, ExtendedFieldURI.PropertyType.String));
     }
 
     protected Map<String, String> folderIdMap;
@@ -203,6 +205,9 @@ public class EwsExchangeSession extends ExchangeSession {
         for (String attribute : attributes) {
             findItemMethod.addAdditionalProperty(FIELD_MAP.get(attribute));
         }
+        if (condition != null && !condition.isEmpty()) {
+            findItemMethod.setSearchExpression((SearchExpression) condition);
+        }
         executeMethod(findItemMethod);
         return findItemMethod.getResponseItems();
     }
@@ -213,13 +218,25 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         public void appendTo(StringBuilder buffer) {
-            buffer.append("<t:").append(operator.toString()).append('>');
-
+            int actualConditionCount = 0;
             for (Condition condition : conditions) {
-                condition.appendTo(buffer);
+                if (!condition.isEmpty()) {
+                    actualConditionCount++;
+                }
             }
+            if (actualConditionCount > 0) {
+                if (actualConditionCount > 1) {
+                    buffer.append("<t:").append(operator.toString()).append('>');
+                }
 
-            buffer.append("</t:").append(operator.toString()).append('>');
+                for (Condition condition : conditions) {
+                    condition.appendTo(buffer);
+                }
+
+                if (actualConditionCount > 1) {
+                    buffer.append("</t:").append(operator.toString()).append('>');
+                }
+            }
         }
     }
 
@@ -235,12 +252,6 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    static final Map<String, FieldURI> attributeMap = new HashMap<String, FieldURI>();
-
-    static {
-        attributeMap.put("folderclass", ExtendedFieldURI.PR_CONTAINER_CLASS);
-        attributeMap.put("read", ExtendedFieldURI.PR_READ);
-    }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition implements SearchExpression {
         protected ContainmentMode containmentMode;
@@ -258,7 +269,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected FieldURI getFieldURI(String attributeName) {
-            FieldURI fieldURI = attributeMap.get(attributeName);
+            FieldURI fieldURI = FIELD_MAP.get(attributeName);
             if (fieldURI == null) {
                 throw new IllegalArgumentException("Unknown field: " + attributeName);
             }
@@ -306,7 +317,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:Not><t:Exists>");
-            attributeMap.get(attributeName).appendTo(buffer);
+            FIELD_MAP.get(attributeName).appendTo(buffer);
             buffer.append("</t:Exists></t:Not>");
         }
 
