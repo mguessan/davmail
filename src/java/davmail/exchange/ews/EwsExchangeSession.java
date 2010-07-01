@@ -244,6 +244,11 @@ public class EwsExchangeSession extends ExchangeSession {
             attributeMap.get(attributeName).appendTo(buffer);
             buffer.append("</t:Exists></t:Not>");
         }
+
+        public boolean isEmpty() {
+            return false;
+        }
+
     }
 
     @Override

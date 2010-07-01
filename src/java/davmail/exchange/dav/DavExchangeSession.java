@@ -364,7 +364,7 @@ public class DavExchangeSession extends ExchangeSession {
             boolean first = true;
 
             for (Condition condition : conditions) {
-                if (condition != null) {
+                if (condition != null && !condition.isEmpty()) {
                     if (first) {
                         buffer.append('(');
                         first = false;

@@ -600,7 +600,14 @@ public abstract class ExchangeSession {
          *
          * @param buffer search filter buffer
          */
-        public abstract void appendTo(StringBuilder buffer);
+        public void appendTo(StringBuilder buffer);
+
+        /**
+         * True if condition is empty.
+         *
+         * @return true if condition is empty
+         */
+        public boolean isEmpty();
     }
 
     /**
@@ -615,6 +622,10 @@ public abstract class ExchangeSession {
             this.attributeName = attributeName;
             this.operator = operator;
             this.value = value;
+        }
+
+        public boolean isEmpty() {
+            return false;
         }
     }
 
@@ -641,6 +652,17 @@ public abstract class ExchangeSession {
                 conditions.add(condition);
             }
         }
+
+        public boolean isEmpty() {
+            boolean isEmpty = true;
+            for (Condition condition: conditions) {
+                if (!condition.isEmpty()) {
+                    isEmpty = false;
+                    break;
+                }
+            }
+            return isEmpty;
+        }
     }
 
     /**
@@ -652,6 +674,11 @@ public abstract class ExchangeSession {
         protected NotCondition(Condition condition) {
             this.condition = condition;
         }
+
+        public boolean isEmpty() {
+            return condition.isEmpty();
+        }
+
     }
 
     /**
@@ -664,6 +691,10 @@ public abstract class ExchangeSession {
         protected MonoCondition(String attributeName, Operator operator) {
             this.attributeName = attributeName;
             this.operator = operator;
+        }
+
+        public boolean isEmpty() {
+            return false;
         }
     }
 

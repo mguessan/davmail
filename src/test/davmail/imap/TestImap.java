@@ -71,9 +71,14 @@ public class TestImap extends AbstractExchangeSessionTestCase {
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 
-    public void testUidSearchUndeleted() throws IOException {
+    public void testUidSearchDeleted() throws IOException {
         writeLine(". UID SEARCH UNDELETED");
-        assertEquals(". OK", readFullAnswer("."));
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testUidSearchUndeleted() throws IOException {
+        writeLine(". UID SEARCH DELETED");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
     public void testLogout() throws IOException {
