@@ -224,6 +224,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK UID FETCH completed",readFullAnswer("."));
     }
 
+    public void testPartialFetch() throws IOException {
+        writeLine(". UID FETCH "+messageUid+" (BODY.PEEK[1.MIME])");
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
 
     public void testDeleteFolder() throws IOException {
         writeLine(". DELETE testfolder");

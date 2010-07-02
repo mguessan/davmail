@@ -158,7 +158,6 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Message buildMessage(EWSMethod.Item response) throws URIException {
         Message message = new Message();
 
-
         message.size = response.getInt(FIELD_MAP.get("messageSize").getResponseName());
         message.uid = response.get(FIELD_MAP.get("uid").getResponseName());
         message.imapUid = response.getLong(FIELD_MAP.get("imapUid").getResponseName());

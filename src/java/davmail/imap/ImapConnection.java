@@ -649,6 +649,10 @@ public class ImapConnection extends AbstractConnection {
                         MimePart bodyPart = mimeMessage;
                         String[] partIndexStrings = partIndexString.split("\\.");
                         for (String subPartIndexString : partIndexStrings) {
+                            // ignore MIME subpart index, will return full part
+                            if ("MIME".equals(subPartIndexString)) {
+                                break;
+                            }
                             int subPartIndex;
                             // try to parse part index
                             try {
