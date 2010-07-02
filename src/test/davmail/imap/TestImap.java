@@ -22,6 +22,9 @@ import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
 
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.net.Socket;
 
@@ -33,10 +36,21 @@ public class TestImap extends AbstractDavMailTestCase {
     static BufferedWriter socketWriter;
     static BufferedReader socketReader;
 
+    static String messageUid = null;
+
+    protected void write(String line) throws IOException {
+        socketWriter.write(line);
+        socketWriter.flush();
+    }
+
     protected void writeLine(String line) throws IOException {
         socketWriter.write(line);
         socketWriter.newLine();
         socketWriter.flush();
+    }
+
+    protected String readLine() throws IOException {
+        return socketReader.readLine();
     }
 
     protected String readFullAnswer(String prefix) throws IOException {
@@ -97,6 +111,123 @@ public class TestImap extends AbstractDavMailTestCase {
     public void testStoreUndelete() throws IOException {
         writeLine(". UID STORE 10 -FLAGS (\\Deleted)");
         readFullAnswer(".");
+    }
+
+    public void testCreateFolder() throws IOException {
+        writeLine(". DELETE testfolder");
+        readFullAnswer(".");
+        writeLine(". CREATE testfolder");
+        assertEquals(". OK folder created", readFullAnswer("."));
+    }
+
+    public void testSelectFolder() throws IOException {
+        writeLine(". SELECT testfolder");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+    }
+
+    public void testCreateMessage() throws IOException, MessagingException {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.setText("Test message");
+        mimeMessage.setSubject("Test subject");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        byte[] content = baos.toByteArray();
+        writeLine(". APPEND testfolder (\\Draft) {" + content.length + "}");
+        assertEquals("+ send literal data", readLine());
+        writeLine(new String(content));
+        assertEquals(". OK APPEND completed", readFullAnswer("."));
+        writeLine(". NOOP");
+        assertEquals(". OK NOOP completed", readFullAnswer("."));
+
+        // fetch message uid
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf("UID ") + 4;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+        assertNotNull(messageUid);
+    }
+
+    public void testUidStoreDeletedFlag() throws IOException {
+
+        // test deleted flag
+        writeLine(". UID STORE "+messageUid+" +FLAGS (\\Deleted)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Seen \\Deleted \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+        // remove deleted flag
+        writeLine(". UID STORE "+messageUid+" -FLAGS (\\Deleted)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Seen \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+    }
+
+    public void testUidStoreSeenFlag() throws IOException {
+        // remove seen flag
+        writeLine(". UID STORE "+messageUid+" FLAGS (\\Draft)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
+    public void testUidStoreForwardedFlag() throws IOException {
+        // add forwarded flag
+        writeLine(". UID STORE "+messageUid+" +FLAGS ($Forwarded)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft $Forwarded))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+        // remove forwarded flag
+        writeLine(". UID STORE "+messageUid+" -FLAGS ($Forwarded)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
+    public void testUidStoreAnsweredFlag() throws IOException {
+        // add answered flag
+        writeLine(". UID STORE "+messageUid+" +FLAGS (\\Answered)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft \\Answered))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+        // remove answered flag
+        writeLine(". UID STORE "+messageUid+" -FLAGS (\\Answered)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
+    public void testUidStoreJunkFlag() throws IOException {
+        // add Junk flag
+        writeLine(". UID STORE "+messageUid+" +FLAGS (Junk)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (Junk \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+        // remove Junk flag
+        writeLine(". UID STORE "+messageUid+" -FLAGS (Junk)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
+
+    public void testDeleteFolder() throws IOException {
+        writeLine(". DELETE testfolder");
+        assertEquals(". OK folder deleted",readFullAnswer("."));
     }
 
     public void testLogout() throws IOException {

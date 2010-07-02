@@ -251,7 +251,7 @@ public class ImapConnection extends AbstractConnection {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                     try {
                                         session.deleteFolder(folderName);
-                                        sendClient(commandId + " OK delete completed");
+                                        sendClient(commandId + " OK folder deleted");
                                     } catch (HttpException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
@@ -770,8 +770,7 @@ public class ImapConnection extends AbstractConnection {
         }
         while (iterator.hasNext()) {
             ExchangeSession.Message message = iterator.next();
-            if ((conditions.deleted == null || message.deleted == conditions.deleted)
-                    && (conditions.flagged == null || message.flagged == conditions.flagged)
+            if ((conditions.flagged == null || message.flagged == conditions.flagged)
                     && (conditions.answered == null || message.answered == conditions.answered)) {
                 uidList.add(message.getImapUid());
             }
@@ -985,7 +984,6 @@ public class ImapConnection extends AbstractConnection {
     static final class SearchConditions {
         Boolean flagged;
         Boolean answered;
-        Boolean deleted;
         String indexRange;
         String uidRange;
     }
@@ -1145,6 +1143,12 @@ public class ImapConnection extends AbstractConnection {
                 } else if ("Junk".equals(flag) && message.junk) {
                     properties.put("junk", "0");
                     message.junk = false;
+                } else if ("$Forwarded".equals(flag) && message.forwarded) {
+                    properties.put("forwarded", null);
+                    message.forwarded = false;
+                } else if ("\\Answered".equals(flag) && message.answered) {
+                    properties.put("answered", null);
+                    message.answered = false;
                 }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
