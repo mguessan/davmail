@@ -39,7 +39,7 @@ public class Field {
         FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
 
-        FIELD_MAP.put("iconIndex", new ExtendedFieldURI(0x1080, ExtendedFieldURI.PropertyType.Long));// PR_ICON_INDEX
+        FIELD_MAP.put("iconIndex", new ExtendedFieldURI(0x1080, ExtendedFieldURI.PropertyType.Integer));// PR_ICON_INDEX
         FIELD_MAP.put("datereceived", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));// PR_MESSAGE_DELIVERY_TIME
         FIELD_MAP.put("bcc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "bcc"));
 
