@@ -18,15 +18,15 @@
  */
 package davmail.exchange.ews;
 
-import java.util.Set;
-
 /**
- * Update Folder method.
+ * Item update conflict resolution
  */
-public class UpdateFolderMethod extends EWSMethod {
-    public UpdateFolderMethod(FolderId folderId, Set<FieldUpdate> updates) {
-        super("Folder", "UpdateFolder");
-        this.folderId = folderId;
-        this.updates = updates;
+public class ConflictResolution extends AttributeOption {
+    private ConflictResolution(String value) {
+        super("ConflictResolution", value);
     }
+
+    public static final ConflictResolution NeverOverwrite = new ConflictResolution("NeverOverwrite");
+    public static final ConflictResolution AutoResolve = new ConflictResolution("AutoResolve");
+    public static final ConflictResolution AlwaysOverwrite = new ConflictResolution("AlwaysOverwrite");
 }

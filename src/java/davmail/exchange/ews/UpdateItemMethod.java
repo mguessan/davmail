@@ -21,12 +21,13 @@ package davmail.exchange.ews;
 import java.util.Set;
 
 /**
- * Update Folder method.
+ * Uµpdate Item method.
  */
-public class UpdateFolderMethod extends EWSMethod {
-    public UpdateFolderMethod(FolderId folderId, Set<FieldUpdate> updates) {
-        super("Folder", "UpdateFolder");
-        this.folderId = folderId;
+public class UpdateItemMethod extends EWSMethod {
+    public UpdateItemMethod(ConflictResolution conflictResolution, ItemId itemId, Set<FieldUpdate> updates) {
+        super("Item", "UpdateItem");
+        this.itemId = itemId;
         this.updates = updates;
+        this.conflictResolution = conflictResolution;
     }
 }

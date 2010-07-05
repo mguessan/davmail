@@ -23,6 +23,7 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
@@ -39,23 +40,6 @@ import java.util.*;
  * Compatible with Exchange 2007 and hopefully 2010.
  */
 public class EwsExchangeSession extends ExchangeSession {
-
-    protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
-
-    static {
-        FIELD_MAP.put("uid", new ExtendedFieldURI(0x300b, ExtendedFieldURI.PropertyType.Binary));
-        FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
-        FIELD_MAP.put("read", new ExtendedFieldURI(0x0e69, ExtendedFieldURI.PropertyType.Boolean));
-        FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Long));
-        FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
-
-        FIELD_MAP.put("folderclass", new ExtendedFieldURI(0x3613, ExtendedFieldURI.PropertyType.String));
-    }
 
     protected Map<String, String> folderIdMap;
 
@@ -126,20 +110,76 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
+    class Message extends ExchangeSession.Message {
+        // message item id
+        ItemId itemId;
+    }
+
+    /**
+     * Message create/update properties
+     *
+     * @param properties flag values map
+     * @return field values
+     */
+    protected Set<FieldUpdate> buildProperties(Map<String, String> properties) {
+        HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if ("read".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("read", entry.getValue()));
+            } else if ("junk".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("junk", entry.getValue()));
+            } else if ("flagged".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("flagStatus", entry.getValue()));
+            } else if ("answered".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
+                if ("102".equals(entry.getValue())) {
+                    list.add(Field.createFieldUpdate("iconIndex", "261"));
+                }
+            } else if ("forwarded".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("lastVerbExecuted", entry.getValue()));
+                if ("104".equals(entry.getValue())) {
+                    list.add(Field.createFieldUpdate("iconIndex", "262"));
+                }
+            } else if ("bcc".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("bcc", entry.getValue()));
+            } else if ("draft".equals(entry.getKey())) {
+                // note: draft is readonly after create
+                list.add(Field.createFieldUpdate("messageFlags", entry.getValue()));
+            } else if ("deleted".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("deleted", entry.getValue()));
+            } else if ("datereceived".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("datereceived", entry.getValue()));
+            }
+        }
+        return list;
+    }
+
     @Override
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
-        throw new UnsupportedOperationException();
-
+        EWSMethod.Item item = new EWSMethod.Item();
+        item.type = "Message";
+        item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
+        Set<FieldUpdate> fieldUpdates = buildProperties(properties);
+        if (!properties.containsKey("draft")) {
+            // need to force draft flag to false
+            fieldUpdates.add(Field.createFieldUpdate("messageFlags", "0"));
+        }
+        item.setFieldUpdates(fieldUpdates);
+        CreateItemMethod createItemMethod = new CreateItemMethod(getFolderId(folderPath), item);
+        createItemMethod.messageDisposition = MessageDisposition.SaveOnly;
+        executeMethod(createItemMethod);
+        // TODO: do we need to update message after to force some properties ?
     }
 
     @Override
-    public void updateMessage(Message message, Map<String, String> properties) throws IOException {
-        throw new UnsupportedOperationException();
-
+    public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
+        UpdateItemMethod updateItemMethod = new UpdateItemMethod(ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message)message).itemId, buildProperties(properties));
+        updateItemMethod.messageDisposition = MessageDisposition.SaveOnly;
+        executeMethod(updateItemMethod);
     }
 
     @Override
-    public void deleteMessage(Message message) throws IOException {
+    public void deleteMessage(ExchangeSession.Message message) throws IOException {
         throw new UnsupportedOperationException();
 
     }
@@ -151,25 +191,28 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected BufferedReader getContentReader(Message message) throws IOException {
+    protected BufferedReader getContentReader(ExchangeSession.Message message) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     protected Message buildMessage(EWSMethod.Item response) throws URIException {
         Message message = new Message();
 
-        message.size = response.getInt(FIELD_MAP.get("messageSize").getResponseName());
-        message.uid = response.get(FIELD_MAP.get("uid").getResponseName());
-        message.imapUid = response.getLong(FIELD_MAP.get("imapUid").getResponseName());
-        message.read = response.getBoolean(FIELD_MAP.get("read").getResponseName());
-        message.junk = response.getBoolean(FIELD_MAP.get("junk").getResponseName());
-        message.flagged = "2".equals(response.get(FIELD_MAP.get("flagStatus").getResponseName()));
-        message.draft = "9".equals(response.get(FIELD_MAP.get("messageFlags").getResponseName()));
-        String lastVerbExecuted = response.get(FIELD_MAP.get("lastVerbExecuted").getResponseName());
+        // get item id
+        message.itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+
+        message.size = response.getInt(Field.get("messageSize").getResponseName());
+        message.uid = response.get(Field.get("uid").getResponseName());
+        message.imapUid = response.getLong(Field.get("imapUid").getResponseName());
+        message.read = response.getBoolean(Field.get("read").getResponseName());
+        message.junk = response.getBoolean(Field.get("junk").getResponseName());
+        message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
+        message.draft = "9".equals(response.get(Field.get("messageFlags").getResponseName()));
+        String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
-        message.date = response.get(FIELD_MAP.get("date").getResponseName());
-        message.deleted = "1".equals(response.get(FIELD_MAP.get("deleted").getResponseName()));
+        message.date = response.get(Field.get("date").getResponseName());
+        message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
@@ -180,6 +223,8 @@ public class EwsExchangeSession extends ExchangeSession {
             if (message.uid != null) {
                 buffer.append(" uid: ").append(message.uid);
             }
+            buffer.append(" ItemId: ").append(message.itemId.id);
+            buffer.append(" ChangeKey: ").append(message.itemId.changeKey);
             LOGGER.debug(buffer.toString());
         }
         return message;
@@ -200,9 +245,9 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
-        FindItemMethod findItemMethod = new FindItemMethod(FolderQueryTraversal.SHALLOW, BaseShape.ID_ONLY, getFolderId(folderPath));
+        FindItemMethod findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath));
         for (String attribute : attributes) {
-            findItemMethod.addAdditionalProperty(FIELD_MAP.get(attribute));
+            findItemMethod.addAdditionalProperty(Field.get(attribute));
         }
         if (condition != null && !condition.isEmpty()) {
             findItemMethod.setSearchExpression((SearchExpression) condition);
@@ -268,7 +313,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected FieldURI getFieldURI(String attributeName) {
-            FieldURI fieldURI = FIELD_MAP.get(attributeName);
+            FieldURI fieldURI = Field.get(attributeName);
             if (fieldURI == null) {
                 throw new IllegalArgumentException("Unknown field: " + attributeName);
             }
@@ -316,7 +361,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         public void appendTo(StringBuilder buffer) {
             buffer.append("<t:Not><t:Exists>");
-            FIELD_MAP.get(attributeName).appendTo(buffer);
+            Field.get(attributeName).appendTo(buffer);
             buffer.append("</t:Exists></t:Not>");
         }
 
@@ -511,7 +556,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void copyMessage(Message message, String targetFolder) throws IOException {
+    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -543,7 +588,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    protected void moveToTrash(Message message) throws IOException {
+    protected void moveToTrash(ExchangeSession.Message message) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -1399,6 +1399,7 @@ public class DavExchangeSession extends ExchangeSession {
             } else if ("bcc".equals(entry.getKey())) {
                 list.add(Field.createDavProperty("bcc", entry.getValue()));
             } else if ("draft".equals(entry.getKey())) {
+                // note: draft is readonly after create
                 list.add(Field.createDavProperty("messageFlags", entry.getValue()));
             } else if ("deleted".equals(entry.getKey())) {
                 list.add(Field.createDavProperty("writedeleted", entry.getValue()));

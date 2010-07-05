@@ -86,19 +86,23 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     public void appendValue(StringBuilder buffer, String itemType, String value) {
-        appendTo(buffer);
-        buffer.append("<t:");
-        buffer.append(itemType);
-        buffer.append('>');
+        if (itemType != null) {
+            appendTo(buffer);
+            buffer.append("<t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
         buffer.append("<t:ExtendedProperty>");
         appendTo(buffer);
         buffer.append("<t:Value>");
         buffer.append(value);
         buffer.append("</t:Value>");
         buffer.append("</t:ExtendedProperty>");
-        buffer.append("</t:");
-        buffer.append(itemType);
-        buffer.append('>');
+        if (itemType != null) {
+            buffer.append("</t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
     }
 
     public String getResponseName() {

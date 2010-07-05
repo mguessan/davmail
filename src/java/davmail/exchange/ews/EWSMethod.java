@@ -21,7 +21,6 @@ package davmail.exchange.ews;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpState;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -44,11 +43,14 @@ public abstract class EWSMethod extends PostMethod {
     protected BaseShape baseShape;
     protected boolean includeMimeContent;
     protected FolderId folderId;
+    protected FolderId savedItemFolderId;
     protected FolderId toFolderId;
     protected FolderId parentFolderId;
     protected ItemId itemId;
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
+    protected MessageDisposition messageDisposition;
+    protected ConflictResolution conflictResolution;
 
     protected Set<FieldUpdate> updates;
 
@@ -56,7 +58,6 @@ public abstract class EWSMethod extends PostMethod {
     protected final String methodName;
     protected final String responseCollectionName;
 
-    protected byte[] mimeContent;
     protected List<Item> responseItems;
     protected String errorDetail;
     protected Item item;
@@ -105,27 +106,11 @@ public abstract class EWSMethod extends PostMethod {
         return "POST";
     }
 
-    protected void setBaseShape(BaseShape baseShape) {
-        this.baseShape = baseShape;
-    }
-
-    protected void setFolderId(FolderId folderId) {
-        this.folderId = folderId;
-    }
-
-    protected void setParentFolderId(FolderId folderId) {
-        this.parentFolderId = folderId;
-    }
-
     protected void addAdditionalProperty(FieldURI additionalProperty) {
         if (additionalProperties == null) {
             additionalProperties = new HashSet<FieldURI>();
         }
         additionalProperties.add(additionalProperty);
-    }
-
-    protected void setAdditionalProperties(Set<FieldURI> additionalProperties) {
-        this.additionalProperties = additionalProperties;
     }
 
     protected void setSearchExpression(SearchExpression searchExpression) {
@@ -158,9 +143,13 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeItemId(Writer writer) throws IOException {
         if (itemId != null) {
-            writer.write("<m:ItemIds>");
+            if (updates == null) {
+                writer.write("<m:ItemIds>");
+            }
             itemId.write(writer);
-            writer.write("</m:ItemIds>");
+            if (updates == null) {
+                writer.write("</m:ItemIds>");
+            }
         }
     }
 
@@ -173,6 +162,14 @@ public abstract class EWSMethod extends PostMethod {
             if (updates == null) {
                 writer.write("</m:FolderIds>");
             }
+        }
+    }
+
+    protected void writeSavedItemFolderId(Writer writer) throws IOException {
+        if (savedItemFolderId != null) {
+            writer.write("<m:SavedItemFolderId>");
+            savedItemFolderId.write(writer);
+            writer.write("</m:SavedItemFolderId>");
         }
     }
 
@@ -237,15 +234,7 @@ public abstract class EWSMethod extends PostMethod {
         if (updates != null) {
             writer.write("<t:Updates>");
             for (FieldUpdate fieldUpdate : updates) {
-                writer.write("<t:Set");
-                writer.write(itemType);
-                writer.write("Field>");
-
                 fieldUpdate.write(itemType, writer);
-
-                writer.write("</t:Set");
-                writer.write(itemType);
-                writer.write("Field>");
             }
             writer.write("</t:Updates>");
         }
@@ -282,6 +271,12 @@ public abstract class EWSMethod extends PostMethod {
             if (deleteType != null) {
                 deleteType.write(writer);
             }
+            if (messageDisposition != null) {
+                messageDisposition.write(writer);
+            }
+            if (conflictResolution != null) {
+                conflictResolution.write(writer);
+            }
             writer.write(">");
             writeSoapBody(writer);
             writer.write("</m:");
@@ -304,6 +299,7 @@ public abstract class EWSMethod extends PostMethod {
         writeParentFolderId(writer);
         writeToFolderId(writer);
         writeFolderId(writer);
+        writeSavedItemFolderId(writer);
         writeItem(writer);
         writeUpdates(writer);
         endChanges(writer);
@@ -323,6 +319,8 @@ public abstract class EWSMethod extends PostMethod {
 
     public static class Item extends HashMap<String, String> {
         public String type;
+        protected byte[] mimeContent;
+        protected Set<FieldUpdate> fieldUpdates;
 
         @Override
         public String toString() {
@@ -348,9 +346,23 @@ public abstract class EWSMethod extends PostMethod {
                 writer.write(mapEntry.getKey());
                 writer.write(">");
             }
+            if (mimeContent != null) {
+                writer.write("<t:MimeContent>");
+                writer.write(new String(mimeContent));
+                writer.write("</t:MimeContent>");
+            }
+            if (fieldUpdates != null) {
+                for (FieldUpdate fieldUpdate : fieldUpdates) {
+                    fieldUpdate.write(null, writer);
+                }
+            }
             writer.write("</t:");
             writer.write(type);
             writer.write(">");
+        }
+
+        public void setFieldUpdates(Set<FieldUpdate> fieldUpdates) {
+            this.fieldUpdates = fieldUpdates;
         }
 
         public int getInt(String key) {
@@ -385,7 +397,7 @@ public abstract class EWSMethod extends PostMethod {
 
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
-            throw new EWSException(errorDetail);
+            throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope()));
         }
     }
 
@@ -405,7 +417,12 @@ public abstract class EWSMethod extends PostMethod {
 
     public byte[] getMimeContent() throws EWSException {
         checkSuccess();
-        return mimeContent;
+        Item responseItem = getResponseItem();
+        if (responseItem != null) {
+            return responseItem.mimeContent;
+        } else {
+            return null;
+        }
     }
 
     protected String handleTag(XMLStreamReader reader, String localName) throws XMLStreamException {
@@ -446,38 +463,38 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected Item handleItem(XMLStreamReader reader) throws XMLStreamException {
-        Item item = new Item();
-        item.type = reader.getLocalName();
-        while (reader.hasNext() && !isEndTag(reader, item.type)) {
+        Item responseItem = new Item();
+        responseItem.type = reader.getLocalName();
+        while (reader.hasNext() && !isEndTag(reader, responseItem.type)) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
                 if ("ExtendedProperty".equals(tagLocalName)) {
-                    addExtendedPropertyValue(reader, item);
+                    addExtendedPropertyValue(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
-                    handleMimeContent(reader);
+                    handleMimeContent(reader, responseItem);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
                         // get change key
-                        item.put("ChangeKey", getAttributeValue(reader, "ChangeKey"));
+                        responseItem.put("ChangeKey", getAttributeValue(reader, "ChangeKey"));
                     }
                     if (value == null) {
                         value = getTagContent(reader);
                     }
                     if (value != null) {
-                        item.put(tagLocalName, value);
+                        responseItem.put(tagLocalName, value);
                     }
                 }
             }
         }
-        return item;
+        return responseItem;
     }
 
-    protected void handleMimeContent(XMLStreamReader reader) throws XMLStreamException {
+    protected void handleMimeContent(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         byte[] base64MimeContent = reader.getElementText().getBytes();
-        mimeContent = Base64.decodeBase64(base64MimeContent);
+        responseItem.mimeContent = Base64.decodeBase64(base64MimeContent);
     }
 
     protected void addExtendedPropertyValue(XMLStreamReader reader, Item item) throws XMLStreamException {

@@ -34,8 +34,32 @@ public class FieldUpdate {
     }
 
     public void write(String itemType, Writer writer) throws IOException {
+        String action;
+        if (value == null) {
+            action = "Delete";
+        } else {
+            action = "Set";
+        }
+        if (itemType != null) {
+            writer.write("<t:");
+            writer.write(action);
+            writer.write(itemType);
+            writer.write("Field>");
+        }
+
         StringBuilder buffer = new StringBuilder();
-        fieldURI.appendValue(buffer, itemType, value);
+        if (value == null) {
+            fieldURI.appendTo(buffer);
+        } else {
+            fieldURI.appendValue(buffer, itemType, value);
+        }
         writer.write(buffer.toString());
+
+        if (itemType != null) {
+            writer.write("</t:");
+            writer.write(action);
+            writer.write(itemType);
+            writer.write("Field>");
+        }
     }
 }

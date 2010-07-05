@@ -22,9 +22,9 @@ package davmail.exchange.ews;
  * Create Item method.
  */
 public class CreateItemMethod extends EWSMethod {
-      public CreateItemMethod(FolderId parentFolderId, EWSMethod.Item item) {
-        super("Folder", "CreateFolder");
-        this.parentFolderId = parentFolderId;
+      public CreateItemMethod(FolderId savedItemFolderId, EWSMethod.Item item) {
+        super("Item", "CreateItem");
+        this.savedItemFolderId = savedItemFolderId;
         this.item = item;
     }
 }
