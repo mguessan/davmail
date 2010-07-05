@@ -21,6 +21,7 @@ package davmail.imap;
 import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
+import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -126,6 +127,7 @@ public class TestImap extends AbstractDavMailTestCase {
     }
 
     public void testCreateMessage() throws IOException, MessagingException {
+        
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", "test@test.local");
         mimeMessage.setText("Test message");
@@ -133,7 +135,7 @@ public class TestImap extends AbstractDavMailTestCase {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
         byte[] content = baos.toByteArray();
-        writeLine(". APPEND testfolder (\\Draft) {" + content.length + "}");
+        writeLine(". APPEND testfolder (\\Draft) {" + content.length + '}');
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
         assertEquals(". OK APPEND completed", readFullAnswer("."));

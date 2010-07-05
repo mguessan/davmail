@@ -161,6 +161,11 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
+        String bcc = properties.get("bcc");
+        // Exchange 2007 is unable to handle bcc field on create
+        if (bcc != null) {
+            properties.remove("bcc");
+        }
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
             // need to force draft flag to false
@@ -173,7 +178,15 @@ public class EwsExchangeSession extends ExchangeSession {
         item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);
-        // TODO: do we need to update message after to force some properties ?
+
+        if (bcc != null) {
+            ItemId itemId = new ItemId(createItemMethod.getResponseItem().get("ItemId"), createItemMethod.getResponseItem().get("ChangeKey"));
+            properties.put("bcc", bcc);
+            properties.remove("draft");
+            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, itemId, buildProperties(properties));
+            executeMethod(updateItemMethod);
+        }
+
     }
 
     @Override

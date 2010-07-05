@@ -57,6 +57,7 @@ public class ExtendedFieldURI implements FieldURI {
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyName = propertyName;
+        this.propertyType = PropertyType.String;
     }
 
     public String getPropertyTag() {
@@ -75,14 +76,15 @@ public class ExtendedFieldURI implements FieldURI {
             buffer.append("PropertySetId=\"").append(propertySetId).append("\" ");
         }
         if (propertyName != null) {
-            buffer.append("propertyName=\"").append(propertyName).append("\" ");
+            buffer.append("PropertyName=\"").append(propertyName).append("\" ");
         }
         if (propertyId != 0) {
             buffer.append("PropertyId=\"").append(String.valueOf(propertyId)).append("\" ");
         }
         if (propertyType != null) {
-            buffer.append("PropertyType=\"").append(propertyType.toString()).append("\"/>");
+            buffer.append("PropertyType=\"").append(propertyType.toString()).append("\" ");
         }
+        buffer.append("/>");
     }
 
     public void appendValue(StringBuilder buffer, String itemType, String value) {
