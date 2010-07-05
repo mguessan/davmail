@@ -22,9 +22,9 @@ package davmail.exchange.ews;
  * Delete Item method.
  */
 public class DeleteItemMethod extends EWSMethod {
-    public DeleteItemMethod(FolderId folderId, ItemId itemId) {
+    public DeleteItemMethod(ItemId itemId, DeleteType deleteType) {
         super("Item", "DeleteItem");
-        this.folderId = folderId;
+        addMethodOption(deleteType);
         this.itemId = itemId;
     }
 

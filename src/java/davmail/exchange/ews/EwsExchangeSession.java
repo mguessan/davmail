@@ -18,21 +18,16 @@
  */
 package davmail.exchange.ews;
 
-import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
-import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -41,7 +36,6 @@ import java.io.InputStreamReader;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * EWS Exchange adapter.
@@ -170,26 +164,28 @@ public class EwsExchangeSession extends ExchangeSession {
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
             // need to force draft flag to false
-            fieldUpdates.add(Field.createFieldUpdate("messageFlags", "0"));
+            if (properties.containsKey("read")) {
+                fieldUpdates.add(Field.createFieldUpdate("messageFlags", "1"));
+            } else {
+                fieldUpdates.add(Field.createFieldUpdate("messageFlags", "0"));
+            }
         }
         item.setFieldUpdates(fieldUpdates);
-        CreateItemMethod createItemMethod = new CreateItemMethod(getFolderId(folderPath), item);
-        createItemMethod.messageDisposition = MessageDisposition.SaveOnly;
+        CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);
         // TODO: do we need to update message after to force some properties ?
     }
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        UpdateItemMethod updateItemMethod = new UpdateItemMethod(ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
-        updateItemMethod.messageDisposition = MessageDisposition.SaveOnly;
+        UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
         executeMethod(updateItemMethod);
     }
 
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
-        throw new UnsupportedOperationException();
-
+        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(((EwsExchangeSession.Message) message).itemId, DeleteType.HardDelete);
+        executeMethod(deleteItemMethod);
     }
 
     @Override
@@ -229,7 +225,7 @@ public class EwsExchangeSession extends ExchangeSession {
         message.read = response.getBoolean(Field.get("read").getResponseName());
         message.junk = response.getBoolean(Field.get("junk").getResponseName());
         message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
-        message.draft = "9".equals(response.get(Field.get("messageFlags").getResponseName()));
+        message.draft = "9".equals(response.get(Field.get("messageFlags").getResponseName())) || "8".equals(response.get(Field.get("messageFlags").getResponseName()));
         String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);

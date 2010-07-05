@@ -18,17 +18,15 @@
  */
 package davmail.exchange.ews;
 
-import java.util.Set;
-
 /**
- * Uµpdate Item method.
+ * DeleteItem disposal type.
  */
-public class UpdateItemMethod extends EWSMethod {
-    public UpdateItemMethod(MessageDisposition messageDisposition, ConflictResolution conflictResolution, ItemId itemId, Set<FieldUpdate> updates) {
-        super("Item", "UpdateItem");
-        this.itemId = itemId;
-        this.updates = updates;
-        addMethodOption(messageDisposition);
-        addMethodOption(conflictResolution);
+public class DeleteType extends AttributeOption {
+    private DeleteType(String value) {
+        super("DeleteType", value);
     }
+
+    public static final DeleteType HardDelete = new DeleteType("HardDelete");
+    public static final DeleteType SoftDelete = new DeleteType("SoftDelete");
+    public static final DeleteType MoveToDeletedItems = new DeleteType("MoveToDeletedItems");
 }

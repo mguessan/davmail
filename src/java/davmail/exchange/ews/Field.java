@@ -34,7 +34,7 @@ public class Field {
         FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("lastVerbExecuted", new ExtendedFieldURI(0x1081, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("read", new ExtendedFieldURI(0x0e69, ExtendedFieldURI.PropertyType.Boolean));
-        FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Long));
+        FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));

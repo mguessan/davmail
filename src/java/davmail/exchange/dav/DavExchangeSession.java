@@ -1069,7 +1069,7 @@ public class DavExchangeSession extends ExchangeSession {
         message.read = "1".equals(getPropertyIfExists(properties, "read"));
         message.junk = "1".equals(getPropertyIfExists(properties, "junk"));
         message.flagged = "2".equals(getPropertyIfExists(properties, "flagStatus"));
-        message.draft = "9".equals(getPropertyIfExists(properties, "messageFlags"));
+        message.draft = "9".equals(getPropertyIfExists(properties, "messageFlags")) || "8".equals(getPropertyIfExists(properties, "messageFlags"));
         String lastVerbExecuted = getPropertyIfExists(properties, "lastVerbExecuted");
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
@@ -1424,9 +1424,14 @@ public class DavExchangeSession extends ExchangeSession {
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName + ".EML");
         PropPatchMethod patchMethod;
+        List<DavConstants> davProperties = buildProperties(properties);
+        if (!properties.containsKey("read")) {
+            // force unread
+            davProperties.add(Field.createDavProperty("read", "0"));
+        }
         // create the message first as draft
         if (properties.containsKey("draft")) {
-            patchMethod = new PropPatchMethod(messageUrl, buildProperties(properties));
+            patchMethod = new PropPatchMethod(messageUrl, davProperties);
             try {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
@@ -1454,8 +1459,8 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         // add bcc and other properties
-        if (!properties.isEmpty()) {
-            patchMethod = new PropPatchMethod(messageUrl, buildProperties(properties));
+        if (!davProperties.isEmpty()) {
+            patchMethod = new PropPatchMethod(messageUrl, davProperties);
             try {
                 // update message with blind carbon copy and other flags
                 int statusCode = httpClient.executeMethod(patchMethod);
@@ -1539,10 +1544,15 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(baos);
             String line;
+            boolean first = true;
             while ((line = reader.readLine()) != null) {
+                if (first) {
+                    first = false;
+                } else {
+                    outputStreamWriter.write((char) 13);
+                    outputStreamWriter.write((char) 10);
+                }
                 outputStreamWriter.write(line);
-                outputStreamWriter.write((char) 13);
-                outputStreamWriter.write((char) 10);
             }
             outputStreamWriter.flush();
         } finally {

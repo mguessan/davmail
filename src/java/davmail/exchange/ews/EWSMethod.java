@@ -49,8 +49,7 @@ public abstract class EWSMethod extends PostMethod {
     protected ItemId itemId;
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
-    protected MessageDisposition messageDisposition;
-    protected ConflictResolution conflictResolution;
+    protected Set<AttributeOption> methodOptions;
 
     protected Set<FieldUpdate> updates;
 
@@ -111,6 +110,13 @@ public abstract class EWSMethod extends PostMethod {
             additionalProperties = new HashSet<FieldURI>();
         }
         additionalProperties.add(additionalProperty);
+    }
+
+    protected void addMethodOption(AttributeOption attributeOption) {
+        if (methodOptions == null) {
+            methodOptions = new HashSet<AttributeOption>();
+        }
+        methodOptions.add(attributeOption);
     }
 
     protected void setSearchExpression(SearchExpression searchExpression) {
@@ -271,11 +277,10 @@ public abstract class EWSMethod extends PostMethod {
             if (deleteType != null) {
                 deleteType.write(writer);
             }
-            if (messageDisposition != null) {
-                messageDisposition.write(writer);
-            }
-            if (conflictResolution != null) {
-                conflictResolution.write(writer);
+            if (methodOptions != null) {
+                for (AttributeOption attributeOption : methodOptions) {
+                    attributeOption.write(writer);
+                }
             }
             writer.write(">");
             writeSoapBody(writer);
