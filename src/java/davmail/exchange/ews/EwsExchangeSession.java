@@ -183,7 +183,10 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId itemId = new ItemId(createItemMethod.getResponseItem().get("ItemId"), createItemMethod.getResponseItem().get("ChangeKey"));
             HashMap<String, String> localProperties = new HashMap<String, String>();
             localProperties.put("bcc", bcc);
-            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, itemId, buildProperties(localProperties));
+            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                    ConflictResolution.AlwaysOverwrite,
+                    CalendarItemCreateOrDeleteOperation.SendToNone,
+                    itemId, buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
 
@@ -191,7 +194,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
+        UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                ConflictResolution.AlwaysOverwrite,
+                CalendarItemCreateOrDeleteOperation.SendToNone,
+                ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
         executeMethod(updateItemMethod);
     }
 
@@ -588,7 +594,8 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
-        throw new UnsupportedOperationException();
+        CopyItemMethod copyItemMethod = new CopyItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
+        executeMethod(copyItemMethod);
     }
 
     /**

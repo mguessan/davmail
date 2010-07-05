@@ -300,9 +300,9 @@ public abstract class EWSMethod extends PostMethod {
         startChanges(writer);
         writeShape(writer);
         writeRestriction(writer);
-        writeItemId(writer);
         writeParentFolderId(writer);
         writeToFolderId(writer);
+        writeItemId(writer);
         writeFolderId(writer);
         writeSavedItemFolderId(writer);
         writeItem(writer);

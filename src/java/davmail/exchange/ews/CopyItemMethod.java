@@ -18,20 +18,13 @@
  */
 package davmail.exchange.ews;
 
-import java.util.Set;
-
 /**
- * Uµpdate Item method.
+ * Copy item to another folder.
  */
-public class UpdateItemMethod extends EWSMethod {
-    public UpdateItemMethod(MessageDisposition messageDisposition, ConflictResolution conflictResolution,
-                            CalendarItemCreateOrDeleteOperation calendarItemCreateOrDeleteOperation,
-                            ItemId itemId, Set<FieldUpdate> updates) {
-        super("Item", "UpdateItem");
+public class CopyItemMethod extends EWSMethod {
+    public CopyItemMethod(ItemId itemId, FolderId toFolderId) {
+        super("Item", "CopyItem");
         this.itemId = itemId;
-        this.updates = updates;
-        addMethodOption(messageDisposition);
-        addMethodOption(conflictResolution);
-        addMethodOption(calendarItemCreateOrDeleteOperation);
+        this.toFolderId = toFolderId;
     }
 }

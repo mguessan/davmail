@@ -18,20 +18,15 @@
  */
 package davmail.exchange.ews;
 
-import java.util.Set;
-
 /**
- * Uµpdate Item method.
+ * Item update option.
  */
-public class UpdateItemMethod extends EWSMethod {
-    public UpdateItemMethod(MessageDisposition messageDisposition, ConflictResolution conflictResolution,
-                            CalendarItemCreateOrDeleteOperation calendarItemCreateOrDeleteOperation,
-                            ItemId itemId, Set<FieldUpdate> updates) {
-        super("Item", "UpdateItem");
-        this.itemId = itemId;
-        this.updates = updates;
-        addMethodOption(messageDisposition);
-        addMethodOption(conflictResolution);
-        addMethodOption(calendarItemCreateOrDeleteOperation);
+public class CalendarItemCreateOrDeleteOperation extends AttributeOption {
+     private CalendarItemCreateOrDeleteOperation(String value) {
+        super("SendMeetingInvitationsOrCancellations", value);
     }
+      
+    public static final CalendarItemCreateOrDeleteOperation SendToNone = new CalendarItemCreateOrDeleteOperation("SendToNone");
+    public static final CalendarItemCreateOrDeleteOperation SendOnlyToAll = new CalendarItemCreateOrDeleteOperation("SendOnlyToAll");
+    public static final CalendarItemCreateOrDeleteOperation SendToAllAndSaveCopy = new CalendarItemCreateOrDeleteOperation("SendToAllAndSaveCopy");
 }
