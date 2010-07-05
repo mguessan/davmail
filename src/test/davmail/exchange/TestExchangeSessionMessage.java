@@ -51,9 +51,22 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         assertFalse(message.draft);
         assertTrue(message.size > 0);
         assertFalse(message.deleted);
-        // TODO
         assertFalse(message.read);
         assertNotNull(message.date);
+    }
+
+    public void testFlagMessage() throws IOException, MessagingException {
+        ExchangeSession.Folder testFolder = session.getFolder("testfolder");
+        testFolder.loadMessages();
+        HashMap<String,String> properties = new HashMap<String,String>();
+        properties.put("flagged", "2");
+        session.updateMessage(message, properties);
+
+        // refresh folder
+        testFolder.loadMessages();
+        assertNotNull(testFolder.get(0));
+        assertTrue(testFolder.get(0).flagged);
+        assertEquals(message.getImapUid(), testFolder.get(0).getImapUid());
     }
 
     public void testGetContent() throws IOException, MessagingException {

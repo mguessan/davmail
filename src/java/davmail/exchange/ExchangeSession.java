@@ -541,6 +541,7 @@ public abstract class ExchangeSession {
     protected static final Set<String> IMAP_MESSAGE_ATTRIBUTES = new HashSet<String>();
 
     static {
+        IMAP_MESSAGE_ATTRIBUTES.add("permanenturl");
         IMAP_MESSAGE_ATTRIBUTES.add("uid");
         IMAP_MESSAGE_ATTRIBUTES.add("messageSize");
         IMAP_MESSAGE_ATTRIBUTES.add("imapUid");
@@ -1108,7 +1109,7 @@ public abstract class ExchangeSession {
         /**
          * Permanent uid (PR_SEARCH_KEY) to IMAP UID map.
          */
-        private final HashMap<String, Long> uidToImapUidMap = new HashMap<String, Long>();
+        private final HashMap<String, Long> permanentUrlToImapUidMap = new HashMap<String, Long>();
 
         /**
          * Get IMAP folder flags.
@@ -1156,16 +1157,16 @@ public abstract class ExchangeSession {
         protected void fixUids(MessageList messages) {
             boolean sortNeeded = false;
             for (Message message : messages) {
-                if (uidToImapUidMap.containsKey(message.getUid())) {
-                    long previousUid = uidToImapUidMap.get(message.getUid());
+                if (permanentUrlToImapUidMap.containsKey(message.permanentUrl)) {
+                    long previousUid = permanentUrlToImapUidMap.get(message.permanentUrl);
                     if (message.getImapUid() != previousUid) {
-                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message uid " + message.getUid());
+                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message " + message.permanentUrl);
                         message.setImapUid(previousUid);
                         sortNeeded = true;
                     }
                 } else {
                     // add message to uid map
-                    uidToImapUidMap.put(message.getUid(), message.getImapUid());
+                    permanentUrlToImapUidMap.put(message.permanentUrl, message.getImapUid());
                 }
             }
             if (sortNeeded) {

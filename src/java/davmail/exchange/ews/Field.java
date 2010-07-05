@@ -28,6 +28,8 @@ public class Field {
     protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
 
     static {
+        FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
+
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x300b, ExtendedFieldURI.PropertyType.Binary));
         FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));//PR_MESSAGE_FLAGS
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));

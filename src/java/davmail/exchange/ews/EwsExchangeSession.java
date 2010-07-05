@@ -238,6 +238,8 @@ public class EwsExchangeSession extends ExchangeSession {
         // get item id
         message.itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
 
+        message.permanentUrl = response.get(Field.get("permanenturl").getResponseName());
+
         message.size = response.getInt(Field.get("messageSize").getResponseName());
         message.uid = response.get(Field.get("uid").getResponseName());
         message.imapUid = response.getLong(Field.get("imapUid").getResponseName());
