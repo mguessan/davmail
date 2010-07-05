@@ -18,22 +18,30 @@
  */
 package davmail.exchange.ews;
 
+import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * EWS Exchange adapter.
@@ -173,7 +181,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        UpdateItemMethod updateItemMethod = new UpdateItemMethod(ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message)message).itemId, buildProperties(properties));
+        UpdateItemMethod updateItemMethod = new UpdateItemMethod(ConflictResolution.AlwaysOverwrite, ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
         updateItemMethod.messageDisposition = MessageDisposition.SaveOnly;
         executeMethod(updateItemMethod);
     }
@@ -190,9 +198,23 @@ public class EwsExchangeSession extends ExchangeSession {
 
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     protected BufferedReader getContentReader(ExchangeSession.Message message) throws IOException {
-        throw new UnsupportedOperationException();
+        byte[] content = getContent(message);
+        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    protected byte[] getContent(ExchangeSession.Message message) throws IOException {
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Message) message).itemId, true);
+        executeMethod(getItemMethod);
+        return getItemMethod.getMimeContent();
     }
 
     protected Message buildMessage(EWSMethod.Item response) throws URIException {

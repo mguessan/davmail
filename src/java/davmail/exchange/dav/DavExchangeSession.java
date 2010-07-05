@@ -1533,6 +1533,32 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    protected byte[] getContent(Message message) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        BufferedReader reader = getContentReader(message);
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(baos);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                outputStreamWriter.write(line);
+                outputStreamWriter.write((char) 13);
+                outputStreamWriter.write((char) 10);
+            }
+            outputStreamWriter.flush();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                LOGGER.warn("Error closing message input stream", e);
+            }
+        }
+        return baos.toByteArray();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     protected BufferedReader getContentReader(Message message) throws IOException {
         BufferedReader reader;
         try {

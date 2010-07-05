@@ -503,13 +503,22 @@ public abstract class ExchangeSession {
     public abstract void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException;
 
     /**
-     * Create message MIME body reader;
+     * Create message MIME body reader.
      *
      * @param message Exchange message
      * @return message body reader
      * @throws IOException on error
      */
     protected abstract BufferedReader getContentReader(Message message) throws IOException;
+
+    /**
+     * Get raw MIME message content
+     *
+     * @param message Exchange message
+     * @return message body
+     * @throws IOException on error
+     */
+    protected abstract byte[] getContent(Message message) throws IOException;
 
     protected static final Set<String> POP_MESSAGE_ATTRIBUTES = new HashSet<String>();
 
@@ -653,7 +662,7 @@ public abstract class ExchangeSession {
 
         public boolean isEmpty() {
             boolean isEmpty = true;
-            for (Condition condition: conditions) {
+            for (Condition condition : conditions) {
                 if (!condition.isEmpty()) {
                     isEmpty = false;
                     break;
@@ -1378,6 +1387,7 @@ public abstract class ExchangeSession {
          * @param os        output stream
          * @param doubleDot replace '.' lines with '..' (POP protocol)
          * @throws IOException on error
+         * @deprecated move to byte array handling instead
          */
         public void write(OutputStream os, boolean doubleDot) throws IOException {
             BufferedReader reader = getContentReader(this);
@@ -1432,13 +1442,10 @@ public abstract class ExchangeSession {
                     mimeMessage = messageList.cachedMimeMessage;
                     LOGGER.debug("Got message content for " + imapUid + " from cache");
                 } else {
-                    // load message
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    write(baos, false);
                     // load and parse message
-                    mimeBody = new SharedByteArrayInputStream(baos.toByteArray());
+                    mimeBody = new SharedByteArrayInputStream(getContent(this));
                     mimeMessage = new MimeMessage(null, mimeBody);
-                    LOGGER.debug("Downloaded message content for " + imapUid + " (" + baos.size() + ')');
+                    LOGGER.debug("Downloaded message content for " + imapUid + " (" + mimeBody.available() + ')');
                 }
             }
         }
