@@ -24,6 +24,9 @@ import org.apache.log4j.Level;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -95,5 +98,23 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
     }
+
+    public void testCreateDateReceivedMessage() throws MessagingException, IOException {
+        MimeMessage mimeMessage = createMimeMessage();
+        String messageName = UUID.randomUUID().toString();
+        HashMap<String, String> properties = new HashMap<String, String>();
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MONTH, -1);
+        properties.put("datereceived", dateFormatter.format(cal.getTime()));
+        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+        assertNotNull(messageList);
+        assertEquals(properties.get("datereceived"), messageList.get(0).date);
+    }
+
 
 }

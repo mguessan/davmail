@@ -181,9 +181,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
         if (bcc != null) {
             ItemId itemId = new ItemId(createItemMethod.getResponseItem().get("ItemId"), createItemMethod.getResponseItem().get("ChangeKey"));
-            properties.put("bcc", bcc);
-            properties.remove("draft");
-            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, itemId, buildProperties(properties));
+            HashMap<String, String> localProperties = new HashMap<String, String>();
+            localProperties.put("bcc", bcc);
+            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly, ConflictResolution.AlwaysOverwrite, itemId, buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
 
