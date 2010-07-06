@@ -18,26 +18,16 @@
  */
 package davmail.exchange;
 
-import davmail.exchange.dav.DavExchangeSession;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Test ExchangeSession contact features.
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
-
-    @Override
-    public void setUp() throws IOException {
-        super.setUp();
-        // recreate empty folder
-        session.deleteFolder("testcontactfolder");
-        session.createContactFolder("testcontactfolder");
-    }
-
-
+    static String itemName;
+    /*
     public void testSearchContacts() throws IOException {
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null);
         for (ExchangeSession.Contact contact : contacts) {
@@ -61,16 +51,36 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.equals("uid", contact.get("uid"))));
         }
+    } */
+
+    public void testCreateFolder() throws IOException {
+        // recreate empty folder
+        session.deleteFolder("testcontactfolder");
+        session.createContactFolder("testcontactfolder");
     }
 
     public void testCreateContact() throws IOException {
+        itemName = UUID.randomUUID().toString() + ".vcf";
         VCardWriter vCardWriter = new VCardWriter();
         vCardWriter.startCard();
-        vCardWriter.appendProperty("N", "surname", "given name", "honorific prefix", "honorific suffix");
-        vCardWriter.appendProperty("FN", "test name");
+        vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
+        vCardWriter.appendProperty("FN", "common name");
+        vCardWriter.appendProperty("NICKNAME", "nickname");
         vCardWriter.endCard();
 
-        session.createOrUpdateContact("testcontactfolder", UUID.randomUUID().toString() + ".vcf", vCardWriter.toString(), null, null);
+        session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
 
+    }
+
+    public void testGetContact() throws IOException {
+        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        assertEquals("common name", contact.get("cn"));
+        assertEquals("sn", contact.get("sn"));
+        assertEquals("givenName", contact.get("givenName"));
+        assertEquals("middlename", contact.get("middlename"));
+        assertEquals("personaltitle", contact.get("personaltitle"));
+        assertEquals("namesuffix", contact.get("namesuffix"));
+        assertNotNull("lastmodified");
+        assertEquals("nickname", contact.get("nickname"));
     }
 }

@@ -20,10 +20,7 @@ package davmail.exchange;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * VCARD reader.
@@ -35,7 +32,7 @@ public class VCardReader extends ICSBufferedReader {
     public class Property {
         protected String key;
         protected Map<String, Set<String>> params;
-        protected String value;
+        protected List<String> values;
 
         /**
          * Property key, without optional parameters (e.g. TEL).
@@ -52,17 +49,20 @@ public class VCardReader extends ICSBufferedReader {
          * @return value
          */
         public String getValue() {
-            return value;
+            if (values == null || values.size() == 0) {
+                return null;
+            } else {
+                return values.get(0);
+            }
         }
 
         /**
-         * Property values, split on ;.
+         * Property values.
          *
          * @return values
          */
-        public String[] getValues() {
-            // TODO: handle protected characters
-            return value.split(";");
+        public List<String> getValues() {
+            return values;
         }
 
         public boolean hasParam(String paramName, String paramValue) {
@@ -74,6 +74,13 @@ public class VCardReader extends ICSBufferedReader {
                 params = new HashMap<String, Set<String>>();
             }
             params.put(paramName, paramValues);
+        }
+
+        protected void addValue(String value) {
+            if (values == null) {
+                values = new ArrayList<String>();
+            }
+            values.add(value);
         }
     }
 
@@ -87,12 +94,12 @@ public class VCardReader extends ICSBufferedReader {
         super(in);
         String firstLine = readLine();
         if (firstLine == null || !"BEGIN:VCARD".equals(firstLine)) {
-            throw new IOException("Invalid VCard body: "+firstLine); 
+            throw new IOException("Invalid VCard body: " + firstLine);
         }
     }
 
     protected static enum State {
-        KEY, PARAM_NAME, PARAM_VALUE, VALUE
+        KEY, PARAM_NAME, PARAM_VALUE, VALUE, BACKSLASH
     }
 
     public Property readProperty() throws IOException {
@@ -138,9 +145,19 @@ public class VCardReader extends ICSBufferedReader {
                         paramValues.add(line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
+                } else if (state == State.VALUE) {
+                    if (currentChar == ';') {
+                        property.addValue(line.substring(startIndex, i));
+                        startIndex = i + 1;
+                    } else if (currentChar == '\\') {
+                        state = State.BACKSLASH;
+                    }
+                    // state == State.BACKSLASH
+                } else {
+                    state = State.VALUE;
                 }
             }
-            property.value = line.substring(startIndex);
+            property.addValue(line.substring(startIndex));
         }
         return property;
     }

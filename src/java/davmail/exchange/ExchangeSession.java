@@ -22,7 +22,6 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
-import davmail.exchange.dav.Field;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
@@ -31,7 +30,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
-import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
@@ -2626,6 +2624,8 @@ public abstract class ExchangeSession {
         }
     }
 
+    protected static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
+
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
         Map<String, String> properties = new HashMap<String, String>();
@@ -2640,13 +2640,12 @@ public abstract class ExchangeSession {
                 properties.put("fileas", property.getValue());
 
             } else if ("N".equals(property.getKey())) {
-                String[] values = property.getValues();
-                if (values.length > 0) {
-                    properties.put("sn", values[0]);
+                List<String> values = property.getValues();
+                for (int i = 0; i < values.size() && i < VCARD_N_PROPERTIES.length; i++) {
+                    properties.put(VCARD_N_PROPERTIES[i], values.get(i));
                 }
-                if (values.length > 1) {
-                    properties.put("givenName", values[1]);
-                }
+            } else if ("NICKNAME".equals(property.getKey())) {
+                properties.put("nickname", property.getValue());
             } else if ("TEL".equals(property.getKey())) {
                 if (property.hasParam("TYPE", "cell")) {
                     properties.put("mobile", property.getValue());
