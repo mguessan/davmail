@@ -85,6 +85,10 @@ public class VCardReader extends ICSBufferedReader {
      */
     public VCardReader(Reader in) throws IOException {
         super(in);
+        String firstLine = readLine();
+        if (firstLine == null || !"BEGIN:VCARD".equals(firstLine)) {
+            throw new IOException("Invalid VCard body: "+firstLine); 
+        }
     }
 
     protected static enum State {

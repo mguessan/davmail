@@ -21,16 +21,22 @@ package davmail.exchange;
 import davmail.exchange.dav.DavExchangeSession;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Test ExchangeSession contact features.
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
+
+    @Override
+    public void setUp() throws IOException {
+        super.setUp();
+        // recreate empty folder
+        session.deleteFolder("testcontactfolder");
+        session.createContactFolder("testcontactfolder");
+    }
+
 
     public void testSearchContacts() throws IOException {
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null);
@@ -55,5 +61,16 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.equals("uid", contact.get("uid"))));
         }
+    }
+
+    public void testCreateContact() throws IOException {
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("N", "surname", "given name", "honorific prefix", "honorific suffix");
+        vCardWriter.appendProperty("FN", "test name");
+        vCardWriter.endCard();
+
+        session.createOrUpdateContact("testcontactfolder", UUID.randomUUID().toString() + ".vcf", vCardWriter.toString(), null, null);
+
     }
 }

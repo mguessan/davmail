@@ -583,38 +583,10 @@ public class DavExchangeSession extends ExchangeSession {
 
         protected List<DavConstants> buildProperties() throws IOException {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-            list.add(Field.createDavProperty("contentclass", contentClass));
-            list.add(Field.createDavProperty("outlookmessageclass", "IPM.Contact"));
-
-            ICSBufferedReader reader = new ICSBufferedReader(new StringReader(itemBody));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                int index = line.indexOf(':');
-                if (index >= 0) {
-                    String key = line.substring(0, index);
-                    String value = line.substring(index + 1);
-                    if ("FN".equals(key)) {
-                        list.add(Field.createDavProperty("cn", value));
-                        list.add(Field.createDavProperty("subject", value));
-                        list.add(Field.createDavProperty("fileas", value));
-
-                    } else if ("N".equals(key)) {
-                        String[] values = value.split(";");
-                        if (values.length > 0) {
-                            list.add(Field.createDavProperty("sn", values[0]));
-                        }
-                        if (values.length > 1) {
-                            list.add(Field.createDavProperty("givenName", values[1]));
-                        }
-                    } else if ("TEL;TYPE=cell".equals(key)) {
-                        list.add(Field.createDavProperty("mobile", value));
-                    } else if ("TEL;TYPE=work".equals(key)) {
-                        list.add(Field.createDavProperty("telephoneNumber", value));
-                    } else if ("TEL;TYPE=home".equals(key)) {
-                        list.add(Field.createDavProperty("homePhone", value));
-                    }
-                }
+            for (Map.Entry<String, String> entry : entrySet()) {
+                list.add(Field.createDavProperty(entry.getKey(), entry.getValue()));
             }
+
             return list;
         }
 
@@ -1260,7 +1232,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        return new Event(folderPath, itemName, contentClass, icsBody, etag, noneMatch).createOrUpdate();
+        return new Event(getFolderPath(folderPath), itemName, contentClass, icsBody, etag, noneMatch).createOrUpdate();
     }
 
     /**
@@ -1374,7 +1346,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        return new Contact(folderPath, itemName, properties, etag, noneMatch).createOrUpdate();
+        return new Contact(getFolderPath(folderPath), itemName, properties, etag, noneMatch).createOrUpdate();
     }
 
     protected List<DavConstants> buildProperties(Map<String, String> properties) {

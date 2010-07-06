@@ -33,6 +33,8 @@ public class VCardWriter extends ICSBufferedWriter {
             write(":");
             if (propertyValue.indexOf('\n') >= 0) {
                 writeLine(propertyValue.replaceAll("\\n", "\\\\n"));
+            } else {
+                writeLine(propertyValue);
             }
         }
     }
