@@ -43,7 +43,9 @@ import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 
+import javax.mail.BodyPart;
 import javax.mail.MessagingException;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
@@ -1180,6 +1182,45 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         return item;
+    }
+
+    @Override
+    public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
+        ContactPhoto contactPhoto;
+        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.permanentUrl));
+        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+        method.setRequestHeader("Translate", "f");
+        method.setRequestHeader("Accept-Encoding", "gzip");
+
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+            InputStream inputStream;
+            if (isGzipEncoded(method)) {
+                inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
+            } else {
+                inputStream = method.getResponseBodyAsStream();
+            }
+            MimeMessage mimeMessage = new MimeMessage(null, inputStream);
+            BodyPart photoBodyPart = ((MimeMultipart) mimeMessage.getContent()).getBodyPart(1);
+            contactPhoto = new ContactPhoto();
+            String contentType = photoBodyPart.getContentType();
+            contactPhoto.type = contentType.substring(0, contentType.indexOf(';'));
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            InputStream partInputStream = ((MimeBodyPart) photoBodyPart).getInputStream();
+            byte[] bytes = new byte[8192];
+            int length;
+            while ((length = partInputStream.read(bytes)) > 0) {
+                baos.write(bytes, 0, length);
+            }
+            contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
+        } catch (MessagingException e) {
+            throw new IOException(e);
+        } finally {
+            method.releaseConnection();
+        }
+
+        return contactPhoto;
     }
 
     @Override

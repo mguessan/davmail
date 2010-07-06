@@ -1593,7 +1593,7 @@ public abstract class ExchangeSession {
     public abstract static class Item extends HashMap<String, String> {
         protected String folderPath;
         protected String itemName;
-        protected String permanentUrl;
+        public String permanentUrl;
         /**
          * Display name.
          */
@@ -1685,9 +1685,9 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Calendar event object
+     * Contact object
      */
-    public abstract static class Contact extends Item {
+    public abstract class Contact extends Item {
 
         /**
          * @inheritDoc
@@ -1790,6 +1790,15 @@ public abstract class ExchangeSession {
             writer.appendProperty("X-SPOUSE", get("spousecn"));
 
             writer.appendProperty("REV", get("lastmodified"));
+
+            if ("1".equals(get("haspicture"))) {
+                try {
+                    ContactPhoto contactPhoto = getContactPhoto(this);
+                    writer.appendProperty("PHOTO;TYPE=\"" + contactPhoto.type + "\";ENCODING=\"b\"", contactPhoto.content);
+                } catch (IOException e) {
+                    LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
+                }
+            }
 
             writer.endCard();
             return writer.toString();
@@ -2549,6 +2558,20 @@ public abstract class ExchangeSession {
      */
     public abstract Item getItem(String folderPath, String itemName) throws IOException;
 
+    public class ContactPhoto {
+        public String type;
+        public String content;
+    }
+
+    /**
+     * Retrieve contact photo attached to contact
+     * @param contact address book contact
+     * @return contact photo
+     * @throws IOException on error
+     */
+    public abstract ContactPhoto getContactPhoto(Contact contact) throws IOException;
+
+
     /**
      * Delete event named eventName in folder
      *
@@ -2651,13 +2674,13 @@ public abstract class ExchangeSession {
             } else if ("NICKNAME".equals(property.getKey())) {
                 properties.put("nickname", property.getValue());
             } else if ("TEL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "cell")) {
+                if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "CELL")) {
                     properties.put("mobile", property.getValue());
                 }
-                if (property.hasParam("TYPE", "work")) {
+                if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "WORK")) {
                     properties.put("telephoneNumber", property.getValue());
                 }
-                if (property.hasParam("TYPE", "home")) {
+                if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "HOME")) {
                     properties.put("homePhone", property.getValue());
                 }
                 if (property.hasParam("TYPE", "fax")) {
@@ -3015,6 +3038,8 @@ public abstract class ExchangeSession {
 
     static {
         CONTACT_ATTRIBUTES.add("imapUid");
+        CONTACT_ATTRIBUTES.add("etag");
+
         CONTACT_ATTRIBUTES.add("extensionattribute1");
         CONTACT_ATTRIBUTES.add("extensionattribute2");
         CONTACT_ATTRIBUTES.add("extensionattribute3");
@@ -3066,7 +3091,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("otherpostalcode");
         CONTACT_ATTRIBUTES.add("othercountry");
         CONTACT_ATTRIBUTES.add("othercity");
-
+        CONTACT_ATTRIBUTES.add("haspicture");
     }
 
     /**

@@ -243,6 +243,8 @@ public class Field {
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
         createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE=2, SENSITIVITY_NONE = 0
 
+        createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture"); // True/False
+
         // OWA settings
         createField("messageclass", 0x001a, PropertyType.String);
         createField("roamingxmlstream", 0x7c08, PropertyType.Binary);
