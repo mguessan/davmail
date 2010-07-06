@@ -73,9 +73,10 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("TEL;TYPE=fax", "facsimiletelephonenumber");
         vCardWriter.appendProperty("TEL;TYPE=pager", "pager");
 
-        vCardWriter.appendProperty("ADR;TYPE=home", null, null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry");
+        vCardWriter.appendProperty("ADR;TYPE=home", "homepostofficebox", null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry");
         vCardWriter.appendProperty("ADR;TYPE=work", "postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co");
-        
+        vCardWriter.appendProperty("ADR;TYPE=other", "otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry");
+
         vCardWriter.appendProperty("EMAIL;TYPE=work", "email1@local.net");
         vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
         vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
@@ -119,6 +120,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("facsimiletelephonenumber", contact.get("facsimiletelephonenumber"));
         assertEquals("pager", contact.get("pager"));
 
+        assertEquals("homepostofficebox", contact.get("homepostofficebox"));
         assertEquals("homeStreet", contact.get("homeStreet"));
         assertEquals("homeCity", contact.get("homeCity"));
         assertEquals("homeState", contact.get("homeState"));
@@ -152,5 +154,12 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("profession", contact.get("profession"));
         assertEquals("im", contact.get("im"));
         //assertEquals("bday", contact.get("bday"));
+
+        assertEquals("otherpostofficebox", contact.get("otherpostofficebox"));
+        assertEquals("otherstreet", contact.get("otherstreet"));
+        assertEquals("othercity", contact.get("othercity"));
+        assertEquals("otherstate", contact.get("otherstate"));
+        assertEquals("otherpostalcode", contact.get("otherpostalcode"));
+        assertEquals("othercountry", contact.get("othercountry"));
     }
 }

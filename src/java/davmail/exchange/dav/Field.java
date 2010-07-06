@@ -200,8 +200,10 @@ public class Field {
         createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1EmailAddress
         createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2EmailAddress
         createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3EmailAddress
+
         createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
         createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
+        createField(URN_SCHEMAS_CONTACTS, "homepostofficebox"); // PR_HOME_ADDRESS_POST_OFFICE_BOX 0x3A5E String
         createField(URN_SCHEMAS_CONTACTS, "homeCity"); // PR_HOME_ADDRESS_CITY 0x3A59 String
         createField(URN_SCHEMAS_CONTACTS, "homeCountry"); // PR_HOME_ADDRESS_COUNTRY 0x3A5A String
         createField(URN_SCHEMAS_CONTACTS, "homePhone"); // PR_HOME_TELEPHONE_NUMBER 0x3A09 String
@@ -229,6 +231,13 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
         createField("description", URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", SCHEMAS_MAPI, "InstMsg"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
+
+        createField(URN_SCHEMAS_CONTACTS, "otherstreet"); // PR_OTHER_ADDRESS_STREET 0x3A63 String
+        createField(URN_SCHEMAS_CONTACTS, "otherstate"); // PR_OTHER_ADDRESS_STATE_OR_PROVINCE 0x3A62 String
+        createField(URN_SCHEMAS_CONTACTS, "otherpostofficebox"); // PR_OTHER_ADDRESS_POST_OFFICE_BOX 0x3A64 String
+        createField(URN_SCHEMAS_CONTACTS, "otherpostalcode"); // PR_OTHER_ADDRESS_POSTAL_CODE 0x3A61 String
+        createField(URN_SCHEMAS_CONTACTS, "othercountry"); // PR_OTHER_ADDRESS_COUNTRY 0x3A60 String
+        createField(URN_SCHEMAS_CONTACTS, "othercity"); // PR_OTHER_ADDRESS_CITY 0x3A5F String
 
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False

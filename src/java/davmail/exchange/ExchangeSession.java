@@ -1759,9 +1759,11 @@ public abstract class ExchangeSession {
             // the street address; the locality (e.g., city); the region (e.g., state or province);
             // the postal code; the country name
             writer.appendProperty("ADR;TYPE=home",
-                    null, null, get("homeStreet"), get("homeCity"), get("homeState"), get("homePostalCode"), get("homeCountry"));
+                    get("homepostofficebox"), null, get("homeStreet"), get("homeCity"), get("homeState"), get("homePostalCode"), get("homeCountry"));
             writer.appendProperty("ADR;TYPE=work",
                     get("postofficebox"), get("roomnumber"), get("street"), get("l"), get("st"), get("postalcode"), get("co"));
+            writer.appendProperty("ADR;TYPE=other",
+                    get("otherpostofficebox"), null, get("otherstreet"), get("othercity"), get("otherstate"), get("otherpostalcode"), get("othercountry"));
 
             writer.appendProperty("EMAIL;TYPE=work", get("email1"));
             writer.appendProperty("EMAIL;TYPE=home", get("email2"));
@@ -2625,8 +2627,9 @@ public abstract class ExchangeSession {
     }
 
     protected static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
-    protected static final String[] VCARD_ADR_HOME_PROPERTIES = {null, null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
+    protected static final String[] VCARD_ADR_HOME_PROPERTIES = {"homepostofficebox", null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
     protected static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
+    protected static final String[] VCARD_ADR_OTHER_PROPERTIES = {"otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry"};
     protected static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
 
     protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
@@ -2676,6 +2679,8 @@ public abstract class ExchangeSession {
                     convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
                 } else if (property.hasParam("TYPE", "work")) {
                     convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
+                } else if (property.hasParam("TYPE", "other")) {
+                    convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
                 }
             } else if ("EMAIL".equals(property.getKey())) {
                 if (property.hasParam("TYPE", "work")) {
@@ -3043,6 +3048,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("homePostalCode");
         CONTACT_ATTRIBUTES.add("homeState");
         CONTACT_ATTRIBUTES.add("homeStreet");
+        CONTACT_ATTRIBUTES.add("homepostofficebox");
         CONTACT_ATTRIBUTES.add("l");
         CONTACT_ATTRIBUTES.add("manager");
         CONTACT_ATTRIBUTES.add("mobile");
@@ -3066,6 +3072,13 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("im");
         CONTACT_ATTRIBUTES.add("middlename");
         CONTACT_ATTRIBUTES.add("lastmodified");
+        CONTACT_ATTRIBUTES.add("otherstreet");
+        CONTACT_ATTRIBUTES.add("otherstate");
+        CONTACT_ATTRIBUTES.add("otherpostofficebox");
+        CONTACT_ATTRIBUTES.add("otherpostalcode");
+        CONTACT_ATTRIBUTES.add("othercountry");
+        CONTACT_ATTRIBUTES.add("othercity");
+
     }
 
     /**
