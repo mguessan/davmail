@@ -30,7 +30,8 @@ public class Field {
     static {
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
 
-        FIELD_MAP.put("uid", new ExtendedFieldURI(0x300b, ExtendedFieldURI.PropertyType.Binary));
+        // use PR_RECORD_KEY as unique key 
+        FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
         FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));//PR_MESSAGE_FLAGS
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("flagStatus", new ExtendedFieldURI(0x1090, ExtendedFieldURI.PropertyType.Integer));
@@ -45,7 +46,13 @@ public class Field {
         FIELD_MAP.put("datereceived", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));// PR_MESSAGE_DELIVERY_TIME
         FIELD_MAP.put("bcc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "bcc"));
 
+        // folder
         FIELD_MAP.put("folderclass", new ExtendedFieldURI(0x3613, ExtendedFieldURI.PropertyType.String));
+
+        // contact
+
+        FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
+        
     }
 
     /**

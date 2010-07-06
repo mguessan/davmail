@@ -112,8 +112,8 @@ public class Field {
 
         createField(DAV, "isfolder");
 
-        // item id, do not use DAV:uid, see http://support.microsoft.com/kb/320749
-        createField("uid", 0x300b, PropertyType.Binary); // PR_SEARCH_KEY
+        // item uid, do not use as search parameter, see http://support.microsoft.com/kb/320749
+        createField(DAV, "uid"); // based on PR_RECORD_KEY
 
         // POP and IMAP message
         createField("messageSize", 0x0e08, PropertyType.Long);//PR_MESSAGE_SIZE
@@ -212,7 +212,7 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "mobile"); // PR_MOBILE_TELEPHONE_NUMBER 0x3A1C String
         createField(URN_SCHEMAS_CONTACTS, "namesuffix"); // PR_GENERATION 0x3A05 String
         createField(URN_SCHEMAS_CONTACTS, "nickname"); // PR_NICKNAME 0x3A4F String
-        createField(URN_SCHEMAS_CONTACTS, "o"); // PR_OTHER_ADDRESS_CITY 0x3A5F String
+        createField(URN_SCHEMAS_CONTACTS, "o"); // PR_COMPANY_NAME 0x3A16 String
         createField(URN_SCHEMAS_CONTACTS, "pager"); // PR_PAGER_TELEPHONE_NUMBER 0x3A21 String
         createField(URN_SCHEMAS_CONTACTS, "personaltitle"); // PR_DISPLAY_NAME_PREFIX 0x3A45 String
         createField(URN_SCHEMAS_CONTACTS, "postalcode"); // workAddressPostalCode DistinguishedPropertySetType.Address/0x00008048/String
@@ -226,7 +226,7 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "street"); // workAddressStreet DistinguishedPropertySetType.Address/0x00008045/String
         createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08 String
         createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
-        createField(URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
+        createField("description", URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", DistinguishedPropertySetType.Address, 0x8062, "im"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
 
         // contact private flags
@@ -256,6 +256,9 @@ public class Field {
             field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64");
         } else {
             field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name);
+        }
+        if (propertyType == PropertyType.Integer || propertyType == PropertyType.Long) {
+            field.isIntValue = true;
         }
         fieldMap.put(field.alias, field);
     }
@@ -298,6 +301,7 @@ public class Field {
     protected final String requestPropertyString;
     protected final DavPropertyName responsePropertyName;
     protected final String cast;
+    protected boolean isIntValue;
 
 
     public Field(Namespace namespace, String name) {
@@ -328,6 +332,10 @@ public class Field {
 
     public String getAlias() {
         return alias;
+    }
+
+    public boolean isIntValue() {
+        return isIntValue;
     }
 
     /**
