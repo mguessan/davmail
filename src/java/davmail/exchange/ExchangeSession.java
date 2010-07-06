@@ -1768,7 +1768,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("EMAIL;TYPE=other", get("email3"));
 
             writer.appendProperty("ORG", get("o"), get("department"));
-            writer.appendProperty("URL;WORK", get("businesshomepage"));
+            writer.appendProperty("URL;TYPE=work", get("businesshomepage"));
             writer.appendProperty("TITLE", get("title"));
             writer.appendProperty("NOTE", get("description"));
 
@@ -2627,6 +2627,7 @@ public abstract class ExchangeSession {
     protected static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
     protected static final String[] VCARD_ADR_HOME_PROPERTIES = {null, null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
     protected static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
+    protected static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
 
     protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
         for (int i = 0; i < values.size() && i < contactProperties.length; i++) {
@@ -2686,23 +2687,30 @@ public abstract class ExchangeSession {
                 if (property.hasParam("TYPE", "other")) {
                     properties.put("email3", property.getValue());
                 }
+            } else if ("ORG".equals(property.getKey())) {
+                convertContactProperties(properties, VCARD_ORG_PROPERTIES, property.getValues());
+            } else if ("URL".equals(property.getKey())) {
+                if (property.hasParam("TYPE", "work")) {
+                    properties.put("businesshomepage", property.getValue());
+                }
+            } else if ("TITLE".equals(property.getKey())) {
+                properties.put("title", property.getValue());
+            } else if ("NOTE".equals(property.getKey())) {
+                properties.put("description", property.getValue());
+            } else if ("CUSTOM1".equals(property.getKey())) {
+                properties.put("extensionattribute1", property.getValue());
+            } else if ("CUSTOM2".equals(property.getKey())) {
+                properties.put("extensionattribute2", property.getValue());
+            } else if ("CUSTOM3".equals(property.getKey())) {
+                properties.put("extensionattribute3", property.getValue());
+            } else if ("CUSTOM4".equals(property.getKey())) {
+                properties.put("extensionattribute4", property.getValue());
             }
             /*
 
 
-            writer.appendProperty("EMAIL;TYPE=work", get("email1"));
-            writer.appendProperty("EMAIL;TYPE=home", get("email2"));
-            writer.appendProperty("EMAIL;TYPE=other", get("email3"));
 
-            writer.appendProperty("ORG", get("o"), get("department"));
-            writer.appendProperty("URL;WORK", get("businesshomepage"));
-            writer.appendProperty("TITLE", get("title"));
-            writer.appendProperty("NOTE", get("description"));
 
-            writer.appendProperty("CUSTOM1", get("extensionattribute1"));
-            writer.appendProperty("CUSTOM2", get("extensionattribute2"));
-            writer.appendProperty("CUSTOM3", get("extensionattribute3"));
-            writer.appendProperty("CUSTOM4", get("extensionattribute4"));
 
             writer.appendProperty("ROLE", get("profession"));
             writer.appendProperty("NICKNAME", get("nickname"));

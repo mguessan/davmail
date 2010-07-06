@@ -66,7 +66,7 @@ public class VCardReader extends ICSBufferedReader {
         }
 
         public boolean hasParam(String paramName, String paramValue) {
-            return params.containsKey(paramName) && params.get(paramName).contains(paramValue);
+            return params != null && params.containsKey(paramName) && params.get(paramName).contains(paramValue);
         }
 
         protected void addParam(String paramName, Set<String> paramValues) {
@@ -152,7 +152,7 @@ public class VCardReader extends ICSBufferedReader {
                     } else if (currentChar == '\\') {
                         state = State.BACKSLASH;
                     }
-                    // state == State.BACKSLASH
+                // BACKSLASH state
                 } else {
                     state = State.VALUE;
                 }

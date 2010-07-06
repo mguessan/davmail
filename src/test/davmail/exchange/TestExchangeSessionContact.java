@@ -80,6 +80,17 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
         vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
 
+        vCardWriter.appendProperty("ORG", "o", "department");
+
+        vCardWriter.appendProperty("URL;TYPE=work", "http://local.net");
+        vCardWriter.appendProperty("TITLE", "title");
+        vCardWriter.appendProperty("NOTE", "description");
+
+        vCardWriter.appendProperty("CUSTOM1", "extensionattribute1");
+        vCardWriter.appendProperty("CUSTOM2", "extensionattribute2");
+        vCardWriter.appendProperty("CUSTOM3", "extensionattribute3");
+        vCardWriter.appendProperty("CUSTOM4", "extensionattribute4");
+
         vCardWriter.endCard();
 
         session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
@@ -120,5 +131,17 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("email1@local.net", contact.get("email1"));
         assertEquals("email2@local.net", contact.get("email2"));
         assertEquals("email3@local.net", contact.get("email3"));
+
+        assertEquals("o", contact.get("o"));
+        assertEquals("department", contact.get("department"));
+
+        assertEquals("http://local.net", contact.get("businesshomepage"));
+        assertEquals("title", contact.get("title"));
+        assertEquals("description", contact.get("description"));
+
+        assertEquals("extensionattribute1", contact.get("extensionattribute1"));
+        assertEquals("extensionattribute2", contact.get("extensionattribute2"));
+        assertEquals("extensionattribute3", contact.get("extensionattribute3"));
+        assertEquals("extensionattribute4", contact.get("extensionattribute4"));
     }
 }
