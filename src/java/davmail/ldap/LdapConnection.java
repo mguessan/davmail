@@ -29,9 +29,6 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -39,8 +36,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -103,6 +98,7 @@ public class LdapConnection extends AbstractConnection {
     static final HashMap<String, String> CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
+        CONTACT_ATTRIBUTE_MAP.put("imapUid", "uid");
         CONTACT_ATTRIBUTE_MAP.put("co", "countryname");
         CONTACT_ATTRIBUTE_MAP.put("extensionattribute1", "custom1");
         CONTACT_ATTRIBUTE_MAP.put("extensionattribute2", "custom2");
@@ -116,7 +112,7 @@ public class LdapConnection extends AbstractConnection {
         CONTACT_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
         CONTACT_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
         CONTACT_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
-        CONTACT_ATTRIBUTE_MAP.put("textdescription", "description");
+        CONTACT_ATTRIBUTE_MAP.put("description", "description");
         CONTACT_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
     }
 
@@ -227,21 +223,21 @@ public class LdapConnection extends AbstractConnection {
     static final HashMap<String, String> CONTACT_MAP = new HashMap<String, String>();
 
     static {
-        CONTACT_MAP.put("uid", "DAV:uid");
-        CONTACT_MAP.put("mail", "urn:schemas:contacts:email1");
-        CONTACT_MAP.put("displayname", "urn:schemas:contacts:cn");
-        CONTACT_MAP.put("cn", "urn:schemas:contacts:cn");
-        CONTACT_MAP.put("givenname", "urn:schemas:contacts:givenName");
-        CONTACT_MAP.put("sn", "urn:schemas:contacts:sn");
-        CONTACT_MAP.put("title", "urn:schemas:contacts:title");
-        CONTACT_MAP.put("company", "urn:schemas:contacts:o");
-        CONTACT_MAP.put("o", "urn:schemas:contacts:o");
-        CONTACT_MAP.put("l", "urn:schemas:contacts:l");
-        CONTACT_MAP.put("department", "urn:schemas:contacts:department");
-        CONTACT_MAP.put("apple-group-realname", "urn:schemas:contacts:department");
-        CONTACT_MAP.put("description", "urn:schemas:httpmail:textdescription");
-        CONTACT_MAP.put("mozillahomelocalityname", "urn:schemas:contacts:homeCity");
-        CONTACT_MAP.put("c", "urn:schemas:contacts:co");
+        CONTACT_MAP.put("uid", "imapUid");
+        CONTACT_MAP.put("mail", "email1");
+        CONTACT_MAP.put("displayname", "cn");
+        CONTACT_MAP.put("cn", "cn");
+        CONTACT_MAP.put("givenname", "givenName");
+        CONTACT_MAP.put("sn", "sn");
+        CONTACT_MAP.put("title", "title");
+        CONTACT_MAP.put("company", "o");
+        CONTACT_MAP.put("o", "o");
+        CONTACT_MAP.put("l", "l");
+        CONTACT_MAP.put("department", "department");
+        CONTACT_MAP.put("apple-group-realname", "department");
+        CONTACT_MAP.put("description", "description");
+        CONTACT_MAP.put("mozillahomelocalityname", "homeCity");
+        CONTACT_MAP.put("c", "c");
     }
 
     /**
@@ -1027,26 +1023,16 @@ public class LdapConnection extends AbstractConnection {
 
             ExchangeSession.Condition condition;
 
-            // convert hex uid to base64
-            String actualValue = value;
-            if ("uid".equals(contactAttributeName)) {
-                try {
-                    actualValue = StringUtil.hexToBase64(value);
-                } catch (DecoderException e) {
-                    // ignore, this is not an hex uid
-                }
-            }
-
             if (operator == LDAP_FILTER_EQUALITY) {
-                condition = session.equals(contactAttributeName, actualValue);
-            } else if ("*".equals(actualValue)) {
+                condition = session.equals(contactAttributeName, value);
+            } else if ("*".equals(value)) {
                 condition = session.not(session.isNull(contactAttributeName));
             } else {
                 // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
-                    condition = session.contains(contactAttributeName, actualValue);
+                    condition = session.contains(contactAttributeName, value);
                 } else {
-                    condition = session.startsWith(contactAttributeName, actualValue);
+                    condition = session.startsWith(contactAttributeName, value);
                 }
             }
             return condition;
@@ -1177,9 +1163,11 @@ public class LdapConnection extends AbstractConnection {
 
                             // first search in contact
                             try {
-                                persons = contactFind(session.equals("uid", StringUtil.hexToBase64(uid)), returningAttributes);
-                            } catch (DecoderException e) {
-                                // ignore, this is not an hex uid
+                                // check if this is a contact uid
+                                Integer.parseInt(uid);
+                                persons = contactFind(session.equals("imapUid", uid), returningAttributes);
+                            } catch (NumberFormatException e) {
+                                // ignore, this is not a contact uid
                             }
 
                             // then in GAL
@@ -1213,7 +1201,7 @@ public class LdapConnection extends AbstractConnection {
                         if (ldapFilter.isFullSearch()) {
                             // append personal contacts first
                             for (Map<String, String> person : contactFind(null, returningAttributes).values()) {
-                                persons.put(person.get("uid"), person);
+                                persons.put(person.get("imapUid"), person);
                                 if (persons.size() == sizeLimit) {
                                     break;
                                 }
@@ -1240,7 +1228,7 @@ public class LdapConnection extends AbstractConnection {
                             // ignored all attribute filters => return empty results
                             if (ldapFilter.isFullSearch() || filter != null) {
                                 for (Map<String, String> person : contactFind(filter, returningAttributes).values()) {
-                                    persons.put(person.get("uid"), person);
+                                    persons.put(person.get("imapUid"), person);
 
                                     if (persons.size() == sizeLimit) {
                                         break;
@@ -1295,6 +1283,7 @@ public class LdapConnection extends AbstractConnection {
 
         }
 
+
         /**
          * Search users in contacts folder
          *
@@ -1307,14 +1296,15 @@ public class LdapConnection extends AbstractConnection {
             if (returningAttributes != null && !returningAttributes.isEmpty()) {
                 ldapReturningAttributes = new HashSet<String>();
                 // always return uid
-                ldapReturningAttributes.add("uid");
+                ldapReturningAttributes.add("imapUid");
+                ldapReturningAttributes.add("email1");
                 for (String attribute : returningAttributes) {
-                     if (!"objectclass".equals(attribute)) {
-                         ldapReturningAttributes.add(attribute);
-                     }
+                    if (!"objectclass".equals(attribute)) {
+                        ldapReturningAttributes.add(attribute);
+                    }
                 }
             } else {
-               ldapReturningAttributes = ExchangeSession.CONTACT_ATTRIBUTES; 
+                ldapReturningAttributes = ExchangeSession.CONTACT_ATTRIBUTES;
             }
 
             Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
@@ -1336,15 +1326,12 @@ public class LdapConnection extends AbstractConnection {
                         } catch (ParseException e) {
                             throw new IOException(e);
                         }
-                    } else if ("textdescription".equals(propertyName) && " \n".equals(propertyValue)) {
+                    } else if ("description".equals(propertyName) && " \n".equals(propertyValue)) {
                         propertyValue = null;
                     }
                     */
-                if (contact.get("uid") != null) {
-                    // convert uid to hex
-                    String hexUid = StringUtil.base64ToHex(contact.get("uid"));
-                    contact.put("uid", hexUid);
-                    results.put(hexUid, contact);
+                if (contact.get("imapUid") != null) {
+                    results.put(contact.get("imapUid"), contact);
                 }
             }
 
