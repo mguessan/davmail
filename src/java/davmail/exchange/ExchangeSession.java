@@ -2625,6 +2625,16 @@ public abstract class ExchangeSession {
     }
 
     protected static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
+    protected static final String[] VCARD_ADR_HOME_PROPERTIES = {null, null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
+    protected static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
+
+    protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
+        for (int i = 0; i < values.size() && i < contactProperties.length; i++) {
+            if (contactProperties[i] != null) {
+                properties.put(contactProperties[i], values.get(i));
+            }
+        }
+    }
 
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
@@ -2640,10 +2650,7 @@ public abstract class ExchangeSession {
                 properties.put("fileas", property.getValue());
 
             } else if ("N".equals(property.getKey())) {
-                List<String> values = property.getValues();
-                for (int i = 0; i < values.size() && i < VCARD_N_PROPERTIES.length; i++) {
-                    properties.put(VCARD_N_PROPERTIES[i], values.get(i));
-                }
+                convertContactProperties(properties, VCARD_N_PROPERTIES, property.getValues());
             } else if ("NICKNAME".equals(property.getKey())) {
                 properties.put("nickname", property.getValue());
             } else if ("TEL".equals(property.getKey())) {
@@ -2656,7 +2663,69 @@ public abstract class ExchangeSession {
                 if (property.hasParam("TYPE", "home")) {
                     properties.put("homePhone", property.getValue());
                 }
+                if (property.hasParam("TYPE", "fax")) {
+                    properties.put("facsimiletelephonenumber", property.getValue());
+                }
+                if (property.hasParam("TYPE", "pager")) {
+                    properties.put("pager", property.getValue());
+                }
+            } else if ("ADR".equals(property.getKey())) {
+                // address
+                if (property.hasParam("TYPE", "home")) {
+                    convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
+                } else if (property.hasParam("TYPE", "work")) {
+                    convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
+                }
+            } else if ("EMAIL".equals(property.getKey())) {
+                if (property.hasParam("TYPE", "work")) {
+                    properties.put("email1", property.getValue());
+                }
+                if (property.hasParam("TYPE", "home")) {
+                    properties.put("email2", property.getValue());
+                }
+                if (property.hasParam("TYPE", "other")) {
+                    properties.put("email3", property.getValue());
+                }
             }
+            /*
+
+
+            writer.appendProperty("EMAIL;TYPE=work", get("email1"));
+            writer.appendProperty("EMAIL;TYPE=home", get("email2"));
+            writer.appendProperty("EMAIL;TYPE=other", get("email3"));
+
+            writer.appendProperty("ORG", get("o"), get("department"));
+            writer.appendProperty("URL;WORK", get("businesshomepage"));
+            writer.appendProperty("TITLE", get("title"));
+            writer.appendProperty("NOTE", get("description"));
+
+            writer.appendProperty("CUSTOM1", get("extensionattribute1"));
+            writer.appendProperty("CUSTOM2", get("extensionattribute2"));
+            writer.appendProperty("CUSTOM3", get("extensionattribute3"));
+            writer.appendProperty("CUSTOM4", get("extensionattribute4"));
+
+            writer.appendProperty("ROLE", get("profession"));
+            writer.appendProperty("NICKNAME", get("nickname"));
+            writer.appendProperty("X-AIM", get("im"));
+
+            writer.appendProperty("BDAY", get("bday"));
+
+            writer.appendProperty("X-EVOLUTION-ASSISTANT", get("secretarycn"));
+            writer.appendProperty("X-EVOLUTION-MANAGER", get("manager"));
+            writer.appendProperty("X-EVOLUTION-SPOUSE", get("spousecn"));
+
+
+            String lastModified = get("lastmodified");
+            if (lastModified != null) {
+                try {
+                    writer.appendProperty("REV", getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(lastModified)));
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid date: " + lastModified);
+                }
+            }
+            writer.endCard();
+
+             */
         }
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
     }

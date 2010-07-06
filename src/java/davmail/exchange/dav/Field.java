@@ -18,7 +18,6 @@
  */
 package davmail.exchange.dav;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
@@ -193,9 +192,10 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.PublicStrings/0x00008049/String
         createField(URN_SCHEMAS_CONTACTS, "department"); // PR_DEPARTMENT_NAME 0x3A18 String
         // email with display name
-        //createField(URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
-        //createField(URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
-        //createField(URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
+        createField("writeemail1", URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
+        createField("writeemail2", URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
+        createField("writeemail3", URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
+        // email only
         createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1EmailAddress
         createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2EmailAddress
         createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3EmailAddress
@@ -264,16 +264,17 @@ public class Field {
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
-        String name;
+        String uriName;
         if (propertySetType == DistinguishedPropertySetType.Address) {
             // Address namespace expects integer names
-            name = String.valueOf(propertyTag);
+            uriName = String.valueOf(propertyTag);
         } else {
             // Common namespace expects hex names
-            name = "0x" + toHexString(propertyTag);
+            uriName = "0x" + toHexString(propertyTag);
         }
+        String name = "_x" + propertyTypeMap.get(PropertyType.String10) + "_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, uriName, responseAlias, null);
         fieldMap.put(field.alias, field);
     }
 
@@ -313,9 +314,13 @@ public class Field {
     }
 
     public Field(String alias, Namespace namespace, String name, String responseAlias, String cast) {
+        this(alias, namespace, name, name, responseAlias, cast);
+    }
+
+    public Field(String alias, Namespace namespace, String name, String uriName, String responseAlias, String cast) {
         davPropertyName = DavPropertyName.create(name, namespace);
         this.alias = alias;
-        this.uri = namespace.getURI() + name;
+        this.uri = namespace.getURI() + uriName;
         if (responseAlias == null) {
             this.requestPropertyString = '"' + uri + '"';
             this.responsePropertyName = davPropertyName;

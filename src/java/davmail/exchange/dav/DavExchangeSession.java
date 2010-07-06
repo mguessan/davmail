@@ -24,7 +24,6 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
-import davmail.exchange.ICSBufferedReader;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
@@ -584,7 +583,11 @@ public class DavExchangeSession extends ExchangeSession {
         protected List<DavConstants> buildProperties() throws IOException {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
-                list.add(Field.createDavProperty(entry.getKey(), entry.getValue()));
+                String key = entry.getKey();
+                if (key.startsWith("email")) {
+                    key = "write"+key;
+                }
+                list.add(Field.createDavProperty(key, entry.getValue()));
             }
 
             return list;

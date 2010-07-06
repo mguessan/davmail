@@ -66,6 +66,20 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
         vCardWriter.appendProperty("FN", "common name");
         vCardWriter.appendProperty("NICKNAME", "nickname");
+
+        vCardWriter.appendProperty("TEL;TYPE=cell", "mobile");
+        vCardWriter.appendProperty("TEL;TYPE=work", "telephoneNumber");
+        vCardWriter.appendProperty("TEL;TYPE=home,voice", "homePhone");
+        vCardWriter.appendProperty("TEL;TYPE=fax", "facsimiletelephonenumber");
+        vCardWriter.appendProperty("TEL;TYPE=pager", "pager");
+
+        vCardWriter.appendProperty("ADR;TYPE=home", null, null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry");
+        vCardWriter.appendProperty("ADR;TYPE=work", "postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co");
+        
+        vCardWriter.appendProperty("EMAIL;TYPE=work", "email1@local.net");
+        vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
+        vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
+
         vCardWriter.endCard();
 
         session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
@@ -82,5 +96,29 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("namesuffix", contact.get("namesuffix"));
         assertNotNull("lastmodified");
         assertEquals("nickname", contact.get("nickname"));
+
+        assertEquals("mobile", contact.get("mobile"));
+        assertEquals("telephoneNumber", contact.get("telephoneNumber"));
+        assertEquals("homePhone", contact.get("homePhone"));
+        assertEquals("facsimiletelephonenumber", contact.get("facsimiletelephonenumber"));
+        assertEquals("pager", contact.get("pager"));
+
+        assertEquals("homeStreet", contact.get("homeStreet"));
+        assertEquals("homeCity", contact.get("homeCity"));
+        assertEquals("homeState", contact.get("homeState"));
+        assertEquals("homePostalCode", contact.get("homePostalCode"));
+        assertEquals("homeCountry", contact.get("homeCountry"));
+
+        assertEquals("postofficebox", contact.get("postofficebox"));
+        assertEquals("roomnumber", contact.get("roomnumber"));
+        assertEquals("street", contact.get("street"));
+        assertEquals("l", contact.get("l"));
+        assertEquals("st", contact.get("st"));
+        assertEquals("postalcode", contact.get("postalcode"));
+        assertEquals("co", contact.get("co"));
+
+        assertEquals("email1@local.net", contact.get("email1"));
+        assertEquals("email2@local.net", contact.get("email2"));
+        assertEquals("email3@local.net", contact.get("email3"));
     }
 }
