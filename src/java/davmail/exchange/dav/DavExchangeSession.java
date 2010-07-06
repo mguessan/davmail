@@ -425,7 +425,7 @@ public class DavExchangeSession extends ExchangeSession {
             //noinspection VariableNotUsedInsideIf
             if (field.cast != null) {
                 buffer.append("CAST (\"");
-            } else if (!isIntValue) {
+            } else if (!isIntValue && !field.isIntValue()) {
                 buffer.append('\'');
             }
             if (Operator.Like == operator) {
@@ -437,7 +437,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
             if (field.cast != null) {
                 buffer.append("\" as '").append(field.cast).append("')");
-            } else if (!isIntValue) {
+            } else if (!isIntValue && !field.isIntValue()) {
                 buffer.append('\'');
             }
         }
@@ -561,7 +561,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @throws URIException on error
          */
         public Contact(MultiStatusResponse multiStatusResponse) throws URIException {
-            href = URIUtil.decode(multiStatusResponse.getHref());
+            setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
@@ -577,8 +577,8 @@ public class DavExchangeSession extends ExchangeSession {
         /**
          * @inheritDoc
          */
-        public Contact(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
-            super(messageUrl, contentClass, itemBody, etag, noneMatch);
+        public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
+            super(folderPath, itemName, properties, etag, noneMatch);
         }
 
         protected List<DavConstants> buildProperties() throws IOException {
@@ -626,7 +626,7 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public ItemResult createOrUpdate() throws IOException {
             int status = 0;
-            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), buildProperties());
+            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), buildProperties());
             propPatchMethod.setRequestHeader("Translate", "f");
             if (etag != null) {
                 propPatchMethod.setRequestHeader("If-Match", etag);
@@ -643,9 +643,9 @@ public class DavExchangeSession extends ExchangeSession {
                     }
 
                     if (status == HttpStatus.SC_CREATED) {
-                        LOGGER.debug("Created contact " + href);
+                        LOGGER.debug("Created contact " + getHref());
                     } else {
-                        LOGGER.debug("Updated contact " + href);
+                        LOGGER.debug("Updated contact " + getHref());
                     }
                 } else {
                     LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
@@ -663,7 +663,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
             itemResult.status = status;
             // need to retrieve new etag
-            HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(href));
+            HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
             try {
                 httpClient.executeMethod(headMethod);
                 if (headMethod.getResponseHeader("ETag") != null) {
@@ -690,7 +690,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @throws URIException on error
          */
         public Event(MultiStatusResponse multiStatusResponse) throws URIException {
-            href = URIUtil.decode(multiStatusResponse.getHref());
+            setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
@@ -701,8 +701,8 @@ public class DavExchangeSession extends ExchangeSession {
         /**
          * @inheritDoc
          */
-        public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
-            super(messageUrl, contentClass, itemBody, etag, noneMatch);
+        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+            super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
         /**
@@ -803,7 +803,7 @@ public class DavExchangeSession extends ExchangeSession {
          */
         @Override
         protected ItemResult createOrUpdate(byte[] messageContent) throws IOException {
-            PutMethod putmethod = new PutMethod(URIUtil.encodePath(href));
+            PutMethod putmethod = new PutMethod(URIUtil.encodePath(getHref()));
             putmethod.setRequestHeader("Translate", "f");
             putmethod.setRequestHeader("Overwrite", "f");
             if (etag != null) {
@@ -819,9 +819,9 @@ public class DavExchangeSession extends ExchangeSession {
                 status = httpClient.executeMethod(putmethod);
                 if (status == HttpURLConnection.HTTP_OK) {
                     if (etag != null) {
-                        LOGGER.debug("Updated event " + href);
+                        LOGGER.debug("Updated event " + getHref());
                     } else {
-                        LOGGER.warn("Overwritten event " + href);
+                        LOGGER.warn("Overwritten event " + getHref());
                     }
                 } else if (status != HttpURLConnection.HTTP_CREATED) {
                     LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
@@ -847,13 +847,13 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyList.add(Field.createDavProperty("contentclass", contentClass));
                 // ... but also set PR_INTERNET_CONTENT to preserve custom properties
                 propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(messageContent))));
-                PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(href), propertyList);
+                PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), propertyList);
                 int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                 if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
                     LOGGER.warn("Unable to patch event to trigger activeSync push");
                 } else {
                     // need to retrieve new etag
-                    Item newItem = getItem(href);
+                    Item newItem = getItem(getHref());
                     itemResult.etag = newItem.etag;
                 }
             }
@@ -1201,12 +1201,12 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public int sendEvent(String icsBody) throws IOException {
-        String messageUrl = draftsUrl + '/' + UUID.randomUUID().toString() + ".EML";
-        int status = internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:calendarmessage", icsBody, null, null).status;
+        String itemName = UUID.randomUUID().toString() + ".EML";
+        int status = internalCreateOrUpdateEvent(draftsUrl, itemName, "urn:content-classes:calendarmessage", icsBody, null, null).status;
         if (status != HttpStatus.SC_CREATED) {
             return status;
         } else {
-            MoveMethod method = new MoveMethod(URIUtil.encodePath(messageUrl), URIUtil.encodePath(sendmsgUrl), true);
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(draftsUrl + '/' + itemName), URIUtil.encodePath(sendmsgUrl), true);
             status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
             if (status != HttpStatus.SC_OK) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
@@ -1259,8 +1259,8 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        return new Event(messageUrl, contentClass, icsBody, etag, noneMatch).createOrUpdate();
+    public ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
+        return new Event(folderPath, itemName, contentClass, icsBody, etag, noneMatch).createOrUpdate();
     }
 
     /**
@@ -1373,8 +1373,8 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        return new Contact(messageUrl, contentClass, icsBody, etag, noneMatch).createOrUpdate();
+    protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
+        return new Contact(folderPath, itemName, properties, etag, noneMatch).createOrUpdate();
     }
 
     protected List<DavConstants> buildProperties(Map<String, String> properties) {

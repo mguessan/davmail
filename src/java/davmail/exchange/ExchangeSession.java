@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exchange.dav.Field;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.util.StringUtil;
@@ -30,6 +31,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
@@ -1390,6 +1392,7 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          * @deprecated move to byte array handling instead
          */
+        @Deprecated
         public void write(OutputStream os, boolean doubleDot) throws IOException {
             BufferedReader reader = getContentReader(this);
             try {
@@ -1590,7 +1593,8 @@ public abstract class ExchangeSession {
      * Generic folder item.
      */
     public abstract static class Item extends HashMap<String, String> {
-        protected String href;
+        protected String folderPath;
+        protected String itemName;
         protected String permanentUrl;
         /**
          * Display name.
@@ -1610,16 +1614,14 @@ public abstract class ExchangeSession {
         /**
          * Build item instance.
          *
-         * @param messageUrl   message url
-         * @param contentClass content class
-         * @param itemBody     item body
-         * @param etag         item etag
-         * @param noneMatch    none match flag
+         * @param folderPath folder path
+         * @param itemName   item name class
+         * @param etag       item etag
+         * @param noneMatch  none match flag
          */
-        public Item(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
-            this.href = messageUrl;
-            this.contentClass = contentClass;
-            this.itemBody = itemBody;
+        public Item(String folderPath, String itemName, String etag, String noneMatch) {
+            this.folderPath = folderPath;
+            this.itemName = itemName;
             this.etag = etag;
             this.noneMatch = noneMatch;
         }
@@ -1651,12 +1653,7 @@ public abstract class ExchangeSession {
          * @return event name
          */
         public String getName() {
-            int index = href.lastIndexOf('/');
-            if (index >= 0) {
-                return href.substring(index + 1);
-            } else {
-                return href;
-            }
+            return itemName;
         }
 
         /**
@@ -1673,6 +1670,20 @@ public abstract class ExchangeSession {
             LOGGER.warn(message);
             return new HttpException(message);
         }
+
+        public void setHref(String href) {
+            int index = href.lastIndexOf('/');
+            if (index >= 0) {
+                folderPath = href.substring(0, index);
+                itemName = href.substring(index + 1);
+            } else {
+                throw new IllegalArgumentException(href);
+            }
+        }
+
+        public String getHref() {
+            return folderPath + '/' + itemName;
+        }
     }
 
     /**
@@ -1683,8 +1694,9 @@ public abstract class ExchangeSession {
         /**
          * @inheritDoc
          */
-        public Contact(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
-            super(messageUrl.endsWith(".vcf") ? messageUrl.substring(0, messageUrl.length() - 3) + "EML" : messageUrl, contentClass, itemBody, etag, noneMatch);
+        public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
+            super(folderPath, itemName.endsWith(".vcf") ? itemName.substring(0, itemName.length() - 3) + "EML" : itemName, etag, noneMatch);
+            this.putAll(properties);
         }
 
         /**
@@ -1760,7 +1772,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("ORG", get("o"), get("department"));
             writer.appendProperty("URL;WORK", get("businesshomepage"));
             writer.appendProperty("TITLE", get("title"));
-            writer.appendProperty("NOTE", get("textdescription"));
+            writer.appendProperty("NOTE", get("description"));
 
             writer.appendProperty("CUSTOM1", get("extensionattribute1"));
             writer.appendProperty("CUSTOM2", get("extensionattribute2"));
@@ -1796,12 +1808,16 @@ public abstract class ExchangeSession {
      * Calendar event object.
      */
     public abstract class Event extends Item {
+        protected String contentClass;
+        protected String itemBody;
 
         /**
          * @inheritDoc
          */
-        public Event(String messageUrl, String contentClass, String itemBody, String etag, String noneMatch) {
-            super(messageUrl, contentClass, itemBody, etag, noneMatch);
+        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+            super(folderPath, itemName, etag, noneMatch);
+            this.contentClass = contentClass;
+            this.itemBody = itemBody;
         }
 
         /**
@@ -2601,19 +2617,55 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public ItemResult createOrUpdateItem(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
-        String messageUrl = folderPath + '/' + itemName;
         if (itemBody.startsWith("BEGIN:VCALENDAR")) {
-            return internalCreateOrUpdateEvent(messageUrl, "urn:content-classes:appointment", itemBody, etag, noneMatch);
+            return internalCreateOrUpdateEvent(folderPath, itemName, "urn:content-classes:appointment", itemBody, etag, noneMatch);
         } else if (itemBody.startsWith("BEGIN:VCARD")) {
-            return internalCreateOrUpdateContact(messageUrl, "urn:content-classes:person", itemBody, etag, noneMatch);
+            return createOrUpdateContact(folderPath, itemName, itemBody, etag, noneMatch);
         } else {
             throw new IOException(BundleMessage.format("EXCEPTION_INVALID_MESSAGE_CONTENT", itemBody));
         }
     }
 
-    protected abstract ItemResult internalCreateOrUpdateContact(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException;
+    protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
+        // parse VCARD body to build contact property map
+        Map<String, String> properties = new HashMap<String, String>();
+        properties.put("outlookmessageclass", "IPM.Contact");
 
-    protected abstract ItemResult internalCreateOrUpdateEvent(String messageUrl, String contentClass, String icsBody, String etag, String noneMatch) throws IOException;
+        VCardReader reader = new VCardReader(new StringReader(itemBody));
+        VCardReader.Property property;
+        while ((property = reader.readProperty()) != null) {
+            if ("FN".equals(property.getKey())) {
+                properties.put("cn", property.getValue());
+                properties.put("subject", property.getValue());
+                properties.put("fileas", property.getValue());
+
+            } else if ("N".equals(property.getKey())) {
+                String[] values = property.getValues();
+                if (values.length > 0) {
+                    properties.put("sn", values[0]);
+                }
+                if (values.length > 1) {
+                    properties.put("givenName", values[1]);
+                }
+            } else if ("TEL".equals(property.getKey())) {
+                if (property.hasParam("TYPE", "cell")) {
+                    properties.put("mobile", property.getValue());
+                }
+                if (property.hasParam("TYPE", "work")) {
+                    properties.put("telephoneNumber", property.getValue());
+                }
+                if (property.hasParam("TYPE", "home")) {
+                    properties.put("homePhone", property.getValue());
+                }
+            }
+        }
+        return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
+    }
+
+
+    protected abstract ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException;
+
+    protected abstract ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException;
 
     /**
      * Get current Exchange alias name from login name
@@ -2897,7 +2949,7 @@ public abstract class ExchangeSession {
     public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<String>();
 
     static {
-        CONTACT_ATTRIBUTES.add("uid");
+        CONTACT_ATTRIBUTES.add("imapUid");
         CONTACT_ATTRIBUTES.add("extensionattribute1");
         CONTACT_ATTRIBUTES.add("extensionattribute2");
         CONTACT_ATTRIBUTES.add("extensionattribute3");
@@ -2938,7 +2990,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("street");
         CONTACT_ATTRIBUTES.add("telephoneNumber");
         CONTACT_ATTRIBUTES.add("title");
-        CONTACT_ATTRIBUTES.add("textdescription");
+        CONTACT_ATTRIBUTES.add("description");
         CONTACT_ATTRIBUTES.add("im");
         CONTACT_ATTRIBUTES.add("middlename");
         CONTACT_ATTRIBUTES.add("lastmodified");
