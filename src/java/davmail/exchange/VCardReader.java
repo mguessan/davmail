@@ -99,7 +99,7 @@ public class VCardReader extends ICSBufferedReader {
     }
 
     protected static enum State {
-        KEY, PARAM_NAME, PARAM_VALUE, VALUE, BACKSLASH
+        KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
     }
 
     public Property readProperty() throws IOException {
@@ -129,19 +129,46 @@ public class VCardReader extends ICSBufferedReader {
                         state = State.PARAM_VALUE;
                         paramValues = new HashSet<String>();
                         startIndex = i + 1;
+                    } else if (currentChar == ';') {
+                        // param with no value
+                        paramName = line.substring(startIndex, i);
+                        property.addParam(paramName, null);
+                        state = State.PARAM_NAME;
+                        startIndex = i + 1;
+                    } else if (currentChar == ':') {
+                        // param with no value
+                        paramName = line.substring(startIndex, i);
+                        property.addParam(paramName, null);
+                        state = State.VALUE;
+                        startIndex = i + 1;
                     }
                 } else if (state == State.PARAM_VALUE) {
-                    if (currentChar == ':') {
-                        paramValues.add(line.substring(startIndex, i));
+                    if (currentChar == '"') {
+                        state = State.QUOTED_PARAM_VALUE;
+                        startIndex = i + 1;
+                    } else if (currentChar == ':') {
+                        if (startIndex < i) {
+                            paramValues.add(line.substring(startIndex, i));
+                        }
                         property.addParam(paramName, paramValues);
                         state = State.VALUE;
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
-                        paramValues.add(line.substring(startIndex, i));
+                        if (startIndex < i) {
+                            paramValues.add(line.substring(startIndex, i));
+                        }
                         property.addParam(paramName, paramValues);
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     } else if (currentChar == ',') {
+                        if (startIndex < i) {
+                            paramValues.add(line.substring(startIndex, i));
+                        }
+                        startIndex = i + 1;
+                    }
+                } else if (state == State.QUOTED_PARAM_VALUE) {
+                    if (currentChar == '"') {
+                        state = State.PARAM_VALUE;
                         paramValues.add(line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
@@ -152,7 +179,7 @@ public class VCardReader extends ICSBufferedReader {
                     } else if (currentChar == '\\') {
                         state = State.BACKSLASH;
                     }
-                // BACKSLASH state
+                    // BACKSLASH state
                 } else {
                     state = State.VALUE;
                 }
