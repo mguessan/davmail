@@ -244,6 +244,15 @@ public final class Settings {
             }
             fileAppender.setFile(logFilePath, true, false, 8192);
             rootLogger.addAppender(fileAppender);
+
+            // disable ConsoleAppender in gui mode
+            if (!Settings.getBooleanProperty("davmail.server")) {
+                ConsoleAppender consoleAppender = (ConsoleAppender)rootLogger.getAppender("ConsoleAppender");
+                if (consoleAppender != null) {
+                    consoleAppender.setThreshold(Level.OFF);
+                }
+            }
+
         } catch (IOException e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_SET_LOG_FILE_PATH"));
         }
