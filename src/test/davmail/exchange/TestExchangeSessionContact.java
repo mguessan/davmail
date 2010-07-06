@@ -94,7 +94,11 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         vCardWriter.appendProperty("ROLE", "profession");
         vCardWriter.appendProperty("X-AIM", "im");
-        //vCardWriter.appendProperty("BDAY", "bday");
+        vCardWriter.appendProperty("BDAY", "20000102T000000Z");
+
+        vCardWriter.appendProperty("X-ASSISTANT", "secretarycn");
+        vCardWriter.appendProperty("X-MANAGER", "manager");
+        vCardWriter.appendProperty("X-SPOUSE", "spousecn");
 
         vCardWriter.endCard();
 
@@ -153,7 +157,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("profession", contact.get("profession"));
         assertEquals("im", contact.get("im"));
-        //assertEquals("bday", contact.get("bday"));
+        assertEquals("20000102T000000Z", contact.get("bday"));
 
         assertEquals("otherpostofficebox", contact.get("otherpostofficebox"));
         assertEquals("otherstreet", contact.get("otherstreet"));
@@ -161,5 +165,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("otherstate", contact.get("otherstate"));
         assertEquals("otherpostalcode", contact.get("otherpostalcode"));
         assertEquals("othercountry", contact.get("othercountry"));
+
+        assertEquals("secretarycn", contact.get("secretarycn"));
+        assertEquals("manager", contact.get("manager"));
+        assertEquals("spousecn", contact.get("spousecn"));
     }
 }

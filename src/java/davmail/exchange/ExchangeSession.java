@@ -1785,19 +1785,12 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("BDAY", get("bday"));
 
-            writer.appendProperty("X-EVOLUTION-ASSISTANT", get("secretarycn"));
-            writer.appendProperty("X-EVOLUTION-MANAGER", get("manager"));
-            writer.appendProperty("X-EVOLUTION-SPOUSE", get("spousecn"));
+            writer.appendProperty("X-ASSISTANT", get("secretarycn"));
+            writer.appendProperty("X-MANAGER", get("manager"));
+            writer.appendProperty("X-SPOUSE", get("spousecn"));
 
+            writer.appendProperty("REV", get("lastmodified"));
 
-            String lastModified = get("lastmodified");
-            if (lastModified != null) {
-                try {
-                    writer.appendProperty("REV", getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(lastModified)));
-                } catch (ParseException e) {
-                    LOGGER.warn("Invalid date: " + lastModified);
-                }
-            }
             writer.endCard();
             return writer.toString();
         }
@@ -2715,26 +2708,21 @@ public abstract class ExchangeSession {
             } else if ("X-AIM".equals(property.getKey())) {
                 properties.put("im", property.getValue());
             } else if ("BDAY".equals(property.getKey())) {
-                properties.put("bday", property.getValue());
-            }
-            /*
-
-            writer.appendProperty("X-EVOLUTION-ASSISTANT", get("secretarycn"));
-            writer.appendProperty("X-EVOLUTION-MANAGER", get("manager"));
-            writer.appendProperty("X-EVOLUTION-SPOUSE", get("spousecn"));
-
-
-            String lastModified = get("lastmodified");
-            if (lastModified != null) {
-                try {
-                    writer.appendProperty("REV", getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(lastModified)));
-                } catch (ParseException e) {
-                    LOGGER.warn("Invalid date: " + lastModified);
+                String value = property.getValue();
+                if (value != null) {
+                    try {
+                        properties.put("bday", ExchangeSession.getExchangeZuluDateFormatMillisecond().format(ExchangeSession.getZuluDateFormat().parse(value)));
+                    } catch (ParseException e) {
+                        LOGGER.warn("Invalid date: " + value);
+                    }
                 }
+            } else if ("X-ASSISTANT".equals(property.getKey())) {
+                properties.put("secretarycn", property.getValue());
+            } else if ("X-MANAGER".equals(property.getKey())) {
+                properties.put("manager", property.getValue());
+            } else if ("X-SPOUSE".equals(property.getKey())) {
+                properties.put("spousecn", property.getValue());
             }
-            writer.endCard();
-
-             */
         }
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
     }

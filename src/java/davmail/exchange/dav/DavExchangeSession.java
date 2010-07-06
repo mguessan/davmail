@@ -52,6 +52,7 @@ import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
@@ -568,6 +569,13 @@ public class DavExchangeSession extends ExchangeSession {
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = getPropertyIfExists(properties, attributeName);
                 if (value != null) {
+                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
+                        try {
+                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormatMillisecond().parse(value));
+                        } catch (ParseException e) {
+                            LOGGER.warn("Invalid date: " + value);
+                        }
+                    }
                     put(attributeName, value);
                 }
             }
@@ -585,7 +593,7 @@ public class DavExchangeSession extends ExchangeSession {
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
                 if (key.startsWith("email")) {
-                    key = "write"+key;
+                    key = "write" + key;
                 }
                 list.add(Field.createDavProperty(key, entry.getValue()));
             }
