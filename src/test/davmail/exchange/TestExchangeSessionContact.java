@@ -91,9 +91,14 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("CUSTOM3", "extensionattribute3");
         vCardWriter.appendProperty("CUSTOM4", "extensionattribute4");
 
+        vCardWriter.appendProperty("ROLE", "profession");
+        vCardWriter.appendProperty("X-AIM", "im");
+        //vCardWriter.appendProperty("BDAY", "bday");
+
         vCardWriter.endCard();
 
-        session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        assertEquals(201, result.status);
 
     }
 
@@ -143,5 +148,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("extensionattribute2", contact.get("extensionattribute2"));
         assertEquals("extensionattribute3", contact.get("extensionattribute3"));
         assertEquals("extensionattribute4", contact.get("extensionattribute4"));
+
+        assertEquals("profession", contact.get("profession"));
+        assertEquals("im", contact.get("im"));
+        //assertEquals("bday", contact.get("bday"));
     }
 }

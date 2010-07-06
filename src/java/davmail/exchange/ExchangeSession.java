@@ -2705,18 +2705,14 @@ public abstract class ExchangeSession {
                 properties.put("extensionattribute3", property.getValue());
             } else if ("CUSTOM4".equals(property.getKey())) {
                 properties.put("extensionattribute4", property.getValue());
+            } else if ("ROLE".equals(property.getKey())) {
+                properties.put("profession", property.getValue());
+            } else if ("X-AIM".equals(property.getKey())) {
+                properties.put("im", property.getValue());
+            } else if ("BDAY".equals(property.getKey())) {
+                properties.put("bday", property.getValue());
             }
             /*
-
-
-
-
-
-            writer.appendProperty("ROLE", get("profession"));
-            writer.appendProperty("NICKNAME", get("nickname"));
-            writer.appendProperty("X-AIM", get("im"));
-
-            writer.appendProperty("BDAY", get("bday"));
 
             writer.appendProperty("X-EVOLUTION-ASSISTANT", get("secretarycn"));
             writer.appendProperty("X-EVOLUTION-MANAGER", get("manager"));

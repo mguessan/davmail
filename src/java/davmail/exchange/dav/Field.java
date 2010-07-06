@@ -50,6 +50,7 @@ public class Field {
     protected static final Namespace URN_SCHEMAS_MAILHEADER = Namespace.getNamespace("urn:schemas:mailheader:");
 
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
+    protected static final Namespace SCHEMAS_MAPI = Namespace.getNamespace("http://schemas.microsoft.com/mapi/");    
     protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
     protected static final Namespace SCHEMAS_MAPI_ID = Namespace.getNamespace("http://schemas.microsoft.com/mapi/id/");
     protected static final Namespace SCHEMAS_MAPI_STRING = Namespace.getNamespace("http://schemas.microsoft.com/mapi/string/");
@@ -227,7 +228,7 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "telephoneNumber"); // PR_BUSINESS_TELEPHONE_NUMBER 0x3A08 String
         createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
         createField("description", URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
-        createField("im", DistinguishedPropertySetType.Address, 0x8062, "im"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
+        createField("im", SCHEMAS_MAPI, "InstMsg"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
 
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
@@ -264,17 +265,16 @@ public class Field {
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
-        String uriName;
+        String name;
         if (propertySetType == DistinguishedPropertySetType.Address) {
             // Address namespace expects integer names
-            uriName = String.valueOf(propertyTag);
+            name = String.valueOf(propertyTag);
         } else {
             // Common namespace expects hex names
-            uriName = "0x" + toHexString(propertyTag);
+            name = "0x" + toHexString(propertyTag);
         }
-        String name = "_x" + propertyTypeMap.get(PropertyType.String10) + "_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, uriName, responseAlias, null);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null);
         fieldMap.put(field.alias, field);
     }
 
@@ -314,13 +314,9 @@ public class Field {
     }
 
     public Field(String alias, Namespace namespace, String name, String responseAlias, String cast) {
-        this(alias, namespace, name, name, responseAlias, cast);
-    }
-
-    public Field(String alias, Namespace namespace, String name, String uriName, String responseAlias, String cast) {
         davPropertyName = DavPropertyName.create(name, namespace);
         this.alias = alias;
-        this.uri = namespace.getURI() + uriName;
+        this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
             this.requestPropertyString = '"' + uri + '"';
             this.responsePropertyName = davPropertyName;
