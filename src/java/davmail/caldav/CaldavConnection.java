@@ -1312,7 +1312,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isBrokenHrefEncoding() {
-            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/");
+            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/")|| isUserAgent("Lightning/1.0b2");
         }
 
         protected boolean isLightning() {
