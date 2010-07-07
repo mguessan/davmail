@@ -40,9 +40,19 @@ public class ItemId {
     }
 
     /**
+     * Build Item id from response item.
+     *
+     * @param item response item
+     */
+    public ItemId(EWSMethod.Item item) {
+        this.id = item.get("ItemId");
+        this.changeKey = item.get("ChangeKey");
+    }
+
+    /**
      * Create Item id.
      *
-     * @param id        item id
+     * @param id item id
      */
     public ItemId(String id) {
         this.id = id;
@@ -50,7 +60,7 @@ public class ItemId {
 
     /**
      * Write item id as XML.
-     * 
+     *
      * @param writer
      * @throws IOException
      */

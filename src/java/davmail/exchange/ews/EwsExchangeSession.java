@@ -186,7 +186,7 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(createItemMethod);
 
         if (bcc != null) {
-            ItemId itemId = new ItemId(createItemMethod.getResponseItem().get("ItemId"), createItemMethod.getResponseItem().get("ChangeKey"));
+            ItemId itemId = new ItemId(createItemMethod.getResponseItem());
             HashMap<String, String> localProperties = new HashMap<String, String>();
             localProperties.put("bcc", bcc);
             UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -249,7 +249,7 @@ public class EwsExchangeSession extends ExchangeSession {
         Message message = new Message();
 
         // get item id
-        message.itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+        message.itemId = new ItemId(response);
 
         message.permanentUrl = response.get(Field.get("permanenturl").getResponseName());
 
@@ -506,7 +506,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
-        folder.folderId = new FolderId(item.get("FolderId"), item.get("ChangeKey"));
+        folder.folderId = new FolderId(item);
         folder.displayName = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
         folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getResponseName());
         folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getResponseName());
@@ -651,7 +651,7 @@ public class EwsExchangeSession extends ExchangeSession {
         ItemId itemId;
 
         protected Contact(EWSMethod.Item response) throws URIException {
-            itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+            itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
@@ -729,7 +729,7 @@ public class EwsExchangeSession extends ExchangeSession {
         ItemId itemId;
 
         protected Event(EWSMethod.Item response) throws URIException {
-            itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+            itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
@@ -742,7 +742,7 @@ public class EwsExchangeSession extends ExchangeSession {
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
-        
+
 
         @Override
         protected ItemResult createOrUpdate(byte[] content) throws IOException {
@@ -848,7 +848,30 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public int deleteItem(String folderPath, String itemName) throws IOException {
-        throw new UnsupportedOperationException();
+        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        if (!responses.isEmpty()) {
+            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(responses.get(0)), DeleteType.HardDelete);
+            executeMethod(deleteItemMethod);
+        }
+        return HttpStatus.SC_OK;
+    }
+
+    @Override
+    public int processItem(String folderPath, String itemName) throws IOException {
+        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        if (!responses.isEmpty()) {
+            HashMap<String, String> localProperties = new HashMap<String, String>();
+            localProperties.put("processed", "1");
+            localProperties.put("read", "1");
+            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                    ConflictResolution.AlwaysOverwrite,
+                    CalendarItemCreateOrDeleteOperation.SendToNone,
+                    new ItemId(responses.get(0)), buildProperties(localProperties));
+            executeMethod(updateItemMethod);
+        }
+        return HttpStatus.SC_OK;
     }
 
     @Override
@@ -943,7 +966,7 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
         if (item != null) {
-            folderId = new FolderId(item.get("FolderId"), item.get("ChangeKey"));
+            folderId = new FolderId(item);
         }
         return folderId;
     }

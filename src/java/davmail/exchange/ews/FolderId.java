@@ -43,6 +43,16 @@ public class FolderId extends Option {
     }
 
     /**
+     * Build Folder id from response item.
+     *
+     * @param item response item
+     */
+    public FolderId(EWSMethod.Item item) {
+        this(item.get("ItemId"),item.get("ChangeKey"));
+    }
+
+
+    /**
      * @inheritDoc
      */
     @Override

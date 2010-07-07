@@ -272,7 +272,12 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);
 
         } else if (request.isDelete()) {
-            int status = session.deleteItem(request.getFolderPath(), lastPath);
+            int status;
+            if (request.getFolderPath().endsWith("inbox")) {
+                status = session.processItem(request.getFolderPath(), lastPath);
+            } else {
+                status = session.deleteItem(request.getFolderPath(), lastPath);
+            }
             sendHttpResponse(status);
         } else if (request.isGet()) {
             if (request.path.endsWith("/")) {

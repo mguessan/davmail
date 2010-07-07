@@ -1206,19 +1206,19 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public int deleteItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
-        int status;
-        if (inboxUrl.endsWith(folderPath)) {
-            // do not delete calendar messages, mark read and processed
-            ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-            list.add(Field.createDavProperty("processed", "1"));
-            list.add(Field.createDavProperty("read", "1"));
-            PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
-            DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
-            status = HttpStatus.SC_OK;
-        } else {
-            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
-        }
-        return status;
+        return DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+    }
+
+    @Override
+    public int processItem(String folderPath, String itemName) throws IOException {
+        String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
+        // do not delete calendar messages, mark read and processed
+        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+        list.add(Field.createDavProperty("processed", "1"));
+        list.add(Field.createDavProperty("read", "1"));
+        PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
+        DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
+        return HttpStatus.SC_OK;
     }
 
     /**

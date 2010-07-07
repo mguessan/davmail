@@ -2598,6 +2598,7 @@ public abstract class ExchangeSession {
 
     /**
      * Retrieve contact photo attached to contact
+     *
      * @param contact address book contact
      * @return contact photo
      * @throws IOException on error
@@ -2606,14 +2607,25 @@ public abstract class ExchangeSession {
 
 
     /**
-     * Delete event named eventName in folder
+     * Delete event named itemName in folder
      *
      * @param folderPath Exchange folder path
-     * @param itemName   event name
+     * @param itemName   item name
      * @return HTTP status
      * @throws IOException on error
      */
     public abstract int deleteItem(String folderPath, String itemName) throws IOException;
+
+    /**
+     * Mark event processed named eventName in folder
+     *
+     * @param folderPath Exchange folder path
+     * @param itemName   item name
+     * @return HTTP status
+     * @throws IOException on error
+     */
+    public abstract int processItem(String folderPath, String itemName) throws IOException;
+
 
     private static int dumpIndex;
 
