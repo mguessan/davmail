@@ -21,7 +21,7 @@
                     log file, you will need to change DavMail settings under the advanced tab.
                     Set the WIRE logging category to DEBUG level.
                 </p>
-                <p>You can then reproduce you issue and send the log file to
+                <p>You can then reproduce your issue and send the log file to
                     <a href="mailto:mguessan@free.fr">mguessan@free.fr</a>
                 </p>
                 <p>The davmail.log file is available in DavMail working directory on Unix and Windows,
