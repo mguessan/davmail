@@ -48,7 +48,7 @@ public class FolderId extends Option {
      * @param item response item
      */
     public FolderId(EWSMethod.Item item) {
-        this(item.get("ItemId"),item.get("ChangeKey"));
+        this(item.get("FolderId"),item.get("ChangeKey"));
     }
 
 
