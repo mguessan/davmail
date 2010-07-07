@@ -29,6 +29,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
 import javax.mail.MessagingException;
 import java.io.BufferedReader;
@@ -506,12 +507,12 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item.get("FolderId"), item.get("ChangeKey"));
-        folder.displayName = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
-        folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getPropertyTag());
-        folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getPropertyTag());
-        folder.ctag = item.get(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX.getPropertyTag());
-        folder.unreadCount = item.getInt(ExtendedFieldURI.PR_CONTENT_UNREAD.getPropertyTag());
-        folder.hasChildren = item.getBoolean(ExtendedFieldURI.PR_SUBFOLDERS.getPropertyTag());
+        folder.displayName = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
+        folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getResponseName());
+        folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getResponseName());
+        folder.ctag = item.get(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX.getResponseName());
+        folder.unreadCount = item.getInt(ExtendedFieldURI.PR_CONTENT_UNREAD.getResponseName());
+        folder.hasChildren = item.getBoolean(ExtendedFieldURI.PR_SUBFOLDERS.getResponseName());
         // noInferiors not implemented
         return folder;
     }
@@ -535,11 +536,11 @@ public class EwsExchangeSession extends ExchangeSession {
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
             Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
-                folder.folderPath = parentFolderPath + '/' + item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
+                folder.folderPath = parentFolderPath + '/' + item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
             } else if (folderIdMap.get(folder.folderId.value) != null) {
                 folder.folderPath = folderIdMap.get(folder.folderId.value);
             } else {
-                folder.folderPath = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getPropertyTag());
+                folder.folderPath = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
             }
             folders.add(folder);
             if (recursive && folder.hasChildren) {
@@ -656,11 +657,11 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             for (String attributeName : CONTACT_ATTRIBUTES) {
-                String value = response.get(Field.get("attributeName").getResponseName());
+                String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
                     if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
                         try {
-                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormatMillisecond().parse(value));
+                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormat().parse(value));
                         } catch (ParseException e) {
                             LOGGER.warn("Invalid date: " + value);
                         }
@@ -682,7 +683,8 @@ public class EwsExchangeSession extends ExchangeSession {
             for (Map.Entry<String, String> entry : entrySet()) {
                 list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
             }
-
+            // force urlcompname
+            list.add(Field.createFieldUpdate("urlcompname", URIUtil.encodePath(convertItemNameToEML(itemName))));
             return list;
         }
 
@@ -810,9 +812,33 @@ public class EwsExchangeSession extends ExchangeSession {
         return events;
     }
 
+    protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
+
+    static {
+        EVENT_REQUEST_PROPERTIES.add("permanenturl");
+        EVENT_REQUEST_PROPERTIES.add("etag");
+        EVENT_REQUEST_PROPERTIES.add("displayname");
+    }
+
+
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        throw new UnsupportedOperationException();
+        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        if (responses.isEmpty()) {
+            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+        }
+        String itemType = responses.get(0).type;
+        if ("Contact".equals(itemType)) {
+            // retrieve Contact properties
+            // TODO: need to check list size
+            return searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname)).get(0);
+        } else if ("CalendarItem".equals(itemType)
+                || "MeetingRequest".equals(itemType)) {
+            return new Event(responses.get(0));
+        } else {
+            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+        }
     }
 
     @Override

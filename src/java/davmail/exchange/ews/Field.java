@@ -28,6 +28,12 @@ public class Field {
     protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
 
     static {
+        // items
+        FIELD_MAP.put("etag", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("displayname", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("urlcompname", new ExtendedFieldURI(0x10f3, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("lastmodified", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
+
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
 
         // use PR_RECORD_KEY as unique key 

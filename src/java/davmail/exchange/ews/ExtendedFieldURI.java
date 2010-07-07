@@ -108,7 +108,11 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     public String getResponseName() {
-        return propertyTag;
+        if (propertyTag != null) {
+            return propertyTag;
+        } else {
+            return String.valueOf(propertyId);
+        }
     }
 
     public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI(0xff6, PropertyType.Binary);

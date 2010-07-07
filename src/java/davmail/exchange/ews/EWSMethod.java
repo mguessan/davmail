@@ -511,6 +511,10 @@ public abstract class EWSMethod extends PostMethod {
                 String tagLocalName = reader.getLocalName();
                 if (tagLocalName.equals("ExtendedFieldURI")) {
                     propertyTag = getAttributeValue(reader, "PropertyTag");
+                    // property name is in PropertyId with DistinguishedPropertySetId 
+                    if (propertyTag == null) {
+                        propertyTag = getAttributeValue(reader, "PropertyId");
+                    }
                 } else if (tagLocalName.equals("Value")) {
                     propertyValue = reader.getElementText();
                 }
