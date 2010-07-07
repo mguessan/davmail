@@ -112,7 +112,7 @@ public class PopConnection extends AbstractConnection {
                         password = null;
                         session = null;
                         if (tokens.hasMoreTokens()) {
-                            userName = tokens.nextToken();
+                            userName = line.substring("USER ".length());
                             sendOK("USER : " + userName);
                             state = State.USER;
                         } else {
