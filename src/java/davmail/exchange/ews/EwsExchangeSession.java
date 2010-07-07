@@ -712,7 +712,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
             ItemResult itemResult = new ItemResult();
-            itemResult.status = status;
+            // TODO
+            itemResult.status = HttpStatus.SC_CREATED;
             // TODO: get etag
             // itemResult.etag = ???
 

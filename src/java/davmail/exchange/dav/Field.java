@@ -172,7 +172,7 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "middlename"); // PR_MIDDLE_NAME 0x3A44
         createField(URN_SCHEMAS_CONTACTS, "fileas"); // urn:schemas:contacts:fileas PS_PUBLIC_STRINGS
 
-        createField("id", 0x0ff6, PropertyType.Binary); // PR_INSTANCE_KEY http://support.microsoft.com/kb/320749
+        //createField("id", 0x0ff6, PropertyType.Binary); // PR_INSTANCE_KEY http://support.microsoft.com/kb/320749
 
         createField(URN_SCHEMAS_CONTACTS, "homepostaladdress"); // homeAddress DistinguishedPropertySetType.Address/0x0000801A/String
         createField(URN_SCHEMAS_CONTACTS, "otherpostaladdress"); // otherAddress DistinguishedPropertySetType.Address/0x0000801C/String

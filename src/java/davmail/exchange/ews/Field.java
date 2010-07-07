@@ -51,7 +51,80 @@ public class Field {
 
         // contact
 
+        FIELD_MAP.put("outlookmessageclass", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x001A, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("subject", new ExtendedFieldURI(0x0037, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("middlename", new ExtendedFieldURI(0x3A44, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
+
+        FIELD_MAP.put("homepostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801A, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("otherpostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801C, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("mailingaddressid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address,0x8022, ExtendedFieldURI.PropertyType.String ));
+        FIELD_MAP.put("workaddress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801B, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("alternaterecipient", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:alternaterecipient"));
+
+        FIELD_MAP.put("extensionattribute1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x804F, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("extensionattribute2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8050, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("extensionattribute3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8051, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("extensionattribute4", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8052, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("businesshomepage", new ExtendedFieldURI(0x3A51, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("c", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:c"));
+
+        FIELD_MAP.put("cn", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, 0x8049, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("department", new ExtendedFieldURI(0x3A18, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8083, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8093, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A3, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("facsimiletelephonenumber", new ExtendedFieldURI(0x3A24, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("givenName", new ExtendedFieldURI(0x3A06, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("homepostofficebox", new ExtendedFieldURI(0x3A5E, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homeCity", new ExtendedFieldURI(0x3A59, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homeCountry", new ExtendedFieldURI(0x3A5A, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homePhone", new ExtendedFieldURI(0x3A09, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homePostalCode", new ExtendedFieldURI(0x3A5B, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homeState", new ExtendedFieldURI(0x3A5C, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homeStreet", new ExtendedFieldURI(0x3A5D, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("l", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8046, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("manager", new ExtendedFieldURI(0x3A4E, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("mobile", new ExtendedFieldURI(0x3A1C, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("namesuffix", new ExtendedFieldURI(0x3A05, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("nickname", new ExtendedFieldURI(0x3A4F, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("o", new ExtendedFieldURI(0x3A16, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("pager", new ExtendedFieldURI(0x3A21, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("personaltitle", new ExtendedFieldURI(0x3A45, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("postalcode", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8048, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("postofficebox", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x804A, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("profession", new ExtendedFieldURI(0x3A46, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("roomnumber", new ExtendedFieldURI(0x3A19, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("secretarycn", new ExtendedFieldURI(0x3A30, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("sn", new ExtendedFieldURI(0x3A11, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("spousecn", new ExtendedFieldURI(0x3A48, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("st", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8047, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("street", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8045, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("telephoneNumber", new ExtendedFieldURI(0x3A08, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("title", new ExtendedFieldURI(0x3A17, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("otherstreet", new ExtendedFieldURI(0x3A63, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("otherstate", new ExtendedFieldURI(0x3A62, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("otherpostofficebox", new ExtendedFieldURI(0x3A64, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("otherpostalcode", new ExtendedFieldURI(0x3A61, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("othercountry", new ExtendedFieldURI(0x3A60, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("othercity", new ExtendedFieldURI(0x3A5F, ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("private", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8506, ExtendedFieldURI.PropertyType.Boolean));
+        FIELD_MAP.put("sensitivity", new ExtendedFieldURI(0x0036, ExtendedFieldURI.PropertyType.Long));
+
+        FIELD_MAP.put("haspicture", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8015, ExtendedFieldURI.PropertyType.Boolean));
         
     }
 
