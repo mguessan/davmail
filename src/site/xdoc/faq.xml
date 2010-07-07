@@ -78,10 +78,19 @@
                     <strong>Is Exchange 2010 supported ?</strong>
                 </p>
                 <p>Currently, the answer is no. As Microsoft decided to drop WebDav support in Exchange 2010, DavMail
-                    will
-                    not work with this new version. New Exchange Web Service support compatible with Exchange 2010 is in
-                    the
-                    roadmap, but not yet available.
+                    will not work with this new version. Experimental Exchange Web Service support compatible with
+                    Exchange 2010 is available in subversion, but not complete yet.
+                </p>
+            </subsection>
+
+            <subsection name="OSX">
+                <p>
+                    <strong>How do I make DavMail start automatically ?</strong>
+                </p>
+                <p>Add DavMail.app to "Login Items", see
+                    <a href="http://docs.info.apple.com/article.html?path=Mac/10.6/en/15189.html">
+                        Opening items automatically when you log in
+                    </a>
                 </p>
             </subsection>
 
