@@ -1593,7 +1593,7 @@ public abstract class ExchangeSession {
     public abstract static class Item extends HashMap<String, String> {
         protected String folderPath;
         protected String itemName;
-        public String permanentUrl;
+        protected String permanentUrl;
         /**
          * Display name.
          */
@@ -1602,12 +1602,7 @@ public abstract class ExchangeSession {
          * item etag
          */
         public String etag;
-        protected String contentClass;
         protected String noneMatch;
-        /**
-         * ICS content
-         */
-        protected String itemBody;
 
         /**
          * Build item instance.
@@ -1652,6 +1647,10 @@ public abstract class ExchangeSession {
          */
         public String getName() {
             return itemName;
+        }
+
+        public String getPermanentUrl() {
+            return permanentUrl;
         }
 
         /**
@@ -1831,6 +1830,40 @@ public abstract class ExchangeSession {
         @Override
         public String getContentType() {
             return "text/calendar;charset=UTF-8";
+        }
+
+        /**
+         * Load ICS content from MIME message input stream
+         *
+         * @param mimeInputStream mime message input stream
+         * @return mime message ics attachment body
+         * @throws IOException        on error
+         * @throws MessagingException on error
+         */
+        protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
+            String result;
+            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+            Object mimeBody = mimeMessage.getContent();
+            MimePart bodyPart = null;
+            if (mimeBody instanceof MimeMultipart) {
+                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
+            } else if (isCalendarContentType(mimeMessage.getContentType())) {
+                // no multipart, single body
+                bodyPart = mimeMessage;
+            }
+
+            if (bodyPart != null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.getDataHandler().writeTo(baos);
+                baos.close();
+                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.writeTo(baos);
+                baos.close();
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
+            }
+            return result;
         }
 
         protected static final String TEXT_CALENDAR = "text/calendar";

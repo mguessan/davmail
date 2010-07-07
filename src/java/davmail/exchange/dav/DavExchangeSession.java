@@ -48,7 +48,6 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -690,41 +689,6 @@ public class DavExchangeSession extends ExchangeSession {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
-        /**
-         * Load ICS content from MIME message input stream
-         *
-         * @param mimeInputStream mime message input stream
-         * @return mime message ics attachment body
-         * @throws IOException        on error
-         * @throws MessagingException on error
-         */
-        protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
-            String result;
-            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
-            Object mimeBody = mimeMessage.getContent();
-            MimePart bodyPart = null;
-            if (mimeBody instanceof MimeMultipart) {
-                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
-            } else if (isCalendarContentType(mimeMessage.getContentType())) {
-                // no multipart, single body
-                bodyPart = mimeMessage;
-            }
-
-            if (bodyPart != null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bodyPart.getDataHandler().writeTo(baos);
-                baos.close();
-                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
-            } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                baos.close();
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
-            }
-            return result;
-        }
-
-
         protected String getICSFromInternetContentProperty() throws IOException, DavException, MessagingException {
             String result = null;
             // PropFind PR_INTERNET_CONTENT
@@ -1187,7 +1151,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.permanentUrl));
+        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getPermanentUrl()));
         method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");

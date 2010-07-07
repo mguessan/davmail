@@ -24,17 +24,21 @@ import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
+import javax.mail.MessagingException;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -163,6 +167,7 @@ public class EwsExchangeSession extends ExchangeSession {
         item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
         String bcc = properties.get("bcc");
         // Exchange 2007 is unable to handle bcc field on create
+        //noinspection VariableNotUsedInsideIf
         if (bcc != null) {
             properties.remove("bcc");
         }
@@ -227,7 +232,14 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
-        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Message) message).itemId, true);
+        return getContent(((EwsExchangeSession.Message) message).itemId);
+    }
+
+    /**
+     * Get item MIME content.
+     */
+    protected byte[] getContent(ItemId itemId) throws IOException {
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
         executeMethod(getItemMethod);
         return getItemMethod.getMimeContent();
     }
@@ -629,21 +641,181 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
-        throw new UnsupportedOperationException();
+        MoveItemMethod moveItemMethod = new MoveItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(TRASH));
+        executeMethod(moveItemMethod);
+    }
+
+    protected class Contact extends ExchangeSession.Contact {
+        // item id
+        ItemId itemId;
+
+        protected Contact(EWSMethod.Item response) throws URIException {
+            itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+
+            permanentUrl = response.get(Field.get("permanenturl").getResponseName());
+            etag = response.get(Field.get("etag").getResponseName());
+            displayName = response.get(Field.get("displayname").getResponseName());
+            for (String attributeName : CONTACT_ATTRIBUTES) {
+                String value = response.get(Field.get("attributeName").getResponseName());
+                if (value != null) {
+                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
+                        try {
+                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormatMillisecond().parse(value));
+                        } catch (ParseException e) {
+                            LOGGER.warn("Invalid date: " + value);
+                        }
+                    }
+                    put(attributeName, value);
+                }
+            }
+        }
+
+        /**
+         * @inheritDoc
+         */
+        public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
+            super(folderPath, itemName, properties, etag, noneMatch);
+        }
+
+        protected Set<FieldUpdate> buildProperties() throws IOException {
+            HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
+            for (Map.Entry<String, String> entry : entrySet()) {
+                list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
+            }
+
+            return list;
+        }
+
+
+        /**
+         * Create or update contact
+         *
+         * @return action result
+         * @throws IOException on error
+         */
+        public ItemResult createOrUpdate() throws IOException {
+
+            EWSMethod.Item item = new EWSMethod.Item();
+            item.type = "Contact";
+            item.setFieldUpdates(buildProperties());
+            // TODO: handle etag and noneMatch
+            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
+            executeMethod(createItemMethod);
+
+            // TODO: detect create/update
+            int status = createItemMethod.getStatusCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                if (etag != null) {
+                    LOGGER.debug("Updated event " + getHref());
+                } else {
+                    LOGGER.warn("Overwritten event " + getHref());
+                }
+            }
+            ItemResult itemResult = new ItemResult();
+            itemResult.status = status;
+            // TODO: get etag
+            // itemResult.etag = ???
+
+            return itemResult;
+
+        }
+    }
+
+    protected class Event extends ExchangeSession.Event {
+        // item id
+        ItemId itemId;
+
+        protected Event(EWSMethod.Item response) throws URIException {
+            itemId = new ItemId(response.get("ItemId"), response.get("ChangeKey"));
+
+            permanentUrl = response.get(Field.get("permanenturl").getResponseName());
+            etag = response.get(Field.get("etag").getResponseName());
+            displayName = response.get(Field.get("displayname").getResponseName());
+        }
+
+        /**
+         * @inheritDoc
+         */
+        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+            super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
+        }
+        
+
+        @Override
+        protected ItemResult createOrUpdate(byte[] content) throws IOException {
+            EWSMethod.Item item = new EWSMethod.Item();
+            item.type = "Message";
+            item.mimeContent = Base64.encodeBase64(content);
+            // TODO: handle etag and noneMatch
+            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
+            executeMethod(createItemMethod);
+
+            // TODO: detect create/update
+            int status = createItemMethod.getStatusCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                if (etag != null) {
+                    LOGGER.debug("Updated event " + getHref());
+                } else {
+                    LOGGER.warn("Overwritten event " + getHref());
+                }
+            }
+            ItemResult itemResult = new ItemResult();
+            itemResult.status = status;
+            // TODO: get etag
+            // itemResult.etag = ???
+
+            return itemResult;
+        }
+
+        @Override
+        public String getBody() throws HttpException {
+            String result;
+            LOGGER.debug("Get event: " + permanentUrl);
+            try {
+                byte[] content = getContent(itemId);
+                result = getICS(new ByteArrayInputStream(content));
+            } catch (IOException e) {
+                throw buildHttpException(e);
+            } catch (MessagingException e) {
+                throw buildHttpException(e);
+            }
+            return result;
+        }
     }
 
     @Override
-    public List<Contact> searchContacts(String folderName, Set<String> attributes, Condition condition) throws IOException {
-        throw new UnsupportedOperationException();
+    public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+        List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
+                and(equals("outlookmessageclass", "IPM.Contact"), condition),
+                FolderQueryTraversal.SHALLOW);
+
+        for (EWSMethod.Item response : responses) {
+            contacts.add(new Contact(response));
+        }
+        return contacts;
     }
 
     @Override
-    protected List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
-        throw new UnsupportedOperationException();
+    protected List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+        List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
+                condition,
+                FolderQueryTraversal.SHALLOW);
+        for (EWSMethod.Item response : responses) {
+            events.add(new Event(response));
+        }
+
+        return events;
     }
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -659,12 +831,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        throw new UnsupportedOperationException();
+        return new Contact(folderPath, itemName, properties, etag, noneMatch).createOrUpdate();
     }
 
     @Override
     protected ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        throw new UnsupportedOperationException();
+        return new Event(folderPath, itemName, contentClass, icsBody, etag, noneMatch).createOrUpdate();
     }
 
     @Override
@@ -761,3 +933,4 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
 }
+
