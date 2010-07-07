@@ -28,7 +28,6 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
-import davmail.util.StringUtil;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

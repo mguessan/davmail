@@ -405,6 +405,8 @@ public class DavExchangeSession extends ExchangeSession {
         operatorMap.put(Operator.IsNull, " is null");
         operatorMap.put(Operator.IsFalse, " = false");
         operatorMap.put(Operator.IsTrue, " = true");
+        operatorMap.put(Operator.StartsWith, " = ");
+        operatorMap.put(Operator.Contains, " = ");
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
