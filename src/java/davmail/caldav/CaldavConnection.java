@@ -1306,8 +1306,8 @@ public class CaldavConnection extends AbstractConnection {
             return getPathElement(getPathLength() - 1);
         }
 
-        protected boolean isIcal3() {
-            return isUserAgent("DAVKit/3");
+        protected boolean isBrokenHrefEncoding() {
+            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/");
         }
 
         protected boolean isLightning() {
@@ -1379,7 +1379,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
-                            if (isIcal3()) {
+                            if (isBrokenHrefEncoding()) {
                                 hrefs.add(streamReader.getText());
                             } else {
                                 hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getText())));
