@@ -188,9 +188,9 @@ public class Field {
 
         createField(URN_SCHEMAS_CONTACTS, "bday"); // PR_BIRTHDAY 0x3A42 SystemTime
         createField(URN_SCHEMAS_CONTACTS, "businesshomepage"); // PR_BUSINESS_HOME_PAGE 0x3A51 String
-        createField(URN_SCHEMAS_CONTACTS, "c"); // country DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:c/String
+        //createField(URN_SCHEMAS_CONTACTS, "c"); // country DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:c/String
         createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001 String
-        createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.PublicStrings/0x00008049/String
+        createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.Address/0x00008049/String
         createField(URN_SCHEMAS_CONTACTS, "department"); // PR_DEPARTMENT_NAME 0x3A18 String
         // email with display name
         createField("writeemail1", URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String

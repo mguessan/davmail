@@ -3091,7 +3091,6 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("extensionattribute4");
         CONTACT_ATTRIBUTES.add("bday");
         CONTACT_ATTRIBUTES.add("businesshomepage");
-        CONTACT_ATTRIBUTES.add("c");
         CONTACT_ATTRIBUTES.add("cn");
         CONTACT_ATTRIBUTES.add("co");
         CONTACT_ATTRIBUTES.add("department");

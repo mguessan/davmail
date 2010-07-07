@@ -77,10 +77,9 @@ public class Field {
 
         FIELD_MAP.put("bday", new ExtendedFieldURI(0x3A42, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("businesshomepage", new ExtendedFieldURI(0x3A51, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("c", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:c"));
 
         FIELD_MAP.put("cn", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, 0x8049, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8049, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("department", new ExtendedFieldURI(0x3A18, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8083, ExtendedFieldURI.PropertyType.String));
