@@ -879,7 +879,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
-            response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + '/');
+            response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + "/contacts/");
         }
 
         if ("users".equals(prefix)) {
