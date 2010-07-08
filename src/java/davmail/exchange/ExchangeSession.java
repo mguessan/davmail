@@ -2486,6 +2486,7 @@ public abstract class ExchangeSession {
         ITEM_PROPERTIES.add("displayname");
         // calendar CdoInstanceType
         ITEM_PROPERTIES.add("instancetype");
+        ITEM_PROPERTIES.add("urlcompname");
     }
 
     /**
@@ -3084,6 +3085,7 @@ public abstract class ExchangeSession {
     static {
         CONTACT_ATTRIBUTES.add("imapUid");
         CONTACT_ATTRIBUTES.add("etag");
+        CONTACT_ATTRIBUTES.add("urlcompname");
 
         CONTACT_ATTRIBUTES.add("extensionattribute1");
         CONTACT_ATTRIBUTES.add("extensionattribute2");

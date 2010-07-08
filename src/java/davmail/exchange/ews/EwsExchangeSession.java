@@ -29,7 +29,6 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import javax.mail.MessagingException;
 import java.io.BufferedReader;
@@ -115,6 +114,10 @@ public class EwsExchangeSession extends ExchangeSession {
             LOGGER.error(e.getMessage(), e);
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
+
+        // also need to retrieve email and alias
+        alias = getAliasFromOptions();
+        email = getEmailFromOptions();
     }
 
     class Message extends ExchangeSession.Message {
@@ -656,6 +659,7 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
+            itemName = response.get(Field.get("urlcompname").getResponseName()); 
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
@@ -684,7 +688,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
             }
             // force urlcompname
-            list.add(Field.createFieldUpdate("urlcompname", URIUtil.encodePath(convertItemNameToEML(itemName))));
+            list.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
             return list;
         }
 
@@ -789,8 +793,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
-                and(equals("outlookmessageclass", "IPM.Contact"), condition),
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes,condition,
                 FolderQueryTraversal.SHALLOW);
 
         for (EWSMethod.Item response : responses) {
@@ -818,12 +821,13 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
         EVENT_REQUEST_PROPERTIES.add("etag");
         EVENT_REQUEST_PROPERTIES.add("displayname");
+        EVENT_REQUEST_PROPERTIES.add("urlcompname");
     }
 
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (responses.isEmpty()) {
             throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
@@ -848,7 +852,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public int deleteItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
             DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(responses.get(0)), DeleteType.HardDelete);
@@ -859,7 +863,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public int processItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = URIUtil.encodePath(convertItemNameToEML(itemName));
+        String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
             HashMap<String, String> localProperties = new HashMap<String, String>();
@@ -891,7 +895,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isSharedFolder(String folderPath) {
-        throw new UnsupportedOperationException();
+        // TODO
+        return false;
     }
 
     @Override
@@ -911,10 +916,13 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        if (folderPath.startsWith(PUBLIC_ROOT)) {
+        String currentMailboxPath = "/users/"+email+ '/';
+        if (folderPath.startsWith(currentMailboxPath)) {
+            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length()));
+        } if (folderPath.startsWith(PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
-        } else if (folderPath.startsWith(INBOX)) {
+        } else if (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX)) {
             currentFolderId = DistinguishedFolderId.INBOX;
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (folderPath.startsWith(CALENDAR)) {

@@ -35,6 +35,7 @@ public class Field {
         FIELD_MAP.put("lastmodified", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
 
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
+        FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
 
         // use PR_RECORD_KEY as unique key 
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
@@ -57,7 +58,7 @@ public class Field {
 
         // contact
 
-        FIELD_MAP.put("outlookmessageclass", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x001A, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("outlookmessageclass", new ExtendedFieldURI(0x001A, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("subject", new ExtendedFieldURI(0x0037, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("middlename", new ExtendedFieldURI(0x3A44, ExtendedFieldURI.PropertyType.String));
