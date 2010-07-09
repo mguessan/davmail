@@ -749,7 +749,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @inheritDoc
          */
         @Override
-        protected ItemResult createOrUpdate(byte[] messageContent) throws IOException {
+        protected ItemResult createOrUpdate(byte[] mimeContent) throws IOException {
             PutMethod putmethod = new PutMethod(URIUtil.encodePath(getHref()));
             putmethod.setRequestHeader("Translate", "f");
             putmethod.setRequestHeader("Overwrite", "f");
@@ -760,7 +760,7 @@ public class DavExchangeSession extends ExchangeSession {
                 putmethod.setRequestHeader("If-None-Match", noneMatch);
             }
             putmethod.setRequestHeader("Content-Type", "message/rfc822");
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(messageContent, "message/rfc822"));
+            putmethod.setRequestEntity(new ByteArrayRequestEntity(mimeContent, "message/rfc822"));
             int status;
             try {
                 status = httpClient.executeMethod(putmethod);
@@ -793,7 +793,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // Set contentclass to make ActiveSync happy
                 propertyList.add(Field.createDavProperty("contentclass", contentClass));
                 // ... but also set PR_INTERNET_CONTENT to preserve custom properties
-                propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(messageContent))));
+                propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(mimeContent))));
                 PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), propertyList);
                 int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                 if (patchStatus != HttpStatus.SC_MULTI_STATUS) {

@@ -37,6 +37,8 @@ public class Field {
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
 
+        FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));        
+
         // use PR_RECORD_KEY as unique key 
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
         FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));//PR_MESSAGE_FLAGS
@@ -131,7 +133,9 @@ public class Field {
         FIELD_MAP.put("sensitivity", new ExtendedFieldURI(0x0036, ExtendedFieldURI.PropertyType.Long));
 
         FIELD_MAP.put("haspicture", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8015, ExtendedFieldURI.PropertyType.Boolean));
-        
+
+        // calendar
+        FIELD_MAP.put("processed", new ExtendedFieldURI(0x65e8, ExtendedFieldURI.PropertyType.Boolean));
     }
 
     /**

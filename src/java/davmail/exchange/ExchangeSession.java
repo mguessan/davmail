@@ -647,7 +647,11 @@ public abstract class ExchangeSession {
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
             this.conditions = new ArrayList<Condition>();
-            this.conditions.addAll(Arrays.asList(conditions));
+            for (Condition condition:conditions) {
+                if (condition != null) {
+                    this.conditions.add(condition);
+                }
+            }
         }
 
         /**
@@ -2475,7 +2479,7 @@ public abstract class ExchangeSession {
 
         }
 
-        protected abstract ItemResult createOrUpdate(byte[] content) throws IOException;
+        protected abstract ItemResult createOrUpdate(byte[] mimeContent) throws IOException;
 
     }
 

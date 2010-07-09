@@ -492,12 +492,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition isTrue(String attributeName) {
-        return new AttributeCondition(attributeName, Operator.IsEqualTo, "True");
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "true");
     }
 
     @Override
     public Condition isFalse(String attributeName) {
-        return new AttributeCondition(attributeName, Operator.IsEqualTo, "False");
+        return new AttributeCondition(attributeName, Operator.IsEqualTo, "false");
     }
 
     protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<FieldURI>();
@@ -529,8 +529,15 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public List<ExchangeSession.Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
+        String baseFolderPath = folderPath;
+        if (baseFolderPath.startsWith("/users/")) {
+            int index = baseFolderPath.indexOf('/', "/users/".length());
+            if (index >= 0) {
+                baseFolderPath = baseFolderPath.substring(index+1);
+            }
+        }
         List<ExchangeSession.Folder> folders = new ArrayList<ExchangeSession.Folder>();
-        appendSubFolders(folders, folderPath, getFolderId(folderPath), condition, recursive);
+        appendSubFolders(folders, baseFolderPath, getFolderId(folderPath), condition, recursive);
         return folders;
     }
 
@@ -760,7 +767,6 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
-
         }
     }
 
@@ -774,6 +780,7 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
+            itemName = response.get(Field.get("urlcompname").getResponseName());
         }
 
         /**
@@ -785,29 +792,70 @@ public class EwsExchangeSession extends ExchangeSession {
 
 
         @Override
-        protected ItemResult createOrUpdate(byte[] content) throws IOException {
-            EWSMethod.Item item = new EWSMethod.Item();
-            item.type = "Message";
-            item.mimeContent = Base64.encodeBase64(content);
-            // TODO: handle etag and noneMatch
-            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
-            executeMethod(createItemMethod);
+        protected ItemResult createOrUpdate(byte[] mimeContent) throws IOException {
+            ItemResult itemResult = new ItemResult();
+            EWSMethod createOrUpdateItemMethod;
 
-            // TODO: detect create/update
-            int status = createItemMethod.getStatusCode();
-            if (status == HttpURLConnection.HTTP_OK) {
+            // first try to load existing event
+            String urlcompname = convertItemNameToEML(itemName);
+            String currentEtag = null;
+            ItemId currentItemId = null;
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            if (!responses.isEmpty()) {
+                EWSMethod.Item response = responses.get(0);
+                currentItemId = new ItemId(response);
+                currentEtag = response.get(Field.get("etag").getResponseName());
+            }
+            if ("*".equals(noneMatch)) {
+                // create requested
+                if (currentItemId != null) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            } else if (etag != null) {
+                // update requested
+                if (currentItemId == null || !etag.equals(currentEtag)) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            }
+
+            if (currentItemId != null) {
+                Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+                updates.add(new FieldUpdate(Field.get("mimeContent"), String.valueOf(Base64.encodeBase64(mimeContent))));
+                // update
+                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                        ConflictResolution.AlwaysOverwrite,
+                        CalendarItemCreateOrDeleteOperation.SendToNone,
+                        currentItemId, updates);
+            } else {
+                // create
+                EWSMethod.Item newItem = new EWSMethod.Item();
+                newItem.type = "Message";
+                newItem.mimeContent = Base64.encodeBase64(mimeContent);
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
+            }
+
+            executeMethod(createOrUpdateItemMethod);
+
+            itemResult.status = createOrUpdateItemMethod.getStatusCode();
+            if (itemResult.status == HttpURLConnection.HTTP_OK) {
+                //noinspection VariableNotUsedInsideIf
                 if (etag != null) {
+                    itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
                 } else {
                     LOGGER.warn("Overwritten event " + getHref());
                 }
             }
-            ItemResult itemResult = new ItemResult();
-            itemResult.status = status;
-            // TODO: get etag
-            // itemResult.etag = ???
+
+            ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
+            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+            executeMethod(getItemMethod);
+            itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
+
         }
 
         @Override
