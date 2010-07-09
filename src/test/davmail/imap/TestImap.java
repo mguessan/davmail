@@ -21,7 +21,6 @@ package davmail.imap;
 import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
-import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -169,7 +168,7 @@ public class TestImap extends AbstractDavMailTestCase {
 
     }
 
-    public void testUidStoreSeenFlag() throws IOException {
+    public void testUidRemoveSeenFlag() throws IOException {
         // remove seen flag
         writeLine(". UID STORE "+messageUid+" FLAGS (\\Draft)");
         assertEquals(". OK STORE completed",readFullAnswer("."));
@@ -220,6 +219,22 @@ public class TestImap extends AbstractDavMailTestCase {
 
         // remove Junk flag
         writeLine(". UID STORE "+messageUid+" -FLAGS (Junk)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
+    public void testUidStoreSeenFlag() throws IOException {
+        // add Junk flag
+        writeLine(". UID STORE "+messageUid+" +FLAGS (\\Seen)");
+        assertEquals(". OK STORE completed",readFullAnswer("."));
+        writeLine(". UID FETCH "+messageUid+" (FLAGS)");
+        assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Seen \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+
+        // remove Junk flag
+        writeLine(". UID STORE "+messageUid+" -FLAGS (\\Seen)");
         assertEquals(". OK STORE completed",readFullAnswer("."));
         writeLine(". UID FETCH "+messageUid+" (FLAGS)");
         assertEquals("* 1 FETCH (UID "+messageUid+" FLAGS (\\Draft))", readLine());
