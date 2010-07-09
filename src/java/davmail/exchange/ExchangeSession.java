@@ -187,7 +187,7 @@ public abstract class ExchangeSession {
         return dateFormatter.format(date);
     }
 
-    protected static SimpleDateFormat getZuluDateFormat() {
+    public static SimpleDateFormat getZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYYMMDD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;

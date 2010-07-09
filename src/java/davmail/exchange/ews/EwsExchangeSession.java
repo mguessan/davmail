@@ -241,6 +241,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     /**
      * Get item MIME content.
+     *
      * @param itemId EWS item id
      * @return item content as byte array
      * @throws IOException on error
@@ -251,7 +252,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return getItemMethod.getMimeContent();
     }
 
-    protected Message buildMessage(EWSMethod.Item response) throws URIException {
+    protected Message buildMessage(EWSMethod.Item response) throws URIException, DavMailException {
         Message message = new Message();
 
         // get item id
@@ -269,7 +270,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
-        message.date = response.get(Field.get("date").getResponseName());
+        message.date = convertDate(response.get(Field.get("date").getResponseName()));
         message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
         if (LOGGER.isDebugEnabled()) {
@@ -656,22 +657,18 @@ public class EwsExchangeSession extends ExchangeSession {
         // item id
         ItemId itemId;
 
-        protected Contact(EWSMethod.Item response) throws URIException {
+        protected Contact(EWSMethod.Item response) throws URIException, DavMailException {
             itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
-            itemName = response.get(Field.get("urlcompname").getResponseName()); 
+            itemName = response.get(Field.get("urlcompname").getResponseName());
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
                     if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
-                        try {
-                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormat().parse(value));
-                        } catch (ParseException e) {
-                            LOGGER.warn("Invalid date: " + value);
-                        }
+                        value = convertDate(value);
                     }
                     put(attributeName, value);
                 }
@@ -681,7 +678,7 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * @inheritDoc
          */
-        public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
+        protected Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
@@ -711,7 +708,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String currentEtag = null;
             ItemId currentItemId = null;
             List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-            if (responses.size() > 0) {
+            if (!responses.isEmpty()) {
                 EWSMethod.Item response = responses.get(0);
                 currentItemId = new ItemId(response);
                 currentEtag = response.get(Field.get("etag").getResponseName());
@@ -748,6 +745,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
+                //noinspection VariableNotUsedInsideIf
                 if (etag != null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
@@ -781,7 +779,7 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * @inheritDoc
          */
-        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+        protected Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
@@ -831,7 +829,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes,condition,
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition,
                 FolderQueryTraversal.SHALLOW);
 
         for (EWSMethod.Item response : responses) {
@@ -954,10 +952,11 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        String currentMailboxPath = "/users/"+email+ '/';
+        String currentMailboxPath = "/users/" + email + '/';
         if (folderPath.startsWith(currentMailboxPath)) {
             return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length()));
-        } if (folderPath.startsWith(PUBLIC_ROOT)) {
+        }
+        if (folderPath.startsWith(PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
         } else if (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX)) {
@@ -1026,6 +1025,16 @@ public class EwsExchangeSession extends ExchangeSession {
             ewsMethod.releaseConnection();
         }
         return status;
+    }
+
+    protected String convertDate(String exchangeDateValue) throws DavMailException {
+        String zuluDateValue;
+        try {
+            zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));
+        } catch (ParseException e) {
+            throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+        }
+        return zuluDateValue;
     }
 
 }

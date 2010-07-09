@@ -246,6 +246,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK UID FETCH completed",readFullAnswer("."));
     }
 
+    public void testFetchInternalDate() throws IOException {
+        writeLine(". UID FETCH "+messageUid+" (INTERNALDATE)");
+        assertEquals(". OK UID FETCH completed",readFullAnswer("."));
+    }
+
 
     public void testDeleteFolder() throws IOException {
         writeLine(". DELETE testfolder");

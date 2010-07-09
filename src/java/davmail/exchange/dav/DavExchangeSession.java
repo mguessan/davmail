@@ -563,7 +563,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @param multiStatusResponse response
          * @throws URIException on error
          */
-        public Contact(MultiStatusResponse multiStatusResponse) throws URIException {
+        public Contact(MultiStatusResponse multiStatusResponse) throws URIException, DavMailException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
@@ -573,11 +573,7 @@ public class DavExchangeSession extends ExchangeSession {
                 String value = getPropertyIfExists(properties, attributeName);
                 if (value != null) {
                     if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
-                        try {
-                            value = ExchangeSession.getZuluDateFormat().format(ExchangeSession.getExchangeZuluDateFormatMillisecond().parse(value));
-                        } catch (ParseException e) {
-                            LOGGER.warn("Invalid date: " + value);
-                        }
+                        value = convertDate(value);
                     }
                     put(attributeName, value);
                 }
@@ -1651,5 +1647,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         LOGGER.debug("Deleted to :" + destination);
+    }
+
+    protected String convertDate(String exchangeDateValue) throws DavMailException {
+        String zuluDateValue;
+        try {
+            zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
+        } catch (ParseException e) {
+            throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+        }
+        return zuluDateValue;
     }
 }

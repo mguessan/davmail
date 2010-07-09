@@ -600,7 +600,7 @@ public class ImapConnection extends AbstractConnection {
                     try {
                         SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                         dateParser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-                        Date date = dateParser.parse(message.date);
+                        Date date = ExchangeSession.getZuluDateFormat().parse(message.date);
                         SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss Z", Locale.ENGLISH);
                         buffer.append(" INTERNALDATE \"").append(dateFormatter.format(date)).append('\"');
                     } catch (ParseException e) {
