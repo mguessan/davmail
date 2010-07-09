@@ -18,9 +18,6 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * Unindexed Field URI
  */
@@ -43,6 +40,9 @@ public class UnindexedFieldURI implements FieldURI {
     }
 
     public void appendValue(StringBuilder buffer, String itemType, String value) {
+        if (fieldURI.startsWith("message")) {
+            itemType = "Message";
+        }
         appendTo(buffer);
         buffer.append("<t:");
         buffer.append(itemType);

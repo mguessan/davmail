@@ -18,9 +18,6 @@
  */
 package davmail.exchange.ews;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * Field URI.
  */
