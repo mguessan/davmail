@@ -135,7 +135,7 @@ public class EwsExchangeSession extends ExchangeSession {
         HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
-                list.add(Field.createFieldUpdate("read", entry.getValue()));
+                list.add(Field.createFieldUpdate("read", Boolean.toString("1".equals(entry.getValue()))));
             } else if ("junk".equals(entry.getKey())) {
                 list.add(Field.createFieldUpdate("junk", entry.getValue()));
             } else if ("flagged".equals(entry.getKey())) {
@@ -241,6 +241,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
     /**
      * Get item MIME content.
+     * @param itemId EWS item id
+     * @return item content as byte array
+     * @throws IOException on error
      */
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
@@ -700,28 +703,63 @@ public class EwsExchangeSession extends ExchangeSession {
          * @throws IOException on error
          */
         public ItemResult createOrUpdate() throws IOException {
+            ItemResult itemResult = new ItemResult();
+            EWSMethod createOrUpdateItemMethod;
 
-            EWSMethod.Item item = new EWSMethod.Item();
-            item.type = "Contact";
-            item.setFieldUpdates(buildProperties());
-            // TODO: handle etag and noneMatch
-            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
-            executeMethod(createItemMethod);
+            // first try to load existing event
+            String urlcompname = convertItemNameToEML(itemName);
+            String currentEtag = null;
+            ItemId currentItemId = null;
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            if (responses.size() > 0) {
+                EWSMethod.Item response = responses.get(0);
+                currentItemId = new ItemId(response);
+                currentEtag = response.get(Field.get("etag").getResponseName());
+            }
+            if ("*".equals(noneMatch)) {
+                // create requested
+                if (currentItemId != null) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            } else if (etag != null) {
+                // update requested
+                if (currentItemId == null || !etag.equals(currentEtag)) {
+                    itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
+                    return itemResult;
+                }
+            }
 
-            // TODO: detect create/update
-            int status = createItemMethod.getStatusCode();
-            if (status == HttpURLConnection.HTTP_OK) {
+            if (currentItemId != null) {
+                // update
+                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                        ConflictResolution.AlwaysOverwrite,
+                        CalendarItemCreateOrDeleteOperation.SendToNone,
+                        currentItemId, buildProperties());
+            } else {
+                // create
+                EWSMethod.Item newItem = new EWSMethod.Item();
+                newItem.type = "Contact";
+                newItem.setFieldUpdates(buildProperties());
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
+            }
+
+            executeMethod(createOrUpdateItemMethod);
+
+            itemResult.status = createOrUpdateItemMethod.getStatusCode();
+            if (itemResult.status == HttpURLConnection.HTTP_OK) {
                 if (etag != null) {
+                    itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
                 } else {
                     LOGGER.warn("Overwritten event " + getHref());
                 }
             }
-            ItemResult itemResult = new ItemResult();
-            // TODO
-            itemResult.status = HttpStatus.SC_CREATED;
-            // TODO: get etag
-            // itemResult.etag = ???
+
+            ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
+            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+            executeMethod(getItemMethod);
+            itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
 
