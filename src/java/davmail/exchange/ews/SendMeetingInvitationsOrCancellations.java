@@ -21,12 +21,12 @@ package davmail.exchange.ews;
 /**
  * Item update option.
  */
-public class CalendarItemCreateOrDeleteOperation extends AttributeOption {
-     private CalendarItemCreateOrDeleteOperation(String value) {
+public class SendMeetingInvitationsOrCancellations extends AttributeOption {
+     private SendMeetingInvitationsOrCancellations(String value) {
         super("SendMeetingInvitationsOrCancellations", value);
     }
       
-    public static final CalendarItemCreateOrDeleteOperation SendToNone = new CalendarItemCreateOrDeleteOperation("SendToNone");
-    public static final CalendarItemCreateOrDeleteOperation SendOnlyToAll = new CalendarItemCreateOrDeleteOperation("SendOnlyToAll");
-    public static final CalendarItemCreateOrDeleteOperation SendToAllAndSaveCopy = new CalendarItemCreateOrDeleteOperation("SendToAllAndSaveCopy");
+    public static final SendMeetingInvitationsOrCancellations SendToNone = new SendMeetingInvitationsOrCancellations("SendToNone");
+    public static final SendMeetingInvitationsOrCancellations SendOnlyToAll = new SendMeetingInvitationsOrCancellations("SendOnlyToAll");
+    public static final SendMeetingInvitationsOrCancellations SendToAllAndSaveCopy = new SendMeetingInvitationsOrCancellations("SendToAllAndSaveCopy");
 }

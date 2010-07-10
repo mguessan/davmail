@@ -1952,6 +1952,7 @@ public abstract class ExchangeSession {
             String eventClass = null;
             String organizer = null;
             String action = null;
+            String method = null;
             boolean sound = false;
 
             List<AllDayState> allDayStates = new ArrayList<AllDayState>();
@@ -2007,6 +2008,8 @@ public abstract class ExchangeSession {
                             hasCdoBusyStatus = true;
                         } else if ("BEGIN:VTIMEZONE".equals(line)) {
                             hasTimezone = true;
+                        } else if (key.equals("METHOD")) {
+                            method = value;
                         }
                     }
                 }
@@ -2030,6 +2033,14 @@ public abstract class ExchangeSession {
                     // fix invalid exchange timezoneid
                     if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
                         line = fixTimezoneId(line, validTimezoneId);
+                    }
+                    if (!fromServer && "BEGIN:VCALENDAR".equals(line) && method == null) {
+                        result.writeLine(line);
+                        // append missing method
+                        if (method == null) {
+                             result.writeLine("METHOD:PUBLISH");
+                        }
+                        continue;
                     }
                     if (fromServer && line.startsWith("PRODID:") && eventClass != null) {
                         result.writeLine(line);

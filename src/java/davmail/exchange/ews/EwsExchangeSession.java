@@ -30,7 +30,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
-import javax.mail.MessagingException;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -194,7 +193,7 @@ public class EwsExchangeSession extends ExchangeSession {
             localProperties.put("bcc", bcc);
             UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                     ConflictResolution.AlwaysOverwrite,
-                    CalendarItemCreateOrDeleteOperation.SendToNone,
+                    SendMeetingInvitationsOrCancellations.SendToNone,
                     itemId, buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
@@ -205,7 +204,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
         UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                 ConflictResolution.AlwaysOverwrite,
-                CalendarItemCreateOrDeleteOperation.SendToNone,
+                SendMeetingInvitationsOrCancellations.SendToNone,
                 ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
         executeMethod(updateItemMethod);
     }
@@ -738,7 +737,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
-                        CalendarItemCreateOrDeleteOperation.SendToNone,
+                        SendMeetingInvitationsOrCancellations.SendToNone,
                         currentItemId, buildProperties());
             } else {
                 // create
@@ -753,7 +752,7 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
                 //noinspection VariableNotUsedInsideIf
-                if (etag != null) {
+                if (etag == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
                 } else {
@@ -763,6 +762,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+            getItemMethod.addAdditionalProperty(Field.get("etag"));
             executeMethod(getItemMethod);
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
@@ -788,6 +788,11 @@ public class EwsExchangeSession extends ExchangeSession {
          */
         protected Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
+        }
+
+        @Override
+        public ItemResult createOrUpdate() throws IOException {
+            return createOrUpdate(fixICS(itemBody, false).getBytes("UTF-8"));
         }
 
 
@@ -826,14 +831,19 @@ public class EwsExchangeSession extends ExchangeSession {
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
-                        CalendarItemCreateOrDeleteOperation.SendToNone,
+                        SendMeetingInvitationsOrCancellations.SendToNone,
                         currentItemId, updates);
             } else {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
-                newItem.type = "Message";
+                newItem.type = "CalendarItem";
                 newItem.mimeContent = Base64.encodeBase64(mimeContent);
-                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
+                HashSet<FieldUpdate> updates = new HashSet<FieldUpdate>();
+                // force urlcompname
+                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
+                newItem.setFieldUpdates(updates);
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
             }
 
             executeMethod(createOrUpdateItemMethod);
@@ -841,7 +851,7 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
                 //noinspection VariableNotUsedInsideIf
-                if (etag != null) {
+                if (etag == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
                 } else {
@@ -851,6 +861,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+            getItemMethod.addAdditionalProperty(Field.get("etag"));
             executeMethod(getItemMethod);
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
@@ -864,10 +875,8 @@ public class EwsExchangeSession extends ExchangeSession {
             LOGGER.debug("Get event: " + permanentUrl);
             try {
                 byte[] content = getContent(itemId);
-                result = getICS(new ByteArrayInputStream(content));
+                result = new String(content);
             } catch (IOException e) {
-                throw buildHttpException(e);
-            } catch (MessagingException e) {
                 throw buildHttpException(e);
             }
             return result;
@@ -955,7 +964,7 @@ public class EwsExchangeSession extends ExchangeSession {
             localProperties.put("read", "1");
             UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                     ConflictResolution.AlwaysOverwrite,
-                    CalendarItemCreateOrDeleteOperation.SendToNone,
+                    SendMeetingInvitationsOrCancellations.SendToNone,
                     new ItemId(responses.get(0)), buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
