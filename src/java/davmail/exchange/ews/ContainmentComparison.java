@@ -22,7 +22,7 @@ package davmail.exchange.ews;
  * Contains comparison mode.
  */
 public class ContainmentComparison extends AttributeOption {
-     private ContainmentComparison(String value) {
+    private ContainmentComparison(String value) {
         super("ContainmentComparison", value);
     }
 

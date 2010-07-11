@@ -25,6 +25,13 @@ import java.util.Set;
  */
 public class GetFolderMethod extends EWSMethod {
 
+    /**
+     * Get folder method.
+     *
+     * @param baseShape            base requested shape
+     * @param folderId             folder id
+     * @param additionalProperties additional requested properties
+     */
     public GetFolderMethod(BaseShape baseShape, FolderId folderId, Set<FieldURI> additionalProperties) {
         super("Folder", "GetFolder");
         this.baseShape = baseShape;

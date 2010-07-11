@@ -22,7 +22,12 @@ package davmail.exchange.ews;
  * Internet Message Header Field.
  */
 public class InternetMessageHeaderFieldURI extends IndexedFieldURI {
-    public InternetMessageHeaderFieldURI(String fieldIndex) {
-        super("item:InternetMessageHeader", fieldIndex);
+    /**
+     * Create header field for field name.
+     *
+     * @param fieldName header field name
+     */
+    public InternetMessageHeaderFieldURI(String fieldName) {
+        super("item:InternetMessageHeader", fieldName);
     }
 }

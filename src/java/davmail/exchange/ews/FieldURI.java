@@ -25,13 +25,17 @@ public interface FieldURI {
 
     /**
      * Append field to buffer
+     *
      * @param buffer current buffer
      */
     public void appendTo(StringBuilder buffer);
 
     /**
      * Append updated field value to buffer
-     * @param buffer current buffer
+     *
+     * @param buffer   current buffer
+     * @param itemType item type
+     * @param value    field value
      */
     public void appendValue(StringBuilder buffer, String itemType, String value);
 

@@ -22,6 +22,12 @@ package davmail.exchange.ews;
  * Copy item to another folder.
  */
 public class CopyItemMethod extends EWSMethod {
+    /**
+     * Copy item method.
+     *
+     * @param itemId     item id
+     * @param toFolderId target folder id
+     */
     public CopyItemMethod(ItemId itemId, FolderId toFolderId) {
         super("Item", "CopyItem");
         this.itemId = itemId;

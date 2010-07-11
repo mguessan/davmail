@@ -22,6 +22,13 @@ package davmail.exchange.ews;
  * Create Item method.
  */
 public class CreateItemMethod extends EWSMethod {
+    /**
+     * Create exchange item.
+     *
+     * @param messageDisposition save or send option
+     * @param savedItemFolderId  saved item folder id
+     * @param item               item content
+     */
     public CreateItemMethod(MessageDisposition messageDisposition, FolderId savedItemFolderId, EWSMethod.Item item) {
         super("Item", "CreateItem");
         this.savedItemFolderId = savedItemFolderId;
@@ -29,6 +36,14 @@ public class CreateItemMethod extends EWSMethod {
         addMethodOption(messageDisposition);
     }
 
+    /**
+     * Create exchange item.
+     *
+     * @param messageDisposition     save or send option
+     * @param sendMeetingInvitations send invitation option
+     * @param savedItemFolderId      saved item folder id
+     * @param item                   item content
+     */
     public CreateItemMethod(MessageDisposition messageDisposition, SendMeetingInvitations sendMeetingInvitations, FolderId savedItemFolderId, EWSMethod.Item item) {
         super("Item", "CreateItem");
         this.savedItemFolderId = savedItemFolderId;
@@ -36,5 +51,5 @@ public class CreateItemMethod extends EWSMethod {
         addMethodOption(messageDisposition);
         addMethodOption(sendMeetingInvitations);
     }
-    
+
 }

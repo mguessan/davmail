@@ -40,25 +40,40 @@ public class ExtendedFieldURI implements FieldURI {
     protected int propertyId;
     protected PropertyType propertyType;
 
+    /**
+     * Create extended field uri.
+     *
+     * @param intPropertyTag property tag as int
+     * @param propertyType   property type
+     */
     public ExtendedFieldURI(int intPropertyTag, PropertyType propertyType) {
         this.propertyTag = "0x" + Integer.toHexString(intPropertyTag);
         this.propertyType = propertyType;
     }
 
+    /**
+     * Create extended field uri.
+     *
+     * @param distinguishedPropertySetId distinguished property set id
+     * @param propertyId                 property id
+     * @param propertyType               property type
+     */
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, int propertyId, PropertyType propertyType) {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyId = propertyId;
         this.propertyType = propertyType;
     }
 
+    /**
+     * Create extended field uri.
+     *
+     * @param distinguishedPropertySetId distinguished property set id
+     * @param propertyName               property name
+     */
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName) {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
         this.propertyName = propertyName;
         this.propertyType = PropertyType.String;
-    }
-
-    public String getPropertyTag() {
-        return propertyTag;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -104,6 +119,11 @@ public class ExtendedFieldURI implements FieldURI {
         }
     }
 
+    /**
+     * Field name in EWS response.
+     *
+     * @return field name in response
+     */
     public String getResponseName() {
         if (propertyTag != null) {
             return propertyTag;

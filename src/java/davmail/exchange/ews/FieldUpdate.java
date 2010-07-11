@@ -28,13 +28,27 @@ public class FieldUpdate {
     FieldURI fieldURI;
     String value;
 
+    /**
+     * Create field update with value.
+     *
+     * @param fieldURI target field
+     * @param value    field value
+     */
     public FieldUpdate(FieldURI fieldURI, String value) {
         this.fieldURI = fieldURI;
         this.value = value;
     }
 
+    /**
+     * Write field to request writer.
+     *
+     * @param itemType item type
+     * @param writer   request writer
+     * @throws IOException on error
+     */
     public void write(String itemType, Writer writer) throws IOException {
         String action;
+        //noinspection VariableNotUsedInsideIf
         if (value == null) {
             action = "Delete";
         } else {

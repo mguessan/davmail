@@ -22,6 +22,12 @@ package davmail.exchange.ews;
  * Move Item method.
  */
 public class MoveItemMethod extends EWSMethod {
+    /**
+     * Move item to target folder.
+     *
+     * @param itemId     item id
+     * @param toFolderId target folder id
+     */
     public MoveItemMethod(ItemId itemId, FolderId toFolderId) {
         super("Item", "MoveItem");
         this.itemId = itemId;

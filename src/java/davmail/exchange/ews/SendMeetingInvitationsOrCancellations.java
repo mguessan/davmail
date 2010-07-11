@@ -22,10 +22,10 @@ package davmail.exchange.ews;
  * Item update option.
  */
 public class SendMeetingInvitationsOrCancellations extends AttributeOption {
-     private SendMeetingInvitationsOrCancellations(String value) {
+    private SendMeetingInvitationsOrCancellations(String value) {
         super("SendMeetingInvitationsOrCancellations", value);
     }
-      
+
     public static final SendMeetingInvitationsOrCancellations SendToNone = new SendMeetingInvitationsOrCancellations("SendToNone");
     public static final SendMeetingInvitationsOrCancellations SendOnlyToAll = new SendMeetingInvitationsOrCancellations("SendOnlyToAll");
     public static final SendMeetingInvitationsOrCancellations SendToAllAndSaveCopy = new SendMeetingInvitationsOrCancellations("SendToAllAndSaveCopy");

@@ -66,6 +66,9 @@ public abstract class EWSMethod extends PostMethod {
 
     /**
      * Build EWS method
+     *
+     * @param itemType   item type
+     * @param methodName method name
      */
     public EWSMethod(String itemType, String methodName) {
         super("/ews/exchange.asmx");
@@ -226,6 +229,7 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void startChanges(Writer writer) throws IOException {
+        //noinspection VariableNotUsedInsideIf
         if (updates != null) {
             writer.write("<m:");
             writer.write(itemType);
@@ -248,6 +252,7 @@ public abstract class EWSMethod extends PostMethod {
 
 
     protected void endChanges(Writer writer) throws IOException {
+        //noinspection VariableNotUsedInsideIf
         if (updates != null) {
             writer.write("</t:");
             writer.write(itemType);
@@ -322,7 +327,13 @@ public abstract class EWSMethod extends PostMethod {
         return inputFactory;
     }
 
+    /**
+     * Item
+     */
     public static class Item extends HashMap<String, String> {
+        /**
+         * Item type.
+         */
         public String type;
         protected byte[] mimeContent;
         protected Set<FieldUpdate> fieldUpdates;
@@ -366,10 +377,21 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(">");
         }
 
+        /**
+         * Field updates.
+         *
+         * @param fieldUpdates field updates
+         */
         public void setFieldUpdates(Set<FieldUpdate> fieldUpdates) {
             this.fieldUpdates = fieldUpdates;
         }
 
+        /**
+         * Get property value as int
+         *
+         * @param key property response name
+         * @return property value
+         */
         public int getInt(String key) {
             int result = 0;
             String value = get(key);
@@ -379,6 +401,12 @@ public abstract class EWSMethod extends PostMethod {
             return result;
         }
 
+        /**
+         * Get property value as long
+         *
+         * @param key property response name
+         * @return property value
+         */
         public long getLong(String key) {
             long result = 0;
             String value = get(key);
@@ -389,6 +417,12 @@ public abstract class EWSMethod extends PostMethod {
         }
 
 
+        /**
+         * Get property value as boolean
+         *
+         * @param key property response name
+         * @return property value
+         */
         public boolean getBoolean(String key) {
             boolean result = false;
             String value = get(key);
@@ -400,17 +434,34 @@ public abstract class EWSMethod extends PostMethod {
 
     }
 
+    /**
+     * Check method success.
+     *
+     * @throws EWSException on error
+     */
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
             throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope()));
         }
     }
 
+    /**
+     * Get response items.
+     *
+     * @return response items
+     * @throws EWSException on error
+     */
     public List<Item> getResponseItems() throws EWSException {
         checkSuccess();
         return responseItems;
     }
 
+    /**
+     * Get single response item.
+     *
+     * @return response item
+     * @throws EWSException on error
+     */
     public Item getResponseItem() throws EWSException {
         checkSuccess();
         if (responseItems != null && responseItems.size() == 1) {
@@ -420,6 +471,12 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    /**
+     * Get response mime content.
+     *
+     * @return mime content
+     * @throws EWSException on error
+     */
     public byte[] getMimeContent() throws EWSException {
         checkSuccess();
         Item responseItem = getResponseItem();
@@ -509,13 +566,13 @@ public abstract class EWSMethod extends PostMethod {
             reader.next();
             if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
-                if (tagLocalName.equals("ExtendedFieldURI")) {
+                if ("ExtendedFieldURI".equals(tagLocalName)) {
                     propertyTag = getAttributeValue(reader, "PropertyTag");
                     // property name is in PropertyId with DistinguishedPropertySetId 
                     if (propertyTag == null) {
                         propertyTag = getAttributeValue(reader, "PropertyId");
                     }
-                } else if (tagLocalName.equals("Value")) {
+                } else if ("Value".equals(tagLocalName)) {
                     propertyValue = reader.getElementText();
                 }
             }
@@ -555,7 +612,7 @@ public abstract class EWSMethod extends PostMethod {
         Header contentTypeHeader = getResponseHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
             responseItems = new ArrayList<Item>();
-            XMLStreamReader reader = null;
+            XMLStreamReader reader;
             try {
                 XMLInputFactory xmlInputFactory = getXmlInputFactory();
                 reader = xmlInputFactory.createXMLStreamReader(getResponseBodyAsStream());

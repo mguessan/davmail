@@ -21,9 +21,19 @@ package davmail.exchange.ews;
 import java.util.Set;
 
 /**
- * Uµpdate Item method.
+ * Update Item method.
  */
 public class UpdateItemMethod extends EWSMethod {
+    /**
+     * Update exchange item.
+     *
+     * @param messageDisposition save or send option
+     * @param conflictResolution overwrite option
+     * @param sendMeetingInvitationsOrCancellations
+     *                           send invitations option
+     * @param itemId             item id with change key
+     * @param updates            field updates
+     */
     public UpdateItemMethod(MessageDisposition messageDisposition, ConflictResolution conflictResolution,
                             SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations,
                             ItemId itemId, Set<FieldUpdate> updates) {

@@ -28,9 +28,9 @@ public class FindFolderMethod extends EWSMethod {
     /**
      * Find Exchange Folder.
      *
-     * @param traversal      traversal type
-     * @param baseShape      base shape
-     * @param parentFolderId parent folder id
+     * @param traversal            traversal type
+     * @param baseShape            base shape
+     * @param parentFolderId       parent folder id
      * @param additionalProperties folder properties
      */
     public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId, Set<FieldURI> additionalProperties) {
@@ -44,11 +44,11 @@ public class FindFolderMethod extends EWSMethod {
     /**
      * Find Exchange Folder.
      *
-     * @param traversal        traversal type
-     * @param baseShape        base shape
-     * @param parentFolderId   parent folder id
+     * @param traversal            traversal type
+     * @param baseShape            base shape
+     * @param parentFolderId       parent folder id
      * @param additionalProperties folder properties
-     * @param searchExpression search expression
+     * @param searchExpression     search expression
      */
     public FindFolderMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId,
                             Set<FieldURI> additionalProperties, SearchExpression searchExpression) {

@@ -25,6 +25,11 @@ public class IndexedFieldURI implements FieldURI {
     protected String fieldURI;
     protected String fieldIndex;
 
+    /**
+     * Create indexed field uri.
+     * @param fieldURI base field uri
+     * @param fieldIndex field name 
+     */
     public IndexedFieldURI(String fieldURI, String fieldIndex) {
         this.fieldURI = fieldURI;
         this.fieldIndex = fieldIndex;

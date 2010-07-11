@@ -25,13 +25,18 @@ public class UnindexedFieldURI implements FieldURI {
     protected final String fieldURI;
     protected final String fieldName;
 
+    /**
+     * Create unindexed field URI.
+     *
+     * @param fieldURI field name
+     */
     public UnindexedFieldURI(String fieldURI) {
         this.fieldURI = fieldURI;
         int colonIndex = fieldURI.indexOf(':');
         if (colonIndex < 0) {
             fieldName = fieldURI;
         } else {
-            fieldName = fieldURI.substring(colonIndex+1);
+            fieldName = fieldURI.substring(colonIndex + 1);
         }
     }
 

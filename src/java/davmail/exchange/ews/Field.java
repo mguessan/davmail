@@ -27,6 +27,9 @@ import java.util.Map;
 public class Field {
     protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
 
+    private Field() {
+    }
+
     static {
         // items
         FIELD_MAP.put("etag", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
@@ -37,7 +40,7 @@ public class Field {
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
 
-        FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));        
+        FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 
         // use PR_RECORD_KEY as unique key 
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
@@ -68,7 +71,7 @@ public class Field {
 
         FIELD_MAP.put("homepostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801A, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("otherpostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801C, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("mailingaddressid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address,0x8022, ExtendedFieldURI.PropertyType.String ));
+        FIELD_MAP.put("mailingaddressid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8022, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("workaddress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801B, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("alternaterecipient", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:alternaterecipient"));

@@ -22,6 +22,13 @@ package davmail.exchange.ews;
  * EWS Find Item Method.
  */
 public class FindItemMethod extends EWSMethod {
+    /**
+     * Find item method.
+     *
+     * @param traversal      folder traversal mode
+     * @param baseShape      base item shape
+     * @param parentFolderId parent folder id
+     */
     public FindItemMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
         super("Item", "FindItem");
         this.traversal = traversal;

@@ -30,10 +30,12 @@ public abstract class AttributeOption extends Option {
         super(name, value);
     }
 
+    /**
+     * @inheritDoc
+     */
     public void appendTo(StringBuilder buffer) {
         buffer.append(' ').append(name).append("=\"").append(value).append('"');
     }
-
 
     /**
      * @inheritDoc

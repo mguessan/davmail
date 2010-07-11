@@ -24,6 +24,12 @@ import java.util.Set;
  * Update Folder method.
  */
 public class UpdateFolderMethod extends EWSMethod {
+    /**
+     * Update folder options.
+     *
+     * @param folderId folder id
+     * @param updates  folder properties updates
+     */
     public UpdateFolderMethod(FolderId folderId, Set<FieldUpdate> updates) {
         super("Folder", "UpdateFolder");
         this.folderId = folderId;

@@ -50,19 +50,10 @@ public class ItemId {
     }
 
     /**
-     * Create Item id.
-     *
-     * @param id item id
-     */
-    public ItemId(String id) {
-        this.id = id;
-    }
-
-    /**
      * Write item id as XML.
      *
-     * @param writer
-     * @throws IOException
+     * @param writer request writer
+     * @throws IOException on error
      */
     public void write(Writer writer) throws IOException {
         writer.write("<t:ItemId Id=\"");

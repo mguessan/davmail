@@ -34,7 +34,9 @@ public class ContainmentMode extends AttributeOption {
      * Starts with.
      */
     public static final ContainmentMode Prefixed = new ContainmentMode("Prefixed");
-
+    /**
+     * Contains
+     */
     public static final ContainmentMode Substring = new ContainmentMode("Substring");
     public static final ContainmentMode PrefixOnWords = new ContainmentMode("PrefixOnWords");
     public static final ContainmentMode ExactPhrase = new ContainmentMode("ExactPhrase");

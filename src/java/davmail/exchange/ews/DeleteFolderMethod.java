@@ -22,6 +22,11 @@ package davmail.exchange.ews;
  * Delete Folder method.
  */
 public class DeleteFolderMethod extends EWSMethod {
+    /**
+     * Delete folder method.
+     *
+     * @param folderId folder id
+     */
     public DeleteFolderMethod(FolderId folderId) {
         super("Folder", "DeleteFolder");
         this.folderId = folderId;

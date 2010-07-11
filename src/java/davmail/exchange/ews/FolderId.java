@@ -27,15 +27,23 @@ import java.io.Writer;
 public class FolderId extends Option {
     protected String changeKey;
 
+    /**
+     * Create FolderId with specified tag name.
+     *
+     * @param name      field tag name
+     * @param value     id value
+     * @param changeKey folder change key
+     */
     protected FolderId(String name, String value, String changeKey) {
         super(name, value);
         this.changeKey = changeKey;
     }
 
     /**
-     * Create FolderId option
+     * Create FolderId
      *
-     * @param value id value
+     * @param value     id value
+     * @param changeKey folder change key
      */
     public FolderId(String value, String changeKey) {
         super("t:FolderId", value);
@@ -48,7 +56,7 @@ public class FolderId extends Option {
      * @param item response item
      */
     public FolderId(EWSMethod.Item item) {
-        this(item.get("FolderId"),item.get("ChangeKey"));
+        this(item.get("FolderId"), item.get("ChangeKey"));
     }
 
 

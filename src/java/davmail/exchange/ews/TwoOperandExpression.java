@@ -20,9 +20,6 @@ package davmail.exchange.ews;
 
 import davmail.util.StringUtil;
 
-import java.io.IOException;
-import java.io.Writer;
-
 /**
  * Two operand expression.
  */
