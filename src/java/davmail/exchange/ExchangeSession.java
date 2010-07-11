@@ -913,8 +913,6 @@ public abstract class ExchangeSession {
         boolean inHeader = true;
         boolean inRecipientHeader = false;
         while (!".".equals(line)) {
-            mailBuffer.append(line).append((char) 13).append((char) 10);
-            line = reader.readLine();
             // Exchange 2007 : skip From: header
             if ((inHeader && line.length() >= 5)) {
                 String prefix = line.substring(0, 5).toLowerCase();
@@ -931,11 +929,13 @@ public abstract class ExchangeSession {
 
             if ((inHeader && line.length() >= 3) || inRecipientHeader) {
                 String prefix = line.substring(0, 3).toLowerCase();
-                if ("to:".equals(prefix) || "cc:".equals(prefix) || inRecipientHeader) {
+                if ("to:".equalsIgnoreCase(prefix) || "cc:".equalsIgnoreCase(prefix) || inRecipientHeader) {
                     inRecipientHeader = true;
                     recipientBuffer.append(line);
                 }
             }
+            mailBuffer.append(line).append((char) 13).append((char) 10);
+            line = reader.readLine();
         }
         // remove visible recipients from list
         List<String> visibleRecipients = new ArrayList<String>();

@@ -217,7 +217,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
-        throw new UnsupportedOperationException();
+        EWSMethod.Item item = new EWSMethod.Item();
+        item.type = "Message";
+        item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
+        // TODO: handle bcc
+        Set<FieldUpdate> fieldUpdates = buildProperties(properties);
+        item.setFieldUpdates(fieldUpdates);
+        CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId("Drafts"), item);
+        executeMethod(createItemMethod);
 
     }
 
