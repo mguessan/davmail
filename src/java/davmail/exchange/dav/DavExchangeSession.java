@@ -572,7 +572,7 @@ public class DavExchangeSession extends ExchangeSession {
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = getPropertyIfExists(properties, attributeName);
                 if (value != null) {
-                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
+                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDate(value);
                     }
                     put(attributeName, value);

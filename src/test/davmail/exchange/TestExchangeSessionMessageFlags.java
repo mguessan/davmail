@@ -98,7 +98,7 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
         MimeMessage mimeMessage = createMimeMessage();
         String messageName = UUID.randomUUID().toString();
         HashMap<String, String> properties = new HashMap<String, String>();
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        SimpleDateFormat dateFormatter = ExchangeSession.getExchangeZuluDateFormat();
         dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MONTH, -1);
@@ -108,7 +108,8 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
         assertNotNull(messageList);
-        assertEquals(properties.get("datereceived"), messageList.get(0).date);
+        // TODO: use same format for date read/write
+        assertEquals(ExchangeSession.getZuluDateFormat().format(cal.getTime()), messageList.get(0).date);
     }
 
 
