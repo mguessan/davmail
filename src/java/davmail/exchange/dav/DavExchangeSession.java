@@ -1365,32 +1365,34 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected List<DavConstants> buildProperties(Map<String, String> properties) {
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-            if ("read".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("read", entry.getValue()));
-            } else if ("junk".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("junk", entry.getValue()));
-            } else if ("flagged".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("flagStatus", entry.getValue()));
-            } else if ("answered".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("lastVerbExecuted", entry.getValue()));
-                if ("102".equals(entry.getValue())) {
-                    list.add(Field.createDavProperty("iconIndex", "261"));
+        if (properties != null) {
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                if ("read".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("read", entry.getValue()));
+                } else if ("junk".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("junk", entry.getValue()));
+                } else if ("flagged".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("flagStatus", entry.getValue()));
+                } else if ("answered".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("lastVerbExecuted", entry.getValue()));
+                    if ("102".equals(entry.getValue())) {
+                        list.add(Field.createDavProperty("iconIndex", "261"));
+                    }
+                } else if ("forwarded".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("lastVerbExecuted", entry.getValue()));
+                    if ("104".equals(entry.getValue())) {
+                        list.add(Field.createDavProperty("iconIndex", "262"));
+                    }
+                } else if ("bcc".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("bcc", entry.getValue()));
+                } else if ("draft".equals(entry.getKey())) {
+                    // note: draft is readonly after create
+                    list.add(Field.createDavProperty("messageFlags", entry.getValue()));
+                } else if ("deleted".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("writedeleted", entry.getValue()));
+                } else if ("datereceived".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("datereceived", entry.getValue()));
                 }
-            } else if ("forwarded".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("lastVerbExecuted", entry.getValue()));
-                if ("104".equals(entry.getValue())) {
-                    list.add(Field.createDavProperty("iconIndex", "262"));
-                }
-            } else if ("bcc".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("bcc", entry.getValue()));
-            } else if ("draft".equals(entry.getKey())) {
-                // note: draft is readonly after create
-                list.add(Field.createDavProperty("messageFlags", entry.getValue()));
-            } else if ("deleted".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("writedeleted", entry.getValue()));
-            } else if ("datereceived".equals(entry.getKey())) {
-                list.add(Field.createDavProperty("datereceived", entry.getValue()));
             }
         }
         return list;
