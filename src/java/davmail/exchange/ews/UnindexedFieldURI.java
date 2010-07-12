@@ -45,13 +45,15 @@ public class UnindexedFieldURI implements FieldURI {
     }
 
     public void appendValue(StringBuilder buffer, String itemType, String value) {
-        if (fieldURI.startsWith("message")) {
+        if (fieldURI.startsWith("message") && itemType != null) {
             itemType = "Message";
         }
-        appendTo(buffer);
-        buffer.append("<t:");
-        buffer.append(itemType);
-        buffer.append('>');
+        if (itemType != null) {
+            appendTo(buffer);
+            buffer.append("<t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
         buffer.append("<t:");
         buffer.append(fieldName);
         buffer.append('>');
@@ -59,9 +61,11 @@ public class UnindexedFieldURI implements FieldURI {
         buffer.append("</t:");
         buffer.append(fieldName);
         buffer.append('>');
-        buffer.append("</t:");
-        buffer.append(itemType);
-        buffer.append('>');
+        if (itemType != null) {
+            buffer.append("</t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
     }
 
     public String getResponseName() {

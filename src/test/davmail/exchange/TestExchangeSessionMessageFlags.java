@@ -26,16 +26,11 @@ import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
 /**
- * Created by IntelliJ IDEA.
- * User: mguessan
- * Date: 5 juil. 2010
- * Time: 16:17:45
- * To change this template use File | Settings | File Templates.
+ * Test message flag update
  */
 public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTestCase {
 
