@@ -243,8 +243,16 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeUpdates(Writer writer) throws IOException {
         if (updates != null) {
             writer.write("<t:Updates>");
+            // write extended properties first
             for (FieldUpdate fieldUpdate : updates) {
-                fieldUpdate.write(itemType, writer);
+                if (fieldUpdate.fieldURI instanceof ExtendedFieldURI) {
+                    fieldUpdate.write(itemType, writer);
+                }
+            }
+            for (FieldUpdate fieldUpdate : updates) {
+                if (!(fieldUpdate.fieldURI instanceof ExtendedFieldURI)) {
+                    fieldUpdate.write(itemType, writer);
+                }
             }
             writer.write("</t:Updates>");
         }
