@@ -934,8 +934,12 @@ public abstract class ExchangeSession {
                     recipientBuffer.append(line);
                 }
             }
-            mailBuffer.append(line).append((char) 13).append((char) 10);
-            line = reader.readLine();
+            String nextLine = reader.readLine();
+            mailBuffer.append(line);
+            if (!".".equals(nextLine)) {
+                mailBuffer.append((char) 13).append((char) 10);
+            }
+            line = nextLine;
         }
         // remove visible recipients from list
         List<String> visibleRecipients = new ArrayList<String>();

@@ -21,13 +21,17 @@ package davmail.smtp;
 import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 /**
@@ -35,28 +39,49 @@ import java.net.Socket;
  */
 public class TestSmtp extends AbstractDavMailTestCase {
     static Socket clientSocket;
-    static BufferedWriter socketWriter;
-    static BufferedReader socketReader;
+    static BufferedOutputStream socketOutputStream;
+    static BufferedInputStream socketInputStream;
+    static final byte[] CRLF = {13, 10};
+    enum State {CHAR, CR, CRLF}
 
     protected void write(String line) throws IOException {
-        socketWriter.write(line);
-        socketWriter.flush();
+        socketOutputStream.write(line.getBytes("ASCII"));
+        socketOutputStream.flush();
     }
 
     protected void writeLine(String line) throws IOException {
-        socketWriter.write(line);
-        socketWriter.newLine();
-        socketWriter.flush();
+        write(line);
+        socketOutputStream.write(CRLF);
+        socketOutputStream.flush();
     }
 
     protected String readLine() throws IOException {
-        return socketReader.readLine();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        State state = State.CHAR;
+        while (!(state == State.CRLF)) {
+            int character = socketInputStream.read();
+            if (state == State.CHAR) {
+                if (character == 13) {
+                    state = State.CR;
+                }
+            } else {
+                if (character == 10) {
+                    state = State.CRLF;
+                } else {
+                    state = State.CHAR;
+                }
+            } 
+            if (state == State.CHAR) {
+                baos.write(character);
+            }
+        }
+        return new String(baos.toByteArray(), "ASCII");
     }
 
     protected String readFullAnswer(String prefix) throws IOException {
-        String line = socketReader.readLine();
+        String line = readLine();
         while (!line.startsWith(prefix)) {
-            line = socketReader.readLine();
+            line = readLine();
         }
         return line;
     }
@@ -68,8 +93,8 @@ public class TestSmtp extends AbstractDavMailTestCase {
             // start gateway
             DavGateway.start();
             clientSocket = new Socket("localhost", Settings.getIntProperty("davmail.smtpPort"));
-            socketWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-            socketReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            socketOutputStream = new BufferedOutputStream(clientSocket.getOutputStream());
+            socketInputStream = new BufferedInputStream(clientSocket.getInputStream());
         }
         if (session == null) {
             session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
@@ -77,21 +102,25 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void testBanner() throws IOException {
-        String banner = socketReader.readLine();
+        String banner = readLine();
         assertNotNull(banner);
     }
 
     public void testLogin() throws IOException {
         String credentials = (char) 0+Settings.getProperty("davmail.username")+ (char) 0 +Settings.getProperty("davmail.password");
         writeLine("AUTH PLAIN " + new String(new Base64().encode(credentials.getBytes())));
-        assertEquals("235 OK Authenticated", socketReader.readLine());
+        assertEquals("235 OK Authenticated", readLine());
     }
 
 
-    public void testSendMessage() throws IOException, MessagingException {
+    public void testSendMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "Test message\r\n" +
+                "Special characters: éèçà\r\n" +
+                "Chinese: "+((char)0x604F)+((char)0x7D59);
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
-        mimeMessage.setText("Test message");
+        mimeMessage.setText(body, "UTF-8");
+        //mimeMessage.setHeader("Content-Transfer-Encoding", "8bit");
         mimeMessage.setSubject("Test subject");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
@@ -102,9 +131,18 @@ public class TestSmtp extends AbstractDavMailTestCase {
         readLine();
         writeLine("DATA");
         assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());
-        writeLine(new String(content));
+        mimeMessage.writeTo(socketOutputStream);
+        writeLine("");
         writeLine(".");
         assertEquals("250 Queued mail for delivery", readLine());
+        // wait for asynchronous message send
+        Thread.sleep(1000);
+        ExchangeSession.MessageList messages = session.searchMessages("Sent", session.headerEquals("message-id", mimeMessage.getMessageID()));
+        assertEquals(1, messages.size());
+        ExchangeSession.Message message = messages.get(0);
+        message.getMimeMessage().writeTo(System.out);
+        assertEquals(body, (String) message.getMimeMessage().getDataHandler().getContent());
+        
     }
 
     public void testBccMessage() throws IOException, MessagingException {
