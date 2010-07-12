@@ -88,8 +88,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
 
-    public void testCreateMessage() throws IOException, MessagingException {
-
+    public void testSendMessage() throws IOException, MessagingException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
         mimeMessage.setText("Test message");
@@ -100,6 +99,27 @@ public class TestSmtp extends AbstractDavMailTestCase {
         writeLine("MAIL FROM:"+session.getEmail());
         readLine();
         writeLine("RCPT TO:"+Settings.getProperty("davmail.to"));
+        readLine();
+        writeLine("DATA");
+        assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());
+        writeLine(new String(content));
+        writeLine(".");
+        assertEquals("250 Queued mail for delivery", readLine());
+    }
+
+    public void testBccMessage() throws IOException, MessagingException {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.setText("Test message");
+        mimeMessage.setSubject("Test subject");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        byte[] content = baos.toByteArray();
+        writeLine("MAIL FROM:"+session.getEmail());
+        readLine();
+        writeLine("RCPT TO:"+Settings.getProperty("davmail.to"));
+        readLine();
+        writeLine("RCPT TO:"+Settings.getProperty("davmail.bcc"));
         readLine();
         writeLine("DATA");
         assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());

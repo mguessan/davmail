@@ -149,8 +149,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 if ("104".equals(entry.getValue())) {
                     list.add(Field.createFieldUpdate("iconIndex", "262"));
                 }
-            } else if ("bcc".equals(entry.getKey())) {
-                list.add(Field.createFieldUpdate("bcc", entry.getValue()));
             } else if ("draft".equals(entry.getKey())) {
                 // note: draft is readonly after create
                 list.add(Field.createFieldUpdate("messageFlags", entry.getValue()));
@@ -219,11 +217,18 @@ public class EwsExchangeSession extends ExchangeSession {
     public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
-        // TODO: handle bcc
+        String bcc = properties.get("bcc");
+        if (bcc != null) {
+            properties.remove("bcc");
+            // put bcc header back into mime body, Exchange will handle it on send
+            item.mimeContent = Base64.encodeBase64(("bcc: "+bcc+ "\r\n" +messageBody).getBytes());
+        } else {
+            item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
+        }
+
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         item.setFieldUpdates(fieldUpdates);
-        CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId("Drafts"), item);
+        CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId(SENT), item);
         executeMethod(createItemMethod);
 
     }
@@ -539,7 +544,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (baseFolderPath.startsWith("/users/")) {
             int index = baseFolderPath.indexOf('/', "/users/".length());
             if (index >= 0) {
-                baseFolderPath = baseFolderPath.substring(index+1);
+                baseFolderPath = baseFolderPath.substring(index + 1);
             }
         }
         List<ExchangeSession.Folder> folders = new ArrayList<ExchangeSession.Folder>();
