@@ -94,25 +94,25 @@ public class LdapConnection extends AbstractConnection {
     }
 
 
-    static final HashMap<String, String> CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> CONTACT_TO_LDAP_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
-        CONTACT_ATTRIBUTE_MAP.put("imapUid", "uid");
-        CONTACT_ATTRIBUTE_MAP.put("co", "countryname");
-        CONTACT_ATTRIBUTE_MAP.put("extensionattribute1", "custom1");
-        CONTACT_ATTRIBUTE_MAP.put("extensionattribute2", "custom2");
-        CONTACT_ATTRIBUTE_MAP.put("extensionattribute3", "custom3");
-        CONTACT_ATTRIBUTE_MAP.put("extensionattribute4", "custom4");
-        CONTACT_ATTRIBUTE_MAP.put("email1", "mail");
-        CONTACT_ATTRIBUTE_MAP.put("email2", "xmozillasecondemail");
-        CONTACT_ATTRIBUTE_MAP.put("homeCountry", "mozillahomecountryname");
-        CONTACT_ATTRIBUTE_MAP.put("homeCity", "mozillahomelocalityname");
-        CONTACT_ATTRIBUTE_MAP.put("homePostalCode", "mozillahomepostalcode");
-        CONTACT_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
-        CONTACT_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
-        CONTACT_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
-        CONTACT_ATTRIBUTE_MAP.put("description", "description");
-        CONTACT_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("imapUid", "uid");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("co", "countryname");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("extensionattribute1", "custom1");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("extensionattribute2", "custom2");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("extensionattribute3", "custom3");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("extensionattribute4", "custom4");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("email1", "mail");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("email2", "xmozillasecondemail");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeCountry", "mozillahomecountryname");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeCity", "mozillahomelocalityname");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homePostalCode", "mozillahomepostalcode");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("description", "description");
+        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
     }
 
     static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
@@ -219,24 +219,24 @@ public class LdapConnection extends AbstractConnection {
         CRITERIA_MAP.put("apple-group-realname", "DP");
     }
 
-    static final HashMap<String, String> CONTACT_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> LDAP_TO_CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
-        CONTACT_MAP.put("uid", "imapUid");
-        CONTACT_MAP.put("mail", "email1");
-        CONTACT_MAP.put("displayname", "cn");
-        CONTACT_MAP.put("cn", "cn");
-        CONTACT_MAP.put("givenname", "givenName");
-        CONTACT_MAP.put("sn", "sn");
-        CONTACT_MAP.put("title", "title");
-        CONTACT_MAP.put("company", "o");
-        CONTACT_MAP.put("o", "o");
-        CONTACT_MAP.put("l", "l");
-        CONTACT_MAP.put("department", "department");
-        CONTACT_MAP.put("apple-group-realname", "department");
-        CONTACT_MAP.put("description", "description");
-        CONTACT_MAP.put("mozillahomelocalityname", "homeCity");
-        CONTACT_MAP.put("c", "c");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uid", "imapUid");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mail", "email1");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("displayname", "cn");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("cn", "cn");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("givenname", "givenName");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("sn", "sn");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("title", "title");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("company", "o");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("o", "o");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("l", "l");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("department", "department");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-group-realname", "department");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("description", "description");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomelocalityname", "homeCity");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("c", "c");
     }
 
     /**
@@ -974,7 +974,7 @@ public class LdapConnection extends AbstractConnection {
             } else if (IGNORE_MAP.contains(attributeName)) {
                 // Ignore this specific attribute
                 return true;
-            } else if (CRITERIA_MAP.get(attributeName) == null && CONTACT_MAP.get(attributeName) == null) {
+            } else if (CRITERIA_MAP.get(attributeName) == null && LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName) == null) {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE",
                         attributeName, value));
 
@@ -1108,7 +1108,7 @@ public class LdapConnection extends AbstractConnection {
         }
 
         public String getContactAttributeName() {
-            return CONTACT_MAP.get(attributeName);
+            return LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName);
         }
     }
 
@@ -1296,10 +1296,14 @@ public class LdapConnection extends AbstractConnection {
                 ldapReturningAttributes = new HashSet<String>();
                 // always return uid
                 ldapReturningAttributes.add("imapUid");
-                ldapReturningAttributes.add("email1");
                 for (String attribute : returningAttributes) {
                     if (!"objectclass".equals(attribute)) {
-                        ldapReturningAttributes.add(attribute);
+                        String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attribute);
+                        if (mappedAttribute == null) {
+                            ldapReturningAttributes.add(attribute);
+                        } else {
+                            ldapReturningAttributes.add(mappedAttribute);
+                        }
                     }
                 }
             } else {
@@ -1404,7 +1408,7 @@ public class LdapConnection extends AbstractConnection {
                     for (Map.Entry<String, String> entry : person.entrySet()) {
                         String contactAttribute = entry.getKey();
                         // get converted attribute name
-                        String ldapAttribute = CONTACT_ATTRIBUTE_MAP.get(contactAttribute);
+                        String ldapAttribute = CONTACT_TO_LDAP_ATTRIBUTE_MAP.get(contactAttribute);
                         // no conversion, use exchange attribute name
                         if (ldapAttribute == null) {
                             ldapAttribute = contactAttribute;
