@@ -128,7 +128,8 @@ public class TestImap extends AbstractDavMailTestCase {
     public void testCreateMessage() throws IOException, MessagingException {
         
         MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.addHeader("bcc", Settings.getProperty("davmail.bcc"));
         mimeMessage.setText("Test message");
         mimeMessage.setSubject("Test subject");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

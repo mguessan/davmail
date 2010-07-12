@@ -165,13 +165,15 @@ public class EwsExchangeSession extends ExchangeSession {
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
         String bcc = properties.get("bcc");
-        // Exchange 2007 is unable to handle bcc field on create
-        //noinspection VariableNotUsedInsideIf
         if (bcc != null) {
             properties.remove("bcc");
+            // put bcc header back into mime body, Exchange will handle it on send
+            item.mimeContent = Base64.encodeBase64(("bcc: "+bcc+ "\r\n" +messageBody).getBytes());
+        } else {
+            item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
         }
+
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
             // need to force draft flag to false
@@ -184,18 +186,6 @@ public class EwsExchangeSession extends ExchangeSession {
         item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);
-
-        if (bcc != null) {
-            ItemId itemId = new ItemId(createItemMethod.getResponseItem());
-            HashMap<String, String> localProperties = new HashMap<String, String>();
-            localProperties.put("bcc", bcc);
-            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                    ConflictResolution.AlwaysOverwrite,
-                    SendMeetingInvitationsOrCancellations.SendToNone,
-                    itemId, buildProperties(localProperties));
-            executeMethod(updateItemMethod);
-        }
-
     }
 
     @Override
