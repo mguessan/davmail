@@ -162,17 +162,10 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        String bcc = properties.get("bcc");
-        if (bcc != null) {
-            properties.remove("bcc");
-            // put bcc header back into mime body, Exchange will handle it on send
-            item.mimeContent = Base64.encodeBase64(("bcc: "+bcc+ "\r\n" +messageBody).getBytes());
-        } else {
-            item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
-        }
+        item.mimeContent = Base64.encodeBase64(messageBody);
 
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
@@ -204,23 +197,13 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
+    public void sendMessage(byte[] messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        String bcc = properties.get("bcc");
-        if (bcc != null) {
-            properties.remove("bcc");
-            // put bcc header back into mime body, Exchange will handle it on send
-            item.mimeContent = Base64.encodeBase64(("bcc: "+bcc+ "\r\n" +messageBody).getBytes());
-        } else {
-            item.mimeContent = Base64.encodeBase64(messageBody.getBytes());
-        }
+        item.mimeContent = Base64.encodeBase64(messageBody);
 
-        Set<FieldUpdate> fieldUpdates = buildProperties(properties);
-        item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId(SENT), item);
         executeMethod(createItemMethod);
-
     }
 
     /**

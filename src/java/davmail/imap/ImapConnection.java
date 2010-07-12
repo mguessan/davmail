@@ -419,20 +419,12 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                     int size = Integer.parseInt(nextToken);
                                     sendClient("+ send literal data");
-                                    char[] buffer = new char[size];
-                                    int index = 0;
-                                    int count = 0;
-                                    while (count >= 0 && index < size) {
-                                        count = in.read(buffer, index, size - index);
-                                        if (count >= 0) {
-                                            index += count;
-                                        }
-                                    }
+                                    byte[] buffer = in.readContent(size);
                                     // empty line
                                     readClient();
 
                                     String messageName = UUID.randomUUID().toString();
-                                    session.createMessage(folderName, messageName, properties, new String(buffer));
+                                    session.createMessage(folderName, messageName, properties, buffer);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
                                     sendClient("+ idling ");
@@ -441,7 +433,7 @@ public class ImapConnection extends AbstractConnection {
                                     DavGatewayTray.resetIcon();
                                     try {
                                         int count = 0;
-                                        while (!in.ready()) {
+                                        while (in.available() == 0) {
                                             if (++count >= imapIdleDelay) {
                                                 count = 0;
                                                 List<Long> previousImapUidList = currentFolder.getImapUidList();

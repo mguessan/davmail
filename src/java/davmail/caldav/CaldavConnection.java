@@ -91,21 +91,7 @@ public class CaldavConnection extends AbstractConnection {
             } catch (NumberFormatException e) {
                 throw new DavMailException("EXCEPTION_INVALID_CONTENT_LENGTH", contentLength);
             }
-            char[] buffer = new char[size];
-            StringBuilder builder = new StringBuilder();
-            int actualSize = in.read(buffer);
-            builder.append(buffer, 0, actualSize);
-            if (actualSize < 0) {
-                throw new DavMailException("EXCEPTION_END_OF_STREAM");
-            }
-            // dirty hack to ensure full content read
-            // TODO : replace with a dedicated reader
-            while (builder.toString().getBytes("UTF-8").length < size) {
-                actualSize = in.read(buffer);
-                builder.append(buffer, 0, actualSize);
-            }
-
-            String content = builder.toString();
+            String content = in.readContentAsString(size);
             if (wireLogger.isDebugEnabled()) {
                 wireLogger.debug("< " + content);
             }

@@ -59,11 +59,10 @@ public class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
         return mimeMessage;
     }
 
-    protected String getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
+    protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
-        byte[] content = baos.toByteArray();
-        return new String(content);
+        return baos.toByteArray();
     }
 
 }

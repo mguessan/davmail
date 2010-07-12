@@ -35,7 +35,9 @@ import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
+import javax.mail.Address;
 import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
@@ -473,7 +475,7 @@ public abstract class ExchangeSession {
      * @param messageBody mail body
      * @throws IOException when unable to create message
      */
-    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException;
+    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException;
 
     /**
      * Update given properties on message.
@@ -496,11 +498,10 @@ public abstract class ExchangeSession {
     /**
      * Send message to recipients, properties contains bcc recipients and other non MIME flags.
      *
-     * @param properties  additional message properties
      * @param messageBody MIME message body
      * @throws IOException on error
      */
-    public abstract void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException;
+    public abstract void sendMessage(byte[] messageBody) throws IOException;
 
     /**
      * Create message MIME body reader.
@@ -906,67 +907,25 @@ public abstract class ExchangeSession {
      * @param reader     message stream
      * @throws IOException on error
      */
-    public void sendMessage(List<String> recipients, BufferedReader reader) throws IOException {
-        String line = reader.readLine();
-        StringBuilder mailBuffer = new StringBuilder();
-        StringBuilder recipientBuffer = new StringBuilder();
-        boolean inHeader = true;
-        boolean inRecipientHeader = false;
-        while (!".".equals(line)) {
-            // Exchange 2007 : skip From: header
-            if ((inHeader && line.length() >= 5)) {
-                String prefix = line.substring(0, 5).toLowerCase();
-                if ("from:".equals(prefix)) {
-                    line = reader.readLine();
-                }
-            }
+    public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
+        // Exchange 2007 : skip From: header
+        mimeMessage.removeHeader("from");
 
-            if (inHeader && line.length() == 0) {
-                inHeader = false;
-            }
-
-            inRecipientHeader = inRecipientHeader && line.startsWith(" ");
-
-            if ((inHeader && line.length() >= 3) || inRecipientHeader) {
-                String prefix = line.substring(0, 3).toLowerCase();
-                if ("to:".equalsIgnoreCase(prefix) || "cc:".equalsIgnoreCase(prefix) || inRecipientHeader) {
-                    inRecipientHeader = true;
-                    recipientBuffer.append(line);
-                }
-            }
-            String nextLine = reader.readLine();
-            mailBuffer.append(line);
-            if (!".".equals(nextLine)) {
-                mailBuffer.append((char) 13).append((char) 10);
-            }
-            line = nextLine;
-        }
         // remove visible recipients from list
-        List<String> visibleRecipients = new ArrayList<String>();
-        for (String recipient : recipients) {
-            if (recipientBuffer.indexOf(recipient) >= 0) {
-                visibleRecipients.add(recipient);
+        Set<String> visibleRecipients = new HashSet<String>();
+        Address[] recipients = mimeMessage.getAllRecipients();
+        for (Address address:recipients) {
+            visibleRecipients.add(address.toString());
+        }
+        for (String recipient : rcptToRecipients) {
+            if (!visibleRecipients.contains(recipient)) {
+                 mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
             }
         }
-        recipients.removeAll(visibleRecipients);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
 
-        StringBuilder bccBuffer = new StringBuilder();
-        for (String recipient : recipients) {
-            if (bccBuffer.length() > 0) {
-                bccBuffer.append(',');
-            }
-            bccBuffer.append('<');
-            bccBuffer.append(recipient);
-            bccBuffer.append('>');
-        }
-
-        String bcc = bccBuffer.toString();
-        HashMap<String, String> properties = new HashMap<String, String>();
-        if (bcc.length() > 0) {
-            properties.put("bcc", bcc);
-        }
-
-        sendMessage(properties, mailBuffer.toString());
+        sendMessage(baos.toByteArray());
     }
 
     /**

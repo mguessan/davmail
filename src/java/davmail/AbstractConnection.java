@@ -18,6 +18,7 @@
  */
 package davmail;
 
+import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.codec.binary.Base64;
@@ -35,9 +36,74 @@ public class AbstractConnection extends Thread {
         INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA
     }
 
+    protected static class LineReaderInputStream extends PushbackInputStream {
+        final String encoding;
+
+        /**
+         * @inheritDoc
+         */
+        protected LineReaderInputStream(InputStream in, String encoding) {
+            super(in);
+            if (encoding == null) {
+                this.encoding = "ASCII";
+            } else {
+                this.encoding = encoding;
+            }
+        }
+
+        public String readLine() throws IOException {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int b;
+            while ((b = read()) > -1) {
+                if (b == '\r') {
+                    int next = read();
+                    if (next != '\n') {
+                        unread(next);
+                    }
+                    break;
+                } else if (b == '\n') {
+                    break;
+                }
+                baos.write(b);
+            }
+            return new String(baos.toByteArray(), encoding);
+        }
+
+        /**
+         * Read byteSize bytes from inputStream, return content as String.
+         * @param byteSize content size
+         * @return content
+         * @throws IOException on error
+         */
+        public String readContentAsString(int byteSize) throws IOException {
+            return new String(readContent(byteSize), encoding);
+        }
+
+        /**
+         * Read byteSize bytes from inputStream, return content as byte array.
+         * @param byteSize content size
+         * @return content
+         * @throws IOException on error
+         */
+        public byte[] readContent(int byteSize) throws IOException {
+            byte[] buffer = new byte[byteSize];
+            int startIndex = 0;
+            int count = 0;
+            while (count >= 0 && startIndex < byteSize) {
+                count = in.read(buffer, startIndex, byteSize - startIndex);
+                startIndex += count;
+            }
+            if (startIndex < byteSize) {
+                throw new DavMailException("EXCEPTION_END_OF_STREAM");
+            }
+
+            return buffer;
+        }
+    }
+
     protected final Socket client;
 
-    protected BufferedReader in;
+    protected LineReaderInputStream in;
     protected OutputStream os;
     // user name and password initialized through connection
     protected String userName;
@@ -70,12 +136,7 @@ public class AbstractConnection extends Thread {
         super(name + '-' + clientSocket.getPort());
         this.client = clientSocket;
         try {
-            if (encoding == null) {
-                //noinspection IOResourceOpenedButNotSafelyClosed
-                in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            } else {
-                in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
-            }
+            in = new LineReaderInputStream(client.getInputStream(), encoding);
             os = new BufferedOutputStream(client.getOutputStream());
         } catch (IOException e) {
             close();

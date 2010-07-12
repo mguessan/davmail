@@ -1407,7 +1407,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @throws IOException when unable to create message
      */
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, String messageBody) throws IOException {
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName + ".EML");
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
@@ -1434,7 +1434,7 @@ public class DavExchangeSession extends ExchangeSession {
         putmethod.setRequestHeader("Translate", "f");
         try {
             // use same encoding as client socket reader
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody.getBytes()));
+            putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody));
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
@@ -1495,10 +1495,10 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void sendMessage(HashMap<String, String> properties, String messageBody) throws IOException {
+    public void sendMessage(byte[] messageBody) throws IOException {
         String messageName = UUID.randomUUID().toString();
 
-        createMessage("Drafts", messageName, properties, messageBody);
+        createMessage("Drafts", messageName, null, messageBody);
 
         String tempUrl = draftsUrl + '/' + messageName + ".EML";
         MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);

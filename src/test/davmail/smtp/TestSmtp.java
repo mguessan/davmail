@@ -21,6 +21,7 @@ package davmail.smtp;
 import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
+import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import org.apache.commons.codec.binary.Base64;
@@ -78,14 +79,6 @@ public class TestSmtp extends AbstractDavMailTestCase {
         return new String(baos.toByteArray(), "ASCII");
     }
 
-    protected String readFullAnswer(String prefix) throws IOException {
-        String line = readLine();
-        while (!line.startsWith(prefix)) {
-            line = readLine();
-        }
-        return line;
-    }
-
     @Override
     public void setUp() throws IOException {
         super.setUp();
@@ -95,43 +88,26 @@ public class TestSmtp extends AbstractDavMailTestCase {
             clientSocket = new Socket("localhost", Settings.getIntProperty("davmail.smtpPort"));
             socketOutputStream = new BufferedOutputStream(clientSocket.getOutputStream());
             socketInputStream = new BufferedInputStream(clientSocket.getInputStream());
+
+            String banner = readLine();
+            assertNotNull(banner);
+            String credentials = (char) 0+Settings.getProperty("davmail.username")+ (char) 0 +Settings.getProperty("davmail.password");
+            writeLine("AUTH PLAIN " + new String(new Base64().encode(credentials.getBytes())));
+            assertEquals("235 OK Authenticated", readLine());
         }
         if (session == null) {
             session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
         }
     }
 
-    public void testBanner() throws IOException {
-        String banner = readLine();
-        assertNotNull(banner);
-    }
-
-    public void testLogin() throws IOException {
-        String credentials = (char) 0+Settings.getProperty("davmail.username")+ (char) 0 +Settings.getProperty("davmail.password");
-        writeLine("AUTH PLAIN " + new String(new Base64().encode(credentials.getBytes())));
-        assertEquals("235 OK Authenticated", readLine());
-    }
-
-
-    public void testSendMessage() throws IOException, MessagingException, InterruptedException {
-        String body = "Test message\r\n" +
-                "Special characters: éèçà\r\n" +
-                "Chinese: "+((char)0x604F)+((char)0x7D59);
-        MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
-        mimeMessage.setText(body, "UTF-8");
-        //mimeMessage.setHeader("Content-Transfer-Encoding", "8bit");
-        mimeMessage.setSubject("Test subject");
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
-        byte[] content = baos.toByteArray();
+    public void sendAndCheckMessage(MimeMessage mimeMessage) throws IOException, MessagingException, InterruptedException {
         writeLine("MAIL FROM:"+session.getEmail());
         readLine();
         writeLine("RCPT TO:"+Settings.getProperty("davmail.to"));
         readLine();
         writeLine("DATA");
         assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());
-        mimeMessage.writeTo(socketOutputStream);
+        mimeMessage.writeTo(new DoubleDotOutputStream(socketOutputStream));
         writeLine("");
         writeLine(".");
         assertEquals("250 Queued mail for delivery", readLine());
@@ -141,29 +117,35 @@ public class TestSmtp extends AbstractDavMailTestCase {
         assertEquals(1, messages.size());
         ExchangeSession.Message message = messages.get(0);
         message.getMimeMessage().writeTo(System.out);
-        assertEquals(body, (String) message.getMimeMessage().getDataHandler().getContent());
-        
+        assertEquals(mimeMessage.getDataHandler().getContent(), (String) message.getMimeMessage().getDataHandler().getContent());
     }
 
-    public void testBccMessage() throws IOException, MessagingException {
+    public void testSendMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "Test message\r\n" +
+                "Special characters: éèçà\r\n" +
+                "Chinese: "+((char)0x604F)+((char)0x7D59);
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test subject");
+        mimeMessage.setText(body, "UTF-8");
+        sendAndCheckMessage(mimeMessage);
+    }
+
+    public void testBccMessage() throws IOException, MessagingException, InterruptedException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
-        mimeMessage.setText("Test message");
         mimeMessage.setSubject("Test subject");
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
-        byte[] content = baos.toByteArray();
-        writeLine("MAIL FROM:"+session.getEmail());
-        readLine();
-        writeLine("RCPT TO:"+Settings.getProperty("davmail.to"));
-        readLine();
-        writeLine("RCPT TO:"+Settings.getProperty("davmail.bcc"));
-        readLine();
-        writeLine("DATA");
-        assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());
-        writeLine(new String(content));
-        writeLine(".");
-        assertEquals("250 Queued mail for delivery", readLine());
+        mimeMessage.setText("Test message");
+        sendAndCheckMessage(mimeMessage);
+    }
+
+    public void testDotMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "First line\r\n.\r\nSecond line";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test subject");
+        mimeMessage.setText(body);
+        sendAndCheckMessage(mimeMessage);
     }
 
     public void testQuit() throws IOException {

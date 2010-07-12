@@ -21,18 +21,22 @@ package davmail.smtp;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.exception.DavMailException;
+import davmail.exchange.DoubleDotInputStream;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 
-import javax.mail.internet.InternetAddress;
 import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import javax.mail.util.SharedByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Date;
-import java.util.StringTokenizer;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Dav Gateway smtp connection implementation
@@ -47,6 +51,7 @@ public class SmtpConnection extends AbstractConnection {
     public SmtpConnection(Socket clientSocket) {
         super(SmtpConnection.class.getSimpleName(), clientSocket, null);
     }
+
 
     @Override
     public void run() {
@@ -146,7 +151,15 @@ public class SmtpConnection extends AbstractConnection {
                             sendClient("354 Start mail input; end with <CRLF>.<CRLF>");
 
                             try {
-                                session.sendMessage(recipients, in);
+                                // read message in buffer
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                DoubleDotInputStream doubleDotInputStream = new DoubleDotInputStream(in);
+                                int b;
+                                while ((b = doubleDotInputStream.read()) >= 0) {
+                                    baos.write(b);
+                                }
+                                MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(baos.toByteArray()));
+                                session.sendMessage(recipients, mimeMessage);
                                 state = State.AUTHENTICATED;
                                 sendClient("250 Queued mail for delivery");
                             } catch (Exception e) {
