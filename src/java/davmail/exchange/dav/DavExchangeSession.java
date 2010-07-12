@@ -43,11 +43,10 @@ import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 
-import javax.mail.BodyPart;
 import javax.mail.MessagingException;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -1163,13 +1162,18 @@ public class DavExchangeSession extends ExchangeSession {
                 inputStream = method.getResponseBodyAsStream();
             }
             MimeMessage mimeMessage = new MimeMessage(null, inputStream);
-            BodyPart photoBodyPart = ((MimeMultipart) mimeMessage.getContent()).getBodyPart(1);
+            MimePart photoBodyPart;
+            if (mimeMessage.getContent() instanceof MimeMultipart) {
+                photoBodyPart = (MimePart) ((MimeMultipart) mimeMessage.getContent()).getBodyPart(1);
+            } else {
+                photoBodyPart = (MimePart) mimeMessage;
+            }
             contactPhoto = new ContactPhoto();
             String contentType = photoBodyPart.getContentType();
             contactPhoto.type = contentType.substring(0, contentType.indexOf(';'));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream partInputStream = ((MimeBodyPart) photoBodyPart).getInputStream();
+            InputStream partInputStream = photoBodyPart.getInputStream();
             byte[] bytes = new byte[8192];
             int length;
             while ((length = partInputStream.read(bytes)) > 0) {
