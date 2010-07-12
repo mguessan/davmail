@@ -675,7 +675,7 @@ public class EwsExchangeSession extends ExchangeSession {
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
-                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName)) {
+                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDate(value);
                     }
                     put(attributeName, value);
