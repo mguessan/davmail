@@ -52,7 +52,7 @@ public class AbstractConnection extends Thread {
         }
 
         public String readLine() throws IOException {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream baos = null;
             int b;
             while ((b = read()) > -1) {
                 if (b == '\r') {
@@ -64,13 +64,21 @@ public class AbstractConnection extends Thread {
                 } else if (b == '\n') {
                     break;
                 }
+                if (baos == null) {
+                    baos = new ByteArrayOutputStream();
+                }
                 baos.write(b);
             }
-            return new String(baos.toByteArray(), encoding);
+            if (baos != null) {
+                return new String(baos.toByteArray(), encoding);
+            } else {
+                return null;
+            }
         }
 
         /**
          * Read byteSize bytes from inputStream, return content as String.
+         *
          * @param byteSize content size
          * @return content
          * @throws IOException on error
@@ -81,6 +89,7 @@ public class AbstractConnection extends Thread {
 
         /**
          * Read byteSize bytes from inputStream, return content as byte array.
+         *
          * @param byteSize content size
          * @return content
          * @throws IOException on error
