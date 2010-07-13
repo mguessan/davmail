@@ -58,11 +58,31 @@ public class VCardWriter extends ICSBufferedWriter {
                 } else {
                     valueBuffer.append(';');
                 }
-                if (value != null) {
-                    valueBuffer.append(value);
-                }
+                appendEncodedValue(valueBuffer, value);
             }
             writeLine(valueBuffer.toString());
+        }
+    }
+
+    /**
+     * Encode and append value to buffer
+     *
+     * @param buffer current buffer
+     * @param value  property value
+     */
+    private void appendEncodedValue(StringBuilder buffer, String value) {
+        if (value != null) {
+            for (int i = 0; i < value.length();i++) {
+                char c = value.charAt(i);
+                if (c == ',') {
+                    buffer.append('\\');
+                }
+                if (c == '\n') {
+                    buffer.append("\\n");
+                } else {
+                    buffer.append(value.charAt(i));
+                }
+            }
         }
     }
 
