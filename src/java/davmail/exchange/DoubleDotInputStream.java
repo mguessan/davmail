@@ -34,7 +34,7 @@ public class DoubleDotInputStream extends PushbackInputStream {
      * @inheritDoc
      */
     public DoubleDotInputStream(InputStream in) {
-        super(in, 3);
+        super(in, 4);
     }
 
     /**
