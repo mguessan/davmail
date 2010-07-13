@@ -80,8 +80,35 @@ public class VCardReader extends ICSBufferedReader {
             if (values == null) {
                 values = new ArrayList<String>();
             }
-            values.add(value);
+            values.add(decodeValue(value));
         }
+
+        protected String decodeValue(String value) {
+            if (value == null || (value.indexOf('\\') < 0 && value.indexOf(',') < 0)) {
+                return value;
+            } else {
+                // decode value
+                StringBuilder decodedValue = new StringBuilder();
+                for (int i = 0; i < value.length(); i++) {
+                    char c = value.charAt(i);
+                    if (c == '\\') {
+                        //noinspection AssignmentToForLoopParameter
+                        c = value.charAt(++i);
+                        if (c == 'n') {
+                            c = '\n';
+                        } else if (c == 'r') {
+                            c = '\r';
+                        }
+                    } else if (c == ',' && !"NOTE".equals(key)) {
+                        // convert multiple values to multiline values (e.g. street)
+                        c = '\n';
+                    }
+                    decodedValue.append(c);
+                }
+                return decodedValue.toString();
+            }
+        }
+
     }
 
     /**
