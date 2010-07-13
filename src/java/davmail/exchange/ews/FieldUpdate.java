@@ -61,13 +61,16 @@ public class FieldUpdate {
             writer.write("Field>");
         }
 
-        StringBuilder buffer = new StringBuilder();
-        if (value == null) {
-            fieldURI.appendTo(buffer);
-        } else {
-            fieldURI.appendValue(buffer, itemType, value);
+        // do not try to set empty value on create
+        if (itemType != null || value != null) {
+            StringBuilder buffer = new StringBuilder();
+            if (value == null) {
+                fieldURI.appendTo(buffer);
+            } else {
+                fieldURI.appendValue(buffer, itemType, value);
+            }
+            writer.write(buffer.toString());
         }
-        writer.write(buffer.toString());
 
         if (itemType != null) {
             writer.write("</t:");

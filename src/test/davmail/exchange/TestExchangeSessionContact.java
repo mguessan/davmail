@@ -95,6 +95,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("ROLE", "profession");
         vCardWriter.appendProperty("X-AIM", "im");
         vCardWriter.appendProperty("BDAY", "20000102T000000Z");
+        vCardWriter.appendProperty("CATEGORIES", "keywords");
 
         vCardWriter.appendProperty("X-ASSISTANT", "secretarycn");
         vCardWriter.appendProperty("X-MANAGER", "manager");
@@ -169,5 +170,6 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("secretarycn", contact.get("secretarycn"));
         assertEquals("manager", contact.get("manager"));
         assertEquals("spousecn", contact.get("spousecn"));
+        assertEquals("keywords", contact.get("keywords"));
     }
 }

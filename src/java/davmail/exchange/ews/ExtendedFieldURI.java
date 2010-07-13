@@ -76,6 +76,18 @@ public class ExtendedFieldURI implements FieldURI {
         this.propertyType = PropertyType.String;
     }
 
+    /**
+     * Create extended field uri.
+     *
+     * @param distinguishedPropertySetId distinguished property set id
+     * @param propertyName               property name
+     */
+    public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName, PropertyType propertyType) {
+        this.distinguishedPropertySetId = distinguishedPropertySetId;
+        this.propertyName = propertyName;
+        this.propertyType = propertyType;
+    }
+
     public void appendTo(StringBuilder buffer) {
         buffer.append("<t:ExtendedFieldURI ");
         if (propertyTag != null) {
@@ -108,9 +120,21 @@ public class ExtendedFieldURI implements FieldURI {
         }
         buffer.append("<t:ExtendedProperty>");
         appendTo(buffer);
-        buffer.append("<t:Value>");
-        buffer.append(value);
-        buffer.append("</t:Value>");
+        if (propertyType == PropertyType.StringArray) {
+            buffer.append("<t:Values>");
+            String[] values = value.split("\n");
+            for (final String singleValue : values) {
+                buffer.append("<t:Value>");
+                buffer.append(singleValue);
+                buffer.append("</t:Value>");
+
+            }
+            buffer.append("</t:Values>");
+        } else {
+            buffer.append("<t:Value>");
+            buffer.append(value);
+            buffer.append("</t:Value>");
+        }
         buffer.append("</t:ExtendedProperty>");
         if (itemType != null) {
             buffer.append("</t:");
@@ -127,6 +151,8 @@ public class ExtendedFieldURI implements FieldURI {
     public String getResponseName() {
         if (propertyTag != null) {
             return propertyTag;
+        } else if (propertyName != null) {
+            return propertyName;
         } else {
             return String.valueOf(propertyId);
         }

@@ -576,12 +576,28 @@ public abstract class EWSMethod extends PostMethod {
                 String tagLocalName = reader.getLocalName();
                 if ("ExtendedFieldURI".equals(tagLocalName)) {
                     propertyTag = getAttributeValue(reader, "PropertyTag");
-                    // property name is in PropertyId with DistinguishedPropertySetId 
+                    // property name is in PropertyId or PropertyName with DistinguishedPropertySetId
                     if (propertyTag == null) {
                         propertyTag = getAttributeValue(reader, "PropertyId");
                     }
+                    if (propertyTag == null) {
+                        propertyTag = getAttributeValue(reader, "PropertyName");
+                    }
                 } else if ("Value".equals(tagLocalName)) {
                     propertyValue = reader.getElementText();
+                } else if ("Values".equals(tagLocalName)) {
+                    StringBuilder buffer = new StringBuilder();
+                    while (reader.hasNext() && !(isEndTag(reader, "Values"))) {
+                        reader.next();
+                        if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
+
+                            if (buffer.length() > 0) {
+                                buffer.append(',');
+                            }
+                            buffer.append(reader.getElementText());
+                        }
+                    }
+                    propertyValue = buffer.toString();
                 }
             }
         }
