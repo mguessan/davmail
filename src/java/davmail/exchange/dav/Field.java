@@ -21,9 +21,15 @@ package davmail.exchange.dav;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
+import org.apache.jackrabbit.webdav.xml.DomUtil;
 import org.apache.jackrabbit.webdav.xml.Namespace;
+import org.apache.jackrabbit.webdav.xml.XmlSerializable;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,12 +51,13 @@ public class Field {
     }
 
     protected static final Namespace EMPTY = Namespace.getNamespace("");
+    protected static final Namespace XML = Namespace.getNamespace("xml:");
     protected static final Namespace DAV = Namespace.getNamespace("DAV:");
     protected static final Namespace URN_SCHEMAS_HTTPMAIL = Namespace.getNamespace("urn:schemas:httpmail:");
     protected static final Namespace URN_SCHEMAS_MAILHEADER = Namespace.getNamespace("urn:schemas:mailheader:");
 
     protected static final Namespace SCHEMAS_EXCHANGE = Namespace.getNamespace("http://schemas.microsoft.com/exchange/");
-    protected static final Namespace SCHEMAS_MAPI = Namespace.getNamespace("http://schemas.microsoft.com/mapi/");    
+    protected static final Namespace SCHEMAS_MAPI = Namespace.getNamespace("http://schemas.microsoft.com/mapi/");
     protected static final Namespace SCHEMAS_MAPI_PROPTAG = Namespace.getNamespace("http://schemas.microsoft.com/mapi/proptag/");
     protected static final Namespace SCHEMAS_MAPI_ID = Namespace.getNamespace("http://schemas.microsoft.com/mapi/id/");
     protected static final Namespace SCHEMAS_MAPI_STRING = Namespace.getNamespace("http://schemas.microsoft.com/mapi/string/");
@@ -239,6 +246,9 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "othercountry"); // PR_OTHER_ADDRESS_COUNTRY 0x3A60 String
         createField(URN_SCHEMAS_CONTACTS, "othercity"); // PR_OTHER_ADDRESS_CITY 0x3A5F String
 
+        createField("keywords", SCHEMAS_EXCHANGE, "keywords-utf8", PropertyType.StringArray); // PS_PUBLIC_STRINGS Keywords String
+        //createField("keywords", DistinguishedPropertySetType.PublicStrings, "Keywords", ); // PS_PUBLIC_STRINGS Keywords String
+
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
         createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE=2, SENSITIVITY_NONE = 0
@@ -307,6 +317,14 @@ public class Field {
         fieldMap.put(field.alias, field);
     }
 
+    protected static void createField(String alias, Namespace namespace, String name, PropertyType propertyType) {
+        Field field = new Field(alias, namespace, name);
+        if (propertyType == PropertyType.StringArray) {
+            field.isMultivalued = true;
+        }
+        fieldMap.put(field.alias, field);
+    }
+
     protected final DavPropertyName davPropertyName;
     protected final String alias;
     protected final String uri;
@@ -314,6 +332,7 @@ public class Field {
     protected final DavPropertyName responsePropertyName;
     protected final String cast;
     protected boolean isIntValue;
+    protected boolean isMultivalued;
 
 
     public Field(Namespace namespace, String name) {
@@ -375,11 +394,24 @@ public class Field {
     }
 
     public static DavConstants createDavProperty(String alias, String value) {
+        Field field = Field.get(alias);
         if (value == null) {
             // return DavPropertyName to remove property
-            return Field.get(alias).davPropertyName;
+            return field.davPropertyName;
+        } else if (field.isMultivalued) {
+            List<XmlSerializable> valueList = new ArrayList<XmlSerializable>();
+            String[] values = value.split("\n");
+            for (final String singleValue : values) {
+                valueList.add(new XmlSerializable() {
+                    public Element toXml(Document document) {
+                        return DomUtil.createElement(document, "v", XML, singleValue);
+                    }
+                });
+            }
+
+            return new DefaultDavProperty(field.davPropertyName, valueList);
         } else {
-            return new DefaultDavProperty(Field.get(alias).davPropertyName, value);
+            return new DefaultDavProperty(field.davPropertyName, value);
         }
     }
 

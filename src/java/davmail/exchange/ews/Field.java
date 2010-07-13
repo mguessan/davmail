@@ -132,6 +132,8 @@ public class Field {
         FIELD_MAP.put("othercountry", new ExtendedFieldURI(0x3A60, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othercity", new ExtendedFieldURI(0x3A5F, ExtendedFieldURI.PropertyType.String));
 
+        FIELD_MAP.put("keywords", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "Keywords"));
+
         FIELD_MAP.put("private", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8506, ExtendedFieldURI.PropertyType.Boolean));
         FIELD_MAP.put("sensitivity", new ExtendedFieldURI(0x0036, ExtendedFieldURI.PropertyType.Long));
 

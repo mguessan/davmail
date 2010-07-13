@@ -1751,6 +1751,9 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("BDAY", get("bday"));
 
+            // categories
+            writer.appendProperty("CATEGORIES", get("keywords"));
+
             writer.appendProperty("X-ASSISTANT", get("secretarycn"));
             writer.appendProperty("X-MANAGER", get("manager"));
             writer.appendProperty("X-SPOUSE", get("spousecn"));
@@ -2672,6 +2675,8 @@ public abstract class ExchangeSession {
     protected static final String[] VCARD_ADR_OTHER_PROPERTIES = {"otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry"};
     protected static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
 
+    protected static final String[] EMPTY_PROPERTIES = {"description", "keywords"};
+
     protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
         for (int i = 0; i < values.size() && i < contactProperties.length; i++) {
             if (contactProperties[i] != null) {
@@ -2763,6 +2768,8 @@ public abstract class ExchangeSession {
                         LOGGER.warn("Invalid date: " + value);
                     }
                 }
+            } else if ("CATEGORIES".equals(property.getKey())) {
+                properties.put("keywords", property.getValue());
             } else if ("X-ASSISTANT".equals(property.getKey())) {
                 properties.put("secretarycn", property.getValue());
             } else if ("X-MANAGER".equals(property.getKey())) {
@@ -2771,6 +2778,13 @@ public abstract class ExchangeSession {
                 properties.put("spousecn", property.getValue());
             }
         }
+        // detect empty values
+        for (String key : EMPTY_PROPERTIES) {
+            if (!properties.containsKey(key)) {
+                properties.put(key, null);
+            }
+        }
+
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
     }
 
@@ -3116,6 +3130,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("othercountry");
         CONTACT_ATTRIBUTES.add("othercity");
         CONTACT_ATTRIBUTES.add("haspicture");
+        CONTACT_ATTRIBUTES.add("keywords");
     }
 
     /**

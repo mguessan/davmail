@@ -42,6 +42,7 @@ import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
+import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -967,7 +968,21 @@ public class DavExchangeSession extends ExchangeSession {
         if (property == null) {
             return null;
         } else {
-            return (String) property.getValue();
+            Object value = property.getValue();
+            if (value instanceof Node) {
+                return ((Node) value).getTextContent();
+            } else if (value instanceof List) {
+                StringBuilder buffer = new StringBuilder();
+                for (Object node : (List) value) {
+                    if (buffer.length() > 0) {
+                        buffer.append(',');
+                    }
+                    buffer.append(((Node) node).getTextContent());
+                }
+                return buffer.toString();
+            } else {
+                return (String) value;
+            }
         }
     }
 
@@ -1166,7 +1181,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (mimeMessage.getContent() instanceof MimeMultipart) {
                 photoBodyPart = (MimePart) ((MimeMultipart) mimeMessage.getContent()).getBodyPart(1);
             } else {
-                photoBodyPart = (MimePart) mimeMessage;
+                photoBodyPart = mimeMessage;
             }
             contactPhoto = new ContactPhoto();
             String contentType = photoBodyPart.getContentType();
