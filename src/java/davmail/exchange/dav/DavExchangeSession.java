@@ -1432,25 +1432,26 @@ public class DavExchangeSession extends ExchangeSession {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName + ".EML");
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
-        if (!properties.containsKey("read")) {
-            // force unread
-            davProperties.add(Field.createDavProperty("read", "0"));
-        }
-        // create the message first as draft
-        if (properties.containsKey("draft")) {
-            patchMethod = new PropPatchMethod(messageUrl, davProperties);
-            try {
-                // update message with blind carbon copy and other flags
-                int statusCode = httpClient.executeMethod(patchMethod);
-                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
-                }
+        if (properties != null) {
+            if (!properties.containsKey("read")) {
+                // force unread
+                davProperties.add(Field.createDavProperty("read", "0"));
+            }
+            // create the message first as draft
+            if (properties.containsKey("draft")) {
+                patchMethod = new PropPatchMethod(messageUrl, davProperties);
+                try {
+                    // update message with blind carbon copy and other flags
+                    int statusCode = httpClient.executeMethod(patchMethod);
+                    if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                        throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
+                    }
 
-            } finally {
-                patchMethod.releaseConnection();
+                } finally {
+                    patchMethod.releaseConnection();
+                }
             }
         }
-
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         try {
