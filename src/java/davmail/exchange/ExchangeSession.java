@@ -648,7 +648,7 @@ public abstract class ExchangeSession {
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
             this.conditions = new ArrayList<Condition>();
-            for (Condition condition:conditions) {
+            for (Condition condition : conditions) {
                 if (condition != null) {
                     this.conditions.add(condition);
                 }
@@ -914,12 +914,12 @@ public abstract class ExchangeSession {
         // remove visible recipients from list
         Set<String> visibleRecipients = new HashSet<String>();
         Address[] recipients = mimeMessage.getAllRecipients();
-        for (Address address:recipients) {
+        for (Address address : recipients) {
             visibleRecipients.add(address.toString());
         }
         for (String recipient : rcptToRecipients) {
             if (!visibleRecipients.contains(recipient)) {
-                 mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
+                mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
             }
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -2001,7 +2001,7 @@ public abstract class ExchangeSession {
                         result.writeLine(line);
                         // append missing method
                         if (method == null) {
-                             result.writeLine("METHOD:PUBLISH");
+                            result.writeLine("METHOD:PUBLISH");
                         }
                         continue;
                     }
@@ -2682,7 +2682,41 @@ public abstract class ExchangeSession {
 
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> properties = new HashMap<String, String>() {
+
+            @Override
+            public String put(String key, String value) {
+                String currentValue = get(key);
+                super.put(key, decodeValue(key, value));
+                return currentValue;
+            }
+
+            private String decodeValue(String key, String value) {
+                if (value == null || (value.indexOf('\\') < 0 && value.indexOf(',') < 0)) {
+                    return value;
+                } else {
+                    // decode value
+                    StringBuilder decodedValue = new StringBuilder();
+                    for (int i = 0; i < value.length(); i++) {
+                        char c = value.charAt(i);
+                        if (c == '\\') {
+                            //noinspection AssignmentToForLoopParameter
+                            c = value.charAt(++i);
+                            if (c == 'n') {
+                                c = '\n';
+                            } else if (c == 'r') {
+                                c = '\r';
+                            }
+                        } else if (c == ',' && !"description".equals(key)) {
+                            // convert multiple values to multiline values (e.g. street)
+                            c = '\n';
+                        }
+                        decodedValue.append(c);
+                    }
+                    return decodedValue.toString();
+                }
+            }
+        };
         properties.put("outlookmessageclass", "IPM.Contact");
 
         VCardReader reader = new VCardReader(new StringReader(itemBody));

@@ -176,12 +176,7 @@ public class VCardReader extends ICSBufferedReader {
                     if (currentChar == ';') {
                         property.addValue(line.substring(startIndex, i));
                         startIndex = i + 1;
-                    } else if (currentChar == '\\') {
-                        state = State.BACKSLASH;
                     }
-                    // BACKSLASH state
-                } else {
-                    state = State.VALUE;
                 }
             }
             property.addValue(line.substring(startIndex));
