@@ -197,9 +197,9 @@ public class Field {
         createField("writeemail2", URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
         createField("writeemail3", URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
         // email only
-        createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1EmailAddress
-        createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2EmailAddress
-        createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3EmailAddress
+        createField("email1", DistinguishedPropertySetType.Address, 0x8084, "email1"); // Email1OriginalDisplayName
+        createField("email2", DistinguishedPropertySetType.Address, 0x8094, "email2"); // Email2OriginalDisplayName
+        createField("email3", DistinguishedPropertySetType.Address, 0x80A4, "email3"); // Email3OriginalDisplayName
 
         createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
         createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
