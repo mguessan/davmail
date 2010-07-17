@@ -18,7 +18,12 @@
  */
 package davmail.exchange;
 
+import org.apache.commons.codec.binary.Base64;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 /**
@@ -101,6 +106,16 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("X-MANAGER", "manager");
         vCardWriter.appendProperty("X-SPOUSE", "spousecn");
 
+        // add photo
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        InputStream partInputStream = new FileInputStream("src/data/anonymous.jpg");
+        byte[] bytes = new byte[8192];
+        int length;
+        while ((length = partInputStream.read(bytes)) > 0) {
+            baos.write(bytes, 0, length);
+        }
+        vCardWriter.appendProperty("PHOTO;ENCODING=b;TYPE=JPEG", new String(Base64.encodeBase64(baos.toByteArray())));
+
         vCardWriter.endCard();
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
@@ -171,5 +186,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("manager", contact.get("manager"));
         assertEquals("spousecn", contact.get("spousecn"));
         assertEquals("keywords", contact.get("keywords"));
+
+        assertNotNull(session.getContactPhoto(contact));
     }
 }

@@ -676,7 +676,11 @@ public class EwsExchangeSession extends ExchangeSession {
         protected Set<FieldUpdate> buildProperties() throws IOException {
             HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
             for (Map.Entry<String, String> entry : entrySet()) {
-                list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
+                if ("photo".equals(entry.getKey())) {
+                    list.add(Field.createFieldUpdate("haspicture", "true"));
+                } else {
+                    list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
+                }
             }
             // force urlcompname
             list.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
@@ -691,6 +695,8 @@ public class EwsExchangeSession extends ExchangeSession {
          * @throws IOException on error
          */
         public ItemResult createOrUpdate() throws IOException {
+            String photo = get("photo");
+
             ItemResult itemResult = new ItemResult();
             EWSMethod createOrUpdateItemMethod;
 
@@ -731,7 +737,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 newItem.setFieldUpdates(buildProperties());
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
             }
-
             executeMethod(createOrUpdateItemMethod);
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
@@ -746,6 +751,15 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
+
+            if (photo != null) {
+                // TODO: handle photo update, fix attachment mapi properties (available only with Exchange 2010)
+                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpg", photo);
+                // update photo attachment
+                CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
+                executeMethod(createAttachmentMethod);
+            }
+
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
             getItemMethod.addAdditionalProperty(Field.get("etag"));
             executeMethod(getItemMethod);
@@ -925,7 +939,27 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
-        throw new UnsupportedOperationException();
+        ContactPhoto contactPhoto = null;
+
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Contact)contact).itemId, false);
+        getItemMethod.addAdditionalProperty(Field.get("attachments"));
+        executeMethod(getItemMethod);
+        EWSMethod.Item item = getItemMethod.getResponseItem();
+        if (item != null) {
+            FileAttachment attachment = item.getAttachmentByName("ContactPicture.jpg");
+            if (attachment != null) {
+                // get attachment content
+                GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
+                executeMethod(getAttachmentMethod);
+
+                contactPhoto = new ContactPhoto();
+                contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
+                contactPhoto.type = attachment.contentType;
+            }
+
+        }
+
+        return contactPhoto;
     }
 
     @Override

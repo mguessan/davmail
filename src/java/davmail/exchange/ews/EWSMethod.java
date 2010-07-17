@@ -47,11 +47,16 @@ public abstract class EWSMethod extends PostMethod {
     protected FolderId toFolderId;
     protected FolderId parentFolderId;
     protected ItemId itemId;
+    protected ItemId parentItemId;
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
     protected Set<AttributeOption> methodOptions;
 
     protected Set<FieldUpdate> updates;
+
+    protected FileAttachment attachment;
+
+    protected String attachmentId;
 
     protected final String itemType;
     protected final String methodName;
@@ -159,6 +164,18 @@ public abstract class EWSMethod extends PostMethod {
             if (updates == null) {
                 writer.write("</m:ItemIds>");
             }
+        }
+    }
+
+    protected void writeParentItemId(Writer writer) throws IOException {
+        if (parentItemId != null) {
+            writer.write("<m:ParentItemId Id=\"");
+            writer.write(parentItemId.id);
+            if (parentItemId.changeKey != null) {
+                writer.write("\" ChangeKey=\"");
+                writer.write(parentItemId.changeKey);
+            }
+            writer.write("\"/>");
         }
     }
 
@@ -316,11 +333,36 @@ public abstract class EWSMethod extends PostMethod {
         writeParentFolderId(writer);
         writeToFolderId(writer);
         writeItemId(writer);
+        writeParentItemId(writer);
+        writeAttachments(writer);
+        writeAttachmentId(writer);
         writeFolderId(writer);
         writeSavedItemFolderId(writer);
         writeItem(writer);
         writeUpdates(writer);
         endChanges(writer);
+    }
+
+    private void writeAttachmentId(Writer writer) throws IOException {
+        if (attachmentId != null) {
+            writer.write("<m:AttachmentShape>");
+            writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
+            writer.write("</m:AttachmentShape>");
+
+            writer.write("<m:AttachmentIds>");
+            writer.write("<t:AttachmentId Id=\"");
+            writer.write(attachmentId);
+            writer.write("\"/>");
+            writer.write("</m:AttachmentIds>");
+        }
+    }
+
+    protected void writeAttachments(Writer writer) throws IOException {
+        if (attachment != null) {
+            writer.write("<m:Attachments>");
+            attachment.write(writer);
+            writer.write("</m:Attachments>");
+        }
     }
 
     /**
@@ -345,6 +387,7 @@ public abstract class EWSMethod extends PostMethod {
         public String type;
         protected byte[] mimeContent;
         protected Set<FieldUpdate> fieldUpdates;
+        protected List<FileAttachment> attachments;
 
         @Override
         public String toString() {
@@ -440,6 +483,18 @@ public abstract class EWSMethod extends PostMethod {
             return result;
         }
 
+        public FileAttachment getAttachmentByName(String attachmentName) {
+            FileAttachment result = null;
+            if (attachments != null) {
+                for (FileAttachment attachment:attachments) {
+                    if (attachmentName.equals(attachment.name)) {
+                        result = attachment;
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
     }
 
     /**
@@ -544,6 +599,8 @@ public abstract class EWSMethod extends PostMethod {
                     addExtendedPropertyValue(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
                     handleMimeContent(reader, responseItem);
+                } else if (tagLocalName.equals("Attachments")) {
+                    responseItem.attachments = handleAttachments(reader, responseItem);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -561,6 +618,39 @@ public abstract class EWSMethod extends PostMethod {
         }
         return responseItem;
     }
+
+    protected List<FileAttachment> handleAttachments(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        List<FileAttachment> attachments = new ArrayList<FileAttachment>();
+        while (reader.hasNext() && !(isEndTag(reader, "Attachments"))) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if (tagLocalName.equals("FileAttachment")) {
+                    attachments.add(handleFileAttachment(reader, responseItem));
+                }
+            }
+        }
+        return attachments;
+    }
+
+    protected FileAttachment handleFileAttachment(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        FileAttachment fileAttachment = new FileAttachment();
+        while (reader.hasNext() && !(isEndTag(reader, "FileAttachment"))) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if (tagLocalName.equals("AttachmentId")) {
+                    fileAttachment.attachmentId = getAttributeValue(reader, "Id");
+                } else if (tagLocalName.equals("Name")) {
+                   fileAttachment.name = getTagContent(reader);
+                } else if (tagLocalName.equals("ContentType")) {
+                   fileAttachment.contentType = getTagContent(reader);
+                }
+            }
+        }
+        return fileAttachment;
+    }
+
 
     protected void handleMimeContent(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         byte[] base64MimeContent = reader.getElementText().getBytes();

@@ -2776,6 +2776,8 @@ public abstract class ExchangeSession {
                 properties.put("manager", property.getValue());
             } else if ("X-SPOUSE".equals(property.getKey())) {
                 properties.put("spousecn", property.getValue());
+            } else if ("PHOTO".equals(property.getKey())) {
+                properties.put("photo", property.getValue());
             }
         }
         // detect empty values

@@ -141,6 +141,9 @@ public class Field {
 
         // calendar
         FIELD_MAP.put("processed", new ExtendedFieldURI(0x65e8, ExtendedFieldURI.PropertyType.Boolean));
+
+        // attachments
+        FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
     }
 
     /**
