@@ -30,10 +30,9 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -753,8 +752,13 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
 
             if (photo != null) {
+                // convert image to jpeg
+                BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(photo.getBytes())));
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(image, "jpg", baos);
+
                 // TODO: handle photo update, fix attachment mapi properties (available only with Exchange 2010)
-                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", photo);
+                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(baos.toByteArray())));
                 // update photo attachment
                 CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
                 executeMethod(createAttachmentMethod);
@@ -941,7 +945,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto = null;
 
-        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Contact)contact).itemId, false);
+        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Contact) contact).itemId, false);
         getItemMethod.addAdditionalProperty(Field.get("attachments"));
         executeMethod(getItemMethod);
         EWSMethod.Item item = getItemMethod.getResponseItem();
