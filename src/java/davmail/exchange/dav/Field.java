@@ -261,6 +261,9 @@ public class Field {
         createField("roamingdictionary", 0x7c07, PropertyType.Binary);
 
         createField(DAV, "ishidden");
+
+        createField("attachmentContactPhoto", 0x7FFF, PropertyType.Boolean); // PR_ATTACHMENT_CONTACTPHOTO
+        createField("renderingPosition", 0x370B, PropertyType.Long);// PR_RENDERING_POSITION
     }
 
     protected static String toHexString(int propertyTag) {

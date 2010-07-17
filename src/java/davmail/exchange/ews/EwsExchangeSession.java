@@ -754,7 +754,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             if (photo != null) {
                 // TODO: handle photo update, fix attachment mapi properties (available only with Exchange 2010)
-                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpg", photo);
+                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", photo);
                 // update photo attachment
                 CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
                 executeMethod(createAttachmentMethod);

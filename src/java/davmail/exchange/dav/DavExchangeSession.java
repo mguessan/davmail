@@ -44,10 +44,9 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.w3c.dom.Node;
 
+import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -594,7 +593,9 @@ public class DavExchangeSession extends ExchangeSession {
                 if (key.startsWith("email")) {
                     key = "write" + key;
                 }
-                list.add(Field.createDavProperty(key, entry.getValue()));
+                if (!"photo".equals(key)) {
+                    list.add(Field.createDavProperty(key, entry.getValue()));
+                }
             }
 
             return list;
@@ -644,6 +645,51 @@ public class DavExchangeSession extends ExchangeSession {
                 status = HttpStatus.SC_FORBIDDEN;
             }
             itemResult.status = status;
+
+
+            String photo = get("photo");
+            if (photo != null) {
+                // photo url
+                String contactPictureUrl = getHref() + "/ContactPicture.jpg";
+                // need to update photo
+                BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(photo.getBytes())));
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(image, "jpg", baos);
+
+                final PutMethod putmethod = new PutMethod(URIUtil.encodePath(contactPictureUrl));
+                putmethod.setRequestHeader("Overwrite", "t");
+                putmethod.setRequestHeader("Content-Type", "image/jpeg");
+                putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "image/jpeg"));
+                try {
+                    status = httpClient.executeMethod(putmethod);
+                    if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
+                        throw new IOException("Unable to update contact picture");
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Error in contact photo create or update", e);
+                    throw e;
+                } finally {
+                    putmethod.releaseConnection();
+                }
+
+                ArrayList<DavConstants> changeList = new ArrayList<DavConstants>();
+                changeList.add(Field.createDavProperty("attachmentContactPhoto", "1"));
+                changeList.add(Field.createDavProperty("renderingPosition", "-1"));
+
+                final PropPatchMethod attachmentPropPatchMethod = new PropPatchMethod(contactPictureUrl, changeList);
+                try {
+                    status = httpClient.executeMethod(attachmentPropPatchMethod);
+                    if (status != HttpStatus.SC_MULTI_STATUS) {
+                        throw new IOException("Unable to update contact picture");
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Error in contact photo create or update", e);
+                    throw e;
+                } finally {
+                    attachmentPropPatchMethod.releaseConnection();
+                }
+
+            }
             // need to retrieve new etag
             HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
             try {
@@ -1163,9 +1209,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getPermanentUrl()));
-        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-        method.setRequestHeader("Translate", "f");
+        final GetMethod method = new GetMethod(getFolderPath(CONTACTS) + '/' + contact.get("urlcompname") + "/ContactPicture.jpg");
         method.setRequestHeader("Accept-Encoding", "gzip");
 
         try {
@@ -1176,27 +1220,18 @@ public class DavExchangeSession extends ExchangeSession {
             } else {
                 inputStream = method.getResponseBodyAsStream();
             }
-            MimeMessage mimeMessage = new MimeMessage(null, inputStream);
-            MimePart photoBodyPart;
-            if (mimeMessage.getContent() instanceof MimeMultipart) {
-                photoBodyPart = (MimePart) ((MimeMultipart) mimeMessage.getContent()).getBodyPart(1);
-            } else {
-                photoBodyPart = mimeMessage;
-            }
+
             contactPhoto = new ContactPhoto();
-            String contentType = photoBodyPart.getContentType();
-            contactPhoto.type = contentType.substring(0, contentType.indexOf(';'));
+            contactPhoto.type = "image/jpeg";
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream partInputStream = photoBodyPart.getInputStream();
+            InputStream partInputStream = inputStream;
             byte[] bytes = new byte[8192];
             int length;
             while ((length = partInputStream.read(bytes)) > 0) {
                 baos.write(bytes, 0, length);
             }
             contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
-        } catch (MessagingException e) {
-            throw new IOException(e);
         } finally {
             method.releaseConnection();
         }
