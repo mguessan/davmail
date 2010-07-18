@@ -109,9 +109,8 @@ public class NTLMv2Scheme implements AuthScheme {
 
     /**
      * Deprecated.
-     *
-     * @deprecated
      */
+    @Deprecated
     public String getID() {
         throw new UnsupportedOperationException();
     }
@@ -145,8 +144,8 @@ public class NTLMv2Scheme implements AuthScheme {
      *                                     are not valid or not applicable for this authentication scheme
      * @throws AuthenticationException     if authorization string cannot
      *                                     be generated due to an authentication failure
-     * @deprecated
      */
+    @Deprecated
     public String authenticate(final Credentials credentials, String method, String uri) throws AuthenticationException {
         throw new UnsupportedOperationException();
     }

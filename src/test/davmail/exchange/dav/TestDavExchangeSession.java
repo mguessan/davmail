@@ -18,20 +18,15 @@
  */
 package davmail.exchange.dav;
 
-import davmail.BundleMessage;
-import davmail.Settings;
 import davmail.exchange.AbstractExchangeSessionTestCase;
-import davmail.exchange.ExchangeSession;
-import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Webdav specific unit tests
@@ -40,11 +35,18 @@ import java.util.*;
 public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     DavExchangeSession davSession;
 
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void setUp() throws IOException {
         super.setUp();
         davSession = ((DavExchangeSession) session);
     }
 
+    /**
+     * Test exchange folder path mapping
+     */
     public void testGetFolderPath() {
         String mailPath = davSession.getFolderPath("");
         String rootPath = davSession.getFolderPath("/users/");
@@ -101,6 +103,11 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         assertEquals(mailPath + "Contacts", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Contacts"));
     }
 
+    /**
+     * Get main category list
+     *
+     * @throws IOException on error
+     */
     public void testGetCategoryList() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
@@ -108,9 +115,14 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
-
+        System.out.println(propertyList);
     }
 
+    /**
+     * Find calendar options
+     *
+     * @throws IOException on error
+     */
     public void testGetCalendarOptions() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
@@ -118,9 +130,14 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
-
+        System.out.println(propertyList);
     }
 
+    /**
+     * Retrieve all hidden items
+     *
+     * @throws IOException on error
+     */
     public void testAllHidden() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("messageclass");
@@ -128,7 +145,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         attributes.add("roamingxmlstream");
         attributes.add("displayname");
 
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/", attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + '/', attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep);
         for (MultiStatusResponse response : responses) {
             System.out.println(response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
@@ -141,6 +158,11 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         }
     }
 
+    /**
+     * Search in non ipm subtree
+     *
+     * @throws IOException on error
+     */
     public void testNonIpmSubtree() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("messageclass");
@@ -163,72 +185,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
             if (roamingdictionaryProperty != null) {
                 System.out.println("roamingdictionary: " + new String(Base64.decodeBase64(((String) roamingdictionaryProperty.getValue()).getBytes()), "UTF-8"));
             }
-
-
         }
     }
 
-    public void testGetVtimezone() {
-        ExchangeSession.VTimezone timezone = davSession.getVTimezone();
-        assertNotNull(timezone.timezoneId);
-        assertNotNull(timezone.timezoneBody);
-        System.out.println(timezone.timezoneId);
-        System.out.println(timezone.timezoneBody);
-    }
-
-    public void testDumpVtimezones() {
-        Properties properties = new Properties() {
-            @Override
-            public synchronized Enumeration<Object> keys() {
-                Enumeration keysEnumeration = super.keys();
-                TreeSet<String> sortedKeySet = new TreeSet<String>();
-                while (keysEnumeration.hasMoreElements()) {
-                    sortedKeySet.add((String) keysEnumeration.nextElement());
-                }
-                final Iterator<String> sortedKeysIterator = sortedKeySet.iterator();
-                return new Enumeration<Object>() {
-
-                    public boolean hasMoreElements() {
-                        return sortedKeysIterator.hasNext();
-                    }
-
-                    public Object nextElement() {
-                        return sortedKeysIterator.next();
-                    }
-                };
-            }
-
-        };
-        for (int i = 1; i < 100; i++) {
-            Settings.setProperty("davmail.timezoneId", String.valueOf(i));
-            ExchangeSession.VTimezone timezone = davSession.getVTimezone();
-            if (timezone.timezoneId != null) {
-                properties.put(timezone.timezoneId.replaceAll("\\\\", ""), String.valueOf(i));
-                System.out.println(timezone.timezoneId + '=' + i);
-            }
-            davSession.vTimezone = null;
-        }
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream("timezoneids.properties");
-            properties.store(fileOutputStream, "Timezone ids");
-        } catch (IOException e) {
-            System.err.println(e);
-        } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    System.err.println(e);
-                }
-            }
-        }
-    }
-
-    public void testSearchCalendar() throws IOException {
-        List<ExchangeSession.Event> events = davSession.searchEvents("/users/" + davSession.getEmail() + "/calendar/test", ExchangeSession.ITEM_PROPERTIES, null);
-        for (ExchangeSession.Event event:events) {
-            System.out.println(event.getBody());
-        }
-    }
 }

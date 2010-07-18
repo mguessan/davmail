@@ -87,7 +87,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
 
     public void testFolderAccent() throws IOException {
-        String folderName = "testé";
+        String folderName = "testÃ©";
         session.createMessageFolder(folderName);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);

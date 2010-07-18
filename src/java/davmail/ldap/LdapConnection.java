@@ -257,7 +257,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     // LDAP version
-    static final int LDAP_VERSION2 = 0x02;
+    // static final int LDAP_VERSION2 = 0x02;
     static final int LDAP_VERSION3 = 0x03;
 
     // LDAP request operations
@@ -282,10 +282,10 @@ public class LdapConnection extends AbstractConnection {
 
     // LDAP filter operators (only LDAP_FILTER_SUBSTRINGS is supported)
     static final int LDAP_FILTER_SUBSTRINGS = 0xa4;
-    static final int LDAP_FILTER_GE = 0xa5;
-    static final int LDAP_FILTER_LE = 0xa6;
+    //static final int LDAP_FILTER_GE = 0xa5;
+    //static final int LDAP_FILTER_LE = 0xa6;
     static final int LDAP_FILTER_PRESENT = 0x87;
-    static final int LDAP_FILTER_APPROX = 0xa8;
+    //static final int LDAP_FILTER_APPROX = 0xa8;
     static final int LDAP_FILTER_EQUALITY = 0xa3;
 
     // LDAP filter mode (only startsWith supported by galfind)
@@ -300,8 +300,8 @@ public class LdapConnection extends AbstractConnection {
 
     // LDAP search scope
     static final int SCOPE_BASE_OBJECT = 0;
-    static final int SCOPE_ONE_LEVEL = 1;
-    static final int SCOPE_SUBTREE = 2;
+    //static final int SCOPE_ONE_LEVEL = 1;
+    //static final int SCOPE_SUBTREE = 2;
 
     /**
      * For some unknow reaseon parseIntWithTag is private !
@@ -846,7 +846,6 @@ public class LdapConnection extends AbstractConnection {
          */
         public ExchangeSession.Condition getContactSearchFilter() {
             ExchangeSession.MultiCondition condition;
-            String op;
 
             if (type == LDAP_FILTER_OR) {
                 condition = session.or();
@@ -1099,10 +1098,6 @@ public class LdapConnection extends AbstractConnection {
             DavGatewayTray.error(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", "nested simple filters"));
         }
 
-        public String getAttributeName() {
-            return attributeName;
-        }
-
         public String getGalFindAttributeName() {
             return CRITERIA_MAP.get(attributeName);
         }
@@ -1286,7 +1281,8 @@ public class LdapConnection extends AbstractConnection {
         /**
          * Search users in contacts folder
          *
-         * @param condition search filter
+         * @param condition           search filter
+         * @param returningAttributes requested attributes
          * @return List of users
          * @throws IOException on error
          */

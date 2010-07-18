@@ -560,7 +560,8 @@ public class DavExchangeSession extends ExchangeSession {
          * Build Contact instance from multistatusResponse info
          *
          * @param multiStatusResponse response
-         * @throws URIException on error
+         * @throws URIException     on error
+         * @throws DavMailException on error
          */
         public Contact(MultiStatusResponse multiStatusResponse) throws URIException, DavMailException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
@@ -590,10 +591,9 @@ public class DavExchangeSession extends ExchangeSession {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
-                if (key.startsWith("email") || key.equals("private")) {
-                    key = "write" + key;
-                }
-                if (!"photo".equals(key)) {
+                if (key.startsWith("email") || "private".equals(key)) {
+                    list.add(Field.createDavProperty("write" + key, entry.getValue()));
+                } else if (!"photo".equals(key)) {
                     list.add(Field.createDavProperty(key, entry.getValue()));
                 }
             }
@@ -625,6 +625,7 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(propPatchMethod);
                 if (status == HttpStatus.SC_MULTI_STATUS) {
+                    //noinspection VariableNotUsedInsideIf
                     if (etag == null) {
                         status = HttpStatus.SC_CREATED;
                         LOGGER.debug("Created contact " + getHref());
@@ -634,7 +635,7 @@ public class DavExchangeSession extends ExchangeSession {
                     }
                 } else {
                     LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
-                }            
+                }
             } finally {
                 propPatchMethod.releaseConnection();
             }
@@ -810,6 +811,7 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(putmethod);
                 if (status == HttpURLConnection.HTTP_OK) {
+                    //noinspection VariableNotUsedInsideIf
                     if (etag != null) {
                         LOGGER.debug("Updated event " + getHref());
                     } else {
@@ -1221,7 +1223,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
 
             contactPhoto = new ContactPhoto();
-            contactPhoto.type = "image/jpeg";
+            contactPhoto.contentType = "image/jpeg";
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             InputStream partInputStream = inputStream;

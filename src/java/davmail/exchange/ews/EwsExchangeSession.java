@@ -958,7 +958,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 contactPhoto = new ContactPhoto();
                 contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
-                contactPhoto.type = attachment.contentType;
+                contactPhoto.contentType = attachment.contentType;
             }
 
         }

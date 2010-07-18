@@ -106,6 +106,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("X-MANAGER", "manager");
         vCardWriter.appendProperty("X-SPOUSE", "spousecn");
 
+        vCardWriter.appendProperty("CLASS", "PRIVATE");
+
         // add photo
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         InputStream partInputStream = new FileInputStream("src/data/anonymous.jpg");
@@ -186,6 +188,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("manager", contact.get("manager"));
         assertEquals("spousecn", contact.get("spousecn"));
         assertEquals("keywords", contact.get("keywords"));
+
+        assertEquals("1", contact.get("private"));
 
         assertNotNull(session.getContactPhoto(contact));
     }
