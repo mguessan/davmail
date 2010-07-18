@@ -251,7 +251,8 @@ public class Field {
 
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
-        createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE=2, SENSITIVITY_NONE = 0
+        createField("writeprivate", DistinguishedPropertySetType.Common, 0x8506, PropertyType.String10);
+        createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE = 2, SENSITIVITY_PERSONAL = 1, SENSITIVITY_NONE = 0
 
         createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture"); // True/False
 

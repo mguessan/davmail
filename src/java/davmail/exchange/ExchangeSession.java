@@ -1751,8 +1751,11 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("BDAY", get("bday"));
 
-            // categories
             writer.appendProperty("CATEGORIES", get("keywords"));
+
+            if ("1".equals(get("private"))) {
+                writer.appendProperty("CLASS", "PRIVATE");
+            }
 
             writer.appendProperty("X-ASSISTANT", get("secretarycn"));
             writer.appendProperty("X-MANAGER", get("manager"));
@@ -2770,6 +2773,14 @@ public abstract class ExchangeSession {
                 }
             } else if ("CATEGORIES".equals(property.getKey())) {
                 properties.put("keywords", property.getValue());
+            } else if ("CLASS".equals(property.getKey())) {
+                if ("PUBLIC".equals(property.getValue())) {
+                    properties.put("sensitivity", "0");
+                    properties.put("private", "0");
+                } else {
+                    properties.put("sensitivity", "2");
+                    properties.put("private", "1");
+                }
             } else if ("X-ASSISTANT".equals(property.getKey())) {
                 properties.put("secretarycn", property.getValue());
             } else if ("X-MANAGER".equals(property.getKey())) {
@@ -3133,6 +3144,9 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("othercity");
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
+
+        CONTACT_ATTRIBUTES.add("private");
+        CONTACT_ATTRIBUTES.add("sensitivity");
     }
 
     /**

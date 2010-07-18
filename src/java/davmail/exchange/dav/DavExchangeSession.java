@@ -590,7 +590,7 @@ public class DavExchangeSession extends ExchangeSession {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
-                if (key.startsWith("email")) {
+                if (key.startsWith("email") || key.equals("private")) {
                     key = "write" + key;
                 }
                 if (!"photo".equals(key)) {
@@ -609,7 +609,12 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public ItemResult createOrUpdate() throws IOException {
             int status = 0;
-            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), buildProperties());
+            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), buildProperties()) {
+                @Override
+                protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
+                    // ignore response body, sometimes invalid with exchange mapi properties
+                }
+            };
             propPatchMethod.setRequestHeader("Translate", "f");
             if (etag != null) {
                 propPatchMethod.setRequestHeader("If-Match", etag);
@@ -620,22 +625,16 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(propPatchMethod);
                 if (status == HttpStatus.SC_MULTI_STATUS) {
-                    MultiStatus responses = propPatchMethod.getResponseBodyAsMultiStatus();
-                    if (responses.getResponses().length > 0) {
-                        status = responses.getResponses()[0].getStatus()[0].getStatusCode();
-                    }
-
-                    if (status == HttpStatus.SC_CREATED) {
+                    if (etag == null) {
+                        status = HttpStatus.SC_CREATED;
                         LOGGER.debug("Created contact " + getHref());
                     } else {
+                        status = HttpStatus.SC_OK;
                         LOGGER.debug("Updated contact " + getHref());
                     }
                 } else {
                     LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
-                }
-            } catch (DavException e) {
-                LOGGER.error("Error in item create or update", e);
-                throw new IOException(e);
+                }            
             } finally {
                 propPatchMethod.releaseConnection();
             }
