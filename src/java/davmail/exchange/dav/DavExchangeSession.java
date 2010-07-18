@@ -574,6 +574,8 @@ public class DavExchangeSession extends ExchangeSession {
                 if (value != null) {
                     if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDate(value);
+                    } else if ("haspicture".equals(attributeName) || "private".equals(attributeName)) {
+                        value = "1".equals(value)?"true":"false";
                     }
                     put(attributeName, value);
                 }
@@ -1223,7 +1225,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto = null;
-        if ("1".equals(contact.get("haspicture"))) {
+        if ("true".equals(contact.get("haspicture"))) {
             final GetMethod method = new GetMethod(contact.getHref() + "/ContactPicture.jpg");
             method.setRequestHeader("Translate", "f");
             method.setRequestHeader("Accept-Encoding", "gzip");

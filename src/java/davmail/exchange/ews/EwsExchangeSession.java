@@ -703,11 +703,21 @@ public class EwsExchangeSession extends ExchangeSession {
             String urlcompname = convertItemNameToEML(itemName);
             String currentEtag = null;
             ItemId currentItemId = null;
+            FileAttachment currentFileAttachment = null;
             List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
             if (!responses.isEmpty()) {
                 EWSMethod.Item response = responses.get(0);
                 currentItemId = new ItemId(response);
                 currentEtag = response.get(Field.get("etag").getResponseName());
+
+                // load current picture
+                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, currentItemId, false);
+                getItemMethod.addAdditionalProperty(Field.get("attachments"));
+                executeMethod(getItemMethod);
+                EWSMethod.Item item = getItemMethod.getResponseItem();
+                if (item != null) {
+                    currentFileAttachment = item.getAttachmentByName("ContactPicture.jpg");
+                }
             }
             if ("*".equals(noneMatch)) {
                 // create requested
@@ -743,13 +753,19 @@ public class EwsExchangeSession extends ExchangeSession {
                 //noinspection VariableNotUsedInsideIf
                 if (etag == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
-                    LOGGER.debug("Updated event " + getHref());
+                    LOGGER.debug("Created event " + getHref());
                 } else {
-                    LOGGER.warn("Overwritten event " + getHref());
+                    LOGGER.warn("Updated event " + getHref());
                 }
             }
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
+
+            // first delete current picture
+            if (currentFileAttachment != null) {
+                DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);
+                executeMethod(deleteAttachmentMethod);
+            }
 
             if (photo != null) {
                 // convert image to jpeg

@@ -345,10 +345,11 @@ public abstract class EWSMethod extends PostMethod {
 
     private void writeAttachmentId(Writer writer) throws IOException {
         if (attachmentId != null) {
-            writer.write("<m:AttachmentShape>");
-            writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
-            writer.write("</m:AttachmentShape>");
-
+            if ("CreateAttachment".equals(methodName)) {
+                writer.write("<m:AttachmentShape>");
+                writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
+                writer.write("</m:AttachmentShape>");
+            }
             writer.write("<m:AttachmentIds>");
             writer.write("<t:AttachmentId Id=\"");
             writer.write(attachmentId);
@@ -486,7 +487,7 @@ public abstract class EWSMethod extends PostMethod {
         public FileAttachment getAttachmentByName(String attachmentName) {
             FileAttachment result = null;
             if (attachments != null) {
-                for (FileAttachment attachment:attachments) {
+                for (FileAttachment attachment : attachments) {
                     if (attachmentName.equals(attachment.name)) {
                         result = attachment;
                         break;
@@ -642,9 +643,9 @@ public abstract class EWSMethod extends PostMethod {
                 if (tagLocalName.equals("AttachmentId")) {
                     fileAttachment.attachmentId = getAttributeValue(reader, "Id");
                 } else if (tagLocalName.equals("Name")) {
-                   fileAttachment.name = getTagContent(reader);
+                    fileAttachment.name = getTagContent(reader);
                 } else if (tagLocalName.equals("ContentType")) {
-                   fileAttachment.contentType = getTagContent(reader);
+                    fileAttachment.contentType = getTagContent(reader);
                 }
             }
         }
