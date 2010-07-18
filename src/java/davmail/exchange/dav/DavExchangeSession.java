@@ -673,7 +673,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
 
                 ArrayList<DavConstants> changeList = new ArrayList<DavConstants>();
-                changeList.add(Field.createDavProperty("attachmentContactPhoto", "1"));
+                changeList.add(Field.createDavProperty("attachmentContactPhoto", "true"));
                 changeList.add(Field.createDavProperty("renderingPosition", "-1"));
 
                 final PropPatchMethod attachmentPropPatchMethod = new PropPatchMethod(contactPictureUrl, changeList);
@@ -1210,7 +1210,8 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(getFolderPath(CONTACTS) + '/' + contact.get("urlcompname") + "/ContactPicture.jpg");
+        final GetMethod method = new GetMethod(contact.getHref() + "/ContactPicture.jpg");
+        method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");
 
         try {

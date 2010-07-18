@@ -2800,10 +2800,10 @@ public abstract class ExchangeSession {
             } else if ("CLASS".equals(property.getKey())) {
                 if ("PUBLIC".equals(property.getValue())) {
                     properties.put("sensitivity", "0");
-                    properties.put("private", "0");
+                    properties.put("private", "false");
                 } else {
                     properties.put("sensitivity", "2");
-                    properties.put("private", "1");
+                    properties.put("private", "true");
                 }
             } else if ("X-ASSISTANT".equals(property.getKey())) {
                 properties.put("secretarycn", property.getValue());
@@ -2819,7 +2819,8 @@ public abstract class ExchangeSession {
         for (String key : CONTACT_ATTRIBUTES) {
             if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key) &&
                     !properties.containsKey(key)) {
-                properties.put(key, null);
+// TODO: enable
+                //properties.put(key, null);
             }
         }
 

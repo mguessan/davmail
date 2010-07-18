@@ -250,8 +250,8 @@ public class Field {
         //createField("keywords", DistinguishedPropertySetType.PublicStrings, "Keywords", ); // PS_PUBLIC_STRINGS Keywords String
 
         // contact private flags
-        createField("private", DistinguishedPropertySetType.Common, 0x8506, "private"); // True/False
-        createField("writeprivate", DistinguishedPropertySetType.Common, 0x8506, PropertyType.String10);
+        createField("private", DistinguishedPropertySetType.Common, 0x8506, "private", PropertyType.Boolean); // True/False
+        createField("writeprivate", DistinguishedPropertySetType.Common, 0x8506, PropertyType.Boolean);
         createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE = 2, SENSITIVITY_PERSONAL = 1, SENSITIVITY_NONE = 0
 
         createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture"); // True/False
@@ -279,17 +279,18 @@ public class Field {
         String name = 'x' + toHexString(propertyTag) + propertyTypeMap.get(propertyType);
         Field field;
         if (propertyType == PropertyType.Binary) {
-            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64");
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64", propertyType);
         } else {
-            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name);
-        }
-        if (propertyType == PropertyType.Integer || propertyType == PropertyType.Long) {
-            field.isIntValue = true;
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, propertyType);
         }
         fieldMap.put(field.alias, field);
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
+         createField(alias, propertySetType, propertyTag, responseAlias, null);
+    }
+
+    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias, PropertyType propertyType) {
         String name;
         if (propertySetType == DistinguishedPropertySetType.Address) {
             // Address namespace expects integer names
@@ -299,15 +300,15 @@ public class Field {
             name = "0x" + toHexString(propertyTag);
         }
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null, propertyType);
         fieldMap.put(field.alias, field);
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, PropertyType propertyType) {
-        String name = "_x" + propertyTypeMap.get(propertyType) + "_x" + toHexString(propertyTag);
+        String name = "_x0030_x" + toHexString(propertyTag);
 
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType);
         fieldMap.put(field.alias, field);
     }
 
@@ -317,38 +318,41 @@ public class Field {
     }
 
     protected static void createField(String alias, Namespace namespace, String name) {
-        Field field = new Field(alias, namespace, name);
+        Field field = new Field(alias, namespace, name, null);
         fieldMap.put(field.alias, field);
     }
 
     protected static void createField(String alias, Namespace namespace, String name, PropertyType propertyType) {
-        Field field = new Field(alias, namespace, name);
-        if (propertyType == PropertyType.StringArray) {
-            field.isMultivalued = true;
-        }
+        Field field = new Field(alias, namespace, name, propertyType);
         fieldMap.put(field.alias, field);
     }
 
     protected final DavPropertyName davPropertyName;
+    protected final PropertyType propertyType;
     protected final String alias;
     protected final String uri;
     protected final String requestPropertyString;
     protected final DavPropertyName responsePropertyName;
     protected final String cast;
-    protected boolean isIntValue;
-    protected boolean isMultivalued;
+    protected final boolean isIntValue;
+    protected final boolean isMultivalued;
+    protected final boolean isBooleanValue;
 
 
     public Field(Namespace namespace, String name) {
-        this(name, namespace, name);
+        this(name, namespace, name, null);
     }
 
-    public Field(String alias, Namespace namespace, String name) {
-        this(alias, namespace, name, null, null);
+    public Field(String alias, Namespace namespace, String name, PropertyType propertyType) {
+        this(alias, namespace, name, null, null, propertyType);
     }
 
-    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast) {
+    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast, PropertyType propertyType) {
         davPropertyName = DavPropertyName.create(name, namespace);
+        this.propertyType = propertyType;
+        isMultivalued = propertyType == PropertyType.StringArray;
+        isIntValue = propertyType == PropertyType.Integer || propertyType == PropertyType.Long;
+        isBooleanValue = propertyType == PropertyType.Boolean;
         this.alias = alias;
         this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
@@ -414,6 +418,12 @@ public class Field {
             }
 
             return new DefaultDavProperty(field.davPropertyName, valueList);
+        } else if (field.isBooleanValue) {
+            if ("true".equals(value)) {
+                return new DefaultDavProperty(field.davPropertyName, "1");
+            } else {
+                return new DefaultDavProperty(field.davPropertyName, "0");
+            }
         } else {
             return new DefaultDavProperty(field.davPropertyName, value);
         }
