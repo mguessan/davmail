@@ -89,6 +89,9 @@ public abstract class ExchangeSession {
 
     protected static final String PUBLIC_ROOT = "/public";
     protected static final String CALENDAR = "calendar";
+    /**
+     * Contacts folder logical name
+     */
     public static final String CONTACTS = "contacts";
     protected static final String ADDRESSBOOK = "addressbook";
     protected static final String INBOX = "INBOX";
@@ -189,6 +192,10 @@ public abstract class ExchangeSession {
         return dateFormatter.format(date);
     }
 
+    /**
+     * Return standard zulu date formatter.
+     * @return zulu date formatter
+     */
     public static SimpleDateFormat getZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYYMMDD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
@@ -903,9 +910,10 @@ public abstract class ExchangeSession {
      * Send message in reader to recipients.
      * Detect visible recipients in message body to determine bcc recipients
      *
-     * @param recipients recipients list
-     * @param reader     message stream
+     * @param rcptToRecipients recipients list
+     * @param mimeMessage mime message
      * @throws IOException on error
+     * @throws MessagingException on error
      */
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // Exchange 2007 : skip From: header
@@ -1616,10 +1624,6 @@ public abstract class ExchangeSession {
             return itemName;
         }
 
-        public String getPermanentUrl() {
-            return permanentUrl;
-        }
-
         /**
          * Get event etag (last change tag).
          *
@@ -1635,6 +1639,11 @@ public abstract class ExchangeSession {
             return new HttpException(message);
         }
 
+        /**
+         * Set item href.
+         *
+         * @param href item href
+         */
         public void setHref(String href) {
             int index = href.lastIndexOf('/');
             if (index >= 0) {
@@ -1645,6 +1654,11 @@ public abstract class ExchangeSession {
             }
         }
 
+        /**
+         * Return item href.
+         *
+         * @return item href
+         */
         public String getHref() {
             return folderPath + '/' + itemName;
         }
@@ -1766,7 +1780,7 @@ public abstract class ExchangeSession {
             if ("1".equals(get("haspicture"))) {
                 try {
                     ContactPhoto contactPhoto = getContactPhoto(this);
-                    writer.appendProperty("PHOTO;TYPE=\"" + contactPhoto.type + "\";ENCODING=\"b\"", contactPhoto.content);
+                    writer.appendProperty("PHOTO;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\"", contactPhoto.content);
                 } catch (IOException e) {
                     LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
                 }
@@ -1977,7 +1991,7 @@ public abstract class ExchangeSession {
                             hasCdoBusyStatus = true;
                         } else if ("BEGIN:VTIMEZONE".equals(line)) {
                             hasTimezone = true;
-                        } else if (key.equals("METHOD")) {
+                        } else if ("METHOD".equals(key)) {
                             method = value;
                         }
                     }
@@ -2463,7 +2477,10 @@ public abstract class ExchangeSession {
 
     }
 
-    public static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+    /**
+     * Common item properties
+     */
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
 
     static {
         ITEM_PROPERTIES.add("etag");
@@ -2576,8 +2593,17 @@ public abstract class ExchangeSession {
      */
     public abstract Item getItem(String folderPath, String itemName) throws IOException;
 
-    public class ContactPhoto {
-        public String type;
+    /**
+     * Contact picture
+     */
+    public static class ContactPhoto {
+        /**
+         * Contact picture content type (always image/jpeg on read)
+         */
+        public String contentType;
+        /**
+         * Base64 encoded picture content
+         */
         public String content;
     }
 
@@ -2677,8 +2703,6 @@ public abstract class ExchangeSession {
     protected static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
     protected static final String[] VCARD_ADR_OTHER_PROPERTIES = {"otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry"};
     protected static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
-
-    protected static final String[] EMPTY_PROPERTIES = {"description", "keywords"};
 
     protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
         for (int i = 0; i < values.size() && i < contactProperties.length; i++) {
@@ -2791,9 +2815,10 @@ public abstract class ExchangeSession {
                 properties.put("photo", property.getValue());
             }
         }
-        // detect empty values
-        for (String key : EMPTY_PROPERTIES) {
-            if (!properties.containsKey(key)) {
+        // reset missing properties to null
+        for (String key : CONTACT_ATTRIBUTES) {
+            if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key) &&
+                    !properties.containsKey(key)) {
                 properties.put(key, null);
             }
         }
@@ -3085,6 +3110,9 @@ public abstract class ExchangeSession {
         return results;
     }
 
+    /**
+     * Full Contact attribute list
+     */
     public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<String>();
 
     static {
@@ -3338,8 +3366,13 @@ public abstract class ExchangeSession {
 
     }
 
-    public VTimezone vTimezone;
+    protected VTimezone vTimezone;
 
+    /**
+     * Load and return current user OWA timezone.
+     *
+     * @return current timezone
+     */
     public VTimezone getVTimezone() {
         if (vTimezone == null) {
             // need to load Timezone info from OWA
