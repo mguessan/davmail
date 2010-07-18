@@ -591,7 +591,7 @@ public class DavExchangeSession extends ExchangeSession {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
-                if (key.startsWith("email") || "private".equals(key)) {
+                if (key.startsWith("email")) {
                     list.add(Field.createDavProperty("write" + key, entry.getValue()));
                 } else if (!"photo".equals(key)) {
                     list.add(Field.createDavProperty(key, entry.getValue()));
@@ -646,11 +646,10 @@ public class DavExchangeSession extends ExchangeSession {
             }
             itemResult.status = status;
 
-
+            String contactPictureUrl = getHref() + "/ContactPicture.jpg";
             String photo = get("photo");
             if (photo != null) {
                 // photo url
-                String contactPictureUrl = getHref() + "/ContactPicture.jpg";
                 // need to update photo
                 BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(photo.getBytes())));
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -689,6 +688,20 @@ public class DavExchangeSession extends ExchangeSession {
                     attachmentPropPatchMethod.releaseConnection();
                 }
 
+            } else {
+                // try to delete picture
+                DeleteMethod deleteMethod = new DeleteMethod(contactPictureUrl);
+                try {
+                    status = httpClient.executeMethod(deleteMethod);
+                    if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                        throw new IOException("Unable to delete contact picture");
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Error in contact photo delete", e);
+                    throw e;
+                } finally {
+                    deleteMethod.releaseConnection();
+                }
             }
             // need to retrieve new etag
             HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
@@ -1209,35 +1222,36 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
-        ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(contact.getHref() + "/ContactPicture.jpg");
-        method.setRequestHeader("Translate", "f");
-        method.setRequestHeader("Accept-Encoding", "gzip");
+        ContactPhoto contactPhoto = null;
+        if ("1".equals(contact.get("haspicture"))) {
+            final GetMethod method = new GetMethod(contact.getHref() + "/ContactPicture.jpg");
+            method.setRequestHeader("Translate", "f");
+            method.setRequestHeader("Accept-Encoding", "gzip");
 
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            InputStream inputStream;
-            if (isGzipEncoded(method)) {
-                inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
-            } else {
-                inputStream = method.getResponseBodyAsStream();
+            try {
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+                InputStream inputStream;
+                if (isGzipEncoded(method)) {
+                    inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
+                } else {
+                    inputStream = method.getResponseBodyAsStream();
+                }
+
+                contactPhoto = new ContactPhoto();
+                contactPhoto.contentType = "image/jpeg";
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                InputStream partInputStream = inputStream;
+                byte[] bytes = new byte[8192];
+                int length;
+                while ((length = partInputStream.read(bytes)) > 0) {
+                    baos.write(bytes, 0, length);
+                }
+                contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
+            } finally {
+                method.releaseConnection();
             }
-
-            contactPhoto = new ContactPhoto();
-            contactPhoto.contentType = "image/jpeg";
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream partInputStream = inputStream;
-            byte[] bytes = new byte[8192];
-            int length;
-            while ((length = partInputStream.read(bytes)) > 0) {
-                baos.write(bytes, 0, length);
-            }
-            contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
-        } finally {
-            method.releaseConnection();
         }
-
         return contactPhoto;
     }
 

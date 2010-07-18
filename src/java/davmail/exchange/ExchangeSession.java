@@ -2813,14 +2813,15 @@ public abstract class ExchangeSession {
                 properties.put("spousecn", property.getValue());
             } else if ("PHOTO".equals(property.getKey())) {
                 properties.put("photo", property.getValue());
+                properties.put("haspicture", "true");
             }
         }
         // reset missing properties to null
         for (String key : CONTACT_ATTRIBUTES) {
-            if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key) &&
+            if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
+                     && !"lastmodified".equals(key) &&
                     !properties.containsKey(key)) {
-// TODO: enable
-                //properties.put(key, null);
+                properties.put(key, null);
             }
         }
 

@@ -132,8 +132,7 @@ public class Field {
         createField("iconIndex", 0x1080, PropertyType.Long);//PR_ICON_INDEX
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
-        createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted");
-        createField("writedeleted", DistinguishedPropertySetType.Common, 0x8570, PropertyType.String10);
+        createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted", PropertyType.Boolean);
 
         createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
@@ -251,10 +250,9 @@ public class Field {
 
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private", PropertyType.Boolean); // True/False
-        createField("writeprivate", DistinguishedPropertySetType.Common, 0x8506, PropertyType.Boolean);
         createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE = 2, SENSITIVITY_PERSONAL = 1, SENSITIVITY_NONE = 0
 
-        createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture"); // True/False
+        createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture", PropertyType.Boolean); // True/False
 
         // OWA settings
         createField("messageclass", 0x001a, PropertyType.String);
@@ -279,7 +277,7 @@ public class Field {
         String name = 'x' + toHexString(propertyTag) + propertyTypeMap.get(propertyType);
         Field field;
         if (propertyType == PropertyType.Binary) {
-            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64", propertyType);
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64", name, propertyType);
         } else {
             field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, propertyType);
         }
@@ -292,6 +290,7 @@ public class Field {
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias, PropertyType propertyType) {
         String name;
+        String updateAlias;
         if (propertySetType == DistinguishedPropertySetType.Address) {
             // Address namespace expects integer names
             name = String.valueOf(propertyTag);
@@ -299,16 +298,9 @@ public class Field {
             // Common namespace expects hex names
             name = "0x" + toHexString(propertyTag);
         }
+        updateAlias = "_x0030_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null, propertyType);
-        fieldMap.put(field.alias, field);
-    }
-
-    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, PropertyType propertyType) {
-        String name = "_x0030_x" + toHexString(propertyTag);
-
-        Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null, updateAlias, propertyType);
         fieldMap.put(field.alias, field);
     }
 
@@ -333,6 +325,7 @@ public class Field {
     protected final String uri;
     protected final String requestPropertyString;
     protected final DavPropertyName responsePropertyName;
+    protected final DavPropertyName updatePropertyName;
     protected final String cast;
     protected final boolean isIntValue;
     protected final boolean isMultivalued;
@@ -344,11 +337,12 @@ public class Field {
     }
 
     public Field(String alias, Namespace namespace, String name, PropertyType propertyType) {
-        this(alias, namespace, name, null, null, propertyType);
+        this(alias, namespace, name, null, null, name, propertyType);
     }
 
-    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast, PropertyType propertyType) {
+    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast, String updateAlias, PropertyType propertyType) {
         davPropertyName = DavPropertyName.create(name, namespace);
+        updatePropertyName = DavPropertyName.create(updateAlias, namespace); 
         this.propertyType = propertyType;
         isMultivalued = propertyType == PropertyType.StringArray;
         isIntValue = propertyType == PropertyType.Integer || propertyType == PropertyType.Long;
@@ -405,7 +399,7 @@ public class Field {
         Field field = Field.get(alias);
         if (value == null) {
             // return DavPropertyName to remove property
-            return field.davPropertyName;
+            return field.updatePropertyName;
         } else if (field.isMultivalued) {
             List<XmlSerializable> valueList = new ArrayList<XmlSerializable>();
             String[] values = value.split("\n");
@@ -417,15 +411,17 @@ public class Field {
                 });
             }
 
-            return new DefaultDavProperty(field.davPropertyName, valueList);
+            return new DefaultDavProperty(field.updatePropertyName, valueList);
         } else if (field.isBooleanValue) {
             if ("true".equals(value)) {
-                return new DefaultDavProperty(field.davPropertyName, "1");
+                return new DefaultDavProperty(field.updatePropertyName, "1");
+            } else if ("false".equals(value)){
+                return new DefaultDavProperty(field.updatePropertyName, "0");
             } else {
-                return new DefaultDavProperty(field.davPropertyName, "0");
+                throw new RuntimeException("Invalid value for "+field.alias+": "+value);
             }
         } else {
-            return new DefaultDavProperty(field.davPropertyName, value);
+            return new DefaultDavProperty(field.updatePropertyName, value);
         }
     }
 

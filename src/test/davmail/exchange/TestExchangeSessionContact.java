@@ -193,4 +193,85 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertNotNull(session.getContactPhoto(contact));
     }
+
+    public void testUpdateContact() throws IOException {
+        ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        assertEquals(200, result.status);
+
+        contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+        assertNull(contact.get("cn"));
+        assertNull(contact.get("sn"));
+        assertNull(contact.get("givenName"));
+        assertNull(contact.get("middlename"));
+        assertNull(contact.get("personaltitle"));
+        assertNull(contact.get("namesuffix"));
+        assertNotNull("lastmodified");
+        assertNull(contact.get("nickname"));
+
+        assertNull(contact.get("mobile"));
+        assertNull(contact.get("telephoneNumber"));
+        assertNull(contact.get("homePhone"));
+        assertNull(contact.get("facsimiletelephonenumber"));
+        assertNull(contact.get("pager"));
+
+        assertNull(contact.get("homepostofficebox"));
+        assertNull(contact.get("homeStreet"));
+        assertNull(contact.get("homeCity"));
+        assertNull(contact.get("homeState"));
+        assertNull(contact.get("homePostalCode"));
+        assertNull(contact.get("homeCountry"));
+
+        assertNull(contact.get("postofficebox"));
+        assertNull(contact.get("roomnumber"));
+        assertNull(contact.get("street"));
+        assertNull(contact.get("l"));
+        assertNull(contact.get("st"));
+        assertNull(contact.get("postalcode"));
+        assertNull(contact.get("co"));
+
+        assertNull(contact.get("email1"));
+        assertNull(contact.get("email2"));
+        assertNull(contact.get("email3"));
+
+        assertNull(contact.get("o"));
+        assertNull(contact.get("department"));
+
+        assertNull(contact.get("businesshomepage"));
+        assertNull(contact.get("title"));
+        assertNull(contact.get("description"));
+
+        assertNull(contact.get("extensionattribute1"));
+        assertNull(contact.get("extensionattribute2"));
+        assertNull(contact.get("extensionattribute3"));
+        assertNull(contact.get("extensionattribute4"));
+
+        assertNull(contact.get("profession"));
+        assertNull(contact.get("im"));
+        assertNull(contact.get("bday"));
+
+        assertNull(contact.get("otherpostofficebox"));
+        assertNull(contact.get("otherstreet"));
+        assertNull(contact.get("othercity"));
+        assertNull(contact.get("otherstate"));
+        assertNull(contact.get("otherpostalcode"));
+        assertNull(contact.get("othercountry"));
+
+        assertNull(contact.get("secretarycn"));
+        assertNull(contact.get("manager"));
+        assertNull(contact.get("spousecn"));
+        assertNull(contact.get("keywords"));
+
+        assertNull(contact.get("private"));
+
+        assertNull(session.getContactPhoto(contact));
+
+
+    }
 }
