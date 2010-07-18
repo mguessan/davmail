@@ -189,8 +189,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("spousecn", contact.get("spousecn"));
         assertEquals("keywords", contact.get("keywords"));
 
-        assertEquals("1", contact.get("private"));
+        assertEquals("true", contact.get("private"));
 
+        assertEquals("true", contact.get("haspicture"));
         assertNotNull(session.getContactPhoto(contact));
     }
 
@@ -269,6 +270,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("keywords"));
 
         assertNull(contact.get("private"));
+
+        assertNull(contact.get("haspicture"));
 
         assertNull(session.getContactPhoto(contact));
 
