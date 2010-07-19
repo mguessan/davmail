@@ -266,11 +266,11 @@ public class Field {
     }
 
     protected static String toHexString(int propertyTag) {
-        String hexValue = Integer.toHexString(propertyTag);
+        StringBuilder hexValue = new StringBuilder(Integer.toHexString(propertyTag));
         while (hexValue.length() < 4) {
-            hexValue = '0' + hexValue;
+            hexValue.insert(0, '0');
         }
-        return hexValue;
+        return hexValue.toString();
     }
 
     protected static void createField(String alias, int propertyTag, PropertyType propertyType) {

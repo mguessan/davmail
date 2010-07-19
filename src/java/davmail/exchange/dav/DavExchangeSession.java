@@ -575,7 +575,7 @@ public class DavExchangeSession extends ExchangeSession {
                     if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDate(value);
                     } else if ("haspicture".equals(attributeName) || "private".equals(attributeName)) {
-                        value = "1".equals(value)?"true":"false";
+                        value = "1".equals(value) ? "true" : "false";
                     }
                     put(attributeName, value);
                 }
@@ -1230,9 +1230,9 @@ public class DavExchangeSession extends ExchangeSession {
             method.setRequestHeader("Translate", "f");
             method.setRequestHeader("Accept-Encoding", "gzip");
 
+            InputStream inputStream = null;
             try {
                 DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                InputStream inputStream;
                 if (isGzipEncoded(method)) {
                     inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
                 } else {
@@ -1251,6 +1251,13 @@ public class DavExchangeSession extends ExchangeSession {
                 }
                 contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
             } finally {
+                if (inputStream != null) {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        LOGGER.debug(e);
+                    }
+                }
                 method.releaseConnection();
             }
         }

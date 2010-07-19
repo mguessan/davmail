@@ -324,7 +324,7 @@ public class CaldavConnection extends AbstractConnection {
         int size = contacts.size();
         int count = 0;
         for (ExchangeSession.Contact contact : contacts) {
-            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_CONTACT", ++count, size));
+            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, size));
             DavGatewayTray.switchIcon();
             appendItemResponse(response, request, contact);
         }
@@ -334,7 +334,7 @@ public class CaldavConnection extends AbstractConnection {
         int size = events.size();
         int count = 0;
         for (ExchangeSession.Event event : events) {
-            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_EVENT", ++count, size));
+            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, size));
             DavGatewayTray.switchIcon();
             appendItemResponse(response, request, event);
         }
@@ -590,10 +590,7 @@ public class CaldavConnection extends AbstractConnection {
             if (folder.isContact()) {
                 appendContactsResponses(response, request, session.getAllContacts(folderPath));
             } else {
-                DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_EVENTS", folderPath));
-                List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
-                DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_EVENTS", events.size()));
-                appendEventsResponses(response, request, events);
+                appendEventsResponses(response, request, session.getAllEvents(folderPath));
                 // Send sub folders for multi-calendar support under iCal, except for public folders
                 if (!folderPath.startsWith("/public")) {
                     List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);

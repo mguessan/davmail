@@ -27,13 +27,12 @@
 
 package info.growl;
 
+import javax.imageio.ImageIO;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.imageio.ImageIO;
 
 /**
  * Growl notification implementation. This uses JNI to send messages to Growl.
@@ -147,7 +146,7 @@ class GrowlNative implements Growl {
         sendNotification(appName, name, title, body, callbackContext, convertImage(icon));
     }
 
-    private class NotificationType {
+    private static class NotificationType {
         private final String name;
         private final boolean enabledByDefault;
 

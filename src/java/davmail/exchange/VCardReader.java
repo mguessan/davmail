@@ -29,7 +29,7 @@ public class VCardReader extends ICSBufferedReader {
     /**
      * VCard property
      */
-    public class Property {
+    public static class Property {
         protected String key;
         protected Map<String, Set<String>> params;
         protected List<String> values;
@@ -49,7 +49,7 @@ public class VCardReader extends ICSBufferedReader {
          * @return value
          */
         public String getValue() {
-            if (values == null || values.size() == 0) {
+            if (values == null || values.isEmpty()) {
                 return null;
             } else {
                 return values.get(0);

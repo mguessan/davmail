@@ -119,7 +119,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     public void displayMessage(final String message, final Level level) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                if (mainFrame != null) {
+                if (errorArea != null && messageArea != null) {
                     if (level.equals(Level.INFO)) {
                         errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
                         errorArea.setText(message);
