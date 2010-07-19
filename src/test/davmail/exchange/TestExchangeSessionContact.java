@@ -274,7 +274,22 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("haspicture"));
 
         assertNull(session.getContactPhoto(contact));
+    }
 
+    public void testUpperCaseParamName() throws IOException {
+            ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            VCardWriter vCardWriter = new VCardWriter();
+            vCardWriter.startCard();
+            vCardWriter.appendProperty("TEL;TYPE=CELL", "mobile");
+            vCardWriter.endCard();
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+            assertEquals(200, result.status);
+
+            contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            assertEquals("mobile", contact.get("mobile"));
 
     }
 }

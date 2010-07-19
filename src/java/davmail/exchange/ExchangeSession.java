@@ -2683,13 +2683,13 @@ public abstract class ExchangeSession {
             } else if ("NICKNAME".equals(property.getKey())) {
                 properties.put("nickname", property.getValue());
             } else if ("TEL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "CELL")) {
+                if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
                     properties.put("mobile", property.getValue());
                 }
-                if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "WORK")) {
+                if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
                     properties.put("telephoneNumber", property.getValue());
                 }
-                if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "HOME")) {
+                if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
                     properties.put("homePhone", property.getValue());
                 }
                 if (property.hasParam("TYPE", "fax")) {

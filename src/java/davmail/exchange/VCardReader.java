@@ -175,28 +175,28 @@ public class VCardReader extends ICSBufferedReader {
                         startIndex = i + 1;
                     } else if (currentChar == ':') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues.add(line.substring(startIndex, i).toLowerCase());
                         }
                         property.addParam(paramName, paramValues);
                         state = State.VALUE;
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues.add(line.substring(startIndex, i).toLowerCase());
                         }
                         property.addParam(paramName, paramValues);
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     } else if (currentChar == ',') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues.add(line.substring(startIndex, i).toLowerCase());
                         }
                         startIndex = i + 1;
                     }
                 } else if (state == State.QUOTED_PARAM_VALUE) {
                     if (currentChar == '"') {
                         state = State.PARAM_VALUE;
-                        paramValues.add(line.substring(startIndex, i));
+                        paramValues.add(line.substring(startIndex, i).toLowerCase());
                         startIndex = i + 1;
                     }
                 } else if (state == State.VALUE) {
