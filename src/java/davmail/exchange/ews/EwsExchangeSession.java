@@ -22,6 +22,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpException;
@@ -29,9 +30,10 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -768,12 +770,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
             if (photo != null) {
                 // convert image to jpeg
-                BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(photo.getBytes())));
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(image, "jpg", baos);
+                byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
                 // TODO: handle photo update, fix attachment mapi properties (available only with Exchange 2010)
-                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(baos.toByteArray())));
+                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
                 // update photo attachment
                 CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
                 executeMethod(createAttachmentMethod);

@@ -26,6 +26,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
@@ -44,9 +45,7 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.w3c.dom.Node;
 
-import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
@@ -651,16 +650,13 @@ public class DavExchangeSession extends ExchangeSession {
             String contactPictureUrl = getHref() + "/ContactPicture.jpg";
             String photo = get("photo");
             if (photo != null) {
-                // photo url
                 // need to update photo
-                BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(photo.getBytes())));
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(image, "jpg", baos);
+                byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
                 final PutMethod putmethod = new PutMethod(URIUtil.encodePath(contactPictureUrl));
                 putmethod.setRequestHeader("Overwrite", "t");
                 putmethod.setRequestHeader("Content-Type", "image/jpeg");
-                putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray(), "image/jpeg"));
+                putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
                 try {
                     status = httpClient.executeMethod(putmethod);
                     if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
