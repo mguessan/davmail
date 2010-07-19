@@ -73,7 +73,12 @@ public class VCardReader extends ICSBufferedReader {
             if (params == null) {
                 params = new HashMap<String, Set<String>>();
             }
-            params.put(paramName, paramValues);
+            if (params.get(paramName) == null) {
+                params.put(paramName, paramValues);
+            } else {
+                params.get(paramName).addAll(paramValues);
+            }
+
         }
 
         protected void addValue(String value) {

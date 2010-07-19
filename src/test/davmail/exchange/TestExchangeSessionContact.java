@@ -18,14 +18,12 @@
  */
 package davmail.exchange;
 
-import davmail.Settings;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -295,22 +293,21 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
     }
 
-    public void testSearchPublicContacts() throws IOException {
-        String folderPath = Settings.getProperty("davmail.publicContactFolder");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null);
-        int count = 0;
-        for (ExchangeSession.Contact contact : contacts) {
-            System.out.println("Contact "+(++count)+ '/' +contacts.size()+session.getItem(folderPath, contact.getName()));
-        }
+    public void testMultipleTypesParamName() throws IOException {
+            ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            VCardWriter vCardWriter = new VCardWriter();
+            vCardWriter.startCard();
+            vCardWriter.appendProperty("TEL;TYPE=CELL;TYPE=PREF", "mobile");
+            vCardWriter.endCard();
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+            assertEquals(200, result.status);
+
+            contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            assertEquals("mobile", contact.get("mobile"));
+
     }
 
-    public void testSearchPublicContactsWithPicture() throws IOException {
-        String folderPath = Settings.getProperty("davmail.publicContactFolder");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, session.isTrue("haspicture"));
-        int count = 0;
-        for (ExchangeSession.Contact contact : contacts) {
-            System.out.println("Contact "+(++count)+ '/' +contacts.size()+contact.getBody());
-            assertNotNull(session.getContactPhoto(contact));
-        }
-    }
 }
