@@ -18,12 +18,14 @@
  */
 package davmail.exchange;
 
+import davmail.Settings;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -292,4 +294,14 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
             assertEquals("mobile", contact.get("mobile"));
 
     }
+
+    public void testSearchPublicContacts() throws IOException {
+        String folderPath = Settings.getProperty("davmail.publicContactFolder");
+        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null);
+        int count = 0;
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println("Contact "+(++count)+ '/' +contacts.size()+session.getItem(folderPath, contact.getName()));
+        }
+    }
+
 }

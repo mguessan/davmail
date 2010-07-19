@@ -1196,6 +1196,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     static {
         EVENT_REQUEST_PROPERTIES.add(Field.get("permanenturl").davPropertyName);
+        EVENT_REQUEST_PROPERTIES.add(Field.get("urlcompname").davPropertyName);
         EVENT_REQUEST_PROPERTIES.add(Field.get("etag").davPropertyName);
         EVENT_REQUEST_PROPERTIES.add(Field.get("contentclass").davPropertyName);
         EVENT_REQUEST_PROPERTIES.add(Field.get("displayname").davPropertyName);
@@ -1308,18 +1309,22 @@ public class DavExchangeSession extends ExchangeSession {
     public Item getItem(String itemPath) throws IOException {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES);
         if (responses.length == 0) {
-            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
         String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "contentclass");
+        String urlcompname = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname");
         if ("urn:content-classes:person".equals(contentClass)) {
             // retrieve Contact properties
-            // TODO: need to check list size
-            return searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", itemPath.substring(itemPath.lastIndexOf('/') + 1))).get(0);
+            List<ExchangeSession.Contact> contacts = searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
+            if (contacts.isEmpty()) {
+               throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+            }
+            return contacts.get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
                 || "urn:content-classes:calendarmessage".equals(contentClass)) {
             return new Event(responses[0]);
         } else {
-            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
     }
 

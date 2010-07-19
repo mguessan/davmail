@@ -941,7 +941,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (responses.isEmpty()) {
-            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
         String itemType = responses.get(0).type;
         if ("Contact".equals(itemType)) {
@@ -952,7 +952,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "MeetingRequest".equals(itemType)) {
             return new Event(responses.get(0));
         } else {
-            throw new DavMailException("EXCEPTION_EVENT_NOT_FOUND");
+            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
     }
 
