@@ -532,6 +532,7 @@ public abstract class ExchangeSession {
 
     static {
         POP_MESSAGE_ATTRIBUTES.add("uid");
+        POP_MESSAGE_ATTRIBUTES.add("imapUid");
         POP_MESSAGE_ATTRIBUTES.add("messageSize");
     }
 
@@ -1355,54 +1356,6 @@ public abstract class ExchangeSession {
                 buffer.append("$Forwarded ");
             }
             return buffer.toString().trim();
-        }
-
-        /**
-         * Write MIME message to os
-         *
-         * @param os        output stream
-         * @param doubleDot replace '.' lines with '..' (POP protocol)
-         * @throws IOException on error
-         * @deprecated move to byte array handling instead
-         */
-        @Deprecated
-        public void write(OutputStream os, boolean doubleDot) throws IOException {
-            BufferedReader reader = getContentReader(this);
-            try {
-                OutputStreamWriter isoWriter = new OutputStreamWriter(os);
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (doubleDot && ".".equals(line)) {
-                        line = "..";
-                        // patch text/calendar to include utf-8 encoding
-                    } else if ("Content-Type: text/calendar;".equals(line)) {
-                        StringBuilder headerBuffer = new StringBuilder();
-                        headerBuffer.append(line);
-                        while ((line = reader.readLine()) != null && line.startsWith("\t")) {
-                            headerBuffer.append((char) 13);
-                            headerBuffer.append((char) 10);
-                            headerBuffer.append(line);
-                        }
-                        if (headerBuffer.indexOf("charset") < 0) {
-                            headerBuffer.append(";charset=utf-8");
-                        }
-                        headerBuffer.append((char) 13);
-                        headerBuffer.append((char) 10);
-                        headerBuffer.append(line);
-                        line = headerBuffer.toString();
-                    }
-                    isoWriter.write(line);
-                    isoWriter.write((char) 13);
-                    isoWriter.write((char) 10);
-                }
-                isoWriter.flush();
-            } finally {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    LOGGER.warn("Error closing message input stream", e);
-                }
-            }
         }
 
         /**

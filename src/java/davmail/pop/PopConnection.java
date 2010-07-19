@@ -20,9 +20,11 @@ package davmail.pop;
 
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -195,7 +197,7 @@ public class PopConnection extends AbstractConnection {
                                 try {
                                     int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
                                     sendOK("");
-                                    messages.get(messageNumber).write(os, true);
+                                    IOUtil.write(messages.get(messageNumber).getRawInputStream(), new DoubleDotOutputStream(os));
                                     sendClient("");
                                     sendClient(".");
                                 } catch (SocketException e) {
@@ -232,7 +234,7 @@ public class PopConnection extends AbstractConnection {
                                 int lines = Integer.valueOf(tokens.nextToken());
                                 ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
-                                m.write(new TopOutputStream(os, lines), true);
+                                IOUtil.write(m.getRawInputStream(), new TopOutputStream(new DoubleDotOutputStream(os), lines));
                                 sendClient("");
                                 sendClient(".");
                             } catch (NumberFormatException e) {
