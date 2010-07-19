@@ -2776,6 +2776,7 @@ public abstract class ExchangeSession {
                 properties.put("haspicture", "true");
             }
         }
+        LOGGER.debug("Create or update contact "+itemName+": "+properties);
         // reset missing properties to null
         for (String key : CONTACT_ATTRIBUTES) {
             if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
@@ -2784,7 +2785,6 @@ public abstract class ExchangeSession {
                 properties.put(key, null);
             }
         }
-
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
     }
 
