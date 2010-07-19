@@ -1687,6 +1687,7 @@ public abstract class ExchangeSession {
             writer.appendProperty("TEL;TYPE=home", get("homePhone"));
             writer.appendProperty("TEL;TYPE=fax", get("facsimiletelephonenumber"));
             writer.appendProperty("TEL;TYPE=pager", get("pager"));
+            writer.appendProperty("TEL;TYPE=car", get("othermobile"));
 
             // The structured type value corresponds, in sequence, to the post office box; the extended address;
             // the street address; the locality (e.g., city); the region (e.g., state or province);
@@ -1704,6 +1705,7 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("ORG", get("o"), get("department"));
             writer.appendProperty("URL;TYPE=work", get("businesshomepage"));
+            writer.appendProperty("URL;TYPE=home", get("personalHomePage"));
             writer.appendProperty("TITLE", get("title"));
             writer.appendProperty("NOTE", get("description"));
 
@@ -2698,6 +2700,9 @@ public abstract class ExchangeSession {
                 if (property.hasParam("TYPE", "pager")) {
                     properties.put("pager", property.getValue());
                 }
+                if (property.hasParam("TYPE", "car")) {
+                    properties.put("othermobile", property.getValue());
+                }
             } else if ("ADR".equals(property.getKey())) {
                 // address
                 if (property.hasParam("TYPE", "home")) {
@@ -2722,6 +2727,8 @@ public abstract class ExchangeSession {
             } else if ("URL".equals(property.getKey())) {
                 if (property.hasParam("TYPE", "work")) {
                     properties.put("businesshomepage", property.getValue());
+                } else if (property.hasParam("TYPE", "home")) {
+                    properties.put("personalHomePage", property.getValue());
                 }
             } else if ("TITLE".equals(property.getKey())) {
                 properties.put("title", property.getValue());
@@ -3127,6 +3134,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("othercity");
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
+        CONTACT_ATTRIBUTES.add("othermobile");
 
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");

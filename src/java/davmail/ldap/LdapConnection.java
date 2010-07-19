@@ -224,19 +224,86 @@ public class LdapConnection extends AbstractConnection {
     static {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uid", "imapUid");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mail", "email1");
+
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("displayname", "cn");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("cn", "cn");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("commonname", "cn");
+
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("givenname", "givenName");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("sn", "sn");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("title", "title");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("surname", "sn");
+
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("company", "o");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("o", "o");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("l", "l");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("department", "department");
+
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-group-realname", "department");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("description", "description");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomelocalityname", "homeCity");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("c", "c");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("c", "co");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("countryname", "co");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("custom1", "extensionattribute1");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("custom2", "extensionattribute2");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("custom3", "extensionattribute3");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("custom4", "extensionattribute4");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillacustom1", "extensionattribute1");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillacustom2", "extensionattribute2");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillacustom3", "extensionattribute3");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillacustom4", "extensionattribute4");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("telephonenumber", "telephoneNumber");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("orgunit", "department");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("departmentnumber", "department");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("ou", "department");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillaworkstreet2", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomestreet", "homeStreet");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillanickname", "nickname");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillanickname", "nickname");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("cellphone", "mobile");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homeurl", "personalHomePage");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomeurl", "personalHomePage");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomepostalcode", "homePostalCode");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("fax", "facsimiletelephonenumber");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomecountryname", "homeCountry");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("streetaddress", "street");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillaworkurl", "businesshomepage");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("workurl", "businesshomepage");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("region", "st");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("birthmonth", "bday");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("birthday", "bday");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("birthyear", "bday");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("carphone", "othermobile");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nsaimid", "im");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nscpaimscreenname", "im");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillasecondemail", "email2");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("notes", "description");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("pagerphone", "pager");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("locality", "l");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homephone", "homePhone");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillasecondemail", "email2");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("zip", "postalcode");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomestate", "homeState");
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("modifytimestamp", "lastmodified");
+
+        // ignore attribute
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("objectclass", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillausehtmlmail", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillausehtmlmail", null);
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomestreet2", null);
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("labeleduri", null);
+
     }
 
     /**
@@ -973,7 +1040,7 @@ public class LdapConnection extends AbstractConnection {
             } else if (IGNORE_MAP.contains(attributeName)) {
                 // Ignore this specific attribute
                 return true;
-            } else if (CRITERIA_MAP.get(attributeName) == null && LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName) == null) {
+            } else if (CRITERIA_MAP.get(attributeName) == null && getContactAttributeName(attributeName) == null) {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER_ATTRIBUTE",
                         attributeName, value));
 
@@ -1013,7 +1080,7 @@ public class LdapConnection extends AbstractConnection {
         }
 
         public ExchangeSession.Condition getContactSearchFilter() {
-            String contactAttributeName = getContactAttributeName();
+            String contactAttributeName = getContactAttributeName(attributeName);
 
             if (canIgnore || (contactAttributeName == null)) {
                 return null;
@@ -1102,9 +1169,22 @@ public class LdapConnection extends AbstractConnection {
             return CRITERIA_MAP.get(attributeName);
         }
 
-        public String getContactAttributeName() {
-            return LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName);
+    }
+
+    protected static String getContactAttributeName(String attributeName) {
+        String contactAttributeName = null;
+        // first look in contact attributes
+        if (ExchangeSession.CONTACT_ATTRIBUTES.contains(attributeName)) {
+            contactAttributeName = attributeName;
+        } else if (LDAP_TO_CONTACT_ATTRIBUTE_MAP.containsKey(attributeName)) {
+            String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName);
+            if (mappedAttribute != null) {
+                contactAttributeName = mappedAttribute;
+            }
+        } else {
+            DavGatewayTray.debug(new BundleMessage("UNKNOWN_ATTRIBUTE", attributeName));
         }
+        return contactAttributeName;
     }
 
     protected class SearchThread extends Thread {
@@ -1287,28 +1367,24 @@ public class LdapConnection extends AbstractConnection {
          * @throws IOException on error
          */
         public Map<String, Map<String, String>> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes) throws IOException {
-            Set<String> ldapReturningAttributes;
+            Set<String> contactReturningAttributes;
             if (returningAttributes != null && !returningAttributes.isEmpty()) {
-                ldapReturningAttributes = new HashSet<String>();
+                contactReturningAttributes = new HashSet<String>();
                 // always return uid
-                ldapReturningAttributes.add("imapUid");
+                contactReturningAttributes.add("imapUid");
                 for (String attribute : returningAttributes) {
-                    if (!"objectclass".equals(attribute)) {
-                        String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attribute);
-                        if (mappedAttribute == null) {
-                            ldapReturningAttributes.add(attribute);
-                        } else {
-                            ldapReturningAttributes.add(mappedAttribute);
-                        }
+                    String contactAttributeName = getContactAttributeName(attribute);
+                    if (contactAttributeName != null) {
+                        contactReturningAttributes.add(contactAttributeName);
                     }
                 }
             } else {
-                ldapReturningAttributes = ExchangeSession.CONTACT_ATTRIBUTES;
+                contactReturningAttributes = ExchangeSession.CONTACT_ATTRIBUTES;
             }
 
             Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
 
-            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ldapReturningAttributes, condition);
+            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition);
 
             for (ExchangeSession.Contact contact : contacts) {
                 // TODO convert values

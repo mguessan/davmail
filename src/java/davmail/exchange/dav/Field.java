@@ -194,6 +194,7 @@ public class Field {
 
         createField(URN_SCHEMAS_CONTACTS, "bday"); // PR_BIRTHDAY 0x3A42 SystemTime
         createField(URN_SCHEMAS_CONTACTS, "businesshomepage"); // PR_BUSINESS_HOME_PAGE 0x3A51 String
+        createField(URN_SCHEMAS_CONTACTS, "personalHomePage"); // PR_PERSONAL_HOME_PAGE 0x3A50 String
         //createField(URN_SCHEMAS_CONTACTS, "c"); // country DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:c/String
         createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001 String
         createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.Address/0x00008049/String
@@ -237,6 +238,8 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "title"); // PR_TITLE 0x3A17 String
         createField("description", URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", SCHEMAS_MAPI, "InstMsg"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
+        createField(URN_SCHEMAS_CONTACTS, "othermobile"); // PR_CAR_TELEPHONE_NUMBER 0x3A1E String
+
 
         createField(URN_SCHEMAS_CONTACTS, "otherstreet"); // PR_OTHER_ADDRESS_STREET 0x3A63 String
         createField(URN_SCHEMAS_CONTACTS, "otherstate"); // PR_OTHER_ADDRESS_STATE_OR_PROVINCE 0x3A62 String
