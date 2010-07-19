@@ -56,4 +56,21 @@ public class DoubleDotOutputStream extends FilterOutputStream {
         out.write(b);
     }
 
+    /**
+     * Send termination characters.
+     * Do not close actual outputstream
+     *
+     * @throws IOException on error
+     */
+    @Override
+    public void close() throws IOException {
+        if (currentState != State.CRLF) {
+            out.write('\r');
+            out.write('\n');
+        }
+        out.write('.');
+        out.write('\r');
+        out.write('\n');
+    }
+
 }

@@ -197,9 +197,9 @@ public class PopConnection extends AbstractConnection {
                                 try {
                                     int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
                                     sendOK("");
-                                    IOUtil.write(messages.get(messageNumber).getRawInputStream(), new DoubleDotOutputStream(os));
-                                    sendClient("");
-                                    sendClient(".");
+                                    DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
+                                    IOUtil.write(messages.get(messageNumber).getRawInputStream(), doubleDotOutputStream);
+                                    doubleDotOutputStream.close();
                                 } catch (SocketException e) {
                                     // can not send error to client after a socket exception
                                     DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
@@ -234,9 +234,9 @@ public class PopConnection extends AbstractConnection {
                                 int lines = Integer.valueOf(tokens.nextToken());
                                 ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
-                                IOUtil.write(m.getRawInputStream(), new TopOutputStream(new DoubleDotOutputStream(os), lines));
-                                sendClient("");
-                                sendClient(".");
+                                DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
+                                IOUtil.write(m.getRawInputStream(), doubleDotOutputStream);
+                                doubleDotOutputStream.close();
                             } catch (NumberFormatException e) {
                                 sendERR("invalid command");
                             } catch (IndexOutOfBoundsException e) {
