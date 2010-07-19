@@ -22,8 +22,8 @@ package davmail.exchange.ews;
  * Indexed FieldURI
  */
 public class IndexedFieldURI implements FieldURI {
-    protected String fieldURI;
-    protected String fieldIndex;
+    protected final String fieldURI;
+    protected final String fieldIndex;
 
     /**
      * Create indexed field uri.

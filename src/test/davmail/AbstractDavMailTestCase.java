@@ -21,7 +21,6 @@ package davmail;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import junit.framework.TestCase;
-import org.apache.log4j.Level;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,9 +64,9 @@ public class AbstractDavMailTestCase extends TestCase {
             Settings.setProperty("davmail.server", "true");
 
             // enable WIRE debug log
-            // Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+            //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
             // enable EWS support
-            Settings.setProperty("davmail.enableEws", "true");
+            Settings.setProperty("davmail.enableEws", "false");
 
         }
     }

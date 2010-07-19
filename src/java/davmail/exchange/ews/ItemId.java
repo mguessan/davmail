@@ -26,7 +26,7 @@ import java.io.Writer;
  */
 public class ItemId {
     protected final String id;
-    protected String changeKey;
+    protected final String changeKey;
 
     /**
      * Create Item id.

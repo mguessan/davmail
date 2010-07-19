@@ -27,7 +27,7 @@ import java.io.PushbackInputStream;
  * A line with a single dot means end of stream
  */
 public class DoubleDotInputStream extends PushbackInputStream {
-    int[] buffer = new int[4];
+    final int[] buffer = new int[4];
     int index = -1;
 
     /**
@@ -40,7 +40,6 @@ public class DoubleDotInputStream extends PushbackInputStream {
     /**
      * Push current byte to buffer and read next byte.
      *
-     * @param currentByte current byte
      * @return next byte
      * @throws IOException on error
      */

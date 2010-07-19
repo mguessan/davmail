@@ -28,9 +28,9 @@ public class TwoOperandExpression implements SearchExpression {
         IsEqualTo, IsNotEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsLessThanOrEqualTo
     }
 
-    protected Operator operator;
-    protected FieldURI fieldURI;
-    protected String value;
+    protected final Operator operator;
+    protected final FieldURI fieldURI;
+    protected final String value;
 
     /**
      * Create two operand expression.

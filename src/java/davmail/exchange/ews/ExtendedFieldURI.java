@@ -38,7 +38,7 @@ public class ExtendedFieldURI implements FieldURI {
     protected String propertySetId;
     protected String propertyName;
     protected int propertyId;
-    protected PropertyType propertyType;
+    protected final PropertyType propertyType;
 
     /**
      * Create extended field uri.

@@ -1421,9 +1421,8 @@ public class CaldavConnection extends AbstractConnection {
          *
          * @param subFolder sub folder path
          * @return folder path
-         * @throws IOException on error
          */
-        public String getFolderPath(String subFolder) throws IOException {
+        public String getFolderPath(String subFolder)  {
             int endIndex;
             if (isFolder()) {
                 endIndex = getPathLength();

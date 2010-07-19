@@ -631,9 +631,9 @@ public abstract class ExchangeSession {
      * Attribute condition.
      */
     public abstract static class AttributeCondition implements Condition {
-        protected String attributeName;
-        protected Operator operator;
-        protected String value;
+        protected final String attributeName;
+        protected final Operator operator;
+        protected final String value;
 
         protected AttributeCondition(String attributeName, Operator operator, String value) {
             this.attributeName = attributeName;
@@ -650,8 +650,8 @@ public abstract class ExchangeSession {
      * Multiple condition.
      */
     public abstract static class MultiCondition implements Condition {
-        protected Operator operator;
-        protected List<Condition> conditions;
+        protected final Operator operator;
+        protected final List<Condition> conditions;
 
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
@@ -690,7 +690,7 @@ public abstract class ExchangeSession {
      * Not condition.
      */
     public abstract static class NotCondition implements Condition {
-        protected Condition condition;
+        protected final Condition condition;
 
         protected NotCondition(Condition condition) {
             this.condition = condition;
@@ -706,8 +706,8 @@ public abstract class ExchangeSession {
      * Single search filter condition.
      */
     public abstract static class MonoCondition implements Condition {
-        protected String attributeName;
-        protected Operator operator;
+        protected final String attributeName;
+        protected final Operator operator;
 
         protected MonoCondition(String attributeName, Operator operator) {
             this.attributeName = attributeName;

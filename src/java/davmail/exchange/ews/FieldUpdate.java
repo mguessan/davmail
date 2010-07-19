@@ -25,8 +25,8 @@ import java.io.Writer;
  * Field update
  */
 public class FieldUpdate {
-    FieldURI fieldURI;
-    String value;
+    final FieldURI fieldURI;
+    final String value;
 
     /**
      * Create field update with value.

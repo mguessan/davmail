@@ -589,7 +589,7 @@ public class DavExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
-        protected List<DavConstants> buildProperties() throws IOException {
+        protected List<DavConstants> buildProperties()  {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();

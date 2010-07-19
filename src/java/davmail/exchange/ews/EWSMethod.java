@@ -484,6 +484,11 @@ public abstract class EWSMethod extends PostMethod {
             return result;
         }
 
+        /**
+         * Get file attachment by file name
+         * @param attachmentName attachment name
+         * @return attachment
+         */
         public FileAttachment getAttachmentByName(String attachmentName) {
             FileAttachment result = null;
             if (attachments != null) {
@@ -600,8 +605,8 @@ public abstract class EWSMethod extends PostMethod {
                     addExtendedPropertyValue(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
                     handleMimeContent(reader, responseItem);
-                } else if (tagLocalName.equals("Attachments")) {
-                    responseItem.attachments = handleAttachments(reader, responseItem);
+                } else if ("Attachments".equals(tagLocalName)) {
+                    responseItem.attachments = handleAttachments(reader);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -620,31 +625,31 @@ public abstract class EWSMethod extends PostMethod {
         return responseItem;
     }
 
-    protected List<FileAttachment> handleAttachments(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+    protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {
         List<FileAttachment> attachments = new ArrayList<FileAttachment>();
         while (reader.hasNext() && !(isEndTag(reader, "Attachments"))) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
-                if (tagLocalName.equals("FileAttachment")) {
-                    attachments.add(handleFileAttachment(reader, responseItem));
+                if ("FileAttachment".equals(tagLocalName)) {
+                    attachments.add(handleFileAttachment(reader));
                 }
             }
         }
         return attachments;
     }
 
-    protected FileAttachment handleFileAttachment(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+    protected FileAttachment handleFileAttachment(XMLStreamReader reader) throws XMLStreamException {
         FileAttachment fileAttachment = new FileAttachment();
         while (reader.hasNext() && !(isEndTag(reader, "FileAttachment"))) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
-                if (tagLocalName.equals("AttachmentId")) {
+                if ("AttachmentId".equals(tagLocalName)) {
                     fileAttachment.attachmentId = getAttributeValue(reader, "Id");
-                } else if (tagLocalName.equals("Name")) {
+                } else if ("Name".equals(tagLocalName)) {
                     fileAttachment.name = getTagContent(reader);
-                } else if (tagLocalName.equals("ContentType")) {
+                } else if ("ContentType".equals(tagLocalName)) {
                     fileAttachment.contentType = getTagContent(reader);
                 }
             }
@@ -713,7 +718,7 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-    protected String getAttributeValue(XMLStreamReader reader, String attributeName) throws XMLStreamException {
+    protected String getAttributeValue(XMLStreamReader reader, String attributeName) {
         for (int i = 0; i < reader.getAttributeCount(); i++) {
             if (attributeName.equals(reader.getAttributeLocalName(i))) {
                 return reader.getAttributeValue(i);

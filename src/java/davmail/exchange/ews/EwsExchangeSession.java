@@ -27,7 +27,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
 import javax.imageio.ImageIO;
@@ -52,8 +51,8 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static class FolderPath {
-        protected String parentPath;
-        protected String folderName;
+        protected final String parentPath;
+        protected final String folderName;
 
         protected FolderPath(String folderPath) {
             int slashIndex = folderPath.lastIndexOf('/');
@@ -235,7 +234,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return getItemMethod.getMimeContent();
     }
 
-    protected Message buildMessage(EWSMethod.Item response) throws URIException, DavMailException {
+    protected Message buildMessage(EWSMethod.Item response) throws  DavMailException {
         Message message = new Message();
 
         // get item id
@@ -395,7 +394,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static class IsNullCondition implements ExchangeSession.Condition, SearchExpression {
-        protected String attributeName;
+        protected final String attributeName;
 
         protected IsNullCondition(String attributeName) {
             this.attributeName = attributeName;
@@ -647,7 +646,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // item id
         ItemId itemId;
 
-        protected Contact(EWSMethod.Item response) throws URIException, DavMailException {
+        protected Contact(EWSMethod.Item response) throws DavMailException {
             itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
@@ -672,7 +671,7 @@ public class EwsExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
-        protected Set<FieldUpdate> buildProperties() throws IOException {
+        protected Set<FieldUpdate> buildProperties() {
             HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
@@ -793,7 +792,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // item id
         ItemId itemId;
 
-        protected Event(EWSMethod.Item response) throws URIException {
+        protected Event(EWSMethod.Item response)  {
             itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
