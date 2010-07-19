@@ -157,19 +157,19 @@ public class VCardReader extends ICSBufferedReader {
                     }
                 } else if (state == State.PARAM_NAME) {
                     if (currentChar == '=') {
-                        paramName = line.substring(startIndex, i);
+                        paramName = line.substring(startIndex, i).toUpperCase();
                         state = State.PARAM_VALUE;
                         paramValues = new HashSet<String>();
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
                         // param with no value
-                        paramName = line.substring(startIndex, i);
+                        paramName = line.substring(startIndex, i).toUpperCase();
                         property.addParam(paramName, null);
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     } else if (currentChar == ':') {
                         // param with no value
-                        paramName = line.substring(startIndex, i);
+                        paramName = line.substring(startIndex, i).toUpperCase();
                         property.addParam(paramName, null);
                         state = State.VALUE;
                         startIndex = i + 1;

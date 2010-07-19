@@ -298,7 +298,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
             VCardWriter vCardWriter = new VCardWriter();
             vCardWriter.startCard();
-            vCardWriter.appendProperty("TEL;TYPE=CELL;TYPE=PREF", "mobile");
+            vCardWriter.appendProperty("TEL;TYPE=CELL;TYPE=pref", "another mobile");
             vCardWriter.endCard();
 
             ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
@@ -306,8 +306,25 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
             contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
 
-            assertEquals("mobile", contact.get("mobile"));
+            assertEquals("another mobile", contact.get("mobile"));
 
+    }
+
+    public void testLowerCaseTypesParamName() throws IOException {
+            ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            VCardWriter vCardWriter = new VCardWriter();
+            vCardWriter.startCard();
+            vCardWriter.appendProperty("TEL;type=HOME;type=pref", "5 68 99 3");
+            vCardWriter.endCard();
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+            assertEquals(200, result.status);
+
+            contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            assertEquals("5 68 99 3", contact.get("homePhone"));
+        
     }
 
 }
