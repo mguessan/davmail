@@ -1227,7 +1227,7 @@ public class DavExchangeSession extends ExchangeSession {
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto = null;
         if ("true".equals(contact.get("haspicture"))) {
-            final GetMethod method = new GetMethod(contact.getHref() + "/ContactPicture.jpg");
+            final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
             method.setRequestHeader("Translate", "f");
             method.setRequestHeader("Accept-Encoding", "gzip");
 
