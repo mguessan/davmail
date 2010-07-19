@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -1171,20 +1173,41 @@ public class LdapConnection extends AbstractConnection {
 
     }
 
-    protected static String getContactAttributeName(String attributeName) {
+    /**
+     * Convert contact attribute name to LDAP attribute name.
+     *
+     * @param ldapAttributeName ldap attribute name
+     * @return contact attribute name
+     */
+    protected static String getContactAttributeName(String ldapAttributeName) {
         String contactAttributeName = null;
         // first look in contact attributes
-        if (ExchangeSession.CONTACT_ATTRIBUTES.contains(attributeName)) {
-            contactAttributeName = attributeName;
-        } else if (LDAP_TO_CONTACT_ATTRIBUTE_MAP.containsKey(attributeName)) {
-            String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(attributeName);
+        if (ExchangeSession.CONTACT_ATTRIBUTES.contains(ldapAttributeName)) {
+            contactAttributeName = ldapAttributeName;
+        } else if (LDAP_TO_CONTACT_ATTRIBUTE_MAP.containsKey(ldapAttributeName)) {
+            String mappedAttribute = LDAP_TO_CONTACT_ATTRIBUTE_MAP.get(ldapAttributeName);
             if (mappedAttribute != null) {
                 contactAttributeName = mappedAttribute;
             }
         } else {
-            DavGatewayTray.debug(new BundleMessage("UNKNOWN_ATTRIBUTE", attributeName));
+            DavGatewayTray.debug(new BundleMessage("UNKNOWN_ATTRIBUTE", ldapAttributeName));
         }
         return contactAttributeName;
+    }
+
+    /**
+     * Convert LDAP attribute name to contact attribute name.
+     *
+     * @param contactAttributeName ldap attribute name
+     * @return contact attribute name
+     */
+    protected static String getLdapAttributeName(String contactAttributeName) {
+        String mappedAttributeName = CONTACT_TO_LDAP_ATTRIBUTE_MAP.get(contactAttributeName);
+        if (mappedAttributeName != null) {
+            return contactAttributeName;
+        } else {
+            return mappedAttributeName;
+        }
     }
 
     protected class SearchThread extends Thread {
@@ -1387,24 +1410,6 @@ public class LdapConnection extends AbstractConnection {
             List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition);
 
             for (ExchangeSession.Contact contact : contacts) {
-                // TODO convert values
-                /*
-                    if ("bday".equals(propertyName)) {
-                        SimpleDateFormat parser = getExchangeZuluDateFormatMillisecond();
-                        try {
-                            Calendar calendar = Calendar.getInstance();
-                            calendar.setTime(parser.parse(propertyValue));
-                            item.put("birthday", String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
-                            item.put("birthmonth", String.valueOf(calendar.get(Calendar.MONTH) + 1));
-                            item.put("birthyear", String.valueOf(calendar.get(Calendar.YEAR)));
-                            propertyValue = null;
-                        } catch (ParseException e) {
-                            throw new IOException(e);
-                        }
-                    } else if ("description".equals(propertyName) && " \n".equals(propertyValue)) {
-                        propertyValue = null;
-                    }
-                    */
                 if (contact.get("imapUid") != null) {
                     results.put(contact.get("imapUid"), contact);
                 }
@@ -1477,18 +1482,39 @@ public class LdapConnection extends AbstractConnection {
 
                 } else {
                     // convert Contact entries
-                    for (Map.Entry<String, String> entry : person.entrySet()) {
-                        String contactAttribute = entry.getKey();
-                        // get converted attribute name
-                        String ldapAttribute = CONTACT_TO_LDAP_ATTRIBUTE_MAP.get(contactAttribute);
-                        // no conversion, use exchange attribute name
-                        if (ldapAttribute == null) {
-                            ldapAttribute = contactAttribute;
+                    if (returnAllAttributes) {
+                        // just convert contact attributes to default ldap names
+                        for (Map.Entry<String, String> entry : person.entrySet()) {
+                            String ldapAttribute = getLdapAttributeName(entry.getKey());
+                            String value = entry.getValue();
+                            if (value != null) {
+                                ldapPerson.put(ldapAttribute, value);
+                            }
                         }
-                        String value = entry.getValue();
-                        if (value != null
-                                && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
-                            ldapPerson.put(ldapAttribute, value);
+                    } else {
+                        // iterate over requested attributes
+                        for (String ldapAttribute : returningAttributes) {
+                            String contactAttribute = getContactAttributeName(ldapAttribute);
+                            String value = person.get(contactAttribute);
+                            if (value != null) {
+                                if (ldapAttribute.startsWith("birth")) {
+                                    SimpleDateFormat parser = session.getZuluDateFormat();
+                                    Calendar calendar = Calendar.getInstance();
+                                    try {
+                                        calendar.setTime(parser.parse(value));
+                                    } catch (ParseException e) {
+                                        throw new IOException(e);
+                                    }
+                                    if ("birthday".equals(ldapAttribute)) {
+                                        value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+                                    } else if ("birthmonth".equals(ldapAttribute)) {
+                                        value = String.valueOf(calendar.get(Calendar.MONTH) + 1);
+                                    } else if ("birthyear".equals(ldapAttribute)) {
+                                        value = String.valueOf(calendar.get(Calendar.YEAR));
+                                    }
+                                }
+                                ldapPerson.put(ldapAttribute, value);
+                            }
                         }
                     }
 
