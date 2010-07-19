@@ -1730,7 +1730,7 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("REV", get("lastmodified"));
 
-            if ("1".equals(get("haspicture"))) {
+            if ("true".equals(get("haspicture"))) {
                 try {
                     ContactPhoto contactPhoto = getContactPhoto(this);
                     writer.appendProperty("PHOTO;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\"", contactPhoto.content);

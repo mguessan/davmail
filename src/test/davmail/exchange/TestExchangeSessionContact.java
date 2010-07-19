@@ -304,4 +304,13 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         }
     }
 
+    public void testSearchPublicContactsWithPicture() throws IOException {
+        String folderPath = Settings.getProperty("davmail.publicContactFolder");
+        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, session.isTrue("haspicture"));
+        int count = 0;
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println("Contact "+(++count)+ '/' +contacts.size()+contact.getBody());
+            assertNotNull(session.getContactPhoto(contact));
+        }
+    }
 }
