@@ -193,7 +193,7 @@ public class Field {
         createField(SCHEMAS_EXCHANGE, "extensionattribute4"); // DistinguishedPropertySetType.Address/0x00008052/String
 
         createField(URN_SCHEMAS_CONTACTS, "bday"); // PR_BIRTHDAY 0x3A42 SystemTime
-        createField("anniversary", DistinguishedPropertySetType.Address, 0x80DF, "anniversary"); // WeddingAnniversaryLocal
+        createField("anniversary", URN_SCHEMAS_CONTACTS, "weddinganniversary"); // WeddingAnniversary
         createField(URN_SCHEMAS_CONTACTS, "businesshomepage"); // PR_BUSINESS_HOME_PAGE 0x3A51 String
         createField(URN_SCHEMAS_CONTACTS, "personalHomePage"); // PR_PERSONAL_HOME_PAGE 0x3A50 String
         //createField(URN_SCHEMAS_CONTACTS, "c"); // country DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:c/String
