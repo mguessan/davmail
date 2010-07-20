@@ -510,7 +510,11 @@ public abstract class EWSMethod extends PostMethod {
      */
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
-            throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope()));
+            try {
+                throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                throw new EWSException(e.getMessage());
+            }
         }
     }
 
