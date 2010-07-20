@@ -249,7 +249,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPropPatch()) {
             patchCalendar(request);
         } else if (request.isReport()) {
-            reportEvents(request);
+            reportItems(request);
             // event requests
         } else if (request.isPut()) {
             String etag = request.getHeader("if-match");
@@ -643,12 +643,12 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
-     * Report events listed in request.
+     * Report items listed in request.
      *
      * @param request Caldav request
      * @throws IOException on error
      */
-    public void reportEvents(CaldavRequest request) throws IOException {
+    public void reportItems(CaldavRequest request) throws IOException {
         String folderPath = request.getFolderPath();
         List<ExchangeSession.Event> events;
         List<String> notFound = new ArrayList<String>();
@@ -659,7 +659,7 @@ public class CaldavConnection extends AbstractConnection {
             int count = 0;
             int total = request.getHrefs().size();
             for (String href : request.getHrefs()) {
-                DavGatewayTray.debug(new BundleMessage("LOG_REPORT_EVENT", ++count, total));
+                DavGatewayTray.debug(new BundleMessage("LOG_REPORT_ITEM", ++count, total));
                 DavGatewayTray.switchIcon();
                 String eventName = getEventFileNameFromPath(href);
                 try {
@@ -670,8 +670,9 @@ public class CaldavConnection extends AbstractConnection {
                         item = session.getItem(folderPath, eventName);
                         appendItemResponse(response, request, item);
                     }
-                } catch (HttpException e) {
-                    DavGatewayTray.warn(new BundleMessage("LOG_EVENT_NOT_AVAILABLE", eventName, href));
+                } catch (Exception e) {
+                    wireLogger.debug(e);
+                    DavGatewayTray.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", eventName, href));
                     notFound.add(href);
                 }
             }
