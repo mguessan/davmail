@@ -31,9 +31,7 @@ public class VCardWriter extends ICSBufferedWriter {
         if ((propertyValue != null) && (propertyValue.length() > 0)) {
             write(propertyName);
             write(":");
-            StringBuilder valueBuffer = new StringBuilder();
-            appendEncodedValue(valueBuffer, propertyValue);
-            writeLine(valueBuffer.toString());
+            writeLine(propertyValue);
         }
 
     }
