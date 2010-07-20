@@ -384,9 +384,7 @@ public class CaldavConnection extends AbstractConnection {
      * @return Exchange folder object
      * @throws IOException on error
      */
-    public ExchangeSession.Folder appendFolder(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        ExchangeSession.Folder folder = session.getFolder(request.getFolderPath(subFolder));
-
+    public ExchangeSession.Folder appendFolder(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder) throws IOException {
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
@@ -582,19 +580,32 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void sendFolder(CaldavRequest request) throws IOException {
         String folderPath = request.getFolderPath();
+        // process request before sending response to avoid sending headers twice on error
+        ExchangeSession.Folder folder = session.getFolder(request.getFolderPath(null));
+        List<ExchangeSession.Contact> contacts = null;
+        List<ExchangeSession.Event> events = null;
+        List<ExchangeSession.Folder> folderList = null;
+        if (folder.isContact()) {
+            contacts = session.getAllContacts(folderPath);
+        } else {
+           events = session.getAllEvents(folderPath);
+            if (!folderPath.startsWith("/public")) {
+                folderList = session.getSubCalendarFolders(folderPath, false);
+            }
+        }
+
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        ExchangeSession.Folder folder = appendFolder(response, request, null);
+        appendFolder(response, request, folder, null);
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
-                appendContactsResponses(response, request, session.getAllContacts(folderPath));
+                appendContactsResponses(response, request, contacts);
             } else {
-                appendEventsResponses(response, request, session.getAllEvents(folderPath));
+                appendEventsResponses(response, request, events);
                 // Send sub folders for multi-calendar support under iCal, except for public folders
-                if (!folderPath.startsWith("/public")) {
-                    List<ExchangeSession.Folder> folderList = session.getSubCalendarFolders(folderPath, false);
+                if (folderList != null) {
                     for (ExchangeSession.Folder subFolder : folderList) {
-                        appendFolder(response, request, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1));
+                        appendFolder(response, request, subFolder, subFolder.folderPath.substring(subFolder.folderPath.indexOf('/') + 1));
                     }
                 }
             }
@@ -731,8 +742,8 @@ public class CaldavConnection extends AbstractConnection {
         if (request.getDepth() == 1) {
             appendInbox(response, request, "inbox");
             appendOutbox(response, request, "outbox");
-            appendFolder(response, request, "calendar");
-            appendFolder(response, request, "contacts");
+            appendFolder(response, request, session.getFolder(request.getFolderPath("calendar")), "calendar");
+            appendFolder(response, request, session.getFolder(request.getFolderPath("contacts")), "contacts");
         }
         response.endResponse();
         response.endMultistatus();
