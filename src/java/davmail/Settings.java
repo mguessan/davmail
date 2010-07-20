@@ -19,11 +19,13 @@
 package davmail;
 
 import davmail.ui.tray.DavGatewayTray;
-
-import java.util.*;
-import java.io.*;
-
 import org.apache.log4j.*;
+
+import java.io.*;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.TreeSet;
 
 /**
  * Settings facade.
@@ -236,10 +238,14 @@ public final class Settings {
             // Build file appender
             RollingFileAppender fileAppender = ((RollingFileAppender) rootLogger.getAppender("FileAppender"));
             if (fileAppender == null) {
+                String logFileSize = Settings.getProperty("davmail.logFileSize");
+                if (logFileSize == null || logFileSize.length() == 0) {
+                    logFileSize = "1MB";
+                }
                 fileAppender = new RollingFileAppender();
                 fileAppender.setName("FileAppender");
                 fileAppender.setMaxBackupIndex(2);
-                fileAppender.setMaxFileSize("1MB");
+                fileAppender.setMaxFileSize(logFileSize);
                 fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
             }
             fileAppender.setFile(logFilePath, true, false, 8192);
