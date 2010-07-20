@@ -119,6 +119,7 @@ public abstract class ExchangeSession {
     private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     private static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    private static final String YYYY_MM_DD = "yyyy-MM-dd";
     private static final String YYYY_MM_DD_T_HHMMSS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     /**
@@ -199,6 +200,12 @@ public abstract class ExchangeSession {
      */
     public static SimpleDateFormat getZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYYMMDD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormat.setTimeZone(GMT_TIMEZONE);
+        return dateFormat;
+    }
+
+    protected static SimpleDateFormat getVcardBdayFormat() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);
         return dateFormat;
     }
@@ -1724,8 +1731,16 @@ public abstract class ExchangeSession {
             writer.appendProperty("ROLE", get("profession"));
             writer.appendProperty("NICKNAME", get("nickname"));
             writer.appendProperty("X-AIM", get("im"));
-
-            writer.appendProperty("BDAY", get("bday"));
+            // convert bday value
+            String bday = get("bday");
+            if (bday != null && bday.length() > 0) {
+                try {
+                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
+                    writer.appendProperty("BDAY", ExchangeSession.getVcardBdayFormat().format(parser.parse(bday)));
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid date: " + bday);
+                }
+            }
 
             writer.appendProperty("CATEGORIES", get("keywords"));
 
@@ -2761,10 +2776,9 @@ public abstract class ExchangeSession {
                     try {
                         SimpleDateFormat parser;
                         if (value.length() == 10) {
-                            parser = new SimpleDateFormat("yyyy-MM-dd");
-                            parser.setTimeZone(GMT_TIMEZONE);
+                            parser = ExchangeSession.getVcardBdayFormat();
                         } else {
-                            parser = ExchangeSession.getZuluDateFormat();
+                            parser = ExchangeSession.getExchangeZuluDateFormat();
                         }
                         properties.put("bday", ExchangeSession.getExchangeZuluDateFormatMillisecond().format(parser.parse(value)));
                     } catch (ParseException e) {
