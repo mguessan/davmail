@@ -114,6 +114,14 @@ public class VCardReader extends ICSBufferedReader {
             }
         }
 
+        public void setKey(String key) {
+            int dotIndex = key.indexOf('.');
+            if (dotIndex < 0) {
+                this.key = key;
+            } else {
+                this.key = key.substring(dotIndex + 1);
+            }
+        }
     }
 
     /**
@@ -147,11 +155,11 @@ public class VCardReader extends ICSBufferedReader {
                 char currentChar = line.charAt(i);
                 if (state == State.KEY) {
                     if (currentChar == ':') {
-                        property.key = line.substring(startIndex, i);
+                        property.setKey(line.substring(startIndex, i));
                         state = State.VALUE;
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
-                        property.key = line.substring(startIndex, i);
+                        property.setKey(line.substring(startIndex, i));
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     }

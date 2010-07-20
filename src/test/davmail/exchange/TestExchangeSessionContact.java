@@ -299,4 +299,20 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         
     }
 
+    public void testKeyPrefix() throws IOException {
+            ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            VCardWriter vCardWriter = new VCardWriter();
+            vCardWriter.startCard();
+            vCardWriter.appendProperty("ITEM1.TEL;TYPE=CELL;TYPE=pref", "mobile with prefix");
+            vCardWriter.endCard();
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+            assertEquals(200, result.status);
+
+            contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            assertEquals("mobile with prefix", contact.get("mobile"));
+
+    }
 }
