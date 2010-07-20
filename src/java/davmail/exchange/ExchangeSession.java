@@ -194,6 +194,7 @@ public abstract class ExchangeSession {
 
     /**
      * Return standard zulu date formatter.
+     *
      * @return zulu date formatter
      */
     public static SimpleDateFormat getZuluDateFormat() {
@@ -912,29 +913,35 @@ public abstract class ExchangeSession {
      * Detect visible recipients in message body to determine bcc recipients
      *
      * @param rcptToRecipients recipients list
-     * @param mimeMessage mime message
-     * @throws IOException on error
+     * @param mimeMessage      mime message
+     * @throws IOException        on error
      * @throws MessagingException on error
      */
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
-        // Exchange 2007 : skip From: header
-        mimeMessage.removeHeader("from");
+        // check Sent folder for duplicates
+        ExchangeSession.MessageList messages = searchMessages(SENT, headerEquals("message-id", mimeMessage.getMessageID()));
+        if (!messages.isEmpty()) {
+            LOGGER.debug("Dropping message: already sent");
+        } else {
+            // Exchange 2007 : skip From: header
+            mimeMessage.removeHeader("from");
 
-        // remove visible recipients from list
-        Set<String> visibleRecipients = new HashSet<String>();
-        Address[] recipients = mimeMessage.getAllRecipients();
-        for (Address address : recipients) {
-            visibleRecipients.add(address.toString());
-        }
-        for (String recipient : rcptToRecipients) {
-            if (!visibleRecipients.contains(recipient)) {
-                mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
+            // remove visible recipients from list
+            Set<String> visibleRecipients = new HashSet<String>();
+            Address[] recipients = mimeMessage.getAllRecipients();
+            for (Address address : recipients) {
+                visibleRecipients.add(address.toString());
             }
-        }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
+            for (String recipient : rcptToRecipients) {
+                if (!visibleRecipients.contains(recipient)) {
+                    mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
+                }
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
 
-        sendMessage(baos.toByteArray());
+            sendMessage(baos.toByteArray());
+        }
     }
 
     /**
@@ -2778,11 +2785,11 @@ public abstract class ExchangeSession {
                 properties.put("haspicture", "true");
             }
         }
-        LOGGER.debug("Create or update contact "+itemName+": "+properties);
+        LOGGER.debug("Create or update contact " + itemName + ": " + properties);
         // reset missing properties to null
         for (String key : CONTACT_ATTRIBUTES) {
             if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
-                     && !"lastmodified".equals(key) &&
+                    && !"lastmodified".equals(key) &&
                     !properties.containsKey(key)) {
                 properties.put(key, null);
             }

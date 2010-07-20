@@ -148,6 +148,16 @@ public class TestSmtp extends AbstractDavMailTestCase {
         sendAndCheckMessage(mimeMessage);
     }
 
+    public void testSendMessageTwice() throws IOException, MessagingException, InterruptedException {
+        String body = "First line\r\n.\r\nSecond line";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test subject");
+        mimeMessage.setText(body);
+        sendAndCheckMessage(mimeMessage);
+        sendAndCheckMessage(mimeMessage);
+    }
+
     public void testQuit() throws IOException {
        writeLine("QUIT");
         assertEquals("221 Closing connection", readLine());
