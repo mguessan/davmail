@@ -315,4 +315,21 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
             assertEquals("mobile with prefix", contact.get("mobile"));
 
     }
+
+    public void testIphonePersonalHomePage() throws IOException {
+            ExchangeSession.Contact contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            VCardWriter vCardWriter = new VCardWriter();
+            vCardWriter.startCard();
+            vCardWriter.appendProperty("ITEM1.URL", "http://www.myhomepage.org");
+            vCardWriter.endCard();
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+            assertEquals(200, result.status);
+
+            contact = (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
+
+            assertEquals("http://www.myhomepage.org", contact.get("personalHomePage"));
+
+    }
 }

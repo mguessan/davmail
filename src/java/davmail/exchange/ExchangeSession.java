@@ -2728,6 +2728,9 @@ public abstract class ExchangeSession {
                     properties.put("businesshomepage", property.getValue());
                 } else if (property.hasParam("TYPE", "home")) {
                     properties.put("personalHomePage", property.getValue());
+                } else {
+                    // default: set personal home page
+                    properties.put("personalHomePage", property.getValue());
                 }
             } else if ("TITLE".equals(property.getKey())) {
                 properties.put("title", property.getValue());
@@ -3087,6 +3090,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("extensionattribute4");
         CONTACT_ATTRIBUTES.add("bday");
         CONTACT_ATTRIBUTES.add("businesshomepage");
+        CONTACT_ATTRIBUTES.add("personalHomePage");
         CONTACT_ATTRIBUTES.add("cn");
         CONTACT_ATTRIBUTES.add("co");
         CONTACT_ATTRIBUTES.add("department");
