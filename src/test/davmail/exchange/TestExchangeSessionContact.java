@@ -372,4 +372,21 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, contact.etag, null);
         assertEquals(200, result.status);
     }
+
+    public void testIphoneEncodedComma() throws IOException {
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("ITEM1.TEL;TYPE=CELL;TYPE=pref", "mobile\\, with comma");
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        assertEquals(200, result.status);
+
+        contact = getCurrentContact();
+
+        assertEquals("mobile, with comma", contact.get("mobile"));
+
+    }
 }

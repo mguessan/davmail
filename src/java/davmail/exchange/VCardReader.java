@@ -106,7 +106,13 @@ public class VCardReader extends ICSBufferedReader {
                         }
                     }
                     // iPhone encodes category separator
-                    if (c == ',' && !"NOTE".equals(key)) {
+                    if (c == ',' &&
+                            // multivalued properties
+                            ("N".equals(key) ||
+                             "ADR".equals(key) ||
+                             "CATEGORIES".equals(key) ||
+                             "NICKNAME".equals(key)
+                            )) {
                         // convert multiple values to multiline values (e.g. street)
                         c = '\n';
                     }
