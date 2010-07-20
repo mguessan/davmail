@@ -24,6 +24,7 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
@@ -588,7 +589,7 @@ public class CaldavConnection extends AbstractConnection {
         if (folder.isContact()) {
             contacts = session.getAllContacts(folderPath);
         } else {
-           events = session.getAllEvents(folderPath);
+            events = session.getAllEvents(folderPath);
             if (!folderPath.startsWith("/public")) {
                 folderList = session.getSubCalendarFolders(folderPath, false);
             }
@@ -991,7 +992,11 @@ public class CaldavConnection extends AbstractConnection {
         if (message == null) {
             message = e.toString();
         }
-        sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
+        if (e instanceof HttpNotFoundException) {
+            sendErr(HttpStatus.SC_NOT_FOUND, message);
+        } else {
+            sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
+        }
     }
 
     /**
@@ -1306,7 +1311,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isBrokenHrefEncoding() {
-            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/")|| isUserAgent("Lightning/1.0b2");
+            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/") || isUserAgent("Lightning/1.0b2");
         }
 
         protected boolean isLightning() {
@@ -1432,7 +1437,7 @@ public class CaldavConnection extends AbstractConnection {
          * @param subFolder sub folder path
          * @return folder path
          */
-        public String getFolderPath(String subFolder)  {
+        public String getFolderPath(String subFolder) {
             int endIndex;
             if (isFolder()) {
                 endIndex = getPathLength();
