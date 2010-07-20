@@ -921,7 +921,7 @@ public abstract class ExchangeSession {
         // check Sent folder for duplicates
         ExchangeSession.MessageList messages = searchMessages(SENT, headerEquals("message-id", mimeMessage.getMessageID()));
         if (!messages.isEmpty()) {
-            LOGGER.debug("Dropping message id "+mimeMessage.getMessageID()+": already sent");
+            LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
         } else {
             // Exchange 2007 : skip From: header
             mimeMessage.removeHeader("from");
@@ -2759,7 +2759,14 @@ public abstract class ExchangeSession {
                 String value = property.getValue();
                 if (value != null) {
                     try {
-                        properties.put("bday", ExchangeSession.getExchangeZuluDateFormatMillisecond().format(ExchangeSession.getZuluDateFormat().parse(value)));
+                        SimpleDateFormat parser;
+                        if (value.length() == 10) {
+                            parser = new SimpleDateFormat("yyyy-MM-dd");
+                            parser.setTimeZone(GMT_TIMEZONE);
+                        } else {
+                            parser = ExchangeSession.getZuluDateFormat();
+                        }
+                        properties.put("bday", ExchangeSession.getExchangeZuluDateFormatMillisecond().format(parser.parse(value)));
                     } catch (ParseException e) {
                         LOGGER.warn("Invalid date: " + value);
                     }

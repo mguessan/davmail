@@ -406,4 +406,21 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("common & name", contact.get("cn"));
 
     }
+
+    public void testDateValue() throws IOException {
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("BDAY", "2000-01-02");
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        assertEquals(200, result.status);
+
+        contact = getCurrentContact();
+
+        assertEquals("20000102T000000Z", contact.get("bday"));
+
+    }
 }
