@@ -235,7 +235,7 @@ public class PopConnection extends AbstractConnection {
                                 ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
                                 DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
-                                IOUtil.write(m.getRawInputStream(), doubleDotOutputStream);
+                                IOUtil.write(m.getRawInputStream(), new TopOutputStream(doubleDotOutputStream, lines));
                                 doubleDotOutputStream.close();
                             } catch (NumberFormatException e) {
                                 sendERR("invalid command");
