@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import davmail.util.StringUtil;
+
 /**
  * Extended MAPI property.
  */
@@ -93,24 +95,24 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     public void appendTo(StringBuilder buffer) {
-        buffer.append("<t:ExtendedFieldURI ");
+        buffer.append("<t:ExtendedFieldURI");
         if (propertyTag != null) {
-            buffer.append("PropertyTag=\"").append(propertyTag).append("\" ");
+            buffer.append(" PropertyTag=\"").append(propertyTag).append('"');
         }
         if (distinguishedPropertySetId != null) {
-            buffer.append("DistinguishedPropertySetId=\"").append(distinguishedPropertySetId).append("\" ");
+            buffer.append(" DistinguishedPropertySetId=\"").append(distinguishedPropertySetId).append('"');
         }
         if (propertySetId != null) {
-            buffer.append("PropertySetId=\"").append(propertySetId).append("\" ");
+            buffer.append(" PropertySetId=\"").append(propertySetId).append('"');
         }
         if (propertyName != null) {
-            buffer.append("PropertyName=\"").append(propertyName).append("\" ");
+            buffer.append(" PropertyName=\"").append(propertyName).append('"');
         }
         if (propertyId != 0) {
-            buffer.append("PropertyId=\"").append(String.valueOf(propertyId)).append("\" ");
+            buffer.append(" PropertyId=\"").append(String.valueOf(propertyId)).append('"');
         }
         if (propertyType != null) {
-            buffer.append("PropertyType=\"").append(propertyType.toString()).append("\" ");
+            buffer.append(" PropertyType=\"").append(propertyType.toString()).append('"');
         }
         buffer.append("/>");
     }
@@ -129,14 +131,14 @@ public class ExtendedFieldURI implements FieldURI {
             String[] values = value.split("\n");
             for (final String singleValue : values) {
                 buffer.append("<t:Value>");
-                buffer.append(singleValue);
+                buffer.append(StringUtil.xmlEncode(singleValue));
                 buffer.append("</t:Value>");
 
             }
             buffer.append("</t:Values>");
         } else {
             buffer.append("<t:Value>");
-            buffer.append(value);
+            buffer.append(StringUtil.xmlEncode(value));
             buffer.append("</t:Value>");
         }
         buffer.append("</t:ExtendedProperty>");

@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import davmail.util.StringUtil;
+
 /**
  * Indexed FieldURI
  */
@@ -52,7 +54,7 @@ public class IndexedFieldURI implements FieldURI {
         buffer.append("<t:");
         buffer.append(fieldIndex);
         buffer.append('>');
-        buffer.append(value);
+        buffer.append(StringUtil.xmlEncode(value));
         buffer.append("</t:");
         buffer.append(fieldIndex);
         buffer.append('>');

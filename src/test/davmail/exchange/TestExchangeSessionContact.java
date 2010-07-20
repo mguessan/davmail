@@ -389,4 +389,21 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("mobile, with comma", contact.get("mobile"));
 
     }
+
+    public void testAmpersAndValue() throws IOException {
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("FN", "common & name");
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        assertEquals(200, result.status);
+
+        contact = getCurrentContact();
+
+        assertEquals("common & name", contact.get("cn"));
+
+    }
 }
