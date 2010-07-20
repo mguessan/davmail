@@ -104,7 +104,9 @@ public class VCardReader extends ICSBufferedReader {
                         } else if (c == 'r') {
                             c = '\r';
                         }
-                    } else if (c == ',' && !"NOTE".equals(key)) {
+                    }
+                    // iPhone encodes category separator
+                    if (c == ',' && !"NOTE".equals(key)) {
                         // convert multiple values to multiline values (e.g. street)
                         c = '\n';
                     }

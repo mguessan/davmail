@@ -754,9 +754,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 //noinspection VariableNotUsedInsideIf
                 if (etag == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
-                    LOGGER.debug("Created event " + getHref());
+                    LOGGER.debug("Created contact " + getHref());
                 } else {
-                    LOGGER.warn("Updated event " + getHref());
+                    LOGGER.debug("Updated contact " + getHref());
                 }
             }
 
@@ -946,8 +946,11 @@ public class EwsExchangeSession extends ExchangeSession {
         String itemType = responses.get(0).type;
         if ("Contact".equals(itemType)) {
             // retrieve Contact properties
-            // TODO: need to check list size
-            return searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname)).get(0);
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname)); 
+            if (contacts.isEmpty()) {
+               throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+            }
+            return contacts.get(0);
         } else if ("CalendarItem".equals(itemType)
                 || "MeetingRequest".equals(itemType)) {
             return new Event(responses.get(0));
