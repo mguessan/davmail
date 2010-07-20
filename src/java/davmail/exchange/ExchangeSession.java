@@ -1731,16 +1731,9 @@ public abstract class ExchangeSession {
             writer.appendProperty("ROLE", get("profession"));
             writer.appendProperty("NICKNAME", get("nickname"));
             writer.appendProperty("X-AIM", get("im"));
-            // convert bday value
-            String bday = get("bday");
-            if (bday != null && bday.length() > 0) {
-                try {
-                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
-                    writer.appendProperty("BDAY", ExchangeSession.getVcardBdayFormat().format(parser.parse(bday)));
-                } catch (ParseException e) {
-                    LOGGER.warn("Invalid date: " + bday);
-                }
-            }
+
+            writer.appendProperty("BDAY", convertZuluDateToBday(get("bday")));
+            writer.appendProperty("X-ANNIVERSARY", convertZuluDateToBday(get("anniversary")));
 
             writer.appendProperty("CATEGORIES", get("keywords"));
 
@@ -1765,6 +1758,19 @@ public abstract class ExchangeSession {
 
             writer.endCard();
             return writer.toString();
+        }
+
+        protected String convertZuluDateToBday(String value) {
+            String result = null;
+            if (value != null && value.length() > 0) {
+                try {
+                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
+                    result = ExchangeSession.getVcardBdayFormat().format(parser.parse(value));
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid date: " + value);
+                }
+            }
+            return result;
         }
 
     }
@@ -2771,20 +2777,9 @@ public abstract class ExchangeSession {
             } else if ("X-AIM".equals(property.getKey())) {
                 properties.put("im", property.getValue());
             } else if ("BDAY".equals(property.getKey())) {
-                String value = property.getValue();
-                if (value != null) {
-                    try {
-                        SimpleDateFormat parser;
-                        if (value.length() == 10) {
-                            parser = ExchangeSession.getVcardBdayFormat();
-                        } else {
-                            parser = ExchangeSession.getExchangeZuluDateFormat();
-                        }
-                        properties.put("bday", ExchangeSession.getExchangeZuluDateFormatMillisecond().format(parser.parse(value)));
-                    } catch (ParseException e) {
-                        LOGGER.warn("Invalid date: " + value);
-                    }
-                }
+                properties.put("bday", convertBDayToZulu(property.getValue()));
+            } else if ("X-ANNIVERSARY".equals(property.getKey())) {
+                 properties.put("anniversary", convertBDayToZulu(property.getValue()));
             } else if ("CATEGORIES".equals(property.getKey())) {
                 properties.put("keywords", property.getValue());
             } else if ("CLASS".equals(property.getKey())) {
@@ -2816,6 +2811,25 @@ public abstract class ExchangeSession {
             }
         }
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
+    }
+
+    protected String convertBDayToZulu(String value) {
+        String result = null;
+        if (value != null && value.length() > 0) {
+            try {
+                SimpleDateFormat parser;
+                if (value.length() == 10) {
+                    parser = ExchangeSession.getVcardBdayFormat();
+                } else {
+                    parser = ExchangeSession.getExchangeZuluDateFormat();
+                }
+                result = ExchangeSession.getExchangeZuluDateFormatMillisecond().format(parser.parse(value));
+            } catch (ParseException e) {
+                LOGGER.warn("Invalid date: " + value);
+            }
+        }
+        
+        return result;
     }
 
 
@@ -3117,6 +3131,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("extensionattribute3");
         CONTACT_ATTRIBUTES.add("extensionattribute4");
         CONTACT_ATTRIBUTES.add("bday");
+        CONTACT_ATTRIBUTES.add("anniversary");
         CONTACT_ATTRIBUTES.add("businesshomepage");
         CONTACT_ATTRIBUTES.add("personalHomePage");
         CONTACT_ATTRIBUTES.add("cn");

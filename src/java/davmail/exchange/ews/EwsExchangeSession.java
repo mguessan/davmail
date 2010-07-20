@@ -254,7 +254,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
-        message.date = convertDate(response.get(Field.get("date").getResponseName()));
+        message.date = convertDateFromExchange(response.get(Field.get("date").getResponseName()));
         message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
         if (LOGGER.isDebugEnabled()) {
@@ -658,8 +658,8 @@ public class EwsExchangeSession extends ExchangeSession {
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
-                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
-                        value = convertDate(value);
+                    if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
+                        value = convertDateFromExchange(value);
                     }
                     put(attributeName, value);
                 }
@@ -1121,7 +1121,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    protected String convertDate(String exchangeDateValue) throws DavMailException {
+    protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
         String zuluDateValue;
         try {
             zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));

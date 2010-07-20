@@ -571,8 +571,9 @@ public class DavExchangeSession extends ExchangeSession {
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = getPropertyIfExists(properties, attributeName);
                 if (value != null) {
-                    if ("bday".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
-                        value = convertDate(value);
+                    if ("bday".equals(attributeName) || "anniversary".equals(attributeName)
+                            || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
+                        value = convertDateFromExchange(value);
                     } else if ("haspicture".equals(attributeName) || "private".equals(attributeName)) {
                         value = "1".equals(value) ? "true" : "false";
                     }
@@ -1731,7 +1732,7 @@ public class DavExchangeSession extends ExchangeSession {
         LOGGER.debug("Deleted to :" + destination);
     }
 
-    protected String convertDate(String exchangeDateValue) throws DavMailException {
+    protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
         String zuluDateValue;
         try {
             zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
