@@ -249,6 +249,8 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "othercountry"); // PR_OTHER_ADDRESS_COUNTRY 0x3A60 String
         createField(URN_SCHEMAS_CONTACTS, "othercity"); // PR_OTHER_ADDRESS_CITY 0x3A5F String
 
+        createField(URN_SCHEMAS_CONTACTS, "gender"); // PR_GENDER 0x3A4D Integer16
+
         createField("keywords", SCHEMAS_EXCHANGE, "keywords-utf8", PropertyType.StringArray); // PS_PUBLIC_STRINGS Keywords String
         //createField("keywords", DistinguishedPropertySetType.PublicStrings, "Keywords", ); // PS_PUBLIC_STRINGS Keywords String
 

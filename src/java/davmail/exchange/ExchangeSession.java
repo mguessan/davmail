@@ -1733,7 +1733,14 @@ public abstract class ExchangeSession {
             writer.appendProperty("X-AIM", get("im"));
 
             writer.appendProperty("BDAY", convertZuluDateToBday(get("bday")));
-            writer.appendProperty("X-ANNIVERSARY", convertZuluDateToBday(get("anniversary")));
+            writer.appendProperty("ANNIVERSARY", convertZuluDateToBday(get("anniversary")));
+
+            String gender = get("gender");
+            if ("1".equals(gender)) {
+                writer.appendProperty("SEX", "2");
+            } else if ("2".equals(gender)) {
+                writer.appendProperty("SEX", "1");
+            }
 
             writer.appendProperty("CATEGORIES", get("keywords"));
 
@@ -2781,8 +2788,8 @@ public abstract class ExchangeSession {
                 properties.put("im", property.getValue());
             } else if ("BDAY".equals(property.getKey())) {
                 properties.put("bday", convertBDayToZulu(property.getValue()));
-            } else if ("X-ANNIVERSARY".equals(property.getKey())) {
-                 properties.put("anniversary", convertBDayToZulu(property.getValue()));
+            } else if ("ANNIVERSARY".equals(property.getKey())) {
+                properties.put("anniversary", convertBDayToZulu(property.getValue()));
             } else if ("CATEGORIES".equals(property.getKey())) {
                 properties.put("keywords", property.getValue());
             } else if ("CLASS".equals(property.getKey())) {
@@ -2792,6 +2799,13 @@ public abstract class ExchangeSession {
                 } else {
                     properties.put("sensitivity", "2");
                     properties.put("private", "true");
+                }
+            } else if ("SEX".equals(property.getKey())) {
+                String propertyValue = property.getValue();
+                if ("1".equals(propertyValue)) {
+                    properties.put("gender", "2");
+                } else if ("2".equals(propertyValue)) {
+                    properties.put("gender", "1");
                 }
             } else if ("X-ASSISTANT".equals(property.getKey())) {
                 properties.put("secretarycn", property.getValue());
@@ -2834,7 +2848,7 @@ public abstract class ExchangeSession {
                 LOGGER.warn("Invalid date: " + value);
             }
         }
-        
+
         return result;
     }
 
@@ -3187,7 +3201,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
         CONTACT_ATTRIBUTES.add("othermobile");
-
+        CONTACT_ATTRIBUTES.add("gender");
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
     }
