@@ -27,6 +27,17 @@ public class VCardWriter extends ICSBufferedWriter {
         writeLine("VERSION:3.0");
     }
 
+    public void appendProperty(String propertyName, String propertyValue) {
+        if ((propertyValue != null) && (propertyValue.length() > 0)) {
+            write(propertyName);
+            write(":");
+            StringBuilder valueBuffer = new StringBuilder();
+            appendEncodedValue(valueBuffer, propertyValue);
+            writeLine(valueBuffer.toString());
+        }
+
+    }
+
     public void appendProperty(String propertyName, String... propertyValue) {
         boolean hasValue = false;
         for (String value : propertyValue) {
@@ -60,7 +71,7 @@ public class VCardWriter extends ICSBufferedWriter {
      */
     private void appendEncodedValue(StringBuilder buffer, String value) {
         if (value != null) {
-            for (int i = 0; i < value.length();i++) {
+            for (int i = 0; i < value.length(); i++) {
                 char c = value.charAt(i);
                 if (c == ',' || c == ';') {
                     buffer.append('\\');
