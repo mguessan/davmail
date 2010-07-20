@@ -22,12 +22,15 @@ package davmail.exchange.ews;
  * Extended MAPI property.
  */
 public class ExtendedFieldURI implements FieldURI {
+
+    @SuppressWarnings({"UnusedDeclaration"})
     protected enum PropertyType {
         ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
         Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
         ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     protected static enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
@@ -81,6 +84,7 @@ public class ExtendedFieldURI implements FieldURI {
      *
      * @param distinguishedPropertySetId distinguished property set id
      * @param propertyName               property name
+     * @param propertyType               property type
      */
     public ExtendedFieldURI(DistinguishedPropertySetType distinguishedPropertySetId, String propertyName, PropertyType propertyType) {
         this.distinguishedPropertySetId = distinguishedPropertySetId;
@@ -157,24 +161,6 @@ public class ExtendedFieldURI implements FieldURI {
             return String.valueOf(propertyId);
         }
     }
-
-    public static final ExtendedFieldURI PR_INSTANCE_KEY = new ExtendedFieldURI(0xff6, PropertyType.Binary);
-    public static final ExtendedFieldURI PR_MESSAGE_SIZE = new ExtendedFieldURI(0xe08, PropertyType.Integer);
-    public static final ExtendedFieldURI PR_INTERNET_ARTICLE_NUMBER = new ExtendedFieldURI(0xe23, PropertyType.Integer);
-    public static final ExtendedFieldURI JUNK_FLAG = new ExtendedFieldURI(0x1083, PropertyType.Integer);
-    public static final ExtendedFieldURI PR_FLAG_STATUS = new ExtendedFieldURI(0x1090, PropertyType.Integer);
-    public static final ExtendedFieldURI PR_MESSAGE_FLAGS = new ExtendedFieldURI(0x0e07, PropertyType.Integer);
-    public static final ExtendedFieldURI PR_ACTION_FLAG = new ExtendedFieldURI(0x1081, PropertyType.Integer);
-    public static final ExtendedFieldURI PR_URL_COMP_NAME = new ExtendedFieldURI(0x10f3, PropertyType.String);
-    public static final ExtendedFieldURI PR_CONTAINER_CLASS = new ExtendedFieldURI(0x3613, PropertyType.String);
-
-    public static final ExtendedFieldURI PR_LAST_MODIFICATION_TIME = new ExtendedFieldURI(0x3008, PropertyType.SystemTime);
-    public static final ExtendedFieldURI PR_LOCAL_COMMIT_TIME_MAX = new ExtendedFieldURI(0x670a, PropertyType.SystemTime);
-    public static final ExtendedFieldURI PR_SUBFOLDERS = new ExtendedFieldURI(0x360a, PropertyType.Boolean);
-    public static final ExtendedFieldURI PR_CONTENT_UNREAD = new ExtendedFieldURI(0x3603, PropertyType.Integer);
-
-    // message properties
-    public static final ExtendedFieldURI PR_READ = new ExtendedFieldURI(0xe69, PropertyType.Boolean);
 
 }
 

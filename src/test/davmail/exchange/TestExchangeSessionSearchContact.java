@@ -21,7 +21,9 @@ package davmail.exchange;
 import davmail.Settings;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Test contact search.
@@ -44,6 +46,31 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println("Contact " + (++count) + '/' + contacts.size() + contact.getBody());
             assertNotNull(session.getContactPhoto(contact));
+        }
+    }
+
+    public void testSearchContacts() throws IOException {
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null);
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println(session.getItem(ExchangeSession.CONTACTS, contact.getName()));
+        }
+    }
+
+    public void testSearchContactsUidOnly() throws IOException {
+        Set<String> attributes = new HashSet<String>();
+        attributes.add("uid");
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println(contact);
+        }
+    }
+
+    public void testSearchContactsByUid() throws IOException {
+        Set<String> attributes = new HashSet<String>();
+        attributes.add("uid");
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.equals("uid", contact.get("uid"))));
         }
     }
 

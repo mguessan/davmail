@@ -2580,17 +2580,16 @@ public abstract class ExchangeSession {
      * @return HTTP status
      * @throws IOException on error
      */
-    public abstract int deleteItem(String folderPath, String itemName) throws IOException;
+    public abstract void deleteItem(String folderPath, String itemName) throws IOException;
 
     /**
      * Mark event processed named eventName in folder
      *
      * @param folderPath Exchange folder path
      * @param itemName   item name
-     * @return HTTP status
      * @throws IOException on error
      */
-    public abstract int processItem(String folderPath, String itemName) throws IOException;
+    public abstract void processItem(String folderPath, String itemName) throws IOException;
 
 
     private static int dumpIndex;

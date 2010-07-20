@@ -72,7 +72,4 @@ public class UnindexedFieldURI implements FieldURI {
         return fieldName;
     }
 
-    public static final UnindexedFieldURI DATE_TIME_SENT = new UnindexedFieldURI("item:DateTimeSent");
-    public static final UnindexedFieldURI FOLDER_DISPLAYNAME = new UnindexedFieldURI("folder:DisplayName");
-
 }

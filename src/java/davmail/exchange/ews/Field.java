@@ -37,6 +37,12 @@ public class Field {
         FIELD_MAP.put("urlcompname", new ExtendedFieldURI(0x10f3, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("lastmodified", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
 
+        // folder
+        FIELD_MAP.put("ctag", new ExtendedFieldURI(0x670a, ExtendedFieldURI.PropertyType.SystemTime)); // PR_LOCAL_COMMIT_TIME_MAX
+        FIELD_MAP.put("unread", new ExtendedFieldURI(0x3603, ExtendedFieldURI.PropertyType.Integer)); // PR_CONTENT_UNREAD
+        FIELD_MAP.put("hassubs", new ExtendedFieldURI(0x360a, ExtendedFieldURI.PropertyType.Boolean)); // PR_SUBFOLDERS
+        FIELD_MAP.put("folderDisplayName", new UnindexedFieldURI("folder:DisplayName"));
+
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
 

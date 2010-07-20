@@ -29,17 +29,6 @@ public class ItemId {
     protected final String changeKey;
 
     /**
-     * Create Item id.
-     *
-     * @param id        item id
-     * @param changeKey item change key
-     */
-    public ItemId(String id, String changeKey) {
-        this.id = id;
-        this.changeKey = changeKey;
-    }
-
-    /**
      * Build Item id from response item.
      *
      * @param item response item

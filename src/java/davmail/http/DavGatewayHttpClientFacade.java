@@ -332,10 +332,9 @@ public final class DavGatewayHttpClientFacade {
      *
      * @param httpClient Http client instance
      * @param path       Path to be deleted
-     * @return Http status
      * @throws IOException on error
      */
-    public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
+    public static void executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
         DeleteMethod deleteMethod = new DeleteMethod(path);
         deleteMethod.setFollowRedirects(false);
 
@@ -344,7 +343,6 @@ public final class DavGatewayHttpClientFacade {
         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
             throw DavGatewayHttpClientFacade.buildHttpException(deleteMethod);
         }
-        return HttpStatus.SC_OK;
     }
 
     /**
@@ -413,12 +411,13 @@ public final class DavGatewayHttpClientFacade {
 
     /**
      * Enable NTLM authentication on http client
+     *
      * @param httpClient HttpClient instance
      */
     public static void addNTLM(HttpClient httpClient) {
         // register the jcifs based NTLMv2 implementation
         AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
-        
+
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.NTLM);
         authPrefs.add(AuthPolicy.DIGEST);
@@ -453,7 +452,7 @@ public final class DavGatewayHttpClientFacade {
                     acceptNTLM = true;
                 }
                 if ("Basic realm".equalsIgnoreCase(headerElement.getName())) {
-                   acceptBasic = true;
+                    acceptBasic = true;
                 }
             }
             return acceptNTLM && !acceptBasic;
@@ -490,10 +489,9 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient      Http client instance
      * @param method          Http method
      * @param followRedirects Follow redirects flag
-     * @return Http status
      * @throws IOException on error
      */
-    public static int executeGetMethod(HttpClient httpClient, GetMethod method, boolean followRedirects) throws IOException {
+    public static void executeGetMethod(HttpClient httpClient, GetMethod method, boolean followRedirects) throws IOException {
         // do not follow redirects in expired sessions
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
@@ -517,7 +515,6 @@ public final class DavGatewayHttpClientFacade {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         }
-        return status;
     }
 
     private static void resetMethod(HttpMethod method) {

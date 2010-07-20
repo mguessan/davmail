@@ -18,6 +18,7 @@
  */
 package davmail.exchange;
 
+import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.ByteArrayOutputStream;
@@ -32,31 +33,6 @@ import java.util.UUID;
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase {
     static String itemName;
-    /*
-    public void testSearchContacts() throws IOException {
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null);
-        for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(session.getItem(ExchangeSession.CONTACTS, contact.getName()));
-        }
-    }
-
-    public void testSearchContactsUidOnly() throws IOException {
-        Set<String> attributes = new HashSet<String>();
-        attributes.add("uid");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
-        for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(contact);
-        }
-    }
-
-    public void testSearchContactsByUid() throws IOException {
-        Set<String> attributes = new HashSet<String>();
-        attributes.add("uid");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
-        for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.equals("uid", contact.get("uid"))));
-        }
-    } */
 
     public void testCreateFolder() throws IOException {
         // recreate empty folder
@@ -110,12 +86,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         // add photo
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream partInputStream = new FileInputStream("src/data/anonymous.jpg");
-        byte[] bytes = new byte[8192];
-        int length;
-        while ((length = partInputStream.read(bytes)) > 0) {
-            baos.write(bytes, 0, length);
-        }
+        InputStream fileInputStream = new FileInputStream("src/data/anonymous.jpg");
+        IOUtil.write(fileInputStream, baos);
         vCardWriter.appendProperty("PHOTO;ENCODING=b;TYPE=JPEG", new String(Base64.encodeBase64(baos.toByteArray())));
 
         vCardWriter.endCard();

@@ -258,13 +258,12 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);
 
         } else if (request.isDelete()) {
-            int status;
             if (request.getFolderPath().endsWith("inbox")) {
-                status = session.processItem(request.getFolderPath(), lastPath);
+                session.processItem(request.getFolderPath(), lastPath);
             } else {
-                status = session.deleteItem(request.getFolderPath(), lastPath);
+                session.deleteItem(request.getFolderPath(), lastPath);
             }
-            sendHttpResponse(status);
+            sendHttpResponse(HttpStatus.SC_OK);
         } else if (request.isGet()) {
             if (request.path.endsWith("/")) {
                 // GET request on a folder => build ics content of all folder events
@@ -1410,9 +1409,8 @@ public class CaldavConnection extends AbstractConnection {
          * Get request folder path.
          *
          * @return exchange folder path
-         * @throws IOException on error
          */
-        public String getFolderPath() throws IOException {
+        public String getFolderPath() {
             return getFolderPath(null);
         }
 

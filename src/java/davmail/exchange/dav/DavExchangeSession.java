@@ -1278,13 +1278,13 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public int deleteItem(String folderPath, String itemName) throws IOException {
+    public void deleteItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
-        return DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
     }
 
     @Override
-    public int processItem(String folderPath, String itemName) throws IOException {
+    public void processItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
         // do not delete calendar messages, mark read and processed
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
@@ -1292,7 +1292,6 @@ public class DavExchangeSession extends ExchangeSession {
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
         DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
-        return HttpStatus.SC_OK;
     }
 
     /**

@@ -487,23 +487,23 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<FieldURI>();
 
     static {
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_URL_COMP_NAME);
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME);
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_CONTAINER_CLASS);
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX);
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_CONTENT_UNREAD);
-        FOLDER_PROPERTIES.add(ExtendedFieldURI.PR_SUBFOLDERS);
+        FOLDER_PROPERTIES.add(Field.get("urlcompname"));
+        FOLDER_PROPERTIES.add(Field.get("lastmodified"));
+        FOLDER_PROPERTIES.add(Field.get("folderclass"));
+        FOLDER_PROPERTIES.add(Field.get("ctag"));
+        FOLDER_PROPERTIES.add(Field.get("unread"));
+        FOLDER_PROPERTIES.add(Field.get("hassubs"));
     }
 
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item);
-        folder.displayName = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
-        folder.folderClass = item.get(ExtendedFieldURI.PR_CONTAINER_CLASS.getResponseName());
-        folder.etag = item.get(ExtendedFieldURI.PR_LAST_MODIFICATION_TIME.getResponseName());
-        folder.ctag = item.get(ExtendedFieldURI.PR_LOCAL_COMMIT_TIME_MAX.getResponseName());
-        folder.unreadCount = item.getInt(ExtendedFieldURI.PR_CONTENT_UNREAD.getResponseName());
-        folder.hasChildren = item.getBoolean(ExtendedFieldURI.PR_SUBFOLDERS.getResponseName());
+        folder.displayName = item.get(Field.get("urlcompname").getResponseName());
+        folder.folderClass = item.get(Field.get("folderclass").getResponseName());
+        folder.etag = item.get(Field.get("lastmodified").getResponseName());
+        folder.ctag = item.get(Field.get("ctag").getResponseName());
+        folder.unreadCount = item.getInt(Field.get("unread").getResponseName());
+        folder.hasChildren = item.getBoolean(Field.get("hassubs").getResponseName());
         // noInferiors not implemented
         return folder;
     }
@@ -534,11 +534,11 @@ public class EwsExchangeSession extends ExchangeSession {
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
             Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
-                folder.folderPath = parentFolderPath + '/' + item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
+                folder.folderPath = parentFolderPath + '/' + item.get(Field.get("urlcompname").getResponseName());
             } else if (folderIdMap.get(folder.folderId.value) != null) {
                 folder.folderPath = folderIdMap.get(folder.folderId.value);
             } else {
-                folder.folderPath = item.get(ExtendedFieldURI.PR_URL_COMP_NAME.getResponseName());
+                folder.folderPath = item.get(Field.get("urlcompname").getResponseName());
             }
             folders.add(folder);
             if (recursive && folder.hasChildren) {
@@ -629,7 +629,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // rename folder
         if (!path.folderName.equals(targetPath.folderName)) {
             Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-            updates.add(new FieldUpdate(UnindexedFieldURI.FOLDER_DISPLAYNAME, targetPath.folderName));
+            updates.add(new FieldUpdate(Field.get("folderDisplayName"), targetPath.folderName));
             UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(folderId, updates);
             executeMethod(updateFolderMethod);
         }
@@ -982,18 +982,17 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public int deleteItem(String folderPath, String itemName) throws IOException {
+    public void deleteItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
             DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(responses.get(0)), DeleteType.HardDelete);
             executeMethod(deleteItemMethod);
         }
-        return HttpStatus.SC_OK;
     }
 
     @Override
-    public int processItem(String folderPath, String itemName) throws IOException {
+    public void processItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
         List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
@@ -1006,7 +1005,6 @@ public class EwsExchangeSession extends ExchangeSession {
                     new ItemId(responses.get(0)), buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
-        return HttpStatus.SC_OK;
     }
 
     @Override
@@ -1101,7 +1099,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 parentFolderId,
                 FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
-                        ExtendedFieldURI.PR_URL_COMP_NAME, folderName)
+                        Field.get("urlcompname"), folderName)
         );
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
@@ -1111,15 +1109,13 @@ public class EwsExchangeSession extends ExchangeSession {
         return folderId;
     }
 
-    protected int executeMethod(EWSMethod ewsMethod) throws IOException {
-        int status;
+    protected void executeMethod(EWSMethod ewsMethod) throws IOException {
         try {
-            status = httpClient.executeMethod(ewsMethod);
+            httpClient.executeMethod(ewsMethod);
             ewsMethod.checkSuccess();
         } finally {
             ewsMethod.releaseConnection();
         }
-        return status;
     }
 
     protected String convertDate(String exchangeDateValue) throws DavMailException {

@@ -1498,7 +1498,7 @@ public class LdapConnection extends AbstractConnection {
                             String value = person.get(contactAttribute);
                             if (value != null) {
                                 if (ldapAttribute.startsWith("birth")) {
-                                    SimpleDateFormat parser = session.getZuluDateFormat();
+                                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
                                     Calendar calendar = Calendar.getInstance();
                                     try {
                                         calendar.setTime(parser.parse(value));

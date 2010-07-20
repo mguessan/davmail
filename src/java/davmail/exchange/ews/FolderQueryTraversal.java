@@ -34,5 +34,6 @@ public final class FolderQueryTraversal extends AttributeOption {
     /**
      * Recursive search.
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public static final FolderQueryTraversal DEEP = new FolderQueryTraversal("Deep");
 }
