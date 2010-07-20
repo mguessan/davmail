@@ -1467,7 +1467,7 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient(data, offset, length);
                     if (wireLogger.isDebugEnabled()) {
                         StringBuilder logBuffer = new StringBuilder("> ");
-                        logBuffer.append(new String(data, offset, length));
+                        logBuffer.append(new String(data, offset, length, "UTF-8"));
                         wireLogger.debug(logBuffer.toString());
                     }
                     sendClient("");
