@@ -27,18 +27,6 @@ public class VCardWriter extends ICSBufferedWriter {
         writeLine("VERSION:3.0");
     }
 
-    public void appendProperty(String propertyName, String propertyValue) {
-        if (propertyValue != null && propertyValue.length() > 0) {
-            write(propertyName);
-            write(":");
-            if (propertyValue.indexOf('\n') >= 0) {
-                writeLine(propertyValue.replaceAll("\\n", "\\\\n"));
-            } else {
-                writeLine(propertyValue);
-            }
-        }
-    }
-
     public void appendProperty(String propertyName, String... propertyValue) {
         boolean hasValue = false;
         for (String value : propertyValue) {
