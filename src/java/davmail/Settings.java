@@ -246,6 +246,7 @@ public final class Settings {
                 fileAppender.setName("FileAppender");
                 fileAppender.setMaxBackupIndex(2);
                 fileAppender.setMaxFileSize(logFileSize);
+                fileAppender.setEncoding("UTF-8");
                 fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
             }
             fileAppender.setFile(logFilePath, true, false, 8192);
