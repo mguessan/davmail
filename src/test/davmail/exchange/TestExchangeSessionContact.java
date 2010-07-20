@@ -361,4 +361,15 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("rouge,vert", contact.get("keywords"));
 
     }
+
+    public void testSemiColonInCompoundValue() throws IOException {
+        ExchangeSession.Contact contact = getCurrentContact();
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "item1.ADR;type=WORK;type=pref:;;line1\\nline 2 \\; with semicolon;;;;\n" +
+                "END:VCARD";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, contact.etag, null);
+        assertEquals(200, result.status);
+    }
 }

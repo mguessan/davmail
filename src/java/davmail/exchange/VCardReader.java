@@ -215,10 +215,14 @@ public class VCardReader extends ICSBufferedReader {
                         startIndex = i + 1;
                     }
                 } else if (state == State.VALUE) {
-                    if (currentChar == ';') {
+                    if (currentChar == '\\') {
+                        state = State.BACKSLASH;
+                    } else if (currentChar == ';') {
                         property.addValue(line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
+                } else if (state == State.BACKSLASH) {
+                    state = State.VALUE;
                 }
             }
             property.addValue(line.substring(startIndex));
