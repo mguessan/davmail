@@ -30,12 +30,13 @@ import java.util.UUID;
  */
 public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase {
     static ExchangeSession.Message message;
+    static String messageName;
 
     public void testCreateMessage() throws IOException, MessagingException {
         session.deleteFolder("testfolder");
         session.createMessageFolder("testfolder");
         MimeMessage mimeMessage = createMimeMessage();
-        String messageName = UUID.randomUUID().toString();
+        messageName = UUID.randomUUID().toString()+".EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
     }
@@ -76,6 +77,10 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         assertTrue(mimeMessage.getHeader("To")[0].indexOf("test@test.local") >= 0);
         assertEquals("Test subject", mimeMessage.getSubject());
         assertEquals("Test message", mimeMessage.getContent());
+    }
+
+    public void testProcessMessage() throws IOException, MessagingException {
+        session.processItem("testfolder", messageName);
     }
 
     public void testDeleteMessage() throws IOException {

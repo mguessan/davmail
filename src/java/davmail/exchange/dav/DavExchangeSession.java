@@ -1289,7 +1289,7 @@ public class DavExchangeSession extends ExchangeSession {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
         // do not delete calendar messages, mark read and processed
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-        list.add(Field.createDavProperty("processed", "1"));
+        list.add(Field.createDavProperty("processed", "true"));
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
         DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
@@ -1490,7 +1490,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException {
-        String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName + ".EML");
+        String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
         if (properties != null) {
@@ -1579,7 +1579,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void sendMessage(byte[] messageBody) throws IOException {
-        String messageName = UUID.randomUUID().toString();
+        String messageName = UUID.randomUUID().toString()+".EML";
 
         createMessage("Drafts", messageName, null, messageBody);
 

@@ -44,7 +44,7 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
 
     public void testCreateDraftMessage() throws MessagingException, IOException {
         MimeMessage mimeMessage = createMimeMessage();
-        String messageName = UUID.randomUUID().toString();
+        String messageName = UUID.randomUUID().toString()+".EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "9");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));

@@ -423,7 +423,7 @@ public class ImapConnection extends AbstractConnection {
                                     // empty line
                                     readClient();
 
-                                    String messageName = UUID.randomUUID().toString();
+                                    String messageName = UUID.randomUUID().toString() + ".EML";
                                     session.createMessage(folderName, messageName, properties, buffer);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
