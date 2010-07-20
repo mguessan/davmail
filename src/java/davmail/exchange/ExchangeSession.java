@@ -1765,7 +1765,10 @@ public abstract class ExchangeSession {
             if (value != null && value.length() > 0) {
                 try {
                     SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
-                    result = ExchangeSession.getVcardBdayFormat().format(parser.parse(value));
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(parser.parse(value));
+                    cal.add(Calendar.HOUR_OF_DAY, 12);
+                    result = ExchangeSession.getVcardBdayFormat().format(cal.getTime());
                 } catch (ParseException e) {
                     LOGGER.warn("Invalid date: " + value);
                 }
@@ -2820,6 +2823,9 @@ public abstract class ExchangeSession {
                 SimpleDateFormat parser;
                 if (value.length() == 10) {
                     parser = ExchangeSession.getVcardBdayFormat();
+                } else if (value.length() == 15) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
                 } else {
                     parser = ExchangeSession.getExchangeZuluDateFormat();
                 }
