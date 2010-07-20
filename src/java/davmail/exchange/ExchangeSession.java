@@ -921,7 +921,7 @@ public abstract class ExchangeSession {
         // check Sent folder for duplicates
         ExchangeSession.MessageList messages = searchMessages(SENT, headerEquals("message-id", mimeMessage.getMessageID()));
         if (!messages.isEmpty()) {
-            LOGGER.debug("Dropping message: already sent");
+            LOGGER.debug("Dropping message id "+mimeMessage.getMessageID()+": already sent");
         } else {
             // Exchange 2007 : skip From: header
             mimeMessage.removeHeader("from");
