@@ -648,13 +648,13 @@ public class DavExchangeSession extends ExchangeSession {
             }
             itemResult.status = status;
 
-            String contactPictureUrl = getHref() + "/ContactPicture.jpg";
+            String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
             String photo = get("photo");
             if (photo != null) {
                 // need to update photo
                 byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
-                final PutMethod putmethod = new PutMethod(URIUtil.encodePath(contactPictureUrl));
+                final PutMethod putmethod = new PutMethod(contactPictureUrl);
                 putmethod.setRequestHeader("Overwrite", "t");
                 putmethod.setRequestHeader("Content-Type", "image/jpeg");
                 putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
