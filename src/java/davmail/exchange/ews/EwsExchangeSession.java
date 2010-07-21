@@ -20,6 +20,7 @@ package davmail.exchange.ews;
 
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
@@ -1041,7 +1042,7 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderId(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId == null) {
-            throw new DavMailException("EXCEPTION_FOLDER_NOT_FOUND", folderPath);
+            throw new HttpNotFoundException("Folder '"+folderPath+"' not found");
         }
         return folderId;
     }

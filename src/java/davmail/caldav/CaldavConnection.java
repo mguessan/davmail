@@ -160,7 +160,9 @@ public class CaldavConnection extends AbstractConnection {
         } catch (SocketException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_CLOSED"));
         } catch (Exception e) {
-            DavGatewayTray.log(e);
+            if (!(e instanceof HttpNotFoundException)) {
+                DavGatewayTray.log(e);
+            }
             try {
                 sendErr(e);
             } catch (IOException e2) {
