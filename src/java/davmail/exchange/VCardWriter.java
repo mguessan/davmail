@@ -31,9 +31,22 @@ public class VCardWriter extends ICSBufferedWriter {
         if ((propertyValue != null) && (propertyValue.length() > 0)) {
             write(propertyName);
             write(":");
-            writeLine(propertyValue);
+            writeLine(encodeMultiline(propertyValue));
         }
 
+    }
+
+    protected String encodeMultiline(String value) {
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\n') {
+                buffer.append("\\n");
+            } else {
+                buffer.append(value.charAt(i));
+            }
+        }
+        return buffer.toString();
     }
 
     public void appendProperty(String propertyName, String... propertyValue) {

@@ -2788,7 +2788,7 @@ public abstract class ExchangeSession {
                 properties.put("im", property.getValue());
             } else if ("BDAY".equals(property.getKey())) {
                 properties.put("bday", convertBDayToZulu(property.getValue()));
-            } else if ("ANNIVERSARY".equals(property.getKey())) {
+            } else if ("ANNIVERSARY".equals(property.getKey()) || "X-ANNIVERSARY".equals(property.getKey())) {
                 properties.put("anniversary", convertBDayToZulu(property.getValue()));
             } else if ("CATEGORIES".equals(property.getKey())) {
                 properties.put("keywords", property.getValue());
