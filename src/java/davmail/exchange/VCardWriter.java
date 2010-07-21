@@ -29,15 +29,16 @@ public class VCardWriter extends ICSBufferedWriter {
 
     public void appendProperty(String propertyName, String propertyValue) {
         if ((propertyValue != null) && (propertyValue.length() > 0)) {
-            write(propertyName);
-            write(":");
-            writeLine(encodeMultiline(propertyValue));
+            StringBuilder buffer = new StringBuilder();
+            buffer.append(propertyName);
+            buffer.append(':');
+            appendMultilineEncodedValue(buffer, propertyValue);
+            writeLine(buffer.toString());
         }
 
     }
 
-    protected String encodeMultiline(String value) {
-        StringBuilder buffer = new StringBuilder();
+    protected void appendMultilineEncodedValue(StringBuilder buffer, String value) {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
             if (c == '\n') {
@@ -46,7 +47,6 @@ public class VCardWriter extends ICSBufferedWriter {
                 buffer.append(value.charAt(i));
             }
         }
-        return buffer.toString();
     }
 
     public void appendProperty(String propertyName, String... propertyValue) {
@@ -58,19 +58,19 @@ public class VCardWriter extends ICSBufferedWriter {
             }
         }
         if (hasValue) {
-            write(propertyName);
-            write(":");
             boolean first = true;
-            StringBuilder valueBuffer = new StringBuilder();
+            StringBuilder buffer = new StringBuilder();
+            buffer.append(propertyName);
+            buffer.append(':');
             for (String value : propertyValue) {
                 if (first) {
                     first = false;
                 } else {
-                    valueBuffer.append(';');
+                    buffer.append(';');
                 }
-                appendEncodedValue(valueBuffer, value);
+                appendEncodedValue(buffer, value);
             }
-            writeLine(valueBuffer.toString());
+            writeLine(buffer.toString());
         }
     }
 
