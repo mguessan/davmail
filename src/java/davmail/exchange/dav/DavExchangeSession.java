@@ -67,14 +67,14 @@ public class DavExchangeSession extends ExchangeSession {
     protected static final DavPropertyNameSet WELL_KNOWN_FOLDERS = new DavPropertyNameSet();
 
     static {
-        WELL_KNOWN_FOLDERS.add(Field.get("inbox").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("deleteditems").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("sentitems").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("sendmsg").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("drafts").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("calendar").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("contacts").davPropertyName);
-        WELL_KNOWN_FOLDERS.add(Field.get("outbox").davPropertyName);
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("inbox"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("deleteditems"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("sentitems"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("sendmsg"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("drafts"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("calendar"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("contacts"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("outbox"));
     }
 
     /**
@@ -238,7 +238,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected String getURIPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
-        DavProperty property = properties.get(Field.get(alias).davPropertyName);
+        DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return null;
         } else {
@@ -1172,8 +1172,7 @@ public class DavExchangeSession extends ExchangeSession {
                 .append(Field.getRequestPropertyString("permanenturl"));
         if (attributes != null) {
             for (String attribute : attributes) {
-                Field field = Field.get(attribute);
-                searchRequest.append(',').append(Field.getRequestPropertyString(field.getAlias()));
+                searchRequest.append(',').append(Field.getRequestPropertyString(attribute));
             }
         }
         searchRequest.append(" FROM SCOPE('").append(folderQueryTraversal).append(" TRAVERSAL OF \"").append(folderUrl).append("\"')");
@@ -1181,8 +1180,6 @@ public class DavExchangeSession extends ExchangeSession {
             searchRequest.append(" WHERE ");
             condition.appendTo(searchRequest);
         }
-        // TODO order by ImapUid
-        //searchRequest.append("       ORDER BY \"urn:schemas:httpmail:date\" ASC");
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
         return DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString());
@@ -1192,11 +1189,11 @@ public class DavExchangeSession extends ExchangeSession {
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
 
     static {
-        EVENT_REQUEST_PROPERTIES.add(Field.get("permanenturl").davPropertyName);
-        EVENT_REQUEST_PROPERTIES.add(Field.get("urlcompname").davPropertyName);
-        EVENT_REQUEST_PROPERTIES.add(Field.get("etag").davPropertyName);
-        EVENT_REQUEST_PROPERTIES.add(Field.get("contentclass").davPropertyName);
-        EVENT_REQUEST_PROPERTIES.add(Field.get("displayname").davPropertyName);
+        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("permanenturl"));
+        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("urlcompname"));
+        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("etag"));
+        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("contentclass"));
+        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("displayname"));
     }
 
     @Override

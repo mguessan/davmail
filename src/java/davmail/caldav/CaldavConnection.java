@@ -381,6 +381,7 @@ public class CaldavConnection extends AbstractConnection {
      *
      * @param response  Caldav response
      * @param request   Caldav request
+     * @param folder    folder object
      * @param subFolder calendar folder path relative to request path
      * @return Exchange folder object
      * @throws IOException on error

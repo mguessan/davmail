@@ -73,11 +73,11 @@ public class Field {
     /**
      * Property type list from EWS
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     protected static enum PropertyType {
         ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
         Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
-        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray,
-        String10
+        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
     }
 
     protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
@@ -88,9 +88,9 @@ public class Field {
         propertyTypeMap.put(PropertyType.SystemTime, "0040");
         propertyTypeMap.put(PropertyType.String, "001f"); // 001f is PT_UNICODE_STRING, 001E is PT_STRING
         propertyTypeMap.put(PropertyType.Binary, "0102");
-        propertyTypeMap.put(PropertyType.String10, "0030"); // decimal PT_STRING
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     protected static enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
@@ -283,7 +283,7 @@ public class Field {
         String name = 'x' + toHexString(propertyTag) + propertyTypeMap.get(propertyType);
         Field field;
         if (propertyType == PropertyType.Binary) {
-            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, null, "bin.base64", name, propertyType);
+            field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, propertyType, null, "bin.base64", name);
         } else {
             field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, propertyType);
         }
@@ -291,7 +291,7 @@ public class Field {
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
-         createField(alias, propertySetType, propertyTag, responseAlias, null);
+        createField(alias, propertySetType, propertyTag, responseAlias, null);
     }
 
     protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias, PropertyType propertyType) {
@@ -306,7 +306,7 @@ public class Field {
         }
         updateAlias = "_x0030_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
-                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, responseAlias, null, updateAlias, propertyType);
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType, responseAlias, null, updateAlias);
         fieldMap.put(field.alias, field);
     }
 
@@ -325,8 +325,7 @@ public class Field {
         fieldMap.put(field.alias, field);
     }
 
-    protected final DavPropertyName davPropertyName;
-    protected final PropertyType propertyType;
+    private final DavPropertyName davPropertyName;
     protected final String alias;
     protected final String uri;
     protected final String requestPropertyString;
@@ -337,23 +336,52 @@ public class Field {
     protected final boolean isMultivalued;
     protected final boolean isBooleanValue;
 
-
-    public Field(Namespace namespace, String name) {
+    /**
+     * Create field for namespace and name, use name as alias.
+     *
+     * @param namespace Exchange namespace
+     * @param name      Exchange name
+     */
+    protected Field(Namespace namespace, String name) {
         this(name, namespace, name, null);
     }
 
-    public Field(String alias, Namespace namespace, String name, PropertyType propertyType) {
-        this(alias, namespace, name, null, null, name, propertyType);
+    /**
+     * Create field for namespace and name of type propertyType.
+     *
+     * @param alias        logical name in DavMail
+     * @param namespace    Exchange namespace
+     * @param name         Exchange name
+     * @param propertyType property type
+     */
+    protected Field(String alias, Namespace namespace, String name, PropertyType propertyType) {
+        this(alias, namespace, name, propertyType, null, null, name);
     }
 
-    public Field(String alias, Namespace namespace, String name, String responseAlias, String cast, String updateAlias, PropertyType propertyType) {
-        davPropertyName = DavPropertyName.create(name, namespace);
-        updatePropertyName = DavPropertyName.create(updateAlias, namespace); 
-        this.propertyType = propertyType;
-        isMultivalued = propertyType == PropertyType.StringArray;
-        isIntValue = propertyType == PropertyType.Integer || propertyType == PropertyType.Long;
-        isBooleanValue = propertyType == PropertyType.Boolean;
+    /**
+     * Create field for namespace and name of type propertyType.
+     *
+     * @param alias         logical name in DavMail
+     * @param namespace     Exchange namespace
+     * @param name          Exchange name
+     * @param propertyType  property type
+     * @param responseAlias property name in SEARCH response (as responsealias in request)
+     * @param cast          response cast type (e.g. bin.base64)
+     * @param updateAlias   some properties use a different alias in PROPPATCH requests
+     */
+    protected Field(String alias, Namespace namespace, String name, PropertyType propertyType, String responseAlias, String cast, String updateAlias) {
         this.alias = alias;
+
+        // property name in PROPFIND requests
+        davPropertyName = DavPropertyName.create(name, namespace);
+        // property name in PROPPATCH requests
+        updatePropertyName = DavPropertyName.create(updateAlias, namespace);
+
+        // a few type based flags
+        isMultivalued = propertyType != null && propertyType.toString().endsWith("Array");
+        isIntValue = propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Short;
+        isBooleanValue = propertyType == PropertyType.Boolean;
+
         this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
             this.requestPropertyString = '"' + uri + '"';
@@ -365,14 +393,20 @@ public class Field {
         this.cast = cast;
     }
 
+    /**
+     * Property uri.
+     *
+     * @return uri
+     */
     public String getUri() {
         return uri;
     }
 
-    public String getAlias() {
-        return alias;
-    }
-
+    /**
+     * Integer value property type.
+     *
+     * @return true if the field value is integer
+     */
     public boolean isIntValue() {
         return isIntValue;
     }
@@ -401,12 +435,20 @@ public class Field {
         return new Field(SCHEMAS_MAPI_STRING_INTERNET_HEADERS, headerName);
     }
 
+    /**
+     * Create DavProperty object for field alias and value.
+     *
+     * @param alias DavMail field alias
+     * @param value field value
+     * @return DavProperty with value or DavPropertyName for null values
+     */
     public static DavConstants createDavProperty(String alias, String value) {
         Field field = Field.get(alias);
         if (value == null) {
             // return DavPropertyName to remove property
             return field.updatePropertyName;
         } else if (field.isMultivalued) {
+            // multivalued field, split values separated by \n
             List<XmlSerializable> valueList = new ArrayList<XmlSerializable>();
             String[] values = value.split("\n");
             for (final String singleValue : values) {
@@ -421,25 +463,42 @@ public class Field {
         } else if (field.isBooleanValue) {
             if ("true".equals(value)) {
                 return new DefaultDavProperty(field.updatePropertyName, "1");
-            } else if ("false".equals(value)){
+            } else if ("false".equals(value)) {
                 return new DefaultDavProperty(field.updatePropertyName, "0");
             } else {
-                throw new RuntimeException("Invalid value for "+field.alias+": "+value);
+                throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }
         } else {
             return new DefaultDavProperty(field.updatePropertyName, value);
         }
     }
 
-
-    public static DavPropertyName getPropertyName(String alias) {
-        return Field.get(alias).davPropertyName;
-    }
-
+    /**
+     * SEARCH request property name for alias
+     *
+     * @param alias field alias
+     * @return request property string
+     */
     public static String getRequestPropertyString(String alias) {
         return Field.get(alias).requestPropertyString;
     }
 
+    /**
+     * PROPFIND request property name
+     *
+     * @param alias field alias
+     * @return request property name
+     */
+    public static DavPropertyName getPropertyName(String alias) {
+        return Field.get(alias).davPropertyName;
+    }
+
+    /**
+     * SEARCH response property name
+     *
+     * @param alias field alias
+     * @return response property name
+     */
     public static DavPropertyName getResponsePropertyName(String alias) {
         return Field.get(alias).responsePropertyName;
     }
