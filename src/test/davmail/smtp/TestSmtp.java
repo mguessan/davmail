@@ -112,12 +112,27 @@ public class TestSmtp extends AbstractDavMailTestCase {
         writeLine(".");
         assertEquals("250 Queued mail for delivery", readLine());
         // wait for asynchronous message send
-        Thread.sleep(1000);
-        ExchangeSession.MessageList messages = session.searchMessages("Sent", session.headerEquals("message-id", mimeMessage.getMessageID()));
+        ExchangeSession.MessageList messages = null;
+        for (int i=0;i<5;i++) {
+            messages = session.searchMessages("Sent", session.headerEquals("message-id", mimeMessage.getMessageID()));
+            if (messages.size() > 0) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
         assertEquals(1, messages.size());
         ExchangeSession.Message message = messages.get(0);
         message.getMimeMessage().writeTo(System.out);
         assertEquals(mimeMessage.getDataHandler().getContent(), (String) message.getMimeMessage().getDataHandler().getContent());
+    }
+
+    public void testSendSimpleMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "Test message";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test subject");
+        mimeMessage.setText(body);
+        sendAndCheckMessage(mimeMessage);
     }
 
     public void testSendMessage() throws IOException, MessagingException, InterruptedException {

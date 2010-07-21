@@ -452,7 +452,7 @@ public class DavExchangeSession extends ExchangeSession {
 
         @Override
         public void appendTo(StringBuilder buffer) {
-            buffer.append('"').append(Field.getHeader(attributeName)).append('"');
+            buffer.append('"').append(Field.getHeader(attributeName).getUri()).append('"');
             buffer.append(operatorMap.get(operator));
             buffer.append('\'');
             if (Operator.Like == operator) {
@@ -1488,7 +1488,7 @@ public class DavExchangeSession extends ExchangeSession {
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
 
-        if (properties.containsKey("draft")) {
+        if (properties != null && properties.containsKey("draft")) {
             // note: draft is readonly after create, create the message first with requested messageFlags
             davProperties.add(Field.createDavProperty("messageFlags", properties.get("draft")));
         }
@@ -1509,6 +1509,8 @@ public class DavExchangeSession extends ExchangeSession {
         // update message body
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
+        putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        
         try {
             // use same encoding as client socket reader
             putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody));
@@ -1560,14 +1562,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void sendMessage(byte[] messageBody) throws IOException {
         String messageName = UUID.randomUUID().toString() + ".EML";
 
-        createMessage(DRAFTS, messageName, null, messageBody);
-
-        String tempUrl = draftsUrl + '/' + messageName + ".EML";
-        MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);
-        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        if (status != HttpStatus.SC_OK) {
-            throw DavGatewayHttpClientFacade.buildHttpException(method);
-        }
+        createMessage(sendmsgUrl, messageName, null, messageBody);
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {

@@ -139,6 +139,9 @@ public class Field {
         createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
         createField(URN_SCHEMAS_HTTPMAIL, "datereceived");//PR_MESSAGE_DELIVERY_TIME, 0x0E06
 
+        // unused: force message encoding
+        createField("messageFormat", 0x5909, PropertyType.Long);//PR_MSG_EDITOR_FORMAT EDITOR_FORMAT_PLAINTEXT = 1 EDITOR_FORMAT_HTML = 2
+        createField("mailOverrideFormat", 0x5909, PropertyType.Long);//PR_INETMAIL_OVERRIDE_FORMAT ENCODING_PREFERENCE = 2 BODY_ENCODING_TEXT_AND_HTML = 1 ENCODING_MIME = 4
 
         // IMAP search
 
