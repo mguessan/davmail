@@ -760,6 +760,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     LOGGER.debug("Updated contact " + getHref());
                 }
+            } else {
+                return itemResult;
             }
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());

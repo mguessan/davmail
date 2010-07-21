@@ -22,6 +22,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
 import org.apache.commons.httpclient.HttpState;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Logger;
@@ -486,6 +487,7 @@ public abstract class EWSMethod extends PostMethod {
 
         /**
          * Get file attachment by file name
+         *
          * @param attachmentName attachment name
          * @return attachment
          */
@@ -510,11 +512,21 @@ public abstract class EWSMethod extends PostMethod {
      */
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
-            try {
-                throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                throw new EWSException(e.getMessage());
+            if (!"ErrorAccessDenied".equals(errorDetail)) {
+                try {
+                    throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    throw new EWSException(e.getMessage());
+                }
             }
+        }
+    }
+
+    public int getStatusCode() {
+        if ("ErrorAccessDenied".equals(errorDetail)) {
+            return HttpStatus.SC_FORBIDDEN;
+        } else {
+            return super.getStatusCode();
         }
     }
 
