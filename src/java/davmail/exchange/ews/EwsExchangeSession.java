@@ -1050,9 +1050,11 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        String currentMailboxPath = "/users/" + email + '/';
-        if (folderPath.startsWith(currentMailboxPath)) {
-            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length()));
+        String currentMailboxPath = "/users/" + email;
+        if (currentMailboxPath.equals(folderPath)) {
+            return DistinguishedFolderId.MSGFOLDERROOT;
+        } else if (folderPath.startsWith(currentMailboxPath + '/')) {
+            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length()+1));
         }
         if (folderPath.startsWith(PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;

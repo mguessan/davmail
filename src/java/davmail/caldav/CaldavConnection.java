@@ -274,7 +274,7 @@ public class CaldavConnection extends AbstractConnection {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
                     sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[]) null, true);
-                } else {
+                } else if (folder.isCalendar()) {
                     List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
                     ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
                     response.append("BEGIN:VCALENDAR\r\n");
@@ -297,6 +297,8 @@ public class CaldavConnection extends AbstractConnection {
                     }
                     response.append("END:VCALENDAR");
                     response.close();
+                } else {
+                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/html", (byte[]) null, true);
                 }
             } else {
                 ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
@@ -1255,7 +1257,7 @@ public class CaldavConnection extends AbstractConnection {
          * @return true if this is a folder (not event) request
          */
         public boolean isFolder() {
-            return isPropFind() || isReport() || isPropPatch() || isOptions() || isPost();
+            return path.endsWith("/") || isPropFind() || isReport() || isPropPatch() || isOptions() || isPost();
         }
 
         public boolean isRoot() {
