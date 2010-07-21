@@ -59,7 +59,6 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
         String messageName = UUID.randomUUID().toString();
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "9");
-        properties.put("read", "1");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);
@@ -72,7 +71,7 @@ public class TestExchangeSessionMessageFlags extends AbstractExchangeSessionTest
         MimeMessage mimeMessage = createMimeMessage();
         String messageName = UUID.randomUUID().toString();
         HashMap<String, String> properties = new HashMap<String, String>();
-        properties.put("read", "1");
+        properties.put("draft", "1");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);

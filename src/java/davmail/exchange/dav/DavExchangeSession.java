@@ -589,7 +589,7 @@ public class DavExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
-        protected List<DavConstants> buildProperties()  {
+        protected List<DavConstants> buildProperties() {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
@@ -1077,7 +1077,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
 
-    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException {
+    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException, DavMailException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
@@ -1089,11 +1089,11 @@ public class DavExchangeSession extends ExchangeSession {
         message.read = "1".equals(getPropertyIfExists(properties, "read"));
         message.junk = "1".equals(getPropertyIfExists(properties, "junk"));
         message.flagged = "2".equals(getPropertyIfExists(properties, "flagStatus"));
-        message.draft = "9".equals(getPropertyIfExists(properties, "messageFlags")) || "8".equals(getPropertyIfExists(properties, "messageFlags"));
+        message.draft = (getIntPropertyIfExists(properties, "messageFlags") & 8) != 0;
         String lastVerbExecuted = getPropertyIfExists(properties, "lastVerbExecuted");
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
-        message.date = getPropertyIfExists(properties, "date");
+        message.date = convertDateFromExchange(getPropertyIfExists(properties, "date"));
         message.deleted = "1".equals(getPropertyIfExists(properties, "deleted"));
 
         if (LOGGER.isDebugEnabled()) {
@@ -1310,7 +1310,7 @@ public class DavExchangeSession extends ExchangeSession {
             // retrieve Contact properties
             List<ExchangeSession.Contact> contacts = searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
-               throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+                throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
             }
             return contacts.get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
@@ -1462,9 +1462,6 @@ public class DavExchangeSession extends ExchangeSession {
                     }
                 } else if ("bcc".equals(entry.getKey())) {
                     list.add(Field.createDavProperty("bcc", entry.getValue()));
-                } else if ("draft".equals(entry.getKey())) {
-                    // note: draft is readonly after create
-                    list.add(Field.createDavProperty("messageFlags", entry.getValue()));
                 } else if ("deleted".equals(entry.getKey())) {
                     list.add(Field.createDavProperty("writedeleted", entry.getValue()));
                 } else if ("datereceived".equals(entry.getKey())) {
@@ -1477,7 +1474,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     /**
      * Create message in specified folder.
-     * Will overwrite an existing message with same subject in the same folder
+     * Will overwrite an existing message with same messageName in the same folder
      *
      * @param folderPath  Exchange folder path
      * @param messageName message name
@@ -1490,26 +1487,26 @@ public class DavExchangeSession extends ExchangeSession {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
-        if (properties != null) {
-            if (!properties.containsKey("read")) {
-                // force unread
-                davProperties.add(Field.createDavProperty("read", "0"));
-            }
-            // create the message first as draft
-            if (properties.containsKey("draft")) {
-                patchMethod = new PropPatchMethod(messageUrl, davProperties);
-                try {
-                    // update message with blind carbon copy and other flags
-                    int statusCode = httpClient.executeMethod(patchMethod);
-                    if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                        throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
-                    }
 
-                } finally {
-                    patchMethod.releaseConnection();
+        if (properties.containsKey("draft")) {
+            // note: draft is readonly after create, create the message first with requested messageFlags
+            davProperties.add(Field.createDavProperty("messageFlags", properties.get("draft")));
+        }
+        if (!davProperties.isEmpty()) {
+            patchMethod = new PropPatchMethod(messageUrl, davProperties);
+            try {
+                // update message with blind carbon copy and other flags
+                int statusCode = httpClient.executeMethod(patchMethod);
+                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
                 }
+
+            } finally {
+                patchMethod.releaseConnection();
             }
         }
+
+        // update message body
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         try {
@@ -1522,21 +1519,6 @@ public class DavExchangeSession extends ExchangeSession {
             }
         } finally {
             putmethod.releaseConnection();
-        }
-
-        // add bcc and other properties
-        if (!davProperties.isEmpty()) {
-            patchMethod = new PropPatchMethod(messageUrl, davProperties);
-            try {
-                // update message with blind carbon copy and other flags
-                int statusCode = httpClient.executeMethod(patchMethod);
-                if (statusCode != HttpStatus.SC_MULTI_STATUS) {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_PATCH_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
-                }
-
-            } finally {
-                patchMethod.releaseConnection();
-            }
         }
     }
 
@@ -1576,9 +1558,9 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void sendMessage(byte[] messageBody) throws IOException {
-        String messageName = UUID.randomUUID().toString()+".EML";
+        String messageName = UUID.randomUUID().toString() + ".EML";
 
-        createMessage("Drafts", messageName, null, messageBody);
+        createMessage(DRAFTS, messageName, null, messageBody);
 
         String tempUrl = draftsUrl + '/' + messageName + ".EML";
         MoveMethod method = new MoveMethod(URIUtil.encodePath(tempUrl), URIUtil.encodePath(sendmsgUrl), true);

@@ -134,8 +134,8 @@ public class Field {
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted", PropertyType.Boolean);
 
-        createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
-        //createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
+        //createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
+        createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME
         createField(URN_SCHEMAS_MAILHEADER, "bcc");//PS_INTERNET_HEADERS/bcc
         createField(URN_SCHEMAS_HTTPMAIL, "datereceived");//PR_MESSAGE_DELIVERY_TIME, 0x0E06
 

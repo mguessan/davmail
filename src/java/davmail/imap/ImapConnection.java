@@ -390,11 +390,19 @@ public class ImapConnection extends AbstractConnection {
                                     }
 
                                     if (flags != null) {
+                                        // parse flags, on create read and draft flags are on the
+                                        // same messageFlags property, 8 means draft and 1 means read
                                         StringTokenizer flagtokenizer = new StringTokenizer(flags);
                                         while (flagtokenizer.hasMoreTokens()) {
                                             String flag = flagtokenizer.nextToken();
                                             if ("\\Seen".equals(flag)) {
-                                                properties.put("read", "1");
+                                                if (properties.containsKey("draft")) {
+                                                    // draft message, add read flag
+                                                    properties.put("draft", "9");
+                                                } else {
+                                                    // not (yet) draft, set read flag
+                                                    properties.put("draft", "1");
+                                                }
                                             } else if ("\\Flagged".equals(flag)) {
                                                 properties.put("flagged", "2");
                                             } else if ("\\Answered".equals(flag)) {
@@ -402,7 +410,13 @@ public class ImapConnection extends AbstractConnection {
                                             } else if ("$Forwarded".equals(flag)) {
                                                 properties.put("forwarded", "104");
                                             } else if ("\\Draft".equals(flag)) {
-                                                properties.put("draft", "9");
+                                                if (properties.containsKey("draft")) {
+                                                    // read message, add draft flag
+                                                    properties.put("draft", "9");
+                                                } else {
+                                                    // not (yet) read, set draft flag
+                                                    properties.put("draft", "8");
+                                                }
                                             } else if ("Junk".equals(flag)) {
                                                 properties.put("junk", "1");
                                             }
