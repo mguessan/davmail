@@ -132,7 +132,7 @@ public class Field {
         createField("iconIndex", 0x1080, PropertyType.Long);//PR_ICON_INDEX
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
-        createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted", PropertyType.Boolean);
+        createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted", PropertyType.String);
 
         //createField(URN_SCHEMAS_HTTPMAIL, "date");//PR_CLIENT_SUBMIT_TIME, 0x0039
         createField("date", 0x0e06, PropertyType.SystemTime);//PR_MESSAGE_DELIVERY_TIME

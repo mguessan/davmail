@@ -1463,7 +1463,7 @@ public class DavExchangeSession extends ExchangeSession {
                 } else if ("bcc".equals(entry.getKey())) {
                     list.add(Field.createDavProperty("bcc", entry.getValue()));
                 } else if ("deleted".equals(entry.getKey())) {
-                    list.add(Field.createDavProperty("writedeleted", entry.getValue()));
+                    list.add(Field.createDavProperty("deleted", entry.getValue()));
                 } else if ("datereceived".equals(entry.getKey())) {
                     list.add(Field.createDavProperty("datereceived", entry.getValue()));
                 }

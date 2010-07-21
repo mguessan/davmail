@@ -135,7 +135,7 @@ public class TestImap extends AbstractDavMailTestCase {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
         byte[] content = baos.toByteArray();
-        writeLine(". APPEND testfolder (\\Draft) {" + content.length + '}');
+        writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
         assertEquals(". OK APPEND completed", readFullAnswer("."));
