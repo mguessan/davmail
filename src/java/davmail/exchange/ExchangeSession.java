@@ -519,15 +519,6 @@ public abstract class ExchangeSession {
     public abstract void sendMessage(byte[] messageBody) throws IOException;
 
     /**
-     * Create message MIME body reader.
-     *
-     * @param message Exchange message
-     * @return message body reader
-     * @throws IOException on error
-     */
-    protected abstract BufferedReader getContentReader(Message message) throws IOException;
-
-    /**
      * Get raw MIME message content
      *
      * @param message Exchange message
@@ -2615,7 +2606,6 @@ public abstract class ExchangeSession {
      *
      * @param folderPath Exchange folder path
      * @param itemName   item name
-     * @return HTTP status
      * @throws IOException on error
      */
     public abstract void deleteItem(String folderPath, String itemName) throws IOException;

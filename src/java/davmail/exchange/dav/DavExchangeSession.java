@@ -1510,7 +1510,7 @@ public class DavExchangeSession extends ExchangeSession {
         PutMethod putmethod = new PutMethod(messageUrl);
         putmethod.setRequestHeader("Translate", "f");
         putmethod.setRequestHeader("Content-Type", "message/rfc822");
-        
+
         try {
             // use same encoding as client socket reader
             putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody));
@@ -1583,62 +1583,55 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected byte[] getContent(Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        BufferedReader reader = getContentReader(message);
+        InputStream contentInputStream;
         try {
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(baos);
-            String line;
-            boolean first = true;
-            while ((line = reader.readLine()) != null) {
-                if (first) {
-                    first = false;
-                } else {
-                    outputStreamWriter.write((char) 13);
-                    outputStreamWriter.write((char) 10);
-                }
-                outputStreamWriter.write(line);
-            }
-            outputStreamWriter.flush();
-        } finally {
             try {
-                reader.close();
-            } catch (IOException e) {
-                LOGGER.warn("Error closing message input stream", e);
+                contentInputStream = getContentInputStream(message.messageUrl);
+            } catch (HttpNotFoundException e) {
+                LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
+                contentInputStream = getContentInputStream(message.permanentUrl);
             }
+        } catch (HttpException e) {
+            // other exception
+            if (Settings.getBooleanProperty("davmail.deleteBroken")) {
+                LOGGER.warn("Deleting broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl);
+                try {
+                    message.delete();
+                } catch (IOException ioe) {
+                    LOGGER.warn("Unable to delete broken message at: " + message.permanentUrl);
+                }
+            }
+            throw e;
+        }
+
+        try {
+            IOUtil.write(contentInputStream, baos);
+        } finally {
+            contentInputStream.close();
         }
         return baos.toByteArray();
     }
 
-    /**
-     * @inheritDoc
-     */
-    @Override
-    protected BufferedReader getContentReader(Message message) throws IOException {
-        BufferedReader reader;
-        try {
-            reader = getContentReader(message, message.messageUrl);
-        } catch (HttpNotFoundException e) {
-            LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
-            reader = getContentReader(message, message.permanentUrl);
-        }
-        return reader;
-    }
-
-    protected BufferedReader getContentReader(Message message, String url) throws IOException {
+    protected InputStream getContentInputStream(String url) throws IOException {
         final GetMethod method = new GetMethod(URIUtil.encodePath(url));
         method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");
 
-        BufferedReader reader;
+        InputStream inputStream;
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            InputStreamReader inputStreamReader;
             if (isGzipEncoded(method)) {
-                inputStreamReader = new InputStreamReader(new GZIPInputStream(method.getResponseBodyAsStream()));
+                inputStream = new GZIPInputStream(method.getResponseBodyAsStream());
             } else {
-                inputStreamReader = new InputStreamReader(method.getResponseBodyAsStream());
+                inputStream = method.getResponseBodyAsStream();
             }
-            reader = new BufferedReader(inputStreamReader) {
+            inputStream = new FilterInputStream(inputStream) {
+                @Override
+                public int read() throws IOException {
+                    return super.read();
+                }
+
                 @Override
                 public void close() throws IOException {
                     try {
@@ -1651,19 +1644,10 @@ public class DavExchangeSession extends ExchangeSession {
 
         } catch (HttpException e) {
             method.releaseConnection();
-            LOGGER.warn("Unable to retrieve message at: " + message.messageUrl);
-            if (Settings.getBooleanProperty("davmail.deleteBroken")
-                    && method.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                LOGGER.warn("Deleting broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl);
-                try {
-                    message.delete();
-                } catch (IOException ioe) {
-                    LOGGER.warn("Unable to delete broken message at: " + message.permanentUrl);
-                }
-            }
+            LOGGER.warn("Unable to retrieve message at: " + url);
             throw e;
         }
-        return reader;
+        return inputStream;
     }
 
     /**
@@ -1707,11 +1691,13 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
-        String zuluDateValue;
-        try {
-            zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
-        } catch (ParseException e) {
-            throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+        String zuluDateValue = null;
+        if (exchangeDateValue != null) {
+            try {
+                zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
         }
         return zuluDateValue;
     }

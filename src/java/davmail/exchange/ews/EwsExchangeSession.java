@@ -31,10 +31,7 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.HeadMethod;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -212,15 +209,6 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    protected BufferedReader getContentReader(ExchangeSession.Message message) throws IOException {
-        byte[] content = getContent(message);
-        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)));
-    }
-
-    /**
-     * @inheritDoc
-     */
-    @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         return getContent(((EwsExchangeSession.Message) message).itemId);
     }
@@ -238,7 +226,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return getItemMethod.getMimeContent();
     }
 
-    protected Message buildMessage(EWSMethod.Item response) throws  DavMailException {
+    protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
         Message message = new Message();
 
         // get item id
@@ -796,7 +784,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // item id
         ItemId itemId;
 
-        protected Event(EWSMethod.Item response)  {
+        protected Event(EWSMethod.Item response) {
             itemId = new ItemId(response);
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
@@ -950,9 +938,9 @@ public class EwsExchangeSession extends ExchangeSession {
         String itemType = responses.get(0).type;
         if ("Contact".equals(itemType)) {
             // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname)); 
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
-               throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+                throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
             }
             return contacts.get(0);
         } else if ("CalendarItem".equals(itemType)
@@ -1044,7 +1032,7 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderId(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId == null) {
-            throw new HttpNotFoundException("Folder '"+folderPath+"' not found");
+            throw new HttpNotFoundException("Folder '" + folderPath + "' not found");
         }
         return folderId;
     }
@@ -1056,7 +1044,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (currentMailboxPath.equals(folderPath)) {
             return DistinguishedFolderId.MSGFOLDERROOT;
         } else if (folderPath.startsWith(currentMailboxPath + '/')) {
-            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length()+1));
+            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length() + 1));
         }
         if (folderPath.startsWith(PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
@@ -1128,11 +1116,13 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
-        String zuluDateValue;
-        try {
-            zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));
-        } catch (ParseException e) {
-            throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+        String zuluDateValue = null;
+        if (exchangeDateValue != null) {
+            try {
+                zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
         }
         return zuluDateValue;
     }
