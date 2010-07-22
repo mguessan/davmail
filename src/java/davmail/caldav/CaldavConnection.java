@@ -687,7 +687,7 @@ public class CaldavConnection extends AbstractConnection {
             appendEventsResponses(response, request, events);
         } else {
             // TODO: handle contacts ?
-            events = session.getAllEvents(request.getFolderPath());
+            events = session.searchEvents(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
             appendEventsResponses(response, request, events);
         }
 
@@ -1201,6 +1201,8 @@ public class CaldavConnection extends AbstractConnection {
         protected final HashSet<String> properties = new HashSet<String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
+        protected String timeRangeStart;
+        protected String timeRangeEnd;
 
         protected CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
             this.command = command;
@@ -1376,6 +1378,9 @@ public class CaldavConnection extends AbstractConnection {
                         } else if ("calendar-multiget".equals(currentElement)
                                 || "addressbook-multiget".equals(currentElement)) {
                             isMultiGet = true;
+                        } else if ("time-range".equals(currentElement)) {
+                            timeRangeStart = streamReader.getAttributeValue(null, "start");
+                            timeRangeEnd = streamReader.getAttributeValue(null, "end");
                         } else if (inProperties) {
                             properties.add(currentElement);
                         }

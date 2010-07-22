@@ -166,6 +166,7 @@ public class Field {
         createField(SCHEMAS_EXCHANGE, "permanenturl");
         createField(URN_SCHEMAS_CALENDAR, "instancetype"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:instancetype/Integer
         createField(URN_SCHEMAS_CALENDAR, "dtstart"); // 0x10C3 SystemTime
+        createField(URN_SCHEMAS_CALENDAR, "dtend"); // 0x10C4 SystemTime
         createField(SCHEMAS_EXCHANGE, "sensitivity"); // PR_SENSITIVITY 0x0036 Integer
         createField(URN_SCHEMAS_CALENDAR, "timezoneid"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezoneid/Integer
         createField("processed", 0x65e8, PropertyType.Boolean);// PR_MESSAGE_PROCESSED

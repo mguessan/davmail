@@ -187,7 +187,7 @@ public abstract class ExchangeSession {
         LOGGER.debug("Session " + this + " created");
     }
 
-    protected static String formatSearchDate(Date date) {
+    public static String formatSearchDate(Date date) {
         SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
         dateFormatter.setTimeZone(GMT_TIMEZONE);
         return dateFormatter.format(date);
@@ -603,7 +603,10 @@ public abstract class ExchangeSession {
     public abstract MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException;
 
     protected enum Operator {
-        Or, And, Not, IsEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsNull, IsTrue, IsFalse,
+        Or, And, Not, IsEqualTo,
+        IsGreaterThan, IsGreaterThanOrEqualTo,
+        IsLessThan, IsLowerThanOrEqualTo,
+        IsNull, IsTrue, IsFalse,
         Like, StartsWith, Contains
     }
 
@@ -795,6 +798,15 @@ public abstract class ExchangeSession {
      * @return condition
      */
     public abstract Condition lt(String attributeName, String value);
+
+    /**
+     * Lower than or equals condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @param value         attribute value
+     * @return condition
+     */
+    public abstract Condition lte(String attributeName, String value);
 
     /**
      * Contains condition.
@@ -2526,13 +2538,51 @@ public abstract class ExchangeSession {
             dateCondition = gt("dtstart", formatSearchDate(cal.getTime()));
         }
 
+        return searchEvents(folderPath, dateCondition);
+    }
+
+    /**
+     * Search events between start and end.
+     *
+     * @param folderPath     Exchange folder path
+     * @param timeRangeStart date range start in zulu format
+     * @param timeRangeEnd   date range start in zulu format
+     * @return list of calendar events
+     * @throws IOException on error
+     */
+    public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
+        try {
+            SimpleDateFormat parser = getZuluDateFormat();
+            ExchangeSession.MultiCondition andCondition = and();
+            if (timeRangeStart != null) {
+                andCondition.add(gte("dtstart", formatSearchDate(parser.parse(timeRangeStart))));
+            }
+            if (timeRangeEnd != null) {
+                andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
+            }
+            andCondition.add(equals("instancetype", 0));
+            return searchEvents(folderPath, ITEM_PROPERTIES, andCondition);
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
+    }
+
+    /**
+     * Search calendar events in provided folder.
+     *
+     * @param folderPath    Exchange folder path
+     * @param dateCondition date filter
+     * @return list of calendar events
+     * @throws IOException on error
+     */
+    public List<Event> searchEvents(String folderPath, Condition dateCondition) throws IOException {
+
         Condition privateCondition = null;
         if (isSharedFolder(folderPath)) {
             LOGGER.debug("Shared or public calendar: exclude private events");
             privateCondition = equals("sensitivity", 0);
         }
-
-
+        // instancetype 0 single appointment / 1 master recurring appointment
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(or(isNull("instancetype"),
                         equals("instancetype", 1),
@@ -2540,7 +2590,6 @@ public abstract class ExchangeSession {
                         equals("outlookmessageclass", "IPM.Appointment"),
                         privateCondition));
     }
-
 
     /**
      * Search calendar events or messages in provided folder matching the search query.
@@ -2551,7 +2600,7 @@ public abstract class ExchangeSession {
      * @return list of calendar messages as Event objects
      * @throws IOException on error
      */
-    protected abstract List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException;
+    public abstract List<Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException;
 
     /**
      * convert vcf extension to EML.

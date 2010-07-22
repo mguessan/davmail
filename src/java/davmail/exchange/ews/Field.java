@@ -46,6 +46,7 @@ public class Field {
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
         FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
 
         FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 

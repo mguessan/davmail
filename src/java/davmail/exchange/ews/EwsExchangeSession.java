@@ -440,6 +440,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public Condition lte(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsLowerThanOrEqualTo, value);
+    }
+
+    @Override
     public Condition lt(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsLessThan, value);
     }
@@ -906,7 +911,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+    public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
                 condition,

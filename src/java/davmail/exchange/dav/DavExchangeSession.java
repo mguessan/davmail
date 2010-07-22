@@ -398,6 +398,7 @@ public class DavExchangeSession extends ExchangeSession {
         operatorMap.put(Operator.IsEqualTo, " = ");
         operatorMap.put(Operator.IsGreaterThanOrEqualTo, " >= ");
         operatorMap.put(Operator.IsGreaterThan, " > ");
+        operatorMap.put(Operator.IsLowerThanOrEqualTo, " <= ");
         operatorMap.put(Operator.IsLessThan, " < ");
         operatorMap.put(Operator.Like, " like ");
         operatorMap.put(Operator.IsNull, " is null");
@@ -514,6 +515,11 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public Condition gte(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsGreaterThanOrEqualTo, value);
+    }
+
+    @Override
+    public Condition lte(String attributeName, String value) {
+        return new AttributeCondition(attributeName, Operator.IsLowerThanOrEqualTo, value);
     }
 
     @Override
@@ -1141,7 +1147,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+    public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
