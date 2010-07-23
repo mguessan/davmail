@@ -140,9 +140,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("postalcode", contact.get("postalcode"));
         assertEquals("co", contact.get("co"));
 
-        assertEquals("email1@local.net", contact.get("email1"));
-        assertEquals("email2@local.net", contact.get("email2"));
-        assertEquals("email3@local.net", contact.get("email3"));
+        assertEquals("email1@local.net", contact.get("smtpemail1"));
+        assertEquals("email2@local.net", contact.get("smtpemail2"));
+        assertEquals("email3@local.net", contact.get("smtpemail3"));
 
         assertEquals("o", contact.get("o"));
         assertEquals("department", contact.get("department"));

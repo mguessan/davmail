@@ -1725,9 +1725,9 @@ public abstract class ExchangeSession {
             writer.appendProperty("ADR;TYPE=other",
                     get("otherpostofficebox"), null, get("otherstreet"), get("othercity"), get("otherstate"), get("otherpostalcode"), get("othercountry"));
 
-            writer.appendProperty("EMAIL;TYPE=work", get("email1"));
-            writer.appendProperty("EMAIL;TYPE=home", get("email2"));
-            writer.appendProperty("EMAIL;TYPE=other", get("email3"));
+            writer.appendProperty("EMAIL;TYPE=work", get("smtpemail1"));
+            writer.appendProperty("EMAIL;TYPE=home", get("smtpemail2"));
+            writer.appendProperty("EMAIL;TYPE=other", get("smtpemail3"));
 
             writer.appendProperty("ORG", get("o"), get("department"));
             writer.appendProperty("URL;TYPE=work", get("businesshomepage"));
@@ -2800,12 +2800,15 @@ public abstract class ExchangeSession {
             } else if ("EMAIL".equals(property.getKey())) {
                 if (property.hasParam("TYPE", "work")) {
                     properties.put("email1", property.getValue());
+                    properties.put("smtpemail1", property.getValue());
                 }
                 if (property.hasParam("TYPE", "home")) {
                     properties.put("email2", property.getValue());
+                    properties.put("smtpemail2", property.getValue());
                 }
                 if (property.hasParam("TYPE", "other")) {
                     properties.put("email3", property.getValue());
+                    properties.put("smtpemail3", property.getValue());
                 }
             } else if ("ORG".equals(property.getKey())) {
                 convertContactProperties(properties, VCARD_ORG_PROPERTIES, property.getValues());
@@ -3205,9 +3208,9 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("cn");
         CONTACT_ATTRIBUTES.add("co");
         CONTACT_ATTRIBUTES.add("department");
-        CONTACT_ATTRIBUTES.add("email1");
-        CONTACT_ATTRIBUTES.add("email2");
-        CONTACT_ATTRIBUTES.add("email3");
+        CONTACT_ATTRIBUTES.add("smtpemail1");
+        CONTACT_ATTRIBUTES.add("smtpemail2");
+        CONTACT_ATTRIBUTES.add("smtpemail3");
         CONTACT_ATTRIBUTES.add("facsimiletelephonenumber");
         CONTACT_ATTRIBUTES.add("givenName");
         CONTACT_ATTRIBUTES.add("homeCity");

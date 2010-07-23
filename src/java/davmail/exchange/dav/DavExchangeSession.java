@@ -599,9 +599,7 @@ public class DavExchangeSession extends ExchangeSession {
             ArrayList<DavConstants> list = new ArrayList<DavConstants>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
-                if (key.startsWith("email")) {
-                    list.add(Field.createDavProperty("write" + key, entry.getValue()));
-                } else if (!"photo".equals(key)) {
+                if (!"photo".equals(key)) {
                     list.add(Field.createDavProperty(key, entry.getValue()));
                 }
             }

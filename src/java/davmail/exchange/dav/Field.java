@@ -207,14 +207,16 @@ public class Field {
         createField(URN_SCHEMAS_CONTACTS, "cn"); // PR_DISPLAY_NAME 0x3001 String
         createField(URN_SCHEMAS_CONTACTS, "co"); // workAddressCountry DistinguishedPropertySetType.Address/0x00008049/String
         createField(URN_SCHEMAS_CONTACTS, "department"); // PR_DEPARTMENT_NAME 0x3A18 String
-        // email with display name
-        createField("writeemail1", URN_SCHEMAS_CONTACTS, "email1"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email1/String
-        createField("writeemail2", URN_SCHEMAS_CONTACTS, "email2"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email2/String
-        createField("writeemail3", URN_SCHEMAS_CONTACTS, "email3"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:contacts:email3/String
-        // email only
-        createField("email1", DistinguishedPropertySetType.Address, 0x8084, "email1"); // Email1OriginalDisplayName
-        createField("email2", DistinguishedPropertySetType.Address, 0x8094, "email2"); // Email2OriginalDisplayName
-        createField("email3", DistinguishedPropertySetType.Address, 0x80A4, "email3"); // Email3OriginalDisplayName
+
+        // smtp email
+        createField("smtpemail1", DistinguishedPropertySetType.Address, 0x8084, "smtpemail1"); // Email1OriginalDisplayName
+        createField("smtpemail2", DistinguishedPropertySetType.Address, 0x8094, "smtpemail2"); // Email2OriginalDisplayName
+        createField("smtpemail3", DistinguishedPropertySetType.Address, 0x80A4, "smtpemail3"); // Email3OriginalDisplayName
+
+        // native email
+        createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1OriginalDisplayName
+        createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2OriginalDisplayName
+        createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3OriginalDisplayName
 
         createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
         createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
