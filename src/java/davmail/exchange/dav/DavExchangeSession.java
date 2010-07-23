@@ -665,7 +665,7 @@ public class DavExchangeSession extends ExchangeSession {
                 try {
                     status = httpClient.executeMethod(putmethod);
                     if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
-                        throw new IOException("Unable to update contact picture");
+                        throw new IOException("Unable to update contact picture: "+status+ ' ' +putmethod.getStatusLine());
                     }
                 } catch (IOException e) {
                     LOGGER.error("Error in contact photo create or update", e);
