@@ -2798,17 +2798,15 @@ public abstract class ExchangeSession {
                     convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
                 }
             } else if ("EMAIL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "work")) {
-                    properties.put("email1", property.getValue());
-                    properties.put("smtpemail1", property.getValue());
-                }
                 if (property.hasParam("TYPE", "home")) {
                     properties.put("email2", property.getValue());
                     properties.put("smtpemail2", property.getValue());
-                }
-                if (property.hasParam("TYPE", "other")) {
+                } else if (property.hasParam("TYPE", "other")) {
                     properties.put("email3", property.getValue());
                     properties.put("smtpemail3", property.getValue());
+                } else {
+                    properties.put("email1", property.getValue());
+                    properties.put("smtpemail1", property.getValue());
                 }
             } else if ("ORG".equals(property.getKey())) {
                 convertContactProperties(properties, VCARD_ORG_PROPERTIES, property.getValues());
