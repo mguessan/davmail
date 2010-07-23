@@ -24,7 +24,6 @@ import davmail.exception.*;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.DeleteMethod;
@@ -32,6 +31,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
@@ -40,7 +40,10 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -59,7 +62,7 @@ public final class DavGatewayHttpClientFacade {
 
     static final long ONE_MINUTE = 60000;
 
-    private static Thread httpConnectionManagerThread;
+    private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
     static {
         DavGatewayHttpClientFacade.start();
@@ -415,6 +418,8 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient HttpClient instance
      */
     public static void addNTLM(HttpClient httpClient) {
+        // NTLM authentication uses persistent connections, use private connection manager
+        httpClient.setHttpConnectionManager(createConnectionManager());
         // register the jcifs based NTLMv2 implementation
         AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
 
@@ -570,34 +575,18 @@ public final class DavGatewayHttpClientFacade {
                 if (httpConnectionManagerThread != null) {
                     httpConnectionManagerThread.interrupt();
                 }
-                multiThreadedHttpConnectionManager.shutdown();
+                MultiThreadedHttpConnectionManager.shutdownAll();
                 multiThreadedHttpConnectionManager = null;
             }
         }
     }
 
-    static class HttpConnectionManagerThread extends Thread {
-        HttpConnectionManagerThread() {
-            super(HttpConnectionManager.class.getSimpleName());
-            setDaemon(true);
-        }
-
-        @Override
-        public void run() {
-            boolean terminated = false;
-            while (!terminated) {
-                try {
-                    sleep(ONE_MINUTE);
-                } catch (InterruptedException e) {
-                    terminated = true;
-                }
-                synchronized (LOCK) {
-                    if (multiThreadedHttpConnectionManager != null) {
-                        multiThreadedHttpConnectionManager.closeIdleConnections(ONE_MINUTE);
-                    }
-                }
-            }
-        }
+    protected static MultiThreadedHttpConnectionManager createConnectionManager() {
+        MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
+        connectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
+        connectionManager.getParams().setConnectionTimeout(10000);
+        httpConnectionManagerThread.addConnectionManager(connectionManager);
+        return connectionManager;
     }
 
     /**
@@ -606,11 +595,13 @@ public final class DavGatewayHttpClientFacade {
     public static void start() {
         synchronized (LOCK) {
             if (multiThreadedHttpConnectionManager == null) {
-                multiThreadedHttpConnectionManager = new MultiThreadedHttpConnectionManager();
-                multiThreadedHttpConnectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
-                multiThreadedHttpConnectionManager.getParams().setConnectionTimeout(10000);
-                httpConnectionManagerThread = new HttpConnectionManagerThread();
+                httpConnectionManagerThread = new IdleConnectionTimeoutThread();
+                httpConnectionManagerThread.setName(IdleConnectionTimeoutThread.class.getSimpleName());
+                httpConnectionManagerThread.setConnectionTimeout(ONE_MINUTE);
+                httpConnectionManagerThread.setTimeoutInterval(ONE_MINUTE);
                 httpConnectionManagerThread.start();
+
+                multiThreadedHttpConnectionManager = createConnectionManager();
             }
         }
     }
