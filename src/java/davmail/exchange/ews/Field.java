@@ -43,10 +43,13 @@ public class Field {
         FIELD_MAP.put("hassubs", new ExtendedFieldURI(0x360a, ExtendedFieldURI.PropertyType.Boolean)); // PR_SUBFOLDERS
         FIELD_MAP.put("folderDisplayName", new UnindexedFieldURI("folder:DisplayName"));
 
+        FIELD_MAP.put("uidNext", new ExtendedFieldURI(0x6751, ExtendedFieldURI.PropertyType.Integer)); // PR_ARTICLE_NUM_NEXT
+        FIELD_MAP.put("highestUid", new ExtendedFieldURI(0x6752, ExtendedFieldURI.PropertyType.Integer)); // PR_IMAP_LAST_ARTICLE_ID
+
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
         FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("dtend", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
 
         FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 
@@ -98,10 +101,22 @@ public class Field {
         FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8049, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("department", new ExtendedFieldURI(0x3A18, ExtendedFieldURI.PropertyType.String));
 
-        FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8084, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8094, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A4, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8083, ExtendedFieldURI.PropertyType.String)); // Email1EmailAddress
+        FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8093, ExtendedFieldURI.PropertyType.String)); // Email2EmailAddress
+        FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A3, ExtendedFieldURI.PropertyType.String)); // Email3EmailAddress
 
+        /*
+        FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8084, ExtendedFieldURI.PropertyType.String)); // Email1OriginalDisplayName
+        FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8094, ExtendedFieldURI.PropertyType.String)); // Email2OriginalDisplayName
+        FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A4, ExtendedFieldURI.PropertyType.String)); // Email3OriginalDisplayName
+        */
+
+        /*
+        FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8080, ExtendedFieldURI.PropertyType.String)); // Email1DisplayName
+        FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8090, ExtendedFieldURI.PropertyType.String)); // Email2DisplayName
+        FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A0, ExtendedFieldURI.PropertyType.String)); // Email3DisplayName
+        */
+        
         FIELD_MAP.put("facsimiletelephonenumber", new ExtendedFieldURI(0x3A24, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("givenName", new ExtendedFieldURI(0x3A06, ExtendedFieldURI.PropertyType.String));
 
@@ -171,16 +186,6 @@ public class Field {
             throw new IllegalArgumentException("Unknown field: " + alias);
         }
         return field;
-    }
-
-    /**
-     * Get Mime header field.
-     *
-     * @param headerName header name
-     * @return field object
-     */
-    public static FieldURI getHeader(String headerName) {
-        return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, headerName);
     }
 
     /**

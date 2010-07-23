@@ -38,6 +38,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         MimeMessage mimeMessage = createMimeMessage();
         messageName = UUID.randomUUID().toString()+".EML";
         HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put("draft", "0");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
     }
 
@@ -81,6 +82,11 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
 
     public void testProcessMessage() throws IOException, MessagingException {
         session.processItem("testfolder", messageName);
+    }
+
+    public void testFolderUidNext() throws IOException, MessagingException {
+        ExchangeSession.Folder folder = session.getFolder("testfolder");
+        assertTrue(folder.uidNext > 0);
     }
 
     public void testDeleteMessage() throws IOException {

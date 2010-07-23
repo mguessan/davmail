@@ -83,11 +83,11 @@ public class Field {
     protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
 
     static {
-        propertyTypeMap.put(PropertyType.Long, "0003");
-        propertyTypeMap.put(PropertyType.Boolean, "000b");
-        propertyTypeMap.put(PropertyType.SystemTime, "0040");
+        propertyTypeMap.put(PropertyType.Integer, "0003"); // PT_INT
+        propertyTypeMap.put(PropertyType.Boolean, "000b"); // PT_BOOLEAN
+        propertyTypeMap.put(PropertyType.SystemTime, "0040"); // PT_SYSTIME
         propertyTypeMap.put(PropertyType.String, "001f"); // 001f is PT_UNICODE_STRING, 001E is PT_STRING
-        propertyTypeMap.put(PropertyType.Binary, "0102");
+        propertyTypeMap.put(PropertyType.Binary, "0102"); // PT_BINARY
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -117,19 +117,22 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "unreadcount");
         createField(SCHEMAS_REPL, "contenttag");
 
+        createField("uidNext", 0x6751, PropertyType.Integer);// PR_ARTICLE_NUM_NEXT
+        createField("highestUid", 0x6752, PropertyType.Integer);// PR_IMAP_LAST_ARTICLE_ID
+
         createField(DAV, "isfolder");
 
         // item uid, do not use as search parameter, see http://support.microsoft.com/kb/320749
         createField(DAV, "uid"); // based on PR_RECORD_KEY
 
         // POP and IMAP message
-        createField("messageSize", 0x0e08, PropertyType.Long);//PR_MESSAGE_SIZE
-        createField("imapUid", 0x0e23, PropertyType.Long);//PR_INTERNET_ARTICLE_NUMBER
-        createField("junk", 0x1083, PropertyType.Long);
-        createField("flagStatus", 0x1090, PropertyType.Long);//PR_FLAG_STATUS
-        createField("messageFlags", 0x0e07, PropertyType.Long);//PR_MESSAGE_FLAGS
-        createField("lastVerbExecuted", 0x1081, PropertyType.Long);//PR_LAST_VERB_EXECUTED
-        createField("iconIndex", 0x1080, PropertyType.Long);//PR_ICON_INDEX
+        createField("messageSize", 0x0e08, PropertyType.Integer);//PR_MESSAGE_SIZE
+        createField("imapUid", 0x0e23, PropertyType.Integer);//PR_INTERNET_ARTICLE_NUMBER
+        createField("junk", 0x1083, PropertyType.Integer);
+        createField("flagStatus", 0x1090, PropertyType.Integer);//PR_FLAG_STATUS
+        createField("messageFlags", 0x0e07, PropertyType.Integer);//PR_MESSAGE_FLAGS
+        createField("lastVerbExecuted", 0x1081, PropertyType.Integer);//PR_LAST_VERB_EXECUTED
+        createField("iconIndex", 0x1080, PropertyType.Integer);//PR_ICON_INDEX
         createField(URN_SCHEMAS_HTTPMAIL, "read");
         //createField("read", 0x0e69, PropertyType.Boolean);//PR_READ
         createField("deleted", DistinguishedPropertySetType.Common, 0x8570, "deleted", PropertyType.String);
@@ -140,8 +143,8 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "datereceived");//PR_MESSAGE_DELIVERY_TIME, 0x0E06
 
         // unused: force message encoding
-        createField("messageFormat", 0x5909, PropertyType.Long);//PR_MSG_EDITOR_FORMAT EDITOR_FORMAT_PLAINTEXT = 1 EDITOR_FORMAT_HTML = 2
-        createField("mailOverrideFormat", 0x5909, PropertyType.Long);//PR_INETMAIL_OVERRIDE_FORMAT ENCODING_PREFERENCE = 2 BODY_ENCODING_TEXT_AND_HTML = 1 ENCODING_MIME = 4
+        createField("messageFormat", 0x5909, PropertyType.Integer);//PR_MSG_EDITOR_FORMAT EDITOR_FORMAT_PLAINTEXT = 1 EDITOR_FORMAT_HTML = 2
+        createField("mailOverrideFormat", 0x5909, PropertyType.Integer);//PR_INETMAIL_OVERRIDE_FORMAT ENCODING_PREFERENCE = 2 BODY_ENCODING_TEXT_AND_HTML = 1 ENCODING_MIME = 4
 
         // IMAP search
 
@@ -260,7 +263,7 @@ public class Field {
 
         // contact private flags
         createField("private", DistinguishedPropertySetType.Common, 0x8506, "private", PropertyType.Boolean); // True/False
-        createField("sensitivity", 0x0036, PropertyType.Long); // PR_SENSITIVITY SENSITIVITY_PRIVATE = 2, SENSITIVITY_PERSONAL = 1, SENSITIVITY_NONE = 0
+        createField("sensitivity", 0x0036, PropertyType.Integer); // PR_SENSITIVITY SENSITIVITY_PRIVATE = 2, SENSITIVITY_PERSONAL = 1, SENSITIVITY_NONE = 0
 
         createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture", PropertyType.Boolean); // True/False
 
@@ -272,7 +275,7 @@ public class Field {
         createField(DAV, "ishidden");
 
         createField("attachmentContactPhoto", 0x7FFF, PropertyType.Boolean); // PR_ATTACHMENT_CONTACTPHOTO
-        createField("renderingPosition", 0x370B, PropertyType.Long);// PR_RENDERING_POSITION
+        createField("renderingPosition", 0x370B, PropertyType.Integer);// PR_RENDERING_POSITION
     }
 
     protected static String toHexString(int propertyTag) {
@@ -383,7 +386,7 @@ public class Field {
 
         // a few type based flags
         isMultivalued = propertyType != null && propertyType.toString().endsWith("Array");
-        isIntValue = propertyType == PropertyType.Integer || propertyType == PropertyType.Long || propertyType == PropertyType.Short;
+        isIntValue = propertyType == PropertyType.Long || propertyType == PropertyType.Integer || propertyType == PropertyType.Short;
         isBooleanValue = propertyType == PropertyType.Boolean;
 
         this.uri = namespace.getURI() + name;

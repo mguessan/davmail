@@ -187,6 +187,12 @@ public abstract class ExchangeSession {
         LOGGER.debug("Session " + this + " created");
     }
 
+    /**
+     * Format date to exchange search format.
+     *
+     * @param date date object
+     * @return formatted search date
+     */
     public static String formatSearchDate(Date date) {
         SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
         dateFormatter.setTimeZone(GMT_TIMEZONE);
@@ -1096,6 +1102,10 @@ public abstract class ExchangeSession {
          */
         public String etag;
         /**
+         * Next IMAP uid
+         */
+        public int uidNext;
+        /**
          * Folder message list, empty before loadMessages call.
          */
         public ExchangeSession.MessageList messages;
@@ -1392,7 +1402,7 @@ public abstract class ExchangeSession {
                     // load and parse message
                     mimeBody = new SharedByteArrayInputStream(getContent(this));
                     mimeMessage = new MimeMessage(null, mimeBody);
-                    LOGGER.debug("Downloaded message content for " + imapUid + " (" + mimeBody.available() + ')');
+                    LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.available() + " bytes)");
                 }
             }
         }
@@ -1456,7 +1466,6 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void delete() throws IOException {
-            LOGGER.debug("Delete " + permanentUrl + " (" + messageUrl + ')');
             deleteMessage(this);
         }
 
@@ -1760,7 +1769,7 @@ public abstract class ExchangeSession {
             if ("true".equals(get("haspicture"))) {
                 try {
                     ContactPhoto contactPhoto = getContactPhoto(this);
-                    writer.appendProperty("PHOTO;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\"", contactPhoto.content);
+                    writer.appendProperty("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\"", contactPhoto.content);
                 } catch (IOException e) {
                     LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
                 }

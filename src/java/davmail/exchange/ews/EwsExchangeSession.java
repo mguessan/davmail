@@ -191,6 +191,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
+        LOGGER.debug("Delete " + message.permanentUrl);
         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(((EwsExchangeSession.Message) message).itemId, DeleteType.HardDelete);
         executeMethod(deleteItemMethod);
     }
@@ -488,6 +489,8 @@ public class EwsExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add(Field.get("ctag"));
         FOLDER_PROPERTIES.add(Field.get("unread"));
         FOLDER_PROPERTIES.add(Field.get("hassubs"));
+        FOLDER_PROPERTIES.add(Field.get("uidNext"));
+        FOLDER_PROPERTIES.add(Field.get("highestUid"));
     }
 
     protected Folder buildFolder(EWSMethod.Item item) {
@@ -500,6 +503,7 @@ public class EwsExchangeSession extends ExchangeSession {
         folder.unreadCount = item.getInt(Field.get("unread").getResponseName());
         folder.hasChildren = item.getBoolean(Field.get("hassubs").getResponseName());
         // noInferiors not implemented
+        folder.uidNext = item.getInt(Field.get("uidNext").getResponseName());
         return folder;
     }
 
@@ -973,7 +977,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 contactPhoto = new ContactPhoto();
                 contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
-                contactPhoto.contentType = attachment.contentType;
+                if (attachment.contentType == null) {
+                    contactPhoto.contentType = "image/jpeg";
+                } else {
+                    contactPhoto.contentType = attachment.contentType;
+                }
+
             }
 
         }

@@ -887,6 +887,8 @@ public class DavExchangeSession extends ExchangeSession {
         folder.ctag = getPropertyIfExists(properties, "contenttag");
         folder.etag = getPropertyIfExists(properties, "lastmodified");
 
+        folder.uidNext = getIntPropertyIfExists(properties, "uidNext");
+
         // replace well known folder names
         if (href.startsWith(inboxUrl)) {
             folder.folderPath = href.replaceFirst(inboxUrl, INBOX);
@@ -933,6 +935,7 @@ public class DavExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add("unreadcount");
         FOLDER_PROPERTIES.add("contenttag");
         FOLDER_PROPERTIES.add("lastmodified");
+        FOLDER_PROPERTIES.add("uidNext");
     }
 
     protected static final DavPropertyNameSet FOLDER_PROPERTIES_NAME_SET = new DavPropertyNameSet();
