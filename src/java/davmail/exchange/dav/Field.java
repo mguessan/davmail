@@ -69,17 +69,6 @@ public class Field {
             Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
                     '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/");
 
-
-    /**
-     * Property type list from EWS
-     */
-    @SuppressWarnings({"UnusedDeclaration"})
-    protected static enum PropertyType {
-        ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
-        Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
-        ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray
-    }
-
     protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
 
     static {
@@ -276,8 +265,14 @@ public class Field {
 
         createField(DAV, "ishidden");
 
+        // attachment content
+        createField("attachDataBinary", 0x3701, PropertyType.Binary);
+
         createField("attachmentContactPhoto", 0x7FFF, PropertyType.Boolean); // PR_ATTACHMENT_CONTACTPHOTO
         createField("renderingPosition", 0x370B, PropertyType.Integer);// PR_RENDERING_POSITION
+        //createField("attachFilename", 0x3704, PropertyType.String); // PR_ATTACH_FILENAME
+        createField("attachExtension", 0x3703, PropertyType.String); // PR_ATTACH_FILENAME
+
     }
 
     protected static String toHexString(int propertyTag) {
@@ -313,7 +308,11 @@ public class Field {
             // Common namespace expects hex names
             name = "0x" + toHexString(propertyTag);
         }
-        updateAlias = "_x0030_x" + toHexString(propertyTag);
+        if ("haspicture".equals(alias)) {
+            updateAlias = "_x0030_x" + toHexString(propertyTag);
+        } else {
+            updateAlias = "_x0030_x" + toHexString(propertyTag);
+        }
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
                 '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType, responseAlias, null, updateAlias);
         fieldMap.put(field.alias, field);
@@ -469,7 +468,7 @@ public class Field {
             }
 
             return new DefaultDavProperty(field.updatePropertyName, valueList);
-        } else if (field.isBooleanValue) {
+        } else if (field.isBooleanValue && !"haspicture".equals(alias)) {
             if ("true".equals(value)) {
                 return new DefaultDavProperty(field.updatePropertyName, "1");
             } else if ("false".equals(value)) {
