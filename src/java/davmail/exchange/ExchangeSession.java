@@ -1769,7 +1769,8 @@ public abstract class ExchangeSession {
             if ("true".equals(get("haspicture"))) {
                 try {
                     ContactPhoto contactPhoto = getContactPhoto(this);
-                    writer.appendProperty("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\"", contactPhoto.content);
+                    writer.writeLine("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\":");
+                    writer.writeLine(contactPhoto.content, true);
                 } catch (IOException e) {
                     LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
                 }

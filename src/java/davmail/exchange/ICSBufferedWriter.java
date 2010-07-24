@@ -42,11 +42,19 @@ public class ICSBufferedWriter {
      * @param line ics event line
      */
     public void writeLine(String line) {
-        if (line.length() > 75) {
-            buffer.append(line.substring(0, 75));
-            newLine();
+         writeLine(line, false);
+    }
+
+    public void writeLine(String line, boolean prefix) {
+        int maxLength = 77;
+        if (prefix) {
+            maxLength--;
             buffer.append(' ');
-            writeLine(line.substring(75));
+        }
+        if (line.length() > maxLength) {
+            buffer.append(line.substring(0, maxLength));
+            newLine();
+            writeLine(line.substring(maxLength), true);
         } else {
             buffer.append(line);
             newLine();
