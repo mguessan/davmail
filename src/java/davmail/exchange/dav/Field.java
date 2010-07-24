@@ -490,7 +490,7 @@ public class Field {
             // multivalued field, split values separated by \n
             String[] values = value.split("\n");
             for (final String singleValue : values) {
-                buffer.append("<v xmlns=\"xml:\">");
+                buffer.append("<v>");
                 buffer.append(StringUtil.xmlEncode(singleValue));
                 buffer.append("</v>");
             }

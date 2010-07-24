@@ -19,7 +19,7 @@
 package davmail.exchange.dav;
 
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.EntityEnclosingMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
@@ -37,7 +37,7 @@ import java.util.*;
  * Custom Exchange PROPPATCH method.
  * Supports extended property update with type.
  */
-public class ExchangePropPatchMethod extends EntityEnclosingMethod {
+public class ExchangePropPatchMethod extends PostMethod {
     protected static final Logger logger = Logger.getLogger(ExchangePropPatchMethod.class);
 
     static final String TYPE_NAMESPACE = "urn:schemas-microsoft-com:datatypes";
@@ -196,9 +196,23 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
             try {
                 XMLInputFactory xmlInputFactory = getXmlInputFactory();
                 reader = xmlInputFactory.createXMLStreamReader(new FilterInputStream(getResponseBodyAsStream()) {
+                    final byte[] lastbytes = new byte[3];
+
                     @Override
-                    public int read() throws IOException {
-                        return in.read();
+                    public int read(byte b[], int off, int len) throws IOException {
+                        int count = in.read(b, off, len);
+                        // patch invalid element name
+                        for (int i = 0; i < count; i++) {
+                            byte currentByte = b[off + i];
+                            if ((lastbytes[0] == '<') && (currentByte >= '0' && currentByte <= '9')) {
+                                // move invalid first tag char to valid range
+                                b[off + i] = (byte) (currentByte + 49);
+                            }
+                            lastbytes[0] = lastbytes[1];
+                            lastbytes[1] = lastbytes[2];
+                            lastbytes[2] = currentByte;
+                        }
+                        return count;
                     }
 
                 });
@@ -218,9 +232,8 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
     }
 
     protected void handleResponse(XMLStreamReader reader) throws XMLStreamException {
-        MultiStatusResponse multiStatusResponse = null;
-        int status = 0;
         String href = null;
+        String responseStatus = "";
         while (reader.hasNext() && !isEndTag(reader, "response")) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
@@ -228,15 +241,11 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                 if ("href".equals(tagLocalName)) {
                     href = reader.getElementText();
                 } else if ("status".equals(tagLocalName)) {
-                    String responseStatus = reader.getElementText();
-                    if ("HTTP/1.1 200 OK".equals(responseStatus)) {
-                        status = HttpStatus.SC_OK;
-                    } else if ("HTTP/1.1 201 Created".equals(responseStatus)) {
-                        status = HttpStatus.SC_CREATED;
-                    }
-                    multiStatusResponse = new MultiStatusResponse(href, status);
+                    responseStatus = reader.getElementText();
                 } else if ("propstat".equals(tagLocalName)) {
+                    MultiStatusResponse multiStatusResponse = new MultiStatusResponse(href, responseStatus);
                     handlePropstat(reader, multiStatusResponse);
+                    responses.add(multiStatusResponse);
                 }
             }
         }
@@ -252,6 +261,8 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                 if ("status".equals(tagLocalName)) {
                     if ("HTTP/1.1 200 OK".equals(reader.getElementText())) {
                         propstatStatus = HttpStatus.SC_OK;
+                    } else {
+                        propstatStatus = 0;
                     }
                 } else if ("prop".equals(tagLocalName) && propstatStatus == HttpStatus.SC_OK) {
                     handleProperty(reader, multiStatusResponse);
@@ -263,17 +274,12 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
 
 
     protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "prop")) {
-            try {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT) {
-                    String tagLocalName = reader.getLocalName();
-                    Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
-                    multiStatusResponse.add(new DefaultDavProperty(tagLocalName, reader.getElementText(), namespace));
-                }
-            } catch (XMLStreamException e) {
-                // ignore, exchange invalid response
-                logger.debug("Ignore invalid response tag name");
+        while (reader.hasNext() && !isEndTag(reader, "prop")){
+            int event = reader.nextTag();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
+                multiStatusResponse.add(new DefaultDavProperty(tagLocalName, reader.getElementText(), namespace));
             }
         }
     }

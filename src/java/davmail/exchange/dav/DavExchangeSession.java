@@ -44,6 +44,8 @@ import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
@@ -616,12 +618,7 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public ItemResult createOrUpdate() throws IOException {
             int status = 0;
-            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), buildProperties()) {
-                @Override
-                protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
-                    // ignore response body, sometimes invalid with exchange mapi properties
-                }
-            };
+            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), buildProperties());
             propPatchMethod.setRequestHeader("Translate", "f");
             if (etag != null) {
                 propPatchMethod.setRequestHeader("If-Match", etag);
@@ -632,6 +629,7 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(propPatchMethod);
                 if (status == HttpStatus.SC_MULTI_STATUS) {
+                    List<MultiStatusResponse> responses = propPatchMethod.getResponses();
                     //noinspection VariableNotUsedInsideIf
                     if (etag == null) {
                         status = HttpStatus.SC_CREATED;
