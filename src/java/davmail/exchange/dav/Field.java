@@ -18,6 +18,7 @@
  */
 package davmail.exchange.dav;
 
+import davmail.util.StringUtil;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
@@ -474,6 +475,36 @@ public class Field {
             }
         } else {
             return new DefaultDavProperty(field.updatePropertyName, value);
+        }
+    }
+
+    public static PropertyValue createPropertyValue(String alias, String value) {
+        Field field = Field.get(alias);
+        String encodedValue = null;
+        DavPropertyName davPropertyName = field.davPropertyName;
+        if (value == null) {
+            // return DavPropertyName to remove property
+            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName());
+        } else if (field.isMultivalued) {
+            StringBuilder buffer = new StringBuilder();
+            // multivalued field, split values separated by \n
+            String[] values = value.split("\n");
+            for (final String singleValue : values) {
+                buffer.append("<v xmlns=\"xml:\">");
+                buffer.append(StringUtil.xmlEncode(singleValue));
+                buffer.append("</v>");
+            }
+            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), buffer.toString());
+        } else if (field.isBooleanValue) {
+            if ("true".equals(value)) {
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "1");
+            } else if ("false".equals(value)) {
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "0");
+            } else {
+                throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
+            }
+        } else {
+            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value));
         }
     }
 

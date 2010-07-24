@@ -596,12 +596,12 @@ public class DavExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
-        protected List<DavConstants> buildProperties() {
-            ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+        protected Set<PropertyValue> buildProperties() {
+            Set<PropertyValue> list = new HashSet<PropertyValue>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
                 if (!"photo".equals(key)) {
-                    list.add(Field.createDavProperty(key, entry.getValue()));
+                    list.add(Field.createPropertyValue(key, entry.getValue()));
                 }
             }
 
@@ -616,7 +616,7 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public ItemResult createOrUpdate() throws IOException {
             int status = 0;
-            PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), buildProperties()) {
+            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), buildProperties()) {
                 @Override
                 protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
                     // ignore response body, sometimes invalid with exchange mapi properties
@@ -697,7 +697,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // update haspicture flag to boolean property
                     DavPropertyName hasPicturePropertyName = Field.getPropertyName("haspicture");
                     Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
-                    propertyValues.add(new PropertyValue(hasPicturePropertyName.getNamespace(),hasPicturePropertyName.getName(),"1", PropertyType.Boolean));
+                    propertyValues.add(new PropertyValue(hasPicturePropertyName.getNamespace().getURI(),hasPicturePropertyName.getName(),"1", PropertyType.Boolean));
                     ExchangePropPatchMethod exchangePropPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), propertyValues);
                     try {
                         status = httpClient.executeMethod(exchangePropPatchMethod);

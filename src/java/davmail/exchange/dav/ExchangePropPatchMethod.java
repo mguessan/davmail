@@ -18,7 +18,6 @@
  */
 package davmail.exchange.dav;
 
-import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.EntityEnclosingMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -41,7 +40,7 @@ import java.util.*;
 public class ExchangePropPatchMethod extends EntityEnclosingMethod {
     protected static final Logger logger = Logger.getLogger(ExchangePropPatchMethod.class);
 
-    static final Namespace TYPE_NAMESPACE = Namespace.getNamespace("urn:schemas-microsoft-com:datatypes");
+    static final String TYPE_NAMESPACE = "urn:schemas-microsoft-com:datatypes";
     final Set<PropertyValue> propertyValues;
 
     /**
@@ -84,7 +83,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
         try {
             // build namespace map
             int currentChar = 'e';
-            final Map<Namespace, Integer> nameSpaceMap = new HashMap<Namespace, Integer>();
+            final Map<String, Integer> nameSpaceMap = new HashMap<String, Integer>();
             final Set<PropertyValue> setPropertyValues = new HashSet<PropertyValue>();
             final Set<PropertyValue> deletePropertyValues = new HashSet<PropertyValue>();
             for (PropertyValue propertyValue : propertyValues) {
@@ -93,11 +92,11 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                     nameSpaceMap.put(TYPE_NAMESPACE, currentChar++);
                 }
                 // property namespace
-                Namespace namespace = propertyValue.getNamespace();
-                if (!nameSpaceMap.containsKey(namespace)) {
-                    nameSpaceMap.put(namespace, currentChar++);
+                String namespaceUri = propertyValue.getNamespaceUri();
+                if (!nameSpaceMap.containsKey(namespaceUri)) {
+                    nameSpaceMap.put(namespaceUri, currentChar++);
                 }
-                if (propertyValue.getValue() == null) {
+                if (propertyValue.getXmlEncodedValue() == null) {
                     deletePropertyValues.add(propertyValue);
                 } else {
                     setPropertyValues.add(propertyValue);
@@ -106,11 +105,11 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
             writer.write("<D:propertyupdate xmlns:D=\"DAV:\"");
-            for (Map.Entry<Namespace, Integer> mapEntry : nameSpaceMap.entrySet()) {
+            for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
                 writer.write(" xmlns:");
                 writer.write((char) mapEntry.getValue().intValue());
                 writer.write("=\"");
-                writer.write(mapEntry.getKey().getURI());
+                writer.write(mapEntry.getKey());
                 writer.write("\"");
             }
             writer.write(">");
@@ -118,7 +117,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                 writer.write("<D:set><D:prop>");
                 for (PropertyValue propertyValue : setPropertyValues) {
                     PropertyType propertyType = propertyValue.getType();
-                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespace()).intValue();
+                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
                     writer.write('<');
                     writer.write(nameSpaceChar);
                     writer.write(':');
@@ -131,7 +130,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                         writer.write("\"");
                     }
                     writer.write('>');
-                    writer.write(StringUtil.xmlEncode(propertyValue.getValue()));
+                    writer.write(propertyValue.getXmlEncodedValue());
                     writer.write("</");
                     writer.write(nameSpaceChar);
                     writer.write(':');
@@ -143,7 +142,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
             if (!deletePropertyValues.isEmpty()) {
                 writer.write("<D:remove><D:prop>");
                 for (PropertyValue propertyValue : deletePropertyValues) {
-                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespace()).intValue();
+                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
                     writer.write('<');
                     writer.write(nameSpaceChar);
                     writer.write(':');
@@ -220,24 +219,48 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
 
     protected void handleResponse(XMLStreamReader reader) throws XMLStreamException {
         MultiStatusResponse multiStatusResponse = null;
-        int currentStatus = 0;
+        int status = 0;
+        String href = null;
         while (reader.hasNext() && !isEndTag(reader, "response")) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
                 if ("href".equals(tagLocalName)) {
-                    multiStatusResponse = new MultiStatusResponse(reader.getElementText(), "");
+                    href = reader.getElementText();
                 } else if ("status".equals(tagLocalName)) {
-                    if ("HTTP/1.1 200 OK".equals(reader.getElementText())) {
-                        currentStatus = HttpStatus.SC_OK;
+                    String responseStatus = reader.getElementText();
+                    if ("HTTP/1.1 200 OK".equals(responseStatus)) {
+                        status = HttpStatus.SC_OK;
+                    } else if ("HTTP/1.1 201 Created".equals(responseStatus)) {
+                        status = HttpStatus.SC_CREATED;
                     }
-                } else if ("prop".equals(tagLocalName) && currentStatus == HttpStatus.SC_OK) {
+                    multiStatusResponse = new MultiStatusResponse(href, status);
+                } else if ("propstat".equals(tagLocalName)) {
+                    handlePropstat(reader, multiStatusResponse);
+                }
+            }
+        }
+
+    }
+
+    protected void handlePropstat(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
+        int propstatStatus = 0;
+        while (reader.hasNext() && !isEndTag(reader, "propstat")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if ("status".equals(tagLocalName)) {
+                    if ("HTTP/1.1 200 OK".equals(reader.getElementText())) {
+                        propstatStatus = HttpStatus.SC_OK;
+                    }
+                } else if ("prop".equals(tagLocalName) && propstatStatus == HttpStatus.SC_OK) {
                     handleProperty(reader, multiStatusResponse);
                 }
             }
         }
 
     }
+
 
     protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         while (reader.hasNext() && !isEndTag(reader, "prop")) {

@@ -18,39 +18,36 @@
  */
 package davmail.exchange.dav;
 
-import org.apache.jackrabbit.webdav.xml.Namespace;
-
-
 /**
  * Property value.
  */
 public class PropertyValue {
-    protected Namespace namespace;
+    protected String namespaceUri;
     protected String name;
-    protected String value;
+    protected String xmlEncodedValue;
     protected PropertyType type;
 
-    public PropertyValue(Namespace namespace, String name) {
-         this(namespace, name, null, null);
+    public PropertyValue(String namespaceUri, String name) {
+         this(namespaceUri, name, null, null);
     }
 
-    public PropertyValue(Namespace namespace, String name, String value) {
-         this(namespace, name, value, null);
+    public PropertyValue(String namespaceUri, String name, String xmlEncodedValue) {
+         this(namespaceUri, name, xmlEncodedValue, null);
     }
 
-    public PropertyValue(Namespace namespace, String name, String value, PropertyType type) {
-        this.namespace = namespace;
+    public PropertyValue(String namespaceUri, String name, String xmlEncodedValue, PropertyType type) {
+        this.namespaceUri = namespaceUri;
         this.name = name;
-        this.value = value;
+        this.xmlEncodedValue = xmlEncodedValue;
         this.type = type;
     }
 
-    public Namespace getNamespace() {
-        return namespace;
+    public String getNamespaceUri() {
+        return namespaceUri;
     }
 
-    public String getValue() {
-        return value;
+    public String getXmlEncodedValue() {
+        return xmlEncodedValue;
     }
 
     public PropertyType getType() {
