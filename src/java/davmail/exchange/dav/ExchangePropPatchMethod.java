@@ -44,6 +44,12 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
     static final Namespace TYPE_NAMESPACE = Namespace.getNamespace("urn:schemas-microsoft-com:datatypes");
     final Set<PropertyValue> propertyValues;
 
+    /**
+     * Create PROPPATCH method.
+     *
+     * @param path           path
+     * @param propertyValues property values
+     */
     public ExchangePropPatchMethod(String path, Set<PropertyValue> propertyValues) {
         super(path);
         this.propertyValues = propertyValues;
@@ -74,7 +80,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
         });
     }
 
-    public byte[] generateRequestContent() {
+    protected byte[] generateRequestContent() {
         try {
             // build namespace map
             int currentChar = 'e';
@@ -135,7 +141,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                 writer.write("</D:prop></D:set>");
             }
             if (!deletePropertyValues.isEmpty()) {
-                writer.write("<D:delete><D:prop>");
+                writer.write("<D:remove><D:prop>");
                 for (PropertyValue propertyValue : deletePropertyValues) {
                     char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespace()).intValue();
                     writer.write('<');
@@ -144,7 +150,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                     writer.write(propertyValue.getName());
                     writer.write("/>");
                 }
-                writer.write("</D:prop></D:delete>");
+                writer.write("</D:prop></D:remove>");
             }
             writer.write("</D:propertyupdate>");
             writer.close();
@@ -193,7 +199,7 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                 reader = xmlInputFactory.createXMLStreamReader(new FilterInputStream(getResponseBodyAsStream()) {
                     @Override
                     public int read() throws IOException {
-                    return in.read();
+                        return in.read();
                     }
 
                 });
@@ -225,23 +231,23 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
                     if ("HTTP/1.1 200 OK".equals(reader.getElementText())) {
                         currentStatus = HttpStatus.SC_OK;
                     }
-                } else if (tagLocalName.equals("prop")) {
-                    handleProperty(reader, currentStatus, multiStatusResponse);
+                } else if ("prop".equals(tagLocalName) && currentStatus == HttpStatus.SC_OK) {
+                    handleProperty(reader, multiStatusResponse);
                 }
             }
         }
 
     }
 
-    protected void handleProperty(XMLStreamReader reader, int currentStatus, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
+    protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         while (reader.hasNext() && !isEndTag(reader, "prop")) {
             try {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
-                String tagLocalName = reader.getLocalName();
-                Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
-                multiStatusResponse.add(new DefaultDavProperty(tagLocalName, reader.getElementText(), namespace));
-            }
+                int event = reader.next();
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String tagLocalName = reader.getLocalName();
+                    Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
+                    multiStatusResponse.add(new DefaultDavProperty(tagLocalName, reader.getElementText(), namespace));
+                }
             } catch (XMLStreamException e) {
                 // ignore, exchange invalid response
                 logger.debug("Ignore invalid response tag name");
@@ -249,6 +255,12 @@ public class ExchangePropPatchMethod extends EntityEnclosingMethod {
         }
     }
 
+    /**
+     * Get Multistatus responses.
+     *
+     * @return responses
+     * @throws HttpException on error
+     */
     public List<MultiStatusResponse> getResponses() throws HttpException {
         if (responses == null) {
             throw new HttpException(getStatusLine().toString());

@@ -41,6 +41,7 @@ import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.w3c.dom.Node;
@@ -652,71 +653,90 @@ public class DavExchangeSession extends ExchangeSession {
             }
             itemResult.status = status;
 
-            String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
-            String photo = get("photo");
-            if (photo != null) {
-                // need to update photo
-                byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
+            if (status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) {
+                String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
+                String photo = get("photo");
+                if (photo != null) {
+                    // need to update photo
+                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
-                final PutMethod putmethod = new PutMethod(contactPictureUrl);
-                putmethod.setRequestHeader("Overwrite", "t");
-                putmethod.setRequestHeader("Content-Type", "image/jpeg");
-                putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
-                try {
-                    status = httpClient.executeMethod(putmethod);
-                    if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
-                        throw new IOException("Unable to update contact picture: "+status+ ' ' +putmethod.getStatusLine());
+                    final PutMethod putmethod = new PutMethod(contactPictureUrl);
+                    putmethod.setRequestHeader("Overwrite", "t");
+                    putmethod.setRequestHeader("Content-Type", "image/jpeg");
+                    putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
+                    try {
+                        status = httpClient.executeMethod(putmethod);
+                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
+                            throw new IOException("Unable to update contact picture: " + status + ' ' + putmethod.getStatusLine());
+                        }
+                    } catch (IOException e) {
+                        LOGGER.error("Error in contact photo create or update", e);
+                        throw e;
+                    } finally {
+                        putmethod.releaseConnection();
                     }
-                } catch (IOException e) {
-                    LOGGER.error("Error in contact photo create or update", e);
-                    throw e;
-                } finally {
-                    putmethod.releaseConnection();
+
+                    ArrayList<DavConstants> changeList = new ArrayList<DavConstants>();
+                    changeList.add(Field.createDavProperty("attachmentContactPhoto", "true"));
+                    //changeList.add(Field.createDavProperty("renderingPosition", "-1"));
+                    changeList.add(Field.createDavProperty("attachExtension", ".jpg"));
+
+                    final PropPatchMethod attachmentPropPatchMethod = new PropPatchMethod(contactPictureUrl, changeList);
+                    try {
+                        status = httpClient.executeMethod(attachmentPropPatchMethod);
+                        if (status != HttpStatus.SC_MULTI_STATUS) {
+                            throw new IOException("Unable to update contact picture");
+                        }
+                    } catch (IOException e) {
+                        LOGGER.error("Error in contact photo create or update", e);
+                        throw e;
+                    } finally {
+                        attachmentPropPatchMethod.releaseConnection();
+                    }
+
+                    // update haspicture flag to boolean property
+                    DavPropertyName hasPicturePropertyName = Field.getPropertyName("haspicture");
+                    Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+                    propertyValues.add(new PropertyValue(hasPicturePropertyName.getNamespace(),hasPicturePropertyName.getName(),"1", PropertyType.Boolean));
+                    ExchangePropPatchMethod exchangePropPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), propertyValues);
+                    try {
+                        status = httpClient.executeMethod(exchangePropPatchMethod);
+                        if (status != HttpStatus.SC_MULTI_STATUS) {
+                            throw new IOException("Unable to update haspicture flag");
+                        }
+                    } catch (IOException e) {
+                        LOGGER.error("Error in haspicture flag update", e);
+                        throw e;
+                    } finally {
+                        exchangePropPatchMethod.releaseConnection();
+                    }
+
+                } else {
+                    // try to delete picture
+                    DeleteMethod deleteMethod = new DeleteMethod(contactPictureUrl);
+                    try {
+                        status = httpClient.executeMethod(deleteMethod);
+                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                            throw new IOException("Unable to delete contact picture");
+                        }
+                    } catch (IOException e) {
+                        LOGGER.error("Error in contact photo delete", e);
+                        throw e;
+                    } finally {
+                        deleteMethod.releaseConnection();
+                    }
                 }
-
-                ArrayList<DavConstants> changeList = new ArrayList<DavConstants>();
-                changeList.add(Field.createDavProperty("attachmentContactPhoto", "true"));
-                changeList.add(Field.createDavProperty("renderingPosition", "-1"));
-
-                final PropPatchMethod attachmentPropPatchMethod = new PropPatchMethod(contactPictureUrl, changeList);
+                // need to retrieve new etag
+                HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
                 try {
-                    status = httpClient.executeMethod(attachmentPropPatchMethod);
-                    if (status != HttpStatus.SC_MULTI_STATUS) {
-                        throw new IOException("Unable to update contact picture");
+                    httpClient.executeMethod(headMethod);
+                    if (headMethod.getResponseHeader("ETag") != null) {
+                        itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
                     }
-                } catch (IOException e) {
-                    LOGGER.error("Error in contact photo create or update", e);
-                    throw e;
                 } finally {
-                    attachmentPropPatchMethod.releaseConnection();
-                }
-
-            } else {
-                // try to delete picture
-                DeleteMethod deleteMethod = new DeleteMethod(contactPictureUrl);
-                try {
-                    status = httpClient.executeMethod(deleteMethod);
-                    if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-                        throw new IOException("Unable to delete contact picture");
-                    }
-                } catch (IOException e) {
-                    LOGGER.error("Error in contact photo delete", e);
-                    throw e;
-                } finally {
-                    deleteMethod.releaseConnection();
+                    headMethod.releaseConnection();
                 }
             }
-            // need to retrieve new etag
-            HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
-            try {
-                httpClient.executeMethod(headMethod);
-                if (headMethod.getResponseHeader("ETag") != null) {
-                    itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
-                }
-            } finally {
-                headMethod.releaseConnection();
-            }
-
             return itemResult;
 
         }

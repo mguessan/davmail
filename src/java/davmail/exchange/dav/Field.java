@@ -308,11 +308,7 @@ public class Field {
             // Common namespace expects hex names
             name = "0x" + toHexString(propertyTag);
         }
-        if ("haspicture".equals(alias)) {
-            updateAlias = "_x0030_x" + toHexString(propertyTag);
-        } else {
-            updateAlias = "_x0030_x" + toHexString(propertyTag);
-        }
+        updateAlias = "_x0030_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
                 '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType, responseAlias, null, updateAlias);
         fieldMap.put(field.alias, field);
