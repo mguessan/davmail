@@ -1002,9 +1002,10 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @throws IOException on error
+     * @return status
      */
-    public void createMessageFolder(String folderName) throws IOException {
-        createFolder(folderName, "IPF.Note");
+    public int createMessageFolder(String folderName) throws IOException {
+        return createFolder(folderName, "IPF.Note", null);
     }
 
     /**
@@ -1012,9 +1013,10 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @throws IOException on error
+     * @return status
      */
-    public void createCalendarFolder(String folderName) throws IOException {
-        createFolder(folderName, "IPF.Appointment");
+    public int createCalendarFolder(String folderName, Map<String, String> properties) throws IOException {
+        return createFolder(folderName, "IPF.Appointment", properties);
     }
 
     /**
@@ -1022,9 +1024,10 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @throws IOException on error
+     * @return status
      */
-    public void createContactFolder(String folderName) throws IOException {
-        createFolder(folderName, "IPF.Contact");
+    public int createContactFolder(String folderName, Map<String, String> properties) throws IOException {
+        return createFolder(folderName, "IPF.Contact", properties);
     }
 
     /**
@@ -1032,9 +1035,10 @@ public abstract class ExchangeSession {
      *
      * @param folderName  logical folder name
      * @param folderClass folder class
+     * @return status
      * @throws IOException on error
      */
-    public abstract void createFolder(String folderName, String folderClass) throws IOException;
+    public abstract int createFolder(String folderName, String folderClass, Map<String, String> properties) throws IOException;
 
     /**
      * Delete Exchange folder.

@@ -69,7 +69,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testCalendarFolder() throws IOException {
         String folderName = "testcalendar";
-        session.createCalendarFolder(folderName);
+        session.createCalendarFolder(folderName, null);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
         assertEquals("IPF.Appointment", folder.folderClass);
@@ -78,7 +78,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testContactFolder() throws IOException {
         String folderName = "testcontact";
-        session.createContactFolder(folderName);
+        session.createContactFolder(folderName, null);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
         assertEquals("IPF.Contact", folder.folderClass);

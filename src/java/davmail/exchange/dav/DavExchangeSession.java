@@ -678,7 +678,7 @@ public class DavExchangeSession extends ExchangeSession {
                     try {
                         status = httpClient.executeMethod(attachmentPropPatchMethod);
                         if (status != HttpStatus.SC_MULTI_STATUS) {
-                            LOGGER.error("Error in contact photo create or update: "+attachmentPropPatchMethod.getStatusCode());
+                            LOGGER.error("Error in contact photo create or update: " + attachmentPropPatchMethod.getStatusCode());
                             throw new IOException("Unable to update contact picture");
                         }
                     } finally {
@@ -691,7 +691,7 @@ public class DavExchangeSession extends ExchangeSession {
                     try {
                         status = httpClient.executeMethod(deleteMethod);
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-                            LOGGER.error("Error in contact photo delete: "+status);
+                            LOGGER.error("Error in contact photo delete: " + status);
                             throw new IOException("Unable to delete contact picture");
                         }
                     } finally {
@@ -974,11 +974,17 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void createFolder(String folderPath, String folderClass) throws IOException {
-        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-        list.add(Field.createDavProperty("folderclass", folderClass));
+    public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
+        Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+        if (properties != null) {
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                propertyValues.add(Field.createPropertyValue(entry.getKey(), entry.getValue()));
+            }
+        }
+        propertyValues.add(Field.createPropertyValue("folderclass", folderClass));
+
         // standard MkColMethod does not take properties, override PropPatchMethod instead
-        PropPatchMethod method = new PropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), list) {
+        ExchangePropPatchMethod method = new ExchangePropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues) {
             @Override
             public String getName() {
                 return "MKCOL";
@@ -989,6 +995,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
+        return status;
     }
 
     /**
@@ -1331,7 +1338,7 @@ public class DavExchangeSession extends ExchangeSession {
             VTimezone userTimezone = new VTimezone();
             // create temporary folder
             String folderPath = getFolderPath("davmailtemp");
-            createCalendarFolder(folderPath);
+            createCalendarFolder(folderPath, null);
 
             PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
             postMethod.addParameter("Cmd", "saveappt");

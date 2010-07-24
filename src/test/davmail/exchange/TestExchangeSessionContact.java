@@ -48,7 +48,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     public void testCreateFolder() throws IOException {
         // recreate empty folder
         session.deleteFolder("testcontactfolder");
-        session.createContactFolder("testcontactfolder");
+        session.createContactFolder("testcontactfolder", null);
     }
 
     public void testCreateContact() throws IOException {
@@ -424,7 +424,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         System.out.println(contact.getBody());
     }
 
-     public void testAnniversary() throws IOException {
+    public void testAnniversary() throws IOException {
         ExchangeSession.Contact contact = getCurrentContact();
 
         VCardWriter vCardWriter = new VCardWriter();
@@ -440,4 +440,5 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("20000102T000000Z", contact.get("anniversary"));
         System.out.println(contact.getBody());
     }
+
 }

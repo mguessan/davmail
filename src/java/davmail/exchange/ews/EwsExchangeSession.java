@@ -577,14 +577,16 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void createFolder(String folderPath, String folderClass) throws IOException {
+    public int createFolder(String folderPath, String folderClass, Map<String,String> properties) throws IOException {
         FolderPath path = new FolderPath(folderPath);
         EWSMethod.Item folder = new EWSMethod.Item();
         folder.type = "Folder";
         folder.put("DisplayName", path.folderName);
         folder.put("FolderClass", folderClass);
+        // TODO: handle properties
         CreateFolderMethod createFolderMethod = new CreateFolderMethod(getFolderId(path.parentPath), folder);
         executeMethod(createFolderMethod);
+        return HttpStatus.SC_CREATED;
     }
 
     /**

@@ -308,6 +308,11 @@ public class CaldavConnection extends AbstractConnection {
             // test event
             ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
             sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), (byte[]) null, true);
+        } else if (request.isMkCalendar()) {
+            HashMap<String, String> properties = new HashMap<String, String>();
+            //properties.put("displayname", request.getProperty("displayname"));
+            int status = session.createCalendarFolder(request.getFolderPath(), properties);
+            sendHttpResponse(status, null);
         } else {
             sendUnsupported(request);
         }
@@ -1202,7 +1207,7 @@ public class CaldavConnection extends AbstractConnection {
         protected final Map<String, String> headers;
         protected int depth;
         protected final String body;
-        protected final HashSet<String> properties = new HashSet<String>();
+        protected final HashMap<String, String> properties = new HashMap<String, String>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
         protected String timeRangeStart;
@@ -1216,7 +1221,7 @@ public class CaldavConnection extends AbstractConnection {
             buildDepth();
             this.body = body;
 
-            if (isPropFind() || isReport()) {
+            if (isPropFind() || isReport() || isMkCalendar()) {
                 parseXmlBody();
             }
         }
@@ -1255,6 +1260,10 @@ public class CaldavConnection extends AbstractConnection {
 
         public boolean isDelete() {
             return "DELETE".equals(command);
+        }
+
+        public boolean isMkCalendar() {
+            return "MKCALENDAR".equals(command);
         }
 
         /**
@@ -1385,8 +1394,8 @@ public class CaldavConnection extends AbstractConnection {
                         } else if ("time-range".equals(currentElement)) {
                             timeRangeStart = streamReader.getAttributeValue(null, "start");
                             timeRangeEnd = streamReader.getAttributeValue(null, "end");
-                        } else if (inProperties) {
-                            properties.add(currentElement);
+                        } else if (inProperties && !"calendar-free-busy-set".equals(currentElement)) {
+                            properties.put(currentElement, streamReader.getElementText());
                         }
                     } else if (event == XMLStreamConstants.END_ELEMENT) {
                         if ("prop".equals(currentElement)) {
@@ -1420,7 +1429,11 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public boolean hasProperty(String propertyName) {
-            return properties.contains(propertyName);
+            return properties.containsKey(propertyName);
+        }
+
+        public String getProperty(String propertyName) {
+            return properties.get(propertyName);
         }
 
         public boolean isMultiGet() {
@@ -1445,6 +1458,16 @@ public class CaldavConnection extends AbstractConnection {
             return getFolderPath(null);
         }
 
+        public String getParentFolderPath() {
+            int endIndex;
+            if (isFolder()) {
+                endIndex = getPathLength() - 1;
+            } else {
+                endIndex = getPathLength() - 2;
+            }
+            return getFolderPath(endIndex, null);
+        }
+        
         /**
          * Get request folder path with subFolder.
          *
@@ -1458,6 +1481,10 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 endIndex = getPathLength() - 1;
             }
+            return  getFolderPath(endIndex, subFolder);
+        }
+
+        protected String getFolderPath(int endIndex, String subFolder) {
 
             StringBuilder calendarPath = new StringBuilder();
             for (int i = 0; i < endIndex; i++) {
