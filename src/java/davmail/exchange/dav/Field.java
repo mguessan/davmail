@@ -497,9 +497,9 @@ public class Field {
             return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), buffer.toString());
         } else if (field.isBooleanValue) {
             if ("true".equals(value)) {
-                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "1");
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "1", PropertyType.Boolean);
             } else if ("false".equals(value)) {
-                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "0");
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "0", PropertyType.Boolean);
             } else {
                 throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }

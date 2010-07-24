@@ -41,11 +41,8 @@ import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.DavProperty;
-import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
@@ -599,15 +596,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         protected Set<PropertyValue> buildProperties() {
-            Set<PropertyValue> list = new HashSet<PropertyValue>();
+            Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
                 if (!"photo".equals(key)) {
-                    list.add(Field.createPropertyValue(key, entry.getValue()));
+                    propertyValues.add(Field.createPropertyValue(key, entry.getValue()));
                 }
             }
 
-            return list;
+            return propertyValues;
         }
 
         /**
@@ -629,13 +626,11 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(propPatchMethod);
                 if (status == HttpStatus.SC_MULTI_STATUS) {
-                    List<MultiStatusResponse> responses = propPatchMethod.getResponses();
+                    status = propPatchMethod.getResponseStatusCode();
                     //noinspection VariableNotUsedInsideIf
-                    if (etag == null) {
-                        status = HttpStatus.SC_CREATED;
+                    if (status == HttpStatus.SC_CREATED) {
                         LOGGER.debug("Created contact " + getHref());
                     } else {
-                        status = HttpStatus.SC_OK;
                         LOGGER.debug("Updated contact " + getHref());
                     }
                 } else {
@@ -674,39 +669,20 @@ public class DavExchangeSession extends ExchangeSession {
                         putmethod.releaseConnection();
                     }
 
-                    ArrayList<DavConstants> changeList = new ArrayList<DavConstants>();
-                    changeList.add(Field.createDavProperty("attachmentContactPhoto", "true"));
-                    //changeList.add(Field.createDavProperty("renderingPosition", "-1"));
-                    changeList.add(Field.createDavProperty("attachExtension", ".jpg"));
+                    Set<PropertyValue> picturePropertyValues = new HashSet<PropertyValue>();
+                    picturePropertyValues.add(Field.createPropertyValue("attachmentContactPhoto", "true"));
+                    // picturePropertyValues.add(Field.createPropertyValue("renderingPosition", "-1"));
+                    picturePropertyValues.add(Field.createPropertyValue("attachExtension", ".jpg"));
 
-                    final PropPatchMethod attachmentPropPatchMethod = new PropPatchMethod(contactPictureUrl, changeList);
+                    final ExchangePropPatchMethod attachmentPropPatchMethod = new ExchangePropPatchMethod(contactPictureUrl, picturePropertyValues);
                     try {
                         status = httpClient.executeMethod(attachmentPropPatchMethod);
                         if (status != HttpStatus.SC_MULTI_STATUS) {
+                            LOGGER.error("Error in contact photo create or update: "+attachmentPropPatchMethod.getStatusCode());
                             throw new IOException("Unable to update contact picture");
                         }
-                    } catch (IOException e) {
-                        LOGGER.error("Error in contact photo create or update", e);
-                        throw e;
                     } finally {
                         attachmentPropPatchMethod.releaseConnection();
-                    }
-
-                    // update haspicture flag to boolean property
-                    DavPropertyName hasPicturePropertyName = Field.getPropertyName("haspicture");
-                    Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
-                    propertyValues.add(new PropertyValue(hasPicturePropertyName.getNamespace().getURI(),hasPicturePropertyName.getName(),"1", PropertyType.Boolean));
-                    ExchangePropPatchMethod exchangePropPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), propertyValues);
-                    try {
-                        status = httpClient.executeMethod(exchangePropPatchMethod);
-                        if (status != HttpStatus.SC_MULTI_STATUS) {
-                            throw new IOException("Unable to update haspicture flag");
-                        }
-                    } catch (IOException e) {
-                        LOGGER.error("Error in haspicture flag update", e);
-                        throw e;
-                    } finally {
-                        exchangePropPatchMethod.releaseConnection();
                     }
 
                 } else {
@@ -715,11 +691,9 @@ public class DavExchangeSession extends ExchangeSession {
                     try {
                         status = httpClient.executeMethod(deleteMethod);
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                            LOGGER.error("Error in contact photo delete: "+status);
                             throw new IOException("Unable to delete contact picture");
                         }
-                    } catch (IOException e) {
-                        LOGGER.error("Error in contact photo delete", e);
-                        throw e;
                     } finally {
                         deleteMethod.releaseConnection();
                     }
@@ -845,13 +819,10 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 status = httpClient.executeMethod(putmethod);
                 if (status == HttpURLConnection.HTTP_OK) {
-                    //noinspection VariableNotUsedInsideIf
-                    if (etag != null) {
-                        LOGGER.debug("Updated event " + getHref());
-                    } else {
-                        LOGGER.warn("Overwritten event " + getHref());
-                    }
-                } else if (status != HttpURLConnection.HTTP_CREATED) {
+                    LOGGER.debug("Updated event " + getHref());
+                } else if (status == HttpURLConnection.HTTP_CREATED) {
+                    LOGGER.warn("Overwritten event " + getHref());
+                } else {
                     LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
                 }
             } finally {

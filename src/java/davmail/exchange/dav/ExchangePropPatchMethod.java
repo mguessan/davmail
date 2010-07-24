@@ -199,14 +199,14 @@ public class ExchangePropPatchMethod extends PostMethod {
                     final byte[] lastbytes = new byte[3];
 
                     @Override
-                    public int read(byte b[], int off, int len) throws IOException {
-                        int count = in.read(b, off, len);
+                    public int read(byte[] bytes, int off, int len) throws IOException {
+                        int count = in.read(bytes, off, len);
                         // patch invalid element name
                         for (int i = 0; i < count; i++) {
-                            byte currentByte = b[off + i];
+                            byte currentByte = bytes[off + i];
                             if ((lastbytes[0] == '<') && (currentByte >= '0' && currentByte <= '9')) {
                                 // move invalid first tag char to valid range
-                                b[off + i] = (byte) (currentByte + 49);
+                                bytes[off + i] = (byte) (currentByte + 49);
                             }
                             lastbytes[0] = lastbytes[1];
                             lastbytes[1] = lastbytes[2];
@@ -297,4 +297,25 @@ public class ExchangePropPatchMethod extends PostMethod {
         return responses;
     }
 
+    /**
+     * Get single Multistatus response.
+     *
+     * @return response
+     * @throws HttpException on error
+     */
+    public MultiStatusResponse getResponse() throws HttpException {
+        if (responses == null || responses.size() != 1) {
+            throw new HttpException(getStatusLine().toString());
+        }
+        return responses.get(0);
+    }
+
+    public int getResponseStatusCode() throws HttpException {
+        String responseDescription = getResponse().getResponseDescription();
+        if ("HTTP/1.1 201 Created".equals(responseDescription)) {
+            return HttpStatus.SC_CREATED;
+        } else {
+            return HttpStatus.SC_OK;
+        }
+    }
 }
