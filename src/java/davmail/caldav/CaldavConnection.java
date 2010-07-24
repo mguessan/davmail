@@ -632,6 +632,9 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void patchCalendar(CaldavRequest request) throws IOException {
+        if (request.hasProperty("displayname")) {
+            session.moveFolder(request.getFolderPath(), request.getParentFolderPath()+'/'+request.getProperty("displayname"));
+        }
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         // just ignore calendar folder proppatch (color not supported in Exchange)
@@ -1221,7 +1224,7 @@ public class CaldavConnection extends AbstractConnection {
             buildDepth();
             this.body = body;
 
-            if (isPropFind() || isReport() || isMkCalendar()) {
+            if (isPropFind() || isReport() || isMkCalendar() || isPropPatch()) {
                 parseXmlBody();
             }
         }
