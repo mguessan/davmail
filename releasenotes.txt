@@ -1,3 +1,268 @@
+** DavMail 3.8.0b1 released **
+First public release after major refactoring to implement Exchange 2010 and Exchange 2007 without
+Webdav support. This implementation is based on Exchange Web Services. EWS support is not yet
+complete: global address list search and free/busy support is missing.
+This release includes the new Carddav service sponsored by French Defense / DGA through 
+project Trustedbird. OSX notifications will now use Growl if available.
+
+Carddav:
+- Carddav: another urlcompname encoding fix
+- Carddav: generate OSX compatible VCARD photo and change addressbook-home-set with OSX Address Book
+- Carddav: use new ExchangePropPatchMethod in full contact create/update
+- CardDav: use new ExchangePropPatchMethod to create haspicture boolean property
+- Carddav: improve error logging on photo update failure
+- Carddav: use email1 as default email on update
+- Carddav: fix multiple mail MAPI properties handling
+- Carddav: fix GET request on folder support for SOGO
+- Carddav: encode contact picture url
+- Carddav: return 404 not found on missing folder
+- Carddav: fix line folding in generated VCARD
+- Carddav: Fix regression in single value multiline properties
+- Carddav: add gender property
+- Carddav: adjust bday to timezone
+- Carddav: another anniversary property candidate
+- Carddav: Add Anniversary support
+- Carddav: Fix bday generation
+- Carddav: fix iPhone BDAY parser
+- Carddav: adjust fields accepting multiple values
+- Carddav: fix semicolon encoding in compound value
+- Carddav: workaround for iPhone categories encoding
+- CardDav: do not encode simple (not compound) properties
+- Carddav: fix regression in VCardWriter
+- Carddav: always encode values
+- Carddav: protect semicolon
+- Carddav: iPhone personalHomePage support
+- Carddav: ignore key prefix in VCARD
+- Carddav: resize contact picture
+- Carddav: Fix lower case param names
+- Carddav: add contact create or update log statement
+- Carddav: handle param values as parameter list
+- Carddav: encode photo href
+- Carddav: fix regression on VCARD photo detection
+- Carddav: use urlcompname value instead of path to get contact details
+- Carddav: fix case insensitive param values
+- Carddav: add haspicture to test case
+- Carddav: Implement picture delete and private flag over EWS
+- Carddav: handle picture delete
+- Carddav: fix boolean field handling
+- Carddav: Remove missing properties on update
+- Carddav: implement CLASS (private) flag
+- Carddav: convert image to jpeg over EWS
+- Carddav: implement photo update over WebDav
+- Carddav: implement photo handling over EWS
+- Carddav: implement categories support in EWS mode
+- Carddav: implement categories
+- Carddav: get SMTP email address
+- Carddav: move value decoding back to VCardReader
+- Carddav: decode multiline values
+- Carddav: encode comma and \n in values
+- CardDav: make getContactPhoto more robust
+- Carddav: iPhone iOS4 compatibility
+- Carddav: implement contact photo support (readonly)
+- Carddav: implement quoted param value support
+- Carddav: bday, assistant, manager and spouse properties
+- Carddav: other address and homeposteofficebox properties
+- Carddav: instant messaging and role properties
+- Carddav: more properties
+- Carddav: Implement phone, address and email properties
+- Carddav: handle multiple values on a single line and add new properties
+- CardDav: fix contact folder path handling and add create contact unit test
+- Carddav: refactor Contact creation and create VCardReader
+- CardDav: move Contact getBody to ExchangeSession and add more attributes support
+- CardDav: map contact fields
+- CardDav: improve automatic address book setup for OSX
+- CardDav: implement OSX AddressBook requests: current-user-privilege-set property, current-user-principal on root request, addressbook-home-set on principal request, addressbook-multiget REPORT request with address-data response, urn:ietf:params:xml:ns:carddav namespace
+
+Enhancement:
+- Disable preemptive authentication when adding NTLM scheme
+- Fixes from audit
+- Force log file encoding to UTF-8
+- Add new davmail.logFileSize setting
+- Use linux friendly path separator in jsmooth config files
+- Fixes from audit
+- Major refactoring: use straight inpustream instead of reader everywhere
+- Disable ConsoleAppender in gui mode
+- Add missing Junit jar
+- Cleanup: System.setProperty of httpclient.useragent no longer needed
+- Improve item not found logging
+- Log gateway stop at info level
+- Improve empty keystore password handling to avoid NullPointerException
+- Fix 2999717 redirect console to /dev/null in desktop file
+
+Exchange Web Services:
+- EWS: fix urlcompname encoding issues
+- EWS: fix folder name ampersand encoding issue
+- EWS: return 403 forbidden on ErrorAccessDenied
+- EWS: xml encode values
+- EWS: use UTF-8 to decode request on error
+- EWS: send extended properties first on update
+- EWS: format datereceived date
+- EWS: fix bug in UnindexedFieldURI
+- EWS: update createMessage bcc handling to match sendMessage 
+- EWS: implement bcc support in sendMessage
+- EWS: implement send message (SMTP)
+- EWS: fixes from audit
+- EWS: fix CalendarItem creation, no need to wrap ics in a MIME message
+- EWS: implement calendar event create or update, processed field, subfolder path handling 
+- EWS: fix internaldate conversion
+- EWS: convert read flag to boolean and noneMatch/etag to detect create or update on items
+- EWS: use UnindexedFieldURI for read flag
+- EWS: fixes for Caldav and Carddav compatibility
+- EWS: fix folder id regression
+- EWS: fix country contact property mapping
+- EWS: implement getItem and various contact handling fixes
+- EWS: map all contact properties
+- EWS: implement more contact and event methods
+- EWS: implement copy method
+- EWS: datereceived flag support
+- EWS: handle bcc field
+- EWS: various flag handling fixes, implement message delete
+- EWS: implement getContent
+- EWS: fix iconIndex flag property
+- EWS: implement create and update message
+- EWS: fix single value in MultiCondition handling
+- EWS: rely on uid (PR_SEARCH_KEY) instead of permanentUrl to detect imap uid changes
+- EWS: implement searchMessages
+- EWS: fix bug in MultiCondition search
+- EWS: fix from audit
+- EWS: implement folder handling, including the new MoveFolderMethod
+- EWS: move mailbox folder urls to DavExchangeSession
+- EWS: use searchContacts in contactFind
+- EWS: fix regression in deleted flag handling
+- EWS: refactor contactFind, use new Condition API
+- EWS: still more WebDav code to DavExchangeSession
+- EWS: move more WebDav code to DavExchangeSession
+- EWS: Various fixes after refactoring on DASL request generation
+- EWS: in progress refactoring of contacts and events handling
+- EWS: implement folder ctag, remove deprecated foldername property
+- EWS: move WebDav message write and delete to DavExchangeSession
+- EWS: move WebDav code to DavExchangeSession
+- EWS: refactor IMAP search, use Conditions classes instead of string search filder
+- EWS: Use int values to create ExtendedFieldURI propertyTags
+- EWS: map folder path to and from IMAP
+- EWS: implement NotCondition and public folder access
+- EWS: implement IndexedFieldURI and InternetMessageHeader
+- EWS: refactor search to use classes instead of String filters
+- EWS: implement MultipleOperandBooleanExpression (And, Or, Not conditions)
+- EWS: refactor folder search, create abstract getFolder methods
+- EWS: start ExchangeSession refactoring to extract Dav calls
+- EWS: refactor options, use enums
+- EWS: implement basic SearchExpression restriction
+- EWS: Implement CreateFolder, DeleteFolder and CreateItem, refactor options
+- EWS: retrieve and decode MIME content
+- EWS: add standard field additional property, implement IncludeMimeContent in GetItem, add DeleteItemMethod
+- EWS: Generic item property mapping
+- EWS: refactor EWS code
+- EWS: experimental HttpClient based EWS methods
+
+Caldav:
+- Caldav: fix time-range filter support in EWS mode
+- Caldav: move calendar on displayname update
+- Caldav: partial MKCALENDAR implementation
+- Caldav: implement time-range request
+- Caldav: add missing dtstart field
+- Caldav: improve 404 error handling
+- Caldav: fix regression in processItem
+- Caldav: UTF-8 encode report body
+- Caldav: catch any exception in reportItems
+- Caldav: Process request before sending response to avoid sending headers twice on error
+- Caldav: Workaround for Lightning/1.0b2 href encoding bug in REPORT requests
+- Caldav: move processItem logic back to CaldavConnection
+- Caldav: Workaround for emClient broken href encoding
+- Caldav: remove buildCalendarPath method
+- Caldav: allows mixed case contentType in event MIME message (fix Unable to get event error)
+- Caldav: fix 3014204 missing timezone
+- Caldav: fix 2902372 private flag handling undex iCal 4 (OSX 10.6 Snow Leopard)
+- Caldav: send current-user-principal on principals folder for iCal
+- Caldav: workaround for iCal bug: do not notify if reply explicitly not requested
+- Caldav: add CRLF after END:VCALENDAR to comply with RFC
+- Caldav: fix regression in getItem, allow urn:content-classes:calendarmessage contentClass
+- Caldav: Fix Carddav etag handling (additional Head request) and implement card delete
+- Caldav: Implement Carddav create (only a few attributes mapped)
+- Caldav: Implement basic Carddav search requests
+
+Dav:
+- Dav: more property update fixes
+- Dav: patch filter on invalid Exchange Webdav response
+- Dav: new ExchangePropPatchMethod to handle custom exchange propertyupdate and invalid response tag names
+- Dav: refactor getContentReader and fix regression on null date value
+- Dav: fix nullpointer in DavExchangeSession
+- Dav: handle null properties with new createMessage
+- Dav: another datereceived fix
+- Dav: switch back to DAV:uid, used mainly in POP service (case sensitive)
+- Dav: fix bug 3022451 in new search filter implementation with empty sub conditions
+- Dav: Add folder unit tests
+- Dav: add private and sensitivity fields
+- Dav: implement timezone mapping for Exchange 2007, should fix the allday issue with Outlook
+- Dav: use search expression to request ishidden
+- Dav: fix regression in deleteItem
+- Dav: fix regression 3020385 on folder handling
+- Dav: Refactor folder search to use searchItems
+- Dav: use Email1EmailAddress mapi property to get mail attribute, add uid attribute
+- Dav: fix from audit
+- Dav: add unit tests, move buildCalendarPath logic to getFolderPath
+
+Bug fixes:
+- Use private MultiThreadedHttpConnectionManager with NTLM to avoid persistent authentication on connection issues
+- Fix regression in AbstractConnection: return null instead of empty string on closed connection
+- Fix 3001579: improve NTLM support
+
+IMAP:
+- IMAP: add uidNext MAPI property (not available under Exchange 2003)
+- IMAP: fix deleted flag handling over Webdav
+- IMAP: fix flag handling in createMessage
+- IMAP: new seen flag test case
+- IMAP: fix regression on imap uid restore
+- IMAP: fix 3023386, support BODY.PEEK[1.MIME] partial fetch
+- IMAP: new unit tests and fix $Forwarded flag removal
+- IMAP: implement deleted/undeleted search as condition instead of post filter
+- IMAP: add IMAP unit test
+- IMAP: fix 3014787 remove property over WebDav
+- IMAP: implement last message (simple *) fetch range
+- IMAP: send required "* SEARCH" on empty search response
+- IMAP: Add a new hidden davmail.deleteBroken setting to delete broken messages
+- IMAP: implement a new imapAutoExpunge setting to delete messages immediately over IMAP
+
+SMTP:
+- SMTP: send message directly without creating a Draft message to preserve Message-id
+- SMTP: fix log message
+- SMTP: fix 3024482, avoid duplicate messages with gmail
+- SMTP: Fix DoubleDotInputStream pushback size
+- SMTP: last CRLF is not included in message content
+
+Documentation:
+- Doc: javadoc and code cleanup
+- Doc: fix default domain label
+- Doc: new FAQ entry on OSX auto start "Login Items"
+- Doc: typos fixes from Raphael Fairise
+- Doc: update release guide
+- Doc: add a new mail.strictly_mime FAQ entry to enable quoted-printable
+
+POP:
+- POP: fix regression in TOP command
+- POP: fix message termination, append CRLF only when necessary
+- POP: replace deprecated write method, use DoubleDotOutputStream instead
+- POP: allow space in username
+
+LDAP:
+- LDAP: fix contact attributes reverse mapping
+- LDAP: improve contact attribute mapping and add a few new properties
+- LDAP: fix attribute map
+- LDAP: fix regression after EWS refactoring
+- LDAP: use imap uid as ldap uid
+- LDAP: use PR_SEARCH_KEY instead of DAV:uid as uid string
+
+OSX:
+- Exclude growl from non OSX packages
+- Fix growl build project name
+- OSX: implement growl support
+- include jnilib in OSX package
+- libgrowl-0.2 with libgrowl.jnilib compiled on OSX Snow Leopard
+- set libgrowl version to 0.2
+- rename generated jar with version, exclude test classes and create Manifest with Michael Stringer author
+- Improve Growl exception handling, remove System.out and a few fixes from audit
+- Initial growl import from http://forums.cocoaforge.com/viewtopic.php?f=6&t=17320
+
 ** DavMail 3.6.6 released **
 This release is mainly focused on IMAP enhancements, including IDLE (RFC2177)
 aka "Push Mail" support and other protocol compliance fixes, particularly on
