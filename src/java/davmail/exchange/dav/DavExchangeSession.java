@@ -398,7 +398,7 @@ public class DavExchangeSession extends ExchangeSession {
         operatorMap.put(Operator.IsEqualTo, " = ");
         operatorMap.put(Operator.IsGreaterThanOrEqualTo, " >= ");
         operatorMap.put(Operator.IsGreaterThan, " > ");
-        operatorMap.put(Operator.IsLowerThanOrEqualTo, " <= ");
+        operatorMap.put(Operator.IsLessThanOrEqualTo, " <= ");
         operatorMap.put(Operator.IsLessThan, " < ");
         operatorMap.put(Operator.Like, " like ");
         operatorMap.put(Operator.IsNull, " is null");
@@ -523,7 +523,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public Condition lte(String attributeName, String value) {
-        return new AttributeCondition(attributeName, Operator.IsLowerThanOrEqualTo, value);
+        return new AttributeCondition(attributeName, Operator.IsLessThanOrEqualTo, value);
     }
 
     @Override

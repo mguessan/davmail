@@ -612,7 +612,7 @@ public abstract class ExchangeSession {
     protected enum Operator {
         Or, And, Not, IsEqualTo,
         IsGreaterThan, IsGreaterThanOrEqualTo,
-        IsLessThan, IsLowerThanOrEqualTo,
+        IsLessThan, IsLessThanOrEqualTo,
         IsNull, IsTrue, IsFalse,
         Like, StartsWith, Contains
     }

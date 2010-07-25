@@ -631,7 +631,7 @@ public class CaldavConnection extends AbstractConnection {
      */
     public void patchCalendar(CaldavRequest request) throws IOException {
         if (request.hasProperty("displayname")) {
-            session.moveFolder(request.getFolderPath(), request.getParentFolderPath()+'/'+request.getProperty("displayname"));
+            session.moveFolder(request.getFolderPath(), request.getParentFolderPath() + '/' + request.getProperty("displayname"));
         }
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -1392,9 +1392,8 @@ public class CaldavConnection extends AbstractConnection {
                         } else if ("calendar-multiget".equals(currentElement)
                                 || "addressbook-multiget".equals(currentElement)) {
                             isMultiGet = true;
-                        } else if ("time-range".equals(currentElement)) {
-                            timeRangeStart = streamReader.getAttributeValue(null, "start");
-                            timeRangeEnd = streamReader.getAttributeValue(null, "end");
+                        } else if ("comp-filter".equals(currentElement)) {
+                            handleCompFilter(streamReader);
                         } else if (inProperties && !"calendar-free-busy-set".equals(currentElement)) {
                             properties.put(currentElement, streamReader.getElementText());
                         }
@@ -1425,6 +1424,23 @@ public class CaldavConnection extends AbstractConnection {
                     }
                 } catch (XMLStreamException e) {
                     DavGatewayTray.error(e);
+                }
+            }
+        }
+
+        protected boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
+            return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+        }
+
+        public void handleCompFilter(XMLStreamReader reader) throws XMLStreamException {
+            while (reader.hasNext() && !isEndTag(reader, "comp-filter")) {
+                int event = reader.next();
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String tagLocalName = reader.getLocalName();
+                    if ("time-range".equals(tagLocalName)) {
+                        timeRangeStart = reader.getAttributeValue(null, "start");
+                        timeRangeEnd = reader.getAttributeValue(null, "end");
+                    }
                 }
             }
         }
@@ -1468,7 +1484,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             return getFolderPath(endIndex, null);
         }
-        
+
         /**
          * Get request folder path with subFolder.
          *
@@ -1482,7 +1498,7 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 endIndex = getPathLength() - 1;
             }
-            return  getFolderPath(endIndex, subFolder);
+            return getFolderPath(endIndex, subFolder);
         }
 
         protected String getFolderPath(int endIndex, String subFolder) {

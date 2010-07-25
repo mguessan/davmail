@@ -448,7 +448,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition lte(String attributeName, String value) {
-        return new AttributeCondition(attributeName, Operator.IsLowerThanOrEqualTo, value);
+        return new AttributeCondition(attributeName, Operator.IsLessThanOrEqualTo, value);
     }
 
     @Override
