@@ -174,7 +174,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 fieldUpdates.add(Field.createFieldUpdate("messageFlags", "0"));
             }
         }
-        fieldUpdates.add(Field.createFieldUpdate("urlcompname", StringUtil.encodeUrlcompname(messageName)));
+        fieldUpdates.add(Field.createFieldUpdate("urlcompname", messageName));
         item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);

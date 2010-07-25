@@ -441,4 +441,25 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         System.out.println(contact.getBody());
     }
 
+    public void testSpecialCharacters() throws IOException {
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
+        vCardWriter.appendProperty("FN", "common name");
+        vCardWriter.endCard();
+
+        itemName = "test & accentué.vcf";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        assertEquals(201, result.status);
+
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        assertEquals("common name", contact.get("cn"));
+    }
+
+    public void testdqdsq() throws IOException {
+        session.searchContacts("testcontactfolder", ExchangeSession.CONTACT_ATTRIBUTES, null);
+    }
 }
