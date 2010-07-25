@@ -418,6 +418,8 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient HttpClient instance
      */
     public static void addNTLM(HttpClient httpClient) {
+        // disable preemptive authentication
+        httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, false);
         // NTLM authentication uses persistent connections, use private connection manager
         httpClient.setHttpConnectionManager(createConnectionManager());
         // register the jcifs based NTLMv2 implementation
