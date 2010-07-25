@@ -24,6 +24,7 @@ import davmail.util.StringUtil;
  * Two operand expression.
  */
 public class TwoOperandExpression implements SearchExpression {
+    @SuppressWarnings({"UnusedDeclaration"})
     protected enum Operator {
         IsEqualTo, IsNotEqualTo, IsGreaterThan, IsGreaterThanOrEqualTo, IsLessThan, IsLessThanOrEqualTo
     }

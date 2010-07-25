@@ -392,10 +392,9 @@ public class CaldavConnection extends AbstractConnection {
      * @param request   Caldav request
      * @param folder    folder object
      * @param subFolder calendar folder path relative to request path
-     * @return Exchange folder object
      * @throws IOException on error
      */
-    public ExchangeSession.Folder appendFolder(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder) throws IOException {
+    public void appendFolder(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder) throws IOException {
         response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
@@ -451,7 +450,6 @@ public class CaldavConnection extends AbstractConnection {
 
         response.endPropStatOK();
         response.endResponse();
-        return folder;
     }
 
     /**

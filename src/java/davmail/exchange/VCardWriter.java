@@ -22,22 +22,37 @@ package davmail.exchange;
  * VCard Writer
  */
 public class VCardWriter extends ICSBufferedWriter {
+    /**
+     * Begin VCard and version
+     */
     public void startCard() {
         writeLine("BEGIN:VCARD");
         writeLine("VERSION:3.0");
     }
 
+    /**
+     * Append single value property
+     *
+     * @param propertyName  property name
+     * @param propertyValue property value
+     */
     public void appendProperty(String propertyName, String propertyValue) {
         if ((propertyValue != null) && (propertyValue.length() > 0)) {
-            StringBuilder buffer = new StringBuilder();
-            buffer.append(propertyName);
-            buffer.append(':');
-            appendMultilineEncodedValue(buffer, propertyValue);
-            writeLine(buffer.toString());
+            StringBuilder lineBuffer = new StringBuilder();
+            lineBuffer.append(propertyName);
+            lineBuffer.append(':');
+            appendMultilineEncodedValue(lineBuffer, propertyValue);
+            writeLine(lineBuffer.toString());
         }
 
     }
 
+    /**
+     * Append and encode \n to \\n in value.
+     *
+     * @param buffer line buffer
+     * @param value  value
+     */
     protected void appendMultilineEncodedValue(StringBuilder buffer, String value) {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
@@ -49,6 +64,12 @@ public class VCardWriter extends ICSBufferedWriter {
         }
     }
 
+    /**
+     * Append compound value
+     *
+     * @param propertyName  property name
+     * @param propertyValue property values
+     */
     public void appendProperty(String propertyName, String... propertyValue) {
         boolean hasValue = false;
         for (String value : propertyValue) {
@@ -59,18 +80,18 @@ public class VCardWriter extends ICSBufferedWriter {
         }
         if (hasValue) {
             boolean first = true;
-            StringBuilder buffer = new StringBuilder();
-            buffer.append(propertyName);
-            buffer.append(':');
+            StringBuilder lineBuffer = new StringBuilder();
+            lineBuffer.append(propertyName);
+            lineBuffer.append(':');
             for (String value : propertyValue) {
                 if (first) {
                     first = false;
                 } else {
-                    buffer.append(';');
+                    lineBuffer.append(';');
                 }
-                appendEncodedValue(buffer, value);
+                appendEncodedValue(lineBuffer, value);
             }
-            writeLine(buffer.toString());
+            writeLine(lineBuffer.toString());
         }
     }
 
@@ -96,6 +117,9 @@ public class VCardWriter extends ICSBufferedWriter {
         }
     }
 
+    /**
+     * End VCard
+     */
     public void endCard() {
         writeLine("END:VCARD");
     }

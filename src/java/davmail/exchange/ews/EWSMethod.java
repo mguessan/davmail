@@ -522,6 +522,7 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    @Override
     public int getStatusCode() {
         if ("ErrorAccessDenied".equals(errorDetail)) {
             return HttpStatus.SC_FORBIDDEN;

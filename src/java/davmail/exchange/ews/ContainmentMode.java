@@ -21,6 +21,7 @@ package davmail.exchange.ews;
 /**
  * Contains search mode.
  */
+@SuppressWarnings({"UnusedDeclaration"})
 public class ContainmentMode extends AttributeOption {
     private ContainmentMode(String value) {
         super("ContainmentMode", value);

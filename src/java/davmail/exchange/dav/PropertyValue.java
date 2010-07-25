@@ -22,10 +22,10 @@ package davmail.exchange.dav;
  * Property value.
  */
 public class PropertyValue {
-    protected String namespaceUri;
-    protected String name;
-    protected String xmlEncodedValue;
-    protected PropertyType type;
+    protected final String namespaceUri;
+    protected final String name;
+    protected final String xmlEncodedValue;
+    protected final PropertyType type;
 
     public PropertyValue(String namespaceUri, String name) {
          this(namespaceUri, name, null, null);

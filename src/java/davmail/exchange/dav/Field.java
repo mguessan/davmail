@@ -478,9 +478,16 @@ public class Field {
         }
     }
 
+    /**
+     * Create property value object for field and value.
+     *
+     * @param alias field alias
+     * @param value field value
+     * @return property value object
+     * @see ExchangePropPatchMethod
+     */
     public static PropertyValue createPropertyValue(String alias, String value) {
         Field field = Field.get(alias);
-        String encodedValue = null;
         DavPropertyName davPropertyName = field.davPropertyName;
         if (value == null) {
             // return DavPropertyName to remove property

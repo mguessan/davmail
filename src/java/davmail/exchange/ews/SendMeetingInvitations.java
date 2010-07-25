@@ -21,6 +21,7 @@ package davmail.exchange.ews;
 /**
  * Item update option.
  */
+@SuppressWarnings({"UnusedDeclaration"})
 public class SendMeetingInvitations extends AttributeOption {
     private SendMeetingInvitations(String value) {
         super("SendMeetingInvitations", value);

@@ -1630,10 +1630,6 @@ public class DavExchangeSession extends ExchangeSession {
                 inputStream = method.getResponseBodyAsStream();
             }
             inputStream = new FilterInputStream(inputStream) {
-                @Override
-                public int read() throws IOException {
-                    return super.read();
-                }
 
                 @Override
                 public void close() throws IOException {
