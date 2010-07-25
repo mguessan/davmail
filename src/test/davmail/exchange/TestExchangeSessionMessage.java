@@ -96,6 +96,46 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         assertEquals(0, messageList.size());
     }
 
+    public void testSpecialMessageCharacter() throws IOException, MessagingException {
+        session.deleteFolder("testfolder");
+        session.createMessageFolder("testfolder");
+        MimeMessage mimeMessage = createMimeMessage();
+        messageName = "Special & accenté.EML";
+        HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put("draft", "0");
+        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+    }
+
+    public void testSlashMessageName() throws IOException, MessagingException {
+        session.deleteFolder("testfolder");
+        session.createMessageFolder("testfolder");
+        MimeMessage mimeMessage = createMimeMessage();
+        messageName = "test _xF8FF_ slash.EML";
+        HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put("draft", "0");
+        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+    }
+
+    public void testPlusMessageName() throws IOException, MessagingException {
+        // fails on Exchange 2003
+        session.deleteFolder("testfolder");
+        session.createMessageFolder("testfolder");
+        MimeMessage mimeMessage = createMimeMessage();
+        messageName = "test + plus.EML";
+        HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put("draft", "0");
+        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        assertNotNull(messageList);
+        assertEquals(1, messageList.size());
+    }
+
     /**
      * Cleanup
      */

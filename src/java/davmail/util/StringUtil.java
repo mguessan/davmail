@@ -135,6 +135,18 @@ public final class StringUtil {
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
     private static final Pattern ENCODED_GT_PATTERN = Pattern.compile("&gt;");
 
+    private static final Pattern F8FF_PATTERN = Pattern.compile("_xF8FF_");
+    private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
+
+
+    public static String urlEncodeSlash(String name) {
+        String result = name;
+        if (name.indexOf("_xF8FF_") >= 0) {
+            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char)0xF8FF));
+        }
+        return result;
+    }
+
     /**
      * Encode & to %26 for urlcompname.
      *
@@ -232,4 +244,17 @@ public final class StringUtil {
         return base64Value;
     }
 
+    public static String encodeUrlcompname(String value) {
+        String result = value;
+        if (result.indexOf("_xF8FF_") >= 0) {
+            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char)0xF8FF));
+        }
+        if (result.indexOf('&') >= 0) {
+            result = AMP_PATTERN.matcher(result).replaceAll("%26");
+        }
+        if (result.indexOf('+') >= 0) {
+            result = PLUS_PATTERN.matcher(result).replaceAll("%2B");
+        }
+        return result;
+    }
 }

@@ -174,7 +174,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 fieldUpdates.add(Field.createFieldUpdate("messageFlags", "0"));
             }
         }
-        fieldUpdates.add(Field.createFieldUpdate("urlcompname", messageName));
+        fieldUpdates.add(Field.createFieldUpdate("urlcompname", StringUtil.encodeUrlcompname(messageName)));
         item.setFieldUpdates(fieldUpdates);
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), item);
         executeMethod(createItemMethod);
@@ -363,10 +363,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 containmentComparison.appendTo(buffer);
             }
             buffer.append('>');
-            getFieldURI(attributeName).appendTo(buffer);
+            FieldURI fieldURI = getFieldURI(attributeName);
+            fieldURI.appendTo(buffer);
 
             buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
-            buffer.append(StringUtil.xmlEncode(value));
+            // encode urlcompname
+            if (fieldURI instanceof ExtendedFieldURI && "0x10f3".equals(((ExtendedFieldURI) fieldURI).propertyTag)) {
+                buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
+            } else {
+                buffer.append(StringUtil.xmlEncode(value));
+            }
             buffer.append("\"/></t:FieldURIOrConstant>");
 
             buffer.append("</t:").append(operator.toString()).append('>');
@@ -577,7 +583,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public int createFolder(String folderPath, String folderClass, Map<String,String> properties) throws IOException {
+    public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
         FolderPath path = new FolderPath(folderPath);
         EWSMethod.Item folder = new EWSMethod.Item();
         folder.type = "Folder";
@@ -1112,7 +1118,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 parentFolderId,
                 FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
-                        Field.get("urlcompname"), StringUtil.urlEncodeAmpersand(folderName))
+                        Field.get("urlcompname"), folderName)
         );
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();

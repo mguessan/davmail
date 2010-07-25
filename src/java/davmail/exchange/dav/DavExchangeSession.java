@@ -433,7 +433,11 @@ public class DavExchangeSession extends ExchangeSession {
             if (Operator.Like == operator) {
                 buffer.append('%');
             }
-            buffer.append(value);
+            if ("urlcompname".equals(field.alias)) {
+                buffer.append(StringUtil.encodeUrlcompname(value));
+            } else {
+                buffer.append(value);
+            }
             if (Operator.Like == operator || Operator.StartsWith == operator) {
                 buffer.append('%');
             }
@@ -1202,22 +1206,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
         String itemPath = getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName);
-        Item item;
-        try {
-            item = getItem(itemPath);
-        } catch (HttpNotFoundException hnfe) {
-            // failover for Exchange 2007 plus encoding issue
-            String decodedEventName = convertItemNameToEML(itemName).replaceAll("_xF8FF_", "/").replaceAll("_x003F_", "?").replaceAll("'", "''");
-            LOGGER.debug("Item not found at " + itemPath + ", search by displayname: '" + decodedEventName + '\'');
-            ExchangeSession.MessageList messages = searchMessages(folderPath, equals("displayname", decodedEventName));
-            if (!messages.isEmpty()) {
-                item = getItem(messages.get(0).getPermanentUrl());
-            } else {
-                throw hnfe;
-            }
-        }
-
-        return item;
+        return getItem(itemPath);
     }
 
     @Override

@@ -556,6 +556,7 @@ public abstract class ExchangeSession {
 
     static {
         IMAP_MESSAGE_ATTRIBUTES.add("permanenturl");
+        IMAP_MESSAGE_ATTRIBUTES.add("urlcompname");
         IMAP_MESSAGE_ATTRIBUTES.add("uid");
         IMAP_MESSAGE_ATTRIBUTES.add("messageSize");
         IMAP_MESSAGE_ATTRIBUTES.add("imapUid");
