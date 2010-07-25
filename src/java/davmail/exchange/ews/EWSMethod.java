@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpConnection;
@@ -410,7 +411,7 @@ public abstract class EWSMethod extends PostMethod {
                 writer.write("<t:");
                 writer.write(mapEntry.getKey());
                 writer.write(">");
-                writer.write(mapEntry.getValue());
+                writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
                 writer.write("</t:");
                 writer.write(mapEntry.getKey());
                 writer.write(">");

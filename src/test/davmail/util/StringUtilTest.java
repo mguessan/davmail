@@ -57,4 +57,9 @@ public class StringUtilTest extends TestCase {
         assertEquals(">", StringUtil.xmlDecode("&gt;"));
         assertEquals("&lt;test&gt;", StringUtil.xmlEncode("<test>"));
     }
+
+    public void testUrlEncodeAmpersand() {
+        assertEquals("%26", StringUtil.urlEncodeAmpersand("&"));
+        assertEquals("&", StringUtil.urlDecodeAmpersand("%26"));
+    }
 }

@@ -105,4 +105,17 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
         assertEquals(folderName, folder.folderPath);
         session.deleteFolder(folderName);
     }
+
+    public void testSpecialFolderCharacter() throws IOException {
+        String folderName = "Special & accenté";
+        session.deleteFolder(folderName);
+        session.createMessageFolder(folderName);
+        ExchangeSession.Folder folder = session.getFolder(folderName);
+        assertNotNull(folder);
+        assertEquals(folderName, folder.displayName);
+        assertEquals(folderName, folder.folderPath);
+        session.deleteFolder(folderName);
+    }
+
+    
 }

@@ -496,7 +496,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item);
-        folder.displayName = item.get(Field.get("urlcompname").getResponseName());
+        folder.displayName = StringUtil.urlDecodeAmpersand(item.get(Field.get("urlcompname").getResponseName()));
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
         folder.ctag = item.get(Field.get("ctag").getResponseName());
@@ -1112,7 +1112,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 parentFolderId,
                 FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
-                        Field.get("urlcompname"), folderName)
+                        Field.get("urlcompname"), StringUtil.urlEncodeAmpersand(folderName))
         );
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();

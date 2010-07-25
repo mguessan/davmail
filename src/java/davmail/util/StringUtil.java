@@ -129,12 +129,42 @@ public final class StringUtil {
     private static final Pattern LT_PATTERN = Pattern.compile("<");
     private static final Pattern GT_PATTERN = Pattern.compile(">");
 
+    private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
+
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
     private static final Pattern ENCODED_GT_PATTERN = Pattern.compile("&gt;");
 
     /**
-     * Need to encode xml for iCal
+     * Encode & to %26 for urlcompname.
+     *
+     * @param name decoded name
+     * @return name encoded name
+     */
+    public static String urlEncodeAmpersand(String name) {
+        String result = name;
+        if (name.indexOf('&') >= 0) {
+            result = AMP_PATTERN.matcher(result).replaceAll("%26");
+        }
+        return result;
+    }
+
+    /**
+     * Decode %26 to & for urlcompname.
+     *
+     * @param name decoded name
+     * @return name encoded name
+     */
+    public static String urlDecodeAmpersand(String name) {
+        String result = name;
+        if (name.indexOf("%26") >= 0) {
+            result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
+        }
+        return result;
+    }
+
+    /**
+     * Need to encode xml for iCal.
      *
      * @param name decoded name
      * @return name encoded name
