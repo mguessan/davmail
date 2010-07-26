@@ -1216,14 +1216,14 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             if (responses.length == 0) {
-                throw new HttpNotFoundException(itemPath);
+                throw new HttpNotFoundException(itemPath+" not found");
             }
         } catch (HttpNotFoundException e) {
             LOGGER.debug(itemPath +" not found, searching by urlcompname");
             // failover: try to get event by displayname
             responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", emlItemName), FolderQueryTraversal.Shallow);
             if (responses.length == 0) {
-                throw new HttpNotFoundException(itemPath);
+                throw new HttpNotFoundException(itemPath+" not found");
             }
         }
         // build item
@@ -1234,7 +1234,7 @@ public class DavExchangeSession extends ExchangeSession {
             List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
                 LOGGER.warn("Item found, but unable to build contact");
-                throw new HttpNotFoundException(itemPath);
+                throw new HttpNotFoundException(itemPath+" not found");
             }
             return contacts.get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
