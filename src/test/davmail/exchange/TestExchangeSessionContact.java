@@ -176,7 +176,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertEquals("true", contact.get("private"));
 
-        assertEquals("http://fburl", contact.get("url"));
+        assertEquals("http://fburl", contact.get("fburl"));
 
         assertEquals("true", contact.get("haspicture"));
         assertNotNull(session.getContactPhoto(contact));

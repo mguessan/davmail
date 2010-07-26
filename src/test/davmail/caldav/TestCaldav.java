@@ -23,10 +23,12 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -161,4 +163,37 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(events.size(), responses.length);
     }
 
+    public void testCreateCalendar() throws IOException {
+        String folderName = "test & accentué";
+        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/"+folderName+ '/');
+        // first delete calendar
+        session.deleteFolder("calendar/"+folderName);
+        String body =
+                "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
+                "   <C:mkcalendar xmlns:D=\"DAV:\"\n" +
+                "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
+                "     <D:set>\n" +
+                "       <D:prop>\n" +
+                "         <D:displayname>"+ StringUtil.xmlEncode(folderName)+"</D:displayname>\n" +
+                "         <C:calendar-description xml:lang=\"en\">Calendar description</C:calendar-description>\n" +
+                "         <C:supported-calendar-component-set>\n" +
+                "           <C:comp name=\"VEVENT\"/>\n" +
+                "         </C:supported-calendar-component-set>\n" +
+                "       </D:prop>\n" +
+                "     </D:set>\n" +
+                "   </C:mkcalendar>";
+
+        SearchReportMethod method = new SearchReportMethod(encodedFolderpath, body) {
+            @Override
+            public String getName() {
+                return "MKCALENDAR";
+            }
+        };
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_CREATED, method.getStatusCode());
+
+        GetMethod getMethod = new GetMethod(encodedFolderpath);
+        httpClient.executeMethod(getMethod);
+        assertEquals(HttpStatus.SC_OK, getMethod.getStatusCode());
+    }
 }

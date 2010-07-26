@@ -995,9 +995,8 @@ public class DavExchangeSession extends ExchangeSession {
             }
         };
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        // ok or already exists
-        if (status != HttpStatus.SC_MULTI_STATUS && status != HttpStatus.SC_METHOD_NOT_ALLOWED) {
-            throw DavGatewayHttpClientFacade.buildHttpException(method);
+        if (status == HttpStatus.SC_MULTI_STATUS) {
+            status = method.getResponseStatusCode();
         }
         return status;
     }
