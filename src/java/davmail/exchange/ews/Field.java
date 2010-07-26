@@ -144,6 +144,10 @@ public class Field {
         FIELD_MAP.put("description", new ExtendedFieldURI(0x1000, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("im", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8062, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("othermobile", new ExtendedFieldURI(0x3A1E, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("internationalisdnnumber", new ExtendedFieldURI(0x3A2D, ExtendedFieldURI.PropertyType.String));
+        
+        FIELD_MAP.put("otherTelephone", new ExtendedFieldURI(0x3A21, ExtendedFieldURI.PropertyType.String));
+        FIELD_MAP.put("homefax", new ExtendedFieldURI(0x3A25, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("otherstreet", new ExtendedFieldURI(0x3A63, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("otherstate", new ExtendedFieldURI(0x3A62, ExtendedFieldURI.PropertyType.String));

@@ -239,7 +239,10 @@ public class Field {
         createField("description", URN_SCHEMAS_HTTPMAIL, "textdescription"); // PR_BODY 0x1000 String
         createField("im", SCHEMAS_MAPI, "InstMsg"); // InstantMessagingAddress DistinguishedPropertySetType.Address/0x00008062/String
         createField(URN_SCHEMAS_CONTACTS, "othermobile"); // PR_CAR_TELEPHONE_NUMBER 0x3A1E String
+        createField(URN_SCHEMAS_CONTACTS, "internationalisdnnumber"); // PR_ISDN_NUMBER 0x3A2D String        
 
+        createField(URN_SCHEMAS_CONTACTS, "otherTelephone"); // PR_OTHER_TELEPHONE_NUMBER 0x3A21 String
+        createField(URN_SCHEMAS_CONTACTS, "homefax"); // PR_HOME_FAX_NUMBER 0x3A25 String
 
         createField(URN_SCHEMAS_CONTACTS, "otherstreet"); // PR_OTHER_ADDRESS_STREET 0x3A63 String
         createField(URN_SCHEMAS_CONTACTS, "otherstate"); // PR_OTHER_ADDRESS_STATE_OR_PROVINCE 0x3A62 String

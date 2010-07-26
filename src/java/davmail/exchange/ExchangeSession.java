@@ -1013,6 +1013,7 @@ public abstract class ExchangeSession {
      * Create Exchange calendar folder.
      *
      * @param folderName logical folder name
+     * @param properties folder properties
      * @throws IOException on error
      * @return status
      */
@@ -1024,6 +1025,7 @@ public abstract class ExchangeSession {
      * Create Exchange contact folder.
      *
      * @param folderName logical folder name
+     * @param properties folder properties
      * @throws IOException on error
      * @return status
      */
@@ -1036,6 +1038,7 @@ public abstract class ExchangeSession {
      *
      * @param folderName  logical folder name
      * @param folderClass folder class
+     * @param properties folder properties
      * @return status
      * @throws IOException on error
      */
@@ -1348,15 +1351,6 @@ public abstract class ExchangeSession {
          */
         public String getUid() {
             return uid;
-        }
-
-        /**
-         * Return permanent message url.
-         *
-         * @return permanent message url
-         */
-        public String getPermanentUrl() {
-            return permanentUrl;
         }
 
         /**
@@ -1719,6 +1713,9 @@ public abstract class ExchangeSession {
             writer.appendProperty("TEL;TYPE=fax", get("facsimiletelephonenumber"));
             writer.appendProperty("TEL;TYPE=pager", get("pager"));
             writer.appendProperty("TEL;TYPE=car", get("othermobile"));
+            writer.appendProperty("TEL;TYPE=home,fax", get("homefax"));
+            writer.appendProperty("TEL;TYPE=isdn", get("internationalisdnnumber"));
+            writer.appendProperty("TEL;TYPE=msg", get("otherTelephone"));
 
             // The structured type value corresponds, in sequence, to the post office box; the extended address;
             // the street address; the locality (e.g., city); the region (e.g., state or province);
@@ -2780,21 +2777,22 @@ public abstract class ExchangeSession {
             } else if ("TEL".equals(property.getKey())) {
                 if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
                     properties.put("mobile", property.getValue());
-                }
-                if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
+                } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
                     properties.put("telephoneNumber", property.getValue());
-                }
-                if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
+                } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
                     properties.put("homePhone", property.getValue());
-                }
-                if (property.hasParam("TYPE", "fax")) {
-                    properties.put("facsimiletelephonenumber", property.getValue());
-                }
-                if (property.hasParam("TYPE", "pager")) {
+                } else if (property.hasParam("TYPE", "fax")) {
+                    if (property.hasParam("TYPE", "home")) {
+                        properties.put("homefax", property.getValue());
+                    } else {
+                        properties.put("facsimiletelephonenumber", property.getValue());
+                    }
+                } else if (property.hasParam("TYPE", "pager")) {
                     properties.put("pager", property.getValue());
-                }
-                if (property.hasParam("TYPE", "car")) {
+                } else if (property.hasParam("TYPE", "car")) {
                     properties.put("othermobile", property.getValue());
+                } else {
+                    properties.put("otherTelephone", property.getValue());
                 }
             } else if ("ADR".equals(property.getKey())) {
                 // address
@@ -2802,7 +2800,8 @@ public abstract class ExchangeSession {
                     convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
                 } else if (property.hasParam("TYPE", "work")) {
                     convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
-                } else if (property.hasParam("TYPE", "other")) {
+                // any other type goes to other address
+                } else {
                     convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
                 }
             } else if ("EMAIL".equals(property.getKey())) {
@@ -3260,6 +3259,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
         CONTACT_ATTRIBUTES.add("othermobile");
+        CONTACT_ATTRIBUTES.add("otherTelephone");        
         CONTACT_ATTRIBUTES.add("gender");
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
