@@ -459,7 +459,4 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("common name", contact.get("cn"));
     }
 
-    public void testdqdsq() throws IOException {
-        session.searchContacts("testcontactfolder", ExchangeSession.CONTACT_ATTRIBUTES, null);
-    }
 }

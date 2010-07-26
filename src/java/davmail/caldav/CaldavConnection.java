@@ -1380,39 +1380,29 @@ public class CaldavConnection extends AbstractConnection {
 
                 streamReader = inputFactory.createXMLStreamReader(new StringReader(body));
                 boolean inElement = false;
-                boolean inProperties = false;
-                String currentElement = null;
+                String tagLocalName = null;
                 while (streamReader.hasNext()) {
                     int event = streamReader.next();
                     if (event == XMLStreamConstants.START_ELEMENT) {
                         inElement = true;
-                        currentElement = streamReader.getLocalName();
-                        if ("prop".equals(currentElement)) {
-                            inProperties = true;
-                        } else if ("calendar-multiget".equals(currentElement)
-                                || "addressbook-multiget".equals(currentElement)) {
+                        tagLocalName = streamReader.getLocalName();
+                        if ("prop".equals(tagLocalName)) {
+                            handleProp(streamReader);
+                        } else if ("calendar-multiget".equals(tagLocalName)
+                                || "addressbook-multiget".equals(tagLocalName)) {
                             isMultiGet = true;
-                        } else if ("comp-filter".equals(currentElement)) {
+                        } else if ("comp-filter".equals(tagLocalName)) {
                             handleCompFilter(streamReader);
-                        } else if (inProperties && !"calendar-free-busy-set".equals(currentElement)) {
-                            properties.put(currentElement, streamReader.getElementText());
-                        }
-                    } else if (event == XMLStreamConstants.END_ELEMENT) {
-                        if ("prop".equals(currentElement)) {
-                            inProperties = false;
-                        }
-                    } else if (event == XMLStreamConstants.CHARACTERS && inElement) {
-                        if ("href".equals(currentElement)) {
+                        } else if ("href".equals(tagLocalName)) {
                             if (hrefs == null) {
                                 hrefs = new HashSet<String>();
                             }
                             if (isBrokenHrefEncoding()) {
-                                hrefs.add(streamReader.getText());
+                                hrefs.add(streamReader.getElementText());
                             } else {
-                                hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getText())));
+                                hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getElementText())));
                             }
                         }
-                        inElement = false;
                     }
                 }
             } catch (XMLStreamException e) {
@@ -1440,6 +1430,18 @@ public class CaldavConnection extends AbstractConnection {
                     if ("time-range".equals(tagLocalName)) {
                         timeRangeStart = reader.getAttributeValue(null, "start");
                         timeRangeEnd = reader.getAttributeValue(null, "end");
+                    }
+                }
+            }
+        }
+
+        public void handleProp(XMLStreamReader reader) throws XMLStreamException {
+            while (reader.hasNext() && !isEndTag(reader, "prop")) {
+                int event = reader.next();
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String tagLocalName = reader.getLocalName();
+                    if (!"calendar-free-busy-set".equals(tagLocalName)) {
+                        properties.put(tagLocalName, reader.getElementText());
                     }
                 }
             }
