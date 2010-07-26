@@ -22,6 +22,10 @@ import davmail.exchange.ExchangeSession;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
 import junit.framework.TestCase;
 
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -69,5 +73,19 @@ public class AbstractDavMailTestCase extends TestCase {
             //Settings.setProperty("davmail.enableEws", "false");
 
         }
+    }
+
+    protected MimeMessage createMimeMessage() throws MessagingException {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.setText("Test message");
+        mimeMessage.setSubject("Test subject");
+        return mimeMessage;
+    }
+
+    protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        return baos.toByteArray();
     }
 }

@@ -23,10 +23,6 @@ import davmail.Settings;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
@@ -49,20 +45,6 @@ public class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
                 session = new DavExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
             }
         }
-    }
-
-    protected MimeMessage createMimeMessage() throws MessagingException {
-        MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("To", "test@test.local");
-        mimeMessage.setText("Test message");
-        mimeMessage.setSubject("Test subject");
-        return mimeMessage;
-    }
-
-    protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
-        return baos.toByteArray();
     }
 
 }

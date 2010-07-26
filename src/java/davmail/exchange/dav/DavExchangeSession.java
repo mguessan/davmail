@@ -856,7 +856,7 @@ public class DavExchangeSession extends ExchangeSession {
                     LOGGER.warn("Unable to patch event to trigger activeSync push");
                 } else {
                     // need to retrieve new etag
-                    Item newItem = getItem(getHref());
+                    Item newItem = getItem(folderPath, itemName);
                     itemResult.etag = newItem.etag;
                 }
             }
@@ -935,7 +935,6 @@ public class DavExchangeSession extends ExchangeSession {
         for (String attribute : FOLDER_PROPERTIES) {
             FOLDER_PROPERTIES_NAME_SET.add(Field.getPropertyName(attribute));
         }
-
     }
 
     /**
@@ -1191,21 +1190,62 @@ public class DavExchangeSession extends ExchangeSession {
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString());
     }
 
-
-    protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES = new DavPropertyNameSet();
+    protected static final Set<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
 
     static {
-        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("permanenturl"));
-        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("urlcompname"));
-        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("etag"));
-        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("contentclass"));
-        EVENT_REQUEST_PROPERTIES.add(Field.getPropertyName("displayname"));
+        EVENT_REQUEST_PROPERTIES.add("permanenturl");
+        EVENT_REQUEST_PROPERTIES.add("urlcompname");
+        EVENT_REQUEST_PROPERTIES.add("etag");
+        EVENT_REQUEST_PROPERTIES.add("contentclass");
+        EVENT_REQUEST_PROPERTIES.add("displayname");
+    }
+
+    protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES_NAME_SET = new DavPropertyNameSet();
+    static {
+        for (String attribute : EVENT_REQUEST_PROPERTIES) {
+            EVENT_REQUEST_PROPERTIES_NAME_SET.add(Field.getPropertyName(attribute));
+        }
+
     }
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String itemPath = getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName);
-        return getItem(itemPath);
+        String emlItemName = convertItemNameToEML(itemName);
+        String itemPath = getFolderPath(folderPath) + '/' + emlItemName;
+        MultiStatusResponse[] responses;
+        try {
+            responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+            if (responses.length == 0) {
+                throw new HttpNotFoundException(itemPath);
+            }
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug(itemPath +" not found, searching by urlcompname");
+            // failover: try to get event by displayname
+            responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", emlItemName), FolderQueryTraversal.Shallow);
+            if (responses.length == 0) {
+                throw new HttpNotFoundException(itemPath);
+            }
+        }
+        // build item
+        String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "contentclass");
+        String urlcompname = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname");
+        if ("urn:content-classes:person".equals(contentClass)) {
+            // retrieve Contact properties
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
+            if (contacts.isEmpty()) {
+                LOGGER.warn("Item found, but unable to build contact");
+                throw new HttpNotFoundException(itemPath);
+            }
+            return contacts.get(0);
+        } else if ("urn:content-classes:appointment".equals(contentClass)
+                || "urn:content-classes:calendarmessage".equals(contentClass)) {
+            return new Event(responses[0]);
+        } else {
+            LOGGER.warn("wrong contentclass on item "+itemPath+": "+contentClass);
+            // return item anyway
+            return new Event(responses[0]);
+        }
+
     }
 
     @Override
@@ -1281,35 +1321,6 @@ public class DavExchangeSession extends ExchangeSession {
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
         DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
-    }
-
-    /**
-     * Get item by url
-     *
-     * @param itemPath Event path
-     * @return event object
-     * @throws IOException on error
-     */
-    public Item getItem(String itemPath) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES);
-        if (responses.length == 0) {
-            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
-        }
-        String contentClass = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "contentclass");
-        String urlcompname = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname");
-        if ("urn:content-classes:person".equals(contentClass)) {
-            // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(itemPath.substring(0, itemPath.lastIndexOf('/')), CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
-            if (contacts.isEmpty()) {
-                throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
-            }
-            return contacts.get(0);
-        } else if ("urn:content-classes:appointment".equals(contentClass)
-                || "urn:content-classes:calendarmessage".equals(contentClass)) {
-            return new Event(responses[0]);
-        } else {
-            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
-        }
     }
 
     @Override
