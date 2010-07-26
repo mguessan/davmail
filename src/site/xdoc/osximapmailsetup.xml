@@ -99,6 +99,11 @@
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxMailImap13.png" alt=""/>
                 </div>
+
+                <p>Proceed to
+                    <a href="osxaddressbooksetup.html">OSX Address Book setup</a>
+                </p>
+
             </subsection>
         </section>
     </body>

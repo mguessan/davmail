@@ -11,10 +11,11 @@
     <body>
 
         <section name="Thunderbird Carddav setup">
-            <p>Thunderbird does not support Carddav natively, you will need to download and install the Sogo Connector
+            <p>Thunderbird does not support Carddav natively, you will need to download and install the SOGo Connector
                 plugin from
-                <a href="http://www.sogo.nu/fr/downloads/frontends.html">SOGo Connector Thunderbird extension</a>
+                <a href="http://www.sogo.nu/fr/downloads/frontends.html">SOGo Connector Thunderbird extension</a>.
             </p>
+            <p>Note: the SOGo connector is not yet available for thunderbird 3.</p>
 
             <subsection name="Create a new remote address book">
                 <p>After plugin installation, restart Thunderbird, open address book and choose
