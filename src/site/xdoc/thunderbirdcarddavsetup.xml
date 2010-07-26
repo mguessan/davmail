@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Thunderbird Carddav setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Thunderbird Carddav setup">
+            <p>Thunderbird does not support Carddav natively, you will need to download and install the Sogo Connector
+                plugin from
+                <a href="http://www.sogo.nu/fr/downloads/frontends.html">SOGo Connector Thunderbird extension</a>
+            </p>
+
+            <subsection name="Create a new remote address book">
+                <p>After plugin installation, restart Thunderbird, open address book and choose
+                    File / New / Remote Address Book:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCarddav1.png" alt=""/>
+                </div>
+
+                <p>Choose a name and enter contact folder location (adjust port to your settings):</p>
+                <code>http://localhost:1080/users/mail@company.com/contacts
+                </code>
+                <p>Replace mail@company.com with actual user email address.
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCarddav2.png" alt=""/>
+                </div>
+
+                <p>Press OK and launch synchronisation with the toolbar
+                    <code>Synchronize</code>
+                    button.
+                </p>
+
+                <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
+                    or email address with Exchange 2007
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/thunderbirdCarddav3.png" alt=""/>
+                </div>
+
+                <p>Proceed to
+                    <a href="thunderbirddirectorysetup.html">Thunderbird directory setup</a>
+                </p>
+            </subsection>
+        </section>
+    </body>
+</document>

@@ -48,6 +48,7 @@
             <item name="IMAP Mail setup" href="/thunderbirdimapmailsetup.html"/>
             <item name="Calendar setup" href="/thunderbirdcalendarsetup.html"/>
             <item name="Directory setup" href="/thunderbirddirectorysetup.html"/>
+            <item name="Directory setup" href="/thunderbirdcarddavsetup.html"/>
         </menu>
         <menu name="OSX Setup">
             <item name="iCal setup" href="/osxicalsetup.html"/>
