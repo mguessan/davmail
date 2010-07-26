@@ -4,7 +4,7 @@
           xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Thunderbird calendar setup</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Thunderbird calendar setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
@@ -40,6 +40,7 @@
 
 
                 <p>Provide your credentials, login is Active Directory account name, i.e. domain\account
+                    or email address with Exchange 2007
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar4.png" alt=""/>
@@ -52,7 +53,7 @@
                     <img src="images/thunderbirdCalendar5.png" alt=""/>
                 </div>
 
-                <p>You may want to enable the (experimental) Lightning calendar cach feature to avoid
+                <p>You may want to enable the (experimental) Lightning calendar cache feature to avoid
                     the possibly long calendar load task delay on Thunderbird startup: double click
                     on the calendar in Lightning left pane and activate cache. Restart Thunderbird.
                 </p>

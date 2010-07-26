@@ -4,7 +4,7 @@
           xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway - Thunderbird directory setup</title>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Thunderbird directory setup</title>
         <author email="mguessan@free.fr">Mickael Guessant</author>
     </properties>
 
@@ -29,6 +29,10 @@
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdDirectory2.png" alt=""/>
                 </div>
+
+                <p>Proceed to
+                    <a href="thunderbirdcarddavsetup.html">Thunderbird Carddav setup</a>
+                </p>
             </subsection>
         </section>
     </body>
