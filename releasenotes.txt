@@ -1,3 +1,24 @@
+** DavMail 3.8.0b2 released **
+Fixes the most obvious regressions in 3.8.0b1 and some documentation
+updates on Carddav. Note for EWS only users: add davmail.enableEws=true in
+davmail.properties
+
+Caldav: fix sendEvent regression, conflict on outbox notifications
+Caldav: improve HttpNotFound message
+Caldav: Refactor getItem
+Doc: fix carddav thunderbird doc
+Doc: update left menu
+Doc: set source encoding to UTF-8 in maven pom
+Doc: update roadmap
+Doc: Basic OSX setup instructions
+Doc: thunderbird carddav setup with SOGO connector
+Doc: Update homepage and project description
+Carddav: additional TEL properties
+Caldav: fix MKCALENDAR http status code: return 201 instead of 207
+Carddav: add fburl field
+Caldav: Another request parsing bug: handle empty elements
+Caldav: fix regression in REPORT requests parsing
+
 ** DavMail 3.8.0b1 released **
 First public release after major refactoring to implement Exchange 2010 and Exchange 2007 without
 Webdav support. This implementation is based on Exchange Web Services. EWS support is not yet
