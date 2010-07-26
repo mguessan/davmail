@@ -30,6 +30,9 @@
         on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
         (gateway running on a server).
     </description>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
     <developers>
         <developer>
             <name>Mickaël Guessant</name>
