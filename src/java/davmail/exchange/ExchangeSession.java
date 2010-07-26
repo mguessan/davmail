@@ -2368,12 +2368,12 @@ public abstract class ExchangeSession {
         }
 
         /**
-         * Create or update item
+         * Build Mime body for event or event message.
          *
-         * @return action result
+         * @return mimeContent as byte array or null
          * @throws IOException on error
          */
-        public ItemResult createOrUpdate() throws IOException {
+        public byte[] createMimeContent() throws IOException {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
@@ -2397,14 +2397,14 @@ public abstract class ExchangeSession {
                     writer.writeHeader("Cc", participants.optionalAttendees);
                     // do not send notification if no recipients found
                     if (participants.attendees == null && participants.optionalAttendees == null) {
-                        status = HttpStatus.SC_NO_CONTENT;
+                        return null;
                     }
                 } else {
                     // notify only organizer
                     writer.writeHeader("To", participants.organizer);
                     // do not send notification if no recipients found
                     if (participants.organizer == null) {
-                        status = HttpStatus.SC_NO_CONTENT;
+                        return null;
                     }
                 }
 
@@ -2470,13 +2470,23 @@ public abstract class ExchangeSession {
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary + "--");
             writer.close();
+            return baos.toByteArray();
+        }
 
+        /**
+         * Create or update item
+         *
+         * @return action result
+         * @throws IOException on error
+         */
+        public ItemResult createOrUpdate() throws IOException {
+            byte[] mimeContent = createMimeContent();
             ItemResult itemResult;
-            if (status == 0) {
-                itemResult = createOrUpdate(baos.toByteArray());
+            if (mimeContent != null) {
+                itemResult = createOrUpdate(mimeContent);
             } else {
                 itemResult = new ItemResult();
-                itemResult.status = status;
+                itemResult.status = HttpStatus.SC_NO_CONTENT;
             }
 
             return itemResult;

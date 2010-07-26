@@ -1293,16 +1293,13 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public int sendEvent(String icsBody) throws IOException {
         String itemName = UUID.randomUUID().toString() + ".EML";
-        int status = internalCreateOrUpdateEvent(draftsUrl, itemName, "urn:content-classes:calendarmessage", icsBody, null, null).status;
-        if (status != HttpStatus.SC_CREATED) {
-            return status;
+        byte[] mimeContent = (new Event(getFolderPath(DRAFTS), itemName, "urn:content-classes:calendarmessage", icsBody, null, null)).createMimeContent();
+        if (mimeContent == null) {
+            // no recipients, cancel
+            return HttpStatus.SC_NO_CONTENT;
         } else {
-            MoveMethod method = new MoveMethod(URIUtil.encodePath(draftsUrl + '/' + itemName), URIUtil.encodePath(sendmsgUrl), true);
-            status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-            if (status != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
-            }
-            return status;
+            sendMessage(mimeContent);
+            return HttpStatus.SC_OK;
         }
     }
 
