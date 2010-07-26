@@ -1088,13 +1088,14 @@ public class LdapConnection extends AbstractConnection {
                 return null;
             }
 
-            ExchangeSession.Condition condition;
+            ExchangeSession.Condition condition = null;
 
             if (operator == LDAP_FILTER_EQUALITY) {
                 condition = session.equals(contactAttributeName, value);
             } else if ("*".equals(value)) {
                 condition = session.not(session.isNull(contactAttributeName));
-            } else {
+            // do not allow substring search on integer field imapUid
+            } else if (!"imapUid".equals(contactAttributeName)){
                 // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
                     condition = session.contains(contactAttributeName, value);
