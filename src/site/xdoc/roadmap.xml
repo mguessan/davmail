@@ -15,31 +15,25 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in DavMail next versions.
             </p>
-            <subsection name="3.6.7">
+            <subsection name="3.8.1">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
-                    <li>Create a new RPM package with redline rpm ant task</li>
                     <li>Change the subject line when replying to invites</li>
-                    <li>Growl support on OSX</li>
                 </ul>
             </subsection>
-            <subsection name="3.7.0">
+            <subsection name="3.9.0">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Implement CardDav protocol to sync address books. This new feature
-                        is sponsored by <a href="http://www.defense.gouv.fr/dga/">French Defense / DGA</a>
-                        through project <a href="http://www.trustedbird.org">Trustedbird</a>
-                    </li>
+                    <li>Create a new RPM package with redline rpm ant task</li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>
                     <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
                         http://msexchangeteam.com/archive/2004/03/31/105275.aspx
                     </li>
-                    <li>Implement MKCALENDAR</li>
                 </ul>
             </subsection>
             <subsection name="4.0">
@@ -48,11 +42,8 @@
                 </p>
                 <ul>
                     <li>Implement optional ICS Todo/Task conversion to Outlook tasks</li>
-                    <li>Exchange 2010 support through EWS: Need a major refactoring of ExchangeSession
-                        to separate WebDav only stuff
-                    </li>
-                    <li>Replace BufferedReader with a dedicated InputStream to parse
-                        Caldav Requests, detect encoding in http headers
+                    <li>Exchange 2010 support through EWS: Experimental implementation already available but not
+                        complete, set davmail.enableEws=true in davmail.properties to test
                     </li>
                     <li>Jsmooth Windows 64 bit wrappers</li>
                     <li>Include Unix init.d script to help users use DavMail in server mode</li>
