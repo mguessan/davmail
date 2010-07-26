@@ -259,6 +259,8 @@ public class Field {
 
         createField("haspicture", DistinguishedPropertySetType.Address, 0x8015, "haspicture", PropertyType.Boolean); // True/False
 
+        createField(URN_SCHEMAS_CALENDAR, "fburl"); // freeBusyLocation
+
         // OWA settings
         createField("messageclass", 0x001a, PropertyType.String);
         createField("roamingxmlstream", 0x7c08, PropertyType.Binary);

@@ -89,6 +89,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("BDAY", "2000-01-02T00:00:00Z");
         vCardWriter.appendProperty("CATEGORIES", "keyword1,keyword2");
 
+        vCardWriter.appendProperty("FBURL", "http://fburl");
+
         vCardWriter.appendProperty("X-ASSISTANT", "secretarycn");
         vCardWriter.appendProperty("X-MANAGER", "manager");
         vCardWriter.appendProperty("X-SPOUSE", "spousecn");
@@ -173,6 +175,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("keyword1,keyword2", contact.get("keywords"));
 
         assertEquals("true", contact.get("private"));
+
+        assertEquals("http://fburl", contact.get("url"));
 
         assertEquals("true", contact.get("haspicture"));
         assertNotNull(session.getContactPhoto(contact));

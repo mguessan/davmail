@@ -161,6 +161,8 @@ public class Field {
 
         FIELD_MAP.put("haspicture", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8015, ExtendedFieldURI.PropertyType.Boolean));
 
+        FIELD_MAP.put("fburl", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80D8, ExtendedFieldURI.PropertyType.String));
+
         // calendar
         FIELD_MAP.put("processed", new ExtendedFieldURI(0x65e8, ExtendedFieldURI.PropertyType.Boolean));
 

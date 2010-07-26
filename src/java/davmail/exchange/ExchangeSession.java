@@ -1761,6 +1761,8 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("CATEGORIES", get("keywords"));
 
+            writer.appendProperty("FBURL", get("fburl"));
+
             if ("1".equals(get("private"))) {
                 writer.appendProperty("CLASS", "PRIVATE");
             }
@@ -2862,6 +2864,8 @@ public abstract class ExchangeSession {
                 } else if ("2".equals(propertyValue)) {
                     properties.put("gender", "1");
                 }
+            } else if ("FBURL".equals(property.getKey())) {
+                properties.put("fburl", property.getValue());
             } else if ("X-ASSISTANT".equals(property.getKey())) {
                 properties.put("secretarycn", property.getValue());
             } else if ("X-MANAGER".equals(property.getKey())) {
@@ -3259,6 +3263,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("gender");
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
+        CONTACT_ATTRIBUTES.add("fburl");        
     }
 
     /**
