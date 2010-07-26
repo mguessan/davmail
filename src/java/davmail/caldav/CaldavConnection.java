@@ -1440,9 +1440,11 @@ public class CaldavConnection extends AbstractConnection {
                 int event = reader.next();
                 if (event == XMLStreamConstants.START_ELEMENT) {
                     String tagLocalName = reader.getLocalName();
-                    if (!"calendar-free-busy-set".equals(tagLocalName)) {
-                        properties.put(tagLocalName, reader.getElementText());
+                    String tagText = null;
+                    if (reader.hasText()) {
+                        tagText = reader.getElementText();
                     }
+                    properties.put(tagLocalName, tagText);
                 }
             }
         }
