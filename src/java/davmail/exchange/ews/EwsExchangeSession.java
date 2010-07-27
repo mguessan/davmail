@@ -846,11 +846,10 @@ public class EwsExchangeSession extends ExchangeSession {
             String urlcompname = convertItemNameToEML(itemName);
             String currentEtag = null;
             ItemId currentItemId = null;
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-            if (!responses.isEmpty()) {
-                EWSMethod.Item response = responses.get(0);
-                currentItemId = new ItemId(response);
-                currentEtag = response.get(Field.get("etag").getResponseName());
+            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
+            if (currentItem != null) {
+                currentItemId = new ItemId(currentItem);
+                currentEtag = currentItem.get(Field.get("etag").getResponseName());
             }
             if ("*".equals(noneMatch)) {
                 // create requested
