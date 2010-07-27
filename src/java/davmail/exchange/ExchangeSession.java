@@ -2376,7 +2376,6 @@ public abstract class ExchangeSession {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
-            int status = 0;
             String method = getICSMethod(itemBody);
 
             writer.writeHeader("Content-Transfer-Encoding", "7bit");

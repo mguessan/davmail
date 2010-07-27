@@ -1187,7 +1187,7 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-    protected class CaldavRequest {
+    protected static class CaldavRequest {
         protected final String command;
         protected final String path;
         protected final String[] pathElements;
@@ -1361,17 +1361,12 @@ public class CaldavConnection extends AbstractConnection {
             XMLStreamReader streamReader = null;
             try {
                 XMLInputFactory inputFactory = XMLStreamUtil.getXmlInputFactory();
-                inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
-                inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
 
                 streamReader = inputFactory.createXMLStreamReader(new StringReader(body));
-                boolean inElement = false;
-                String tagLocalName = null;
                 while (streamReader.hasNext()) {
                     int event = streamReader.next();
                     if (event == XMLStreamConstants.START_ELEMENT) {
-                        inElement = true;
-                        tagLocalName = streamReader.getLocalName();
+                        String tagLocalName = streamReader.getLocalName();
                         if ("prop".equals(tagLocalName)) {
                             handleProp(streamReader);
                         } else if ("calendar-multiget".equals(tagLocalName)

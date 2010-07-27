@@ -713,7 +713,6 @@ public class EwsExchangeSession extends ExchangeSession {
             EWSMethod createOrUpdateItemMethod;
 
             // first try to load existing event
-            String urlcompname = convertItemNameToEML(itemName);
             String currentEtag = null;
             ItemId currentItemId = null;
             FileAttachment currentFileAttachment = null;
@@ -1048,7 +1047,6 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = convertItemNameToEML(itemName);
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item != null) {
             HashMap<String, String> localProperties = new HashMap<String, String>();
