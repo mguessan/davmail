@@ -28,6 +28,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
+import davmail.exchange.XMLStreamUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
@@ -1359,7 +1360,7 @@ public class CaldavConnection extends AbstractConnection {
         protected void parseXmlBody() throws IOException {
             XMLStreamReader streamReader = null;
             try {
-                XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+                XMLInputFactory inputFactory = XMLStreamUtil.getXmlInputFactory();
                 inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
                 inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
 

@@ -696,10 +696,6 @@ public class EwsExchangeSession extends ExchangeSession {
                     list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }
-            // force urlcompname, only for DavMail created items
-            if (!isItemId(itemName)) {
-                list.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-            }
             return list;
         }
 
@@ -749,17 +745,20 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
+            Set<FieldUpdate> properties = buildProperties();
             if (currentItemId != null) {
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
                         SendMeetingInvitationsOrCancellations.SendToNone,
-                        currentItemId, buildProperties());
+                        currentItemId, properties);
             } else {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "Contact";
-                newItem.setFieldUpdates(buildProperties());
+                // force urlcompname on create
+                properties.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                newItem.setFieldUpdates(properties);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
             }
             executeMethod(createOrUpdateItemMethod);
@@ -843,7 +842,6 @@ public class EwsExchangeSession extends ExchangeSession {
             EWSMethod createOrUpdateItemMethod;
 
             // first try to load existing event
-            String urlcompname = convertItemNameToEML(itemName);
             String currentEtag = null;
             ItemId currentItemId = null;
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);

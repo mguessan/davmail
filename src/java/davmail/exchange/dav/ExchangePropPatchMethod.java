@@ -18,6 +18,7 @@
  */
 package davmail.exchange.dav;
 
+import davmail.exchange.XMLStreamUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -165,18 +166,6 @@ public class ExchangePropPatchMethod extends PostMethod {
         return "PROPPATCH";
     }
 
-    /**
-     * Build a new XMLInputFactory.
-     *
-     * @return XML input factory
-     */
-    public static XMLInputFactory getXmlInputFactory() {
-        XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-        inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
-        inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
-        return inputFactory;
-    }
-
     protected boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
         return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
     }
@@ -194,7 +183,7 @@ public class ExchangePropPatchMethod extends PostMethod {
             responses = new ArrayList<MultiStatusResponse>();
             XMLStreamReader reader;
             try {
-                XMLInputFactory xmlInputFactory = getXmlInputFactory();
+                XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
                 reader = xmlInputFactory.createXMLStreamReader(new FilterInputStream(getResponseBodyAsStream()) {
                     final byte[] lastbytes = new byte[3];
 
