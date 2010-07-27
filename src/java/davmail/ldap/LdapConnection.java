@@ -1091,11 +1091,19 @@ public class LdapConnection extends AbstractConnection {
             ExchangeSession.Condition condition = null;
 
             if (operator == LDAP_FILTER_EQUALITY) {
-                condition = session.isEqualTo(contactAttributeName, value);
+                try {
+                    // check imapUid value
+                    if ("imapUid".equals(contactAttributeName)) {
+                        Integer.parseInt(value);
+                    }
+                    condition = session.isEqualTo(contactAttributeName, value);
+                } catch (NumberFormatException e) {
+                    // ignore condition
+                }
             } else if ("*".equals(value)) {
                 condition = session.not(session.isNull(contactAttributeName));
-            // do not allow substring search on integer field imapUid
-            } else if (!"imapUid".equals(contactAttributeName)){
+                // do not allow substring search on integer field imapUid
+            } else if (!"imapUid".equals(contactAttributeName)) {
                 // endsWith not supported by exchange, convert to contains
                 if (mode == LDAP_SUBSTRING_FINAL || mode == LDAP_SUBSTRING_ANY) {
                     condition = session.contains(contactAttributeName, value);
@@ -1387,7 +1395,7 @@ public class LdapConnection extends AbstractConnection {
          *
          * @param condition           search filter
          * @param returningAttributes requested attributes
-         * @param maxCount maximum item count
+         * @param maxCount            maximum item count
          * @return List of users
          * @throws IOException on error
          */
