@@ -1263,7 +1263,7 @@ public class LdapConnection extends AbstractConnection {
                             try {
                                 // check if this is a contact uid
                                 Integer.parseInt(uid);
-                                persons = contactFind(session.isEqualTo("imapUid", uid), returningAttributes);
+                                persons = contactFind(session.isEqualTo("imapUid", uid), returningAttributes, sizeLimit);
                             } catch (NumberFormatException e) {
                                 // ignore, this is not a contact uid
                             }
@@ -1298,7 +1298,7 @@ public class LdapConnection extends AbstractConnection {
                         Map<String, Map<String, String>> persons = new HashMap<String, Map<String, String>>();
                         if (ldapFilter.isFullSearch()) {
                             // append personal contacts first
-                            for (Map<String, String> person : contactFind(null, returningAttributes).values()) {
+                            for (Map<String, String> person : contactFind(null, returningAttributes, sizeLimit).values()) {
                                 persons.put(person.get("imapUid"), person);
                                 if (persons.size() == sizeLimit) {
                                     break;
@@ -1325,7 +1325,7 @@ public class LdapConnection extends AbstractConnection {
                             // if ldapfilter is not a full search and filter is null,
                             // ignored all attribute filters => return empty results
                             if (ldapFilter.isFullSearch() || filter != null) {
-                                for (Map<String, String> person : contactFind(filter, returningAttributes).values()) {
+                                for (Map<String, String> person : contactFind(filter, returningAttributes, sizeLimit).values()) {
                                     persons.put(person.get("imapUid"), person);
 
                                     if (persons.size() == sizeLimit) {
@@ -1387,10 +1387,11 @@ public class LdapConnection extends AbstractConnection {
          *
          * @param condition           search filter
          * @param returningAttributes requested attributes
+         * @param maxCount maximum item count
          * @return List of users
          * @throws IOException on error
          */
-        public Map<String, Map<String, String>> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes) throws IOException {
+        public Map<String, Map<String, String>> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes, int maxCount) throws IOException {
             Set<String> contactReturningAttributes;
             if (returningAttributes != null && !returningAttributes.isEmpty()) {
                 contactReturningAttributes = new HashSet<String>();
@@ -1408,7 +1409,7 @@ public class LdapConnection extends AbstractConnection {
 
             Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
 
-            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition, 0);
+            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition, maxCount);
 
             for (ExchangeSession.Contact contact : contacts) {
                 if (contact.get("imapUid") != null) {
