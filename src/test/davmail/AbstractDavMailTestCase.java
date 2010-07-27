@@ -78,7 +78,7 @@ public class AbstractDavMailTestCase extends TestCase {
     protected MimeMessage createMimeMessage() throws MessagingException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", "test@test.local");
-        mimeMessage.setText("Test message");
+        mimeMessage.setText("Test message\n");
         mimeMessage.setSubject("Test subject");
         return mimeMessage;
     }

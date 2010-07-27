@@ -77,7 +77,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(content));
         assertTrue(mimeMessage.getHeader("To")[0].indexOf("test@test.local") >= 0);
         assertEquals("Test subject", mimeMessage.getSubject());
-        assertEquals("Test message", mimeMessage.getContent());
+        assertEquals("Test message\n", mimeMessage.getContent());
     }
 
     public void testProcessMessage() throws IOException, MessagingException {

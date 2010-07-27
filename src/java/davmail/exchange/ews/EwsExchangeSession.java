@@ -241,7 +241,7 @@ public class EwsExchangeSession extends ExchangeSession {
         message.read = response.getBoolean(Field.get("read").getResponseName());
         message.junk = response.getBoolean(Field.get("junk").getResponseName());
         message.flagged = "2".equals(response.get(Field.get("flagStatus").getResponseName()));
-        message.draft = "9".equals(response.get(Field.get("messageFlags").getResponseName())) || "8".equals(response.get(Field.get("messageFlags").getResponseName()));
+        message.draft = (response.getInt(Field.get("messageFlags").getResponseName()) & 8) != 0;
         String lastVerbExecuted = response.get(Field.get("lastVerbExecuted").getResponseName());
         message.answered = "102".equals(lastVerbExecuted) || "103".equals(lastVerbExecuted);
         message.forwarded = "104".equals(lastVerbExecuted);
