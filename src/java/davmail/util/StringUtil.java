@@ -142,7 +142,7 @@ public final class StringUtil {
     public static String urlEncodeSlash(String name) {
         String result = name;
         if (name.indexOf("_xF8FF_") >= 0) {
-            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char)0xF8FF));
+            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char) 0xF8FF));
         }
         return result;
     }
@@ -244,10 +244,16 @@ public final class StringUtil {
         return base64Value;
     }
 
+    /**
+     * Encode item name to get actual value stored in urlcompname MAPI property.
+     *
+     * @param value decoded value
+     * @return urlcompname encoded value
+     */
     public static String encodeUrlcompname(String value) {
         String result = value;
         if (result.indexOf("_xF8FF_") >= 0) {
-            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char)0xF8FF));
+            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char) 0xF8FF));
         }
         if (result.indexOf('&') >= 0) {
             result = AMP_PATTERN.matcher(result).replaceAll("%26");
@@ -257,4 +263,20 @@ public final class StringUtil {
         }
         return result;
     }
+
+    /**
+     * Urlencode plus sign in encoded href.
+     * '+' is decoded as ' ' by URIUtil.decode, the workaround is to force urlencoding to '%2B' first
+     *
+     * @param value encoded href
+     * @return encoded href
+     */
+    public static String encodePlusSign(String value) {
+        String result = value;
+        if (result.indexOf('+') >= 0) {
+            result = PLUS_PATTERN.matcher(result).replaceAll("%2B");
+        }
+        return result;
+    }
+
 }

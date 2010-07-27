@@ -47,7 +47,6 @@ import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -611,15 +610,8 @@ public class DavExchangeSession extends ExchangeSession {
             return propertyValues;
         }
 
-        /**
-         * Create or update contact
-         *
-         * @return action result
-         * @throws IOException on error
-         */
-        public ItemResult createOrUpdate() throws IOException {
-            int status = 0;
-            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(URIUtil.encodePath(getHref()), buildProperties());
+        protected ExchangePropPatchMethod internalCreateOrUpdate(String encodedHref) throws IOException {
+            ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, buildProperties());
             propPatchMethod.setRequestHeader("Translate", "f");
             if (etag != null) {
                 propPatchMethod.setRequestHeader("If-Match", etag);
@@ -628,20 +620,50 @@ public class DavExchangeSession extends ExchangeSession {
                 propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
             }
             try {
-                status = httpClient.executeMethod(propPatchMethod);
-                if (status == HttpStatus.SC_MULTI_STATUS) {
-                    status = propPatchMethod.getResponseStatusCode();
-                    //noinspection VariableNotUsedInsideIf
-                    if (status == HttpStatus.SC_CREATED) {
-                        LOGGER.debug("Created contact " + getHref());
-                    } else {
-                        LOGGER.debug("Updated contact " + getHref());
-                    }
-                } else {
-                    LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
-                }
+                httpClient.executeMethod(propPatchMethod);
             } finally {
                 propPatchMethod.releaseConnection();
+            }
+            return propPatchMethod;
+        }
+
+        /**
+         * Create or update contact
+         *
+         * @return action result
+         * @throws IOException on error
+         */
+        public ItemResult createOrUpdate() throws IOException {
+            String encodedHref = URIUtil.encodePath(getHref());
+            ExchangePropPatchMethod propPatchMethod = internalCreateOrUpdate(encodedHref);
+            int status = propPatchMethod.getStatusCode();
+            if (status == HttpStatus.SC_MULTI_STATUS) {
+                status = propPatchMethod.getResponseStatusCode();
+                //noinspection VariableNotUsedInsideIf
+                if (status == HttpStatus.SC_CREATED) {
+                    LOGGER.debug("Created contact " + encodedHref);
+                } else {
+                    LOGGER.debug("Updated contact " + encodedHref);
+                }
+            } else if (status == HttpStatus.SC_NOT_FOUND) {
+                LOGGER.debug("Contact not found at " + encodedHref + ", searching permanenturl by urlcompname");
+                // failover, search item by urlcompname
+                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.equals("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
+                if (responses.length == 1) {
+                    encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
+                    LOGGER.warn("Contact found, permanenturl is " + encodedHref);
+                    propPatchMethod = internalCreateOrUpdate(encodedHref);
+                    status = propPatchMethod.getStatusCode();
+                    if (status == HttpStatus.SC_MULTI_STATUS) {
+                        status = propPatchMethod.getResponseStatusCode();
+                        LOGGER.debug("Updated contact " + encodedHref);
+                    } else {
+                        LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
+                    }
+                }
+
+            } else {
+                LOGGER.warn("Unable to create or update contact " + status + ' ' + propPatchMethod.getStatusLine());
             }
             ItemResult itemResult = new ItemResult();
             // 440 means forbidden on Exchange
@@ -803,12 +825,8 @@ public class DavExchangeSession extends ExchangeSession {
             return result;
         }
 
-        /**
-         * @inheritDoc
-         */
-        @Override
-        protected ItemResult createOrUpdate(byte[] mimeContent) throws IOException {
-            PutMethod putmethod = new PutMethod(URIUtil.encodePath(getHref()));
+        protected PutMethod internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {
+            PutMethod putmethod = new PutMethod(encodedHref);
             putmethod.setRequestHeader("Translate", "f");
             putmethod.setRequestHeader("Overwrite", "f");
             if (etag != null) {
@@ -819,27 +837,54 @@ public class DavExchangeSession extends ExchangeSession {
             }
             putmethod.setRequestHeader("Content-Type", "message/rfc822");
             putmethod.setRequestEntity(new ByteArrayRequestEntity(mimeContent, "message/rfc822"));
-            int status;
             try {
-                status = httpClient.executeMethod(putmethod);
-                if (status == HttpURLConnection.HTTP_OK) {
-                    LOGGER.debug("Updated event " + getHref());
-                } else if (status == HttpURLConnection.HTTP_CREATED) {
-                    LOGGER.warn("Overwritten event " + getHref());
-                } else {
-                    LOGGER.warn("Unable to create or update message " + status + ' ' + putmethod.getStatusLine());
-                }
+                httpClient.executeMethod(putmethod);
             } finally {
                 putmethod.releaseConnection();
             }
+            return putmethod;
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        protected ItemResult createOrUpdate(byte[] mimeContent) throws IOException {
+            String encodedHref = URIUtil.encodePath(getHref());
+            PutMethod putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
+            int status = putMethod.getStatusCode();
+
+            if (status == HttpStatus.SC_OK) {
+                LOGGER.debug("Updated event " + encodedHref);
+            } else if (status == HttpStatus.SC_CREATED) {
+                LOGGER.warn("Overwritten event " + encodedHref);
+            } else if (status == HttpStatus.SC_NOT_FOUND) {
+                LOGGER.debug("Event not found at " + encodedHref + ", searching permanenturl by urlcompname");
+                // failover, search item by urlcompname
+                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.equals("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
+                if (responses.length == 1) {
+                    encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
+                    LOGGER.warn("Event found, permanenturl is " + encodedHref);
+                    putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
+                    status = putMethod.getStatusCode();
+                    if (status == HttpStatus.SC_OK) {
+                        LOGGER.debug("Updated event " + encodedHref);
+                    } else {
+                        LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                    }
+                }
+            } else {
+                LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+            }
+
             ItemResult itemResult = new ItemResult();
             // 440 means forbidden on Exchange
             if (status == 440) {
                 status = HttpStatus.SC_FORBIDDEN;
             }
             itemResult.status = status;
-            if (putmethod.getResponseHeader("GetETag") != null) {
-                itemResult.etag = putmethod.getResponseHeader("GetETag").getValue();
+            if (putMethod.getResponseHeader("GetETag") != null) {
+                itemResult.etag = putMethod.getResponseHeader("GetETag").getValue();
             }
 
             // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
@@ -850,7 +895,7 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyList.add(Field.createDavProperty("contentclass", contentClass));
                 // ... but also set PR_INTERNET_CONTENT to preserve custom properties
                 propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(mimeContent))));
-                PropPatchMethod propPatchMethod = new PropPatchMethod(URIUtil.encodePath(getHref()), propertyList);
+                PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
                 int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                 if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
                     LOGGER.warn("Unable to patch event to trigger activeSync push");
@@ -1201,6 +1246,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES_NAME_SET = new DavPropertyNameSet();
+
     static {
         for (String attribute : EVENT_REQUEST_PROPERTIES) {
             EVENT_REQUEST_PROPERTIES_NAME_SET.add(Field.getPropertyName(attribute));
@@ -1216,14 +1262,14 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             if (responses.length == 0) {
-                throw new HttpNotFoundException(itemPath+" not found");
+                throw new HttpNotFoundException(itemPath + " not found");
             }
         } catch (HttpNotFoundException e) {
-            LOGGER.debug(itemPath +" not found, searching by urlcompname");
+            LOGGER.debug(itemPath + " not found, searching by urlcompname");
             // failover: try to get event by displayname
             responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", emlItemName), FolderQueryTraversal.Shallow);
             if (responses.length == 0) {
-                throw new HttpNotFoundException(itemPath+" not found");
+                throw new HttpNotFoundException(itemPath + " not found");
             }
         }
         // build item
@@ -1234,14 +1280,14 @@ public class DavExchangeSession extends ExchangeSession {
             List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
                 LOGGER.warn("Item found, but unable to build contact");
-                throw new HttpNotFoundException(itemPath+" not found");
+                throw new HttpNotFoundException(itemPath + " not found");
             }
             return contacts.get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
                 || "urn:content-classes:calendarmessage".equals(contentClass)) {
             return new Event(responses[0]);
         } else {
-            LOGGER.warn("wrong contentclass on item "+itemPath+": "+contentClass);
+            LOGGER.warn("wrong contentclass on item " + itemPath + ": " + contentClass);
             // return item anyway
             return new Event(responses[0]);
         }
@@ -1362,7 +1408,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // get timezoneid from OWA settings
                     userTimezone.timezoneId = getTimezoneIdFromExchange();
                 }
-                // without a timezoneId, use Exchange timezone 
+                // without a timezoneId, use Exchange timezone
                 if (userTimezone.timezoneId != null) {
                     propertyList.add(Field.createDavProperty("timezoneid", userTimezone.timezoneId));
                 }

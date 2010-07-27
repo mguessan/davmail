@@ -131,7 +131,7 @@ public class CaldavConnection extends AbstractConnection {
                 tokens = new StringTokenizer(line);
                 String command = tokens.nextToken();
                 Map<String, String> headers = parseHeaders();
-                String encodedPath = encodePlusSign(tokens.nextToken());
+                String encodedPath = StringUtil.encodePlusSign(tokens.nextToken());
                 String path = URIUtil.decode(encodedPath);
                 String content = getContent(headers.get("content-length"));
                 setSocketTimeout(headers.get("keep-alive"));
@@ -1186,21 +1186,6 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-    /**
-     * Make sure + sign in URL is encoded.
-     *
-     * @param path URL path
-     * @return reencoded path
-     */
-    protected String encodePlusSign(String path) {
-        // make sure + sign in URL is encoded
-        if (path.indexOf('+') >= 0) {
-            return path.replaceAll("\\+", "%2B");
-        } else {
-            return path;
-        }
-    }
-
     protected class CaldavRequest {
         protected final String command;
         protected final String path;
@@ -1332,7 +1317,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isBrokenHrefEncoding() {
-            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/") || isUserAgent("Lightning/1.0b2");
+            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/")/* || isUserAgent("Lightning/1.0b2")*/;
         }
 
         protected boolean isLightning() {
@@ -1400,7 +1385,7 @@ public class CaldavConnection extends AbstractConnection {
                             if (isBrokenHrefEncoding()) {
                                 hrefs.add(streamReader.getElementText());
                             } else {
-                                hrefs.add(URIUtil.decode(encodePlusSign(streamReader.getElementText())));
+                                hrefs.add(URIUtil.decode(StringUtil.encodePlusSign(streamReader.getElementText())));
                             }
                         }
                     }
