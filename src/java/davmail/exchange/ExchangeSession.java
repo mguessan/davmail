@@ -422,6 +422,9 @@ public abstract class ExchangeSession {
         ((PostMethod) logonMethod).addParameter(passwordInput, password);
         ((PostMethod) logonMethod).addParameter("trusted", "4");
         ((PostMethod) logonMethod).addParameter("flags", "4");
+
+        // add exchange 2010 cookie
+        logonMethod.addRequestHeader("Cookie", "PBack=0");
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
         // test form based authentication

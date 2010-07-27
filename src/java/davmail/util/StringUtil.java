@@ -169,7 +169,7 @@ public final class StringUtil {
      */
     public static String urlDecodeAmpersand(String name) {
         String result = name;
-        if (name.indexOf("%26") >= 0) {
+        if (name != null && name.indexOf("%26") >= 0) {
             result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
         }
         return result;

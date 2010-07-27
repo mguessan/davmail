@@ -29,7 +29,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.HeadMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -83,17 +83,17 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
         // nothing to do, mailPath not used in EWS mode
         // check EWS access
-        HttpMethod headMethod = new HeadMethod("/ews/services.wsdl");
+        HttpMethod getMethod = new GetMethod("/ews/exchange.asmx");
         try {
-            headMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, headMethod);
-            if (headMethod.getStatusCode() != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(headMethod);
+            getMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, getMethod);
+            if (getMethod.getStatusCode() != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
             }
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         } finally {
-            headMethod.releaseConnection();
+            getMethod.releaseConnection();
         }
 
         try {
