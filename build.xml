@@ -132,7 +132,7 @@
                 toFile="dist/davmail.desktop"
                 name="DavMail"
                 comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
-                exec="davmail > /dev/null"
+                exec="davmail"
                 icon="/usr/share/davmail/davmail.png"
                 categories="Office;Email;Network;Calendar;ContactManagement"
                 />
