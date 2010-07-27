@@ -69,6 +69,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testCalendarFolder() throws IOException {
         String folderName = "testcalendar";
+        session.deleteFolder(folderName);
         session.createCalendarFolder(folderName, null);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
@@ -78,6 +79,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testContactFolder() throws IOException {
         String folderName = "testcontact";
+        session.deleteFolder(folderName);
         session.createContactFolder(folderName, null);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
@@ -88,6 +90,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testFolderAccent() throws IOException {
         String folderName = "testé";
+        session.deleteFolder(folderName);
         session.createMessageFolder(folderName);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
@@ -98,6 +101,7 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
 
     public void testFolderSpace() throws IOException {
         String folderName = "test space";
+        session.deleteFolder(folderName);
         session.createMessageFolder(folderName);
         ExchangeSession.Folder folder = session.getFolder(folderName);
         assertNotNull(folder);
