@@ -1408,7 +1408,7 @@ public class LdapConnection extends AbstractConnection {
 
             Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
 
-            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition);
+            List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition, 0);
 
             for (ExchangeSession.Contact contact : contacts) {
                 if (contact.get("imapUid") != null) {

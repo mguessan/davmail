@@ -2517,7 +2517,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, ITEM_PROPERTIES, isEqualTo("outlookmessageclass", "IPM.Contact"));
+        return searchContacts(folderPath, ITEM_PROPERTIES, isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
     }
 
 
@@ -2527,10 +2527,11 @@ public abstract class ExchangeSession {
      * @param folderPath Exchange folder path
      * @param attributes requested attributes
      * @param condition  Exchange search query
+     * @param maxCount maximum item count
      * @return list of contacts
      * @throws IOException on error
      */
-    public abstract List<Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException;
+    public abstract List<Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException;
 
     /**
      * Search calendar messages in provided folder.

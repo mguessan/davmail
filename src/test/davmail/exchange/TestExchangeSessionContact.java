@@ -39,7 +39,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         if (itemName != null) {
             return (ExchangeSession.Contact) session.getItem("testcontactfolder", itemName);
         } else {
-            List<ExchangeSession.Contact> contacts = session.searchContacts("testcontactfolder", ExchangeSession.CONTACT_ATTRIBUTES, null);
+            List<ExchangeSession.Contact> contacts = session.searchContacts("testcontactfolder", ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
             itemName = contacts.get(0).itemName;
             return contacts.get(0);
         }

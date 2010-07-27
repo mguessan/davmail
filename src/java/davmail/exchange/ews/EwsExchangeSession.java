@@ -269,7 +269,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW);
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW, 0);
 
         for (EWSMethod.Item response : responses) {
             Message message = buildMessage(response);
@@ -280,8 +280,8 @@ public class EwsExchangeSession extends ExchangeSession {
         return messages;
     }
 
-    protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
-        FindItemMethod findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath));
+    protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal, int maxCount) throws IOException {
+        FindItemMethod findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath), maxCount);
         for (String attribute : attributes) {
             findItemMethod.addAdditionalProperty(Field.get(attribute));
         }
@@ -922,10 +922,10 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
+    public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition,
-                FolderQueryTraversal.SHALLOW);
+                FolderQueryTraversal.SHALLOW, maxCount);
 
         for (EWSMethod.Item response : responses) {
             contacts.add(new Contact(response));
@@ -938,7 +938,7 @@ public class EwsExchangeSession extends ExchangeSession {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
                 condition,
-                FolderQueryTraversal.SHALLOW);
+                FolderQueryTraversal.SHALLOW, 0);
         for (EWSMethod.Item response : responses) {
             events.add(new Event(response));
         }
@@ -968,7 +968,7 @@ public class EwsExchangeSession extends ExchangeSession {
             executeMethod(getItemMethod);
             item = getItemMethod.getResponseItem();
         } else {
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW, 0);
             if (!responses.isEmpty()) {
                 item = responses.get(0);
             }
@@ -1039,10 +1039,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-        if (!responses.isEmpty()) {
-            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(responses.get(0)), DeleteType.HardDelete);
+        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        if (item != null) {
+            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete);
             executeMethod(deleteItemMethod);
         }
     }
@@ -1050,15 +1049,15 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-        if (!responses.isEmpty()) {
+        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        if (item != null) {
             HashMap<String, String> localProperties = new HashMap<String, String>();
             localProperties.put("processed", "1");
             localProperties.put("read", "1");
             UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                     ConflictResolution.AlwaysOverwrite,
                     SendMeetingInvitationsOrCancellations.SendToNone,
-                    new ItemId(responses.get(0)), buildProperties(localProperties));
+                    new ItemId(item), buildProperties(localProperties));
             executeMethod(updateItemMethod);
         }
     }

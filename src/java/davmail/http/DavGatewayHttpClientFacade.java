@@ -291,10 +291,12 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient    http client instance
      * @param path          <i>encoded</i> searched folder path
      * @param searchRequest (SQL like) search request
+     * @param maxCount max item count
      * @return Responses enumeration
      * @throws IOException on error
      */
-    public static MultiStatusResponse[] executeSearchMethod(HttpClient httpClient, String path, String searchRequest) throws IOException {
+    public static MultiStatusResponse[] executeSearchMethod(HttpClient httpClient, String path, String searchRequest,
+                                                            int maxCount) throws IOException {
         String searchBody = "<?xml version=\"1.0\"?>\n" +
                 "<d:searchrequest xmlns:d=\"DAV:\">\n" +
                 "        <d:sql>" + StringUtil.xmlEncode(searchRequest) + "</d:sql>\n" +
@@ -312,6 +314,9 @@ public final class DavGatewayHttpClientFacade {
             }
         };
         searchMethod.setRequestEntity(new StringRequestEntity(searchBody, "text/xml", "UTF-8"));
+        if (maxCount > 0) {
+            searchMethod.addRequestHeader("Range", "rows=0-"+(maxCount-1));
+        }
         return executeMethod(httpClient, searchMethod);
     }
 

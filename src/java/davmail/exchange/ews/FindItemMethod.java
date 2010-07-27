@@ -29,11 +29,12 @@ public class FindItemMethod extends EWSMethod {
      * @param baseShape      base item shape
      * @param parentFolderId parent folder id
      */
-    public FindItemMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId) {
+    public FindItemMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId, int maxCount) {
         super("Item", "FindItem");
         this.traversal = traversal;
         this.baseShape = baseShape;
         this.parentFolderId = parentFolderId;
+        this.maxCount = maxCount;
     }
 }
 

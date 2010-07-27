@@ -112,7 +112,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow, 0);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
         System.out.println(propertyList);
@@ -127,7 +127,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow, 0);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
         System.out.println(propertyList);
@@ -145,7 +145,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         attributes.add("roamingxmlstream");
         attributes.add("displayname");
 
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + '/', attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + '/', attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep, 0);
         for (MultiStatusResponse response : responses) {
             System.out.println(response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
@@ -171,7 +171,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         attributes.add("roamingdictionary");
         attributes.add("displayname");
 
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/non_ipm_subtree", attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/non_ipm_subtree", attributes, davSession.and(davSession.isTrue("ishidden")), DavExchangeSession.FolderQueryTraversal.Deep, 0);
         for (MultiStatusResponse response : responses) {
             System.out.println(response.getHref() + ' ' + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());

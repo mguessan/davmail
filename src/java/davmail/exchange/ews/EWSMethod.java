@@ -55,6 +55,7 @@ public abstract class EWSMethod extends PostMethod {
     protected Disposal deleteType;
     protected Set<AttributeOption> methodOptions;
     protected ElementOption unresolvedEntry;
+    protected int maxCount;
 
     protected Set<FieldUpdate> updates;
 
@@ -343,6 +344,7 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeSoapBody(Writer writer) throws IOException {
         startChanges(writer);
         writeShape(writer);
+        writeIndexedPageItemView(writer);
         writeRestriction(writer);
         writeParentFolderId(writer);
         writeToFolderId(writer);
@@ -358,7 +360,15 @@ public abstract class EWSMethod extends PostMethod {
         endChanges(writer);
     }
 
-    private void writeAttachmentId(Writer writer) throws IOException {
+    protected void writeIndexedPageItemView(Writer writer) throws IOException {
+        if (maxCount > 0) {
+            writer.write("<m:IndexedPageItemView MaxEntriesReturned=\""); 
+            writer.write(String.valueOf(maxCount));
+            writer.write("\" Offset=\"0\" BasePoint=\"Beginning\"/>");
+        }
+    }
+
+    protected void writeAttachmentId(Writer writer) throws IOException {
         if (attachmentId != null) {
             if ("CreateAttachment".equals(methodName)) {
                 writer.write("<m:AttachmentShape>");

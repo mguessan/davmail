@@ -32,16 +32,22 @@ import java.util.Set;
 public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTestCase {
     public void testSearchPublicContacts() throws IOException {
         String folderPath = Settings.getProperty("davmail.publicContactFolder");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null);
+        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
         int count = 0;
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println("Contact " + (++count) + '/' + contacts.size() + session.getItem(folderPath, contact.getName()));
         }
     }
 
+    public void testSearchPublicContactsRange() throws IOException {
+        String folderPath = Settings.getProperty("davmail.publicContactFolder");
+        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, null, 10);
+        assertEquals(10, contacts.size());
+    }
+
     public void testSearchPublicContactsWithPicture() throws IOException {
         String folderPath = Settings.getProperty("davmail.publicContactFolder");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, session.isTrue("haspicture"));
+        List<ExchangeSession.Contact> contacts = session.searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, session.isTrue("haspicture"), 0);
         int count = 0;
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println("Contact " + (++count) + '/' + contacts.size() + contact.getBody());
@@ -50,7 +56,7 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
     }
 
     public void testSearchContacts() throws IOException {
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null);
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 0);
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println(session.getItem(ExchangeSession.CONTACTS, contact.getName()));
         }
@@ -59,7 +65,7 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
     public void testSearchContactsUidOnly() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("uid");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null, 0);
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println(contact);
         }
@@ -68,9 +74,9 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
     public void testSearchContactsByUid() throws IOException {
         Set<String> attributes = new HashSet<String>();
         attributes.add("uid");
-        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null, 0);
         for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("uid", contact.get("uid"))));
+            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("uid", contact.get("uid")), 0));
         }
     }
 
