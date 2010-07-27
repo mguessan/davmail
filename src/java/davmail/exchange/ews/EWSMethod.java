@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import davmail.exchange.XMLStreamUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
@@ -53,6 +54,7 @@ public abstract class EWSMethod extends PostMethod {
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
     protected Set<AttributeOption> methodOptions;
+    protected ElementOption unresolvedEntry;
 
     protected Set<FieldUpdate> updates;
 
@@ -278,6 +280,11 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    protected void writeUnresolvedEntry(Writer writer) throws IOException {
+        if (unresolvedEntry != null) {
+            unresolvedEntry.write(writer);
+        }
+    }
 
     protected void endChanges(Writer writer) throws IOException {
         //noinspection VariableNotUsedInsideIf
@@ -347,6 +354,7 @@ public abstract class EWSMethod extends PostMethod {
         writeSavedItemFolderId(writer);
         writeItem(writer);
         writeUpdates(writer);
+        writeUnresolvedEntry(writer);
         endChanges(writer);
     }
 
@@ -371,18 +379,6 @@ public abstract class EWSMethod extends PostMethod {
             attachment.write(writer);
             writer.write("</m:Attachments>");
         }
-    }
-
-    /**
-     * Build a new XMLInputFactory.
-     *
-     * @return XML input factory
-     */
-    public static XMLInputFactory getXmlInputFactory() {
-        XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-        inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
-        inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
-        return inputFactory;
     }
 
     /**
@@ -774,7 +770,7 @@ public abstract class EWSMethod extends PostMethod {
             responseItems = new ArrayList<Item>();
             XMLStreamReader reader;
             try {
-                XMLInputFactory xmlInputFactory = getXmlInputFactory();
+                XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
                 reader = xmlInputFactory.createXMLStreamReader(getResponseBodyAsStream());
                 while (reader.hasNext()) {
                     reader.next();

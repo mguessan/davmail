@@ -18,36 +18,16 @@
  */
 package davmail.exchange.ews;
 
-import davmail.util.StringUtil;
-
-import java.io.IOException;
-import java.io.Writer;
-
 /**
- * Generic element option.
+ * ResolveNames search scope.
  */
-public class ElementOption extends Option {
-    /**
-     * Create element option.
-     *
-     * @param name  element tag name
-     * @param value element value
-     */
-    protected ElementOption(String name, String value) {
-        super(name, value);
+public class SearchScope extends AttributeOption {
+    private SearchScope(String value) {
+        super("SearchScope", value);
     }
 
-    /**
-     * @inheritDoc
-     */
-    @Override
-    public void write(Writer writer) throws IOException {
-        writer.write('<');
-        writer.write(name);
-        writer.write('>');
-        writer.write(StringUtil.xmlEncode(value));
-        writer.write("</");
-        writer.write(name);
-        writer.write('>');
-    }
+    public static final SearchScope ActiveDirectory = new SearchScope("ActiveDirectory");
+    public static final SearchScope ActiveDirectoryContacts = new SearchScope("ActiveDirectoryContacts");
+    public static final SearchScope Contacts = new SearchScope("Contacts");
+    public static final SearchScope ContactsActiveDirectory = new SearchScope("ContactsActiveDirectory");
 }

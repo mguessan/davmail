@@ -18,36 +18,20 @@
  */
 package davmail.exchange.ews;
 
-import davmail.util.StringUtil;
-
-import java.io.IOException;
-import java.io.Writer;
-
 /**
- * Generic element option.
+ * Resolve Names method.
  */
-public class ElementOption extends Option {
+public class ResolveNamesMethod extends EWSMethod {
+    protected static final AttributeOption RETURN_FULL_CONTACT_DATA = new AttributeOption("ReturnFullContactData", "true");
     /**
-     * Create element option.
+     * Build Resolve Names method
      *
-     * @param name  element tag name
-     * @param value element value
+     * @param value   search value
      */
-    protected ElementOption(String name, String value) {
-        super(name, value);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    @Override
-    public void write(Writer writer) throws IOException {
-        writer.write('<');
-        writer.write(name);
-        writer.write('>');
-        writer.write(StringUtil.xmlEncode(value));
-        writer.write("</");
-        writer.write(name);
-        writer.write('>');
+    public ResolveNamesMethod(String value) {
+        super("Contact", "ResolveNames");
+        addMethodOption(SearchScope.ActiveDirectory);
+        addMethodOption(RETURN_FULL_CONTACT_DATA);
+        unresolvedEntry = new ElementOption("m:UnresolvedEntry", value);
     }
 }

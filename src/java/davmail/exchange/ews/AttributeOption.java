@@ -24,7 +24,7 @@ import java.io.Writer;
 /**
  * Generic attribute option.
  */
-public abstract class AttributeOption extends Option {
+public class AttributeOption extends Option {
 
     protected AttributeOption(String name, String value) {
         super(name, value);
