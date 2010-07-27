@@ -70,6 +70,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected SearchExpression searchExpression;
 
+    protected String serverVersion;
 
     /**
      * Build EWS method
@@ -104,7 +105,7 @@ public abstract class EWSMethod extends PostMethod {
             }
 
             public String getContentType() {
-                return "text/xml;charset=UTF-8";
+                return "text/xml; charset=UTF-8";
             }
         });
     }
@@ -297,10 +298,14 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
                     "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" " +
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
-                    "<soap:Header>" +
-                    "<t:RequestServerVersion Version=\"Exchange2007_SP1\"/>" +
-                    "</soap:Header>" +
-                    "<soap:Body>");
+                    "");
+            if (serverVersion != null) {
+                writer.write("<soap:Header><t:RequestServerVersion Version=\"");
+                writer.write(serverVersion);
+                writer.write("\"/></soap:Header>");
+            }
+
+            writer.write("<soap:Body>");
             writer.write("<m:");
             writer.write(methodName);
             if (traversal != null) {
@@ -378,6 +383,22 @@ public abstract class EWSMethod extends PostMethod {
         inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
         inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
         return inputFactory;
+    }
+
+    /**
+     * Get Exchange server version, Exchange2010 or Exchange2007_SP1 
+     * @return server version
+     */
+    public String getServerVersion() {
+        return serverVersion;
+    }
+
+    /**
+     * Set Exchange server version, Exchange2010 or Exchange2007_SP1
+     * @param serverVersion server version
+     */
+    public void setServerVersion(String serverVersion) {
+        this.serverVersion = serverVersion;
     }
 
     /**
@@ -619,6 +640,7 @@ public abstract class EWSMethod extends PostMethod {
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
+                // detect version
                 if ("ExtendedProperty".equals(tagLocalName)) {
                     addExtendedPropertyValue(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
@@ -757,7 +779,14 @@ public abstract class EWSMethod extends PostMethod {
                 while (reader.hasNext()) {
                     reader.next();
                     handleErrors(reader);
-                    if (isStartTag(reader, responseCollectionName)) {
+                    if (serverVersion == null && isStartTag(reader,"ServerVersionInfo")) {
+                        String majorVersion = getAttributeValue(reader, "MajorVersion");
+                        if ("14".equals(majorVersion)) {
+                            serverVersion = "Exchange2010";
+                        } else {
+                            serverVersion = "Exchange2007_SP1";
+                        }
+                    } else if (isStartTag(reader, responseCollectionName)) {
                         handleItems(reader);
                     }
                 }

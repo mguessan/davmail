@@ -29,6 +29,7 @@ public class FileAttachment {
     protected String contentType;
     protected String content;
     protected String attachmentId;
+    protected boolean isContactPhoto;    
 
     public FileAttachment() {
         // empty constructor
@@ -58,12 +59,19 @@ public class FileAttachment {
             writer.write(contentType);
             writer.write("</t:ContentType>");
         }
+        if (isContactPhoto) {
+            writer.write("<t:IsContactPhoto>true</t:IsContactPhoto>");
+        }
         if (content != null) {
             writer.write("<t:Content>");
             writer.write(content);
             writer.write("</t:Content>");
         }
         writer.write("</t:FileAttachment>");
+    }
+
+    public void setIsContactPhoto(boolean isContactPhoto) {
+      this.isContactPhoto = isContactPhoto;
     }
 
 }

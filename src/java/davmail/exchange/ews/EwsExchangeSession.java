@@ -45,6 +45,7 @@ import java.util.*;
 public class EwsExchangeSession extends ExchangeSession {
 
     protected Map<String, String> folderIdMap;
+    protected String serverVersion;
 
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
@@ -782,8 +783,10 @@ public class EwsExchangeSession extends ExchangeSession {
                 // convert image to jpeg
                 byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
-                // TODO: handle photo update, fix attachment mapi properties (available only with Exchange 2010)
                 FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
+                if ("Exchange2010".equals(serverVersion)) {
+                    attachment.setIsContactPhoto(true);
+                }
                 // update photo attachment
                 CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
                 executeMethod(createAttachmentMethod);
@@ -1131,7 +1134,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected void executeMethod(EWSMethod ewsMethod) throws IOException {
         try {
+            ewsMethod.setServerVersion(serverVersion);
             httpClient.executeMethod(ewsMethod);
+            if (serverVersion == null) {
+                serverVersion = ewsMethod.getServerVersion();
+            }
             ewsMethod.checkSuccess();
         } finally {
             ewsMethod.releaseConnection();
