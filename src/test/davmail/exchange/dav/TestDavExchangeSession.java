@@ -112,7 +112,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
         System.out.println(propertyList);
@@ -127,7 +127,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         Set<String> attributes = new HashSet<String>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.equals("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow);
+        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
         String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
         System.out.println(propertyList);

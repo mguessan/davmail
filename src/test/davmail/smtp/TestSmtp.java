@@ -114,7 +114,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         // wait for asynchronous message send
         ExchangeSession.MessageList messages = null;
         for (int i=0;i<5;i++) {
-            messages = session.searchMessages("Sent", session.headerEquals("message-id", mimeMessage.getMessageID()));
+            messages = session.searchMessages("Sent", session.headerIsEqualTo("message-id", mimeMessage.getMessageID()));
             if (messages.size() > 0) {
                 break;
             }

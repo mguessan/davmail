@@ -36,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -428,17 +429,17 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Condition equals(String attributeName, String value) {
+    public Condition isEqualTo(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
 
     @Override
-    public Condition equals(String attributeName, int value) {
+    public Condition isEqualTo(String attributeName, int value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, String.valueOf(value));
     }
 
     @Override
-    public Condition headerEquals(String headerName, String value) {
+    public Condition headerIsEqualTo(String headerName, String value) {
         return new HeaderCondition(headerName, Operator.IsEqualTo, value);
     }
 
@@ -714,7 +715,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String currentEtag = null;
             ItemId currentItemId = null;
             FileAttachment currentFileAttachment = null;
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
             if (!responses.isEmpty()) {
                 EWSMethod.Item response = responses.get(0);
                 currentItemId = new ItemId(response);
@@ -836,7 +837,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String urlcompname = convertItemNameToEML(itemName);
             String currentEtag = null;
             ItemId currentItemId = null;
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
             if (!responses.isEmpty()) {
                 EWSMethod.Item response = responses.get(0);
                 currentItemId = new ItemId(response);
@@ -952,14 +953,14 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (responses.isEmpty()) {
             throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
         String itemType = responses.get(0).type;
         if ("Contact".equals(itemType)) {
             // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, isEqualTo("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
                 throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
             }
@@ -1005,7 +1006,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
             DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(responses.get(0)), DeleteType.HardDelete);
             executeMethod(deleteItemMethod);
@@ -1015,7 +1016,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
         String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
         if (!responses.isEmpty()) {
             HashMap<String, String> localProperties = new HashMap<String, String>();
             localProperties.put("processed", "1");
@@ -1156,6 +1157,20 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         return zuluDateValue;
     }
+
+    /**
+     * Format date to exchange search format.
+     *
+     * @param date date object
+     * @return formatted search date
+     */
+    @Override
+    public String formatSearchDate(Date date) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
+        return dateFormatter.format(date);
+    }
+
 
 }
 

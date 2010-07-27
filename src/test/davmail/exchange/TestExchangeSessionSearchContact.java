@@ -70,7 +70,7 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
         attributes.add("uid");
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null);
         for (ExchangeSession.Contact contact : contacts) {
-            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.equals("uid", contact.get("uid"))));
+            System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("uid", contact.get("uid"))));
         }
     }
 

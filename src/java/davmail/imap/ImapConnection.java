@@ -1042,7 +1042,7 @@ public class ImapConnection extends AbstractConnection {
             return session.isFalse("read");
         } else if ("DELETED".equals(token)) {
             // conditions.deleted = Boolean.TRUE;
-            return session.equals("deleted", "1");
+            return session.isEqualTo("deleted", "1");
         } else if ("UNDELETED".equals(token) || "NOT DELETED".equals(token)) {
             // conditions.deleted = Boolean.FALSE;
             return session.isNull("deleted");
@@ -1060,7 +1060,7 @@ public class ImapConnection extends AbstractConnection {
             if ("message-id".equals(headerName) && !value.startsWith("<")) {
                 value = '<' + value + '>';
             }
-            return session.headerEquals(headerName, value);
+            return session.headerIsEqualTo(headerName, value);
         } else if ("UID".equals(token)) {
             String range = tokens.nextToken();
             if ("1:*".equals(range)) {

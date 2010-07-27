@@ -156,7 +156,7 @@ public class TestCaldav extends AbstractDavMailTestCase {
                                 session.gt("dtstart", session.formatSearchDate(start)),
                                 session.lt("dtend", session.formatSearchDate(end))
                         )
-                        , session.or(session.equals("instancetype", 1), session.equals("instancetype", 0))
+                        , session.or(session.isEqualTo("instancetype", 1), session.isEqualTo("instancetype", 0))
                         )
         );
 

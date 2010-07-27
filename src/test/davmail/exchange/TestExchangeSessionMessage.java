@@ -104,7 +104,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
-        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
     }
@@ -117,7 +117,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
-        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
     }
@@ -131,7 +131,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
         session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
-        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.equals("urlcompname", messageName));
+        ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
     }

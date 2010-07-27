@@ -51,6 +51,7 @@ import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
@@ -501,17 +502,17 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Condition equals(String attributeName, String value) {
+    public Condition isEqualTo(String attributeName, String value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
 
     @Override
-    public Condition equals(String attributeName, int value) {
+    public Condition isEqualTo(String attributeName, int value) {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, value);
     }
 
     @Override
-    public Condition headerEquals(String headerName, String value) {
+    public Condition headerIsEqualTo(String headerName, String value) {
         return new HeaderCondition(headerName, Operator.IsEqualTo, value);
     }
 
@@ -648,7 +649,7 @@ public class DavExchangeSession extends ExchangeSession {
             } else if (status == HttpStatus.SC_NOT_FOUND) {
                 LOGGER.debug("Contact not found at " + encodedHref + ", searching permanenturl by urlcompname");
                 // failover, search item by urlcompname
-                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.equals("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
+                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
                 if (responses.length == 1) {
                     encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
                     LOGGER.warn("Contact found, permanenturl is " + encodedHref);
@@ -861,7 +862,7 @@ public class DavExchangeSession extends ExchangeSession {
             } else if (status == HttpStatus.SC_NOT_FOUND) {
                 LOGGER.debug("Event not found at " + encodedHref + ", searching permanenturl by urlcompname");
                 // failover, search item by urlcompname
-                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.equals("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
+                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow);
                 if (responses.length == 1) {
                     encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
                     LOGGER.warn("Event found, permanenturl is " + encodedHref);
@@ -1182,7 +1183,7 @@ public class DavExchangeSession extends ExchangeSession {
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes,
-                and(equals("outlookmessageclass", "IPM.Contact"), isFalse("isfolder"), isFalse("ishidden"), condition),
+                and(isEqualTo("outlookmessageclass", "IPM.Contact"), isFalse("isfolder"), isFalse("ishidden"), condition),
                 FolderQueryTraversal.Shallow);
         for (MultiStatusResponse response : responses) {
             contacts.add(new Contact(response));
@@ -1267,7 +1268,7 @@ public class DavExchangeSession extends ExchangeSession {
         } catch (HttpNotFoundException e) {
             LOGGER.debug(itemPath + " not found, searching by urlcompname");
             // failover: try to get event by displayname
-            responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, equals("urlcompname", emlItemName), FolderQueryTraversal.Shallow);
+            responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", emlItemName), FolderQueryTraversal.Shallow);
             if (responses.length == 0) {
                 throw new HttpNotFoundException(itemPath + " not found");
             }
@@ -1277,7 +1278,7 @@ public class DavExchangeSession extends ExchangeSession {
         String urlcompname = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname");
         if ("urn:content-classes:person".equals(contentClass)) {
             // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, equals("urlcompname", urlcompname));
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, isEqualTo("urlcompname", urlcompname));
             if (contacts.isEmpty()) {
                 LOGGER.warn("Item found, but unable to build contact");
                 throw new HttpNotFoundException(itemPath + " not found");
@@ -1453,7 +1454,7 @@ public class DavExchangeSession extends ExchangeSession {
             Set<String> attributes = new HashSet<String>();
             attributes.add("roamingdictionary");
 
-            MultiStatusResponse[] responses = searchItems("/users/" + getEmail() + "/NON_IPM_SUBTREE", attributes, equals("messageclass", "IPM.Configuration.OWA.UserOptions"), DavExchangeSession.FolderQueryTraversal.Deep);
+            MultiStatusResponse[] responses = searchItems("/users/" + getEmail() + "/NON_IPM_SUBTREE", attributes, isEqualTo("messageclass", "IPM.Configuration.OWA.UserOptions"), DavExchangeSession.FolderQueryTraversal.Deep);
             if (responses.length == 1) {
                 byte[] roamingdictionary = getBinaryPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "roamingdictionary");
                 if (roamingdictionary != null) {
@@ -1742,4 +1743,18 @@ public class DavExchangeSession extends ExchangeSession {
         }
         return zuluDateValue;
     }
+
+    /**
+     * Format date to exchange search format.
+     *
+     * @param date date object
+     * @return formatted search date
+     */
+    @Override
+    public String formatSearchDate(Date date) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
+        dateFormatter.setTimeZone(GMT_TIMEZONE);
+        return dateFormatter.format(date);
+    }
+
 }

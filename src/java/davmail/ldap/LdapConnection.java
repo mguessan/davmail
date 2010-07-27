@@ -1091,7 +1091,7 @@ public class LdapConnection extends AbstractConnection {
             ExchangeSession.Condition condition = null;
 
             if (operator == LDAP_FILTER_EQUALITY) {
-                condition = session.equals(contactAttributeName, value);
+                condition = session.isEqualTo(contactAttributeName, value);
             } else if ("*".equals(value)) {
                 condition = session.not(session.isNull(contactAttributeName));
             // do not allow substring search on integer field imapUid
@@ -1263,7 +1263,7 @@ public class LdapConnection extends AbstractConnection {
                             try {
                                 // check if this is a contact uid
                                 Integer.parseInt(uid);
-                                persons = contactFind(session.equals("imapUid", uid), returningAttributes);
+                                persons = contactFind(session.isEqualTo("imapUid", uid), returningAttributes);
                             } catch (NumberFormatException e) {
                                 // ignore, this is not a contact uid
                             }

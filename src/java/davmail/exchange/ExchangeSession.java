@@ -116,9 +116,9 @@ public abstract class ExchangeSession {
     private final String userName;
 
     private boolean disableGalLookup;
-    private static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
+    protected static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
-    private static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    protected static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     private static final String YYYY_MM_DD = "yyyy-MM-dd";
     private static final String YYYY_MM_DD_T_HHMMSS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
@@ -193,11 +193,7 @@ public abstract class ExchangeSession {
      * @param date date object
      * @return formatted search date
      */
-    public static String formatSearchDate(Date date) {
-        SimpleDateFormat dateFormatter = new SimpleDateFormat(YYYY_MM_DD_HH_MM_SS, Locale.ENGLISH);
-        dateFormatter.setTimeZone(GMT_TIMEZONE);
-        return dateFormatter.format(date);
-    }
+    public abstract String formatSearchDate(Date date);
 
     /**
      * Return standard zulu date formatter.
@@ -762,7 +758,7 @@ public abstract class ExchangeSession {
      * @param value         attribute value
      * @return condition
      */
-    public abstract Condition equals(String attributeName, String value);
+    public abstract Condition isEqualTo(String attributeName, String value);
 
     /**
      * Equals condition.
@@ -771,7 +767,7 @@ public abstract class ExchangeSession {
      * @param value         attribute value
      * @return condition
      */
-    public abstract Condition equals(String attributeName, int value);
+    public abstract Condition isEqualTo(String attributeName, int value);
 
     /**
      * MIME header equals condition.
@@ -780,7 +776,7 @@ public abstract class ExchangeSession {
      * @param value      attribute value
      * @return condition
      */
-    public abstract Condition headerEquals(String headerName, String value);
+    public abstract Condition headerIsEqualTo(String headerName, String value);
 
     /**
      * Greater than or equals condition.
@@ -870,7 +866,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        return getSubFolders(folderName, or(equals("folderclass", "IPF.Note"), isNull("folderclass")),
+        return getSubFolders(folderName, or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass")),
                 recursive);
     }
 
@@ -883,7 +879,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubCalendarFolders(String folderName, boolean recursive) throws IOException {
-        return getSubFolders(folderName, equals("folderclass", "IPF.Appointment"), recursive);
+        return getSubFolders(folderName, isEqualTo("folderclass", "IPF.Appointment"), recursive);
     }
 
     /**
@@ -939,7 +935,7 @@ public abstract class ExchangeSession {
      */
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // check Sent folder for duplicates
-        ExchangeSession.MessageList messages = searchMessages(SENT, headerEquals("message-id", mimeMessage.getMessageID()));
+        ExchangeSession.MessageList messages = searchMessages(SENT, headerIsEqualTo("message-id", mimeMessage.getMessageID()));
         if (!messages.isEmpty()) {
             LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
         } else {
@@ -2521,7 +2517,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, ITEM_PROPERTIES, equals("outlookmessageclass", "IPM.Contact"));
+        return searchContacts(folderPath, ITEM_PROPERTIES, isEqualTo("outlookmessageclass", "IPM.Contact"));
     }
 
 
@@ -2545,7 +2541,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> getEventMessages(String folderPath) throws IOException {
         return searchEvents(folderPath, ITEM_PROPERTIES,
-                and(equals("outlookmessageclass", "IPM.Schedule.Meeting.Request"),
+                and(isEqualTo("outlookmessageclass", "IPM.Schedule.Meeting.Request"),
                         or(isNull("processed"), isFalse("processed"))));
     }
 
@@ -2587,7 +2583,7 @@ public abstract class ExchangeSession {
             if (timeRangeEnd != null) {
                 andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
             }
-            andCondition.add(equals("instancetype", 0));
+            andCondition.add(isEqualTo("instancetype", 0));
             return searchEvents(folderPath, ITEM_PROPERTIES, andCondition);
         } catch (ParseException e) {
             throw new IOException(e);
@@ -2607,14 +2603,14 @@ public abstract class ExchangeSession {
         Condition privateCondition = null;
         if (isSharedFolder(folderPath)) {
             LOGGER.debug("Shared or public calendar: exclude private events");
-            privateCondition = equals("sensitivity", 0);
+            privateCondition = isEqualTo("sensitivity", 0);
         }
         // instancetype 0 single appointment / 1 master recurring appointment
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(or(isNull("instancetype"),
-                        equals("instancetype", 1),
-                        and(equals("instancetype", 0), dateCondition)),
-                        equals("outlookmessageclass", "IPM.Appointment"),
+                        isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition)),
+                        isEqualTo("outlookmessageclass", "IPM.Appointment"),
                         privateCondition));
     }
 
