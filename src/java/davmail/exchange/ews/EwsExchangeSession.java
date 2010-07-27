@@ -665,6 +665,10 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             itemName = response.get(Field.get("urlcompname").getResponseName());
+            // workaround for missing urlcompname in Exchange 2010
+            if (itemName == null) {
+                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+            }
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null) {
@@ -692,8 +696,10 @@ public class EwsExchangeSession extends ExchangeSession {
                     list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }
-            // force urlcompname
-            list.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+            // force urlcompname, only for DavMail created items
+            if (!isItemId(itemName)) {
+                list.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+            }
             return list;
         }
 
@@ -715,11 +721,10 @@ public class EwsExchangeSession extends ExchangeSession {
             String currentEtag = null;
             ItemId currentItemId = null;
             FileAttachment currentFileAttachment = null;
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, EwsExchangeSession.this.isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-            if (!responses.isEmpty()) {
-                EWSMethod.Item response = responses.get(0);
-                currentItemId = new ItemId(response);
-                currentEtag = response.get(Field.get("etag").getResponseName());
+            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
+            if (currentItem != null) {
+                currentItemId = new ItemId(currentItem);
+                currentEtag = currentItem.get(Field.get("etag").getResponseName());
 
                 // load current picture
                 GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, currentItemId, false);
@@ -813,6 +818,10 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             itemName = response.get(Field.get("urlcompname").getResponseName());
+            // workaround for missing urlcompname in Exchange 2010
+            if (itemName == null) {
+                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+            }
         }
 
         /**
@@ -949,28 +958,56 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
     }
 
+    protected EWSMethod.Item getEwsItem(String folderPath, String itemName) throws IOException {
+        EWSMethod.Item item = null;
+        String urlcompname = convertItemNameToEML(itemName);
+        // workaround for missing urlcompname in Exchange 2010
+        if (isItemId(urlcompname)) {
+            ItemId itemId = new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, 152)));
+            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+            for (String attribute : EVENT_REQUEST_PROPERTIES) {
+                getItemMethod.addAdditionalProperty(Field.get(attribute));
+            }
+            executeMethod(getItemMethod);
+            item = getItemMethod.getResponseItem();
+        } else {
+            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
+            if (!responses.isEmpty()) {
+                item = responses.get(0);
+            }
+        }
+        return item;
+    }
+
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        String urlcompname = convertItemNameToEML(itemName);
-        List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW);
-        if (responses.isEmpty()) {
+        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        if (item == null) {
             throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
-        String itemType = responses.get(0).type;
+
+        String itemType = item.type;
         if ("Contact".equals(itemType)) {
             // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, isEqualTo("urlcompname", urlcompname));
-            if (contacts.isEmpty()) {
+            ItemId itemId = new ItemId(item);
+            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+            for (String attribute : CONTACT_ATTRIBUTES) {
+                getItemMethod.addAdditionalProperty(Field.get(attribute));
+            }
+            executeMethod(getItemMethod);
+            item = getItemMethod.getResponseItem();
+            if (item == null) {
                 throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
             }
-            return contacts.get(0);
+            return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
                 || "MeetingRequest".equals(itemType)) {
-            return new Event(responses.get(0));
+            return new Event(item);
         } else {
             throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
         }
+
     }
 
     @Override
@@ -1067,11 +1104,14 @@ public class EwsExchangeSession extends ExchangeSession {
     private FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        String currentMailboxPath = "/users/" + email;
-        if (currentMailboxPath.equals(folderPath)) {
-            return DistinguishedFolderId.MSGFOLDERROOT;
-        } else if (folderPath.startsWith(currentMailboxPath + '/')) {
-            return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length() + 1));
+        String lowerCaseFolderPath = folderPath.toLowerCase();
+        if (email != null) {
+            String currentMailboxPath = "/users/" + email.toLowerCase();
+            if (currentMailboxPath.equals(lowerCaseFolderPath)) {
+                return DistinguishedFolderId.MSGFOLDERROOT;
+            } else if (lowerCaseFolderPath.startsWith(currentMailboxPath + '/')) {
+                return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length() + 1));
+            }
         }
         if (folderPath.startsWith(PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
@@ -1171,6 +1211,8 @@ public class EwsExchangeSession extends ExchangeSession {
         return dateFormatter.format(date);
     }
 
-
+    protected static boolean isItemId(String itemName) {
+         return itemName.length() == 156;
+    }
 }
 

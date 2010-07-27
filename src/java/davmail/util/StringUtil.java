@@ -137,15 +137,9 @@ public final class StringUtil {
 
     private static final Pattern F8FF_PATTERN = Pattern.compile("_xF8FF_");
     private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
-
-
-    public static String urlEncodeSlash(String name) {
-        String result = name;
-        if (name.indexOf("_xF8FF_") >= 0) {
-            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char) 0xF8FF));
-        }
-        return result;
-    }
+    private static final Pattern SLASH_PATTERN = Pattern.compile("/");
+    private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
+    private static final Pattern DASH_PATTERN = Pattern.compile("-");
 
     /**
      * Encode & to %26 for urlcompname.
@@ -279,4 +273,25 @@ public final class StringUtil {
         return result;
     }
 
+    public static String base64ToUrl(String value) {
+        String result = value;
+        if (result.indexOf('+') >= 0) {
+            result = PLUS_PATTERN.matcher(result).replaceAll("-");
+        }
+        if (result.indexOf('/') >= 0) {
+            result = SLASH_PATTERN.matcher(result).replaceAll("_");
+        }
+        return result;
+    }
+
+    public static String urlToBase64(String value) {
+        String result = value;
+        if (result.indexOf('-') >= 0) {
+            result = DASH_PATTERN.matcher(result).replaceAll("+");
+        }
+        if (result.indexOf('_') >= 0) {
+            result = UNDERSCORE_PATTERN.matcher(result).replaceAll("/");
+        }
+        return result;
+    }
 }

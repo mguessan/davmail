@@ -38,6 +38,11 @@ public class ItemId {
         this.changeKey = item.get("ChangeKey");
     }
 
+    public ItemId(String itemId) {
+        this.id = itemId;
+        this.changeKey = null;
+    }
+
     /**
      * Write item id as XML.
      *
