@@ -776,23 +776,26 @@ public class EwsExchangeSession extends ExchangeSession {
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
 
-            // first delete current picture
-            if (currentFileAttachment != null) {
-                DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);
-                executeMethod(deleteAttachmentMethod);
-            }
-
-            if (photo != null) {
-                // convert image to jpeg
-                byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
-
-                FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
-                if ("Exchange2010".equals(serverVersion)) {
-                    attachment.setIsContactPhoto(true);
+            // disable contact picture handling on Exchange 2007
+            if (!"Exchange2010".equals(serverVersion)) {
+                // first delete current picture
+                if (currentFileAttachment != null) {
+                    DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);
+                    executeMethod(deleteAttachmentMethod);
                 }
-                // update photo attachment
-                CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
-                executeMethod(createAttachmentMethod);
+
+                if (photo != null) {
+                    // convert image to jpeg
+                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
+
+                    FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
+                    if ("Exchange2010".equals(serverVersion)) {
+                        attachment.setIsContactPhoto(true);
+                    }
+                    // update photo attachment
+                    CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
+                    executeMethod(createAttachmentMethod);
+                }
             }
 
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
@@ -1122,7 +1125,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String subFolderPath;
             if (slashIndex >= 0) {
                 mailbox = folderPath.substring(USERS_ROOT.length(), slashIndex);
-                subFolderPath = folderPath.substring(slashIndex+1);
+                subFolderPath = folderPath.substring(slashIndex + 1);
             } else {
                 mailbox = folderPath.substring(USERS_ROOT.length());
                 subFolderPath = "";
