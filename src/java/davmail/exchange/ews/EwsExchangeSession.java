@@ -1062,7 +1062,15 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public int sendEvent(String icsBody) throws IOException {
-        throw new UnsupportedOperationException();
+        String itemName = UUID.randomUUID().toString() + ".EML";
+        byte[] mimeContent = new Event(DRAFTS, itemName, "urn:content-classes:calendarmessage", icsBody, null, null).createMimeContent();
+        if (mimeContent == null) {
+            // no recipients, cancel
+            return HttpStatus.SC_NO_CONTENT;
+        } else {
+            sendMessage(mimeContent);
+            return HttpStatus.SC_OK;
+        }
     }
 
     @Override
@@ -1206,7 +1214,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static boolean isItemId(String itemName) {
-         return itemName.length() == 156;
+        return itemName.length() == 156;
     }
 }
 
