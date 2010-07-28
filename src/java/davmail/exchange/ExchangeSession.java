@@ -957,9 +957,6 @@ public abstract class ExchangeSession {
         if (!messages.isEmpty()) {
             LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
         } else {
-            // Exchange 2007 : skip From: header
-            mimeMessage.removeHeader("from");
-
             // remove visible recipients from list
             Set<String> visibleRecipients = new HashSet<String>();
             Address[] recipients = mimeMessage.getAllRecipients();
