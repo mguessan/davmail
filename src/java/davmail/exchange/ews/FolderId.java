@@ -26,6 +26,20 @@ import java.io.Writer;
  */
 public class FolderId extends Option {
     protected String changeKey;
+    protected String mailbox;
+
+    /**
+     * Create FolderId with specified tag name.
+     *
+     * @param name      field tag name
+     * @param value     id value
+     * @param changeKey folder change key
+     * @param mailbox   shared mailbox name
+     */
+    protected FolderId(String name, String value, String changeKey, String mailbox) {
+        this(name, value, changeKey);
+        this.mailbox = mailbox;
+    }
 
     /**
      * Create FolderId with specified tag name.
@@ -40,23 +54,13 @@ public class FolderId extends Option {
     }
 
     /**
-     * Create FolderId
-     *
-     * @param value     id value
-     * @param changeKey folder change key
-     */
-    public FolderId(String value, String changeKey) {
-        super("t:FolderId", value);
-        this.changeKey = changeKey;
-    }
-
-    /**
      * Build Folder id from response item.
      *
+     * @param mailbox mailbox name
      * @param item response item
      */
-    public FolderId(EWSMethod.Item item) {
-        this(item.get("FolderId"), item.get("ChangeKey"));
+    public FolderId(String mailbox, EWSMethod.Item item) {
+        this("t:FolderId", item.get("FolderId"), item.get("ChangeKey"), mailbox);
     }
 
 
@@ -73,7 +77,15 @@ public class FolderId extends Option {
             writer.write("\" ChangeKey=\"");
             writer.write(changeKey);
         }
-        writer.write("\"/>");
+        if (mailbox == null) {
+            writer.write("\"/>");
+        } else {
+            writer.write("\"><t:Mailbox><t:EmailAddress>");
+            writer.write(mailbox);
+            writer.write("</t:EmailAddress></t:Mailbox></");
+            writer.write(name);
+            writer.write('>');
+        }
     }
 
 }

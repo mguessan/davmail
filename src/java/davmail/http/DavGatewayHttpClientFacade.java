@@ -286,6 +286,35 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
+     * Execute method with httpClient, do not follow 30x redirects.
+     *
+     * @param httpClient Http client instance
+     * @param method     Http method
+     * @return status
+     * @throws IOException on error
+     */
+    public static int executeNoRedirect(HttpClient httpClient, HttpMethod method) throws IOException {
+        int status;
+        try {
+            status = httpClient.executeMethod(method);
+            // check NTLM
+            if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+                    && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+                LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
+                resetMethod(method);
+                addNTLM(httpClient);
+                status = httpClient.executeMethod(method);
+            }
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            method.releaseConnection();
+        }
+        // caller will need to release connection
+        return status;
+    }
+
+    /**
      * Execute webdav search method.
      *
      * @param httpClient    http client instance

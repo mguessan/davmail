@@ -33,8 +33,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.NoRouteToHostException;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -76,19 +74,14 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
-        // TODO: implement
-        return false;
-    }
-
-    @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
         // nothing to do, mailPath not used in EWS mode
         // check EWS access
         HttpMethod getMethod = new GetMethod("/ews/exchange.asmx");
+        getMethod.setFollowRedirects(false);
         try {
-            getMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, getMethod);
-            if (getMethod.getStatusCode() != HttpStatus.SC_OK) {
+            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
+            if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
                 throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
             }
         } catch (IOException e) {
@@ -97,6 +90,14 @@ public class EwsExchangeSession extends ExchangeSession {
         } finally {
             getMethod.releaseConnection();
         }
+
+        // also need to retrieve email and alias
+        alias = getAliasFromOptions();
+        email = getEmailFromOptions();
+        if (email == null || alias == null) {
+            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+        }
+        currentMailboxPath = "/users/" + email.toLowerCase();
 
         try {
             folderIdMap = new HashMap<String, String>();
@@ -114,9 +115,6 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
 
-        // also need to retrieve email and alias
-        alias = getAliasFromOptions();
-        email = getEmailFromOptions();
     }
 
     class Message extends ExchangeSession.Message {
@@ -502,9 +500,9 @@ public class EwsExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add(Field.get("highestUid"));
     }
 
-    protected Folder buildFolder(EWSMethod.Item item) {
+    protected Folder buildFolder(String mailbox, EWSMethod.Item item) {
         Folder folder = new Folder();
-        folder.folderId = new FolderId(item);
+        folder.folderId = new FolderId(mailbox, item);
         folder.displayName = item.get(Field.get("folderDisplayName").getResponseName());
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
@@ -540,7 +538,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
         executeMethod(findFolderMethod);
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
-            Folder folder = buildFolder(item);
+            Folder folder = buildFolder(parentFolderId.mailbox, item);
             if (parentFolderPath.length() > 0) {
                 folder.folderPath = parentFolderPath + '/' + item.get(Field.get("urlcompname").getResponseName());
             } else if (folderIdMap.get(folder.folderId.value) != null) {
@@ -571,12 +569,13 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected EwsExchangeSession.Folder internalGetFolder(String folderPath) throws IOException {
-        GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, getFolderId(folderPath), FOLDER_PROPERTIES);
+        FolderId folderId = getFolderId(folderPath);
+        GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, folderId, FOLDER_PROPERTIES);
         executeMethod(getFolderMethod);
         EWSMethod.Item item = getFolderMethod.getResponseItem();
         Folder folder = null;
         if (item != null) {
-            folder = buildFolder(item);
+            folder = buildFolder(folderId.mailbox, item);
             folder.folderPath = folderPath;
         }
         return folder;
@@ -1085,8 +1084,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isSharedFolder(String folderPath) {
-        // TODO
-        return false;
+        return folderPath.startsWith("/") && !folderPath.toLowerCase().startsWith(currentMailboxPath);
+    }
+
+    @Override
+    protected String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException {
+        GetUserAvailabilityMethod getUserAvailabilityMethod = new GetUserAvailabilityMethod(attendee, start, end, interval);
+        executeMethod(getUserAvailabilityMethod);
+        return getUserAvailabilityMethod.getMergedFreeBusy();
     }
 
     @Override
@@ -1103,47 +1108,64 @@ public class EwsExchangeSession extends ExchangeSession {
         return folderId;
     }
 
-    private FolderId getFolderIdIfExists(String folderPath) throws IOException {
+    protected static final String USERS_ROOT = "/users/";
+
+    protected FolderId getFolderIdIfExists(String folderPath) throws IOException {
+        String lowerCaseFolderPath = folderPath.toLowerCase();
+        if (currentMailboxPath.equals(lowerCaseFolderPath)) {
+            return getSubFolderIdIfExists(null, "");
+        } else if (lowerCaseFolderPath.startsWith(currentMailboxPath + '/')) {
+            return getSubFolderIdIfExists(null, folderPath.substring(currentMailboxPath.length() + 1));
+        } else if (folderPath.startsWith("/users/")) {
+            int slashIndex = folderPath.indexOf('/', USERS_ROOT.length());
+            String mailbox;
+            String subFolderPath;
+            if (slashIndex >= 0) {
+                mailbox = folderPath.substring(USERS_ROOT.length(), slashIndex);
+                subFolderPath = folderPath.substring(slashIndex+1);
+            } else {
+                mailbox = folderPath.substring(USERS_ROOT.length());
+                subFolderPath = "";
+            }
+            return getSubFolderIdIfExists(mailbox, subFolderPath);
+        } else {
+            return getSubFolderIdIfExists(null, folderPath);
+        }
+    }
+
+    protected FolderId getSubFolderIdIfExists(String mailbox, String folderPath) throws IOException {
         String[] folderNames;
         FolderId currentFolderId;
-        String lowerCaseFolderPath = folderPath.toLowerCase();
-        if (email != null) {
-            String currentMailboxPath = "/users/" + email.toLowerCase();
-            if (currentMailboxPath.equals(lowerCaseFolderPath)) {
-                return DistinguishedFolderId.MSGFOLDERROOT;
-            } else if (lowerCaseFolderPath.startsWith(currentMailboxPath + '/')) {
-                return getFolderIdIfExists(folderPath.substring(currentMailboxPath.length() + 1));
-            }
-        }
+
         if (folderPath.startsWith(PUBLIC_ROOT)) {
-            currentFolderId = DistinguishedFolderId.PUBLICFOLDERSROOT;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
         } else if (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX)) {
-            currentFolderId = DistinguishedFolderId.INBOX;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (folderPath.startsWith(CALENDAR)) {
-            currentFolderId = DistinguishedFolderId.CALENDAR;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.calendar);
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
         } else if (folderPath.startsWith(CONTACTS)) {
-            currentFolderId = DistinguishedFolderId.CONTACTS;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.contacts);
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
         } else if (folderPath.startsWith(SENT)) {
-            currentFolderId = DistinguishedFolderId.SENTITEMS;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.sentitems);
             folderNames = folderPath.substring(SENT.length()).split("/");
         } else if (folderPath.startsWith(DRAFTS)) {
-            currentFolderId = DistinguishedFolderId.DRAFTS;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.drafts);
             folderNames = folderPath.substring(DRAFTS.length()).split("/");
         } else if (folderPath.startsWith(TRASH)) {
-            currentFolderId = DistinguishedFolderId.DELETEDITEMS;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.deleteditems);
             folderNames = folderPath.substring(TRASH.length()).split("/");
         } else if (folderPath.startsWith(JUNK)) {
-            currentFolderId = DistinguishedFolderId.JUNKEMAIL;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.junkemail);
             folderNames = folderPath.substring(JUNK.length()).split("/");
         } else if (folderPath.startsWith(UNSENT)) {
-            currentFolderId = DistinguishedFolderId.OUTBOX;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.outbox);
             folderNames = folderPath.substring(UNSENT.length()).split("/");
         } else {
-            currentFolderId = DistinguishedFolderId.MSGFOLDERROOT;
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.msgfolderroot);
             folderNames = folderPath.split("/");
         }
         for (String folderName : folderNames) {
@@ -1170,7 +1192,7 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
         if (item != null) {
-            folderId = new FolderId(item);
+            folderId = new FolderId(parentFolderId.mailbox, item);
         }
         return folderId;
     }

@@ -18,6 +18,9 @@
  */
 package davmail.exchange;
 
+import davmail.Settings;
+
+import javax.mail.MessagingException;
 import java.io.IOException;
 
 /**
@@ -121,5 +124,13 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
         session.deleteFolder(folderName);
     }
 
-    
+    public void testGetSharedFolder() throws IOException, MessagingException {
+        ExchangeSession.Folder folder = session.getFolder("/users/"+ Settings.getProperty("davmail.to")+"/inbox");
+        ExchangeSession.MessageList messages = session.searchMessages("/users/"+ Settings.getProperty("davmail.to")+"/inbox");
+        for (ExchangeSession.Message message:messages) {
+            System.out.println(message.getMimeMessage());
+        }
+        assertNotNull(folder);
+    }
+
 }

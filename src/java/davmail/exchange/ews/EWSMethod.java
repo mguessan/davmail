@@ -360,6 +360,7 @@ public abstract class EWSMethod extends PostMethod {
         endChanges(writer);
     }
 
+
     protected void writeIndexedPageItemView(Writer writer) throws IOException {
         if (maxCount > 0) {
             writer.write("<m:IndexedPageItemView MaxEntriesReturned=\""); 
@@ -540,7 +541,9 @@ public abstract class EWSMethod extends PostMethod {
      */
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
-            if (!"ErrorAccessDenied".equals(errorDetail)) {
+            if (!"ErrorAccessDenied".equals(errorDetail)
+                    && !"ErrorNameResolutionMultipleResults".equals(errorDetail)
+                    && !"ErrorMailRecipientNotFound".equals(errorDetail)) {
                 try {
                     throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
                 } catch (UnsupportedEncodingException e) {
@@ -794,6 +797,8 @@ public abstract class EWSMethod extends PostMethod {
                         }
                     } else if (isStartTag(reader, responseCollectionName)) {
                         handleItems(reader);
+                    } else {
+                        handleCustom(reader);
                     }
                 }
 
@@ -806,6 +811,11 @@ public abstract class EWSMethod extends PostMethod {
                 logger.error(errorDetail);
             }
         }
+    }
+
+    @SuppressWarnings({"NoopMethodInAbstractClass"})
+    protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
+        // override to handle custom content
     }
 
     private void handleItems(XMLStreamReader reader) throws XMLStreamException {

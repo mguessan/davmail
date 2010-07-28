@@ -111,6 +111,11 @@ public abstract class ExchangeSession {
     protected String rootPath;
     protected String email;
     protected String alias;
+    /**
+     * Lower case Caldav path to current user mailbox.
+     * /users/<i>email</i>
+     */
+    protected String currentMailboxPath;
     protected final HttpClient httpClient;
 
     private final String userName;
@@ -238,7 +243,20 @@ public abstract class ExchangeSession {
      * @throws NoRouteToHostException on error
      * @throws UnknownHostException   on error
      */
-    public abstract boolean isExpired() throws NoRouteToHostException, UnknownHostException;
+    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+        boolean isExpired = false;
+        try {
+            getFolder("");
+        } catch (UnknownHostException exc) {
+            throw exc;
+        } catch (NoRouteToHostException exc) {
+            throw exc;
+        } catch (IOException e) {
+            isExpired = true;
+        }
+
+        return isExpired;
+    }
 
     /**
      * Test authentication mode : form based or basic.
@@ -1001,8 +1019,8 @@ public abstract class ExchangeSession {
      * Create Exchange message folder.
      *
      * @param folderName logical folder name
-     * @throws IOException on error
      * @return status
+     * @throws IOException on error
      */
     public int createMessageFolder(String folderName) throws IOException {
         return createFolder(folderName, "IPF.Note", null);
@@ -1013,8 +1031,8 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @param properties folder properties
-     * @throws IOException on error
      * @return status
+     * @throws IOException on error
      */
     public int createCalendarFolder(String folderName, Map<String, String> properties) throws IOException {
         return createFolder(folderName, "IPF.Appointment", properties);
@@ -1025,8 +1043,8 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @param properties folder properties
-     * @throws IOException on error
      * @return status
+     * @throws IOException on error
      */
     public int createContactFolder(String folderName, Map<String, String> properties) throws IOException {
         return createFolder(folderName, "IPF.Contact", properties);
@@ -1037,7 +1055,7 @@ public abstract class ExchangeSession {
      *
      * @param folderName  logical folder name
      * @param folderClass folder class
-     * @param properties folder properties
+     * @param properties  folder properties
      * @return status
      * @throws IOException on error
      */
@@ -2526,7 +2544,7 @@ public abstract class ExchangeSession {
      * @param folderPath Exchange folder path
      * @param attributes requested attributes
      * @param condition  Exchange search query
-     * @param maxCount maximum item count
+     * @param maxCount   maximum item count
      * @return list of contacts
      * @throws IOException on error
      */
@@ -2809,7 +2827,7 @@ public abstract class ExchangeSession {
                     convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
                 } else if (property.hasParam("TYPE", "work")) {
                     convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
-                // any other type goes to other address
+                    // any other type goes to other address
                 } else {
                     convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
                 }
@@ -3268,11 +3286,11 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("haspicture");
         CONTACT_ATTRIBUTES.add("keywords");
         CONTACT_ATTRIBUTES.add("othermobile");
-        CONTACT_ATTRIBUTES.add("otherTelephone");        
+        CONTACT_ATTRIBUTES.add("otherTelephone");
         CONTACT_ATTRIBUTES.add("gender");
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
-        CONTACT_ATTRIBUTES.add("fburl");        
+        CONTACT_ATTRIBUTES.add("fburl");
     }
 
     /**
@@ -3309,6 +3327,17 @@ public abstract class ExchangeSession {
     }
 
     /**
+     * Get freebusy data string from Exchange.
+     *
+     * @param attendee attendee email address
+     * @param start    start date in Exchange zulu format
+     * @param end      end date in Exchange zulu format
+     * @param interval freebusy interval in minutes
+     * @return freebusy data or null
+     */
+    protected abstract String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException;
+
+    /**
      * Get freebusy info for attendee between start and end date.
      *
      * @param attendee       attendee email
@@ -3326,7 +3355,6 @@ public abstract class ExchangeSession {
         SimpleDateFormat exchangeZuluDateFormat = getExchangeZuluDateFormat();
         SimpleDateFormat icalDateFormat = getZuluDateFormat();
 
-        String freebusyUrl;
         Date startDate;
         Date endDate;
         try {
@@ -3340,27 +3368,14 @@ public abstract class ExchangeSession {
             } else {
                 endDate = icalDateFormat.parse(endDateValue);
             }
-            freebusyUrl = publicFolderUrl + "/?cmd=freebusy" +
-                    "&start=" + exchangeZuluDateFormat.format(startDate) +
-                    "&end=" + exchangeZuluDateFormat.format(endDate) +
-                    "&interval=" + FREE_BUSY_INTERVAL +
-                    "&u=SMTP:" + attendee;
         } catch (ParseException e) {
             throw new DavMailException("EXCEPTION_INVALID_DATES", e.getMessage());
         }
 
         FreeBusy freeBusy = null;
-        GetMethod getMethod = new GetMethod(freebusyUrl);
-        getMethod.setRequestHeader("Content-Type", "text/xml");
-
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            String fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
-            if (fbdata != null) {
-                freeBusy = new FreeBusy(icalDateFormat, startDate, fbdata);
-            }
-        } finally {
-            getMethod.releaseConnection();
+        String fbdata = getFreeBusyData(attendee, exchangeZuluDateFormat.format(startDate), exchangeZuluDateFormat.format(endDate),  FREE_BUSY_INTERVAL);
+        if (fbdata != null) {
+            freeBusy = new FreeBusy(icalDateFormat, startDate, fbdata);
         }
 
         if (freeBusy != null && freeBusy.knownAttendee) {

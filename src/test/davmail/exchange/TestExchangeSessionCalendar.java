@@ -18,18 +18,19 @@
  */
 package davmail.exchange;
 
-import davmail.AbstractDavMailTestCase;
 import davmail.Settings;
 
+import javax.mail.MessagingException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
  * Test Exchange session calendar features .
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
-public class TestExchangeSessionCalendar extends AbstractDavMailTestCase {
+public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase {
 
     public void testGetVtimezone() {
         ExchangeSession.VTimezone timezone = session.getVTimezone();
@@ -90,5 +91,34 @@ public class TestExchangeSessionCalendar extends AbstractDavMailTestCase {
             System.out.println(event.getBody());
         }
     }
+
+    public void testGetFreeBusyData() throws IOException, MessagingException {
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.set(Calendar.MONTH, 7);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        Date startDate = cal.getTime();
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        Date endDate = cal.getTime();
+        SimpleDateFormat formatter = ExchangeSession.getExchangeZuluDateFormat();
+        // personal fbdata
+        String fbdata = session.getFreeBusyData(session.getEmail(), formatter.format(startDate),
+                formatter.format(endDate), 60);
+        assertNotNull(fbdata);
+        // other user data
+        fbdata = session.getFreeBusyData(Settings.getProperty("davmail.to"), formatter.format(startDate),
+                formatter.format(endDate), 60);
+        assertNotNull(fbdata);
+         // unknown user data
+        fbdata = session.getFreeBusyData("unknown@company.org", formatter.format(startDate),
+                formatter.format(endDate), 60);
+        assertNull(fbdata);
+    }
+
     
 }
+

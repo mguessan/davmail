@@ -18,6 +18,9 @@
  */
 package davmail.exchange.ews;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Distinguished Folder Id.
  */
@@ -27,21 +30,40 @@ public class DistinguishedFolderId extends FolderId {
         super("t:DistinguishedFolderId", value, null);
     }
 
-    public static final DistinguishedFolderId CALENDAR = new DistinguishedFolderId("calendar");
-    public static final DistinguishedFolderId CONTACTS = new DistinguishedFolderId("contacts");
-    public static final DistinguishedFolderId DELETEDITEMS = new DistinguishedFolderId("deleteditems");
-    public static final DistinguishedFolderId DRAFTS = new DistinguishedFolderId("drafts");
-    public static final DistinguishedFolderId INBOX = new DistinguishedFolderId("inbox");
-    public static final DistinguishedFolderId JOURNAL = new DistinguishedFolderId("journal");
-    public static final DistinguishedFolderId NOTES = new DistinguishedFolderId("notes");
-    public static final DistinguishedFolderId OUTBOX = new DistinguishedFolderId("outbox");
-    public static final DistinguishedFolderId SENTITEMS = new DistinguishedFolderId("sentitems");
-    public static final DistinguishedFolderId TASKS = new DistinguishedFolderId("tasks");
-    public static final DistinguishedFolderId MSGFOLDERROOT = new DistinguishedFolderId("msgfolderroot");
-    public static final DistinguishedFolderId PUBLICFOLDERSROOT = new DistinguishedFolderId("publicfoldersroot");
-    public static final DistinguishedFolderId ROOT = new DistinguishedFolderId("root");
-    public static final DistinguishedFolderId JUNKEMAIL = new DistinguishedFolderId("junkemail");
-    public static final DistinguishedFolderId SEARCHFOLDERS = new DistinguishedFolderId("searchfolders");
-    public static final DistinguishedFolderId VOICEMAIL = new DistinguishedFolderId("voicemail");
+    private DistinguishedFolderId(String value, String mailbox) {
+        super("t:DistinguishedFolderId", value, null, mailbox);
+    }
+
+    /**
+     * DistinguishedFolderId names
+     */
+    @SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
+    public static enum Name {
+        calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
+        publicfoldersroot, root, junkemail, searchfolders, voicemail
+    }
+
+    protected static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();
+
+    static {
+        for (Name name : Name.values()) {
+            folderIdMap.put(name, new DistinguishedFolderId(name.toString()));
+        }
+    }
+
+    /**
+     * Get DistinguishedFolderId object for mailbox and name.
+     *
+     * @param mailbox mailbox name
+     * @param name    folder id name
+     * @return DistinguishedFolderId object
+     */
+    public static DistinguishedFolderId getInstance(String mailbox, Name name) {
+        if (mailbox == null) {
+            return folderIdMap.get(name);
+        } else {
+            return new DistinguishedFolderId(name.toString(), mailbox);
+        }
+    }
 
 }

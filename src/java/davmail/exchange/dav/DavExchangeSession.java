@@ -47,9 +47,7 @@ import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
 import java.io.*;
-import java.net.NoRouteToHostException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -172,6 +170,25 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public boolean isSharedFolder(String folderPath) {
         return !getFolderPath(folderPath).toLowerCase().startsWith(mailPath.toLowerCase());
+    }
+
+    @Override
+    protected String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException {
+        String freebusyUrl = publicFolderUrl + "/?cmd=freebusy" +
+                "&start=" + start +
+                "&end=" + end +
+                "&interval=" + interval +
+                "&u=SMTP:" + attendee;
+        GetMethod getMethod = new GetMethod(freebusyUrl);
+        getMethod.setRequestHeader("Content-Type", "text/xml");
+        String fbdata = null;
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
+            fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
+        } finally {
+            getMethod.releaseConnection();
+        }
+        return fbdata;
     }
 
     /**
@@ -333,25 +350,6 @@ public class DavExchangeSession extends ExchangeSession {
             LOGGER.error(e.getMessage());
             throw new DavMailAuthenticationException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    @Override
-    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
-        boolean isExpired = false;
-        try {
-            getFolder("");
-        } catch (UnknownHostException exc) {
-            throw exc;
-        } catch (NoRouteToHostException exc) {
-            throw exc;
-        } catch (IOException e) {
-            isExpired = true;
-        }
-
-        return isExpired;
     }
 
     protected static class MultiCondition extends ExchangeSession.MultiCondition {
