@@ -34,7 +34,7 @@ public class VCalendar extends VObject {
      * Create VCalendar object from reader;
      *
      * @param reader stream reader
-     * @param email current user email
+     * @param email  current user email
      * @throws IOException on error
      */
     public VCalendar(BufferedReader reader, String email) throws IOException {
@@ -49,7 +49,7 @@ public class VCalendar extends VObject {
      * Create VCalendar object from reader;
      *
      * @param vCalendarBody item body
-     * @param email current user email
+     * @param email         current user email
      * @throws IOException on error
      */
     public VCalendar(String vCalendarBody, String email) throws IOException {
@@ -69,7 +69,7 @@ public class VCalendar extends VObject {
 
     protected boolean isAllDay(VObject vObject) {
         VProperty dtstart = vObject.getProperty("DTSTART");
-        return dtstart != null && dtstart.hasParam("DATE");
+        return dtstart != null && dtstart.hasParam("VALUE", "DATE");
     }
 
     protected boolean hasCdoAllDay(VObject vObject) {
@@ -118,18 +118,57 @@ public class VCalendar extends VObject {
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
                 if (calendarServerAccess != null) {
-                    setPropertyValue("CLASS", getEventClass(calendarServerAccess));
-                } else if (vObject.getPropertyValue("X-CALENDARSERVER-ACCESS") != null){
-                    setPropertyValue("CLASS", getEventClass(vObject.getPropertyValue("X-CALENDARSERVER-ACCESS")));
+                    vObject.setPropertyValue("CLASS", getEventClass(calendarServerAccess));
+                } else if (vObject.getPropertyValue("X-CALENDARSERVER-ACCESS") != null) {
+                    vObject.setPropertyValue("CLASS", getEventClass(vObject.getPropertyValue("X-CALENDARSERVER-ACCESS")));
                 }
-                // add organizer line to all events created in Exchange for active sync
-                if (vObject.getPropertyValue("ORGANIZER") == null) {
-                    vObject.setPropertyValue("ORGANIZER", "MAILTO:"+email);
+                if (!fromServer) {
+                    // add organizer line to all events created in Exchange for active sync
+                    if (vObject.getPropertyValue("ORGANIZER") == null) {
+                        vObject.setPropertyValue("ORGANIZER", "MAILTO:" + email);
+                    }
+                    // set OWA allday flag
+                    vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
+                    fixAttendees(vObject);
+                } else {
+                    // remove organizer line for event without attendees for iPhone
+                    if (getProperty("ATTENDEE") == null) {
+                        vObject.setPropertyValue("ORGANIZER", null);
+                    }
                 }
-
             }
         }
 
+    }
+
+    /**
+     * Replace iCal4 (Snow Leopard) principal paths with mailto expression
+     *
+     * @param value attendee value or ics line
+     * @return fixed value
+     */
+    protected String replaceIcal4Principal(String value) {
+        if (value.contains("/principals/__uuids__/")) {
+            return value.replaceAll("/principals/__uuids__/([^/]*)__AT__([^/]*)/", "mailto:$1@$2");
+        } else {
+            return value;
+        }
+    }
+
+    private void fixAttendees(VObject vObject) {
+        if (properties != null) {
+            for (VProperty property : properties) {
+                if ("ATTENDEE".equalsIgnoreCase(property.getKey())) {
+                    property.setValue(replaceIcal4Principal(property.getValue()));
+
+                    // ignore attendee as organizer
+                    if (property.getValue().contains(email)) {
+                        property.setValue(null);
+                    }
+                }
+            }
+
+        }
     }
 
     /**
@@ -138,9 +177,9 @@ public class VCalendar extends VObject {
      * @return CLASS value
      */
     protected String getEventClass(String calendarServerAccess) {
-        if ("PRIVATE".equals(calendarServerAccess)) {
+        if ("PRIVATE".equalsIgnoreCase(calendarServerAccess)) {
             return "CONFIDENTIAL";
-        } else if ("CONFIDENTIAL".equals(calendarServerAccess) || "RESTRICTED".equals(calendarServerAccess)) {
+        } else if ("CONFIDENTIAL".equalsIgnoreCase(calendarServerAccess) || "RESTRICTED".equalsIgnoreCase(calendarServerAccess)) {
             return "PRIVATE";
         } else {
             return calendarServerAccess;
@@ -154,9 +193,9 @@ public class VCalendar extends VObject {
      */
     protected String getCalendarServerAccess() {
         String eventClass = firstVevent.getPropertyValue("CLASS");
-        if ("PRIVATE".equals(eventClass)) {
+        if ("PRIVATE".equalsIgnoreCase(eventClass)) {
             return "CONFIDENTIAL";
-        } else if ("CONFIDENTIAL".equals(eventClass)) {
+        } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
             return "PRIVATE";
         } else {
             return eventClass;

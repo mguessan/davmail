@@ -856,7 +856,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (status == HttpStatus.SC_OK) {
                 LOGGER.debug("Updated event " + encodedHref);
             } else if (status == HttpStatus.SC_CREATED) {
-                LOGGER.warn("Overwritten event " + encodedHref);
+                LOGGER.debug("Created event " + encodedHref);
             } else if (status == HttpStatus.SC_NOT_FOUND) {
                 LOGGER.debug("Event not found at " + encodedHref + ", searching permanenturl by urlcompname");
                 // failover, search item by urlcompname
