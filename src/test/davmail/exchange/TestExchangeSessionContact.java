@@ -258,7 +258,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         assertNull(contact.get("private"));
 
-        assertNull(contact.get("haspicture"));
+        assertTrue(contact.get("haspicture") == null || "false".equals(contact.get("haspicture")));
 
         assertNull(session.getContactPhoto(contact));
     }

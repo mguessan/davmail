@@ -2083,7 +2083,7 @@ public abstract class ExchangeSession {
                                 result.writeLine("CLASS:PRIVATE");
                             } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
                                 result.writeLine("CLASS:CONFIDENTIAL");
-                            } else {
+                            } else if (eventClass != null) {
                                 result.writeLine("CLASS:" + eventClass);
                             }
                         }
@@ -2786,9 +2786,8 @@ public abstract class ExchangeSession {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("outlookmessageclass", "IPM.Contact");
 
-        VCardReader reader = new VCardReader(new StringReader(itemBody));
-        VCardReader.Property property;
-        while ((property = reader.readProperty()) != null) {
+        VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
+        for (VProperty property:vcard.getProperties()) {
             if ("FN".equals(property.getKey())) {
                 properties.put("cn", property.getValue());
                 properties.put("subject", property.getValue());
@@ -3331,6 +3330,7 @@ public abstract class ExchangeSession {
      * @param end      end date in Exchange zulu format
      * @param interval freebusy interval in minutes
      * @return freebusy data or null
+     * @throws IOException on error
      */
     protected abstract String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException;
 
