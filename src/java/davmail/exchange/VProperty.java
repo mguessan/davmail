@@ -18,7 +18,8 @@
  */
 package davmail.exchange;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * VCard property
@@ -43,6 +44,11 @@ public class VProperty {
     protected String key;
     protected List<Param> params;
     protected List<String> values;
+
+    public VProperty(String name, String value) {
+        setKey(name);
+        setValue(value);
+    }
 
     /**
      * Create VProperty from line.
@@ -173,6 +179,16 @@ public class VProperty {
         return params != null && getParam(paramName) != null && containsIgnoreCase(getParam(paramName).values, paramValue);
     }
 
+    /**
+     * Test if the property has a param named paramName.
+     *
+     * @param paramName param name
+     * @return true if property has param name
+     */
+    public boolean hasParam(String paramName) {
+        return params != null && getParam(paramName) != null;
+    }
+
     protected boolean containsIgnoreCase(List<String> stringCollection, String value) {
         for (String collectionValue : stringCollection) {
             if (value.equalsIgnoreCase(collectionValue)) {
@@ -197,13 +213,26 @@ public class VProperty {
 
     protected Param getParam(String paramName) {
         if (params != null) {
-            for (Param param:params) {
+            for (Param param : params) {
                 if (paramName.equals(param.name)) {
                     return param;
                 }
             }
         }
         return null;
+    }
+
+    protected void setValue(String value) {
+        if (value == null) {
+            values = null;
+        } else {
+            if (values == null) {
+                values = new ArrayList<String>();
+            } else {
+                values.clear();
+            }
+            values.add(decodeValue(value));
+        }
     }
 
     protected void addValue(String value) {

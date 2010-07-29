@@ -34,7 +34,7 @@ public class VObject {
     /**
      * Inner VObjects (e.g. VEVENT, VALARM, ...)
      */
-    ArrayList<VObject> objects;
+    ArrayList<VObject> vObjects;
     /**
      * Object base name (VCALENDAR, VEVENT, VCARD...).
      */
@@ -77,26 +77,33 @@ public class VObject {
         VProperty property = new VProperty(line);
         // inner object
         if ("BEGIN".equals(property.getKey())) {
-            addObject(new VObject(property, reader));
+            addVObject(new VObject(property, reader));
         } else {
             addProperty(property);
         }
     }
 
-    protected void addObject(VObject object) {
-        if (objects == null) {
-            objects = new ArrayList<VObject>();
+    protected void addVObject(VObject vObject) {
+        if (vObjects == null) {
+            vObjects = new ArrayList<VObject>();
         }
-        objects.add(object);
+        vObjects.add(vObject);
     }
 
     protected void addProperty(VProperty property) {
-        if (properties == null) {
-            properties = new ArrayList<VProperty>();
+        if (property.getValue() != null) {
+            if (properties == null) {
+                properties = new ArrayList<VProperty>();
+            }
+            properties.add(property);
         }
-        properties.add(property);
     }
 
+    /**
+     * Write VObject to writer.
+     *
+     * @param writer buffered writer
+     */
     public void writeTo(ICSBufferedWriter writer) {
         writer.write("BEGIN:");
         writer.writeLine(type);
@@ -105,8 +112,8 @@ public class VObject {
                 writer.writeLine(property.toString());
             }
         }
-        if (objects != null) {
-            for (VObject object : objects) {
+        if (vObjects != null) {
+            for (VObject object : vObjects) {
                 object.writeTo(writer);
             }
         }
@@ -120,7 +127,44 @@ public class VObject {
         return writer.toString();
     }
 
+    /**
+     * Get VObject properties
+     *
+     * @return properties
+     */
     public List<VProperty> getProperties() {
         return properties;
+    }
+
+    public VProperty getProperty(String name) {
+        if (properties != null) {
+            for (VProperty property : properties) {
+                if (property.getKey().equalsIgnoreCase(name)) {
+                    return property;
+                }
+            }
+
+        }
+        return null;
+    }
+
+    public String getPropertyValue(String name) {
+        VProperty property = getProperty(name);
+        if (property != null) {
+            return property.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    public void setPropertyValue(String name, String value) {
+        VProperty property = getProperty(name);
+        if (property == null) {
+            property = new VProperty(name, value);
+            addProperty(property);
+        } else {
+            property.setValue(value);
+        }
+
     }
 }
