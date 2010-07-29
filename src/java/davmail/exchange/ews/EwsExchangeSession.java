@@ -26,7 +26,6 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -909,7 +908,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         @Override
-        public String getBody() throws HttpException {
+        public String getBody() throws IOException {
             String result;
             LOGGER.debug("Get event: " + permanentUrl);
             try {
@@ -918,7 +917,7 @@ public class EwsExchangeSession extends ExchangeSession {
             } catch (IOException e) {
                 throw buildHttpException(e);
             }
-            return result;
+            return fixICS(result, true);
         }
     }
 

@@ -797,7 +797,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @throws HttpException on error
          */
         @Override
-        public String getBody() throws HttpException {
+        public String getBody() throws IOException {
             String result;
             LOGGER.debug("Get event: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
@@ -821,7 +821,7 @@ public class DavExchangeSession extends ExchangeSession {
             } catch (MessagingException e) {
                 throw buildHttpException(e);
             }
-            return result;
+            return fixICS(result, true);
         }
 
         protected PutMethod internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {

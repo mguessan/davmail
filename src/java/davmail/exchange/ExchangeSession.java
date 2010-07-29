@@ -1605,7 +1605,7 @@ public abstract class ExchangeSession {
          * @return item body
          * @throws HttpException on error
          */
-        public abstract String getBody() throws HttpException;
+        public abstract String getBody() throws IOException;
 
         /**
          * Get event name (file name part in URL).
