@@ -540,11 +540,11 @@ public class EwsExchangeSession extends ExchangeSession {
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
             Folder folder = buildFolder(parentFolderId.mailbox, item);
             if (parentFolderPath.length() > 0) {
-                folder.folderPath = parentFolderPath + '/' + item.get(Field.get("urlcompname").getResponseName());
+                folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
             } else if (folderIdMap.get(folder.folderId.value) != null) {
                 folder.folderPath = folderIdMap.get(folder.folderId.value);
             } else {
-                folder.folderPath = item.get(Field.get("urlcompname").getResponseName());
+                folder.folderPath = item.get(Field.get("folderDisplayName").getResponseName());
             }
             folders.add(folder);
             if (recursive && folder.hasChildren) {
@@ -777,7 +777,7 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
 
             // disable contact picture handling on Exchange 2007
-            if (!"Exchange2010".equals(serverVersion)) {
+            if ("Exchange2010".equals(serverVersion)) {
                 // first delete current picture
                 if (currentFileAttachment != null) {
                     DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);

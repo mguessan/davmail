@@ -83,6 +83,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK Authenticated", socketReader.readLine());
     }
 
+    public void testListFolders() throws IOException {
+        writeLine(". LSUB \"\" \"*\"");
+        assertEquals(". OK LSUB completed", readFullAnswer("."));
+    }
+
     public void testSelectInbox() throws IOException {
         writeLine(". SELECT INBOX");
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
