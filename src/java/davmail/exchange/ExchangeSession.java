@@ -2189,8 +2189,13 @@ public abstract class ExchangeSession {
             } finally {
                 reader.close();
             }
-
             String resultString = result.toString();
+
+            /*  new experimental code
+            VCalendar vCalendar = new VCalendar(icsBody, getEmail());
+            vCalendar.fixVCalendar(fromServer);
+            resultString = vCalendar.toString();
+            */
             dumpICS(resultString, fromServer, true);
 
             return resultString;

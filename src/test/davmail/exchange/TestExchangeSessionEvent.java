@@ -476,4 +476,19 @@ public class TestExchangeSessionEvent extends TestCase {
         assertTrue(toServer.contains("ORGANIZER"));
     }
 
+
+    public void testValarm() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VEVENT\n" +
+                "BEGIN:VALARM\n" +
+                "TRIGGER:-PT15M\n" +
+                "ATTACH;VALUE=URI:Basso\n" +
+                "ACTION:AUDIO\n" +
+                "END:VALARM\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toServer = fixICS(itemBody, false);
+        System.out.println(toServer);
+        assertTrue(toServer.contains("ACTION:DISPLAY"));
+    }
 }

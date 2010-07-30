@@ -82,13 +82,13 @@ public class VProperty {
                     } else if (currentChar == ';') {
                         // param with no value
                         paramName = line.substring(startIndex, i).toUpperCase();
-                        addParam(paramName, null);
+                        addParam(paramName);
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     } else if (currentChar == ':') {
                         // param with no value
                         paramName = line.substring(startIndex, i).toUpperCase();
-                        addParam(paramName, null);
+                        addParam(paramName);
                         state = State.VALUE;
                         startIndex = i + 1;
                     }
@@ -196,6 +196,16 @@ public class VProperty {
             }
         }
         return false;
+    }
+
+    protected void addParam(String paramName) {
+        addParam(paramName, (String)null);
+    }
+
+    protected void addParam(String paramName, String paramValue) {
+        List paramValues = new ArrayList();
+        paramValues.add(paramValue);
+        addParam(paramName, paramValues);
     }
 
     protected void addParam(String paramName, List<String> paramValues) {

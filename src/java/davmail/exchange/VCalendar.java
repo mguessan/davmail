@@ -18,6 +18,8 @@
  */
 package davmail.exchange;
 
+import davmail.Settings;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -129,16 +131,51 @@ public class VCalendar extends VObject {
                     }
                     // set OWA allday flag
                     vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
-                    fixAttendees(vObject);
+                    vObject.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS",
+                            !"TRANSPARENT".equals(vObject.getPropertyValue("TRANSP")) ? "BUSY" : "FREE");
+                    
                 } else {
                     // remove organizer line for event without attendees for iPhone
                     if (getProperty("ATTENDEE") == null) {
                         vObject.setPropertyValue("ORGANIZER", null);
                     }
+                    // TODO: handle transparent ?
                 }
+
+                fixAttendees(vObject, fromServer);
+
+                // TODO handle BUSYSTATUS
+                
+                fixAlarm(vObject, fromServer);
             }
         }
 
+    }
+
+    private void fixAlarm(VObject vObject, boolean fromServer) {
+        for (VObject vAlarm : vObject.vObjects) {
+            if ("VALARM".equals(vAlarm.type)) {
+                String action = vAlarm.getPropertyValue("ACTION");
+                if (fromServer && "DISPLAY".equals(action)
+                        // convert DISPLAY to AUDIO only if user defined an alarm sound
+                        && Settings.getProperty("davmail.caldavAlarmSound") != null) {
+                    // Convert alarm to audio for iCal
+                    vAlarm.setPropertyValue("ACTION", "AUDIO");
+
+                    if (vAlarm.getPropertyValue("ATTACH") == null) {
+                        // Add defined sound into the audio alarm
+                        VProperty vProperty = new VProperty("ATTACH", Settings.getProperty("davmail.caldavAlarmSound"));
+                        vProperty.addParam("VALUE", "URI");
+                        vAlarm.addProperty(vProperty);
+                    }
+
+                } else if (!fromServer && "AUDIO".equals(action)) {
+                    // Use the alarm action that exchange (and blackberry) understand
+                    // (exchange and blackberry don't understand audio actions)
+                    vAlarm.setPropertyValue("ACTION", "DISPLAY");
+                }
+            }
+        }
     }
 
     /**
@@ -155,20 +192,25 @@ public class VCalendar extends VObject {
         }
     }
 
-    private void fixAttendees(VObject vObject) {
-        if (properties != null) {
-            for (VProperty property : properties) {
-                if ("ATTENDEE".equalsIgnoreCase(property.getKey())) {
-                    property.setValue(replaceIcal4Principal(property.getValue()));
+    private void fixAttendees(VObject vObject, boolean fromServer) {
+        if (!fromServer) {
+            if (vObject.properties != null) {
+                for (VProperty property : vObject.properties) {
+                    if ("ATTENDEE".equalsIgnoreCase(property.getKey())) {
+                        property.setValue(replaceIcal4Principal(property.getValue()));
 
-                    // ignore attendee as organizer
-                    if (property.getValue().contains(email)) {
-                        property.setValue(null);
+                        // ignore attendee as organizer
+                        if (property.getValue().contains(email)) {
+                            property.setValue(null);
+                        }
                     }
                 }
-            }
 
+            }
+        } else {
+            // TODO patch RSVP
         }
+
     }
 
     /**
