@@ -19,6 +19,7 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.io.StringReader;
  * VCalendar object.
  */
 public class VCalendar extends VObject {
+    protected static final Logger LOGGER = Logger.getLogger(VCalendar.class);
     protected VObject firstVevent;
     protected VObject vTimezone;
     protected String email;
@@ -35,27 +37,34 @@ public class VCalendar extends VObject {
     /**
      * Create VCalendar object from reader;
      *
-     * @param reader stream reader
-     * @param email  current user email
+     * @param reader    stream reader
+     * @param email     current user email
+     * @param vTimezone user OWA timezone
      * @throws IOException on error
      */
-    public VCalendar(BufferedReader reader, String email) throws IOException {
+    public VCalendar(BufferedReader reader, String email, VObject vTimezone) throws IOException {
         super(reader);
         if (!"VCALENDAR".equals(type)) {
             throw new IOException("Invalid type: " + type);
         }
         this.email = email;
+        // set OWA timezone information
+        if (this.vTimezone == null) {
+            this.vObjects.add(0, vTimezone);
+            this.vTimezone = vTimezone;
+        }
     }
 
     /**
-     * Create VCalendar object from reader;
+     * Create VCalendar object from string;
      *
      * @param vCalendarBody item body
      * @param email         current user email
+     * @param vTimezone     user OWA timezone
      * @throws IOException on error
      */
-    public VCalendar(String vCalendarBody, String email) throws IOException {
-        this(new ICSBufferedReader(new StringReader(vCalendarBody)), email);
+    public VCalendar(String vCalendarBody, String email, VObject vTimezone) throws IOException {
+        this(new ICSBufferedReader(new StringReader(vCalendarBody)), email, vTimezone);
     }
 
     @Override
@@ -124,7 +133,24 @@ public class VCalendar extends VObject {
                 } else if (vObject.getPropertyValue("X-CALENDARSERVER-ACCESS") != null) {
                     vObject.setPropertyValue("CLASS", getEventClass(vObject.getPropertyValue("X-CALENDARSERVER-ACCESS")));
                 }
-                if (!fromServer) {
+                if (fromServer) {
+                    // remove organizer line for event without attendees for iPhone
+                    if (getProperty("ATTENDEE") == null) {
+                        vObject.setPropertyValue("ORGANIZER", null);
+                    }
+                    // detect allday and update date properties
+                    if (isCdoAllDay(vObject)) {
+                        setClientAllday(vObject.getProperty("DTSTART"));
+                        setClientAllday(vObject.getProperty("DTEND"));
+                    }
+                    vObject.setPropertyValue("TRANSP",
+                            !"FREE".equals(vObject.getPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "OPAQUE" : "TRANSPARENT");
+
+                    // TODO splitExDate
+                    // Apple iCal doesn't understand this key, and it's entourage
+                    // specific (i.e. not needed by any caldav client): strip it out
+                    vObject.removeProperty("X-ENTOURAGE_UUID");
+                } else {
                     // add organizer line to all events created in Exchange for active sync
                     if (vObject.getPropertyValue("ORGANIZER") == null) {
                         vObject.setPropertyValue("ORGANIZER", "MAILTO:" + email);
@@ -133,46 +159,78 @@ public class VCalendar extends VObject {
                     vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
                     vObject.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS",
                             !"TRANSPARENT".equals(vObject.getPropertyValue("TRANSP")) ? "BUSY" : "FREE");
-                    
-                } else {
-                    // remove organizer line for event without attendees for iPhone
-                    if (getProperty("ATTENDEE") == null) {
-                        vObject.setPropertyValue("ORGANIZER", null);
+
+                    if (isAllDay(vObject)) {
+                        // convert date values to outlook compatible values
+                        setServerAllday(vObject.getProperty("DTSTART"));
+                        setServerAllday(vObject.getProperty("DTEND"));
                     }
-                    // TODO: handle transparent ?
                 }
 
                 fixAttendees(vObject, fromServer);
 
                 // TODO handle BUSYSTATUS
-                
+
                 fixAlarm(vObject, fromServer);
             }
         }
 
     }
 
-    private void fixAlarm(VObject vObject, boolean fromServer) {
-        for (VObject vAlarm : vObject.vObjects) {
-            if ("VALARM".equals(vAlarm.type)) {
-                String action = vAlarm.getPropertyValue("ACTION");
-                if (fromServer && "DISPLAY".equals(action)
-                        // convert DISPLAY to AUDIO only if user defined an alarm sound
-                        && Settings.getProperty("davmail.caldavAlarmSound") != null) {
-                    // Convert alarm to audio for iCal
-                    vAlarm.setPropertyValue("ACTION", "AUDIO");
+    private void setServerAllday(VProperty property) {
+        // set TZID param
+        if (!property.hasParam("TZID")) {
+            property.addParam("TZID", vTimezone.getPropertyValue("TZID"));
+        }
+        // remove VALUE
+        property.removeParam("VALUE");
+        String value = property.getValue();
+        if (value.length() != 8) {
+            LOGGER.warn("Invalid date value in allday event: " + value);
+        }
+        property.setValue(property.getValue() + "T000000");
+    }
 
-                    if (vAlarm.getPropertyValue("ATTACH") == null) {
-                        // Add defined sound into the audio alarm
-                        VProperty vProperty = new VProperty("ATTACH", Settings.getProperty("davmail.caldavAlarmSound"));
-                        vProperty.addParam("VALUE", "URI");
-                        vAlarm.addProperty(vProperty);
+    protected void setClientAllday(VProperty property) {
+        // set VALUE=DATE param
+        if (!property.hasParam("VALUE")) {
+            property.addParam("VALUE", "DATE");
+        }
+        // remove TZID
+        property.removeParam("TZID");
+        String value = property.getValue();
+        int tIndex = value.indexOf('T');
+        if (tIndex >= 0) {
+            value = value.substring(0, tIndex);
+        } else {
+            LOGGER.warn("Invalid date value in allday event: " + value);
+        }
+        property.setValue(value);
+    }
+
+    protected void fixAlarm(VObject vObject, boolean fromServer) {
+        if (vObject.vObjects != null) {
+            for (VObject vAlarm : vObject.vObjects) {
+                if ("VALARM".equals(vAlarm.type)) {
+                    String action = vAlarm.getPropertyValue("ACTION");
+                    if (fromServer && "DISPLAY".equals(action)
+                            // convert DISPLAY to AUDIO only if user defined an alarm sound
+                            && Settings.getProperty("davmail.caldavAlarmSound") != null) {
+                        // Convert alarm to audio for iCal
+                        vAlarm.setPropertyValue("ACTION", "AUDIO");
+
+                        if (vAlarm.getPropertyValue("ATTACH") == null) {
+                            // Add defined sound into the audio alarm
+                            VProperty vProperty = new VProperty("ATTACH", Settings.getProperty("davmail.caldavAlarmSound"));
+                            vProperty.addParam("VALUE", "URI");
+                            vAlarm.addProperty(vProperty);
+                        }
+
+                    } else if (!fromServer && "AUDIO".equals(action)) {
+                        // Use the alarm action that exchange (and blackberry) understand
+                        // (exchange and blackberry don't understand audio actions)
+                        vAlarm.setPropertyValue("ACTION", "DISPLAY");
                     }
-
-                } else if (!fromServer && "AUDIO".equals(action)) {
-                    // Use the alarm action that exchange (and blackberry) understand
-                    // (exchange and blackberry don't understand audio actions)
-                    vAlarm.setPropertyValue("ACTION", "DISPLAY");
                 }
             }
         }
@@ -193,10 +251,21 @@ public class VCalendar extends VObject {
     }
 
     private void fixAttendees(VObject vObject, boolean fromServer) {
-        if (!fromServer) {
-            if (vObject.properties != null) {
-                for (VProperty property : vObject.properties) {
-                    if ("ATTENDEE".equalsIgnoreCase(property.getKey())) {
+        if (vObject.properties != null) {
+            for (VProperty property : vObject.properties) {
+                if ("ATTENDEE".equalsIgnoreCase(property.getKey())) {
+                    if (fromServer) {
+                        // If this is coming from the server, strip out RSVP for this
+                        // user as an attendee where the partstat is something other
+                        // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
+                        // thinking the attendee has not replied
+                        if (isCurrentUser(property) && property.hasParam("RSVP", "TRUE")) {
+                            VProperty.Param partstat = property.getParam("PARTSTAT");
+                            if (partstat == null || !"NEEDS-ACTION".equals(partstat.getValue())) {
+                                property.removeParam("RSVP");
+                            }
+                        }
+                    } else {
                         property.setValue(replaceIcal4Principal(property.getValue()));
 
                         // ignore attendee as organizer
@@ -207,14 +276,17 @@ public class VCalendar extends VObject {
                 }
 
             }
-        } else {
-            // TODO patch RSVP
         }
 
     }
 
+    private boolean isCurrentUser(VProperty property) {
+        return property.getValue().equalsIgnoreCase("mailto:" + email);
+    }
+
     /**
      * Convert X-CALENDARSERVER-ACCESS to CLASS.
+     * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
      *
      * @return CLASS value
      */
@@ -230,7 +302,7 @@ public class VCalendar extends VObject {
 
     /**
      * Convert CLASS to X-CALENDARSERVER-ACCESS.
-     *
+     * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt     *
      * @return X-CALENDARSERVER-ACCESS value
      */
     protected String getCalendarServerAccess() {

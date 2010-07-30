@@ -20,6 +20,7 @@ package davmail.exchange;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,6 +73,17 @@ public class VObject {
     public VObject(BufferedReader reader) throws IOException {
         this(new VProperty(reader.readLine()), reader);
     }
+
+    /**
+     * Create VCalendar object from string;
+     *
+     * @param itemBody item body
+     * @throws IOException on error
+     */
+    public VObject(String itemBody) throws IOException {
+        this(new ICSBufferedReader(new StringReader(itemBody)));
+    }
+
 
     protected void handleLine(String line, BufferedReader reader) throws IOException {
         VProperty property = new VProperty(line);
@@ -158,13 +170,25 @@ public class VObject {
     }
 
     public void setPropertyValue(String name, String value) {
-        VProperty property = getProperty(name);
-        if (property == null) {
-            property = new VProperty(name, value);
-            addProperty(property);
+        if (value == null) {
+            removeProperty(name);
         } else {
-            property.setValue(value);
+            VProperty property = getProperty(name);
+            if (property == null) {
+                property = new VProperty(name, value);
+                addProperty(property);
+            } else {
+                property.setValue(value);
+            }
         }
+    }
 
+    public void removeProperty(String name) {
+        if (vObjects != null) {
+            VProperty property = getProperty(name);
+            if (property != null) {
+                vObjects.remove(property);
+            }
+        }
     }
 }

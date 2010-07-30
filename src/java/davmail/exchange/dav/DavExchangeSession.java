@@ -24,6 +24,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.VObject;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
@@ -1377,7 +1378,6 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected void loadVtimezone() {
         try {
-            VTimezone userTimezone = new VTimezone();
             // create temporary folder
             String folderPath = getFolderPath("davmailtemp");
             createCalendarFolder(folderPath, null);
@@ -1403,14 +1403,14 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyList.add(Field.createDavProperty("instancetype", "0"));
 
                 // get forced timezone id from settings
-                userTimezone.timezoneId = Settings.getProperty("davmail.timezoneId");
-                if (userTimezone.timezoneId == null) {
+                String timezoneId = Settings.getProperty("davmail.timezoneId");
+                if (timezoneId == null) {
                     // get timezoneid from OWA settings
-                    userTimezone.timezoneId = getTimezoneIdFromExchange();
+                    timezoneId = getTimezoneIdFromExchange();
                 }
                 // without a timezoneId, use Exchange timezone
-                if (userTimezone.timezoneId != null) {
-                    propertyList.add(Field.createDavProperty("timezoneid", userTimezone.timezoneId));
+                if (timezoneId != null) {
+                    propertyList.add(Field.createDavProperty("timezoneid", timezoneId));
                 }
                 String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
                 PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
@@ -1429,10 +1429,9 @@ public class DavExchangeSession extends ExchangeSession {
                 getMethod.setRequestHeader("Translate", "f");
                 try {
                     httpClient.executeMethod(getMethod);
-                    userTimezone.timezoneBody = "BEGIN:VTIMEZONE" +
+                    this.vTimezone = new VObject("BEGIN:VTIMEZONE" +
                             StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
-                            "END:VTIMEZONE\r\n";
-                    userTimezone.timezoneId = StringUtil.getToken(userTimezone.timezoneBody, "TZID:", "\r\n");
+                            "END:VTIMEZONE\r\n");
                 } finally {
                     getMethod.releaseConnection();
                 }
@@ -1440,7 +1439,6 @@ public class DavExchangeSession extends ExchangeSession {
 
             // delete temporary folder
             deleteFolder("davmailtemp");
-            this.vTimezone = userTimezone;
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }

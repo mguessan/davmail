@@ -33,9 +33,9 @@ import java.util.*;
 public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase {
 
     public void testGetVtimezone() {
-        ExchangeSession.VTimezone timezone = session.getVTimezone();
-        assertNotNull(timezone.timezoneId);
-        assertNotNull(timezone.timezoneBody);
+        VObject timezone = session.getVTimezone();
+        assertNotNull(timezone);
+        assertNotNull(timezone.getPropertyValue("TZID"));
     }
 
     public void testDumpVtimezones() throws IOException {
@@ -63,10 +63,10 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
           };
           for (int i = 1; i < 100; i++) {
               Settings.setProperty("davmail.timezoneId", String.valueOf(i));
-              ExchangeSession.VTimezone timezone = session.getVTimezone();
-              if (timezone.timezoneId != null) {
-                  properties.put(timezone.timezoneId.replaceAll("\\\\", ""), String.valueOf(i));
-                  System.out.println(timezone.timezoneId + '=' + i);
+              VObject timezone = session.getVTimezone();
+              if (timezone.getProperty("TZID") != null) {
+                  properties.put(timezone.getPropertyValue("TZID").replaceAll("\\\\", ""), String.valueOf(i));
+                  System.out.println(timezone.getPropertyValue("TZID") + '=' + i);
               }
               session.vTimezone = null;
           }

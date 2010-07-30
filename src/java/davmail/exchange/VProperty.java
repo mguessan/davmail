@@ -39,6 +39,14 @@ public class VProperty {
             }
             values.addAll(paramValues);
         }
+
+        public String getValue() {
+            if (values != null && !values.isEmpty()) {
+                return values.get(0);
+            } else {
+                return null;
+            }
+        }
     }
 
     protected String key;
@@ -189,6 +197,15 @@ public class VProperty {
         return params != null && getParam(paramName) != null;
     }
 
+    public void removeParam(String paramName) {
+        if (params != null) {
+            Param param = getParam(paramName);
+            if (param != null) {
+                params.remove(param);
+            }
+        }
+    }
+
     protected boolean containsIgnoreCase(List<String> stringCollection, String value) {
         for (String collectionValue : stringCollection) {
             if (value.equalsIgnoreCase(collectionValue)) {
@@ -199,7 +216,7 @@ public class VProperty {
     }
 
     protected void addParam(String paramName) {
-        addParam(paramName, (String)null);
+        addParam(paramName, (String) null);
     }
 
     protected void addParam(String paramName, String paramValue) {
@@ -330,7 +347,7 @@ public class VProperty {
     }
 
     protected void appendParamValue(StringBuilder buffer, String value) {
-        if (Math.max(value.indexOf(';'), value.indexOf(',')) >= 0) {
+        if (value.indexOf(';') >= 0 || value.indexOf(',') >= 0 || value.indexOf('(') >= 0 || value.indexOf('/') >= 0) {
             buffer.append('"').append(value).append('"');
         } else {
             buffer.append(value);

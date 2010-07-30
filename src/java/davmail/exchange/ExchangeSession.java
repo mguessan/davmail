@@ -1867,7 +1867,7 @@ public abstract class ExchangeSession {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bodyPart.getDataHandler().writeTo(baos);
                 baos.close();
-                result = fixICS(new String(baos.toByteArray(), "UTF-8"), true);
+                result = new String(baos.toByteArray(), "UTF-8");
             } else {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 mimeMessage.writeTo(baos);
@@ -1937,265 +1937,19 @@ public abstract class ExchangeSession {
         }
 
         protected String fixICS(String icsBody, boolean fromServer) throws IOException {
-            // first pass : detect
-            class AllDayState {
-                boolean isAllDay;
-                boolean hasCdoAllDay;
-                boolean isCdoAllDay;
-            }
 
             dumpIndex++;
             dumpICS(icsBody, fromServer, false);
 
-            // Convert event class from and to iCal
-            // See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
-            boolean isAppleiCal = false;
-            boolean hasAttendee = false;
-            boolean hasCdoBusyStatus = false;
-            // detect ics event with empty timezone (all day from Lightning)
-            boolean hasTimezone = false;
-            String transp = null;
-            String validTimezoneId = null;
-            String eventClass = null;
-            String organizer = null;
-            String action = null;
-            String method = null;
-            boolean sound = false;
-
-            List<AllDayState> allDayStates = new ArrayList<AllDayState>();
-            AllDayState currentAllDayState = new AllDayState();
-            BufferedReader reader = null;
-            try {
-                reader = new ICSBufferedReader(new StringReader(icsBody));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    int index = line.indexOf(':');
-                    if (index >= 0) {
-                        String key = line.substring(0, index);
-                        String value = line.substring(index + 1);
-                        if ("DTSTART;VALUE=DATE".equals(key)) {
-                            currentAllDayState.isAllDay = true;
-                        } else if ("X-MICROSOFT-CDO-ALLDAYEVENT".equals(key)) {
-                            currentAllDayState.hasCdoAllDay = true;
-                            currentAllDayState.isCdoAllDay = "TRUE".equals(value);
-                        } else if ("END:VEVENT".equals(line)) {
-                            allDayStates.add(currentAllDayState);
-                            currentAllDayState = new AllDayState();
-                        } else if ("PRODID".equals(key) && line.contains("iCal")) {
-                            // detect iCal created events
-                            isAppleiCal = true;
-                        } else if (isAppleiCal && "X-CALENDARSERVER-ACCESS".equals(key)) {
-                            eventClass = value;
-                        } else if (!isAppleiCal && "CLASS".equals(key)) {
-                            eventClass = value;
-                        } else if ("ACTION".equals(key)) {
-                            action = value;
-                        } else if ("ATTACH;VALUES=URI".equals(key)) {
-                            // This is a marker that this event has an alarm with sound
-                            sound = true;
-                        } else if (key.startsWith("ORGANIZER")) {
-                            if (value.startsWith("MAILTO:")) {
-                                organizer = value.substring(7);
-                            } else {
-                                organizer = value;
-                            }
-                        } else if (key.startsWith("ATTENDEE")) {
-                            hasAttendee = true;
-                        } else if ("TRANSP".equals(key)) {
-                            transp = value;
-                        } else if (line.startsWith("TZID:(GMT") ||
-                                // additional test for Outlook created recurring events
-                                line.startsWith("TZID:GMT ")) {
-                            try {
-                                validTimezoneId = ResourceBundle.getBundle("timezones").getString(value);
-                            } catch (MissingResourceException mre) {
-                                LOGGER.warn(new BundleMessage("LOG_INVALID_TIMEZONE", value));
-                            }
-                        } else if ("X-MICROSOFT-CDO-BUSYSTATUS".equals(key)) {
-                            hasCdoBusyStatus = true;
-                        } else if ("BEGIN:VTIMEZONE".equals(line)) {
-                            hasTimezone = true;
-                        } else if ("METHOD".equals(key)) {
-                            method = value;
-                        }
-                    }
-                }
-            } finally {
-                if (reader != null) {
-                    reader.close();
-                }
+            if (LOGGER.isDebugEnabled() && fromServer) {
+                LOGGER.debug("Vcalendar body received from server:\n" +icsBody);
             }
-            // second pass : fix
-            int count = 0;
-            ICSBufferedWriter result = new ICSBufferedWriter();
-            try {
-                reader = new ICSBufferedReader(new StringReader(icsBody));
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    // remove empty properties
-                    if ("CLASS:".equals(line) || "LOCATION:".equals(line)) {
-                        continue;
-                    }
-                    // fix invalid exchange timezoneid
-                    if (validTimezoneId != null && line.indexOf(";TZID=") >= 0) {
-                        line = fixTimezoneId(line, validTimezoneId);
-                    }
-                    if (!fromServer && "BEGIN:VCALENDAR".equals(line) && method == null) {
-                        result.writeLine(line);
-                        // append missing method
-                        if (method == null) {
-                            result.writeLine("METHOD:PUBLISH");
-                        }
-                        continue;
-                    }
-                    if (fromServer && line.startsWith("PRODID:") && eventClass != null) {
-                        result.writeLine(line);
-                        // set global calendarserver access for iCal 4
-                        if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
-                        } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
-                        } else if (eventClass != null) {
-                            result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
-                        }
-                        continue;
-                    }
-                    if (!fromServer && "BEGIN:VEVENT".equals(line) && !hasTimezone) {
-                        result.write(ExchangeSession.this.getVTimezone().timezoneBody);
-                        hasTimezone = true;
-                    }
-                    if (!fromServer && currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE".equals(line)) {
-                        line = "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE";
-                    } else if (!fromServer && "END:VEVENT".equals(line)) {
-                        if (!hasCdoBusyStatus) {
-                            result.writeLine("X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE"));
-                        }
-                        if (currentAllDayState.isAllDay && !currentAllDayState.hasCdoAllDay) {
-                            result.writeLine("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE");
-                        }
-                        // add organizer line to all events created in Exchange for active sync
-                        if (organizer == null) {
-                            result.writeLine("ORGANIZER:MAILTO:" + email);
-                        }
-                        if (isAppleiCal) {
-                            if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("CLASS:PRIVATE");
-                            } else if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("CLASS:CONFIDENTIAL");
-                            } else if (eventClass != null) {
-                                result.writeLine("CLASS:" + eventClass);
-                            }
-                        }
-                    } else if (!fromServer && line.startsWith("X-MICROSOFT-CDO-BUSYSTATUS:")) {
-                        line = "X-MICROSOFT-CDO-BUSYSTATUS:" + (!"TRANSPARENT".equals(transp) ? "BUSY" : "FREE");
-                    } else if (!fromServer && !currentAllDayState.isAllDay && "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE".equals(line)) {
-                        line = "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE";
-                    } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTSTART") && !line.startsWith("DTSTART;VALUE=DATE")) {
-                        line = getAllDayLine(line);
-                    } else if (fromServer && currentAllDayState.isCdoAllDay && line.startsWith("DTEND") && !line.startsWith("DTEND;VALUE=DATE")) {
-                        line = getAllDayLine(line);
-                    } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTSTART") && line.startsWith("DTSTART;VALUE=DATE")) {
-                        line = "DTSTART;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(19) + "T000000";
-                    } else if (!fromServer && currentAllDayState.isAllDay && line.startsWith("DTEND") && line.startsWith("DTEND;VALUE=DATE")) {
-                        line = "DTEND;TZID=\"" + ExchangeSession.this.getVTimezone().timezoneId + "\":" + line.substring(17) + "T000000";
-                    } else if (line.startsWith("TZID:") && validTimezoneId != null) {
-                        line = "TZID:" + validTimezoneId;
-                    } else if ("BEGIN:VEVENT".equals(line)) {
-                        currentAllDayState = allDayStates.get(count++);
-                        // remove calendarserver access
-                    } else if (line.startsWith("X-CALENDARSERVER-ACCESS:")) {
-                        continue;
-                    } else if (line.startsWith("EXDATE;TZID=") || line.startsWith("EXDATE:")) {
-                        // Apple iCal doesn't support EXDATE with multiple exceptions
-                        // on one line.  Split into multiple EXDATE entries (which is
-                        // also legal according to the caldav standard).
-                        splitExDate(result, line);
-                        continue;
-                    } else if (line.startsWith("X-ENTOURAGE_UUID:")) {
-                        // Apple iCal doesn't understand this key, and it's entourage
-                        // specific (i.e. not needed by any caldav client): strip it out
-                        continue;
-                    } else if (fromServer && line.startsWith("ATTENDEE;")
-                            && (line.indexOf(email) >= 0)) {
-                        // If this is coming from the server, strip out RSVP for this
-                        // user as an attendee where the partstat is something other
-                        // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
-                        // thinking the attendee has not replied
-
-                        int rsvpSuffix = line.indexOf("RSVP=TRUE;");
-                        int rsvpPrefix = line.indexOf(";RSVP=TRUE");
-
-                        if (((rsvpSuffix >= 0) || (rsvpPrefix >= 0))
-                                && (line.indexOf("PARTSTAT=") >= 0)
-                                && (line.indexOf("PARTSTAT=NEEDS-ACTION") < 0)) {
-
-                            // Strip out the "RSVP" line from the calendar entry
-                            if (rsvpSuffix >= 0) {
-                                line = line.substring(0, rsvpSuffix) + line.substring(rsvpSuffix + 10);
-                            } else {
-                                line = line.substring(0, rsvpPrefix) + line.substring(rsvpPrefix + 10);
-                            }
-
-                        }
-                    } else if (line.startsWith("ACTION:")) {
-                        if (fromServer && "DISPLAY".equals(action)
-                                // convert DISPLAY to AUDIO only if user defined an alarm sound 
-                                && Settings.getProperty("davmail.caldavAlarmSound") != null) {
-                            // Convert alarm to audio for iCal
-                            result.writeLine("ACTION:AUDIO");
-
-                            if (!sound) {
-                                // Add defined sound into the audio alarm
-                                result.writeLine("ATTACH;VALUE=URI:" + Settings.getProperty("davmail.caldavAlarmSound"));
-                            }
-
-                            continue;
-                        } else if (!fromServer && "AUDIO".equals(action)) {
-                            // Use the alarm action that exchange (and blackberry) understand
-                            // (exchange and blackberry don't understand audio actions)
-
-                            result.writeLine("ACTION:DISPLAY");
-                            continue;
-                        }
-
-                        // Don't recognize this type of action: pass it through
-
-                    } else if (line.startsWith("CLASS:")) {
-                        if (!fromServer && isAppleiCal) {
-                            continue;
-                        } else {
-                            // still set calendarserver access inside event for iCal 3
-                            if ("PRIVATE".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("X-CALENDARSERVER-ACCESS:CONFIDENTIAL");
-                            } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
-                                result.writeLine("X-CALENDARSERVER-ACCESS:PRIVATE");
-                            } else {
-                                result.writeLine("X-CALENDARSERVER-ACCESS:" + eventClass);
-                            }
-                        }
-                        // remove organizer line if user is organizer for iPhone
-                    } else if (fromServer && line.startsWith("ORGANIZER") && !hasAttendee) {
-                        continue;
-                    } else if (organizer != null && line.startsWith("ATTENDEE") && line.contains(organizer)) {
-                        // Ignore organizer as attendee
-                        continue;
-                    } else if (!fromServer && line.startsWith("ATTENDEE")) {
-                        line = replaceIcal4Principal(line);
-                    }
-
-                    result.writeLine(line);
-                }
-            } finally {
-                reader.close();
-            }
-            String resultString = result.toString();
-
-            /*  new experimental code
-            VCalendar vCalendar = new VCalendar(icsBody, getEmail());
+            VCalendar vCalendar = new VCalendar(icsBody, getEmail(), getVTimezone());
             vCalendar.fixVCalendar(fromServer);
-            resultString = vCalendar.toString();
-            */
+            String resultString = vCalendar.toString();
+            if (LOGGER.isDebugEnabled() && !fromServer) {
+                LOGGER.debug("Fixed Vcalendar body to server:\n" +resultString);
+            }
             dumpICS(resultString, fromServer, true);
 
             return resultString;
@@ -3481,14 +3235,14 @@ public abstract class ExchangeSession {
 
     }
 
-    protected VTimezone vTimezone;
+    protected VObject vTimezone;
 
     /**
      * Load and return current user OWA timezone.
      *
      * @return current timezone
      */
-    public VTimezone getVTimezone() {
+    public VObject getVTimezone() {
         if (vTimezone == null) {
             // need to load Timezone info from OWA
             loadVtimezone();
