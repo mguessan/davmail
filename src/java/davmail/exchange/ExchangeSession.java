@@ -1957,7 +1957,7 @@ public abstract class ExchangeSession {
 
             // Make sure invites have a proper subject line
             // TODO: get current user attendee status, i18n
-            String subject = vCalendar.getFirstVevent().getPropertyValue("SUMMARY");
+            String subject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
             if (subject == null) {
                subject = BundleMessage.format("MEETING_REQUEST");
             }
@@ -1982,7 +1982,15 @@ public abstract class ExchangeSession {
                         return null;
                     }
                 }
-
+                if (LOGGER.isDebugEnabled()) {
+                    StringBuilder logBuffer = new StringBuilder("Sending notification");
+                    if (recipients.attendees != null) {
+                        logBuffer.append("to: ").append(recipients.attendees);
+                    }
+                    if (recipients.optionalAttendees != null) {
+                        logBuffer.append("cc: ").append(recipients.optionalAttendees);
+                    }
+                }
             } else {
                 // need to parse attendees and organizer to build recipients
                 VCalendar.Recipients recipients = vCalendar.getRecipients(false);
@@ -2017,7 +2025,7 @@ public abstract class ExchangeSession {
 
             // Write a part of the message that contains the
             // ICS description so that invites contain the description text
-            String description = vCalendar.getFirstVevent().getPropertyValue("DESCRIPTION");
+            String description = vCalendar.getFirstVeventPropertyValue("DESCRIPTION");
 
             if (description != null && description.length() > 0) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
@@ -2169,7 +2177,6 @@ public abstract class ExchangeSession {
                 and(or(isNull("instancetype"),
                         isEqualTo("instancetype", 1),
                         and(isEqualTo("instancetype", 0), dateCondition)),
-                        isEqualTo("outlookmessageclass", "IPM.Appointment"),
                         privateCondition));
     }
 

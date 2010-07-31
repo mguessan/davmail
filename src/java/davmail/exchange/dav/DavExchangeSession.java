@@ -1268,7 +1268,7 @@ public class DavExchangeSession extends ExchangeSession {
                     event.getBody();
                     // getBody success => add event or task
                     events.add(event);
-                } catch (HttpException e) {
+                } catch (IOException e) {
                     // invalid event: exclude from list
                     LOGGER.warn("Invalid event " + event.displayName + " found at " + response.getHref(), e);
                 }

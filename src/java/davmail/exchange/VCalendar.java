@@ -334,7 +334,7 @@ public class VCalendar extends VObject {
      * @return X-CALENDARSERVER-ACCESS value
      */
     protected String getCalendarServerAccess() {
-        String eventClass = firstVevent.getPropertyValue("CLASS");
+        String eventClass = getFirstVeventPropertyValue("CLASS");
         if ("PRIVATE".equalsIgnoreCase(eventClass)) {
             return "CONFIDENTIAL";
         } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
@@ -344,8 +344,29 @@ public class VCalendar extends VObject {
         }
     }
 
-    public VObject getFirstVevent() {
-        return firstVevent;
+    public String getFirstVeventPropertyValue(String name) {
+        if (firstVevent == null) {
+            return null;
+        } else {
+            return firstVevent.getPropertyValue(name);
+        }
+    }
+
+    protected VProperty getFirstVeventProperty(String name) {
+        if (firstVevent == null) {
+            return null;
+        } else {
+            return firstVevent.getProperty(name);
+        }
+    }
+
+
+    protected List<VProperty> getFirstVeventProperties(String name) {
+        if (firstVevent == null) {
+            return null;
+        } else {
+            return firstVevent.getProperties(name);
+        }
     }
 
     class Recipients {
@@ -360,7 +381,7 @@ public class VCalendar extends VObject {
         HashSet<String> optionalAttendees = new HashSet<String>();
 
         // get recipients from first VEVENT
-        List<VProperty> attendeeProperties = firstVevent.getProperties("ATTENDEE");
+        List<VProperty> attendeeProperties = getFirstVeventProperties("ATTENDEE");
         if (attendeeProperties != null) {
             for (VProperty property : attendeeProperties) {
                 // exclude current user and invalid values from recipients
@@ -389,9 +410,10 @@ public class VCalendar extends VObject {
             }
         }
         Recipients recipients = new Recipients();
-        recipients.organizer = getEmailValue(firstVevent.getProperty("ORGANIZER"));
+        recipients.organizer = getEmailValue(getFirstVeventProperty("ORGANIZER"));
         recipients.attendees = StringUtil.join(attendees, ", ");
         recipients.optionalAttendees = StringUtil.join(optionalAttendees, ", ");
         return recipients;
     }
+
 }
