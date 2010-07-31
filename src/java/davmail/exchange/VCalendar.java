@@ -19,11 +19,13 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.util.StringUtil;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * VCalendar object.
@@ -67,6 +69,18 @@ public class VCalendar extends VObject {
         this(new ICSBufferedReader(new StringReader(vCalendarBody)), email, vTimezone);
     }
 
+    /**
+     * Create VCalendar object from string;
+     *
+     * @param vCalendarContent item content
+     * @param email            current user email
+     * @param vTimezone        user OWA timezone
+     * @throws IOException on error
+     */
+    public VCalendar(byte[] vCalendarContent, String email, VObject vTimezone) throws IOException {
+        this(new ICSBufferedReader(new InputStreamReader(new ByteArrayInputStream(vCalendarContent), "UTF-8")), email, vTimezone);
+    }
+
     @Override
     protected void addVObject(VObject vObject) {
         super.addVObject(vObject);
@@ -83,28 +97,19 @@ public class VCalendar extends VObject {
         return dtstart != null && dtstart.hasParam("VALUE", "DATE");
     }
 
-    protected boolean hasCdoAllDay(VObject vObject) {
-        return vObject.getProperty("X-MICROSOFT-CDO-ALLDAYEVENT") != null;
-    }
-
-    protected boolean hasCdoBusyStatus(VObject vObject) {
-        return vObject.getProperty("X-MICROSOFT-CDO-BUSYSTATUS") != null;
-    }
-
     protected boolean isCdoAllDay(VObject vObject) {
         return "TRUE".equals(vObject.getPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT"));
     }
 
-    protected boolean isAppleiCal() {
-        return getPropertyValue("PRODID").contains("iCal");
-    }
-
-    protected String getOrganizer() {
-        String organizer = firstVevent.getPropertyValue("ORGANIZER");
-        if (organizer.startsWith("MAILTO:")) {
-            return organizer.substring(7);
+    protected String getEmailValue(VProperty property) {
+        if (property == null) {
+            return null;
+        }
+        String propertyValue = property.getValue();
+        if (propertyValue != null && (propertyValue.startsWith("MAILTO:") || propertyValue.startsWith("mailto:"))) {
+            return propertyValue.substring(7);
         } else {
-            return organizer;
+            return propertyValue;
         }
     }
 
@@ -113,23 +118,21 @@ public class VCalendar extends VObject {
     }
 
     protected void fixVCalendar(boolean fromServer) {
-        // append missing method
-        if (getProperty("METHOD") == null) {
-            setPropertyValue("METHOD", "PUBLISH");
-        }
         // iCal 4 global private flag
         if (fromServer) {
             setPropertyValue("X-CALENDARSERVER-ACCESS", getCalendarServerAccess());
         }
 
+        // iCal 4 global X-CALENDARSERVER-ACCESS
         String calendarServerAccess = getPropertyValue("X-CALENDARSERVER-ACCESS");
+        String now = ExchangeSession.getZuluDateFormat().format(new Date());
 
-        // TODO: patch timezone for iPhone
         // iterate over vObjects
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
                 if (calendarServerAccess != null) {
                     vObject.setPropertyValue("CLASS", getEventClass(calendarServerAccess));
+                    // iCal 3, get X-CALENDARSERVER-ACCESS from local VEVENT
                 } else if (vObject.getPropertyValue("X-CALENDARSERVER-ACCESS") != null) {
                     vObject.setPropertyValue("CLASS", getEventClass(vObject.getPropertyValue("X-CALENDARSERVER-ACCESS")));
                 }
@@ -143,17 +146,24 @@ public class VCalendar extends VObject {
                         setClientAllday(vObject.getProperty("DTSTART"));
                         setClientAllday(vObject.getProperty("DTEND"));
                     }
-                    vObject.setPropertyValue("TRANSP",
-                            !"FREE".equals(vObject.getPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "OPAQUE" : "TRANSPARENT");
+                    String cdoBusyStatus = vObject.getPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS");
+                    if (cdoBusyStatus != null) {
+                        vObject.setPropertyValue("TRANSP",
+                                !"FREE".equals(cdoBusyStatus) ? "OPAQUE" : "TRANSPARENT");
+                    }
 
-                    // TODO splitExDate
                     // Apple iCal doesn't understand this key, and it's entourage
                     // specific (i.e. not needed by any caldav client): strip it out
                     vObject.removeProperty("X-ENTOURAGE_UUID");
+
+                    splitExDate(vObject);
                 } else {
                     // add organizer line to all events created in Exchange for active sync
-                    if (vObject.getPropertyValue("ORGANIZER") == null) {
+                    String organizer = getEmailValue(vObject.getProperty("ORGANIZER"));
+                    if (organizer == null) {
                         vObject.setPropertyValue("ORGANIZER", "MAILTO:" + email);
+                    } else if (!email.equalsIgnoreCase(organizer) && vObject.getProperty("X-MICROSOFT-CDO-REPLYTIME") == null) {
+                        vObject.setPropertyValue("X-MICROSOFT-CDO-REPLYTIME", now);
                     }
                     // set OWA allday flag
                     vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
@@ -169,15 +179,31 @@ public class VCalendar extends VObject {
 
                 fixAttendees(vObject, fromServer);
 
-                // TODO handle BUSYSTATUS
-
                 fixAlarm(vObject, fromServer);
             }
         }
 
     }
 
-    private void setServerAllday(VProperty property) {
+    protected void splitExDate(VObject vObject) {
+        List<VProperty> exDateProperties = vObject.getProperties("EXDATE");
+        if (exDateProperties != null) {
+            for (VProperty property : exDateProperties) {
+                String value = property.getValue();
+                if (value.indexOf(',') >= 0) {
+                    // split property
+                    vObject.removeProperty(property);
+                    for (String singleValue : value.split(",")) {
+                        VProperty singleProperty = new VProperty("EXDATE", singleValue);
+                        singleProperty.setParams(property.getParams());
+                        vObject.addProperty(singleProperty);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void setServerAllday(VProperty property) {
         // set TZID param
         if (!property.hasParam("TZID")) {
             property.addParam("TZID", vTimezone.getPropertyValue("TZID"));
@@ -288,6 +314,7 @@ public class VCalendar extends VObject {
      * Convert X-CALENDARSERVER-ACCESS to CLASS.
      * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
      *
+     * @param calendarServerAccess X-CALENDARSERVER-ACCESS value
      * @return CLASS value
      */
     protected String getEventClass(String calendarServerAccess) {
@@ -303,6 +330,7 @@ public class VCalendar extends VObject {
     /**
      * Convert CLASS to X-CALENDARSERVER-ACCESS.
      * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt     *
+     *
      * @return X-CALENDARSERVER-ACCESS value
      */
     protected String getCalendarServerAccess() {
@@ -316,4 +344,54 @@ public class VCalendar extends VObject {
         }
     }
 
+    public VObject getFirstVevent() {
+        return firstVevent;
+    }
+
+    class Recipients {
+        String attendees;
+        String optionalAttendees;
+        String organizer;
+    }
+
+    public Recipients getRecipients(boolean isNotification) {
+
+        HashSet<String> attendees = new HashSet<String>();
+        HashSet<String> optionalAttendees = new HashSet<String>();
+
+        // get recipients from first VEVENT
+        List<VProperty> attendeeProperties = firstVevent.getProperties("ATTENDEE");
+        if (attendeeProperties != null) {
+            for (VProperty property : attendeeProperties) {
+                // exclude current user and invalid values from recipients
+                // also exclude no action attendees
+                String attendeeEmail = getEmailValue(property);
+                if (!email.equalsIgnoreCase(attendeeEmail) && attendeeEmail.indexOf('@') >= 0
+                        // return all attendees for user calendar folder, filter for notifications
+                        && (!isNotification
+                        // notify attendee if reply explicitly requested
+                        || (property.hasParam("RSVP", "TRUE"))
+                        || (
+                        // workaround for iCal bug: do not notify if reply explicitly not requested
+                        !(property.hasParam("RSVP", "FALSE")) &&
+                                ((property.hasParam("PARTSTAT", "NEEDS-ACTION")
+                                        // need to include other PARTSTATs participants for CANCEL notifications
+                                        || property.hasParam("PARTSTAT", "ACCEPTED")
+                                        || property.hasParam("PARTSTAT", "DECLINED")
+                                        || property.hasParam("PARTSTAT", "TENTATIVE")))
+                ))) {
+                    if (property.hasParam("ROLE", "OPT-PARTICIPANT")) {
+                        optionalAttendees.add(attendeeEmail);
+                    } else {
+                        attendees.add(attendeeEmail);
+                    }
+                }
+            }
+        }
+        Recipients recipients = new Recipients();
+        recipients.organizer = getEmailValue(firstVevent.getProperty("ORGANIZER"));
+        recipients.attendees = StringUtil.join(attendees, ", ");
+        recipients.optionalAttendees = StringUtil.join(optionalAttendees, ", ");
+        return recipients;
+    }
 }

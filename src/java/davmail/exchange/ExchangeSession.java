@@ -39,8 +39,6 @@ import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.NoRouteToHostException;
@@ -1821,15 +1819,15 @@ public abstract class ExchangeSession {
      */
     public abstract class Event extends Item {
         protected String contentClass;
-        protected String itemBody;
+        protected VCalendar vCalendar;
 
         /**
          * @inheritDoc
          */
-        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+        public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
-            this.itemBody = itemBody;
+            fixICS(itemBody.getBytes("UTF-8"), false);
         }
 
         /**
@@ -1843,116 +1841,36 @@ public abstract class ExchangeSession {
             return "text/calendar;charset=UTF-8";
         }
 
+        @Override
+        public String getBody() throws IOException {
+            if (vCalendar == null) {
+                fixICS(getEventContent(), true);
+            }
+            return vCalendar.toString();
+        }
+
         /**
-         * Load ICS content from MIME message input stream
+         * Retrieve item body from Exchange
          *
-         * @param mimeInputStream mime message input stream
-         * @return mime message ics attachment body
-         * @throws IOException        on error
-         * @throws MessagingException on error
+         * @return item content
+         * @throws HttpException on error
          */
-        protected String getICS(InputStream mimeInputStream) throws IOException, MessagingException {
-            String result;
-            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
-            Object mimeBody = mimeMessage.getContent();
-            MimePart bodyPart = null;
-            if (mimeBody instanceof MimeMultipart) {
-                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
-            } else if (isCalendarContentType(mimeMessage.getContentType())) {
-                // no multipart, single body
-                bodyPart = mimeMessage;
-            }
+        public abstract byte[] getEventContent() throws IOException;
 
-            if (bodyPart != null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bodyPart.getDataHandler().writeTo(baos);
-                baos.close();
-                result = new String(baos.toByteArray(), "UTF-8");
-            } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                baos.close();
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
-            }
-            return result;
-        }
-
-        protected static final String TEXT_CALENDAR = "text/calendar";
-        protected static final String APPLICATION_ICS = "application/ics";
-
-        protected boolean isCalendarContentType(String contentType) {
-            return TEXT_CALENDAR.regionMatches(true, 0, contentType, 0, TEXT_CALENDAR.length()) ||
-                    APPLICATION_ICS.regionMatches(true, 0, contentType, 0, APPLICATION_ICS.length());
-        }
-
-        protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
-            MimePart bodyPart = null;
-            for (int i = 0; i < multiPart.getCount(); i++) {
-                String contentType = multiPart.getBodyPart(i).getContentType();
-                if (isCalendarContentType(contentType)) {
-                    bodyPart = (MimePart) multiPart.getBodyPart(i);
-                    break;
-                } else if (contentType.startsWith("multipart")) {
-                    Object content = multiPart.getBodyPart(i).getContent();
-                    if (content instanceof MimeMultipart) {
-                        bodyPart = getCalendarMimePart((MimeMultipart) content);
-                    }
-                }
-            }
-
-            return bodyPart;
-        }
-
-        protected String fixTimezoneId(String line, String validTimezoneId) {
-            return StringUtil.replaceToken(line, "TZID=", ":", validTimezoneId);
-        }
-
-        protected void splitExDate(ICSBufferedWriter result, String line) {
-            int cur = line.lastIndexOf(':') + 1;
-            String start = line.substring(0, cur);
-
-            for (int next = line.indexOf(',', cur); next != -1; next = line.indexOf(',', cur)) {
-                String val = line.substring(cur, next);
-                result.writeLine(start + val);
-
-                cur = next + 1;
-            }
-
-            result.writeLine(start + line.substring(cur));
-        }
-
-        protected String getAllDayLine(String line) throws IOException {
-            int valueIndex = line.lastIndexOf(':');
-            int valueEndIndex = line.lastIndexOf('T');
-            if (valueIndex < 0 || valueEndIndex < 0) {
-                throw new DavMailException("EXCEPTION_INVALID_ICS_LINE", line);
-            }
-            int keyIndex = line.indexOf(';');
-            if (keyIndex == -1) {
-                keyIndex = valueIndex;
-            }
-            String dateValue = line.substring(valueIndex + 1, valueEndIndex);
-            String key = line.substring(0, Math.min(keyIndex, valueIndex));
-            return key + ";VALUE=DATE:" + dateValue;
-        }
-
-        protected String fixICS(String icsBody, boolean fromServer) throws IOException {
-
-            dumpIndex++;
-            dumpICS(icsBody, fromServer, false);
-
+        protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
-                LOGGER.debug("Vcalendar body received from server:\n" +icsBody);
+                dumpIndex++;
+                String icsBody = new String(icsContent);
+                dumpICS(icsBody, fromServer, false);
+                LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
-            VCalendar vCalendar = new VCalendar(icsBody, getEmail(), getVTimezone());
+            vCalendar = new VCalendar(icsContent, getEmail(), getVTimezone());
             vCalendar.fixVCalendar(fromServer);
-            String resultString = vCalendar.toString();
             if (LOGGER.isDebugEnabled() && !fromServer) {
-                LOGGER.debug("Fixed Vcalendar body to server:\n" +resultString);
+                String resultString = vCalendar.toString();
+                LOGGER.debug("Fixed Vcalendar body to server:\n" + resultString);
+                dumpICS(resultString, fromServer, true);
             }
-            dumpICS(resultString, fromServer, true);
-
-            return resultString;
         }
 
         protected void dumpICS(String icsBody, boolean fromServer, boolean after) {
@@ -2020,126 +1938,6 @@ public abstract class ExchangeSession {
 
         }
 
-        protected String getICSValue(String icsBody, String prefix, String defval) throws IOException {
-            // only return values in VEVENT section, not VALARM
-            Stack<String> sectionStack = new Stack<String>();
-            BufferedReader reader = null;
-
-            try {
-                reader = new ICSBufferedReader(new StringReader(icsBody));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("BEGIN:")) {
-                        sectionStack.push(line);
-                    } else if (line.startsWith("END:") && !sectionStack.isEmpty()) {
-                        sectionStack.pop();
-                    } else if (!sectionStack.isEmpty() && "BEGIN:VEVENT".equals(sectionStack.peek()) && line.startsWith(prefix)) {
-                        return line.substring(prefix.length());
-                    }
-                }
-
-            } finally {
-                if (reader != null) {
-                    reader.close();
-                }
-            }
-
-            return defval;
-        }
-
-        protected String getICSSummary(String icsBody) throws IOException {
-            return getICSValue(icsBody, "SUMMARY:", BundleMessage.format("MEETING_REQUEST"));
-        }
-
-        protected String getICSDescription(String icsBody) throws IOException {
-            return getICSValue(icsBody, "DESCRIPTION:", "");
-        }
-
-        class Participants {
-            String attendees;
-            String optionalAttendees;
-            String organizer;
-        }
-
-        /**
-         * Parse ics event for attendees and organizer.
-         * For notifications, only include attendees with RSVP=TRUE or PARTSTAT=NEEDS-ACTION
-         *
-         * @param isNotification get only notified attendees
-         * @return participants
-         * @throws IOException on error
-         */
-        protected Participants getParticipants(boolean isNotification) throws IOException {
-            HashSet<String> attendees = new HashSet<String>();
-            HashSet<String> optionalAttendees = new HashSet<String>();
-            String organizer = null;
-            BufferedReader reader = null;
-            try {
-                reader = new ICSBufferedReader(new StringReader(itemBody));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    int index = line.indexOf(':');
-                    if (index >= 0) {
-                        String key = line.substring(0, index);
-                        String value = line.substring(index + 1);
-                        int semiColon = key.indexOf(';');
-                        if (semiColon >= 0) {
-                            key = key.substring(0, semiColon);
-                        }
-                        if ("ORGANIZER".equals(key) || "ATTENDEE".equals(key)) {
-                            int colonIndex = value.indexOf(':');
-                            if (colonIndex >= 0) {
-                                value = value.substring(colonIndex + 1);
-                            }
-                            value = replaceIcal4Principal(value);
-                            if ("ORGANIZER".equals(key)) {
-                                organizer = value;
-                                // exclude current user and invalid values from recipients
-                                // also exclude no action attendees
-                            } else if (!email.equalsIgnoreCase(value) && value.indexOf('@') >= 0
-                                    // return all attendees for user calendar folder, filter for notifications
-                                    && (!isNotification
-                                    // notify attendee if reply explicitly requested
-                                    || (line.indexOf("RSVP=TRUE") >= 0)
-                                    || (
-                                    // workaround for iCal bug: do not notify if reply explicitly not requested
-                                    !(line.indexOf("RSVP=FALSE") >= 0) &&
-                                            ((line.indexOf("PARTSTAT=NEEDS-ACTION") >= 0
-                                                    // need to include other PARTSTATs participants for CANCEL notifications
-                                                    || line.indexOf("PARTSTAT=ACCEPTED") >= 0
-                                                    || line.indexOf("PARTSTAT=DECLINED") >= 0
-                                                    || line.indexOf("PARTSTAT=TENTATIVE") >= 0))
-                            ))) {
-                                if (line.indexOf("ROLE=OPT-PARTICIPANT") >= 0) {
-                                    optionalAttendees.add(value);
-                                } else {
-                                    attendees.add(value);
-                                }
-                            }
-                        }
-                    }
-                }
-            } finally {
-                if (reader != null) {
-                    reader.close();
-                }
-            }
-            Participants participants = new Participants();
-            participants.attendees = StringUtil.join(attendees, ", ");
-            participants.optionalAttendees = StringUtil.join(optionalAttendees, ", ");
-            participants.organizer = organizer;
-            return participants;
-        }
-
-        protected String getICSMethod(String icsBody) {
-            String icsMethod = StringUtil.getToken(icsBody, "METHOD:", "\r");
-            if (icsMethod == null) {
-                // default method is REQUEST
-                icsMethod = "REQUEST";
-            }
-            return icsMethod;
-        }
-
         /**
          * Build Mime body for event or event message.
          *
@@ -2150,7 +1948,7 @@ public abstract class ExchangeSession {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
-            String method = getICSMethod(itemBody);
+            String method = vCalendar.getMethod();
 
             writer.writeHeader("Content-Transfer-Encoding", "7bit");
             writer.writeHeader("Content-class", contentClass);
@@ -2158,53 +1956,54 @@ public abstract class ExchangeSession {
             writer.writeHeader("Date", new Date());
 
             // Make sure invites have a proper subject line
-            writer.writeHeader("Subject", getICSSummary(itemBody));
+            // TODO: get current user attendee status, i18n
+            String subject = vCalendar.getFirstVevent().getPropertyValue("SUMMARY");
+            if (subject == null) {
+               subject = BundleMessage.format("MEETING_REQUEST");
+            }
+            writer.writeHeader("Subject", subject);
 
             if ("urn:content-classes:calendarmessage".equals(contentClass)) {
                 // need to parse attendees and organizer to build recipients
-                Participants participants = getParticipants(true);
-                if (email.equalsIgnoreCase(participants.organizer)) {
+                VCalendar.Recipients recipients = vCalendar.getRecipients(true);
+                if (email.equalsIgnoreCase(recipients.organizer)) {
                     // current user is organizer => notify all
-                    writer.writeHeader("To", participants.attendees);
-                    writer.writeHeader("Cc", participants.optionalAttendees);
+                    writer.writeHeader("To", recipients.attendees);
+                    writer.writeHeader("Cc", recipients.optionalAttendees);
                     // do not send notification if no recipients found
-                    if (participants.attendees == null && participants.optionalAttendees == null) {
+                    if (recipients.attendees == null && recipients.optionalAttendees == null) {
                         return null;
                     }
                 } else {
                     // notify only organizer
-                    writer.writeHeader("To", participants.organizer);
+                    writer.writeHeader("To", recipients.organizer);
                     // do not send notification if no recipients found
-                    if (participants.organizer == null) {
+                    if (recipients.organizer == null) {
                         return null;
                     }
                 }
 
             } else {
                 // need to parse attendees and organizer to build recipients
-                Participants participants = getParticipants(false);
+                VCalendar.Recipients recipients = vCalendar.getRecipients(false);
                 // storing appointment, full recipients header
-                if (participants.attendees != null) {
-                    writer.writeHeader("To", participants.attendees);
+                if (recipients.attendees != null) {
+                    writer.writeHeader("To", recipients.attendees);
                 } else {
                     // use current user as attendee
                     writer.writeHeader("To", email);
                 }
-                writer.writeHeader("Cc", participants.optionalAttendees);
+                writer.writeHeader("Cc", recipients.optionalAttendees);
 
-                if (participants.organizer != null) {
-                    writer.writeHeader("From", participants.organizer);
+                if (recipients.organizer != null) {
+                    writer.writeHeader("From", recipients.organizer);
                 } else {
                     writer.writeHeader("From", email);
                 }
                 // if not organizer, set REPLYTIME to force Outlook in attendee mode
-                if (participants.organizer != null && !email.equalsIgnoreCase(participants.organizer)) {
-                    if (itemBody.indexOf("METHOD:") < 0) {
-                        itemBody = itemBody.replaceAll("BEGIN:VCALENDAR", "BEGIN:VCALENDAR\r\nMETHOD:REQUEST");
-                    }
-                    if (itemBody.indexOf("X-MICROSOFT-CDO-REPLYTIME") < 0) {
-                        itemBody = itemBody.replaceAll("END:VEVENT", "X-MICROSOFT-CDO-REPLYTIME:" +
-                                getZuluDateFormat().format(new Date()) + "\r\nEND:VEVENT");
+                if (recipients.organizer != null && !email.equalsIgnoreCase(recipients.organizer)) {
+                    if (method == null) {
+                        vCalendar.setPropertyValue("METHOD", "REQUEST");
                     }
                 }
             }
@@ -2218,9 +2017,9 @@ public abstract class ExchangeSession {
 
             // Write a part of the message that contains the
             // ICS description so that invites contain the description text
-            String description = getICSDescription(itemBody).replaceAll("\\\\[Nn]", "\r\n");
+            String description = vCalendar.getFirstVevent().getPropertyValue("DESCRIPTION");
 
-            if (description.length() > 0) {
+            if (description != null && description.length() > 0) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
                         "\tcharset=\"utf-8\"");
                 writer.writeHeader("content-transfer-encoding", "8bit");
@@ -2238,7 +2037,7 @@ public abstract class ExchangeSession {
             writer.writeHeader("Content-Transfer-Encoding", "8bit");
             writer.writeLn();
             writer.flush();
-            baos.write(fixICS(itemBody, false).getBytes("UTF-8"));
+            baos.write(vCalendar.toString().getBytes("UTF-8"));
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary + "--");
             writer.close();
@@ -2251,21 +2050,7 @@ public abstract class ExchangeSession {
          * @return action result
          * @throws IOException on error
          */
-        public ItemResult createOrUpdate() throws IOException {
-            byte[] mimeContent = createMimeContent();
-            ItemResult itemResult;
-            if (mimeContent != null) {
-                itemResult = createOrUpdate(mimeContent);
-            } else {
-                itemResult = new ItemResult();
-                itemResult.status = HttpStatus.SC_NO_CONTENT;
-            }
-
-            return itemResult;
-
-        }
-
-        protected abstract ItemResult createOrUpdate(byte[] mimeContent) throws IOException;
+        public abstract ItemResult createOrUpdate() throws IOException;
 
     }
 
@@ -2546,7 +2331,7 @@ public abstract class ExchangeSession {
         properties.put("outlookmessageclass", "IPM.Contact");
 
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
-        for (VProperty property:vcard.getProperties()) {
+        for (VProperty property : vcard.getProperties()) {
             if ("FN".equals(property.getKey())) {
                 properties.put("cn", property.getValue());
                 properties.put("subject", property.getValue());
@@ -3129,7 +2914,7 @@ public abstract class ExchangeSession {
         }
 
         FreeBusy freeBusy = null;
-        String fbdata = getFreeBusyData(attendee, exchangeZuluDateFormat.format(startDate), exchangeZuluDateFormat.format(endDate),  FREE_BUSY_INTERVAL);
+        String fbdata = getFreeBusyData(attendee, exchangeZuluDateFormat.format(startDate), exchangeZuluDateFormat.format(endDate), FREE_BUSY_INTERVAL);
         if (fbdata != null) {
             freeBusy = new FreeBusy(icalDateFormat, startDate, fbdata);
         }
@@ -3218,21 +3003,6 @@ public abstract class ExchangeSession {
                         .append(':').append(entry.getValue()).append((char) 13).append((char) 10);
             }
         }
-    }
-
-    /**
-     * Timezone structure
-     */
-    public static final class VTimezone {
-        /**
-         * Timezone iCalendar body
-         */
-        public String timezoneBody;
-        /**
-         * Timezone id
-         */
-        public String timezoneId;
-
     }
 
     protected VObject vTimezone;

@@ -160,6 +160,22 @@ public class VObject {
         return null;
     }
 
+    public List<VProperty> getProperties(String name) {
+        List<VProperty> result = null;
+        if (properties != null) {
+            for (VProperty property : properties) {
+                if (property.getKey().equalsIgnoreCase(name)) {
+                    if (result == null) {
+                        result = new ArrayList<VProperty>();
+                    }
+                    result.add(property);
+                }
+            }
+
+        }
+        return result;
+    }
+
     public String getPropertyValue(String name) {
         VProperty property = getProperty(name);
         if (property != null) {
@@ -184,11 +200,17 @@ public class VObject {
     }
 
     public void removeProperty(String name) {
-        if (vObjects != null) {
+        if (properties != null) {
             VProperty property = getProperty(name);
             if (property != null) {
-                vObjects.remove(property);
+                properties.remove(property);
             }
+        }
+    }
+
+    public void removeProperty(VProperty property) {
+        if (properties != null) {
+            properties.remove(property);
         }
     }
 }

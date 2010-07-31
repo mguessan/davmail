@@ -29,7 +29,7 @@ public class VProperty {
         KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
     }
 
-    protected class Param {
+    protected static class Param {
         String name;
         List<String> values;
 
@@ -53,6 +53,12 @@ public class VProperty {
     protected List<Param> params;
     protected List<String> values;
 
+    /**
+     * Create VProperty for key and value.
+     *
+     * @param name  property name
+     * @param value property value
+     */
     public VProperty(String name, String value) {
         setKey(name);
         setValue(value);
@@ -197,6 +203,11 @@ public class VProperty {
         return params != null && getParam(paramName) != null;
     }
 
+    /**
+     * Remove param from property.
+     *
+     * @param paramName param name
+     */
     public void removeParam(String paramName) {
         if (params != null) {
             Param param = getParam(paramName);
@@ -220,7 +231,7 @@ public class VProperty {
     }
 
     protected void addParam(String paramName, String paramValue) {
-        List paramValues = new ArrayList();
+        List<String> paramValues = new ArrayList<String>();
         paramValues.add(paramValue);
         addParam(paramName, paramValues);
     }
@@ -247,6 +258,14 @@ public class VProperty {
             }
         }
         return null;
+    }
+
+    protected List<Param> getParams() {
+        return params;
+    }
+
+    protected void setParams(List<Param> params) {
+        this.params = params;
     }
 
     protected void setValue(String value) {
@@ -280,7 +299,7 @@ public class VProperty {
                 if (c == '\\') {
                     //noinspection AssignmentToForLoopParameter
                     c = value.charAt(++i);
-                    if (c == 'n') {
+                    if (c == 'n' || c == 'N') {
                         c = '\n';
                     } else if (c == 'r') {
                         c = '\r';

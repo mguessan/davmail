@@ -214,7 +214,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Get item MIME content.
+     * Get item content.
      *
      * @param itemId EWS item id
      * @return item content as byte array
@@ -826,18 +826,14 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * @inheritDoc
          */
-        protected Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) {
+        protected Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
-            return createOrUpdate(fixICS(itemBody, false).getBytes("UTF-8"));
-        }
+            byte[] itemContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
 
-
-        @Override
-        protected ItemResult createOrUpdate(byte[] mimeContent) throws IOException {
             ItemResult itemResult = new ItemResult();
             EWSMethod createOrUpdateItemMethod;
 
@@ -865,7 +861,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             if (currentItemId != null) {
                 Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-                updates.add(new FieldUpdate(Field.get("mimeContent"), String.valueOf(Base64.encodeBase64(mimeContent))));
+                updates.add(new FieldUpdate(Field.get("mimeContent"), String.valueOf(Base64.encodeBase64(itemContent))));
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
@@ -875,7 +871,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "CalendarItem";
-                newItem.mimeContent = Base64.encodeBase64(mimeContent);
+                newItem.mimeContent = itemContent;
                 HashSet<FieldUpdate> updates = new HashSet<FieldUpdate>();
                 // force urlcompname
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
@@ -908,16 +904,17 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         @Override
-        public String getBody() throws IOException {
-            String result;
-            LOGGER.debug("Get event: " + permanentUrl);
+        public byte[] getEventContent() throws IOException {
+            byte[] content;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Get event: " + folderPath + '/' + itemName);
+            }
             try {
-                byte[] content = getContent(itemId);
-                result = new String(content);
+                content = getContent(itemId);
             } catch (IOException e) {
                 throw buildHttpException(e);
             }
-            return fixICS(result, true);
+            return content;
         }
     }
 
