@@ -387,7 +387,7 @@ public class VCalendar extends VObject {
                 // exclude current user and invalid values from recipients
                 // also exclude no action attendees
                 String attendeeEmail = getEmailValue(property);
-                if (!email.equalsIgnoreCase(attendeeEmail) && attendeeEmail.indexOf('@') >= 0
+                if (!email.equalsIgnoreCase(attendeeEmail) && attendeeEmail != null && attendeeEmail.indexOf('@') >= 0
                         // return all attendees for user calendar folder, filter for notifications
                         && (!isNotification
                         // notify attendee if reply explicitly requested
