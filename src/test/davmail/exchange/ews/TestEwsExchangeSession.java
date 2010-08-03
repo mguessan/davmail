@@ -21,6 +21,7 @@ package davmail.exchange.ews;
 import davmail.exchange.AbstractExchangeSessionTestCase;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Webdav specific unit tests
@@ -34,5 +35,12 @@ public class TestEwsExchangeSession extends AbstractExchangeSessionTestCase {
         ewsSession = ((EwsExchangeSession) session);
     }
 
-
+    public void testResolveNames() throws IOException {
+        ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod("smtp:g");
+        ewsSession.executeMethod(resolveNamesMethod);
+        List<EWSMethod.Item> items = resolveNamesMethod.getResponseItems();
+        for (EWSMethod.Item item:items) {
+            System.out.println(item);
+        }
+    }
 }

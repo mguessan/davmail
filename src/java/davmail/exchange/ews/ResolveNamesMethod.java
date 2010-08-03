@@ -18,20 +18,65 @@
  */
 package davmail.exchange.ews;
 
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 /**
  * Resolve Names method.
  */
 public class ResolveNamesMethod extends EWSMethod {
     protected static final AttributeOption RETURN_FULL_CONTACT_DATA = new AttributeOption("ReturnFullContactData", "true");
+
     /**
      * Build Resolve Names method
      *
-     * @param value   search value
+     * @param value search value
      */
     public ResolveNamesMethod(String value) {
-        super("Contact", "ResolveNames");
+        super("Contact", "ResolveNames", "ResolutionSet");
         addMethodOption(SearchScope.ActiveDirectory);
         addMethodOption(RETURN_FULL_CONTACT_DATA);
         unresolvedEntry = new ElementOption("m:UnresolvedEntry", value);
     }
+
+    @Override
+    protected Item handleItem(XMLStreamReader reader) throws XMLStreamException {
+        Item responseItem = new Item();
+        responseItem.type = "Contact";
+        // skip to Contact
+        while (reader.hasNext() && !isStartTag(reader, "Contact")) {
+            reader.next();
+        }
+        while (reader.hasNext() && !isEndTag(reader, "Contact")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if ("EmailAddresses".equals(tagLocalName)) {
+                    handleAddresses(reader, responseItem);
+                } else {
+                    responseItem.put(tagLocalName, reader.getElementText());
+                }
+            }
+        }
+        return responseItem;
+    }
+
+    protected void handleAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, "EmailAddresses")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if ("Entry".equals(tagLocalName)) {
+                    String key = getAttributeValue(reader, "Key");
+                    String value = reader.getElementText();
+                    if (value.startsWith("smtp:") || value.startsWith("SMTP:")) {
+                        value = value.substring(5);
+                    }
+                    responseItem.put(key, value);
+                }
+            }
+        }
+    }
+
 }

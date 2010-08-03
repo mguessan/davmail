@@ -82,10 +82,21 @@ public abstract class EWSMethod extends PostMethod {
      * @param methodName method name
      */
     public EWSMethod(String itemType, String methodName) {
+        this(itemType, methodName, itemType + 's');
+    }
+
+    /**
+     * Build EWS method
+     *
+     * @param itemType   item type
+     * @param methodName method name
+     * @param responseCollectionName item response collection name
+     */
+    public EWSMethod(String itemType, String methodName, String responseCollectionName) {
         super("/ews/exchange.asmx");
         this.itemType = itemType;
         this.methodName = methodName;
-        responseCollectionName = itemType + 's';
+        this.responseCollectionName = responseCollectionName;
         setRequestEntity(new RequestEntity() {
             byte[] content;
 
@@ -649,7 +660,6 @@ public abstract class EWSMethod extends PostMethod {
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
-                // detect version
                 if ("ExtendedProperty".equals(tagLocalName)) {
                     addExtendedPropertyValue(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
@@ -751,7 +761,7 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-    private String getTagContent(XMLStreamReader reader) throws XMLStreamException {
+    protected String getTagContent(XMLStreamReader reader) throws XMLStreamException {
         String tagLocalName = reader.getLocalName();
         while (reader.hasNext() && !(reader.getEventType() == XMLStreamConstants.END_ELEMENT)) {
             reader.next();
