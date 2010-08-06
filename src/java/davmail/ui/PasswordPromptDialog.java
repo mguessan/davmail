@@ -73,7 +73,7 @@ public class PasswordPromptDialog extends JDialog {
         passwordField.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 password = passwordField.getPassword();
-                dispose();
+                setVisible(false);
             }
         });
         JPanel passwordPanel = new JPanel();
@@ -102,13 +102,13 @@ public class PasswordPromptDialog extends JDialog {
         okButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 password = passwordField.getPassword();
-                dispose();
+                setVisible(false);
             }
         });
         cancelButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 password = null;
-                dispose();
+                setVisible(false);
             }
         });
 

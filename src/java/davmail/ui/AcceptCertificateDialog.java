@@ -126,13 +126,13 @@ public class AcceptCertificateDialog extends JDialog {
         accept.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 accepted = true;
-                dispose();
+                setVisible(false);
             }
         });
         deny.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 accepted = false;
-                dispose();
+                setVisible(false);
             }
         });
 

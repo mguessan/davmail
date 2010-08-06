@@ -506,7 +506,7 @@ public class SettingsFrame extends JFrame {
      * DavMail settings frame.
      */
     public SettingsFrame() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_DAVMAIL_SETTINGS"));
         setIconImage(DavGatewayTray.getFrameIcon());
 
@@ -615,7 +615,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
                 Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
 
-                dispose();
+                setVisible(false);
                 Settings.save();
                 // restart listeners with new config
                 DavGateway.restart();
@@ -626,7 +626,7 @@ public class SettingsFrame extends JFrame {
         cancel.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 reload();
-                dispose();
+                setVisible(false);
             }
         });
 

@@ -46,7 +46,7 @@ public class AboutFrame extends JFrame {
      * About frame.
      */
     public AboutFrame() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
         setIconImage(DavGatewayTray.getFrameIcon());
         try {
@@ -81,7 +81,7 @@ public class AboutFrame extends JFrame {
                     } catch (URISyntaxException e) {
                         DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
                     }
-                    dispose();
+                    setVisible(false);
                 }
             }
         });
@@ -95,7 +95,7 @@ public class AboutFrame extends JFrame {
         JButton ok = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         ActionListener close = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                dispose();
+                setVisible(false);
             }
         };
         ok.addActionListener(close);
