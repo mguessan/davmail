@@ -959,10 +959,10 @@ public abstract class ExchangeSession {
             Set<String> visibleRecipients = new HashSet<String>();
             Address[] recipients = mimeMessage.getAllRecipients();
             for (Address address : recipients) {
-                visibleRecipients.add(address.toString());
+                visibleRecipients.add(((InternetAddress)address).getAddress().toLowerCase());
             }
             for (String recipient : rcptToRecipients) {
-                if (!visibleRecipients.contains(recipient)) {
+                if (!visibleRecipients.contains(recipient.toLowerCase())) {
                     mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
                 }
             }
