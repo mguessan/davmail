@@ -1948,7 +1948,6 @@ public abstract class ExchangeSession {
             String boundary = UUID.randomUUID().toString();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MimeOutputStreamWriter writer = new MimeOutputStreamWriter(baos);
-            String method = vCalendar.getMethod();
 
             writer.writeHeader("Content-Transfer-Encoding", "7bit");
             writer.writeHeader("Content-class", contentClass);
@@ -2008,12 +2007,9 @@ public abstract class ExchangeSession {
                 } else {
                     writer.writeHeader("From", email);
                 }
-                // if not organizer, set REPLYTIME to force Outlook in attendee mode
-                if (recipients.organizer != null && !email.equalsIgnoreCase(recipients.organizer)) {
-                    if (method == null) {
-                        vCalendar.setPropertyValue("METHOD", "REQUEST");
-                    }
-                }
+            }
+            if (vCalendar.getMethod() == null) {
+                vCalendar.setPropertyValue("METHOD", "REQUEST");
             }
             writer.writeHeader("MIME-Version", "1.0");
             writer.writeHeader("Content-Type", "multipart/alternative;\r\n" +
@@ -2039,7 +2035,7 @@ public abstract class ExchangeSession {
             }
             writer.writeHeader("Content-class", contentClass);
             writer.writeHeader("Content-Type", "text/calendar;\r\n" +
-                    "\tmethod=" + method + ";\r\n" +
+                    "\tmethod=" + vCalendar.getMethod() + ";\r\n" +
                     "\tcharset=\"utf-8\""
             );
             writer.writeHeader("Content-Transfer-Encoding", "8bit");

@@ -275,11 +275,13 @@ public final class StringUtil {
 
     public static String base64ToUrl(String value) {
         String result = value;
-        if (result.indexOf('+') >= 0) {
-            result = PLUS_PATTERN.matcher(result).replaceAll("-");
-        }
-        if (result.indexOf('/') >= 0) {
-            result = SLASH_PATTERN.matcher(result).replaceAll("_");
+        if (value != null) {
+            if (result.indexOf('+') >= 0) {
+                result = PLUS_PATTERN.matcher(result).replaceAll("-");
+            }
+            if (result.indexOf('/') >= 0) {
+                result = SLASH_PATTERN.matcher(result).replaceAll("_");
+            }
         }
         return result;
     }

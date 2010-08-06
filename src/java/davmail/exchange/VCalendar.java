@@ -293,11 +293,6 @@ public class VCalendar extends VObject {
                         }
                     } else {
                         property.setValue(replaceIcal4Principal(property.getValue()));
-
-                        // ignore attendee as organizer
-                        if (property.getValue().contains(email)) {
-                            property.setValue(null);
-                        }
                     }
                 }
 
