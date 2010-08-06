@@ -86,12 +86,15 @@ public class VObject {
 
 
     protected void handleLine(String line, BufferedReader reader) throws IOException {
-        VProperty property = new VProperty(line);
-        // inner object
-        if ("BEGIN".equals(property.getKey())) {
-            addVObject(new VObject(property, reader));
-        } else {
-            addProperty(property);
+        // skip empty lines
+        if (line.length() > 0) {
+            VProperty property = new VProperty(line);
+            // inner object
+            if ("BEGIN".equals(property.getKey())) {
+                addVObject(new VObject(property, reader));
+            } else if (property.getKey() != null) {
+                addProperty(property);
+            }
         }
     }
 
@@ -151,7 +154,7 @@ public class VObject {
     public VProperty getProperty(String name) {
         if (properties != null) {
             for (VProperty property : properties) {
-                if (property.getKey().equalsIgnoreCase(name)) {
+                if (property.getKey() != null && property.getKey().equalsIgnoreCase(name)) {
                     return property;
                 }
             }
@@ -164,7 +167,7 @@ public class VObject {
         List<VProperty> result = null;
         if (properties != null) {
             for (VProperty property : properties) {
-                if (property.getKey().equalsIgnoreCase(name)) {
+                if (property.getKey() != null && property.getKey().equalsIgnoreCase(name)) {
                     if (result == null) {
                         result = new ArrayList<VProperty>();
                     }

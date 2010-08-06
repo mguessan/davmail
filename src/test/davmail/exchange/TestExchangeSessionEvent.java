@@ -251,4 +251,15 @@ public class TestExchangeSessionEvent extends TestCase {
         assertTrue(toClient.contains("EXDATE;TZID=\"Europe/Paris\":20100823T150000"));
 
     }
+
+    public void testEmptyLine() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VEVENT\n" +
+                "\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toClient = fixICS(itemBody, true);
+        System.out.println(toClient);
+    }
+
 }
