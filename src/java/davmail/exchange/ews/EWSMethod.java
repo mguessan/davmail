@@ -554,6 +554,7 @@ public abstract class EWSMethod extends PostMethod {
         if (errorDetail != null) {
             if (!"ErrorAccessDenied".equals(errorDetail)
                     && !"ErrorNameResolutionMultipleResults".equals(errorDetail)
+                    && !"ErrorNameResolutionNoResults".equals(errorDetail)
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)) {
                 try {
                     throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
@@ -818,7 +819,7 @@ public abstract class EWSMethod extends PostMethod {
                 logger.error("Error while parsing soap response: " + e, e);
             }
             if (errorDetail != null) {
-                logger.error(errorDetail);
+                logger.debug(errorDetail);
             }
         }
     }

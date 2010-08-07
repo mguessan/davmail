@@ -345,12 +345,20 @@ public class EwsExchangeSession extends ExchangeSession {
             this.containmentComparison = containmentComparison;
         }
 
-        protected FieldURI getFieldURI(String attributeName) {
+        protected FieldURI getFieldURI() {
             FieldURI fieldURI = Field.get(attributeName);
             if (fieldURI == null) {
                 throw new IllegalArgumentException("Unknown field: " + attributeName);
             }
             return fieldURI;
+        }
+
+        protected String getValue() {
+            return value;
+        }
+
+        protected Operator getOperator() {
+            return operator;
         }
 
         public void appendTo(StringBuilder buffer) {
@@ -362,7 +370,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 containmentComparison.appendTo(buffer);
             }
             buffer.append('>');
-            FieldURI fieldURI = getFieldURI(attributeName);
+            FieldURI fieldURI = getFieldURI();
             fieldURI.appendTo(buffer);
 
             buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
@@ -376,6 +384,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
             buffer.append("</t:").append(operator.toString()).append('>');
         }
+
+        public String getAttributeName() {
+            return attributeName;
+        }
+
+        public ContainmentMode getContainmentMode() {
+            return containmentMode;
+        }
     }
 
     protected static class HeaderCondition extends AttributeCondition {
@@ -385,7 +401,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         @Override
-        protected FieldURI getFieldURI(String attributeName) {
+        protected FieldURI getFieldURI() {
             return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
         }
 
@@ -685,6 +701,12 @@ public class EwsExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
+        /**
+         * Empty constructor for GalFind
+         */
+        public Contact() {
+        }
+
         protected Set<FieldUpdate> buildProperties() {
             HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
             for (Map.Entry<String, String> entry : entrySet()) {
@@ -803,6 +825,10 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
+        }
+
+        public void setName(String name) {
+            this.itemName = name;
         }
     }
 
@@ -1207,6 +1233,64 @@ public class EwsExchangeSession extends ExchangeSession {
         } finally {
             ewsMethod.releaseConnection();
         }
+    }
+
+    protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
+
+    static {
+        GALFIND_ATTRIBUTE_MAP.put("cn", "DisplayName");
+        GALFIND_ATTRIBUTE_MAP.put("givenName", "GivenName");
+        GALFIND_ATTRIBUTE_MAP.put("sn", "Surname");
+        GALFIND_ATTRIBUTE_MAP.put("email1", "EmailAddress1");
+        GALFIND_ATTRIBUTE_MAP.put("email2", "EmailAddress1");
+        GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress1");
+    }
+
+    protected List<ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+        List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
+        if (condition instanceof AttributeCondition) {
+            String mappedAttributeName = GALFIND_ATTRIBUTE_MAP.get(((AttributeCondition) condition).getAttributeName());
+            if (mappedAttributeName != null) {
+                String value = ((AttributeCondition) condition).getValue().toLowerCase();
+                Operator operator = ((AttributeCondition) condition).getOperator();
+                ContainmentMode containmentMode = ((AttributeCondition) condition).getContainmentMode();
+                String searchValue = value;
+                if (mappedAttributeName.startsWith("EmailAddress")) {
+                    searchValue = "smtp:" + searchValue;
+                }
+                if (operator == Operator.IsEqualTo) {
+                    searchValue = '=' + searchValue;
+                }
+                ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(searchValue);
+                executeMethod(resolveNamesMethod);
+                List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
+                for (EWSMethod.Item response : responses) {
+                    String actualValue = response.get(mappedAttributeName);
+                    if (actualValue != null) {
+                        actualValue = actualValue.toLowerCase();
+                    }
+                    if (actualValue != null && (
+                            (operator == Operator.IsEqualTo && value.equals(actualValue)) ||
+                                    (operator == Operator.Contains && containmentMode == ContainmentMode.Substring && actualValue.contains(value)) |
+                                            (operator == Operator.Contains && containmentMode == ContainmentMode.Prefixed && actualValue.startsWith(value))
+                    )) {
+                        Contact contact = new Contact();
+                        contact.setName(response.get("DisplayName"));
+                        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
+                            String attributeValue = response.get(entry.getValue());
+                            if (attributeValue != null) {
+                                contact.put(entry.getKey(), attributeValue);
+                            }
+                        }
+                        contacts.add(contact);
+                    } else if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Actual value " + actualValue + " does not match " +
+                                mappedAttributeName + ' ' + operator + ' ' + containmentMode + ' ' + value);
+                    }
+                }
+            }
+        }
+        return contacts;
     }
 
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {

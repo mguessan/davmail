@@ -27,6 +27,11 @@ public class ContainmentMode extends AttributeOption {
         super("ContainmentMode", value);
     }
 
+    @Override
+    public String toString() {
+        return value;
+    }
+
     /**
      * Full String.
      */

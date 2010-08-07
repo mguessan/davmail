@@ -19,6 +19,7 @@
 package davmail.exchange.ews;
 
 import davmail.exchange.AbstractExchangeSessionTestCase;
+import davmail.exchange.ExchangeSession;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,8 +40,26 @@ public class TestEwsExchangeSession extends AbstractExchangeSessionTestCase {
         ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod("smtp:g");
         ewsSession.executeMethod(resolveNamesMethod);
         List<EWSMethod.Item> items = resolveNamesMethod.getResponseItems();
-        for (EWSMethod.Item item:items) {
+        for (EWSMethod.Item item : items) {
             System.out.println(item);
         }
     }
+
+    public void testGalFind() throws IOException {
+        // find a set of contacts
+        List<ExchangeSession.Contact> contacts = ewsSession.galFind(ewsSession.startsWith("cn", "a"));
+        for (ExchangeSession.Contact contact : contacts) {
+            System.out.println(contact);
+        }
+        if (contacts.size() > 0) {
+            ExchangeSession.Contact testContact = contacts.get(0);
+            contacts = ewsSession.galFind(ewsSession.isEqualTo("cn", testContact.get("cn")));
+            assertEquals(1, contacts.size());
+            contacts = ewsSession.galFind(ewsSession.isEqualTo("email1", testContact.get("email1")));
+            assertEquals(1, contacts.size());
+            contacts = ewsSession.galFind(ewsSession.startsWith("email1", testContact.get("email1")));
+            assertEquals(1, contacts.size());
+        }
+    }
+
 }
