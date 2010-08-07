@@ -649,6 +649,14 @@ public abstract class ExchangeSession {
          * @return true if condition is empty
          */
         public boolean isEmpty();
+
+        /**
+         * Test if the contact matches current condition.
+         *  
+         * @param contact Exchange Contact
+         * @return true if contact matches condition
+         */
+        public abstract boolean isMatch(ExchangeSession.Contact contact);
     }
 
     /**
@@ -708,6 +716,27 @@ public abstract class ExchangeSession {
             }
             return isEmpty;
         }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            if (operator == Operator.And) {
+                for (Condition condition : conditions) {
+                    if (!condition.isMatch(contact)) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if (operator == Operator.Or) {
+                for (Condition condition : conditions) {
+                    if (condition.isMatch(contact)) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return false;
+            }
+        }
+        
     }
 
     /**
@@ -724,6 +753,9 @@ public abstract class ExchangeSession {
             return condition.isEmpty();
         }
 
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            return !condition.isMatch(contact);
+        }
     }
 
     /**
@@ -740,6 +772,19 @@ public abstract class ExchangeSession {
 
         public boolean isEmpty() {
             return false;
+        }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String actualValue = contact.get(attributeName);
+            if (operator == Operator.IsNull) {
+                return actualValue == null;
+            } else if (operator == Operator.IsFalse) {
+                return "false".equals(actualValue);
+            } else if (operator == Operator.IsTrue) {
+                return "true".equals(actualValue);
+            } else {
+                return false;
+            }
         }
     }
 

@@ -315,6 +315,14 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         }
+
+        public List<Condition> getConditions() {
+            return conditions;
+        }
+
+        public Operator getOperator() {
+            return operator;
+        }
     }
 
     protected static class NotCondition extends ExchangeSession.NotCondition implements SearchExpression {
@@ -389,9 +397,22 @@ public class EwsExchangeSession extends ExchangeSession {
             return attributeName;
         }
 
-        public ContainmentMode getContainmentMode() {
-            return containmentMode;
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String lowerCaseValue = value.toLowerCase();
+
+            String actualValue = contact.get(attributeName);
+            if (actualValue == null) {
+                return false;
+            }
+            actualValue = actualValue.toLowerCase();
+            if (operator == Operator.IsEqualTo) {
+                return value.equals(actualValue);
+            } else {
+                return operator == Operator.Contains && ((containmentMode.equals(ContainmentMode.Substring) && actualValue.contains(lowerCaseValue)) ||
+                        (containmentMode.equals(ContainmentMode.Prefixed) && actualValue.startsWith(lowerCaseValue)));
+            }
         }
+
     }
 
     protected static class HeaderCondition extends AttributeCondition {
@@ -422,6 +443,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
         public boolean isEmpty() {
             return false;
+        }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String actualValue = contact.get(attributeName);
+            return actualValue == null;
         }
 
     }
@@ -704,7 +730,7 @@ public class EwsExchangeSession extends ExchangeSession {
         /**
          * Empty constructor for GalFind
          */
-        public Contact() {
+        protected Contact() {
         }
 
         protected Set<FieldUpdate> buildProperties() {
@@ -1246,14 +1272,40 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress1");
     }
 
-    protected List<ExchangeSession.Contact> galFind(Condition condition) throws IOException {
-        List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        if (condition instanceof AttributeCondition) {
+    protected Contact buildGalfindContact(EWSMethod.Item response) {
+        Contact contact = new Contact();
+        contact.setName(response.get("DisplayName"));
+        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
+            String attributeValue = response.get(entry.getValue());
+            if (attributeValue != null) {
+                contact.put(entry.getKey(), attributeValue);
+            }
+        }
+        return contact;
+    }
+
+    protected Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+        Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
+        if (condition instanceof MultiCondition) {
+            List<Condition> conditions = ((MultiCondition) condition).getConditions();
+            Operator operator = ((MultiCondition) condition).getOperator();
+            if (operator == Operator.Or) {
+                for (Condition innerCondition : conditions) {
+                    contacts.putAll(galFind(innerCondition));
+                }
+            } else if (operator == Operator.And && !conditions.isEmpty()) {
+                Map<String, ExchangeSession.Contact> innerContacts = galFind(conditions.get(0));
+                for (ExchangeSession.Contact contact : innerContacts.values()) {
+                    if (condition.isMatch(contact)) {
+                        contacts.put(contact.getName(), contact);
+                    }
+                }
+            }
+        } else if (condition instanceof AttributeCondition) {
             String mappedAttributeName = GALFIND_ATTRIBUTE_MAP.get(((AttributeCondition) condition).getAttributeName());
             if (mappedAttributeName != null) {
                 String value = ((AttributeCondition) condition).getValue().toLowerCase();
                 Operator operator = ((AttributeCondition) condition).getOperator();
-                ContainmentMode containmentMode = ((AttributeCondition) condition).getContainmentMode();
                 String searchValue = value;
                 if (mappedAttributeName.startsWith("EmailAddress")) {
                     searchValue = "smtp:" + searchValue;
@@ -1265,27 +1317,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(resolveNamesMethod);
                 List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
                 for (EWSMethod.Item response : responses) {
-                    String actualValue = response.get(mappedAttributeName);
-                    if (actualValue != null) {
-                        actualValue = actualValue.toLowerCase();
-                    }
-                    if (actualValue != null && (
-                            (operator == Operator.IsEqualTo && value.equals(actualValue)) ||
-                                    (operator == Operator.Contains && containmentMode == ContainmentMode.Substring && actualValue.contains(value)) |
-                                            (operator == Operator.Contains && containmentMode == ContainmentMode.Prefixed && actualValue.startsWith(value))
-                    )) {
-                        Contact contact = new Contact();
-                        contact.setName(response.get("DisplayName"));
-                        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
-                            String attributeValue = response.get(entry.getValue());
-                            if (attributeValue != null) {
-                                contact.put(entry.getKey(), attributeValue);
-                            }
-                        }
-                        contacts.add(contact);
-                    } else if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Actual value " + actualValue + " does not match " +
-                                mappedAttributeName + ' ' + operator + ' ' + containmentMode + ' ' + value);
+                    Contact contact = buildGalfindContact(response);
+                    if (condition.isMatch(contact)) {
+                        contacts.put(contact.getName(), contact);
                     }
                 }
             }

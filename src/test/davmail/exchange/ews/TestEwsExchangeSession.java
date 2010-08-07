@@ -23,6 +23,7 @@ import davmail.exchange.ExchangeSession;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Webdav specific unit tests
@@ -47,17 +48,20 @@ public class TestEwsExchangeSession extends AbstractExchangeSessionTestCase {
 
     public void testGalFind() throws IOException {
         // find a set of contacts
-        List<ExchangeSession.Contact> contacts = ewsSession.galFind(ewsSession.startsWith("cn", "a"));
-        for (ExchangeSession.Contact contact : contacts) {
+        Map<String, ExchangeSession.Contact> contacts = ewsSession.galFind(ewsSession.startsWith("cn", "a"));
+        for (ExchangeSession.Contact contact : contacts.values()) {
             System.out.println(contact);
         }
-        if (contacts.size() > 0) {
-            ExchangeSession.Contact testContact = contacts.get(0);
+        if (!contacts.isEmpty()) {
+            ExchangeSession.Contact testContact = contacts.values().iterator().next();
             contacts = ewsSession.galFind(ewsSession.isEqualTo("cn", testContact.get("cn")));
             assertEquals(1, contacts.size());
             contacts = ewsSession.galFind(ewsSession.isEqualTo("email1", testContact.get("email1")));
             assertEquals(1, contacts.size());
             contacts = ewsSession.galFind(ewsSession.startsWith("email1", testContact.get("email1")));
+            assertEquals(1, contacts.size());
+            contacts = ewsSession.galFind(ewsSession.and(ewsSession.isEqualTo("cn", testContact.get("cn")),
+                    ewsSession.startsWith("email1", testContact.get("email1"))));
             assertEquals(1, contacts.size());
         }
     }

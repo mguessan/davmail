@@ -449,6 +449,24 @@ public class DavExchangeSession extends ExchangeSession {
                 buffer.append('\'');
             }
         }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String lowerCaseValue = value.toLowerCase();
+            String actualValue = contact.get(attributeName);
+            if (actualValue == null) {
+                return false;
+            }
+            actualValue = actualValue.toLowerCase();
+            if (operator == Operator.IsEqualTo) {
+                return actualValue.equals(lowerCaseValue);
+            } else if (operator == Operator.Like) {
+               return actualValue.contains(lowerCaseValue);
+            } else if (operator == Operator.StartsWith) {
+                return actualValue.startsWith(lowerCaseValue);
+            } else {
+                return false;
+            }
+        }
     }
 
     protected static class HeaderCondition extends AttributeCondition {
