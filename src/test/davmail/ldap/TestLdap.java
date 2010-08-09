@@ -18,13 +18,15 @@
  */
 package davmail.ldap;
 
-import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
+import davmail.exchange.AbstractExchangeSessionTestCase;
 import davmail.exchange.ExchangeSessionFactory;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
@@ -34,7 +36,7 @@ import java.util.Hashtable;
 /**
  * Test LDAP.
  */
-public class TestLdap extends AbstractDavMailTestCase {
+public class TestLdap extends AbstractExchangeSessionTestCase {
     InitialLdapContext ldapContext;
 
     @Override
@@ -82,5 +84,18 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"custom1", "mozillausehtmlmail", "postalcode", "custom2", "custom3", "custom4", "street", "surname", "telephonenumber", "mozillahomelocalityname", "orgunit", "mozillaworkstreet2", "xmozillanickname", "mozillahomestreet", "description", "cellphone", "homeurl", "mozillahomepostalcode", "departmentnumber", "postofficebox", "st", "objectclass", "sn", "ou", "fax", "mozillahomeurl", "mozillahomecountryname", "streetaddress", "cn", "company", "mozillaworkurl", "mobile", "region", "birthmonth", "birthday", "labeleduri", "carphone", "department", "xmozillausehtmlmail", "givenname", "nsaimid", "workurl", "facsimiletelephonenumber", "mozillanickname", "title", "nscpaimscreenname", "xmozillasecondemail", "mozillacustom3", "countryname", "mozillacustom4", "mozillacustom1", "mozillacustom2", "homephone", "mozillasecondemail", "pager", "zip", "mail", "c", "mozillahomestate", "o", "l", "birthyear", "modifytimestamp", "locality", "commonname", "notes", "pagerphone", "mozillahomestreet2"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(objectclass=*)", searchControls);
+    }
+
+    public void testGalfind() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+//        searchControls.setReturningAttributes(new String[]{"uid"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(uid="+session.getAlias()+ ')', searchControls);
+        assertTrue(searchResults.hasMore());
+        SearchResult searchResult = searchResults.next();
+        Attributes attributes = searchResult.getAttributes();
+        Attribute attribute = attributes.get("uid");
+        assertEquals(session.getAlias(), attribute.get());
+        assertNotNull(attributes.get("givenName"));
     }
 }

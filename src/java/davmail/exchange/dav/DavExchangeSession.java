@@ -198,6 +198,20 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_CRITERIA_MAP.put("apple-group-realname", "DP");
     }
 
+    static final HashSet<String> GALLOOKUP_ATTRIBUTES = new HashSet<String>();
+
+    static {
+        GALLOOKUP_ATTRIBUTES.add("givenname");
+        GALLOOKUP_ATTRIBUTES.add("initials");
+        GALLOOKUP_ATTRIBUTES.add("sn");
+        GALLOOKUP_ATTRIBUTES.add("street");
+        GALLOOKUP_ATTRIBUTES.add("st");
+        GALLOOKUP_ATTRIBUTES.add("postalcode");
+        GALLOOKUP_ATTRIBUTES.add("c");
+        GALLOOKUP_ATTRIBUTES.add("departement");
+        GALLOOKUP_ATTRIBUTES.add("mobile");
+    }
+
     /**
      * Exchange to LDAP attribute map
      */
@@ -225,7 +239,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+    public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
         if (condition instanceof MultiCondition) {
             // TODO
@@ -242,9 +256,15 @@ public class DavExchangeSession extends ExchangeSession {
                     getMethod.releaseConnection();
                 }
                 LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
-                for (Map<String, String> result:results.values()) {
-                    Contact contact = buildGalfindContact(result);
+                for (Map<String, String> result : results.values()) {
+                    Contact contact = new Contact();
+                    contact.setName(result.get("AN"));
+                    contact.put("uid", result.get("AN"));
+                    buildGalfindContact(contact, result);
                     if (condition.isMatch(contact)) {
+                        if (needGalLookup(returningAttributes)) {
+                            galLookup(contact);
+                        }
                         contacts.put(contact.getName().toLowerCase(), contact);
                     }
                 }
@@ -254,17 +274,63 @@ public class DavExchangeSession extends ExchangeSession {
         return contacts;
     }
 
-    protected Contact buildGalfindContact(Map<String, String> response) {
-        Contact contact = new Contact();
-        contact.setName(response.get("AN"));
-        contact.put("uid", response.get("AN"));
+    protected boolean needGalLookup(Set<String> returningAttributes) {
+        // iCal search, do not call gallookup
+        if (returningAttributes.contains("apple-serviceslocator")) {
+            return false;
+            // return all attributes => call gallookup
+        } else if (returningAttributes.isEmpty()) {
+            return true;
+        }
+
+        for (String attributeName : GALLOOKUP_ATTRIBUTES) {
+            if (returningAttributes.contains(attributeName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean disableGalLookup;
+
+    /**
+     * Get extended address book information for person with gallookup.
+     * Does not work with Exchange 2007
+     *
+     * @param contact galfind contact
+     */
+    public void galLookup(Contact contact) {
+        if (!disableGalLookup) {
+            GetMethod getMethod = null;
+            try {
+                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
+                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
+                // add detailed information
+                if (!results.isEmpty()) {
+                    Map<String, String> personGalLookupDetails = results.get(contact.get("uid").toLowerCase());
+                    if (personGalLookupDetails != null) {
+                        buildGalfindContact(contact, personGalLookupDetails);
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Unable to gallookup person: " + contact + ", disable GalLookup");
+                disableGalLookup = true;
+            } finally {
+                if (getMethod != null) {
+                    getMethod.releaseConnection();
+                }
+            }
+        }
+    }
+
+    protected void buildGalfindContact(Contact contact, Map<String, String> response) {
         for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
             String attributeValue = response.get(entry.getValue());
             if (attributeValue != null) {
                 contact.put(entry.getKey(), attributeValue);
             }
         }
-        return contact;
     }
 
     @Override
@@ -528,6 +594,15 @@ public class DavExchangeSession extends ExchangeSession {
             }
             if ("urlcompname".equals(field.alias)) {
                 buffer.append(StringUtil.encodeUrlcompname(value));
+            } else if (field.isIntValue()) {
+                // check value
+                try {
+                    Integer.parseInt(value);
+                    buffer.append(value);
+                } catch (NumberFormatException e) {
+                    // invalid value, replace with 0
+                    buffer.append('0');
+                }
             } else {
                 buffer.append(value);
             }

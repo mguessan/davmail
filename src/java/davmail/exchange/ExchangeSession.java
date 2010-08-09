@@ -118,7 +118,6 @@ public abstract class ExchangeSession {
 
     private final String userName;
 
-    private boolean disableGalLookup;
     protected static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     protected static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
@@ -2816,7 +2815,7 @@ public abstract class ExchangeSession {
         return results;
     }
 
-    public abstract Map<String, Contact> galFind(Condition condition) throws IOException;
+    public abstract Map<String, Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException;
 
     /**
      * Full Contact attribute list
@@ -2888,39 +2887,6 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
         CONTACT_ATTRIBUTES.add("fburl");
-    }
-
-    /**
-     * Get extended address book information for person with gallookup.
-     * Does not work with Exchange 2007
-     *
-     * @param person person attributes map
-     */
-    public void galLookup(Map<String, String> person) {
-        if (!disableGalLookup) {
-            GetMethod getMethod = null;
-            try {
-                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + person.get("EM")));
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
-                // add detailed information
-                if (!results.isEmpty()) {
-                    Map<String, String> fullperson = results.get(person.get("AN").toLowerCase());
-                    if (fullperson != null) {
-                        for (Map.Entry<String, String> entry : fullperson.entrySet()) {
-                            person.put(entry.getKey(), entry.getValue());
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                LOGGER.warn("Unable to gallookup person: " + person + ", disable GalLookup");
-                disableGalLookup = true;
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
-            }
-        }
     }
 
     /**

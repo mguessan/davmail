@@ -1280,17 +1280,17 @@ public class EwsExchangeSession extends ExchangeSession {
         return contact;
     }
 
-    public Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+    public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
         if (condition instanceof MultiCondition) {
             List<Condition> conditions = ((MultiCondition) condition).getConditions();
             Operator operator = ((MultiCondition) condition).getOperator();
             if (operator == Operator.Or) {
                 for (Condition innerCondition : conditions) {
-                    contacts.putAll(galFind(innerCondition));
+                    contacts.putAll(galFind(innerCondition, returningAttributes, sizeLimit));
                 }
             } else if (operator == Operator.And && !conditions.isEmpty()) {
-                Map<String, ExchangeSession.Contact> innerContacts = galFind(conditions.get(0));
+                Map<String, ExchangeSession.Contact> innerContacts = galFind(conditions.get(0), returningAttributes, sizeLimit);
                 for (ExchangeSession.Contact contact : innerContacts.values()) {
                     if (condition.isMatch(contact)) {
                         contacts.put(contact.getName().toLowerCase(), contact);
