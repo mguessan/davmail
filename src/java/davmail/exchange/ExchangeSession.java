@@ -652,7 +652,7 @@ public abstract class ExchangeSession {
 
         /**
          * Test if the contact matches current condition.
-         *  
+         *
          * @param contact Exchange Contact
          * @return true if contact matches condition
          */
@@ -676,6 +676,15 @@ public abstract class ExchangeSession {
         public boolean isEmpty() {
             return false;
         }
+
+        public String getAttributeName() {
+            return attributeName;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
     }
 
     /**
@@ -736,7 +745,7 @@ public abstract class ExchangeSession {
                 return false;
             }
         }
-        
+
     }
 
     /**
@@ -776,15 +785,9 @@ public abstract class ExchangeSession {
 
         public boolean isMatch(ExchangeSession.Contact contact) {
             String actualValue = contact.get(attributeName);
-            if (operator == Operator.IsNull) {
-                return actualValue == null;
-            } else if (operator == Operator.IsFalse) {
-                return "false".equals(actualValue);
-            } else if (operator == Operator.IsTrue) {
-                return "true".equals(actualValue);
-            } else {
-                return false;
-            }
+            return (operator == Operator.IsNull && actualValue == null) ||
+                    (operator == Operator.IsFalse && "false".equals(actualValue)) ||
+                    (operator == Operator.IsTrue && "true".equals(actualValue));
         }
     }
 
@@ -1004,7 +1007,7 @@ public abstract class ExchangeSession {
             Set<String> visibleRecipients = new HashSet<String>();
             Address[] recipients = mimeMessage.getAllRecipients();
             for (Address address : recipients) {
-                visibleRecipients.add(((InternetAddress)address).getAddress().toLowerCase());
+                visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
             }
             for (String recipient : rcptToRecipients) {
                 if (!visibleRecipients.contains(recipient.toLowerCase())) {
@@ -1732,6 +1735,10 @@ public abstract class ExchangeSession {
             return name;
         }
 
+        public void setName(String name) {
+            this.itemName = name;
+        }
+
         /**
          * Compute vcard uid from name.
          *
@@ -2003,7 +2010,7 @@ public abstract class ExchangeSession {
             // TODO: get current user attendee status, i18n
             String subject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
             if (subject == null) {
-               subject = BundleMessage.format("MEETING_REQUEST");
+                subject = BundleMessage.format("MEETING_REQUEST");
             }
             writer.writeHeader("Subject", subject);
 
@@ -2808,6 +2815,8 @@ public abstract class ExchangeSession {
         LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
         return results;
     }
+
+    public abstract Map<String, Contact> galFind(Condition condition) throws IOException;
 
     /**
      * Full Contact attribute list

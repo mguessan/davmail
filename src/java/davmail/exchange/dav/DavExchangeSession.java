@@ -25,6 +25,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VObject;
+import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
@@ -174,6 +175,96 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public boolean isSharedFolder(String folderPath) {
         return !getFolderPath(folderPath).toLowerCase().startsWith(mailPath.toLowerCase());
+    }
+
+    /**
+     * LDAP to Exchange Criteria Map
+     */
+    static final HashMap<String, String> GALFIND_CRITERIA_MAP = new HashMap<String, String>();
+
+    static {
+        GALFIND_CRITERIA_MAP.put("uid", "AN");
+        // assume mail starts with firstname
+        GALFIND_CRITERIA_MAP.put("smtpemail1", "FN");
+        GALFIND_CRITERIA_MAP.put("displayname", "DN");
+        GALFIND_CRITERIA_MAP.put("cn", "DN");
+        GALFIND_CRITERIA_MAP.put("givenname", "FN");
+        GALFIND_CRITERIA_MAP.put("sn", "LN");
+        GALFIND_CRITERIA_MAP.put("title", "TL");
+        GALFIND_CRITERIA_MAP.put("company", "CP");
+        GALFIND_CRITERIA_MAP.put("o", "CP");
+        GALFIND_CRITERIA_MAP.put("l", "OF");
+        GALFIND_CRITERIA_MAP.put("department", "DP");
+        GALFIND_CRITERIA_MAP.put("apple-group-realname", "DP");
+    }
+
+    /**
+     * Exchange to LDAP attribute map
+     */
+    static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
+
+    static {
+        GALFIND_ATTRIBUTE_MAP.put("uid", "AN");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "EM");
+        GALFIND_ATTRIBUTE_MAP.put("cn", "DN");
+        GALFIND_ATTRIBUTE_MAP.put("displayName", "DN");
+        GALFIND_ATTRIBUTE_MAP.put("telephoneNumber", "PH");
+        GALFIND_ATTRIBUTE_MAP.put("l", "OFFICE");
+        GALFIND_ATTRIBUTE_MAP.put("company", "CP");
+        GALFIND_ATTRIBUTE_MAP.put("title", "TL");
+
+        GALFIND_ATTRIBUTE_MAP.put("givenName", "first");
+        GALFIND_ATTRIBUTE_MAP.put("initials", "initials");
+        GALFIND_ATTRIBUTE_MAP.put("sn", "last");
+        GALFIND_ATTRIBUTE_MAP.put("street", "street");
+        GALFIND_ATTRIBUTE_MAP.put("st", "state");
+        GALFIND_ATTRIBUTE_MAP.put("postalCode", "zip");
+        GALFIND_ATTRIBUTE_MAP.put("c", "country");
+        GALFIND_ATTRIBUTE_MAP.put("departement", "department");
+        GALFIND_ATTRIBUTE_MAP.put("mobile", "mobile");
+    }
+
+    @Override
+    public Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+        Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
+        if (condition instanceof MultiCondition) {
+            // TODO
+        } else if (condition instanceof AttributeCondition) {
+            String searchAttribute = GALFIND_CRITERIA_MAP.get(((ExchangeSession.AttributeCondition) condition).getAttributeName());
+            if (searchAttribute != null) {
+                String searchValue = ((ExchangeSession.AttributeCondition) condition).getValue();
+                Map<String, Map<String, String>> results;
+                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
+                try {
+                    DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
+                    results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+                } finally {
+                    getMethod.releaseConnection();
+                }
+                LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
+                for (Map<String, String> result:results.values()) {
+                    Contact contact = buildGalfindContact(result);
+                    if (condition.isMatch(contact)) {
+                        contacts.put(contact.getName().toLowerCase(), contact);
+                    }
+                }
+            }
+
+        }
+        return contacts;
+    }
+
+    protected Contact buildGalfindContact(Map<String, String> response) {
+        Contact contact = new Contact();
+        contact.setName(response.get("AN"));
+        contact.put("uid", response.get("AN"));
+        for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
+            String attributeValue = response.get(entry.getValue());
+            if (attributeValue != null) {
+                contact.put(entry.getKey(), attributeValue);
+            }
+        }
+        return contact;
     }
 
     @Override
@@ -460,7 +551,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (operator == Operator.IsEqualTo) {
                 return actualValue.equals(lowerCaseValue);
             } else if (operator == Operator.Like) {
-               return actualValue.contains(lowerCaseValue);
+                return actualValue.contains(lowerCaseValue);
             } else if (operator == Operator.StartsWith) {
                 return actualValue.startsWith(lowerCaseValue);
             } else {
@@ -617,6 +708,9 @@ public class DavExchangeSession extends ExchangeSession {
          */
         public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
             super(folderPath, itemName, properties, etag, noneMatch);
+        }
+
+        public Contact() {
         }
 
         protected Set<PropertyValue> buildProperties() {

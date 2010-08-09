@@ -45,24 +45,74 @@ public class ResolveNamesMethod extends EWSMethod {
         Item responseItem = new Item();
         responseItem.type = "Contact";
         // skip to Contact
-        while (reader.hasNext() && !isStartTag(reader, "Contact")) {
+        while (reader.hasNext() && !isStartTag(reader, "Resolution")) {
             reader.next();
         }
-        while (reader.hasNext() && !isEndTag(reader, "Contact")) {
+        while (reader.hasNext() && !isEndTag(reader, "Resolution")) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 String tagLocalName = reader.getLocalName();
-                if ("EmailAddresses".equals(tagLocalName)) {
-                    handleAddresses(reader, responseItem);
-                } else {
-                    responseItem.put(tagLocalName, reader.getElementText());
+                if ("Mailbox".equals(tagLocalName)) {
+                    handleMailbox(reader, responseItem);
+                } else if ("Contact".equals(tagLocalName)) {
+                    handleContact(reader, responseItem);
                 }
             }
         }
         return responseItem;
     }
 
-    protected void handleAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+    protected void handleMailbox(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, "Mailbox")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if ("Name".equals(tagLocalName)) {
+                    responseItem.put(tagLocalName, reader.getElementText());
+                }
+            }
+        }
+    }
+
+    protected void handleContact(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, "Contact")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                if ("EmailAddresses".equals(tagLocalName)) {
+                    handleEmailAddresses(reader, responseItem);
+                } else if ("PhysicalAddresses".equals(tagLocalName)) {
+                    handlePhysicalAddresses(reader, responseItem);
+                } else if ("PhoneNumbers".equals(tagLocalName)) {
+                    handlePhoneNumbers(reader, responseItem);
+                } else {
+                    responseItem.put(tagLocalName, reader.getElementText());
+                }
+            }
+        }
+    }
+
+    protected void handlePhysicalAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, "PhysicalAddresses")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                // TODO
+            }
+        }
+    }
+
+    protected void handlePhoneNumbers(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !isEndTag(reader, "PhoneNumbers")) {
+            int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                String tagLocalName = reader.getLocalName();
+                // TODO
+            }
+        }
+    }
+
+    protected void handleEmailAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !isEndTag(reader, "EmailAddresses")) {
             int event = reader.next();
             if (event == XMLStreamConstants.START_ELEMENT) {

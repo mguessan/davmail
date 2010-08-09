@@ -361,10 +361,6 @@ public class EwsExchangeSession extends ExchangeSession {
             return fieldURI;
         }
 
-        protected String getValue() {
-            return value;
-        }
-
         protected Operator getOperator() {
             return operator;
         }
@@ -381,20 +377,22 @@ public class EwsExchangeSession extends ExchangeSession {
             FieldURI fieldURI = getFieldURI();
             fieldURI.appendTo(buffer);
 
-            buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
+            if (operator == Operator.IsEqualTo) {
+                buffer.append("<t:FieldURIOrConstant>");
+            }
+            buffer.append("<t:Constant Value=\"");
             // encode urlcompname
             if (fieldURI instanceof ExtendedFieldURI && "0x10f3".equals(((ExtendedFieldURI) fieldURI).propertyTag)) {
                 buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
             } else {
                 buffer.append(StringUtil.xmlEncode(value));
             }
-            buffer.append("\"/></t:FieldURIOrConstant>");
+            buffer.append("\"/>");
+            if (operator == Operator.IsEqualTo) {
+                buffer.append("</t:FieldURIOrConstant>");
+            }
 
             buffer.append("</t:").append(operator.toString()).append('>');
-        }
-
-        public String getAttributeName() {
-            return attributeName;
         }
 
         public boolean isMatch(ExchangeSession.Contact contact) {
@@ -406,7 +404,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             actualValue = actualValue.toLowerCase();
             if (operator == Operator.IsEqualTo) {
-                return value.equals(actualValue);
+                return lowerCaseValue.equals(actualValue);
             } else {
                 return operator == Operator.Contains && ((containmentMode.equals(ContainmentMode.Substring) && actualValue.contains(lowerCaseValue)) ||
                         (containmentMode.equals(ContainmentMode.Prefixed) && actualValue.startsWith(lowerCaseValue)));
@@ -711,7 +709,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
-                if (value != null) {
+                if (value != null && value.length() > 0) {
                     if ("bday".equals(attributeName) || "anniversary".equals(attributeName) || "lastmodified".equals(attributeName) || "datereceived".equals(attributeName)) {
                         value = convertDateFromExchange(value);
                     }
@@ -851,10 +849,6 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
-        }
-
-        public void setName(String name) {
-            this.itemName = name;
         }
     }
 
@@ -1264,17 +1258,19 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
+        GALFIND_ATTRIBUTE_MAP.put("uid", "Name");
         GALFIND_ATTRIBUTE_MAP.put("cn", "DisplayName");
         GALFIND_ATTRIBUTE_MAP.put("givenName", "GivenName");
         GALFIND_ATTRIBUTE_MAP.put("sn", "Surname");
         GALFIND_ATTRIBUTE_MAP.put("email1", "EmailAddress1");
-        GALFIND_ATTRIBUTE_MAP.put("email2", "EmailAddress1");
-        GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress1");
+        GALFIND_ATTRIBUTE_MAP.put("email2", "EmailAddress2");
+        GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress3");
     }
 
     protected Contact buildGalfindContact(EWSMethod.Item response) {
         Contact contact = new Contact();
-        contact.setName(response.get("DisplayName"));
+        contact.setName(response.get("Name"));
+        contact.put("uid", response.get("Name"));
         for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
             String attributeValue = response.get(entry.getValue());
             if (attributeValue != null) {
@@ -1284,7 +1280,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return contact;
     }
 
-    protected Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
+    public Map<String, ExchangeSession.Contact> galFind(Condition condition) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
         if (condition instanceof MultiCondition) {
             List<Condition> conditions = ((MultiCondition) condition).getConditions();
@@ -1297,7 +1293,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 Map<String, ExchangeSession.Contact> innerContacts = galFind(conditions.get(0));
                 for (ExchangeSession.Contact contact : innerContacts.values()) {
                     if (condition.isMatch(contact)) {
-                        contacts.put(contact.getName(), contact);
+                        contacts.put(contact.getName().toLowerCase(), contact);
                     }
                 }
             }
@@ -1313,13 +1309,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (operator == Operator.IsEqualTo) {
                     searchValue = '=' + searchValue;
                 }
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("ResolveNames(" + searchValue + ')');
+                }
                 ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(searchValue);
                 executeMethod(resolveNamesMethod);
                 List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
                 for (EWSMethod.Item response : responses) {
                     Contact contact = buildGalfindContact(response);
                     if (condition.isMatch(contact)) {
-                        contacts.put(contact.getName(), contact);
+                        contacts.put(contact.getName().toLowerCase(), contact);
                     }
                 }
             }

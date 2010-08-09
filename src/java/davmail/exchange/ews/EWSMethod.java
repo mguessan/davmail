@@ -553,8 +553,6 @@ public abstract class EWSMethod extends PostMethod {
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
             if (!"ErrorAccessDenied".equals(errorDetail)
-                    && !"ErrorNameResolutionMultipleResults".equals(errorDetail)
-                    && !"ErrorNameResolutionNoResults".equals(errorDetail)
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)) {
                 try {
                     throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
@@ -633,7 +631,11 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void handleErrors(XMLStreamReader reader) throws XMLStreamException {
         String result = handleTag(reader, "ResponseCode");
-        if (errorDetail == null && result != null && !"NoError".equals(result)) {
+        if (errorDetail == null && result != null
+                && !"NoError".equals(result)
+                && !"ErrorNameResolutionMultipleResults".equals(result)
+                && !"ErrorNameResolutionNoResults".equals(result)
+                ) {
             errorDetail = result;
         }
         if (isStartTag(reader, "faultstring")) {
