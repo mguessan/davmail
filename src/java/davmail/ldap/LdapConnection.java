@@ -1422,7 +1422,6 @@ public class LdapConnection extends AbstractConnection {
          */
         protected void sendPersons(int currentMessageId, String baseContext, Map<String, ExchangeSession.Contact> persons, Set<String> returningAttributes) throws IOException {
             boolean needObjectClasses = returningAttributes.contains("objectclass") || returningAttributes.isEmpty();
-            boolean iCalSearch = returningAttributes.contains("apple-serviceslocator");
             boolean returnAllAttributes = returningAttributes.isEmpty();
 
             for (ExchangeSession.Contact person : persons.values()) {

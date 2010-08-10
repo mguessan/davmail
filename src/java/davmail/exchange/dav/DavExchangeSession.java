@@ -224,7 +224,7 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("displayName", "DN");
         GALFIND_ATTRIBUTE_MAP.put("telephoneNumber", "PH");
         GALFIND_ATTRIBUTE_MAP.put("l", "OFFICE");
-        GALFIND_ATTRIBUTE_MAP.put("company", "CP");
+        GALFIND_ATTRIBUTE_MAP.put("o", "CP");
         GALFIND_ATTRIBUTE_MAP.put("title", "TL");
 
         GALFIND_ATTRIBUTE_MAP.put("givenName", "first");
@@ -232,10 +232,11 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("sn", "last");
         GALFIND_ATTRIBUTE_MAP.put("street", "street");
         GALFIND_ATTRIBUTE_MAP.put("st", "state");
-        GALFIND_ATTRIBUTE_MAP.put("postalCode", "zip");
-        GALFIND_ATTRIBUTE_MAP.put("c", "country");
-        GALFIND_ATTRIBUTE_MAP.put("departement", "department");
+        GALFIND_ATTRIBUTE_MAP.put("postalcode", "zip");
+        GALFIND_ATTRIBUTE_MAP.put("co", "country");
+        GALFIND_ATTRIBUTE_MAP.put("department", "department");
         GALFIND_ATTRIBUTE_MAP.put("mobile", "mobile");
+        GALFIND_ATTRIBUTE_MAP.put("roomnumber", "office");
     }
 
     @Override
