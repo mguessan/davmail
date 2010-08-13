@@ -26,6 +26,7 @@ import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
+import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
@@ -68,7 +69,26 @@ public final class DavGatewayHttpClientFacade {
         DavGatewayHttpClientFacade.start();
     }
 
+    // register custom cookie policy
+    static {
+        CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
+    }
+
+
     private DavGatewayHttpClientFacade() {
+    }
+
+    /**
+     * Create basic http client with default params.
+     *
+     * @return HttpClient instance
+     */
+    private static HttpClient getBaseInstance() {
+        HttpClient httpClient = new HttpClient();
+        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
+        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
+        httpClient.getParams().setCookiePolicy("DavMailCookieSpec");
+        return httpClient;
     }
 
     /**
@@ -80,9 +100,7 @@ public final class DavGatewayHttpClientFacade {
      */
     public static HttpClient getInstance(String url) throws DavMailException {
         // create an HttpClient instance
-        HttpClient httpClient = new HttpClient();
-        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
-        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
+        HttpClient httpClient = getBaseInstance();
         configureClient(httpClient, url);
         return httpClient;
     }
@@ -97,9 +115,7 @@ public final class DavGatewayHttpClientFacade {
      * @throws DavMailException on error
      */
     public static HttpClient getInstance(String url, String userName, String password) throws DavMailException {
-        HttpClient httpClient = new HttpClient();
-        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
-        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
+        HttpClient httpClient = getBaseInstance();
         configureClient(httpClient, url);
         // some Exchange servers redirect to a different host for freebusy, use wide auth scope
         AuthScope authScope = new AuthScope(null, -1);
@@ -320,7 +336,7 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient    http client instance
      * @param path          <i>encoded</i> searched folder path
      * @param searchRequest (SQL like) search request
-     * @param maxCount max item count
+     * @param maxCount      max item count
      * @return Responses enumeration
      * @throws IOException on error
      */
@@ -344,7 +360,7 @@ public final class DavGatewayHttpClientFacade {
         };
         searchMethod.setRequestEntity(new StringRequestEntity(searchBody, "text/xml", "UTF-8"));
         if (maxCount > 0) {
-            searchMethod.addRequestHeader("Range", "rows=0-"+(maxCount-1));
+            searchMethod.addRequestHeader("Range", "rows=0-" + (maxCount - 1));
         }
         return executeMethod(httpClient, searchMethod);
     }
