@@ -291,7 +291,9 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomestreet2", null);
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("labeleduri", null);
-
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-generateduid", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uidnumber", null);
     }
 
     /**
@@ -963,7 +965,11 @@ public class LdapConnection extends AbstractConnection {
             Map<String, ExchangeSession.Contact> persons = null;
 
             for (LdapFilter child : criteria) {
-                Map<String, ExchangeSession.Contact> childFind = child.findInGAL(session, returningAttributes, sizeLimit);
+                int currentSizeLimit = sizeLimit;
+                if (persons != null) {
+                    currentSizeLimit -= persons.size();
+                }
+                Map<String, ExchangeSession.Contact> childFind = child.findInGAL(session, returningAttributes, currentSizeLimit);
 
                 if (childFind != null) {
                     if (persons == null) {
@@ -1319,7 +1325,7 @@ public class LdapConnection extends AbstractConnection {
                                     }
                                 }
                                 if (!abandon && persons.size() < sizeLimit) {
-                                    for (ExchangeSession.Contact person : ldapFilter.findInGAL(session, returningAttributes, sizeLimit).values()) {
+                                    for (ExchangeSession.Contact person : ldapFilter.findInGAL(session, returningAttributes, sizeLimit - persons.size()).values()) {
                                         if (persons.size() == sizeLimit) {
                                             break;
                                         }

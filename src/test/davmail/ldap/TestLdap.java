@@ -98,4 +98,20 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         assertEquals(session.getAlias(), attribute.get());
         assertNotNull(attributes.get("givenName"));
     }
+
+    public void testOSXSearch() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"uid", "jpegphoto", "postalcode", "mail", "sn", "apple-emailcontacts", "c", "street", "givenname", "l", "apple-user-picture", "telephonenumber", "cn", "st", "apple-imhandle"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od", "(&(objectclass=inetOrgPerson)(|(givenname=Charles*)(|(uid=Charles*)(cn=Charles*))(sn=Charles*))(objectclass=shadowAccount)(objectclass=extensibleObject)(objectclass=posixAccount)(objectclass=apple-user))", searchControls);
+        assertTrue(searchResults.hasMore());
+    }
+
+    public void testAnotherOSXSearch() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od",
+                "(&(objectclass=inetOrgPerson)(objectclass=extensibleObject)(objectclass=apple-user)(|(|(uid=fair*)(cn=fair*))(givenname=fair*)(sn=fair*)(cn=fair*)(mail=fair*))(objectclass=posixAccount)(objectclass=shadowAccount))", searchControls);
+    }
 }
