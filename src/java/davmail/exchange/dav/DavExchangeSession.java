@@ -277,7 +277,9 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected boolean needGalLookup(Set<String> returningAttributes) {
         // iCal search, do not call gallookup
-        if (returningAttributes.contains("apple-serviceslocator")) {
+        if (returningAttributes == null) {
+            return false;
+        } else if (returningAttributes.contains("apple-serviceslocator")) {
             return false;
             // return all attributes => call gallookup
         } else if (returningAttributes.isEmpty()) {
@@ -1178,17 +1180,17 @@ public class DavExchangeSession extends ExchangeSession {
         folder.uidNext = getIntPropertyIfExists(properties, "uidNext");
 
         // replace well known folder names
-        if (href.startsWith(inboxUrl)) {
+        if (inboxUrl != null && href.startsWith(inboxUrl)) {
             folder.folderPath = href.replaceFirst(inboxUrl, INBOX);
-        } else if (href.startsWith(sentitemsUrl)) {
+        } else if (sentitemsUrl != null && href.startsWith(sentitemsUrl)) {
             folder.folderPath = href.replaceFirst(sentitemsUrl, SENT);
-        } else if (href.startsWith(draftsUrl)) {
+        } else if (draftsUrl != null && href.startsWith(draftsUrl)) {
             folder.folderPath = href.replaceFirst(draftsUrl, DRAFTS);
-        } else if (href.startsWith(deleteditemsUrl)) {
+        } else if (deleteditemsUrl != null && href.startsWith(deleteditemsUrl)) {
             folder.folderPath = href.replaceFirst(deleteditemsUrl, TRASH);
-        } else if (href.startsWith(calendarUrl)) {
+        } else if (calendarUrl != null && href.startsWith(calendarUrl)) {
             folder.folderPath = href.replaceFirst(calendarUrl, CALENDAR);
-        } else if (href.startsWith(contactsUrl)) {
+        } else if (contactsUrl != null && href.startsWith(contactsUrl)) {
             folder.folderPath = href.replaceFirst(contactsUrl, CONTACTS);
         } else {
             int index = href.indexOf(mailPath.substring(0, mailPath.length() - 1));
