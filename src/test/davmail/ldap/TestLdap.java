@@ -89,7 +89,6 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
     public void testGalfind() throws NamingException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
-//        searchControls.setReturningAttributes(new String[]{"uid"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(uid="+session.getAlias()+ ')', searchControls);
         assertTrue(searchResults.hasMore());
         SearchResult searchResult = searchResults.next();
@@ -113,5 +112,17 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od",
                 "(&(objectclass=inetOrgPerson)(objectclass=extensibleObject)(objectclass=apple-user)(|(|(uid=fair*)(cn=fair*))(givenname=fair*)(sn=fair*)(cn=fair*)(mail=fair*))(objectclass=posixAccount)(objectclass=shadowAccount))", searchControls);
+    }
+
+    public void testSearchByGivenName() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(givenName=mic*)", searchControls);
+    }
+
+    public void testSearchByGalfindUnsupportedAttribute() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(postalcode=N18 1ZF)", searchControls);
     }
 }

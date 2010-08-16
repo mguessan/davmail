@@ -47,10 +47,16 @@ public class LdapConnection extends AbstractConnection {
      * Davmail base context
      */
     static final String BASE_CONTEXT = "ou=people";
+    /**
+     * OSX server (OpenDirectory) base context
+     */
     static final String OD_BASE_CONTEXT = "o=od";
     static final String OD_USER_CONTEXT = "cn=users, o=od";
     static final String COMPUTER_CONTEXT = "cn=computers, o=od";
 
+    /**
+     * Root DSE naming contexts (default and OpenDirectory)
+     */
     static final List<String> NAMING_CONTEXTS = new ArrayList<String>();
 
     static {
@@ -70,32 +76,9 @@ public class LdapConnection extends AbstractConnection {
     }
 
     /**
-     * Exchange to LDAP attribute map
+     * Map Exchange contact attribute names to LDAP attributes.
+     * Used only when returningAttributes is empty in LDAP request (return all available attributes)
      */
-    static final HashMap<String, String> ATTRIBUTE_MAP = new HashMap<String, String>();
-
-    static {
-        ATTRIBUTE_MAP.put("uid", "AN");
-        ATTRIBUTE_MAP.put("mail", "EM");
-        ATTRIBUTE_MAP.put("cn", "DN");
-        ATTRIBUTE_MAP.put("displayName", "DN");
-        ATTRIBUTE_MAP.put("telephoneNumber", "PH");
-        ATTRIBUTE_MAP.put("l", "OFFICE");
-        ATTRIBUTE_MAP.put("company", "CP");
-        ATTRIBUTE_MAP.put("title", "TL");
-
-        ATTRIBUTE_MAP.put("givenName", "first");
-        ATTRIBUTE_MAP.put("initials", "initials");
-        ATTRIBUTE_MAP.put("sn", "last");
-        ATTRIBUTE_MAP.put("street", "street");
-        ATTRIBUTE_MAP.put("st", "state");
-        ATTRIBUTE_MAP.put("postalCode", "zip");
-        ATTRIBUTE_MAP.put("c", "country");
-        ATTRIBUTE_MAP.put("departement", "department");
-        ATTRIBUTE_MAP.put("mobile", "mobile");
-    }
-
-
     static final HashMap<String, String> CONTACT_TO_LDAP_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
@@ -113,74 +96,22 @@ public class LdapConnection extends AbstractConnection {
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeState", "mozillahomestate");
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("homeStreet", "mozillahomestreet");
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("businesshomepage", "mozillaworkurl");
-        CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("description", "description");
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("nickname", "mozillanickname");
     }
 
-    static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
-
+    /**
+     * OSX constant computer guid (used by iCal attendee completion)
+     */
     static final String COMPUTER_GUID = "52486C30-F0AB-48E3-9C37-37E9B28CDD7B";
+    /**
+     * OSX constant virtual host guid (used by iCal attendee completion)
+     */
     static final String VIRTUALHOST_GUID = "D6DD8A10-1098-11DE-8C30-0800200C9A66";
 
-    static final String SERVICEINFO =
-            "<?xml version='1.0' encoding='UTF-8'?>" +
-                    "<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>" +
-                    "<plist version='1.0'>" +
-                    "<dict>" +
-                    "<key>com.apple.macosxserver.host</key>" +
-                    "<array>" +
-                    "<string>localhost</string>" +        // NOTE: Will be replaced by real hostname
-                    "</array>" +
-                    "<key>com.apple.macosxserver.virtualhosts</key>" +
-                    "<dict>" +
-                    "<key>" + VIRTUALHOST_GUID + "</key>" +
-                    "<dict>" +
-                    "<key>hostDetails</key>" +
-                    "<dict>" +
-                    "<key>http</key>" +
-                    "<dict>" +
-                    "<key>enabled</key>" +
-                    "<true/>" +
-                    "<key>port</key>" +
-                    "<integer>9999</integer>" +       // NOTE: Will be replaced by real port number
-                    "</dict>" +
-                    "<key>https</key>" +
-                    "<dict>" +
-                    "<key>disabled</key>" +
-                    "<false/>" +
-                    "<key>port</key>" +
-                    "<integer>0</integer>" +
-                    "</dict>" +
-                    "</dict>" +
-                    "<key>hostname</key>" +
-                    "<string>localhost</string>" +        // NOTE: Will be replaced by real hostname
-                    "<key>serviceInfo</key>" +
-                    "<dict>" +
-                    "<key>calendar</key>" +
-                    "<dict>" +
-                    "<key>enabled</key>" +
-                    "<true/>" +
-                    "<key>templates</key>" +
-                    "<dict>" +
-                    "<key>calendarUserAddresses</key>" +
-                    "<array>" +
-                    "<string>%(principaluri)s</string>" +
-                    "<string>mailto:%(email)s</string>" +
-                    "<string>urn:uuid:%(guid)s</string>" +
-                    "</array>" +
-                    "<key>principalPath</key>" +
-                    "<string>/principals/__uuids__/%(guid)s/</string>" +
-                    "</dict>" +
-                    "</dict>" +
-                    "</dict>" +
-                    "<key>serviceType</key>" +
-                    "<array>" +
-                    "<string>calendar</string>" +
-                    "</array>" +
-                    "</dict>" +
-                    "</dict>" +
-                    "</dict>" +
-                    "</plist>";
+    /**
+     * OSX constant value for attribute apple-serviceslocator
+     */
+    static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
         STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ':' + VIRTUALHOST_GUID + ":calendar");
@@ -189,6 +120,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * LDAP to Exchange Criteria Map
      */
+    // TODO: remove
     static final HashMap<String, String> CRITERIA_MAP = new HashMap<String, String>();
 
     static {
@@ -207,6 +139,9 @@ public class LdapConnection extends AbstractConnection {
         CRITERIA_MAP.put("apple-group-realname", "DP");
     }
 
+    /**
+     * LDAP to Exchange contact attribute map.
+     */
     static final HashMap<String, String> LDAP_TO_CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
@@ -299,6 +234,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * LDAP filter attributes ignore map
      */
+    // TODO remove
     static final HashSet<String> IGNORE_MAP = new HashSet<String>();
 
     static {
@@ -334,10 +270,11 @@ public class LdapConnection extends AbstractConnection {
     static final int LDAP_SIZE_LIMIT_EXCEEDED = 4;
     static final int LDAP_INVALID_CREDENTIALS = 49;
 
+    // LDAP filter code
     static final int LDAP_FILTER_AND = 0xa0;
     static final int LDAP_FILTER_OR = 0xa1;
 
-    // LDAP filter operators (only LDAP_FILTER_SUBSTRINGS is supported)
+    // LDAP filter operators
     static final int LDAP_FILTER_SUBSTRINGS = 0xa4;
     //static final int LDAP_FILTER_GE = 0xa5;
     //static final int LDAP_FILTER_LE = 0xa6;
@@ -345,7 +282,7 @@ public class LdapConnection extends AbstractConnection {
     //static final int LDAP_FILTER_APPROX = 0xa8;
     static final int LDAP_FILTER_EQUALITY = 0xa3;
 
-    // LDAP filter mode (only startsWith supported by galfind)
+    // LDAP filter mode
     static final int LDAP_SUBSTRING_INITIAL = 0x80;
     static final int LDAP_SUBSTRING_ANY = 0x81;
     static final int LDAP_SUBSTRING_FINAL = 0x82;
@@ -361,7 +298,7 @@ public class LdapConnection extends AbstractConnection {
     //static final int SCOPE_SUBTREE = 2;
 
     /**
-     * For some unknow reaseon parseIntWithTag is private !
+     * For some unknown reason parseIntWithTag is private !
      */
     static final Method PARSE_INT_WITH_TAG_METHOD;
 
@@ -715,7 +652,7 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
-    protected String hostName() throws UnknownHostException {
+    protected String getCurrentHostName() throws UnknownHostException {
         if (client.getInetAddress().isLoopbackAddress()) {
             // local address, probably using localhost in iCal URL
             return "localhost";
@@ -726,6 +663,81 @@ public class LdapConnection extends AbstractConnection {
     }
 
     /**
+     * Cache serviceInfo string value
+     */
+    protected String serviceInfo;
+
+    protected String getServiceInfo() throws UnknownHostException {
+        if (serviceInfo == null) {
+            StringBuilder buffer = new StringBuilder();
+            buffer.append("<?xml version='1.0' encoding='UTF-8'?>" +
+                    "<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>" +
+                    "<plist version='1.0'>" +
+                    "<dict>" +
+                    "<key>com.apple.macosxserver.host</key>" +
+                    "<array>" +
+                    "<string>localhost</string>" +        // NOTE: Will be replaced by real hostname
+                    "</array>" +
+                    "<key>com.apple.macosxserver.virtualhosts</key>" +
+                    "<dict>" +
+                    "<key>" + VIRTUALHOST_GUID + "</key>" +
+                    "<dict>" +
+                    "<key>hostDetails</key>" +
+                    "<dict>" +
+                    "<key>http</key>" +
+                    "<dict>" +
+                    "<key>enabled</key>" +
+                    "<true/>" +
+                    "<key>port</key>" +
+                    "<integer>");
+            buffer.append(Settings.getProperty("davmail.caldavPort"));
+            buffer.append("</integer>" +
+                    "</dict>" +
+                    "<key>https</key>" +
+                    "<dict>" +
+                    "<key>disabled</key>" +
+                    "<false/>" +
+                    "<key>port</key>" +
+                    "<integer>0</integer>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "<key>hostname</key>" +
+                    "<string>");
+            buffer.append(getCurrentHostName());
+            buffer.append("</string>" +
+                    "<key>serviceInfo</key>" +
+                    "<dict>" +
+                    "<key>calendar</key>" +
+                    "<dict>" +
+                    "<key>enabled</key>" +
+                    "<true/>" +
+                    "<key>templates</key>" +
+                    "<dict>" +
+                    "<key>calendarUserAddresses</key>" +
+                    "<array>" +
+                    "<string>%(principaluri)s</string>" +
+                    "<string>mailto:%(email)s</string>" +
+                    "<string>urn:uuid:%(guid)s</string>" +
+                    "</array>" +
+                    "<key>principalPath</key>" +
+                    "<string>/principals/__uuids__/%(guid)s/</string>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "<key>serviceType</key>" +
+                    "<array>" +
+                    "<string>calendar</string>" +
+                    "</array>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</dict>" +
+                    "</plist>");
+            serviceInfo = buffer.toString();
+        }
+        return serviceInfo;
+    }
+
+    /**
      * Send ComputerContext
      *
      * @param currentMessageId    current message id
@@ -733,20 +745,17 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendComputerContext(int currentMessageId, Set<String> returningAttributes) throws IOException {
-        String customServiceInfo = SERVICEINFO.replaceAll("localhost", hostName());
-        customServiceInfo = customServiceInfo.replaceAll("9999", Settings.getProperty("davmail.caldavPort"));
-
         List<String> objectClasses = new ArrayList<String>();
         objectClasses.add("top");
         objectClasses.add("apple-computer");
         Map<String, Object> attributes = new HashMap<String, Object>();
         addIf(attributes, returningAttributes, "objectClass", objectClasses);
         addIf(attributes, returningAttributes, "apple-generateduid", COMPUTER_GUID);
-        addIf(attributes, returningAttributes, "apple-serviceinfo", customServiceInfo);
+        addIf(attributes, returningAttributes, "apple-serviceinfo", getServiceInfo());
         addIf(attributes, returningAttributes, "apple-serviceslocator", "::anyService");
-        addIf(attributes, returningAttributes, "cn", hostName());
+        addIf(attributes, returningAttributes, "cn", getCurrentHostName());
 
-        String dn = "cn=" + hostName() + ", " + COMPUTER_CONTEXT;
+        String dn = "cn=" + getCurrentHostName() + ", " + COMPUTER_CONTEXT;
         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_SEND_COMPUTER_CONTEXT", dn, attributes));
 
         sendEntry(currentMessageId, dn, attributes);
@@ -1128,11 +1137,11 @@ public class LdapConnection extends AbstractConnection {
                 return null;
             }
 
-            String galFindAttributeName = getGalFindAttributeName();
+            String contactAttributeName = getContactAttributeName(attributeName);
 
-            if (galFindAttributeName != null) {
+            if (contactAttributeName != null) {
                 // quick fix for cn=* filter
-                Map<String, ExchangeSession.Contact> galPersons = session.galFind(session.startsWith(attributeName, "*".equals(value) ? "A" : value), returningAttributes, sizeLimit);
+                Map<String, ExchangeSession.Contact> galPersons = session.galFind(session.startsWith(contactAttributeName, "*".equals(value) ? "A" : value), returningAttributes, sizeLimit);
 
                 if (operator == LDAP_FILTER_EQUALITY) {
                     // Make sure only exact matches are returned
@@ -1437,75 +1446,44 @@ public class LdapConnection extends AbstractConnection {
 
                 Map<String, Object> ldapPerson = new HashMap<String, Object>();
 
-                // convert GAL entries
-                /*if (person.get("uid") != null) {
-                    // TODO: move to galFind
-                    // add detailed information, only for GAL entries
-                    if (needDetails) {
-                        session.galLookup(person);
-                    }
-                    // Process all attributes that are mapped from exchange
-                    for (Map.Entry<String, String> entry : ATTRIBUTE_MAP.entrySet()) {
-                        String ldapAttribute = entry.getKey();
-                        String exchangeAttribute = entry.getValue();
-                        String value = person.get(exchangeAttribute);
-                        // contactFind return ldap attributes directly
-                        if (value == null) {
-                            value = person.get(ldapAttribute);
-                        }
-                        if (value != null
-                                && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                // convert Contact entries
+                if (returnAllAttributes) {
+                    // just convert contact attributes to default ldap names
+                    for (Map.Entry<String, String> entry : person.entrySet()) {
+                        String ldapAttribute = getLdapAttributeName(entry.getKey());
+                        String value = entry.getValue();
+                        if (value != null) {
                             ldapPerson.put(ldapAttribute, value);
                         }
                     }
-                    // TODO
-                    // iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
-                    if (iCalSearch && ldapPerson.get("cn") != null && returningAttributes.contains("sn")) {
-                        ldapPerson.put("sn", ldapPerson.get("cn"));
-                        ldapPerson.remove("cn");
-                    }
-
-                } else {*/
-                    // convert Contact entries
-                    if (returnAllAttributes) {
-                        // just convert contact attributes to default ldap names
-                        for (Map.Entry<String, String> entry : person.entrySet()) {
-                            String ldapAttribute = getLdapAttributeName(entry.getKey());
-                            String value = entry.getValue();
-                            if (value != null) {
-                                ldapPerson.put(ldapAttribute, value);
-                            }
-                        }
-                    } else {
-                        // always map uid
-                        ldapPerson.put("uid", person.get("uid"));
-                        // iterate over requested attributes
-                        for (String ldapAttribute : returningAttributes) {
-                            String contactAttribute = getContactAttributeName(ldapAttribute);
-                            String value = person.get(contactAttribute);
-                            if (value != null) {
-                                if (ldapAttribute.startsWith("birth")) {
-                                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
-                                    Calendar calendar = Calendar.getInstance();
-                                    try {
-                                        calendar.setTime(parser.parse(value));
-                                    } catch (ParseException e) {
-                                        throw new IOException(e);
-                                    }
-                                    if ("birthday".equals(ldapAttribute)) {
-                                        value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
-                                    } else if ("birthmonth".equals(ldapAttribute)) {
-                                        value = String.valueOf(calendar.get(Calendar.MONTH) + 1);
-                                    } else if ("birthyear".equals(ldapAttribute)) {
-                                        value = String.valueOf(calendar.get(Calendar.YEAR));
-                                    }
+                } else {
+                    // always map uid
+                    ldapPerson.put("uid", person.get("uid"));
+                    // iterate over requested attributes
+                    for (String ldapAttribute : returningAttributes) {
+                        String contactAttribute = getContactAttributeName(ldapAttribute);
+                        String value = person.get(contactAttribute);
+                        if (value != null) {
+                            if (ldapAttribute.startsWith("birth")) {
+                                SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
+                                Calendar calendar = Calendar.getInstance();
+                                try {
+                                    calendar.setTime(parser.parse(value));
+                                } catch (ParseException e) {
+                                    throw new IOException(e);
                                 }
-                                ldapPerson.put(ldapAttribute, value);
+                                if ("birthday".equals(ldapAttribute)) {
+                                    value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+                                } else if ("birthmonth".equals(ldapAttribute)) {
+                                    value = String.valueOf(calendar.get(Calendar.MONTH) + 1);
+                                } else if ("birthyear".equals(ldapAttribute)) {
+                                    value = String.valueOf(calendar.get(Calendar.YEAR));
+                                }
                             }
+                            ldapPerson.put(ldapAttribute, value);
                         }
                     }
-
-                //}
+                }
 
                 // Process all attributes which have static mappings
                 for (Map.Entry<String, String> entry : STATIC_ATTRIBUTE_MAP.entrySet()) {
@@ -1513,7 +1491,7 @@ public class LdapConnection extends AbstractConnection {
                     String value = entry.getValue();
 
                     if (value != null
-                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute.toLowerCase()))) {
+                            && (returnAllAttributes || returningAttributes.contains(ldapAttribute))) {
                         ldapPerson.put(ldapAttribute, value);
                     }
                 }

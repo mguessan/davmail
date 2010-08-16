@@ -23,6 +23,7 @@ import davmail.Settings;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -77,6 +78,26 @@ public class TestExchangeSessionSearchContact extends AbstractExchangeSessionTes
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, attributes, null, 0);
         for (ExchangeSession.Contact contact : contacts) {
             System.out.println(session.searchContacts(ExchangeSession.CONTACTS, attributes, session.isEqualTo("uid", contact.get("uid")), 0));
+        }
+    }
+
+    public void testGalFind() throws IOException {
+        // find a set of contacts
+        Map<String, ExchangeSession.Contact> contacts = session.galFind(session.startsWith("cn", "a"), null, 100);
+        for (ExchangeSession.Contact contact : contacts.values()) {
+            System.out.println(contact);
+        }
+        if (!contacts.isEmpty()) {
+            ExchangeSession.Contact testContact = contacts.values().iterator().next();
+            contacts = session.galFind(session.isEqualTo("cn", testContact.get("cn")), null, 100);
+            assertEquals(1, contacts.size());
+            contacts = session.galFind(session.isEqualTo("smtpemail1", testContact.get("smtpemail1")), null, 100);
+            assertEquals(1, contacts.size());
+            contacts = session.galFind(session.startsWith("smtpemail1", testContact.get("smtpemail1")), null, 100);
+            assertEquals(1, contacts.size());
+            contacts = session.galFind(session.and(session.isEqualTo("cn", testContact.get("cn")),
+                    session.startsWith("smtpemail1", testContact.get("smtpemail1"))), null, 100);
+            assertEquals(1, contacts.size());
         }
     }
 

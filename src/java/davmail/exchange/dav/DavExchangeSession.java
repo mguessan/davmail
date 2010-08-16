@@ -186,16 +186,13 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_CRITERIA_MAP.put("uid", "AN");
         // assume mail starts with firstname
         GALFIND_CRITERIA_MAP.put("smtpemail1", "FN");
-        GALFIND_CRITERIA_MAP.put("displayname", "DN");
         GALFIND_CRITERIA_MAP.put("cn", "DN");
-        GALFIND_CRITERIA_MAP.put("givenname", "FN");
+        GALFIND_CRITERIA_MAP.put("givenName", "FN");
         GALFIND_CRITERIA_MAP.put("sn", "LN");
         GALFIND_CRITERIA_MAP.put("title", "TL");
-        GALFIND_CRITERIA_MAP.put("company", "CP");
         GALFIND_CRITERIA_MAP.put("o", "CP");
         GALFIND_CRITERIA_MAP.put("l", "OF");
         GALFIND_CRITERIA_MAP.put("department", "DP");
-        GALFIND_CRITERIA_MAP.put("apple-group-realname", "DP");
     }
 
     static final HashSet<String> GALLOOKUP_ATTRIBUTES = new HashSet<String>();
@@ -262,10 +259,10 @@ public class DavExchangeSession extends ExchangeSession {
                     contact.setName(result.get("AN"));
                     contact.put("uid", result.get("AN"));
                     buildGalfindContact(contact, result);
+                    if (needGalLookup(returningAttributes)) {
+                        galLookup(contact);
+                    }
                     if (condition.isMatch(contact)) {
-                        if (needGalLookup(returningAttributes)) {
-                            galLookup(contact);
-                        }
                         contacts.put(contact.getName().toLowerCase(), contact);
                     }
                 }
