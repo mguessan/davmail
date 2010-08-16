@@ -18,6 +18,7 @@
  */
 package davmail.exchange;
 
+import davmail.BundleMessage;
 import junit.framework.TestCase;
 
 import java.io.IOException;
@@ -260,6 +261,19 @@ public class TestExchangeSessionEvent extends TestCase {
                 "END:VCALENDAR";
         String toClient = fixICS(itemBody, true);
         System.out.println(toClient);
+    }
+
+    public void testAttendeeStatus() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VEVENT\n" +
+                "ATTENDEE;PARTSTAT=ACCEPTED;RSVP=FALSE:MAILTO:" + email + "\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        VCalendar vCalendar = new VCalendar(itemBody, email, vTimeZone);
+        vCalendar.fixVCalendar(false);
+        String status = vCalendar.getAttendeeStatus();
+        assertEquals("ACCEPTED", status);
+        System.out.println("'"+BundleMessage.format(status)+"'");
     }
 
 }

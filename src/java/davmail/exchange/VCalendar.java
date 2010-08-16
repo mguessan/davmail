@@ -411,4 +411,20 @@ public class VCalendar extends VObject {
         return recipients;
     }
 
+    protected String getAttendeeStatus() {
+        String status = null;
+        List<VProperty> attendeeProperties = getFirstVeventProperties("ATTENDEE");
+        if (attendeeProperties != null) {
+            for (VProperty property : attendeeProperties) {
+                String attendeeEmail = getEmailValue(property);
+                if (email.equalsIgnoreCase(attendeeEmail) && property.hasParam("PARTSTAT")) {
+                    // found current user attendee line
+                    status = property.getParam("PARTSTAT").getValue();
+                    break;
+                }
+            }
+        }
+        return status;
+    }
+
 }

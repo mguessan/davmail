@@ -2014,12 +2014,14 @@ public abstract class ExchangeSession {
             writer.writeHeader("Date", new Date());
 
             // Make sure invites have a proper subject line
-            // TODO: get current user attendee status, i18n
             String subject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
             if (subject == null) {
                 subject = BundleMessage.format("MEETING_REQUEST");
             }
-            writer.writeHeader("Subject", subject);
+
+            // Write a part of the message that contains the
+            // ICS description so that invites contain the description text
+            String description = vCalendar.getFirstVeventPropertyValue("DESCRIPTION");
 
             if ("urn:content-classes:calendarmessage".equals(contentClass)) {
                 // need to parse attendees and organizer to build recipients
@@ -2033,6 +2035,16 @@ public abstract class ExchangeSession {
                         return null;
                     }
                 } else {
+                    // reset body
+                    description = "";
+                    
+                    String status = vCalendar.getAttendeeStatus();
+                    if (status != null) {
+                        writer.writeHeader("Subject", BundleMessage.format(status)+ subject);
+                    } else {
+                        writer.writeHeader("Subject", subject);
+                    }
+
                     // notify only organizer
                     writer.writeHeader("To", recipients.organizer);
                     // do not send notification if no recipients found
@@ -2077,10 +2089,6 @@ public abstract class ExchangeSession {
             writer.writeLn("This is a multi-part message in MIME format.");
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary);
-
-            // Write a part of the message that contains the
-            // ICS description so that invites contain the description text
-            String description = vCalendar.getFirstVeventPropertyValue("DESCRIPTION");
 
             if (description != null && description.length() > 0) {
                 writer.writeHeader("Content-Type", "text/plain;\r\n" +
