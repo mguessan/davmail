@@ -681,7 +681,17 @@ public class CaldavConnection extends AbstractConnection {
                     if (eventName != null && eventName.length() > 0
                             && !"inbox".equals(eventName) && !"calendar".equals(eventName)) {
                         ExchangeSession.Item item;
-                        item = session.getItem(folderPath, eventName);
+                        try {
+                            item = session.getItem(folderPath, eventName);
+                        } catch (HttpNotFoundException e) {
+                            // workaround for Lightning bug
+                            if (request.isBrokenLightning() && eventName.indexOf('%') >= 0) {
+                                item = session.getItem(folderPath, URIUtil.decode(eventName));
+                            } else {
+                                throw e;
+                            }
+
+                        }
                         appendItemResponse(response, request, item);
                     }
                 } catch (Exception e) {
