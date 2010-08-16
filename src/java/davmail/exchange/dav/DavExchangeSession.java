@@ -235,10 +235,32 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("roomnumber", "office");
     }
 
+    boolean disableGalFind;
+
+    protected Map<String, Map<String, String>> galFind(String query) throws IOException {
+        Map<String, Map<String, String>> results;
+        String path = getCmdBasePath() + "?Cmd=galfind" + query; 
+        GetMethod getMethod = new GetMethod(path);
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
+            results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+        } catch (IOException e) {
+            LOGGER.debug("GET " + path + " failed: " + e + ' ' + e.getMessage());
+            disableGalFind = true;
+            throw e;
+        } finally {
+            getMethod.releaseConnection();
+        }
+        return results;
+    }
+
+
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
-        if (condition instanceof MultiCondition) {
+        if (disableGalFind) {
+            // do nothing
+        } else if (condition instanceof MultiCondition) {
             List<Condition> conditions = ((ExchangeSession.MultiCondition) condition).getConditions();
             Operator operator = ((ExchangeSession.MultiCondition) condition).getOperator();
             if (operator == Operator.Or) {
@@ -259,8 +281,6 @@ public class DavExchangeSession extends ExchangeSession {
             if (searchAttribute != null) {
                 String searchValue = ((ExchangeSession.AttributeCondition) condition).getValue();
                 StringBuilder query = new StringBuilder();
-                query.append(getCmdBasePath());
-                query.append("?Cmd=galfind");
                 if ("EM".equals(searchAttribute)) {
                     // mail search, split
                     int atIndex = searchValue.indexOf('@');
@@ -272,22 +292,15 @@ public class DavExchangeSession extends ExchangeSession {
                     int dotIndex = searchValue.indexOf('.');
                     if (dotIndex >= 0) {
                         // assume mail starts with firstname
-                        query.append("&FN=").append(searchValue.substring(0, dotIndex));
-                        query.append("&LN=").append(searchValue.substring(dotIndex + 1));
+                        query.append("&FN=").append(URIUtil.encodeWithinQuery(searchValue.substring(0, dotIndex)));
+                        query.append("&LN=").append(URIUtil.encodeWithinQuery(searchValue.substring(dotIndex + 1)));
                     } else {
-                        query.append("&FN=").append(searchValue);
+                        query.append("&FN=").append(URIUtil.encodeWithinQuery(searchValue));
                     }
                 } else {
-                    query.append('&').append(searchAttribute).append('=').append(searchValue);
+                    query.append('&').append(searchAttribute).append('=').append(URIUtil.encodeWithinQuery(searchValue));
                 }
-                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(query.toString()));
-                Map<String, Map<String, String>> results;
-                try {
-                    DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-                    results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-                } finally {
-                    getMethod.releaseConnection();
-                }
+                Map<String, Map<String, String>> results = galFind(query.toString());
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(query.toString() + ": " + results.size() + " result(s)");
                 }
@@ -454,6 +467,123 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
+    }
+
+    /**
+     * Determine user email through various means.
+     *
+     * @param hostName Exchange server host name for last failover
+     */
+    public void buildEmail(String hostName) {
+        // first try to get email from login name
+        alias = getAliasFromLogin();
+        email = getEmail(alias);
+        // failover: use mailbox name as alias
+        if (email == null) {
+            alias = getAliasFromMailPath();
+            email = getEmail(alias);
+        }
+        // another failover : get alias from mailPath display name
+        if (email == null) {
+            alias = getAliasFromMailboxDisplayName();
+            email = getEmail(alias);
+        }
+        if (email == null) {
+            // failover : get email from Exchange 2007 Options page
+            alias = getAliasFromOptions();
+            email = getEmail(alias);
+            // failover: get email from options
+            if (alias != null && email == null) {
+                email = getEmailFromOptions();
+            }
+        }
+        if (email == null) {
+            LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
+                    + " or " + getAliasFromMailPath()
+                    + " or " + getAliasFromOptions()
+            );
+            // last failover: build email from domain name and mailbox display name
+            StringBuilder buffer = new StringBuilder();
+            // most reliable alias
+            alias = getAliasFromMailboxDisplayName();
+            if (alias == null) {
+                alias = getAliasFromLogin();
+            }
+            if (alias != null) {
+                buffer.append(alias);
+                if (alias.indexOf('@') < 0) {
+                    buffer.append('@');
+                    int dotIndex = hostName.indexOf('.');
+                    if (dotIndex >= 0) {
+                        buffer.append(hostName.substring(dotIndex + 1));
+                    }
+                }
+            }
+            email = buffer.toString();
+        }
+    }
+
+    /**
+     * Get user alias from mailbox display name over Webdav.
+     *
+     * @return user alias
+     */
+    public String getAliasFromMailboxDisplayName() {
+        if (mailPath == null) {
+            return null;
+        }
+        String displayName = null;
+        try {
+            Folder rootFolder = getFolder("");
+            if (rootFolder == null) {
+                LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
+            } else {
+                displayName = rootFolder.displayName;
+            }
+        } catch (IOException e) {
+            LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
+        }
+        return displayName;
+    }
+
+    /**
+     * Get current Exchange alias name from mailbox name
+     *
+     * @return user name
+     */
+    protected String getAliasFromMailPath() {
+        if (mailPath == null) {
+            return null;
+        }
+        int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
+        if (index >= 0 && mailPath.endsWith("/")) {
+            return mailPath.substring(index + 1, mailPath.length() - 1);
+        } else {
+            LOGGER.warn(new BundleMessage("EXCEPTION_INVALID_MAIL_PATH", mailPath));
+            return null;
+        }
+    }
+
+    /**
+     * Get user email from global address list (galfind).
+     *
+     * @param alias user alias
+     * @return user email
+     */
+    public String getEmail(String alias) {
+        String emailResult = null;
+        if (alias != null) {
+            try {
+                Map<String, Map<String, String>> results = galFind("&AN=" + URIUtil.encodeWithinQuery(alias));
+                Map<String, String> result = results.get(alias.toLowerCase());
+                if (result != null) {
+                    emailResult = result.get("EM");
+                }
+            } catch (IOException e) {
+                LOGGER.debug("getEmail("+alias+") failed");
+            }
+        }
+        return emailResult;
     }
 
     protected String getURIPropertyIfExists(DavPropertySet properties, String alias) throws URIException {

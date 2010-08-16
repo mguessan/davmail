@@ -623,7 +623,8 @@ public abstract class ExchangeSession {
      */
     public abstract MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException;
 
-    protected enum Operator {
+    @SuppressWarnings({"JavaDoc"})
+    public enum Operator {
         Or, And, Not, IsEqualTo,
         IsGreaterThan, IsGreaterThanOrEqualTo,
         IsLessThan, IsLessThanOrEqualTo,
@@ -676,10 +677,20 @@ public abstract class ExchangeSession {
             return false;
         }
 
+        /**
+         * Get attribute name.
+         *
+         * @return attribute name
+         */
         public String getAttributeName() {
             return attributeName;
         }
 
+        /**
+         * Condition value.
+         *
+         * @return value
+         */
         public String getValue() {
             return value;
         }
@@ -703,10 +714,20 @@ public abstract class ExchangeSession {
             }
         }
 
+        /**
+         * Conditions list.
+         *
+         * @return conditions
+         */
         public List<Condition> getConditions() {
             return conditions;
         }
 
+        /**
+         * Condition operator.
+         *
+         * @return operator
+         */
         public Operator getOperator() {
             return operator;
         }
@@ -1742,6 +1763,11 @@ public abstract class ExchangeSession {
             return name;
         }
 
+        /**
+         * Set contact name
+         *
+         * @param name contact name
+         */
         public void setName(String name) {
             this.itemName = name;
         }
@@ -2037,10 +2063,10 @@ public abstract class ExchangeSession {
                 } else {
                     // reset body
                     description = "";
-                    
+
                     String status = vCalendar.getAttendeeStatus();
                     if (status != null) {
-                        writer.writeHeader("Subject", BundleMessage.format(status)+ subject);
+                        writer.writeHeader("Subject", BundleMessage.format(status) + subject);
                     } else {
                         writer.writeHeader("Subject", subject);
                     }
@@ -2568,47 +2594,6 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Get current Exchange alias name from mailbox name
-     *
-     * @return user name
-     */
-    protected String getAliasFromMailPath() {
-        if (mailPath == null) {
-            return null;
-        }
-        int index = mailPath.lastIndexOf('/', mailPath.length() - 2);
-        if (index >= 0 && mailPath.endsWith("/")) {
-            return mailPath.substring(index + 1, mailPath.length() - 1);
-        } else {
-            LOGGER.warn(new BundleMessage("EXCEPTION_INVALID_MAIL_PATH", mailPath));
-            return null;
-        }
-    }
-
-    /**
-     * Get user alias from mailbox display name over Webdav.
-     *
-     * @return user alias
-     */
-    public String getAliasFromMailboxDisplayName() {
-        if (mailPath == null) {
-            return null;
-        }
-        String displayName = null;
-        try {
-            Folder rootFolder = getFolder("");
-            if (rootFolder == null) {
-                LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
-            } else {
-                displayName = rootFolder.displayName;
-            }
-        } catch (IOException e) {
-            LOGGER.warn(new BundleMessage("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath));
-        }
-        return displayName;
-    }
-
-    /**
      * Test if folderPath is inside user mailbox.
      *
      * @param folderPath absolute folder path
@@ -2631,91 +2616,6 @@ public abstract class ExchangeSession {
             }
         } else {
             return mailPath;
-        }
-    }
-
-    /**
-     * Get user email from global address list (galfind).
-     *
-     * @param alias user alias
-     * @return user email
-     */
-    public String getEmail(String alias) {
-        String emailResult = null;
-        if (alias != null) {
-            GetMethod getMethod = null;
-            String path = null;
-            try {
-                path = getCmdBasePath() + "?Cmd=galfind&AN=" + URIUtil.encodeWithinQuery(alias);
-                getMethod = new GetMethod(path);
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-                Map<String, String> result = results.get(alias.toLowerCase());
-                if (result != null) {
-                    emailResult = result.get("EM");
-                }
-            } catch (IOException e) {
-                LOGGER.debug("GET " + path + " failed: " + e + ' ' + e.getMessage());
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
-            }
-        }
-        return emailResult;
-    }
-
-    /**
-     * Determine user email through various means.
-     *
-     * @param hostName Exchange server host name for last failover
-     */
-    public void buildEmail(String hostName) {
-        // first try to get email from login name
-        alias = getAliasFromLogin();
-        email = getEmail(alias);
-        // failover: use mailbox name as alias
-        if (email == null) {
-            alias = getAliasFromMailPath();
-            email = getEmail(alias);
-        }
-        // another failover : get alias from mailPath display name
-        if (email == null) {
-            alias = getAliasFromMailboxDisplayName();
-            email = getEmail(alias);
-        }
-        if (email == null) {
-            // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions();
-            email = getEmail(alias);
-            // failover: get email from options
-            if (alias != null && email == null) {
-                email = getEmailFromOptions();
-            }
-        }
-        if (email == null) {
-            LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
-                    + " or " + getAliasFromMailPath()
-                    + " or " + getAliasFromOptions()
-            );
-            // last failover: build email from domain name and mailbox display name
-            StringBuilder buffer = new StringBuilder();
-            // most reliable alias
-            alias = getAliasFromMailboxDisplayName();
-            if (alias == null) {
-                alias = getAliasFromLogin();
-            }
-            if (alias != null) {
-                buffer.append(alias);
-                if (alias.indexOf('@') < 0) {
-                    buffer.append('@');
-                    int dotIndex = hostName.indexOf('.');
-                    if (dotIndex >= 0) {
-                        buffer.append(hostName.substring(dotIndex + 1));
-                    }
-                }
-            }
-            email = buffer.toString();
         }
     }
 
@@ -2811,26 +2711,14 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Search users in global address book
+     * Search global address list
      *
-     * @param searchAttribute exchange search attribute
-     * @param searchValue     search value
-     * @return List of users
+     * @param condition           search filter
+     * @param returningAttributes returning attributes
+     * @param sizeLimit           size limit
+     * @return matching contacts from gal
      * @throws IOException on error
      */
-    public Map<String, Map<String, String>> galFind(String searchAttribute, String searchValue) throws IOException {
-        Map<String, Map<String, String>> results;
-        GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
-        } finally {
-            getMethod.releaseConnection();
-        }
-        LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
-        return results;
-    }
-
     public abstract Map<String, Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException;
 
     /**
