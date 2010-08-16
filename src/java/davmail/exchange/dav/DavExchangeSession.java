@@ -257,7 +257,7 @@ public class DavExchangeSession extends ExchangeSession {
                 for (Map<String, String> result : results.values()) {
                     Contact contact = new Contact();
                     contact.setName(result.get("AN"));
-                    contact.put("uid", result.get("AN"));
+                    contact.put("imapUid", result.get("AN"));
                     buildGalfindContact(contact, result);
                     if (needGalLookup(returningAttributes)) {
                         galLookup(contact);
