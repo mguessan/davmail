@@ -114,9 +114,10 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
                 "(&(objectclass=inetOrgPerson)(objectclass=extensibleObject)(objectclass=apple-user)(|(|(uid=fair*)(cn=fair*))(givenname=fair*)(sn=fair*)(cn=fair*)(mail=fair*))(objectclass=posixAccount)(objectclass=shadowAccount))", searchControls);
     }
 
-    public void testSearchByGivenName() throws NamingException {
+    public void testSearchByGivenNameWithoutReturningAttributes() throws NamingException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"uid"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(givenName=mic*)", searchControls);
     }
 
