@@ -703,6 +703,14 @@ public abstract class ExchangeSession {
             }
         }
 
+        public List<Condition> getConditions() {
+            return conditions;
+        }
+
+        public Operator getOperator() {
+            return operator;
+        }
+
         /**
          * Add a new condition.
          *

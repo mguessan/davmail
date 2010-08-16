@@ -315,14 +315,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         }
-
-        public List<Condition> getConditions() {
-            return conditions;
-        }
-
-        public Operator getOperator() {
-            return operator;
-        }
     }
 
     protected static class NotCondition extends ExchangeSession.NotCondition implements SearchExpression {

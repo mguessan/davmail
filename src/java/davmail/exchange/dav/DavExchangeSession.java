@@ -183,9 +183,8 @@ public class DavExchangeSession extends ExchangeSession {
     static final HashMap<String, String> GALFIND_CRITERIA_MAP = new HashMap<String, String>();
 
     static {
-        GALFIND_CRITERIA_MAP.put("uid", "AN");
-        // assume mail starts with firstname
-        GALFIND_CRITERIA_MAP.put("smtpemail1", "FN");
+        GALFIND_CRITERIA_MAP.put("imapUid", "AN");
+        GALFIND_CRITERIA_MAP.put("smtpemail1", "EM");
         GALFIND_CRITERIA_MAP.put("cn", "DN");
         GALFIND_CRITERIA_MAP.put("givenName", "FN");
         GALFIND_CRITERIA_MAP.put("sn", "LN");
@@ -240,21 +239,58 @@ public class DavExchangeSession extends ExchangeSession {
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
         if (condition instanceof MultiCondition) {
-            // TODO
+            List<Condition> conditions = ((ExchangeSession.MultiCondition) condition).getConditions();
+            Operator operator = ((ExchangeSession.MultiCondition) condition).getOperator();
+            if (operator == Operator.Or) {
+                for (Condition innerCondition : conditions) {
+                    contacts.putAll(galFind(innerCondition, returningAttributes, sizeLimit));
+                }
+            } else if (operator == Operator.And && !conditions.isEmpty()) {
+                Map<String, ExchangeSession.Contact> innerContacts = galFind(conditions.get(0), returningAttributes, sizeLimit);
+                for (ExchangeSession.Contact contact : innerContacts.values()) {
+                    if (condition.isMatch(contact)) {
+                        contacts.put(contact.getName().toLowerCase(), contact);
+                    }
+                }
+            }
         } else if (condition instanceof AttributeCondition) {
             String searchAttributeName = ((ExchangeSession.AttributeCondition) condition).getAttributeName();
             String searchAttribute = GALFIND_CRITERIA_MAP.get(searchAttributeName);
             if (searchAttribute != null) {
                 String searchValue = ((ExchangeSession.AttributeCondition) condition).getValue();
+                StringBuilder query = new StringBuilder();
+                query.append(getCmdBasePath());
+                query.append("?Cmd=galfind");
+                if ("EM".equals(searchAttribute)) {
+                    // mail search, split
+                    int atIndex = searchValue.indexOf('@');
+                    // remove suffix
+                    if (atIndex >= 0) {
+                        searchValue = searchValue.substring(0, atIndex);
+                    }
+                    // split firstname.lastname
+                    int dotIndex = searchValue.indexOf('.');
+                    if (dotIndex >= 0) {
+                        // assume mail starts with firstname
+                        query.append("&FN=").append(searchValue.substring(0, dotIndex));
+                        query.append("&LN=").append(searchValue.substring(dotIndex + 1));
+                    } else {
+                        query.append("&FN=").append(searchValue);
+                    }
+                } else {
+                    query.append('&').append(searchAttribute).append('=').append(searchValue);
+                }
+                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(query.toString()));
                 Map<String, Map<String, String>> results;
-                GetMethod getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=galfind&" + searchAttribute + '=' + searchValue));
                 try {
                     DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
                     results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
                 } finally {
                     getMethod.releaseConnection();
                 }
-                LOGGER.debug("galfind " + searchAttribute + '=' + searchValue + ": " + results.size() + " result(s)");
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(query.toString() + ": " + results.size() + " result(s)");
+                }
                 for (Map<String, String> result : results.values()) {
                     Contact contact = new Contact();
                     contact.setName(result.get("AN"));
@@ -278,7 +314,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (GALLOOKUP_ATTRIBUTES.contains(searchAttributeName)) {
             return true;
         } else if (returningAttributes == null) {
-            return false;
+            return true;
             // iCal search, do not call gallookup
         } else if (returningAttributes.contains("apple-serviceslocator")) {
             return false;
@@ -305,7 +341,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     public void galLookup(Contact contact) {
         if (!disableGalLookup) {
-            LOGGER.debug("galLookup("+contact.get("smtpemail1")+ ')');
+            LOGGER.debug("galLookup(" + contact.get("smtpemail1") + ')');
             GetMethod getMethod = null;
             try {
                 getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
@@ -628,15 +664,9 @@ public class DavExchangeSession extends ExchangeSession {
                 return false;
             }
             actualValue = actualValue.toLowerCase();
-            if (operator == Operator.IsEqualTo) {
-                return actualValue.equals(lowerCaseValue);
-            } else if (operator == Operator.Like) {
-                return actualValue.contains(lowerCaseValue);
-            } else if (operator == Operator.StartsWith) {
-                return actualValue.startsWith(lowerCaseValue);
-            } else {
-                return false;
-            }
+            return (operator == Operator.IsEqualTo && actualValue.equals(lowerCaseValue)) ||
+                    (operator == Operator.Like && actualValue.contains(lowerCaseValue)) ||
+                    (operator == Operator.StartsWith && actualValue.startsWith(lowerCaseValue));
         }
     }
 
@@ -790,6 +820,9 @@ public class DavExchangeSession extends ExchangeSession {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
 
+        /**
+         * Default constructor for galFind
+         */
         public Contact() {
         }
 
