@@ -553,7 +553,8 @@ public class CaldavConnection extends AbstractConnection {
         response.startMultistatus();
         appendInbox(response, request, null);
         // do not try to access inbox on shared calendar
-        if (!session.isSharedFolder(request.getFolderPath(null)) && request.getDepth() == 1 && !Settings.getBooleanProperty("davmail.caldavDisableInbox")) {
+        if (!session.isSharedFolder(request.getFolderPath(null)) && request.getDepth() == 1
+                && !request.isBrokenLightning()) {
             try {
                 DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
                 List<ExchangeSession.Event> events = session.getEventMessages(request.getFolderPath());
@@ -1319,6 +1320,10 @@ public class CaldavConnection extends AbstractConnection {
 
         protected boolean isBrokenHrefEncoding() {
             return isUserAgent("DAVKit/3") || isUserAgent("eM Client/") || isUserAgent("Lightning/1.0b2");
+        }
+
+        protected boolean isBrokenLightning() {
+            return isUserAgent("Lightning/1.0b2");
         }
 
         protected boolean isLightning() {
