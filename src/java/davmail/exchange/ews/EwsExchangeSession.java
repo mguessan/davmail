@@ -608,6 +608,8 @@ public class EwsExchangeSession extends ExchangeSession {
         if (item != null) {
             folder = buildFolder(folderId.mailbox, item);
             folder.folderPath = folderPath;
+        } else {
+            throw new HttpNotFoundException("Folder "+folderPath+" not found");
         }
         return folder;
     }
