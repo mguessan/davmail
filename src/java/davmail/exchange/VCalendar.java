@@ -138,7 +138,7 @@ public class VCalendar extends VObject {
                 }
                 if (fromServer) {
                     // remove organizer line for event without attendees for iPhone
-                    if (getProperty("ATTENDEE") == null) {
+                    if (vObject.getProperty("ATTENDEE") == null) {
                         vObject.setPropertyValue("ORGANIZER", null);
                     }
                     // detect allday and update date properties
