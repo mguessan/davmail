@@ -19,16 +19,14 @@
 package davmail.exchange.ews;
 
 /**
- * MessageDisposition flag.
+ * Item update option.
  */
-@SuppressWarnings({"JavaDoc"})
-public class MessageDisposition extends AttributeOption {
-
-    private MessageDisposition(String value) {
-        super("MessageDisposition", value);
+public class SendMeetingCancellations extends AttributeOption {
+    private SendMeetingCancellations(String value) {
+        super("SendMeetingCancellations", value);
     }
 
-    public static final MessageDisposition SaveOnly = new MessageDisposition("SaveOnly");
-    public static final MessageDisposition SendOnly = new MessageDisposition("SendOnly");
-    public static final MessageDisposition SendAndSaveCopy = new MessageDisposition("SendAndSaveCopy");
+    public static final SendMeetingCancellations SendToNone = new SendMeetingCancellations("SendToNone");
+    public static final SendMeetingCancellations SendOnlyToAll = new SendMeetingCancellations("SendOnlyToAll");
+    public static final SendMeetingCancellations SendToAllAndSaveCopy = new SendMeetingCancellations("SendToAllAndSaveCopy");
 }

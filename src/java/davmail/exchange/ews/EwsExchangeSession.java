@@ -194,7 +194,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
         LOGGER.debug("Delete " + message.permanentUrl);
-        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(((EwsExchangeSession.Message) message).itemId, DeleteType.HardDelete);
+        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(((EwsExchangeSession.Message) message).itemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
         executeMethod(deleteItemMethod);
     }
 
@@ -1081,7 +1081,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public void deleteItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item != null) {
-            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete);
+            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
             executeMethod(deleteItemMethod);
         }
     }
