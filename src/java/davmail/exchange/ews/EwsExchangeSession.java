@@ -887,6 +887,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
+                LOGGER.debug("Existing item found: "+itemId.id);
             }
             if ("*".equals(noneMatch)) {
                 // create requested
