@@ -1140,7 +1140,6 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void loadVtimezone() {
         String timezoneId = getTimezoneidFromOptions();
         try {
-            deleteFolder("davmailtemp");
             createCalendarFolder("davmailtemp", null);
             EWSMethod.Item item = new EWSMethod.Item();
             item.type = "CalendarItem";

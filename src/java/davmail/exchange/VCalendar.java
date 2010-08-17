@@ -127,6 +127,11 @@ public class VCalendar extends VObject {
         String calendarServerAccess = getPropertyValue("X-CALENDARSERVER-ACCESS");
         String now = ExchangeSession.getZuluDateFormat().format(new Date());
 
+        // fix method from iPhone
+        if (!fromServer && getPropertyValue("METHOD") == null) {
+            setPropertyValue("METHOD", "PUBLISH");
+        }
+
         // iterate over vObjects
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
