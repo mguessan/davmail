@@ -904,14 +904,17 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             if (currentItemId != null) {
-                Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-                updates.add(new FieldUpdate(Field.get("mimeContent"), String.valueOf(Base64.encodeBase64(itemContent))));
+                /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+                updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64(itemContent))));
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AlwaysOverwrite,
+                        ConflictResolution.AutoResolve,
                         SendMeetingInvitationsOrCancellations.SendToNone,
-                        currentItemId, updates);
-            } else {
+                        currentItemId, updates);*/
+                // hard method: delete/create on update
+                DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
+                executeMethod(deleteItemMethod);
+            } //else {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "CalendarItem";
@@ -922,14 +925,14 @@ public class EwsExchangeSession extends ExchangeSession {
                 //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
                 newItem.setFieldUpdates(updates);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
-            }
+            //}
 
             executeMethod(createOrUpdateItemMethod);
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
                 //noinspection VariableNotUsedInsideIf
-                if (etag == null) {
+                if (currentItemId == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
                     LOGGER.debug("Updated event " + getHref());
                 } else {
