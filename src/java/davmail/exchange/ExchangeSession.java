@@ -2672,7 +2672,7 @@ public abstract class ExchangeSession {
                     || line.indexOf(']') == -1)) {
             }
             if (line != null) {
-                int start = line.toLowerCase().indexOf('[') + 1;
+                int start = line.indexOf('[') + 1;
                 int end = line.indexOf(']', start);
                 result = line.substring(start, end);
             }

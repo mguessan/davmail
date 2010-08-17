@@ -86,9 +86,15 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
       }
 
     public void testSearchCalendar() throws IOException {
-        List<ExchangeSession.Event> events = session.getAllEvents("/users/" + session.getEmail() + "/calendar/test");
+        List<ExchangeSession.Event> events = null;
+        try {
+            events = session.getAllEvents("/users/" + session.getEmail() + "/calendar");
         for (ExchangeSession.Event event:events) {
             System.out.println(event.getBody());
+        }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
         }
     }
 

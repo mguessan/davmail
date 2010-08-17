@@ -55,7 +55,7 @@ public class VObject {
         type = beginProperty.getValue();
         String endLine = "END:" + type;
         String line = reader.readLine();
-        while (line != null && !endLine.equals(line)) {
+        while (line != null && !line.startsWith(endLine)) {
             handleLine(line, reader);
             line = reader.readLine();
         }

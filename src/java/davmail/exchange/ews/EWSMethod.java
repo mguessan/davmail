@@ -88,8 +88,8 @@ public abstract class EWSMethod extends PostMethod {
     /**
      * Build EWS method
      *
-     * @param itemType   item type
-     * @param methodName method name
+     * @param itemType               item type
+     * @param methodName             method name
      * @param responseCollectionName item response collection name
      */
     public EWSMethod(String itemType, String methodName, String responseCollectionName) {
@@ -374,7 +374,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void writeIndexedPageItemView(Writer writer) throws IOException {
         if (maxCount > 0) {
-            writer.write("<m:IndexedPageItemView MaxEntriesReturned=\""); 
+            writer.write("<m:IndexedPageItemView MaxEntriesReturned=\"");
             writer.write(String.valueOf(maxCount));
             writer.write("\" Offset=\"0\" BasePoint=\"Beginning\"/>");
         }
@@ -404,7 +404,8 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     /**
-     * Get Exchange server version, Exchange2010 or Exchange2007_SP1 
+     * Get Exchange server version, Exchange2010 or Exchange2007_SP1
+     *
      * @return server version
      */
     public String getServerVersion() {
@@ -413,6 +414,7 @@ public abstract class EWSMethod extends PostMethod {
 
     /**
      * Set Exchange server version, Exchange2010 or Exchange2007_SP1
+     *
      * @param serverVersion server version
      */
     public void setServerVersion(String serverVersion) {
@@ -447,13 +449,19 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(type);
             writer.write(">");
             for (Map.Entry<String, String> mapEntry : this.entrySet()) {
-                writer.write("<t:");
-                writer.write(mapEntry.getKey());
-                writer.write(">");
-                writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
-                writer.write("</t:");
-                writer.write(mapEntry.getKey());
-                writer.write(">");
+                if ("MeetingTimeZone".equals(mapEntry.getKey())) {
+                    writer.write("<t:MeetingTimeZone TimeZoneName=\"");
+                    writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
+                    writer.write("\"></t:MeetingTimeZone>");
+                } else {
+                    writer.write("<t:");
+                    writer.write(mapEntry.getKey());
+                    writer.write(">");
+                    writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
+                    writer.write("</t:");
+                    writer.write(mapEntry.getKey());
+                    writer.write(">");
+                }
             }
             if (mimeContent != null) {
                 writer.write("<t:MimeContent>");
@@ -801,7 +809,7 @@ public abstract class EWSMethod extends PostMethod {
                 while (reader.hasNext()) {
                     reader.next();
                     handleErrors(reader);
-                    if (serverVersion == null && isStartTag(reader,"ServerVersionInfo")) {
+                    if (serverVersion == null && isStartTag(reader, "ServerVersionInfo")) {
                         String majorVersion = getAttributeValue(reader, "MajorVersion");
                         if ("14".equals(majorVersion)) {
                             serverVersion = "Exchange2010";

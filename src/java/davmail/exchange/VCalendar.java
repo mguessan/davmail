@@ -306,6 +306,14 @@ public class VCalendar extends VObject {
     }
 
     /**
+     * Return VTimezone object
+     * @return VTimezone
+     */
+    public VObject getVTimezone() {
+        return vTimezone;
+    }
+
+    /**
      * Convert X-CALENDARSERVER-ACCESS to CLASS.
      * see http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-privateevents.txt
      *

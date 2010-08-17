@@ -22,6 +22,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.VCalendar;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -30,7 +31,9 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -604,7 +607,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, folderId, FOLDER_PROPERTIES);
         executeMethod(getFolderMethod);
         EWSMethod.Item item = getFolderMethod.getResponseItem();
-        Folder folder = null;
+        Folder folder;
         if (item != null) {
             folder = buildFolder(folderId.mailbox, item);
             folder.folderPath = folderPath;
@@ -1135,7 +1138,60 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected void loadVtimezone() {
-        throw new UnsupportedOperationException();
+        String timezoneId = getTimezoneidFromOptions();
+        try {
+            deleteFolder("davmailtemp");
+            createCalendarFolder("davmailtemp", null);
+            EWSMethod.Item item = new EWSMethod.Item();
+            item.type = "CalendarItem";
+            item.put("MeetingTimeZone", timezoneId);
+            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
+            executeMethod(createItemMethod);
+            item = createItemMethod.getResponseItem();
+            VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
+            this.vTimezone = vCalendar.getVTimezone();
+            // delete temporary folder
+            deleteFolder("davmailtemp");
+        } catch (IOException e) {
+            LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
+        }
+    }
+
+    protected static final String TMZN = "tblTmZn";
+
+    protected String getTimezoneidFromOptions() {
+        String result = null;
+        // get user mail URL from html body
+        BufferedReader optionsPageReader = null;
+        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=Regional");
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+            String line;
+            // find email
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null
+                    && (line.indexOf(TMZN) == -1)) {
+            }
+            if (line != null) {
+                int start = line.indexOf("oV=\"") + 4;
+                int end = line.indexOf('\"', start);
+                result = line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+        } finally {
+            if (optionsPageReader != null) {
+                try {
+                    optionsPageReader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                }
+            }
+            optionsMethod.releaseConnection();
+        }
+
+        return result;
     }
 
 
@@ -1274,11 +1330,12 @@ public class EwsExchangeSession extends ExchangeSession {
         return contact;
     }
 
+    @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
         if (condition instanceof MultiCondition) {
-            List<Condition> conditions = ((MultiCondition) condition).getConditions();
-            Operator operator = ((MultiCondition) condition).getOperator();
+            List<Condition> conditions = ((ExchangeSession.MultiCondition) condition).getConditions();
+            Operator operator = ((ExchangeSession.MultiCondition) condition).getOperator();
             if (operator == Operator.Or) {
                 for (Condition innerCondition : conditions) {
                     contacts.putAll(galFind(innerCondition, returningAttributes, sizeLimit));
@@ -1292,9 +1349,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         } else if (condition instanceof AttributeCondition) {
-            String mappedAttributeName = GALFIND_ATTRIBUTE_MAP.get(((AttributeCondition) condition).getAttributeName());
+            String mappedAttributeName = GALFIND_ATTRIBUTE_MAP.get(((ExchangeSession.AttributeCondition) condition).getAttributeName());
             if (mappedAttributeName != null) {
-                String value = ((AttributeCondition) condition).getValue().toLowerCase();
+                String value = ((ExchangeSession.AttributeCondition) condition).getValue().toLowerCase();
                 Operator operator = ((AttributeCondition) condition).getOperator();
                 String searchValue = value;
                 if (mappedAttributeName.startsWith("EmailAddress")) {
