@@ -2239,8 +2239,7 @@ public abstract class ExchangeSession {
             if (timeRangeEnd != null) {
                 andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
             }
-            andCondition.add(isEqualTo("instancetype", 0));
-            return searchEvents(folderPath, ITEM_PROPERTIES, andCondition);
+            return searchEvents(folderPath, andCondition);
         } catch (ParseException e) {
             throw new IOException(e);
         }

@@ -137,12 +137,13 @@ public class TestCaldav extends AbstractDavMailTestCase {
         buffer.append("<C:comp-filter name=\"VCALENDAR\">");
         buffer.append("<C:comp-filter name=\"VEVENT\">");
         buffer.append("<C:time-range start=\"").append(formatter.format(start)).append("\" end=\"").append(formatter.format(end)).append("\"/>");
+        //buffer.append("<C:time-range start=\"").append(formatter.format(start)).append("\"/>");
         buffer.append("</C:comp-filter>");
         buffer.append("</C:comp-filter>");
         buffer.append("<C:filter>");
         buffer.append("</C:filter>");
         buffer.append("</C:calendar-query>");
-        SearchReportMethod method = new SearchReportMethod("/users/" + session.getEmail() + "/calendar/",buffer.toString());
+        SearchReportMethod method = new SearchReportMethod("/users/" + session.getEmail() + "/calendar/", buffer.toString());
         httpClient.executeMethod(method);
         assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
         MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
@@ -150,14 +151,11 @@ public class TestCaldav extends AbstractDavMailTestCase {
 
         Set<String> ITEM_PROPERTIES = new HashSet<String>();
         ITEM_PROPERTIES.add("instancetype");
-        List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/", ITEM_PROPERTIES,
+        List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/",
                 session.and(
-                        session.and(
-                                session.gt("dtstart", session.formatSearchDate(start)),
-                                session.lt("dtend", session.formatSearchDate(end))
-                        )
-                        , session.or(session.isEqualTo("instancetype", 1), session.isEqualTo("instancetype", 0))
-                        )
+                        session.gt("dtstart", session.formatSearchDate(start)),
+                        session.lt("dtend", session.formatSearchDate(end))
+                )
         );
 
         assertEquals(events.size(), responses.length);
@@ -165,23 +163,23 @@ public class TestCaldav extends AbstractDavMailTestCase {
 
     public void testCreateCalendar() throws IOException {
         String folderName = "test & accentué";
-        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/"+folderName+ '/');
+        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/" + folderName + '/');
         // first delete calendar
-        session.deleteFolder("calendar/"+folderName);
+        session.deleteFolder("calendar/" + folderName);
         String body =
                 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
-                "   <C:mkcalendar xmlns:D=\"DAV:\"\n" +
-                "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
-                "     <D:set>\n" +
-                "       <D:prop>\n" +
-                "         <D:displayname>"+ StringUtil.xmlEncode(folderName)+"</D:displayname>\n" +
-                "         <C:calendar-description xml:lang=\"en\">Calendar description</C:calendar-description>\n" +
-                "         <C:supported-calendar-component-set>\n" +
-                "           <C:comp name=\"VEVENT\"/>\n" +
-                "         </C:supported-calendar-component-set>\n" +
-                "       </D:prop>\n" +
-                "     </D:set>\n" +
-                "   </C:mkcalendar>";
+                        "   <C:mkcalendar xmlns:D=\"DAV:\"\n" +
+                        "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
+                        "     <D:set>\n" +
+                        "       <D:prop>\n" +
+                        "         <D:displayname>" + StringUtil.xmlEncode(folderName) + "</D:displayname>\n" +
+                        "         <C:calendar-description xml:lang=\"en\">Calendar description</C:calendar-description>\n" +
+                        "         <C:supported-calendar-component-set>\n" +
+                        "           <C:comp name=\"VEVENT\"/>\n" +
+                        "         </C:supported-calendar-component-set>\n" +
+                        "       </D:prop>\n" +
+                        "     </D:set>\n" +
+                        "   </C:mkcalendar>";
 
         SearchReportMethod method = new SearchReportMethod(encodedFolderpath, body) {
             @Override
