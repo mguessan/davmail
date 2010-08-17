@@ -179,6 +179,9 @@ public class VCalendar extends VObject {
                         // convert date values to outlook compatible values
                         setServerAllday(vObject.getProperty("DTSTART"));
                         setServerAllday(vObject.getProperty("DTEND"));
+                    } else {
+                        fixTzid(vObject.getProperty("DTSTART"));
+                        fixTzid(vObject.getProperty("DTEND"));
                     }
                 }
 
@@ -188,6 +191,12 @@ public class VCalendar extends VObject {
             }
         }
 
+    }
+
+    private void fixTzid(VProperty property) {
+        if (property != null && !property.hasParam("TZID")) {
+            property.addParam("TZID", vTimezone.getPropertyValue("TZID"));
+        }
     }
 
     protected void splitExDate(VObject vObject) {

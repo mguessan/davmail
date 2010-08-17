@@ -149,8 +149,6 @@ public class TestCaldav extends AbstractDavMailTestCase {
         MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
         MultiStatusResponse[] responses = multiStatus.getResponses();
 
-        Set<String> ITEM_PROPERTIES = new HashSet<String>();
-        ITEM_PROPERTIES.add("instancetype");
         List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/",
                 session.and(
                         session.gt("dtstart", session.formatSearchDate(start)),

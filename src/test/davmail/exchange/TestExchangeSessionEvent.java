@@ -276,4 +276,16 @@ public class TestExchangeSessionEvent extends TestCase {
         System.out.println("'"+BundleMessage.format(status)+"'");
     }
 
+    public void testMissingTzid() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VEVENT\n" +
+                "DTSTART:20100101T000000\n" +
+                "DTEND:20100102T000000\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toServer = fixICS(itemBody, false);
+        System.out.println(toServer);
+        assertTrue(toServer.contains("DTSTART;TZID="));
+        assertTrue(toServer.contains("DTEND;TZID="));
+    }
 }
