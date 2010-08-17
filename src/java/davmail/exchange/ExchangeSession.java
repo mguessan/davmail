@@ -484,7 +484,7 @@ public abstract class ExchangeSession {
 
     protected void checkFormLoginQueryString(HttpMethod logonMethod) throws DavMailAuthenticationException {
         String queryString = logonMethod.getQueryString();
-        if (queryString != null && queryString.contains("reason=2")) {
+        if (queryString != null && (queryString.contains("reason=2") || queryString.contains("reason=4"))) {
             logonMethod.releaseConnection();
             throwAuthenticationFailed();
         }

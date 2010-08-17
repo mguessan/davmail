@@ -480,6 +480,19 @@ public final class DavGatewayHttpClientFacade {
         authPrefs.add(AuthPolicy.DIGEST);
         authPrefs.add(AuthPolicy.BASIC);
         httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
+
+        // separate domain from username in credentials
+        AuthScope authScope = new AuthScope(null, -1);
+        NTCredentials credentials = (NTCredentials) httpClient.getState().getCredentials(authScope);
+        String userName = credentials.getUserName();
+        int backSlashIndex = userName.indexOf('\\');
+        if (backSlashIndex >=0) {
+            String domain = userName.substring(0, backSlashIndex);
+            userName = userName.substring(backSlashIndex+1);
+            credentials = new NTCredentials(userName, credentials.getPassword(), "", domain);
+            httpClient.getState().setCredentials(authScope, credentials); 
+        }
+
         // make sure NTLM is always active
         needNTLM = true;
     }
