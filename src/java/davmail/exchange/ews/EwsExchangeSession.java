@@ -369,7 +369,7 @@ public class EwsExchangeSession extends ExchangeSession {
             FieldURI fieldURI = getFieldURI();
             fieldURI.appendTo(buffer);
 
-            if (operator == Operator.IsEqualTo) {
+            if (operator != Operator.Contains) {
                 buffer.append("<t:FieldURIOrConstant>");
             }
             buffer.append("<t:Constant Value=\"");
@@ -380,7 +380,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 buffer.append(StringUtil.xmlEncode(value));
             }
             buffer.append("\"/>");
-            if (operator == Operator.IsEqualTo) {
+            if (operator != Operator.Contains) {
                 buffer.append("</t:FieldURIOrConstant>");
             }
 
