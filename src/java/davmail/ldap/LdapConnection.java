@@ -52,6 +52,7 @@ public class LdapConnection extends AbstractConnection {
      */
     static final String OD_BASE_CONTEXT = "o=od";
     static final String OD_USER_CONTEXT = "cn=users, o=od";
+    static final String OD_CONFIG_CONTEXT = "cn=config, o=od";
     static final String COMPUTER_CONTEXT = "cn=computers, o=od";
 
     /**
@@ -330,7 +331,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * Search threads map
      */
-    protected final HashMap<Integer, SearchThread> searchThreadMap = new HashMap<Integer, SearchThread>();
+    protected final HashMap<Integer, SearchRunnable> searchThreadMap = new HashMap<Integer, SearchRunnable>();
 
     /**
      * Initialize the streams and start the thread.
@@ -503,21 +504,28 @@ public class LdapConnection extends AbstractConnection {
                 reqBer.parseBoolean();
                 LdapFilter ldapFilter = parseFilter(reqBer);
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
-                // launch search in a separate thread
-                SearchThread searchThread = new SearchThread(getName(), currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter, returningAttributes);
-                synchronized (searchThreadMap) {
-                    searchThreadMap.put(currentMessageId, searchThread);
+                SearchRunnable searchRunnable = new SearchRunnable(currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter, returningAttributes);
+                if (BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) {
+                    // launch search in a separate thread
+                    synchronized (searchThreadMap) {
+                        searchThreadMap.put(currentMessageId, searchRunnable);
+                    }
+                    Thread searchThread = new Thread(searchRunnable);
+                    searchThread.setName(getName() + "-Search-" + currentMessageId);
+                    searchThread.start();
+                } else {
+                    // no need to create a separate thread, just run
+                    searchRunnable.run();
                 }
-                searchThread.start();
 
             } else if (requestOperation == LDAP_REQ_ABANDON) {
                 int abandonMessageId = 0;
                 try {
                     abandonMessageId = (Integer) PARSE_INT_WITH_TAG_METHOD.invoke(reqBer, LDAP_REQ_ABANDON);
                     synchronized (searchThreadMap) {
-                        SearchThread searchThread = searchThreadMap.get(abandonMessageId);
-                        if (searchThread != null) {
-                            searchThread.abandon();
+                        SearchRunnable searchRunnable = searchThreadMap.get(abandonMessageId);
+                        if (searchRunnable != null) {
+                            searchRunnable.abandon();
                             searchThreadMap.remove(currentMessageId);
                         }
                     }
@@ -1169,11 +1177,6 @@ public class LdapConnection extends AbstractConnection {
             // Should never be called
             DavGatewayTray.error(new BundleMessage("LOG_LDAP_UNSUPPORTED_FILTER", "nested simple filters"));
         }
-
-        public String getGalFindAttributeName() {
-            return CRITERIA_MAP.get(attributeName);
-        }
-
     }
 
     /**
@@ -1231,7 +1234,7 @@ public class LdapConnection extends AbstractConnection {
         return contactReturningAttributes;
     }
 
-    protected class SearchThread extends Thread {
+    protected class SearchRunnable implements Runnable {
         private final int currentMessageId;
         private final String dn;
         private final int scope;
@@ -1241,8 +1244,7 @@ public class LdapConnection extends AbstractConnection {
         private final Set<String> returningAttributes;
         private boolean abandon;
 
-        protected SearchThread(String threadName, int currentMessageId, String dn, int scope, int sizeLimit, int timelimit, LdapFilter ldapFilter, Set<String> returningAttributes) {
-            super(threadName + "-Search-" + currentMessageId);
+        protected SearchRunnable(int currentMessageId, String dn, int scope, int sizeLimit, int timelimit, LdapFilter ldapFilter, Set<String> returningAttributes) {
             this.currentMessageId = currentMessageId;
             this.dn = dn;
             this.scope = scope;
@@ -1259,7 +1261,6 @@ public class LdapConnection extends AbstractConnection {
             abandon = true;
         }
 
-        @Override
         public void run() {
             try {
                 int size = 0;
@@ -1290,7 +1291,7 @@ public class LdapConnection extends AbstractConnection {
 
                             // then in GAL
                             if (persons == null || persons.isEmpty()) {
-                                persons = session.galFind(session.isEqualTo("uid", uid),
+                                persons = session.galFind(session.isEqualTo("imapUid", uid),
                                         convertLdapToContactReturningAttributes(returningAttributes), sizeLimit);
 
                                 ExchangeSession.Contact person = persons.get(uid.toLowerCase());
@@ -1328,7 +1329,7 @@ public class LdapConnection extends AbstractConnection {
                             // full search
                             for (char c = 'A'; c <= 'Z'; c++) {
                                 if (!abandon && persons.size() < sizeLimit) {
-                                    for (ExchangeSession.Contact person : session.galFind(session.startsWith("uid", String.valueOf(c)),
+                                    for (ExchangeSession.Contact person : session.galFind(session.startsWith("imapUid", String.valueOf(c)),
                                             convertLdapToContactReturningAttributes(returningAttributes), sizeLimit).values()) {
                                         persons.put(person.get("uid"), person);
                                         if (persons.size() == sizeLimit) {
@@ -1373,7 +1374,7 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
                     }
-                } else if (dn != null && dn.length() > 0) {
+                } else if (dn != null && dn.length() > 0 && !OD_CONFIG_CONTEXT.equals(dn)) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 

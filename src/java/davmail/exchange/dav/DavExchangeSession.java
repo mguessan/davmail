@@ -244,6 +244,9 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
             results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(path + ": " + results.size() + " result(s)");
+            }
         } catch (IOException e) {
             LOGGER.debug("GET " + path + " failed: " + e + ' ' + e.getMessage());
             disableGalFind = true;
@@ -301,9 +304,6 @@ public class DavExchangeSession extends ExchangeSession {
                     query.append('&').append(searchAttribute).append('=').append(URIUtil.encodeWithinQuery(searchValue));
                 }
                 Map<String, Map<String, String>> results = galFind(query.toString());
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(query.toString() + ": " + results.size() + " result(s)");
-                }
                 for (Map<String, String> result : results.values()) {
                     Contact contact = new Contact();
                     contact.setName(result.get("AN"));
