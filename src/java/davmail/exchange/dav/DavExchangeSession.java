@@ -239,7 +239,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected Map<String, Map<String, String>> galFind(String query) throws IOException {
         Map<String, Map<String, String>> results;
-        String path = getCmdBasePath() + "?Cmd=galfind" + query; 
+        String path = getCmdBasePath() + "?Cmd=galfind" + query;
         GetMethod getMethod = new GetMethod(path);
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
@@ -580,7 +580,7 @@ public class DavExchangeSession extends ExchangeSession {
                     emailResult = result.get("EM");
                 }
             } catch (IOException e) {
-                LOGGER.debug("getEmail("+alias+") failed");
+                LOGGER.debug("getEmail(" + alias + ") failed");
             }
         }
         return emailResult;
@@ -1115,6 +1115,10 @@ public class DavExchangeSession extends ExchangeSession {
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
+        }
+
+        protected String getPermanentUrl() {
+            return permanentUrl;
         }
 
 
@@ -1678,18 +1682,33 @@ public class DavExchangeSession extends ExchangeSession {
     public Item getItem(String folderPath, String itemName) throws IOException {
         String emlItemName = convertItemNameToEML(itemName);
         String itemPath = getFolderPath(folderPath) + '/' + emlItemName;
-        MultiStatusResponse[] responses;
+        MultiStatusResponse[] responses = null;
         try {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             if (responses.length == 0) {
                 throw new HttpNotFoundException(itemPath + " not found");
             }
         } catch (HttpNotFoundException e) {
-            LOGGER.debug(itemPath + " not found, searching by urlcompname");
-            // failover: try to get event by displayname
-            responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", emlItemName), FolderQueryTraversal.Shallow, 1);
-            if (responses.length == 0) {
-                throw new HttpNotFoundException(itemPath + " not found");
+            try {
+                LOGGER.debug(itemPath + " not found, searching by urlcompname");
+                // failover: try to get event by displayname
+                responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", emlItemName), FolderQueryTraversal.Shallow, 1);
+                if (responses.length == 0) {
+                    throw new HttpNotFoundException(itemPath + " not found");
+                }
+            } catch (HttpNotFoundException e2) {
+                LOGGER.debug("last failover: search all items");
+                List<ExchangeSession.Event> events = getAllEvents(folderPath);
+                for (ExchangeSession.Event event : events) {
+                    if (itemName.equals(event.getName())) {
+                        responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, ((DavExchangeSession.Event) event).getPermanentUrl(), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+                        break;
+                    }
+                }
+                if (responses == null || responses.length == 0) {
+                    throw new HttpNotFoundException(itemPath + " not found");
+                }
+                LOGGER.warn("search by urlcompname failed, actual value is "+getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname"));
             }
         }
         // build item

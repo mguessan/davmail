@@ -137,6 +137,7 @@ public final class StringUtil {
 
     private static final Pattern F8FF_PATTERN = Pattern.compile("_xF8FF_");
     private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
+    private static final Pattern COLON_PATTERN = Pattern.compile(":");
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
@@ -254,6 +255,9 @@ public final class StringUtil {
         }
         if (result.indexOf('+') >= 0) {
             result = PLUS_PATTERN.matcher(result).replaceAll("%2B");
+        }
+        if (result.indexOf(':') >= 0) {
+            result = COLON_PATTERN.matcher(result).replaceAll("%3A");
         }
         return result;
     }
