@@ -1,3 +1,90 @@
+** DavMail 3.8.1 released **
+Includes a full refactoring of Vcalendar content handling, much progress on
+Exchange Web Services support, LDAP optimizations and many other bufixes.
+
+Exchange Web Services:
+- EWS: hard method: delete/create on update
+- EWS: Fix DeleteItem for CalendarItem
+- EWS: implement loadVtimezone, get user timezone id from OWA settings
+- EWS: Fix FieldURIOrConstant test
+- EWS: separate domain from userName in NTLM mode
+- EWS: MultiCondition galFind
+- EWS: implement basic galFind search
+- EWS: implement resolvenames response parsing
+- EWS: fix subfolder search on Exchange 2010
+- EWS: implement user availability (freebusy) and shared folder access
+- EWS: implement sendEvent
+- EWS: force urlcompname only on create
+- EWS: implement ResolveNames method
+- EWS: Apply workaround to events
+- EWS: workaround for missing urlcompname on Exchange 2010, use encoded ItemId instead
+- EWS: rename equals to isEqualTo and format search date
+- EWS: dynamic version detection
+- EWS: Exchange 2010 message handling
+- EWS: Exchange 2010 folder handling
+- EWS: Exchange 2010 compatibility: add test cookie, access /ews/exchange.asmx endpoint
+
+Caldav:
+- Caldav: Fix missing TZID in DTSTART from iPhone
+- Caldav: return reoccuring events on time-range request
+- Caldav: Fix METHOD on create from iPhone
+- Caldav: need to encode colon (:) in urlcompname search, implement a last failover on item search
+- Caldav: implement 2899430, change the subject line when replying to invites
+- Caldav: workaround for Lightning 1.0b2 bug
+- Caldav: disable caldav inbox with Lightning 1.0b2
+- Caldav: fix regression in fixVCalendar (missing organizer)
+- Caldav: skip empty lines
+- Caldav: Fix regressions in Vcalendar handling
+- Caldav: fix nullpointer in VCalendar
+- Caldav: fix regressions and do not filter on outlookmessageclass
+- Caldav: major refactoring of event content handling and notifications
+- Caldav: switch to new VCalendar parser/patcher
+- Caldav: implement VALARM in VCalendar
+- Caldav: more vcalendar patches
+- Caldav: start new VCalendar fixICS implementation
+- Caldav: call fixICS on download
+- Caldav: reenable Lightning 1.0b2 bug workaround
+- Caldav: failover for 404 not found on items containing '+' in url, search item by urlcompname to get permanenturl
+
+LDAP:
+- LDAP: create a separate thread only for person/contact searches
+- LDAP: implement galFind MultiCondition over webdav and improve search by mail
+- LDAP: need to galLookup when search attribute is not in galfind result
+- LDAP: another search attribute mapping fix
+- LDAP: code cleanup and some galfind search fixes
+- LDAP: fix 3043659, include entries starting with Z
+- LDAP: Improve sizeLimit handling and ignore attributes
+- LDAP: a few more attribute fixes
+- LDAP: move galLookup to DavExchangeSession
+- LDAP: progress on EWS LDAP implementation and refactoring
+- LDAP: fix regression on OSX directory request on iCal start: filter invalid imapUid condition
+- LDAP: use sizeLimit in contactFind
+- LDAP: Fix OSX directory search on uid
+
+Enhancements:
+- Improve error handling
+- Add custom cookie policy to support extended host name
+- Fixes from audit
+
+Bugfixes:
+- Fix regression in getAliasFromMailboxDisplayName
+- Deb: Fix regression in debian desktop link
+
+Dav:
+- Dav: disable galFind on error
+
+SMTP:
+- SMTP: compare actual email address, not email with alias
+- SMTP: no need to remove From header with new sendMessage implementation
+
+SWT:
+- SWT: fix 2992428, hide instead of dispose on close
+
+Carddav:
+- Carddav: refactor VCard handling to merge with VCalendar code
+- Carddav: disable contact picture handling on Exchange 2007
+- Carddav: implement range search
+
 ** DavMail 3.8.0b2 released **
 Fixes the most obvious regressions in 3.8.0b1 and some documentation
 updates on Carddav. Note for EWS only users: add davmail.enableEws=true in
