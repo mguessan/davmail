@@ -228,8 +228,10 @@ public class LdapConnection extends AbstractConnection {
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("labeleduri", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-generateduid", null);
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uidnumber", null);
+
+        // iCal search attribute
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", "apple-serviceslocator");
     }
 
     /**
@@ -1417,6 +1419,7 @@ public class LdapConnection extends AbstractConnection {
             Map<String, ExchangeSession.Contact> results = new HashMap<String, ExchangeSession.Contact>();
 
             Set<String> contactReturningAttributes = convertLdapToContactReturningAttributes(returningAttributes);
+            contactReturningAttributes.remove("apple-serviceslocator");
             List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, contactReturningAttributes, condition, maxCount);
 
             for (ExchangeSession.Contact contact : contacts) {

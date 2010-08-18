@@ -106,7 +106,7 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         assertTrue(searchResults.hasMore());
     }
 
-    public void testAnotherOSXSearch() throws NamingException {
+    public void testOSXICalSearch() throws NamingException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});

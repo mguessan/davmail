@@ -326,16 +326,14 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected boolean needGalLookup(String searchAttributeName, Set<String> returningAttributes) {
-        // search attribute is gallookup attribute, need to fetch value for isMatch
-        if (GALLOOKUP_ATTRIBUTES.contains(searchAttributeName)) {
+        // return all attributes => call gallookup
+        if (returningAttributes == null || returningAttributes.isEmpty()) {
             return true;
-        } else if (returningAttributes == null) {
-            return true;
-            // iCal search, do not call gallookup
+        // iCal search, do not call gallookup
         } else if (returningAttributes.contains("apple-serviceslocator")) {
             return false;
-            // return all attributes => call gallookup
-        } else if (returningAttributes.isEmpty()) {
+        // search attribute is gallookup attribute, need to fetch value for isMatch
+        } else if (GALLOOKUP_ATTRIBUTES.contains(searchAttributeName)) {
             return true;
         }
 
@@ -794,13 +792,19 @@ public class DavExchangeSession extends ExchangeSession {
         public boolean isMatch(ExchangeSession.Contact contact) {
             String lowerCaseValue = value.toLowerCase();
             String actualValue = contact.get(attributeName);
+            Operator actualOperator = operator;
+            // patch for iCal search without galLookup
+            if (actualValue == null && ("givenName".equals(attributeName) || "sn".equals(attributeName))) {
+                actualValue = contact.get("cn");
+                actualOperator = Operator.Like;
+            }
             if (actualValue == null) {
                 return false;
             }
             actualValue = actualValue.toLowerCase();
-            return (operator == Operator.IsEqualTo && actualValue.equals(lowerCaseValue)) ||
-                    (operator == Operator.Like && actualValue.contains(lowerCaseValue)) ||
-                    (operator == Operator.StartsWith && actualValue.startsWith(lowerCaseValue));
+            return (actualOperator == Operator.IsEqualTo && actualValue.equals(lowerCaseValue)) ||
+                    (actualOperator == Operator.Like && actualValue.contains(lowerCaseValue)) ||
+                    (actualOperator == Operator.StartsWith && actualValue.startsWith(lowerCaseValue));
         }
     }
 
