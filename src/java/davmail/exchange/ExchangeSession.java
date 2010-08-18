@@ -95,6 +95,7 @@ public abstract class ExchangeSession {
     protected static final String INBOX = "INBOX";
     protected static final String LOWER_CASE_INBOX = "inbox";
     protected static final String SENT = "Sent";
+    protected static final String SENDMSG = "##DavMailSubmissionURI##";
     protected static final String DRAFTS = "Drafts";
     protected static final String TRASH = "Trash";
     protected static final String JUNK = "Junk";
@@ -1016,6 +1017,17 @@ public abstract class ExchangeSession {
         }
     }
 
+    public void convertResentHeader(MimeMessage mimeMessage, String headerName) throws MessagingException {
+        String[] resentHeader = mimeMessage.getHeader("Resent-"+headerName);
+        if (resentHeader != null) {
+            mimeMessage.removeHeader("Resent-"+headerName);
+            mimeMessage.removeHeader(headerName);
+            for (String value:resentHeader) {
+                mimeMessage.addHeader(headerName, value);
+            }
+        }
+    }
+
     /**
      * Send message in reader to recipients.
      * Detect visible recipients in message body to determine bcc recipients
@@ -1031,6 +1043,12 @@ public abstract class ExchangeSession {
         if (!messages.isEmpty()) {
             LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
         } else {
+            convertResentHeader(mimeMessage, "From");
+            convertResentHeader(mimeMessage, "To");
+            convertResentHeader(mimeMessage, "Cc");
+            convertResentHeader(mimeMessage, "Bcc");
+            convertResentHeader(mimeMessage, "Message-Id");
+
             // remove visible recipients from list
             Set<String> visibleRecipients = new HashSet<String>();
             Address[] recipients = mimeMessage.getAllRecipients();

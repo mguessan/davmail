@@ -95,6 +95,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected String inboxName;
     protected String deleteditemsName;
     protected String sentitemsName;
+    protected String sendmsgName;
     protected String draftsName;
     protected String calendarName;
     protected String contactsName;
@@ -119,6 +120,8 @@ public class DavExchangeSession extends ExchangeSession {
             exchangeFolderPath = mailPath + draftsName + folderPath.substring(DRAFTS.length());
         } else if (folderPath.startsWith(SENT)) {
             exchangeFolderPath = mailPath + sentitemsName + folderPath.substring(SENT.length());
+        } else if (folderPath.startsWith(SENDMSG)) {
+            exchangeFolderPath = mailPath + sendmsgName + folderPath.substring(SENDMSG.length());
         } else if (folderPath.startsWith(CONTACTS)) {
             exchangeFolderPath = mailPath + contactsName + folderPath.substring(CONTACTS.length());
         } else if (folderPath.startsWith(CALENDAR)) {
@@ -600,7 +603,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected String getFolderName(String url) {
         if (url != null) {
             if (url.endsWith("/")) {
-                return url.substring(url.lastIndexOf('/', url.length() - 2) + 1);
+                return url.substring(url.lastIndexOf('/', url.length() - 2) + 1, url.length()-1);
             } else if (url.indexOf('/') > 0) {
                 return url.substring(url.lastIndexOf('/') + 1);
             } else {
@@ -628,6 +631,7 @@ public class DavExchangeSession extends ExchangeSession {
             sentitemsUrl = getURIPropertyIfExists(properties, "sentitems");
             sentitemsName = getFolderName(sentitemsUrl);
             sendmsgUrl = getURIPropertyIfExists(properties, "sendmsg");
+            sendmsgName = getFolderName(sendmsgUrl);
             draftsUrl = getURIPropertyIfExists(properties, "drafts");
             draftsName = getFolderName(draftsUrl);
             calendarUrl = getURIPropertyIfExists(properties, "calendar");
@@ -2043,7 +2047,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void sendMessage(byte[] messageBody) throws IOException {
         String messageName = UUID.randomUUID().toString() + ".EML";
 
-        createMessage(sendmsgUrl, messageName, null, messageBody);
+        createMessage(SENDMSG, messageName, null, messageBody);
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {
