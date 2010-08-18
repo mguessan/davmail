@@ -1017,7 +1017,7 @@ public abstract class ExchangeSession {
         }
     }
 
-    public void convertResentHeader(MimeMessage mimeMessage, String headerName) throws MessagingException {
+    protected void convertResentHeader(MimeMessage mimeMessage, String headerName) throws MessagingException {
         String[] resentHeader = mimeMessage.getHeader("Resent-"+headerName);
         if (resentHeader != null) {
             mimeMessage.removeHeader("Resent-"+headerName);

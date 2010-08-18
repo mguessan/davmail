@@ -101,16 +101,23 @@ public class Field {
         FIELD_MAP.put("co", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8049, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("department", new ExtendedFieldURI(0x3A18, ExtendedFieldURI.PropertyType.String));
 
+        /*
         FIELD_MAP.put("email1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8083, ExtendedFieldURI.PropertyType.String)); // Email1EmailAddress
         FIELD_MAP.put("email2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8093, ExtendedFieldURI.PropertyType.String)); // Email2EmailAddress
         FIELD_MAP.put("email3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A3, ExtendedFieldURI.PropertyType.String)); // Email3EmailAddress
-
 
         FIELD_MAP.put("smtpemail1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8084, ExtendedFieldURI.PropertyType.String)); // Email1OriginalDisplayName
         FIELD_MAP.put("smtpemail2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8094, ExtendedFieldURI.PropertyType.String)); // Email2OriginalDisplayName
         FIELD_MAP.put("smtpemail3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A4, ExtendedFieldURI.PropertyType.String)); // Email3OriginalDisplayName
 
-        
+        FIELD_MAP.put("displayemail1", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8080, ExtendedFieldURI.PropertyType.String)); // Email1DisplayName
+        FIELD_MAP.put("displayemail2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8090, ExtendedFieldURI.PropertyType.String)); // Email2DisplayName
+        FIELD_MAP.put("displayemail3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A0, ExtendedFieldURI.PropertyType.String)); // Email3DisplayName
+        */
+        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1"));
+        FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2"));
+        FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3"));
+
         FIELD_MAP.put("facsimiletelephonenumber", new ExtendedFieldURI(0x3A24, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("givenName", new ExtendedFieldURI(0x3A06, ExtendedFieldURI.PropertyType.String));
 

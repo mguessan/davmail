@@ -733,7 +733,7 @@ public class EwsExchangeSession extends ExchangeSession {
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
                     list.add(Field.createFieldUpdate("haspicture", "true"));
-                } else {
+                } else if (!entry.getKey().startsWith("email")){
                     list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }

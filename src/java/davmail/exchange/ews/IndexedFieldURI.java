@@ -29,8 +29,9 @@ public class IndexedFieldURI implements FieldURI {
 
     /**
      * Create indexed field uri.
-     * @param fieldURI base field uri
-     * @param fieldIndex field name 
+     *
+     * @param fieldURI   base field uri
+     * @param fieldIndex field name
      */
     public IndexedFieldURI(String fieldURI, String fieldIndex) {
         this.fieldURI = fieldURI;
@@ -46,18 +47,26 @@ public class IndexedFieldURI implements FieldURI {
     public void appendValue(StringBuilder buffer, String itemType, String value) {
         if (fieldURI.startsWith("message")) {
             itemType = "Message";
+        } else if (fieldURI.startsWith("contacts")) {
+            itemType = "Contact";
         }
         appendTo(buffer);
         buffer.append("<t:");
         buffer.append(itemType);
         buffer.append('>');
-        buffer.append("<t:");
-        buffer.append(fieldIndex);
-        buffer.append('>');
-        buffer.append(StringUtil.xmlEncode(value));
-        buffer.append("</t:");
-        buffer.append(fieldIndex);
-        buffer.append('>');
+        if (fieldURI.endsWith("EmailAddress")) {
+            buffer.append("<t:EmailAddresses><t:Entry Key=\"").append(fieldIndex).append("\">");
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("</t:Entry></t:EmailAddresses>");
+        } else {
+            buffer.append("<t:");
+            buffer.append(fieldIndex);
+            buffer.append('>');
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("</t:");
+            buffer.append(fieldIndex);
+            buffer.append('>');
+        }
         buffer.append("</t:");
         buffer.append(itemType);
         buffer.append('>');
