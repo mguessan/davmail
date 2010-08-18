@@ -95,11 +95,11 @@ public class GetUserAvailabilityMethod extends EWSMethod {
                 "</t:FreeBusyViewOptions>");
     }
 
-     @Override
-     protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
-         if (isStartTag(reader, "MergedFreeBusy")) {
-             this.mergedFreeBusy = reader.getElementText();
-         }
+    @Override
+    protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
+        if (isStartTag(reader, "MergedFreeBusy")) {
+            this.mergedFreeBusy = reader.getElementText();
+        }
     }
 
     public String getMergedFreeBusy() {

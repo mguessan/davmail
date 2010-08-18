@@ -66,4 +66,15 @@ public class TestEwsExchangeSession extends AbstractExchangeSessionTestCase {
         }
     }
 
+    public void testGetUserConfiguration() throws IOException {
+        GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+        ewsSession.executeMethod(getUserConfigurationMethod);
+        EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
+        assertNotNull(item);
+    }
+
+    public void testTimezone() {
+        ewsSession.loadVtimezone();
+    }
+
 }

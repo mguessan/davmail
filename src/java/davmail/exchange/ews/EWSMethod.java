@@ -432,10 +432,19 @@ public abstract class EWSMethod extends PostMethod {
         protected byte[] mimeContent;
         protected Set<FieldUpdate> fieldUpdates;
         protected List<FileAttachment> attachments;
+        protected List<String> fieldNames = new ArrayList<String>();
 
         @Override
         public String toString() {
             return "type: " + type + ' ' + super.toString();
+        }
+
+        @Override
+        public String put(String key, String value) {
+            if (get(key) == null) {
+                fieldNames.add(key);
+            }
+            return super.put(key, value);
         }
 
         /**
@@ -448,18 +457,23 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("<t:");
             writer.write(type);
             writer.write(">");
-            for (Map.Entry<String, String> mapEntry : this.entrySet()) {
-                if ("MeetingTimeZone".equals(mapEntry.getKey())) {
+            // write ordered fields
+            for (String key:fieldNames) {
+                if ("MeetingTimeZone".equals(key)) {
                     writer.write("<t:MeetingTimeZone TimeZoneName=\"");
-                    writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
+                    writer.write(StringUtil.xmlEncode(get(key)));
                     writer.write("\"></t:MeetingTimeZone>");
+                } else if ("StartTimeZone".equals(key)) {
+                    writer.write("<t:StartTimeZone Id=\"");
+                    writer.write(StringUtil.xmlEncode(get(key)));
+                    writer.write("\"></t:StartTimeZone>");
                 } else {
                     writer.write("<t:");
-                    writer.write(mapEntry.getKey());
+                    writer.write(key);
                     writer.write(">");
-                    writer.write(StringUtil.xmlEncode(mapEntry.getValue()));
+                    writer.write(StringUtil.xmlEncode(get(key)));
                     writer.write("</t:");
-                    writer.write(mapEntry.getKey());
+                    writer.write(key);
                     writer.write(">");
                 }
             }
@@ -643,6 +657,7 @@ public abstract class EWSMethod extends PostMethod {
                 && !"NoError".equals(result)
                 && !"ErrorNameResolutionMultipleResults".equals(result)
                 && !"ErrorNameResolutionNoResults".equals(result)
+                && !"ErrorFolderExists".equals(result)
                 ) {
             errorDetail = result;
         }

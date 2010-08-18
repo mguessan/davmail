@@ -612,7 +612,7 @@ public class EwsExchangeSession extends ExchangeSession {
             folder = buildFolder(folderId.mailbox, item);
             folder.folderPath = folderPath;
         } else {
-            throw new HttpNotFoundException("Folder "+folderPath+" not found");
+            throw new HttpNotFoundException("Folder " + folderPath + " not found");
         }
         return folder;
     }
@@ -625,8 +625,8 @@ public class EwsExchangeSession extends ExchangeSession {
         FolderPath path = new FolderPath(folderPath);
         EWSMethod.Item folder = new EWSMethod.Item();
         folder.type = "Folder";
-        folder.put("DisplayName", path.folderName);
         folder.put("FolderClass", folderClass);
+        folder.put("DisplayName", path.folderName);
         // TODO: handle properties
         CreateFolderMethod createFolderMethod = new CreateFolderMethod(getFolderId(path.parentPath), folder);
         executeMethod(createFolderMethod);
@@ -875,7 +875,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
-            byte[] itemContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
+            byte[] itemContent = Base64.encodeBase64(createMimeContent());
 
             ItemResult itemResult = new ItemResult();
             EWSMethod createOrUpdateItemMethod;
@@ -887,7 +887,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
-                LOGGER.debug("Existing item found with etag: "+currentEtag+" id: "+currentItemId.id);
+                LOGGER.debug("Existing item found with etag: " + currentEtag + " id: " + currentItemId.id);
             }
             if ("*".equals(noneMatch)) {
                 // create requested
@@ -915,16 +915,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
                 executeMethod(deleteItemMethod);
             } //else {
-                // create
-                EWSMethod.Item newItem = new EWSMethod.Item();
-                newItem.type = "CalendarItem";
-                newItem.mimeContent = itemContent;
-                HashSet<FieldUpdate> updates = new HashSet<FieldUpdate>();
-                // force urlcompname
-                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
-                newItem.setFieldUpdates(updates);
-                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
+            // create
+            EWSMethod.Item newItem = new EWSMethod.Item();
+            newItem.type = "CalendarItem";
+            newItem.mimeContent = itemContent;
+            HashSet<FieldUpdate> updates = new HashSet<FieldUpdate>();
+            // force urlcompname
+            updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+            //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
+            newItem.setFieldUpdates(updates);
+            createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
             //}
 
             executeMethod(createOrUpdateItemMethod);
@@ -1142,19 +1142,36 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected void loadVtimezone() {
-        String timezoneId = getTimezoneidFromOptions();
+
         try {
-            createCalendarFolder("davmailtemp", null);
-            EWSMethod.Item item = new EWSMethod.Item();
-            item.type = "CalendarItem";
-            item.put("MeetingTimeZone", timezoneId);
-            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
-            executeMethod(createItemMethod);
-            item = createItemMethod.getResponseItem();
-            VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
-            this.vTimezone = vCalendar.getVTimezone();
-            // delete temporary folder
-            deleteFolder("davmailtemp");
+            String timezoneId = null;
+            if ("Exchange2010".equals(serverVersion)) {
+                GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+                executeMethod(getUserConfigurationMethod);
+                EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
+                if (item != null) {
+                    timezoneId = item.get("timezone");
+                }
+            } else {
+                getTimezoneidFromOptions();
+            }
+            if (timezoneId != null) {
+                createCalendarFolder("davmailtemp", null);
+                EWSMethod.Item item = new EWSMethod.Item();
+                item.type = "CalendarItem";
+                if ("Exchange2010".equals(serverVersion)) {
+                    item.put("StartTimeZone", timezoneId);
+                } else {
+                    item.put("MeetingTimeZone", timezoneId);
+                }
+                CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
+                executeMethod(createItemMethod);
+                item = createItemMethod.getResponseItem();
+                VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
+                this.vTimezone = vCalendar.getVTimezone();
+                // delete temporary folder
+                deleteFolder("davmailtemp");
+            }
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }

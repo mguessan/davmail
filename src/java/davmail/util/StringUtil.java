@@ -178,14 +178,16 @@ public final class StringUtil {
      */
     public static String xmlEncode(String name) {
         String result = name;
-        if (name.indexOf('&') >= 0) {
-            result = AMP_PATTERN.matcher(result).replaceAll("&amp;");
-        }
-        if (name.indexOf('<') >= 0) {
-            result = LT_PATTERN.matcher(result).replaceAll("&lt;");
-        }
-        if (name.indexOf('>') >= 0) {
-            result = GT_PATTERN.matcher(result).replaceAll("&gt;");
+        if (name != null) {
+            if (name.indexOf('&') >= 0) {
+                result = AMP_PATTERN.matcher(result).replaceAll("&amp;");
+            }
+            if (name.indexOf('<') >= 0) {
+                result = LT_PATTERN.matcher(result).replaceAll("&lt;");
+            }
+            if (name.indexOf('>') >= 0) {
+                result = GT_PATTERN.matcher(result).replaceAll("&gt;");
+            }
         }
         return result;
     }
