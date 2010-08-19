@@ -39,7 +39,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         messageName = UUID.randomUUID().toString()+".EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
-        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
     }
 
     public void testSearchMessage() throws IOException, MessagingException {
@@ -103,7 +103,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         messageName = "Special & accenté.EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
-        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
@@ -116,7 +116,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         messageName = "test _xF8FF_ slash.EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
-        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());
@@ -130,7 +130,7 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         messageName = "test + plus.EML";
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "0");
-        session.createMessage("testfolder", messageName, properties, getMimeBody(mimeMessage));
+        session.createMessage("testfolder", messageName, properties, mimeMessage);
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder", session.isEqualTo("urlcompname", messageName));
         assertNotNull(messageList);
         assertEquals(1, messageList.size());

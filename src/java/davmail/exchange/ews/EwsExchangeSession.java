@@ -31,7 +31,10 @@ import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -162,10 +165,17 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException {
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        item.mimeContent = Base64.encodeBase64(messageBody);
+         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            mimeMessage.writeTo(baos);
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
+        baos.close();
+        item.mimeContent = Base64.encodeBase64(baos.toByteArray());
 
         Set<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
@@ -206,6 +216,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
         CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId(SENT), item);
         executeMethod(createItemMethod);
+    }
+
+    @Override
+    public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        sendMessage(baos.toByteArray());
     }
 
     /**
@@ -733,7 +750,7 @@ public class EwsExchangeSession extends ExchangeSession {
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
                     list.add(Field.createFieldUpdate("haspicture", "true"));
-                } else if (!entry.getKey().startsWith("email")){
+                } else if (!entry.getKey().startsWith("email")) {
                     list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }

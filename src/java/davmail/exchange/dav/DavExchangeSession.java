@@ -51,6 +51,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.URL;
 import java.text.ParseException;
@@ -329,10 +330,10 @@ public class DavExchangeSession extends ExchangeSession {
         // return all attributes => call gallookup
         if (returningAttributes == null || returningAttributes.isEmpty()) {
             return true;
-        // iCal search, do not call gallookup
+            // iCal search, do not call gallookup
         } else if (returningAttributes.contains("apple-serviceslocator")) {
             return false;
-        // search attribute is gallookup attribute, need to fetch value for isMatch
+            // search attribute is gallookup attribute, need to fetch value for isMatch
         } else if (GALLOOKUP_ATTRIBUTES.contains(searchAttributeName)) {
             return true;
         }
@@ -601,7 +602,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected String getFolderName(String url) {
         if (url != null) {
             if (url.endsWith("/")) {
-                return url.substring(url.lastIndexOf('/', url.length() - 2) + 1, url.length()-1);
+                return url.substring(url.lastIndexOf('/', url.length() - 2) + 1, url.length() - 1);
             } else if (url.indexOf('/') > 0) {
                 return url.substring(url.lastIndexOf('/') + 1);
             } else {
@@ -1503,6 +1504,21 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected void moveMessage(String sourcePath, String targetPath) throws IOException {
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
+                URIUtil.encodePath(getFolderPath(targetPath)), false);
+        try {
+            int statusCode = httpClient.executeMethod(method);
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_FOLDER");
+            } else if (statusCode != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
+            }
+        } finally {
+            method.releaseConnection();
+        }
+    }
+
     protected String getPropertyIfExists(DavPropertySet properties, String alias) {
         DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
@@ -1716,7 +1732,7 @@ public class DavExchangeSession extends ExchangeSession {
                 if (responses == null || responses.length == 0) {
                     throw new HttpNotFoundException(itemPath + " not found");
                 }
-                LOGGER.warn("search by urlcompname failed, actual value is "+getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname"));
+                LOGGER.warn("search by urlcompname failed, actual value is " + getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname"));
             }
         }
         // build item
@@ -1968,11 +1984,11 @@ public class DavExchangeSession extends ExchangeSession {
      * @param folderPath  Exchange folder path
      * @param messageName message name
      * @param properties  message properties (flags)
-     * @param messageBody mail body
+     * @param mimeMessage MIME message
      * @throws IOException when unable to create message
      */
     @Override
-    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException {
+    public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
         PropPatchMethod patchMethod;
         List<DavConstants> davProperties = buildProperties(properties);
@@ -2002,15 +2018,42 @@ public class DavExchangeSession extends ExchangeSession {
 
         try {
             // use same encoding as client socket reader
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(messageBody));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.writeTo(baos);
+                baos.close();
+            putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray()));
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
             }
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
         } finally {
             putmethod.releaseConnection();
         }
+
+        try {
+            // need to update bcc after put
+            if (mimeMessage.getHeader("Bcc") != null) {
+                davProperties = new ArrayList<DavConstants>();
+                davProperties.add(Field.createDavProperty("bcc", mimeMessage.getHeader("Bcc", ",")));
+                patchMethod = new PropPatchMethod(messageUrl, davProperties);
+                try {
+                    // update message with blind carbon copy
+                    int statusCode = httpClient.executeMethod(patchMethod);
+                    if (statusCode != HttpStatus.SC_MULTI_STATUS) {
+                        throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', patchMethod.getStatusLine());
+                    }
+
+                } finally {
+                    patchMethod.releaseConnection();
+                }
+            }
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
+
     }
 
     /**
@@ -2051,7 +2094,28 @@ public class DavExchangeSession extends ExchangeSession {
     public void sendMessage(byte[] messageBody) throws IOException {
         String messageName = UUID.randomUUID().toString() + ".EML";
 
-        createMessage(SENDMSG, messageName, null, messageBody);
+        try {
+            createMessage(SENDMSG, messageName, null, new MimeMessage(null, new SharedByteArrayInputStream(messageBody)));
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
+        if (mimeMessage.getHeader("Bcc") != null) {
+            // need to create draft first
+            String itemName = UUID.randomUUID().toString() + ".EML";
+            HashMap<String, String> properties = new HashMap<String, String>();
+            properties.put("draft", "9");
+            createMessage(DRAFTS, itemName, properties, mimeMessage);
+            moveMessage(DRAFTS + '/' + itemName, SENDMSG);
+        } else {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
+            sendMessage(baos.toByteArray());
+        }
+
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {

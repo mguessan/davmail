@@ -508,10 +508,10 @@ public abstract class ExchangeSession {
      * @param folderPath  Exchange folder path
      * @param messageName message name
      * @param properties  message properties (flags)
-     * @param messageBody mail body
+     * @param mimeMessage MIME message
      * @throws IOException when unable to create message
      */
-    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, byte[] messageBody) throws IOException;
+    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException, MessagingException;
 
     /**
      * Update given properties on message.
@@ -537,7 +537,7 @@ public abstract class ExchangeSession {
      * @param messageBody MIME message body
      * @throws IOException on error
      */
-    public abstract void sendMessage(byte[] messageBody) throws IOException;
+    public abstract void sendMessage(byte[] messageBody) throws IOException, MessagingException;
 
     /**
      * Get raw MIME message content
@@ -1018,11 +1018,11 @@ public abstract class ExchangeSession {
     }
 
     protected void convertResentHeader(MimeMessage mimeMessage, String headerName) throws MessagingException {
-        String[] resentHeader = mimeMessage.getHeader("Resent-"+headerName);
+        String[] resentHeader = mimeMessage.getHeader("Resent-" + headerName);
         if (resentHeader != null) {
-            mimeMessage.removeHeader("Resent-"+headerName);
+            mimeMessage.removeHeader("Resent-" + headerName);
             mimeMessage.removeHeader(headerName);
-            for (String value:resentHeader) {
+            for (String value : resentHeader) {
                 mimeMessage.addHeader(headerName, value);
             }
         }
@@ -1049,23 +1049,35 @@ public abstract class ExchangeSession {
             convertResentHeader(mimeMessage, "Bcc");
             convertResentHeader(mimeMessage, "Message-Id");
 
+            // fix From header for Exchange 2007
+            Address[] fromAddresses = mimeMessage.getFrom();
+
+            if (fromAddresses != null) {
+                for (Address fromAddress : fromAddresses) {
+                    if (!email.equalsIgnoreCase(((InternetAddress) fromAddress).getAddress())) {
+                        mimeMessage.removeHeader("From");
+                    }
+                }
+            }
+
             // remove visible recipients from list
             Set<String> visibleRecipients = new HashSet<String>();
             Address[] recipients = mimeMessage.getAllRecipients();
-            for (Address address : recipients) {
-                visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
+            if (recipients != null) {
+                for (Address address : recipients) {
+                    visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
+                }
             }
             for (String recipient : rcptToRecipients) {
                 if (!visibleRecipients.contains(recipient.toLowerCase())) {
                     mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
                 }
             }
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            mimeMessage.writeTo(baos);
-
-            sendMessage(baos.toByteArray());
+            sendMessage(mimeMessage);
         }
     }
+
+    public abstract void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException;
 
     /**
      * Get folder object.

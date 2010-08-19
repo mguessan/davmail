@@ -43,7 +43,10 @@ public class TestSmtp extends AbstractDavMailTestCase {
     static BufferedOutputStream socketOutputStream;
     static BufferedInputStream socketInputStream;
     static final byte[] CRLF = {13, 10};
-    enum State {CHAR, CR, CRLF}
+
+    enum State {
+        CHAR, CR, CRLF
+    }
 
     protected void write(String line) throws IOException {
         socketOutputStream.write(line.getBytes("ASCII"));
@@ -71,7 +74,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
                 } else {
                     state = State.CHAR;
                 }
-            } 
+            }
             if (state == State.CHAR) {
                 baos.write(character);
             }
@@ -91,7 +94,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
 
             String banner = readLine();
             assertNotNull(banner);
-            String credentials = (char) 0+Settings.getProperty("davmail.username")+ (char) 0 +Settings.getProperty("davmail.password");
+            String credentials = (char) 0 + Settings.getProperty("davmail.username") + (char) 0 + Settings.getProperty("davmail.password");
             writeLine("AUTH PLAIN " + new String(new Base64().encode(credentials.getBytes())));
             assertEquals("235 OK Authenticated", readLine());
         }
@@ -101,9 +104,17 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void sendAndCheckMessage(MimeMessage mimeMessage) throws IOException, MessagingException, InterruptedException {
-        writeLine("MAIL FROM:"+session.getEmail());
+        sendAndCheckMessage(mimeMessage, null);
+    }
+
+    public void sendAndCheckMessage(MimeMessage mimeMessage, String bcc) throws IOException, MessagingException, InterruptedException {
+        writeLine("MAIL FROM:" + session.getEmail());
         readLine();
-        writeLine("RCPT TO:"+Settings.getProperty("davmail.to"));
+        if (bcc != null) {
+            writeLine("RCPT TO:" + bcc);
+            readLine();
+        }
+        writeLine("RCPT TO:" + Settings.getProperty("davmail.to"));
         readLine();
         writeLine("DATA");
         assertEquals("354 Start mail input; end with <CRLF>.<CRLF>", readLine());
@@ -113,7 +124,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         assertEquals("250 Queued mail for delivery", readLine());
         // wait for asynchronous message send
         ExchangeSession.MessageList messages = null;
-        for (int i=0;i<5;i++) {
+        for (int i = 0; i < 5; i++) {
             messages = session.searchMessages("Sent", session.headerIsEqualTo("message-id", mimeMessage.getMessageID()));
             if (messages.size() > 0) {
                 break;
@@ -138,7 +149,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
     public void testSendMessage() throws IOException, MessagingException, InterruptedException {
         String body = "Test message\r\n" +
                 "Special characters: éèçà\r\n" +
-                "Chinese: "+((char)0x604F)+((char)0x7D59);
+                "Chinese: " + ((char) 0x604F) + ((char) 0x7D59);
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
         mimeMessage.setSubject("Test subject");
@@ -149,9 +160,9 @@ public class TestSmtp extends AbstractDavMailTestCase {
     public void testBccMessage() throws IOException, MessagingException, InterruptedException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
-        mimeMessage.setSubject("Test subject");
+        mimeMessage.setSubject("Test subject dav");
         mimeMessage.setText("Test message");
-        sendAndCheckMessage(mimeMessage);
+        sendAndCheckMessage(mimeMessage, Settings.getProperty("davmail.bcc"));
     }
 
     public void testDotMessage() throws IOException, MessagingException, InterruptedException {
@@ -176,14 +187,14 @@ public class TestSmtp extends AbstractDavMailTestCase {
     public void testComplexToMessage() throws IOException, MessagingException, InterruptedException {
         String body = "Test message";
         MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("To", "nickname <"+Settings.getProperty("davmail.to")+ '>');
+        mimeMessage.addHeader("To", "nickname <" + Settings.getProperty("davmail.to") + '>');
         mimeMessage.setSubject("Test subject");
         mimeMessage.setText(body);
         sendAndCheckMessage(mimeMessage);
     }
 
     public void testQuit() throws IOException {
-       writeLine("QUIT");
+        writeLine("QUIT");
         assertEquals("221 Closing connection", readLine());
     }
 
