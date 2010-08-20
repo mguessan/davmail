@@ -125,6 +125,11 @@ public class EwsExchangeSession extends ExchangeSession {
     class Message extends ExchangeSession.Message {
         // message item id
         ItemId itemId;
+
+        @Override
+        public String getPermanentId() {
+            return itemId.id;
+        }
     }
 
     /**
@@ -219,9 +224,13 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
+    public void sendMessage(MimeMessage mimeMessage) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        mimeMessage.writeTo(baos);
+        try {
+            mimeMessage.writeTo(baos);
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
         sendMessage(baos.toByteArray());
     }
 

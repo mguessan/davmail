@@ -924,6 +924,18 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * @inheritDoc
      */
+    public class Message extends ExchangeSession.Message {
+
+        @Override
+        public String getPermanentId() {
+            return permanentUrl;
+        }
+    }
+
+
+    /**
+     * @inheritDoc
+     */
     public class Contact extends ExchangeSession.Contact {
         /**
          * Build Contact instance from multistatusResponse info
@@ -2019,8 +2031,8 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             // use same encoding as client socket reader
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                baos.close();
+            mimeMessage.writeTo(baos);
+            baos.close();
             putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray()));
             int code = httpClient.executeMethod(putmethod);
 
@@ -2060,7 +2072,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void updateMessage(Message message, Map<String, String> properties) throws IOException {
+    public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
         PropPatchMethod patchMethod = new PropPatchMethod(message.permanentUrl, buildProperties(properties)) {
             @Override
             protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
@@ -2082,7 +2094,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void deleteMessage(Message message) throws IOException {
+    public void deleteMessage(ExchangeSession.Message message) throws IOException {
         LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ')');
         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, message.permanentUrl);
     }
@@ -2102,20 +2114,23 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
-        if (mimeMessage.getHeader("Bcc") != null) {
-            // need to create draft first
-            String itemName = UUID.randomUUID().toString() + ".EML";
-            HashMap<String, String> properties = new HashMap<String, String>();
-            properties.put("draft", "9");
-            createMessage(DRAFTS, itemName, properties, mimeMessage);
-            moveMessage(DRAFTS + '/' + itemName, SENDMSG);
-        } else {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            mimeMessage.writeTo(baos);
-            sendMessage(baos.toByteArray());
+    public void sendMessage(MimeMessage mimeMessage) throws IOException {
+        try {
+            if (mimeMessage.getHeader("Bcc") != null) {
+                // need to create draft first
+                String itemName = UUID.randomUUID().toString() + ".EML";
+                HashMap<String, String> properties = new HashMap<String, String>();
+                properties.put("draft", "9");
+                createMessage(DRAFTS, itemName, properties, mimeMessage);
+                moveMessage(DRAFTS + '/' + itemName, SENDMSG);
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.writeTo(baos);
+                sendMessage(baos.toByteArray());
+            }
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
         }
-
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {
@@ -2134,7 +2149,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    protected byte[] getContent(Message message) throws IOException {
+    protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         InputStream contentInputStream;
         try {
@@ -2203,7 +2218,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public void copyMessage(Message message, String targetFolder) throws IOException {
+    public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
         CopyMethod method = new CopyMethod(message.permanentUrl, targetPath, false);
         // allow rename if a message with the same name exists
@@ -2221,7 +2236,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected void moveToTrash(Message message) throws IOException {
+    protected void moveToTrash(ExchangeSession.Message message) throws IOException {
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
         LOGGER.debug("Deleting : " + message.permanentUrl + " to " + destination);
         MoveMethod method = new MoveMethod(message.permanentUrl, destination, false);

@@ -29,11 +29,13 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.*;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -436,9 +438,10 @@ public class ImapConnection extends AbstractConnection {
                                     byte[] buffer = in.readContent(size);
                                     // empty line
                                     readClient();
+                                    MimeMessage mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(buffer));
 
                                     String messageName = UUID.randomUUID().toString() + ".EML";
-                                    session.createMessage(folderName, messageName, properties, buffer);
+                                    session.createMessage(folderName, messageName, properties, mimeMessage);
                                     sendClient(commandId + " OK APPEND completed");
                                 } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
                                     sendClient("+ idling ");
@@ -690,11 +693,7 @@ public class ImapConnection extends AbstractConnection {
                     }
 
                     // copy selected content to baos
-                    byte[] bytes = new byte[8192];
-                    int length;
-                    while ((length = partInputStream.read(bytes)) > 0) {
-                        partOutputStream.write(bytes, 0, length);
-                    }
+                    IOUtil.write(partInputStream, partOutputStream);
                     partInputStream.close();
                     partOutputStream.close();
                     baos.close();

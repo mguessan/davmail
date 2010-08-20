@@ -511,7 +511,7 @@ public abstract class ExchangeSession {
      * @param mimeMessage MIME message
      * @throws IOException when unable to create message
      */
-    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException, MessagingException;
+    public abstract void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException;
 
     /**
      * Update given properties on message.
@@ -537,7 +537,7 @@ public abstract class ExchangeSession {
      * @param messageBody MIME message body
      * @throws IOException on error
      */
-    public abstract void sendMessage(byte[] messageBody) throws IOException, MessagingException;
+    public abstract void sendMessage(byte[] messageBody) throws IOException;
 
     /**
      * Get raw MIME message content
@@ -1077,7 +1077,12 @@ public abstract class ExchangeSession {
         }
     }
 
-    public abstract void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException;
+    /**
+     * Send Mime message.
+     * @param mimeMessage MIME message
+     * @throws IOException on error
+     */
+    public abstract void sendMessage(MimeMessage mimeMessage) throws IOException;
 
     /**
      * Get folder object.
@@ -1286,16 +1291,16 @@ public abstract class ExchangeSession {
         protected void fixUids(MessageList messages) {
             boolean sortNeeded = false;
             for (Message message : messages) {
-                if (permanentUrlToImapUidMap.containsKey(message.permanentUrl)) {
-                    long previousUid = permanentUrlToImapUidMap.get(message.permanentUrl);
+                if (permanentUrlToImapUidMap.containsKey(message.getPermanentId())) {
+                    long previousUid = permanentUrlToImapUidMap.get(message.getPermanentId());
                     if (message.getImapUid() != previousUid) {
-                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message " + message.permanentUrl);
+                        LOGGER.debug("Restoring IMAP uid " + message.getImapUid() + " -> " + previousUid + " for message " + message.getPermanentId());
                         message.setImapUid(previousUid);
                         sortNeeded = true;
                     }
                 } else {
                     // add message to uid map
-                    permanentUrlToImapUidMap.put(message.permanentUrl, message.getImapUid());
+                    permanentUrlToImapUidMap.put(message.getPermanentId(), message.getImapUid());
                 }
             }
             if (sortNeeded) {
@@ -1375,7 +1380,7 @@ public abstract class ExchangeSession {
     /**
      * Exchange message.
      */
-    public class Message implements Comparable<Message> {
+    public abstract class Message implements Comparable<Message> {
         /**
          * enclosing message list
          */
@@ -1443,6 +1448,13 @@ public abstract class ExchangeSession {
          * Message content parsed in a MIME message.
          */
         protected MimeMessage mimeMessage;
+
+        /**
+         * Get permanent message id.
+         * permanentUrl over WebDav or IitemId over EWS
+         * @return permanent id
+         */
+        public abstract String getPermanentId();
 
         /**
          * IMAP uid , unique in folder (x0e230003)
