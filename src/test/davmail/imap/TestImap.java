@@ -103,12 +103,14 @@ public class TestImap extends AbstractDavMailTestCase {
         readFullAnswer(".");
     }
 
-    public void testUidSearchDeleted() throws IOException {
+    public void testUidSearchUnDeleted() throws IOException {
         writeLine(". UID SEARCH UNDELETED");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        writeLine(". UID SEARCH NOT DELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
-    public void testUidSearchUndeleted() throws IOException {
+    public void testUidSearchdeleted() throws IOException {
         writeLine(". UID SEARCH DELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }

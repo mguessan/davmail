@@ -1011,7 +1011,7 @@ public class ImapConnection extends AbstractConnection {
     protected ExchangeSession.Condition appendSearchParam(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
             String nextToken = tokens.nextToken();
-            if ("DELETED".equals(token)) {
+            if ("DELETED".equals(nextToken)) {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
             } else {
