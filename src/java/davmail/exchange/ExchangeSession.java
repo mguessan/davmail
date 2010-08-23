@@ -422,7 +422,8 @@ public abstract class ExchangeSession {
 
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
         if (logonMethod == null) {
-            throw new DavMailException("EXCEPTION_AUTHENTICATION_FORM_NOT_FOUND", initmethod.getURI());
+            LOGGER.debug("Authentication form not found at " + initmethod.getURI()+ ", trying default url");
+            logonMethod = new PostMethod("/owa/auth/owaauth.dll");
         }
 
         // make sure username and password fields are empty
@@ -1079,6 +1080,7 @@ public abstract class ExchangeSession {
 
     /**
      * Send Mime message.
+     *
      * @param mimeMessage MIME message
      * @throws IOException on error
      */
@@ -1452,6 +1454,7 @@ public abstract class ExchangeSession {
         /**
          * Get permanent message id.
          * permanentUrl over WebDav or IitemId over EWS
+         *
          * @return permanent id
          */
         public abstract String getPermanentId();
