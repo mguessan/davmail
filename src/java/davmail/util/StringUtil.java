@@ -142,6 +142,9 @@ public final class StringUtil {
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
 
+    // WebDav search parameter encode
+    private static final Pattern APOS_PATTERN = Pattern.compile("'");
+
     /**
      * Encode & to %26 for urlcompname.
      *
@@ -299,6 +302,14 @@ public final class StringUtil {
         }
         if (result.indexOf('_') >= 0) {
             result = UNDERSCORE_PATTERN.matcher(result).replaceAll("/");
+        }
+        return result;
+    }
+
+    public static String davSearchEncode(String value) {
+        String result = value;
+        if (result.indexOf('\'') >= 0) {
+            result = APOS_PATTERN.matcher(result).replaceAll("''");
         }
         return result;
     }

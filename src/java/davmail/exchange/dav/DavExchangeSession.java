@@ -767,7 +767,7 @@ public class DavExchangeSession extends ExchangeSession {
                 buffer.append('%');
             }
             if ("urlcompname".equals(field.alias)) {
-                buffer.append(StringUtil.encodeUrlcompname(value));
+                buffer.append(StringUtil.encodeUrlcompname(StringUtil.davSearchEncode(value)));
             } else if (field.isIntValue()) {
                 // check value
                 try {
@@ -778,7 +778,7 @@ public class DavExchangeSession extends ExchangeSession {
                     buffer.append('0');
                 }
             } else {
-                buffer.append(value);
+                buffer.append(StringUtil.davSearchEncode(value));
             }
             if (Operator.Like == operator || Operator.StartsWith == operator) {
                 buffer.append('%');
