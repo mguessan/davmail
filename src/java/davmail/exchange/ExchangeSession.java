@@ -1745,12 +1745,6 @@ public abstract class ExchangeSession {
             return etag;
         }
 
-        protected HttpException buildHttpException(Exception e) {
-            String message = "Unable to get event " + getName() + " at " + permanentUrl + ": " + e.getMessage();
-            LOGGER.warn(message);
-            return new HttpException(message);
-        }
-
         /**
          * Set item href.
          *
@@ -1950,6 +1944,7 @@ public abstract class ExchangeSession {
      */
     public abstract class Event extends Item {
         protected String contentClass;
+        protected String subject;
         protected VCalendar vCalendar;
 
         /**
@@ -1978,6 +1973,12 @@ public abstract class ExchangeSession {
                 fixICS(getEventContent(), true);
             }
             return vCalendar.toString();
+        }
+
+        protected HttpException buildHttpException(Exception e) {
+            String message = "Unable to get event " + getName() + " subject: "+subject+" at " + permanentUrl + ": " + e.getMessage();
+            LOGGER.warn(message);
+            return new HttpException(message);
         }
 
         /**
@@ -2208,6 +2209,7 @@ public abstract class ExchangeSession {
         // calendar CdoInstanceType
         ITEM_PROPERTIES.add("instancetype");
         ITEM_PROPERTIES.add("urlcompname");
+        ITEM_PROPERTIES.add("subject");
     }
 
     /**

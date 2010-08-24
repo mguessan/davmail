@@ -884,6 +884,7 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
+            subject = response.get(Field.get("subject").getResponseName());
             itemName = response.get(Field.get("urlcompname").getResponseName());
             // workaround for missing urlcompname in Exchange 2010
             if (itemName == null) {
@@ -1021,6 +1022,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
         EVENT_REQUEST_PROPERTIES.add("etag");
         EVENT_REQUEST_PROPERTIES.add("displayname");
+        EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
     }
 

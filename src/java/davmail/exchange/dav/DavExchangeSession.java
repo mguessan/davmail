@@ -1155,6 +1155,7 @@ public class DavExchangeSession extends ExchangeSession {
             permanentUrl = getPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
+            subject = getPropertyIfExists(properties, "subject");
         }
 
         protected String getPermanentUrl() {
@@ -1262,7 +1263,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result;
-            LOGGER.debug("Get event: " + permanentUrl);
+            LOGGER.debug("Get event subject: "+subject+ " permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
                 result = getICSFromInternetContentProperty();
@@ -1722,6 +1723,7 @@ public class DavExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("etag");
         EVENT_REQUEST_PROPERTIES.add("contentclass");
         EVENT_REQUEST_PROPERTIES.add("displayname");
+        EVENT_REQUEST_PROPERTIES.add("subject");
     }
 
     protected static final DavPropertyNameSet EVENT_REQUEST_PROPERTIES_NAME_SET = new DavPropertyNameSet();
