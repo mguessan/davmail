@@ -1263,7 +1263,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result;
-            LOGGER.debug("Get event subject: "+subject+ " permanentUrl: " + permanentUrl);
+            LOGGER.debug("Get event subject: " + subject + " permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
                 result = getICSFromInternetContentProperty();
@@ -1281,11 +1281,24 @@ public class DavExchangeSession extends ExchangeSession {
             } catch (DavException e) {
                 throw buildHttpException(e);
             } catch (IOException e) {
+                deleteBroken();
                 throw buildHttpException(e);
             } catch (MessagingException e) {
                 throw buildHttpException(e);
             }
             return result;
+        }
+
+        protected void deleteBroken() {
+            // try to delete broken event
+            if (Settings.getBooleanProperty("davmail.deleteBroken")) {
+                LOGGER.warn("Deleting broken event at: " + permanentUrl);
+                try {
+                    DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, permanentUrl);
+                } catch (IOException ioe) {
+                    LOGGER.warn("Unable to delete broken event at: " + permanentUrl);
+                }
+            }
         }
 
         protected PutMethod internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {

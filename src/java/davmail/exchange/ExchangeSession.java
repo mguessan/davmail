@@ -1978,15 +1978,6 @@ public abstract class ExchangeSession {
         protected HttpException buildHttpException(Exception e) {
             String message = "Unable to get event " + getName() + " subject: "+subject+" at " + permanentUrl + ": " + e.getMessage();
             LOGGER.warn(message);
-            // try to move broken event to trash
-            if (Settings.getBooleanProperty("davmail.deleteBroken")) {
-                LOGGER.warn("Deleting broken event at: " + permanentUrl);
-                try {
-                    deleteItem(folderPath, itemName);
-                } catch (IOException ioe) {
-                    LOGGER.warn("Unable to delete broken event at: " + permanentUrl);
-                }
-            }
             return new HttpException(message);
         }
 
