@@ -97,8 +97,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         // also need to retrieve email and alias
-        alias = getAliasFromOptions();
-        email = getEmailFromOptions();
+        getEmailAndAliasFromOptions();
         if (email == null || alias == null) {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }

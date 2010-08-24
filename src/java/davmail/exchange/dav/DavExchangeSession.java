@@ -425,33 +425,31 @@ public class DavExchangeSession extends ExchangeSession {
 
     static final String BASE_HREF = "<base href=\"";
 
-    protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
-        // find base url
-        String line;
-
+    /**
+     * Exchange 2003: get mailPath from welcome page
+     *
+     * @param method
+     * @return
+     */
+    protected String getMailpathFromWelcomePage(HttpMethod method) {
+        String welcomePageMailPath = null;
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         try {
             mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
             //noinspection StatementWithEmptyBody
+            String line;
             while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) {
             }
             if (line != null) {
+                // Exchange 2003
                 int start = line.toLowerCase().indexOf(BASE_HREF) + BASE_HREF.length();
                 int end = line.indexOf('\"', start);
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
-                mailPath = baseURL.getPath();
-                LOGGER.debug("Base href found in body, mailPath is " + mailPath);
-                buildEmail(method.getURI().getHost());
-                LOGGER.debug("Current user email is " + email);
-            } else {
-                // failover for Exchange 2007 : build standard mailbox link with email
-                buildEmail(method.getURI().getHost());
-                mailPath = "/exchange/" + email + '/';
-                LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
+                welcomePageMailPath = baseURL.getPath();
+                LOGGER.debug("Base href found in body, mailPath is " + welcomePageMailPath);
             }
-            rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
         } catch (IOException e) {
             LOGGER.error("Error parsing main page at " + method.getPath(), e);
         } finally {
@@ -464,11 +462,33 @@ public class DavExchangeSession extends ExchangeSession {
             }
             method.releaseConnection();
         }
+        return welcomePageMailPath;
+    }
 
+    protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
+        // get mailPath from welcome page on Exchange 2003
+        mailPath = getMailpathFromWelcomePage(method);
+
+        //noinspection VariableNotUsedInsideIf
+        if (mailPath != null) {
+            // Exchange 2003
+            try {
+                buildEmail(method.getURI().getHost());
+            } catch (URIException uriException) {
+                LOGGER.warn(uriException);
+            }
+        } else {
+            // Exchange 2007 : get alias and email from options page
+            getEmailAndAliasFromOptions();;
+            // build standard mailbox link with email
+            mailPath = "/exchange/" + email + '/';
+        }
 
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
+        LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
+        rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
     }
 
     /**
@@ -477,51 +497,52 @@ public class DavExchangeSession extends ExchangeSession {
      * @param hostName Exchange server host name for last failover
      */
     public void buildEmail(String hostName) {
-        // first try to get email from login name
-        alias = getAliasFromLogin();
-        email = getEmail(alias);
-        // failover: use mailbox name as alias
-        if (email == null) {
-            alias = getAliasFromMailPath();
-            email = getEmail(alias);
-        }
-        // another failover : get alias from mailPath display name
-        if (email == null) {
-            alias = getAliasFromMailboxDisplayName();
-            email = getEmail(alias);
-        }
-        if (email == null) {
-            // failover : get email from Exchange 2007 Options page
-            alias = getAliasFromOptions();
-            email = getEmail(alias);
-            // failover: get email from options
-            if (alias != null && email == null) {
-                email = getEmailFromOptions();
-            }
-        }
-        if (email == null) {
-            LOGGER.debug("Unable to get user email with alias " + getAliasFromLogin()
-                    + " or " + getAliasFromMailPath()
-                    + " or " + getAliasFromOptions()
-            );
-            // last failover: build email from domain name and mailbox display name
-            StringBuilder buffer = new StringBuilder();
-            // most reliable alias
+        String mailBoxPath = getMailboxPath();
+        // mailPath contains either alias or email
+        if (mailBoxPath.indexOf('@') >= 0) {
+            email = mailBoxPath;
             alias = getAliasFromMailboxDisplayName();
             if (alias == null) {
                 alias = getAliasFromLogin();
             }
-            if (alias != null) {
-                buffer.append(alias);
-                if (alias.indexOf('@') < 0) {
-                    buffer.append('@');
-                    int dotIndex = hostName.indexOf('.');
-                    if (dotIndex >= 0) {
-                        buffer.append(hostName.substring(dotIndex + 1));
+        } else {
+            // use mailbox name as alias
+            alias = mailBoxPath;
+            email = getEmail(alias);
+            if (email == null) {
+                // failover: try to get email from login name
+                alias = getAliasFromLogin();
+                email = getEmail(alias);
+            }
+            // another failover : get alias from mailPath display name
+            if (email == null) {
+                alias = getAliasFromMailboxDisplayName();
+                email = getEmail(alias);
+            }
+            if (email == null) {
+                LOGGER.debug("Unable to get user email with alias " + mailBoxPath
+                        + " or " + getAliasFromLogin()
+                        + " or " +getAliasFromMailboxDisplayName()
+                );
+                // last failover: build email from domain name and mailbox display name
+                StringBuilder buffer = new StringBuilder();
+                // most reliable alias
+                alias = getAliasFromMailboxDisplayName();
+                if (alias == null) {
+                    alias = getAliasFromLogin();
+                }
+                if (alias != null) {
+                    buffer.append(alias);
+                    if (alias.indexOf('@') < 0) {
+                        buffer.append('@');
+                        int dotIndex = hostName.indexOf('.');
+                        if (dotIndex >= 0) {
+                            buffer.append(hostName.substring(dotIndex + 1));
+                        }
                     }
                 }
+                email = buffer.toString();
             }
-            email = buffer.toString();
         }
     }
 
@@ -553,7 +574,7 @@ public class DavExchangeSession extends ExchangeSession {
      *
      * @return user name
      */
-    protected String getAliasFromMailPath() {
+    protected String getMailboxPath() {
         if (mailPath == null) {
             return null;
         }

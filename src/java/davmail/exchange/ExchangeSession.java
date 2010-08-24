@@ -2629,8 +2629,12 @@ public abstract class ExchangeSession {
      * @return user name
      */
     protected String getAliasFromLogin() {
-        // Exchange 2007 : userName is login without domain
+        // login is email, not alias
+        if (this.userName.indexOf('@') >= 0) {
+            return null;
+        }
         String result = this.userName;
+        // remove domain name
         int index = result.indexOf('\\');
         if (index >= 0) {
             result = result.substring(index + 1);
@@ -2666,8 +2670,7 @@ public abstract class ExchangeSession {
 
     static final String MAILBOX_BASE = "/cn=";
 
-    protected String getAliasFromOptions() {
-        String result = null;
+    protected void getEmailAndAliasFromOptions() {
         // get user mail URL from html body
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
@@ -2675,14 +2678,22 @@ public abstract class ExchangeSession {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
-            // find mailbox full name
-            //noinspection StatementWithEmptyBody
-            while ((line = optionsPageReader.readLine()) != null && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
+
+            // find email and alias
+            while ((line = optionsPageReader.readLine()) != null
+                    && (line.indexOf('[') == -1
+                    || line.indexOf('@') == -1
+                    || line.indexOf(']') == -1)
+                    && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
             }
             if (line != null) {
                 int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf('<', start);
-                result = line.substring(start, end);
+                alias = line.substring(start, end);
+                start = line.indexOf('[') + 1;
+                end = line.indexOf(']', start);
+                email = line.substring(start, end);
+
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
@@ -2697,44 +2708,6 @@ public abstract class ExchangeSession {
             optionsMethod.releaseConnection();
         }
 
-        return result;
-    }
-
-    protected String getEmailFromOptions() {
-        String result = null;
-        // get user mail URL from html body
-        BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
-            String line;
-            // find email
-            //noinspection StatementWithEmptyBody
-            while ((line = optionsPageReader.readLine()) != null
-                    && (line.indexOf('[') == -1
-                    || line.indexOf('@') == -1
-                    || line.indexOf(']') == -1)) {
-            }
-            if (line != null) {
-                int start = line.indexOf('[') + 1;
-                int end = line.indexOf(']', start);
-                result = line.substring(start, end);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-        } finally {
-            if (optionsPageReader != null) {
-                try {
-                    optionsPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-                }
-            }
-            optionsMethod.releaseConnection();
-        }
-
-        return result;
     }
 
     /**
