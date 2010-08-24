@@ -25,6 +25,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
+import org.apache.log4j.Logger;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -39,6 +40,8 @@ import java.util.StringTokenizer;
  * Dav Gateway pop connection implementation
  */
 public class PopConnection extends AbstractConnection {
+    private static final Logger LOGGER = Logger.getLogger(PopConnection.class);
+
     private List<ExchangeSession.Message> messages;
 
     /**
@@ -136,7 +139,7 @@ public class PopConnection extends AbstractConnection {
                                 state = State.AUTHENTICATED;
                             } catch (SocketException e) {
                                 // can not send error to client after a socket exception
-                                DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
+                                LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
                             } catch (Exception e) {
                                 DavGatewayTray.error(e);
                                 sendERR(e);
@@ -202,7 +205,7 @@ public class PopConnection extends AbstractConnection {
                                     doubleDotOutputStream.close();
                                 } catch (SocketException e) {
                                     // can not send error to client after a socket exception
-                                    DavGatewayTray.warn(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"), e);
+                                    LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
                                 } catch (Exception e) {
                                     DavGatewayTray.error(new BundleMessage("LOG_ERROR_RETRIEVING_MESSAGE"), e);
                                     sendERR("error retreiving message " + e + ' ' + e.getMessage());

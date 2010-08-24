@@ -32,6 +32,7 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
+import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.*;
@@ -49,6 +50,7 @@ import java.util.*;
  * Still alpha code : need to find a way to handle message ids
  */
 public class ImapConnection extends AbstractConnection {
+    private static final Logger LOGGER = Logger.getLogger(ImapConnection.class);
 
     ExchangeSession.Folder currentFolder;
 
@@ -278,6 +280,9 @@ public class ImapConnection extends AbstractConnection {
                                                         ExchangeSession.Message message = uidRangeIterator.next();
                                                         try {
                                                             handleFetch(message, uidRangeIterator.currentIndex, parameters);
+                                                        } catch (SocketException e) {
+                                                            // client closed connection
+                                                            throw e;
                                                         } catch (IOException e) {
                                                             DavGatewayTray.log(e);
                                                             sendClient(commandId + " NO Unable to retrieve message: " + e.getMessage());
@@ -549,7 +554,7 @@ public class ImapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CONNECTION_ON_TIMEOUT"));
             }
         } catch (SocketException e) {
-            DavGatewayTray.debug(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"));
+            LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {

@@ -27,7 +27,9 @@ import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.imap.ImapConnection;
 import davmail.ui.tray.DavGatewayTray;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -43,6 +45,7 @@ import java.util.*;
  * Handle a caldav connection.
  */
 public class LdapConnection extends AbstractConnection {
+    private static final Logger LOGGER = Logger.getLogger(LdapConnection.class);
     /**
      * Davmail base context
      */
@@ -1390,7 +1393,7 @@ public class LdapConnection extends AbstractConnection {
                 }
             } catch (SocketException e) {
                 // client closed connection
-                DavGatewayTray.debug(new BundleMessage("LOG_CLIENT_CLOSED_CONNECTION"));
+                LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
             } catch (IOException e) {
                 DavGatewayTray.log(e);
                 try {

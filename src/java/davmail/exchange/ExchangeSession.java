@@ -1534,6 +1534,7 @@ public abstract class ExchangeSession {
                     // load and parse message
                     mimeBody = new SharedByteArrayInputStream(getContent(this));
                     mimeMessage = new MimeMessage(null, mimeBody);
+                    mimeBody.reset();
                     LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.available() + " bytes)");
                 }
             }
