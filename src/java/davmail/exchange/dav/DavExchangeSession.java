@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VObject;
 import davmail.exchange.XMLStreamUtil;
@@ -2055,7 +2056,19 @@ public class DavExchangeSession extends ExchangeSession {
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
+                // first delete draft message
+                if (!davProperties.isEmpty()) {
+                    try {
+                        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
+                    } catch (IOException e) {
+                        LOGGER.warn("Unable to delete draft message");
+                    }
+                }
+                if (code == HttpStatus.SC_INSUFFICIENT_STORAGE) {
+                    throw new InsufficientStorageException(putmethod.getStatusText());
+                } else {
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
+                }
             }
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
