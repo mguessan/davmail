@@ -479,7 +479,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
         } else {
             // Exchange 2007 : get alias and email from options page
-            getEmailAndAliasFromOptions();;
+            getEmailAndAliasFromOptions();
             // build standard mailbox link with email
             mailPath = "/exchange/" + email + '/';
         }
@@ -487,7 +487,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
-        LOGGER.debug("Current user email is " + email + ", mailPath is " + mailPath);
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + ", mailPath is " + mailPath);
         rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
     }
 
@@ -522,23 +522,18 @@ public class DavExchangeSession extends ExchangeSession {
             if (email == null) {
                 LOGGER.debug("Unable to get user email with alias " + mailBoxPath
                         + " or " + getAliasFromLogin()
-                        + " or " +getAliasFromMailboxDisplayName()
+                        + " or " + alias
                 );
                 // last failover: build email from domain name and mailbox display name
                 StringBuilder buffer = new StringBuilder();
                 // most reliable alias
-                alias = getAliasFromMailboxDisplayName();
-                if (alias == null) {
-                    alias = getAliasFromLogin();
-                }
-                if (alias != null) {
-                    buffer.append(alias);
-                    if (alias.indexOf('@') < 0) {
-                        buffer.append('@');
-                        int dotIndex = hostName.indexOf('.');
-                        if (dotIndex >= 0) {
-                            buffer.append(hostName.substring(dotIndex + 1));
-                        }
+                alias = mailBoxPath;
+                buffer.append(alias);
+                if (alias.indexOf('@') < 0) {
+                    buffer.append('@');
+                    int dotIndex = hostName.indexOf('.');
+                    if (dotIndex >= 0) {
+                        buffer.append(hostName.substring(dotIndex + 1));
                     }
                 }
                 email = buffer.toString();
@@ -595,7 +590,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     public String getEmail(String alias) {
         String emailResult = null;
-        if (alias != null) {
+        if (alias != null && !disableGalFind) {
             try {
                 Map<String, Map<String, String>> results = galFind("&AN=" + URIUtil.encodeWithinQuery(alias));
                 Map<String, String> result = results.get(alias.toLowerCase());
@@ -603,6 +598,8 @@ public class DavExchangeSession extends ExchangeSession {
                     emailResult = result.get("EM");
                 }
             } catch (IOException e) {
+                // galfind not available
+                disableGalFind = true;
                 LOGGER.debug("getEmail(" + alias + ") failed");
             }
         }

@@ -85,7 +85,7 @@ public abstract class ExchangeSession {
 
     protected static final int FREE_BUSY_INTERVAL = 15;
 
-    protected static final String PUBLIC_ROOT = "/public";
+    protected static final String PUBLIC_ROOT = "/public/";
     protected static final String CALENDAR = "calendar";
     /**
      * Contacts folder logical name
