@@ -155,18 +155,20 @@ public abstract class ExchangeSession {
             // manually follow redirect
             HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, url);
 
-            if (isBasicAuthentication) {
-                int status = method.getStatusCode();
+            if (!this.isAuthenticated()) {
+                if (isBasicAuthentication) {
+                    int status = method.getStatusCode();
 
-                if (status == HttpStatus.SC_UNAUTHORIZED) {
-                    method.releaseConnection();
-                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                } else if (status != HttpStatus.SC_OK) {
-                    method.releaseConnection();
-                    throw DavGatewayHttpClientFacade.buildHttpException(method);
+                    if (status == HttpStatus.SC_UNAUTHORIZED) {
+                        method.releaseConnection();
+                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                    } else if (status != HttpStatus.SC_OK) {
+                        method.releaseConnection();
+                        throw DavGatewayHttpClientFacade.buildHttpException(method);
+                    }
+                } else {
+                    method = formLogin(httpClient, method, userName, password);
                 }
-            } else {
-                method = formLogin(httpClient, method, userName, password);
             }
 
             // avoid 401 roundtrips, only if NTLM is disabled
@@ -422,7 +424,7 @@ public abstract class ExchangeSession {
 
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
         if (logonMethod == null) {
-            LOGGER.debug("Authentication form not found at " + initmethod.getURI()+ ", trying default url");
+            LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", trying default url");
             logonMethod = new PostMethod("/owa/auth/owaauth.dll");
         }
 
@@ -1976,7 +1978,7 @@ public abstract class ExchangeSession {
         }
 
         protected HttpException buildHttpException(Exception e) {
-            String message = "Unable to get event " + getName() + " subject: "+subject+" at " + permanentUrl + ": " + e.getMessage();
+            String message = "Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage();
             LOGGER.warn(message);
             return new HttpException(message);
         }
