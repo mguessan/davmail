@@ -1,11 +1,12 @@
 Release guide :
+- update releasenotes.txt from svn log
 - change version in build.xml and pom.xml, commit
 - update staging (clean checkout) directory
 - launch ant release, check generated packages
 - upload packages: ant upload-release
 - generate site: mvn site
 - upload site: ant upload-site
-- create releasenotes.txt, upload to sourceforge, attach to files
+- upload releasenotes.txt to sourceforge
 - create news message at https://sourceforge.net/news/admin/?group_id=184600
 - create tag in subversion
 - upload version.txt

@@ -1,3 +1,47 @@
+** DavMail 3.8.2 released **
+Bugfix release with improved Exchange 2010 IMAP support, CardDav fixes and
+improved error handling
+
+Enhancements:
+- Disable SWT on Java 7
+- Update debian package description and categories
+- fix 2995990: Add support for already authenticated users
+- Fix missing hide password in log over IMAP
+- More session creation enhancements, fix public folder test when /public is 403
+- Refactor email and alias retrieval: always use options page with Exchange 2007
+- Improve socket closed error handling
+- Try default form url on authentication form not found
+- Add Java Service Wrapper contribution from Dustin Hawkins
+
+Caldav:
+- Caldav: move delete broken event logic to DavExchangeSession
+- Caldav: delete broken events when davmail.deleteBroken is true
+- Caldav: improve event logging, include subject
+
+IMAP:
+- IMAP: handle 507 InsufficientStorage error
+- IMAP: fix regression in NOT DELETED filter
+
+Documentation:
+- Doc: Update OSX directory setup documentation
+
+DAV:
+- DAV: Encode apos in urlcompname used in DAV search request
+
+EWS:
+- EWS: fix single message in folder with Exchange 2010 bug
+- EWS: implement loadVTimezone for Exchange 2010
+
+SMTP:
+- SMTP: fix regression on bcc handling
+- SMTP: convert Resent- headers, see 3019708
+
+LDAP:
+- LDAP: avoid galLookup in iCal searches
+
+Carddav:
+- Carddav: Fix email update over EWS
+
 ** DavMail 3.8.1 released **
 Includes a full refactoring of Vcalendar content handling, much progress on
 Exchange Web Services support, LDAP optimizations and many other bufixes.
