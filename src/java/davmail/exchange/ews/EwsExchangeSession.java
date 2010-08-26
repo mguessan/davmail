@@ -27,9 +27,10 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -80,6 +81,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
+        // also need to retrieve email and alias
+        getEmailAndAliasFromOptions();
+        if (email == null || alias == null) {
+            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+        }
+        currentMailboxPath = "/users/" + email.toLowerCase();
+
         // nothing to do, mailPath not used in EWS mode
         // check EWS access
         HttpMethod getMethod = new GetMethod("/ews/exchange.asmx");
@@ -90,18 +98,20 @@ public class EwsExchangeSession extends ExchangeSession {
                 throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
             }
         } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+            LOGGER.debug(e.getMessage());
+            try {
+                // failover, try to retrieve EWS url from autodiscover
+                getMethod.releaseConnection();
+                getMethod = new GetMethod(getEwsUrlFromAutoDiscover());
+                getMethod.setFollowRedirects(false);
+            } catch (IOException e2) {
+                LOGGER.error(e2.getMessage());
+                throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+            }
+
         } finally {
             getMethod.releaseConnection();
         }
-
-        // also need to retrieve email and alias
-        getEmailAndAliasFromOptions();
-        if (email == null || alias == null) {
-            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
-        }
-        currentMailboxPath = "/users/" + email.toLowerCase();
 
         try {
             folderIdMap = new HashMap<String, String>();
@@ -119,6 +129,72 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
 
+    }
+
+    protected static class AutoDiscoverMethod extends PostMethod {
+        AutoDiscoverMethod(String userEmail) {
+            super("/autodiscover/autodiscover.xml");
+            String body = "<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006\">" +
+                    "<Request>" +
+                    "<EMailAddress>" + userEmail + "</EMailAddress>" +
+                    "<AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>" +
+                    "</Request>" +
+                    "</Autodiscover>";
+            setRequestEntity(new ByteArrayRequestEntity(body.getBytes(), "text/xml"));
+        }
+
+        String ewsUrl;
+
+        @Override
+        protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
+            Header contentTypeHeader = getResponseHeader("Content-Type");
+            if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
+                BufferedReader autodiscoverReader = null;
+                try {
+                    autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream()));
+                    String line;
+                    // find ews url
+                    while ((line = autodiscoverReader.readLine()) != null
+                            && (line.indexOf("<EwsUrl>") == -1)
+                            && (line.indexOf("</EwsUrl>") == -1)) {
+                    }
+                    if (line != null) {
+                        ewsUrl = line.substring(line.indexOf("<EwsUrl>") + 8, line.indexOf("</EwsUrl>"));
+                    }
+                } catch (IOException e) {
+                    LOGGER.debug(e);
+                } finally {
+                    if (autodiscoverReader != null) {
+                        try {
+                            autodiscoverReader.close();
+                        } catch (IOException e) {
+                            LOGGER.debug(e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    protected String getEwsUrlFromAutoDiscover() throws DavMailAuthenticationException {
+        String ewsUrl;
+        AutoDiscoverMethod autoDiscoverMethod = new AutoDiscoverMethod(email);
+        try {
+            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, autoDiscoverMethod);
+            if (status != HttpStatus.SC_OK) {
+                throw DavGatewayHttpClientFacade.buildHttpException(autoDiscoverMethod);
+            }
+            ewsUrl = autoDiscoverMethod.ewsUrl;
+            if (ewsUrl == null) {
+                throw new IOException("Ews url not found");
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+        } finally {
+            autoDiscoverMethod.releaseConnection();
+        }
+        return ewsUrl;
     }
 
     class Message extends ExchangeSession.Message {
@@ -172,7 +248,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             mimeMessage.writeTo(baos);
         } catch (MessagingException e) {
