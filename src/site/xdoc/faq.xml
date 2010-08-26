@@ -98,7 +98,7 @@
                 <p>
                     <strong>How do I secure DavMail connections ?</strong>
                 </p>
-                <p>Communication between DavMail and you Exchange server is secured by default as long as you access
+                <p>Communication between DavMail and your Exchange server is secured by default as long as you access
                     OWA over HTTPS.
                 </p>
                 <p>Communication between the messaging client and DavMail is
@@ -122,7 +122,7 @@
                 <p>
                     <strong>Are my credentials safe ?</strong>
                 </p>
-                <p>DavMail does not store Exchange username and password, they are provided by the messaging client over
+                <p>DavMail does not store Exchange username or password, they are provided by the messaging client over
                     IMAP, HTTP, POP, SMTP or LDAP
                 </p>
             </subsection>
@@ -135,9 +135,8 @@
                     on. To detect errors at this level, you may activate calendar log settings
                     under Tools/Options/Advanced:
                 </p>
-                <source>calendar.debug.log=true
-                    calendar.debug.log.verbose=true
-                </source>
+                <source><![CDATA[calendar.debug.log=true
+calendar.debug.log.verbose=true]]></source>
 
                 <p>
                     <strong>Invalid notifications</strong>
@@ -192,7 +191,7 @@
                     <code>mail.strictly_mime</code>
                     advanced option.
                     Go to Tools/Options/Advanced/General/Config Editor and look for a preference
-                    with name<code>mail.strictly_mime</code>, set value to
+                    with name <code>mail.strictly_mime</code>, set value to
                     <code>true</code>
                     to send messages as quoted-printable.
                 </p>

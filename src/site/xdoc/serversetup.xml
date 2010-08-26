@@ -14,19 +14,18 @@
             <p>Prerequisite : Sun J2SE 1.5 or 1.6.
             </p>
 
-            <p>Davmail Gateway can now run in server mode as a gateway between the mail
+            <p>Davmail Gateway can run in server mode as a gateway between the mail
                 client and the Outlook Web Access (Exchange) server.
-                In server mode Davmail can run on any Java supported platform. This is
-                currently the only way to run DavMail on MacOS X due to poor Java support
-                (no Java 6 yet).
+                In server mode Davmail can run on any Java supported platform.
                 This mode was tested successfully with the Iphone and should work with
-                any phone with POP/IMAP/SMTP/LDAP/Caldav client.
+                any phone with POP/IMAP/SMTP/LDAP/Caldav/Carddav client.
+                In this mode many users can share the same DavMail instance.
             </p>
 
             <p>Download the generic DavMail package from Sourceforge and uncompress it with
-                your favorite tool, e.g. on Linux:<code>unzip davmail-*.zip</code>.
+                your favorite tool, e.g. on Linux:&#x20;<code>unzip davmail-*.zip</code>.
             </p>
-            <p>Prepare a davmail.properties file according to you local needs :
+            <p>Prepare a davmail.properties file according to your local needs :
             </p>
             <source>
                 davmail.url=http://exchangeServer/exchange/

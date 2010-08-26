@@ -25,7 +25,7 @@
                         </li>
                     </ul>
                 </li>
-                <li>Download and unzip ant from<a href="http://ant.apache.org/">ant.apache.org</a>,
+                <li>Download and unzip ant from&#x20;<a href="http://ant.apache.org/">ant.apache.org</a>,
                     add ant/bin full path to the PATH environment variable
                 </li>
                 <li>Get DavMail source package from sourceforge and uncompress it:

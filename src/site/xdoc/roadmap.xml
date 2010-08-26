@@ -13,14 +13,14 @@
         <section name="DavMail RoadMap">
             <p>DavMail features are now almost complete, yet there remains a lot of place
                 for improvement. The following section lists the expected new features
-                and enhancements in DavMail next versions.
+                and enhancements in next DavMail versions.
             </p>
-            <subsection name="3.8.1">
+            <subsection name="3.8.3">
                 <p>
                     <strong>Next bugfix release</strong>
                 </p>
                 <ul>
-                    <li>Change the subject line when replying to invites</li>
+                    <li>Per service SSL setting</li>
                 </ul>
             </subsection>
             <subsection name="3.9.0">
