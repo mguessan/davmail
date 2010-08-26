@@ -74,6 +74,28 @@
                     https://mail.company.com/exchange, which should redirect to /owa. Another important service is the
                     galfind (address book) access at /public/?Cmd=galfind
                 </p>
+                <p>Additional information for Exchange administrators to enable WebDav:</p>
+                <p>After running through the pre-requisite checker for each server (Front End CAS server and
+                    Back End Mailbox server) and adding the appropriate roles and features, add the following
+                    via the ServerManager:
+                </p>
+                <ul>
+                    <li>Select the IIS role, then add Role Services</li>
+                    <li>Add WebDav Publishing (both Cas server and Mailbox Server)</li>
+                    <li>On the Mailbox server, add the ISAPI extensions Role Service to the IIS role</li>
+                    <li>On the Default Web Site (each server) , enable WebDav</li>
+                    <li>Should not have to enable any additional WebDav rules</li>
+                    <li>Install the server roles</li>
+                    <li>Create a test mailbox (see Exchange Docs)</li>
+                </ul>
+                <p>To Test:</p>
+                <ul>
+                    <li>Ensure that Outlook Web Access works by using the https://<i>exchangeServer</i>/owa URL
+                    </li>
+                    <li>Try using the pass through legacy URL: https://<i>exchangeServer</i>/exchange,
+                        if you receive an error 500 “Internal Server Error”, then WebDav is not working.
+                    </li>
+                </ul>
                 <p>
                     <strong>Is Exchange 2010 supported ?</strong>
                 </p>
@@ -191,7 +213,7 @@ calendar.debug.log.verbose=true]]></source>
                     <code>mail.strictly_mime</code>
                     advanced option.
                     Go to Tools/Options/Advanced/General/Config Editor and look for a preference
-                    with name <code>mail.strictly_mime</code>, set value to
+                    with name<code>mail.strictly_mime</code>, set value to
                     <code>true</code>
                     to send messages as quoted-printable.
                 </p>
