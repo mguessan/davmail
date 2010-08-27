@@ -93,4 +93,33 @@ public final class XMLStreamUtil {
         }
         return results;
     }
+
+    /**
+     * Get attribute value for attribute name.
+     * reader must be at START_ELEMENT state
+     *
+     * @param reader        xml stream reader
+     * @param attributeName attribute name
+     * @return attribute value
+     */
+    public static String getAttributeValue(XMLStreamReader reader, String attributeName) {
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            if (attributeName.equals(reader.getAttributeLocalName(i))) {
+                return reader.getAttributeValue(i);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Test if reader is on a start tag named tagLocalName.
+     *
+     * @param reader       xml stream reader
+     * @param tagLocalName tag local name
+     * @return true if reader is on a start tag named tagLocalName
+     */
+    public static boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
+        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+    }
+
 }

@@ -53,6 +53,9 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.net.URL;
 import java.text.ParseException;
@@ -1963,19 +1966,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (responses.length == 1) {
                 byte[] roamingdictionary = getBinaryPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "roamingdictionary");
                 if (roamingdictionary != null) {
-                    String roamingdictionaryString = new String(roamingdictionary, "UTF-8");
-                    int startIndex = roamingdictionaryString.lastIndexOf("18-");
-                    if (startIndex >= 0) {
-                        int endIndex = roamingdictionaryString.indexOf('"', startIndex);
-                        if (endIndex >= 0) {
-                            String timezoneName = roamingdictionaryString.substring(startIndex + 3, endIndex);
-                            try {
-                                timezoneId = ResourceBundle.getBundle("timezoneids").getString(timezoneName);
-                            } catch (MissingResourceException mre) {
-                                LOGGER.warn("Invalid timezone name: " + timezoneName);
-                            }
-                        }
-                    }
+                    timezoneId = ResourceBundle.getBundle("timezoneids").getString(getTimezoneNameFromRoamingDictionary(roamingdictionary));
                 }
             }
         } catch (UnsupportedEncodingException e) {
@@ -1984,6 +1975,29 @@ public class DavExchangeSession extends ExchangeSession {
             LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
         }
         return timezoneId;
+    }
+
+    protected String getTimezoneNameFromRoamingDictionary(byte[] roamingdictionary) {
+        String timezoneName = null;
+        XMLStreamReader reader;
+        try {
+            XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
+            reader = xmlInputFactory.createXMLStreamReader(new ByteArrayInputStream(roamingdictionary));
+            while (reader.hasNext()) {
+                reader.next();
+                if (XMLStreamUtil.isStartTag(reader, "e")
+                        && "18-timezone".equals( XMLStreamUtil.getAttributeValue(reader, "k"))) {
+                    String value = XMLStreamUtil.getAttributeValue(reader, "v");
+                    if (value != null && value.startsWith("18-")) {
+                        timezoneName = value.substring(3);
+                    }
+                }
+            }
+
+        } catch (XMLStreamException e) {
+            LOGGER.error("Error while parsing RoamingDictionary: " + e, e);
+        }
+        return timezoneName;
     }
 
     @Override
