@@ -53,7 +53,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
@@ -1981,10 +1980,9 @@ public class DavExchangeSession extends ExchangeSession {
         String timezoneName = null;
         XMLStreamReader reader;
         try {
-            XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
-            reader = xmlInputFactory.createXMLStreamReader(new ByteArrayInputStream(roamingdictionary));
+            reader = XMLStreamUtil.createXMLStreamReader(roamingdictionary);
             while (reader.hasNext()) {
-                reader.next();
+                reader.nextTag();
                 if (XMLStreamUtil.isStartTag(reader, "e")
                         && "18-timezone".equals( XMLStreamUtil.getAttributeValue(reader, "k"))) {
                     String value = XMLStreamUtil.getAttributeValue(reader, "v");

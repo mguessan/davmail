@@ -18,7 +18,8 @@
  */
 package davmail.exchange.ews;
 
-import javax.xml.stream.XMLStreamConstants;
+import davmail.exchange.XMLStreamUtil;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
@@ -48,16 +49,16 @@ public class GetUserConfigurationMethod extends EWSMethod {
 
     @Override
     protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
-        if (isStartTag(reader, "UserConfiguration")) {
+        if (XMLStreamUtil.isStartTag(reader, "UserConfiguration")) {
             responseItems.add(handleUserConfiguration(reader));
         }
     }
 
     private Item handleUserConfiguration(XMLStreamReader reader) throws XMLStreamException {
         Item responseItem = new Item();
-        while (reader.hasNext() && !(isEndTag(reader, "UserConfiguration"))) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "UserConfiguration"))) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("DictionaryEntry".equals(tagLocalName)) {
                     handleDictionaryEntry(reader, responseItem);
@@ -69,9 +70,9 @@ public class GetUserConfigurationMethod extends EWSMethod {
 
     private void handleDictionaryEntry(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         String key = null;
-        while (reader.hasNext() && !(isEndTag(reader, "DictionaryEntry"))) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "DictionaryEntry"))) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Value".equals(tagLocalName)) {
                     if (key == null) {

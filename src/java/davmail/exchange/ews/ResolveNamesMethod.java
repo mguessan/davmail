@@ -18,7 +18,8 @@
  */
 package davmail.exchange.ews;
 
-import javax.xml.stream.XMLStreamConstants;
+import davmail.exchange.XMLStreamUtil;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
@@ -45,12 +46,12 @@ public class ResolveNamesMethod extends EWSMethod {
         Item responseItem = new Item();
         responseItem.type = "Contact";
         // skip to Contact
-        while (reader.hasNext() && !isStartTag(reader, "Resolution")) {
-            reader.next();
+        while (reader.hasNext() && !XMLStreamUtil.isStartTag(reader, "Resolution")) {
+            reader.nextTag();
         }
-        while (reader.hasNext() && !isEndTag(reader, "Resolution")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Resolution")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Mailbox".equals(tagLocalName)) {
                     handleMailbox(reader, responseItem);
@@ -63,9 +64,9 @@ public class ResolveNamesMethod extends EWSMethod {
     }
 
     protected void handleMailbox(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "Mailbox")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Mailbox")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Name".equals(tagLocalName)) {
                     responseItem.put(tagLocalName, reader.getElementText());
@@ -75,9 +76,9 @@ public class ResolveNamesMethod extends EWSMethod {
     }
 
     protected void handleContact(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "Contact")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Contact")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("EmailAddresses".equals(tagLocalName)) {
                     handleEmailAddresses(reader, responseItem);
@@ -93,9 +94,9 @@ public class ResolveNamesMethod extends EWSMethod {
     }
 
     protected void handlePhysicalAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "PhysicalAddresses")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "PhysicalAddresses")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 // TODO
             }
@@ -103,9 +104,9 @@ public class ResolveNamesMethod extends EWSMethod {
     }
 
     protected void handlePhoneNumbers(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "PhoneNumbers")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "PhoneNumbers")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 // TODO
             }
@@ -113,9 +114,9 @@ public class ResolveNamesMethod extends EWSMethod {
     }
 
     protected void handleEmailAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "EmailAddresses")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "EmailAddresses")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Entry".equals(tagLocalName)) {
                     String key = getAttributeValue(reader, "Key");

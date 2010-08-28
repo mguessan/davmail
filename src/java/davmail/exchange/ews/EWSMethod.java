@@ -29,7 +29,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Logger;
 
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -661,29 +660,17 @@ public abstract class EWSMethod extends PostMethod {
                 ) {
             errorDetail = result;
         }
-        if (isStartTag(reader, "faultstring")) {
+        if (XMLStreamUtil.isStartTag(reader, "faultstring")) {
             errorDetail = reader.getElementText();
         }
-    }
-
-    protected boolean isStartTag(XMLStreamReader reader) {
-        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT);
-    }
-
-    protected boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
-        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
-    }
-
-    protected boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
-        return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
     }
 
     protected Item handleItem(XMLStreamReader reader) throws XMLStreamException {
         Item responseItem = new Item();
         responseItem.type = reader.getLocalName();
-        while (reader.hasNext() && !isEndTag(reader, responseItem.type)) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, responseItem.type)) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
                 if ("ExtendedProperty".equals(tagLocalName)) {
@@ -712,9 +699,9 @@ public abstract class EWSMethod extends PostMethod {
 
     protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {
         List<FileAttachment> attachments = new ArrayList<FileAttachment>();
-        while (reader.hasNext() && !(isEndTag(reader, "Attachments"))) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Attachments"))) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("FileAttachment".equals(tagLocalName)) {
                     attachments.add(handleFileAttachment(reader));
@@ -726,9 +713,9 @@ public abstract class EWSMethod extends PostMethod {
 
     protected FileAttachment handleFileAttachment(XMLStreamReader reader) throws XMLStreamException {
         FileAttachment fileAttachment = new FileAttachment();
-        while (reader.hasNext() && !(isEndTag(reader, "FileAttachment"))) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "FileAttachment"))) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("AttachmentId".equals(tagLocalName)) {
                     fileAttachment.attachmentId = getAttributeValue(reader, "Id");
@@ -751,9 +738,9 @@ public abstract class EWSMethod extends PostMethod {
     protected void addExtendedPropertyValue(XMLStreamReader reader, Item item) throws XMLStreamException {
         String propertyTag = null;
         String propertyValue = null;
-        while (reader.hasNext() && !(isEndTag(reader, "ExtendedProperty"))) {
-            reader.next();
-            if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "ExtendedProperty"))) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("ExtendedFieldURI".equals(tagLocalName)) {
                     propertyTag = getAttributeValue(reader, "PropertyTag");
@@ -768,9 +755,9 @@ public abstract class EWSMethod extends PostMethod {
                     propertyValue = reader.getElementText();
                 } else if ("Values".equals(tagLocalName)) {
                     StringBuilder buffer = new StringBuilder();
-                    while (reader.hasNext() && !(isEndTag(reader, "Values"))) {
-                        reader.next();
-                        if (reader.getEventType() == XMLStreamConstants.START_ELEMENT) {
+                    while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Values"))) {
+                        reader.nextTag();
+                        if (XMLStreamUtil.isStartTag(reader)) {
 
                             if (buffer.length() > 0) {
                                 buffer.append(',');
@@ -819,19 +806,18 @@ public abstract class EWSMethod extends PostMethod {
             responseItems = new ArrayList<Item>();
             XMLStreamReader reader;
             try {
-                XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
-                reader = xmlInputFactory.createXMLStreamReader(getResponseBodyAsStream());
+                reader = XMLStreamUtil.createXMLStreamReader(getResponseBodyAsStream());
                 while (reader.hasNext()) {
-                    reader.next();
+                    reader.nextTag();
                     handleErrors(reader);
-                    if (serverVersion == null && isStartTag(reader, "ServerVersionInfo")) {
+                    if (serverVersion == null && XMLStreamUtil.isStartTag(reader, "ServerVersionInfo")) {
                         String majorVersion = getAttributeValue(reader, "MajorVersion");
                         if ("14".equals(majorVersion)) {
                             serverVersion = "Exchange2010";
                         } else {
                             serverVersion = "Exchange2007_SP1";
                         }
-                    } else if (isStartTag(reader, responseCollectionName)) {
+                    } else if (XMLStreamUtil.isStartTag(reader, responseCollectionName)) {
                         handleItems(reader);
                     } else {
                         handleCustom(reader);
@@ -855,9 +841,9 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     private void handleItems(XMLStreamReader reader) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, responseCollectionName)) {
-            reader.next();
-            if (isStartTag(reader)) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, responseCollectionName)) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 responseItems.add(handleItem(reader));
             }
         }

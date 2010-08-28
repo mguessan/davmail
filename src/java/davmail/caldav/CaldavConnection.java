@@ -36,7 +36,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -1375,12 +1374,10 @@ public class CaldavConnection extends AbstractConnection {
         protected void parseXmlBody() throws IOException {
             XMLStreamReader streamReader = null;
             try {
-                XMLInputFactory inputFactory = XMLStreamUtil.getXmlInputFactory();
-
-                streamReader = inputFactory.createXMLStreamReader(new StringReader(body));
+                streamReader = XMLStreamUtil.createXMLStreamReader(body);
                 while (streamReader.hasNext()) {
-                    int event = streamReader.next();
-                    if (event == XMLStreamConstants.START_ELEMENT) {
+                    streamReader.nextTag();
+                    if (XMLStreamUtil.isStartTag(streamReader)) {
                         String tagLocalName = streamReader.getLocalName();
                         if ("prop".equals(tagLocalName)) {
                             handleProp(streamReader);
@@ -1420,21 +1417,18 @@ public class CaldavConnection extends AbstractConnection {
 
         public void handleCompFilter(XMLStreamReader reader) throws XMLStreamException {
             while (reader.hasNext() && !isEndTag(reader, "comp-filter")) {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT) {
-                    String tagLocalName = reader.getLocalName();
-                    if ("time-range".equals(tagLocalName)) {
-                        timeRangeStart = reader.getAttributeValue(null, "start");
-                        timeRangeEnd = reader.getAttributeValue(null, "end");
-                    }
+                reader.nextTag();
+                if (XMLStreamUtil.isStartTag(reader, "time-range")) {
+                    timeRangeStart = reader.getAttributeValue(null, "start");
+                    timeRangeEnd = reader.getAttributeValue(null, "end");
                 }
             }
         }
 
         public void handleProp(XMLStreamReader reader) throws XMLStreamException {
             while (reader.hasNext() && !isEndTag(reader, "prop")) {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT) {
+                reader.nextTag();
+                if (XMLStreamUtil.isStartTag(reader)) {
                     String tagLocalName = reader.getLocalName();
                     String tagText = null;
                     if (reader.hasText()) {

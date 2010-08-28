@@ -27,8 +27,6 @@ import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.apache.log4j.Logger;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
@@ -166,14 +164,6 @@ public class ExchangePropPatchMethod extends PostMethod {
         return "PROPPATCH";
     }
 
-    protected boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
-        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
-    }
-
-    protected boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
-        return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
-    }
-
     List<MultiStatusResponse> responses;
 
     @Override
@@ -183,8 +173,7 @@ public class ExchangePropPatchMethod extends PostMethod {
             responses = new ArrayList<MultiStatusResponse>();
             XMLStreamReader reader;
             try {
-                XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
-                reader = xmlInputFactory.createXMLStreamReader(new FilterInputStream(getResponseBodyAsStream()) {
+                reader = XMLStreamUtil.createXMLStreamReader(new FilterInputStream(getResponseBodyAsStream()) {
                     final byte[] lastbytes = new byte[3];
 
                     @Override
@@ -206,8 +195,8 @@ public class ExchangePropPatchMethod extends PostMethod {
 
                 });
                 while (reader.hasNext()) {
-                    reader.next();
-                    if (isStartTag(reader, "response")) {
+                    reader.nextTag();
+                    if (XMLStreamUtil.isStartTag(reader, "response")) {
                         handleResponse(reader);
                     }
                 }
@@ -223,9 +212,9 @@ public class ExchangePropPatchMethod extends PostMethod {
     protected void handleResponse(XMLStreamReader reader) throws XMLStreamException {
         String href = null;
         String responseStatus = "";
-        while (reader.hasNext() && !isEndTag(reader, "response")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "response")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("href".equals(tagLocalName)) {
                     href = reader.getElementText();
@@ -243,9 +232,9 @@ public class ExchangePropPatchMethod extends PostMethod {
 
     protected void handlePropstat(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         int propstatStatus = 0;
-        while (reader.hasNext() && !isEndTag(reader, "propstat")) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "propstat")) {
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("status".equals(tagLocalName)) {
                     if ("HTTP/1.1 200 OK".equals(reader.getElementText())) {
@@ -263,9 +252,9 @@ public class ExchangePropPatchMethod extends PostMethod {
 
 
     protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
-        while (reader.hasNext() && !isEndTag(reader, "prop")){
-            int event = reader.nextTag();
-            if (event == XMLStreamConstants.START_ELEMENT) {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "prop")){
+            reader.nextTag();
+            if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
                 multiStatusResponse.add(new DefaultDavProperty(tagLocalName, reader.getElementText(), namespace));

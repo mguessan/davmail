@@ -22,8 +22,10 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -120,6 +122,62 @@ public final class XMLStreamUtil {
      */
     public static boolean isStartTag(XMLStreamReader reader, String tagLocalName) {
         return (reader.getEventType() == XMLStreamConstants.START_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+    }
+
+    /**
+     * Test if reader is on a start tag.
+     *
+     * @param reader       xml stream reader
+     * @return true if reader is on a start tag
+     */
+    public static boolean isStartTag(XMLStreamReader reader) {
+        return (reader.getEventType() == XMLStreamConstants.START_ELEMENT);
+    }
+
+    /**
+     * Test if reader is on an end tag named tagLocalName.
+     *
+     * @param reader       xml stream reader
+     * @param tagLocalName tag local name
+     * @return true if reader is on an end tag named tagLocalName
+     */
+    public static boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
+        return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
+    }
+
+    /**
+     * Create XML stream reader for byte array
+     *
+     * @param xmlContent xml content as byte array
+     * @return XML stream reader
+     * @throws XMLStreamException on error
+     */
+    public static XMLStreamReader createXMLStreamReader(byte[] xmlContent) throws XMLStreamException {
+        return createXMLStreamReader(new ByteArrayInputStream(xmlContent));
+    }
+
+    /**
+     * Create XML stream reader for string
+     *
+     * @param xmlContent xml content as string
+     * @return XML stream reader
+     * @throws XMLStreamException on error
+     */
+    public static XMLStreamReader createXMLStreamReader(String xmlContent) throws XMLStreamException {
+        XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
+        return xmlInputFactory.createXMLStreamReader(new StringReader(xmlContent));
+    }
+
+    /**
+     * Create XML stream reader for inputStream
+     *
+     * @param inputStream xml content inputStream
+     * @return XML stream reader
+     * @throws XMLStreamException on error
+     */
+    public static XMLStreamReader createXMLStreamReader(InputStream inputStream) throws XMLStreamException {
+        XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
+        return xmlInputFactory.createXMLStreamReader(inputStream);
     }
 
 }
