@@ -195,7 +195,7 @@ public class ExchangePropPatchMethod extends PostMethod {
 
                 });
                 while (reader.hasNext()) {
-                    reader.nextTag();
+                    reader.next();
                     if (XMLStreamUtil.isStartTag(reader, "response")) {
                         handleResponse(reader);
                     }

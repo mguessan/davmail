@@ -1376,7 +1376,7 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 streamReader = XMLStreamUtil.createXMLStreamReader(body);
                 while (streamReader.hasNext()) {
-                    streamReader.nextTag();
+                    streamReader.next();
                     if (XMLStreamUtil.isStartTag(streamReader)) {
                         String tagLocalName = streamReader.getLocalName();
                         if ("prop".equals(tagLocalName)) {

@@ -1982,7 +1982,7 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             reader = XMLStreamUtil.createXMLStreamReader(roamingdictionary);
             while (reader.hasNext()) {
-                reader.nextTag();
+                reader.next();
                 if (XMLStreamUtil.isStartTag(reader, "e")
                         && "18-timezone".equals( XMLStreamUtil.getAttributeValue(reader, "k"))) {
                     String value = XMLStreamUtil.getAttributeValue(reader, "v");

@@ -808,7 +808,7 @@ public abstract class EWSMethod extends PostMethod {
             try {
                 reader = XMLStreamUtil.createXMLStreamReader(getResponseBodyAsStream());
                 while (reader.hasNext()) {
-                    reader.nextTag();
+                    reader.next();
                     handleErrors(reader);
                     if (serverVersion == null && XMLStreamUtil.isStartTag(reader, "ServerVersionInfo")) {
                         String majorVersion = getAttributeValue(reader, "MajorVersion");

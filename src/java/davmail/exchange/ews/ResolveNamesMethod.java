@@ -47,7 +47,7 @@ public class ResolveNamesMethod extends EWSMethod {
         responseItem.type = "Contact";
         // skip to Contact
         while (reader.hasNext() && !XMLStreamUtil.isStartTag(reader, "Resolution")) {
-            reader.nextTag();
+            reader.next();
         }
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Resolution")) {
             reader.nextTag();
