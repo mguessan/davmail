@@ -704,7 +704,13 @@ public class CaldavConnection extends AbstractConnection {
             appendEventsResponses(response, request, events);
         } else {
             // TODO: handle contacts ?
-            events = session.searchEvents(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+            if (request.vTodoOnly) {
+                 events = session.searchTasksOnly(request.getFolderPath());
+            } else if (request.vEventOnly) {
+                events = session.searchEventsOnly(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+            } else {
+                events = session.searchEvents(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+            }
             appendEventsResponses(response, request, events);
         }
 
@@ -1209,6 +1215,8 @@ public class CaldavConnection extends AbstractConnection {
         protected boolean isMultiGet;
         protected String timeRangeStart;
         protected String timeRangeEnd;
+        protected boolean vTodoOnly;
+        protected boolean vEventOnly;
 
         protected CaldavRequest(String command, String path, Map<String, String> headers, String body) throws IOException {
             this.command = command;
@@ -1418,7 +1426,14 @@ public class CaldavConnection extends AbstractConnection {
         public void handleCompFilter(XMLStreamReader reader) throws XMLStreamException {
             while (reader.hasNext() && !isEndTag(reader, "comp-filter")) {
                 reader.nextTag();
-                if (XMLStreamUtil.isStartTag(reader, "time-range")) {
+                if (XMLStreamUtil.isStartTag(reader, "comp-filter")) {
+                    String name = reader.getAttributeValue(null, "name");
+                    if ("VEVENT".equals(name)) {
+                        vEventOnly = true;
+                    } else if ("VTODO".equals(name)) {
+                        vTodoOnly = true;
+                    }
+                } else if (XMLStreamUtil.isStartTag(reader, "time-range")) {
                     timeRangeStart = reader.getAttributeValue(null, "start");
                     timeRangeEnd = reader.getAttributeValue(null, "end");
                 }

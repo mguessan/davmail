@@ -33,12 +33,16 @@ import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
+import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
+import org.apache.log4j.Level;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Test Caldav listener.
@@ -121,6 +125,13 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_OK, method.getStatusCode());
     }
 
+    public void testGetOtherUserCalendar() throws IOException {
+        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        PropFindMethod method = new PropFindMethod("/principals/users/" + Settings.getProperty("davmail.to") + "/calendar/");
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_OK, method.getStatusCode());
+    }
+
     public void testReportCalendar() throws IOException, DavException {
         SimpleDateFormat formatter = ExchangeSession.getZuluDateFormat();
         Calendar cal = Calendar.getInstance();
@@ -148,15 +159,58 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
         MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
         MultiStatusResponse[] responses = multiStatus.getResponses();
-
+        ExchangeSession.Condition dateCondition = session.and(
+                session.gt("dtstart", session.formatSearchDate(start)),
+                session.lt("dtend", session.formatSearchDate(end))
+        );
         List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/",
-                session.and(
-                        session.gt("dtstart", session.formatSearchDate(start)),
-                        session.lt("dtend", session.formatSearchDate(end))
-                )
+                session.or(session.isNull("instancetype"),
+                        session.isEqualTo("instancetype", 1),
+                        session.and(session.isEqualTo("instancetype", 0), dateCondition))
+
         );
 
         assertEquals(events.size(), responses.length);
+    }
+
+    public void testReportTasks() throws IOException, DavException {
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        buffer.append("<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">");
+        buffer.append("<D:prop>");
+        buffer.append("<C:calendar-data/>");
+        buffer.append("</D:prop>");
+        buffer.append("<C:comp-filter name=\"VCALENDAR\">");
+        buffer.append("<C:comp-filter name=\"VTODO\"/>");
+        buffer.append("</C:comp-filter>");
+        buffer.append("<C:filter>");
+        buffer.append("</C:filter>");
+        buffer.append("</C:calendar-query>");
+        SearchReportMethod method = new SearchReportMethod("/users/" + session.getEmail() + "/calendar/", buffer.toString());
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+    }
+
+    public void testReportEventsOnly() throws IOException, DavException {
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        buffer.append("<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">");
+        buffer.append("<D:prop>");
+        buffer.append("<C:calendar-data/>");
+        buffer.append("</D:prop>");
+        buffer.append("<C:comp-filter name=\"VCALENDAR\">");
+        buffer.append("<C:comp-filter name=\"VEVENT\"/>");
+        buffer.append("</C:comp-filter>");
+        buffer.append("<C:filter>");
+        buffer.append("</C:filter>");
+        buffer.append("</C:calendar-query>");
+        SearchReportMethod method = new SearchReportMethod("/users/" + session.getEmail() + "/calendar/", buffer.toString());
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
+        MultiStatusResponse[] responses = multiStatus.getResponses();
     }
 
     public void testCreateCalendar() throws IOException {

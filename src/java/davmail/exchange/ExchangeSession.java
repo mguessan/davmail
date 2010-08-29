@@ -2089,9 +2089,9 @@ public abstract class ExchangeSession {
             writer.writeHeader("Date", new Date());
 
             // Make sure invites have a proper subject line
-            String subject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
-            if (subject == null) {
-                subject = BundleMessage.format("MEETING_REQUEST");
+            String vEventSubject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
+            if (vEventSubject == null) {
+                vEventSubject = BundleMessage.format("MEETING_REQUEST");
             }
 
             // Write a part of the message that contains the
@@ -2267,7 +2267,25 @@ public abstract class ExchangeSession {
             dateCondition = gt("dtstart", formatSearchDate(cal.getTime()));
         }
 
-        return searchEvents(folderPath, dateCondition);
+        return searchEvents(folderPath, or(isNull("instancetype"),
+                        isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition)));
+    }
+
+    protected Condition getRangeCondition(String timeRangeStart, String timeRangeEnd) throws IOException {
+        try {
+            SimpleDateFormat parser = getZuluDateFormat();
+            ExchangeSession.MultiCondition andCondition = and();
+            if (timeRangeStart != null) {
+                andCondition.add(gte("dtstart", formatSearchDate(parser.parse(timeRangeStart))));
+            }
+            if (timeRangeEnd != null) {
+                andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
+            }
+            return andCondition;
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
     }
 
     /**
@@ -2280,30 +2298,47 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
-        try {
-            SimpleDateFormat parser = getZuluDateFormat();
-            ExchangeSession.MultiCondition andCondition = and();
-            if (timeRangeStart != null) {
-                andCondition.add(gte("dtstart", formatSearchDate(parser.parse(timeRangeStart))));
-            }
-            if (timeRangeEnd != null) {
-                andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
-            }
-            return searchEvents(folderPath, andCondition);
-        } catch (ParseException e) {
-            throw new IOException(e);
-        }
+        Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
+        return searchEvents(folderPath, or(isNull("instancetype"),
+                        isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition)));
+    }
+
+    /**
+     * Search events between start and end, exclude tasks.
+     *
+     * @param folderPath     Exchange folder path
+     * @param timeRangeStart date range start in zulu format
+     * @param timeRangeEnd   date range start in zulu format
+     * @return list of calendar events
+     * @throws IOException on error
+     */
+    public List<Event> searchEventsOnly(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
+        Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
+        return searchEvents(folderPath, or(isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition)));
+    }
+
+    /**
+     * Search tasks only (VTODO).
+     *
+     * @param folderPath     Exchange folder path
+     * @return list of calendar events
+     * @throws IOException on error
+     */
+    public List<Event> searchTasksOnly(String folderPath) throws IOException {
+        return searchEvents(folderPath, isNull("instancetype"));
     }
 
     /**
      * Search calendar events in provided folder.
      *
-     * @param folderPath    Exchange folder path
-     * @param dateCondition date filter
+     * @param folderPath Exchange folder path
+     * @param filter     search filter
      * @return list of calendar events
      * @throws IOException on error
      */
-    public List<Event> searchEvents(String folderPath, Condition dateCondition) throws IOException {
+    public List<Event> searchEvents(String folderPath, Condition filter) throws IOException {
 
         Condition privateCondition = null;
         if (isSharedFolder(folderPath)) {
@@ -2312,10 +2347,7 @@ public abstract class ExchangeSession {
         }
         // instancetype 0 single appointment / 1 master recurring appointment
         return searchEvents(folderPath, ITEM_PROPERTIES,
-                and(or(isNull("instancetype"),
-                        isEqualTo("instancetype", 1),
-                        and(isEqualTo("instancetype", 0), dateCondition)),
-                        privateCondition));
+                and(filter, privateCondition));
     }
 
     /**
