@@ -21,6 +21,7 @@ package davmail.pop;
 
 import davmail.AbstractConnection;
 import davmail.AbstractServer;
+import davmail.Settings;
 
 import java.net.Socket;
 
@@ -40,6 +41,7 @@ public class PopServer extends AbstractServer {
      */
     public PopServer(int port)  {
         super(PopServer.class.getName(), port, PopServer.DEFAULT_PORT);
+		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecurepop");
     }
 
     @Override

@@ -21,6 +21,7 @@ package davmail.imap;
 
 import davmail.AbstractConnection;
 import davmail.AbstractServer;
+import davmail.Settings;
 
 import java.net.Socket;
 
@@ -41,6 +42,7 @@ public class ImapServer extends AbstractServer {
      */
     public ImapServer(int port) {
         super(ImapServer.class.getName(), port, ImapServer.DEFAULT_PORT);
+		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureimap");
     }
 
     @Override

@@ -163,6 +163,11 @@ public final class Settings {
         SETTINGS.put("davmail.ssl.clientKeystorePass", "");
         SETTINGS.put("davmail.ssl.pkcs11Library", "");
         SETTINGS.put("davmail.ssl.pkcs11Config", "");
+        SETTINGS.put("davmail.ssl.nosecurepop", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.ssl.nosecureimap", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.ssl.nosecuresmtp", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.ssl.nosecurecaldav", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.ssl.nosecureldap", Boolean.FALSE.toString());
 
         // logging
         SETTINGS.put("log4j.rootLogger", Level.WARN.toString());

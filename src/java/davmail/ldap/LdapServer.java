@@ -20,6 +20,7 @@ package davmail.ldap;
 
 import davmail.AbstractConnection;
 import davmail.AbstractServer;
+import davmail.Settings;
 
 import java.net.Socket;
 
@@ -40,6 +41,7 @@ public class LdapServer extends AbstractServer {
      */
     public LdapServer(int port)  {
         super(LdapServer.class.getName(), port, LdapServer.DEFAULT_PORT);
+		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureldap");
     }
 
     @Override
