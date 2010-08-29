@@ -189,7 +189,7 @@ calendar.debug.log.verbose=true]]></source>
                     (
                     <code>mail.server.server<em>index</em>.timeout
                     </code>
-                    and<code>mailnews.tcptimeout</code>)or avoid full
+                    and&#x20;<code>mailnews.tcptimeout</code>)or avoid full
                     mailbox sync: disable global search and indexer under advanced options and change
                     Synchronization &amp; Storage options under Account Settings.
                 </p>
