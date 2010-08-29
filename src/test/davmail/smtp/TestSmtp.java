@@ -108,7 +108,15 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void sendAndCheckMessage(MimeMessage mimeMessage, String bcc) throws IOException, MessagingException, InterruptedException {
-        writeLine("MAIL FROM:" + session.getEmail());
+        sendAndCheckMessage(mimeMessage, null, bcc);
+    }
+
+    public void sendAndCheckMessage(MimeMessage mimeMessage, String from, String bcc) throws IOException, MessagingException, InterruptedException {
+        if (from != null) {
+            writeLine("MAIL FROM:" + from);
+        } else {
+            writeLine("MAIL FROM:" + session.getEmail());
+        }
         readLine();
         if (bcc != null) {
             writeLine("RCPT TO:" + bcc);
@@ -144,6 +152,16 @@ public class TestSmtp extends AbstractDavMailTestCase {
         mimeMessage.setSubject("Test subject");
         mimeMessage.setText(body);
         sendAndCheckMessage(mimeMessage);
+    }
+
+    public void testInvalidFrom() throws IOException, MessagingException, InterruptedException {
+        String body = "Test message";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("From", "guessant@loca.net");
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test subject");
+        mimeMessage.setText(body);
+        sendAndCheckMessage(mimeMessage, "guessant@loca.net", null);
     }
 
     public void testSendMessage() throws IOException, MessagingException, InterruptedException {

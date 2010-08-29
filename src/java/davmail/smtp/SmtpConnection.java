@@ -92,6 +92,7 @@ public class SmtpConnection extends AbstractConnection {
                         // inform server that AUTH is supported
                         // actually it is mandatory (only way to get credentials)
                         sendClient("250-AUTH LOGIN PLAIN");
+                        sendClient("250-8BITMIME");
                         sendClient("250 Hello");
                     } else if ("HELO".equalsIgnoreCase(command)) {
                         sendClient("250 Hello");
