@@ -1684,6 +1684,17 @@ public class DavExchangeSession extends ExchangeSession {
         return contacts;
     }
 
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
+        return searchEvents(folderPath, ITEM_PROPERTIES,
+                and(isEqualTo("contentclass", "urn:content-classes:calendarmessage"),
+                        or(isNull("processed"), isFalse("processed"))));
+    }
+
+
     @Override
     public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();

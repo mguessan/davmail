@@ -2245,12 +2245,7 @@ public abstract class ExchangeSession {
      * @return list of calendar messages as Event objects
      * @throws IOException on error
      */
-    public List<Event> getEventMessages(String folderPath) throws IOException {
-        return searchEvents(folderPath, ITEM_PROPERTIES,
-                and(or(isEqualTo("outlookmessageclass", "IPM.Schedule.Meeting.Request"),
-                        isEqualTo("outlookmessageclass", "IPM.Schedule.Meeting.Canceled")),
-                        or(isNull("processed"), isFalse("processed"))));
-    }
+    public abstract List<Event> getEventMessages(String folderPath) throws IOException;
 
     /**
      * Search calendar events in provided folder.
