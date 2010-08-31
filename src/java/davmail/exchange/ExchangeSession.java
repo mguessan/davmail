@@ -2247,8 +2247,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> getEventMessages(String folderPath) throws IOException {
         return searchEvents(folderPath, ITEM_PROPERTIES,
-                and(isEqualTo("outlookmessageclass", "IPM.Schedule.Meeting.Request"),
-                        or(isNull("processed"), isFalse("processed"))));
+                and(isEqualTo("outlookmessageclass", "IPM.Schedule.Meeting.Request")));
     }
 
     /**

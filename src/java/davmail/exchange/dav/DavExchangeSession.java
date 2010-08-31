@@ -1869,12 +1869,14 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
-        // do not delete calendar messages, mark read and processed
+        // mark read
         ArrayList<DavConstants> list = new ArrayList<DavConstants>();
-        list.add(Field.createDavProperty("processed", "true"));
+        //list.add(Field.createDavProperty("processed", "true"));
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
         DavGatewayHttpClientFacade.executeMethod(httpClient, patchMethod);
+        // move to trash
+        moveToTrash(eventPath);
     }
 
     @Override
@@ -2295,9 +2297,13 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
+        moveToTrash(message.permanentUrl);
+    }
+
+    protected void moveToTrash(String messageUrl) throws IOException {
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
-        LOGGER.debug("Deleting : " + message.permanentUrl + " to " + destination);
-        MoveMethod method = new MoveMethod(message.permanentUrl, destination, false);
+        LOGGER.debug("Deleting : " + messageUrl + " to " + destination);
+        MoveMethod method = new MoveMethod(messageUrl, destination, false);
         method.addRequestHeader("Allow-rename", "t");
 
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
