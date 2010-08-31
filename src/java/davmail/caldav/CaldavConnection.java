@@ -1425,7 +1425,7 @@ public class CaldavConnection extends AbstractConnection {
 
         public void handleCompFilter(XMLStreamReader reader) throws XMLStreamException {
             while (reader.hasNext() && !isEndTag(reader, "comp-filter")) {
-                reader.nextTag();
+                reader.next();
                 if (XMLStreamUtil.isStartTag(reader, "comp-filter")) {
                     String name = reader.getAttributeValue(null, "name");
                     if ("VEVENT".equals(name)) {
@@ -1442,7 +1442,7 @@ public class CaldavConnection extends AbstractConnection {
 
         public void handleProp(XMLStreamReader reader) throws XMLStreamException {
             while (reader.hasNext() && !isEndTag(reader, "prop")) {
-                reader.nextTag();
+                reader.next();
                 if (XMLStreamUtil.isStartTag(reader)) {
                     String tagLocalName = reader.getLocalName();
                     String tagText = null;
