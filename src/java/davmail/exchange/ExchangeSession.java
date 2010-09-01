@@ -1044,36 +1044,40 @@ public abstract class ExchangeSession {
      */
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
         // check Sent folder for duplicates
-        ExchangeSession.MessageList messages = searchMessages(SENT, headerIsEqualTo("message-id", mimeMessage.getMessageID()));
-        if (!messages.isEmpty()) {
-            LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
-        } else {
-            convertResentHeader(mimeMessage, "From");
-            convertResentHeader(mimeMessage, "To");
-            convertResentHeader(mimeMessage, "Cc");
-            convertResentHeader(mimeMessage, "Bcc");
-            convertResentHeader(mimeMessage, "Message-Id");
-
-            // fix From header for Exchange 2007
-            if (!"Exchange2003".equals(serverVersion)) {
-                 mimeMessage.removeHeader("From");
+        if (Settings.getBooleanProperty("davmail.smtpCheckDuplicates")) {
+            ExchangeSession.MessageList messages = searchMessages(SENT, headerIsEqualTo("message-id", mimeMessage.getMessageID()));
+            if (!messages.isEmpty()) {
+                LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
+                return;
             }
-
-            // remove visible recipients from list
-            Set<String> visibleRecipients = new HashSet<String>();
-            Address[] recipients = mimeMessage.getAllRecipients();
-            if (recipients != null) {
-                for (Address address : recipients) {
-                    visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
-                }
-            }
-            for (String recipient : rcptToRecipients) {
-                if (!visibleRecipients.contains(recipient.toLowerCase())) {
-                    mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
-                }
-            }
-            sendMessage(mimeMessage);
         }
+
+        convertResentHeader(mimeMessage, "From");
+        convertResentHeader(mimeMessage, "To");
+        convertResentHeader(mimeMessage, "Cc");
+        convertResentHeader(mimeMessage, "Bcc");
+        convertResentHeader(mimeMessage, "Message-Id");
+
+        // fix From header for Exchange 2007
+        if (!"Exchange2003".equals(serverVersion)) {
+            mimeMessage.removeHeader("From");
+        }
+
+        // remove visible recipients from list
+        Set<String> visibleRecipients = new HashSet<String>();
+        Address[] recipients = mimeMessage.getAllRecipients();
+        if (recipients != null) {
+            for (Address address : recipients) {
+                visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
+            }
+        }
+        for (String recipient : rcptToRecipients) {
+            if (!visibleRecipients.contains(recipient.toLowerCase())) {
+                mimeMessage.addRecipient(javax.mail.Message.RecipientType.BCC, new InternetAddress(recipient));
+            }
+        }
+        sendMessage(mimeMessage);
+
     }
 
     /**
@@ -2260,8 +2264,8 @@ public abstract class ExchangeSession {
         }
 
         return searchEvents(folderPath, or(isNull("instancetype"),
-                        isEqualTo("instancetype", 1),
-                        and(isEqualTo("instancetype", 0), dateCondition)));
+                isEqualTo("instancetype", 1),
+                and(isEqualTo("instancetype", 0), dateCondition)));
     }
 
     protected Condition getRangeCondition(String timeRangeStart, String timeRangeEnd) throws IOException {
@@ -2292,8 +2296,8 @@ public abstract class ExchangeSession {
     public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
         return searchEvents(folderPath, or(isNull("instancetype"),
-                        isEqualTo("instancetype", 1),
-                        and(isEqualTo("instancetype", 0), dateCondition)));
+                isEqualTo("instancetype", 1),
+                and(isEqualTo("instancetype", 0), dateCondition)));
     }
 
     /**
@@ -2308,13 +2312,13 @@ public abstract class ExchangeSession {
     public List<Event> searchEventsOnly(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
         return searchEvents(folderPath, or(isEqualTo("instancetype", 1),
-                        and(isEqualTo("instancetype", 0), dateCondition)));
+                and(isEqualTo("instancetype", 0), dateCondition)));
     }
 
     /**
      * Search tasks only (VTODO).
      *
-     * @param folderPath     Exchange folder path
+     * @param folderPath Exchange folder path
      * @return list of calendar events
      * @throws IOException on error
      */
