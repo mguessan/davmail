@@ -66,11 +66,12 @@ public final class DavGatewayHttpClientFacade {
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
     static {
-        DavGatewayHttpClientFacade.start();
-    }
+        // workaround for TLS Renegotiation issue see http://java.sun.com/javase/javaseforbusiness/docs/TLSReadme.html    
+        System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true");
 
-    // register custom cookie policy
-    static {
+        DavGatewayHttpClientFacade.start();
+
+        // register custom cookie policy
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
     }
 
@@ -321,8 +322,6 @@ public final class DavGatewayHttpClientFacade {
                 addNTLM(httpClient);
                 status = httpClient.executeMethod(method);
             }
-        } catch (IOException e) {
-            throw e;
         } finally {
             method.releaseConnection();
         }
@@ -486,11 +485,11 @@ public final class DavGatewayHttpClientFacade {
         NTCredentials credentials = (NTCredentials) httpClient.getState().getCredentials(authScope);
         String userName = credentials.getUserName();
         int backSlashIndex = userName.indexOf('\\');
-        if (backSlashIndex >=0) {
+        if (backSlashIndex >= 0) {
             String domain = userName.substring(0, backSlashIndex);
-            userName = userName.substring(backSlashIndex+1);
+            userName = userName.substring(backSlashIndex + 1);
             credentials = new NTCredentials(userName, credentials.getPassword(), "", domain);
-            httpClient.getState().setCredentials(authScope, credentials); 
+            httpClient.getState().setCredentials(authScope, credentials);
         }
 
         // make sure NTLM is always active
