@@ -142,7 +142,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (principalIndex >= 0) {
                 principal = folderPath.substring(USERS.length(), principalIndex);
                 localPath = folderPath.substring(USERS.length() + principal.length() + 1);
-                if (localPath.startsWith(LOWER_CASE_INBOX)) {
+                if (localPath.startsWith(LOWER_CASE_INBOX) || localPath.startsWith(INBOX)) {
                     localPath = inboxName + localPath.substring(LOWER_CASE_INBOX.length());
                 } else if (localPath.startsWith(CALENDAR)) {
                     localPath = calendarName + localPath.substring(CALENDAR.length());

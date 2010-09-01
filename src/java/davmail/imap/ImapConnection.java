@@ -53,6 +53,7 @@ import java.util.*;
 public class ImapConnection extends AbstractConnection {
     private static final Logger LOGGER = Logger.getLogger(ImapConnection.class);
 
+    protected String baseMailboxPath;
     ExchangeSession.Folder currentFolder;
 
     /**
@@ -102,6 +103,8 @@ public class ImapConnection extends AbstractConnection {
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
+                            // detect shared mailbox access 
+                            splitUserName();
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
                                 sendClient(commandId + " OK Authenticated");
@@ -119,6 +122,8 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient("+ " + base64Encode("Username:"));
                                         state = State.LOGIN;
                                         userName = base64Decode(readClient());
+                                        // detect shared mailbox access
+                                        splitUserName();
                                         sendClient("+ " + base64Encode("Password:"));
                                         state = State.PASSWORD;
                                         password = base64Decode(readClient());
@@ -145,6 +150,9 @@ public class ImapConnection extends AbstractConnection {
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        if (baseMailboxPath != null) {
+                                            folderContext = baseMailboxPath + folderContext;
+                                        }
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
@@ -198,6 +206,9 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        if (baseMailboxPath != null && !folderName.startsWith("/")) {
+                                            folderName = baseMailboxPath + folderName;
+                                        }
                                         try {
                                             currentFolder = session.getFolder(folderName);
                                             currentFolder.loadMessages();
@@ -576,6 +587,24 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    /**
+     * Detect shared mailbox access.
+     * see http://msexchangeteam.com/archive/2004/03/31/105275.aspx
+     */
+    protected void splitUserName() {
+        String[] tokens = null;
+        if (userName.indexOf('/') >= 0) {
+            tokens = userName.split("/");
+        } else if (userName.indexOf('\\') >= 0) {
+            tokens = userName.split("\\\\");
+        }
+
+        if (tokens != null && tokens.length == 3) {
+            userName = tokens[0] + '\\' + tokens[1];
+            baseMailboxPath = "/users/" + tokens[2] + '/';
+        }
     }
 
     /**
