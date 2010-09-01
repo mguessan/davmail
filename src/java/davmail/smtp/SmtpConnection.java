@@ -123,6 +123,8 @@ public class SmtpConnection extends AbstractConnection {
                             state = State.STARTMAIL;
                             recipients.clear();
                             sendClient("250 Sender OK");
+                        } else if (state == State.INITIAL) {
+                            sendClient("503 Authentication required");
                         } else {
                             state = State.INITIAL;
                             sendClient("503 Bad sequence of commands");
