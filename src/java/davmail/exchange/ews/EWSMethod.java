@@ -601,7 +601,11 @@ public abstract class EWSMethod extends PostMethod {
      */
     public List<Item> getResponseItems() throws EWSException {
         checkSuccess();
-        return responseItems;
+        if (responseItems != null) {
+            return responseItems;
+        } else {
+            return new ArrayList<Item>();
+        }
     }
 
     /**
