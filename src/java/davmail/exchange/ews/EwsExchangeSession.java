@@ -50,7 +50,6 @@ import java.util.*;
 public class EwsExchangeSession extends ExchangeSession {
 
     protected Map<String, String> folderIdMap;
-    protected String serverVersion;
 
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;

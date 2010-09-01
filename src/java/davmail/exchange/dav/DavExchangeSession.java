@@ -475,6 +475,7 @@ public class DavExchangeSession extends ExchangeSession {
         //noinspection VariableNotUsedInsideIf
         if (mailPath != null) {
             // Exchange 2003
+            serverVersion = "Exchange2003";
             try {
                 buildEmail(method.getURI().getHost());
             } catch (URIException uriException) {
@@ -482,6 +483,11 @@ public class DavExchangeSession extends ExchangeSession {
             }
         } else {
             // Exchange 2007 : get alias and email from options page
+            serverVersion = "Exchange2007";
+
+            // Gallookup is an Exchange 2003 only feature
+            disableGalLookup = true;
+
             getEmailAndAliasFromOptions();
             // build standard mailbox link with email
             mailPath = "/exchange/" + email + '/';

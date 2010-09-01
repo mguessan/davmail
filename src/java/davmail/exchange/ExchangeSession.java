@@ -119,6 +119,8 @@ public abstract class ExchangeSession {
 
     private final String userName;
 
+    protected String serverVersion;
+
     protected static final String YYYY_MM_DD_HH_MM_SS = "yyyy/MM/dd HH:mm:ss";
     private static final String YYYYMMDD_T_HHMMSS_Z = "yyyyMMdd'T'HHmmss'Z'";
     protected static final String YYYY_MM_DD_T_HHMMSS_Z = "yyyy-MM-dd'T'HH:mm:ss'Z'";
@@ -1053,14 +1055,8 @@ public abstract class ExchangeSession {
             convertResentHeader(mimeMessage, "Message-Id");
 
             // fix From header for Exchange 2007
-            Address[] fromAddresses = mimeMessage.getFrom();
-
-            if (fromAddresses != null) {
-                for (Address fromAddress : fromAddresses) {
-                    if (!email.equalsIgnoreCase(((InternetAddress) fromAddress).getAddress())) {
-                        mimeMessage.removeHeader("From");
-                    }
-                }
+            if (!"Exchange2003".equals(serverVersion)) {
+                 mimeMessage.removeHeader("From");
             }
 
             // remove visible recipients from list
