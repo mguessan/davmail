@@ -78,6 +78,34 @@ public class EwsExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
+
+    /**
+     * Check endpoint url.
+     *
+     * @param endPointUrl endpoint url
+     * @throws IOException on error
+     */
+    protected void checkEndPointUrl(String endPointUrl) throws IOException {
+        HttpMethod getMethod = new GetMethod(endPointUrl);
+        getMethod.setFollowRedirects(false);
+        try {
+            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
+            if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
+                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
+            }
+            // check Location
+            Header locationHeader = getMethod.getResponseHeader("Location");
+            if (locationHeader == null || !"/ews/services.wsdl".equalsIgnoreCase(locationHeader.getValue())) {
+                throw new IOException("Ews endpoint not available at " + getMethod.getURI().toString());
+            }
+        } catch (IOException e) {
+            LOGGER.debug(e.getMessage());
+            throw e;
+        } finally {
+            getMethod.releaseConnection();
+        }
+    }
+
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
         // also need to retrieve email and alias
@@ -89,27 +117,16 @@ public class EwsExchangeSession extends ExchangeSession {
 
         // nothing to do, mailPath not used in EWS mode
         // check EWS access
-        HttpMethod getMethod = new GetMethod("/ews/exchange.asmx");
-        getMethod.setFollowRedirects(false);
         try {
-            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
-            if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
-                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
-            }
+            checkEndPointUrl("/ews/exchange.asmx");
         } catch (IOException e) {
-            LOGGER.debug(e.getMessage());
             try {
                 // failover, try to retrieve EWS url from autodiscover
-                getMethod.releaseConnection();
-                getMethod = new GetMethod(getEwsUrlFromAutoDiscover());
-                getMethod.setFollowRedirects(false);
+                checkEndPointUrl(getEwsUrlFromAutoDiscover());
             } catch (IOException e2) {
                 LOGGER.error(e2.getMessage());
                 throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
             }
-
-        } finally {
-            getMethod.releaseConnection();
         }
 
         try {
@@ -147,7 +164,10 @@ public class EwsExchangeSession extends ExchangeSession {
         @Override
         protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
             Header contentTypeHeader = getResponseHeader("Content-Type");
-            if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
+            if (contentTypeHeader != null &&
+                    ("text/xml; charset=utf-8".equals(contentTypeHeader.getValue())
+                            || "text/html; charset=utf-8".equals(contentTypeHeader.getValue())
+                    )) {
                 BufferedReader autodiscoverReader = null;
                 try {
                     autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream()));
