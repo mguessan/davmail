@@ -213,7 +213,7 @@ public class ExchangePropPatchMethod extends PostMethod {
         String href = null;
         String responseStatus = "";
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "response")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("href".equals(tagLocalName)) {
@@ -233,7 +233,7 @@ public class ExchangePropPatchMethod extends PostMethod {
     protected void handlePropstat(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         int propstatStatus = 0;
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "propstat")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("status".equals(tagLocalName)) {
@@ -253,7 +253,7 @@ public class ExchangePropPatchMethod extends PostMethod {
 
     protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "prop")){
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());

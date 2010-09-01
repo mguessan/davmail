@@ -153,6 +153,9 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(itemType);
             writer.write("Shape>");
             baseShape.write(writer);
+            if (includeMimeContent) {
+                writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
+            }
             if (additionalProperties != null) {
                 writer.write("<t:AdditionalProperties>");
                 StringBuilder buffer = new StringBuilder();
@@ -161,9 +164,6 @@ public abstract class EWSMethod extends PostMethod {
                 }
                 writer.write(buffer.toString());
                 writer.write("</t:AdditionalProperties>");
-            }
-            if (includeMimeContent) {
-                writer.write("<t:IncludeMimeContent>true</t:IncludeMimeContent>");
             }
             writer.write("</m:");
             writer.write(itemType);
@@ -669,7 +669,7 @@ public abstract class EWSMethod extends PostMethod {
         Item responseItem = new Item();
         responseItem.type = reader.getLocalName();
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, responseItem.type)) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 String value = null;
@@ -700,7 +700,7 @@ public abstract class EWSMethod extends PostMethod {
     protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {
         List<FileAttachment> attachments = new ArrayList<FileAttachment>();
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Attachments"))) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("FileAttachment".equals(tagLocalName)) {
@@ -714,7 +714,7 @@ public abstract class EWSMethod extends PostMethod {
     protected FileAttachment handleFileAttachment(XMLStreamReader reader) throws XMLStreamException {
         FileAttachment fileAttachment = new FileAttachment();
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "FileAttachment"))) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("AttachmentId".equals(tagLocalName)) {
@@ -739,7 +739,7 @@ public abstract class EWSMethod extends PostMethod {
         String propertyTag = null;
         String propertyValue = null;
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "ExtendedProperty"))) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("ExtendedFieldURI".equals(tagLocalName)) {
@@ -756,7 +756,7 @@ public abstract class EWSMethod extends PostMethod {
                 } else if ("Values".equals(tagLocalName)) {
                     StringBuilder buffer = new StringBuilder();
                     while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Values"))) {
-                        reader.nextTag();
+                        reader.next();
                         if (XMLStreamUtil.isStartTag(reader)) {
 
                             if (buffer.length() > 0) {
@@ -842,7 +842,7 @@ public abstract class EWSMethod extends PostMethod {
 
     private void handleItems(XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, responseCollectionName)) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 responseItems.add(handleItem(reader));
             }

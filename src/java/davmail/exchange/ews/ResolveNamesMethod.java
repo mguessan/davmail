@@ -50,7 +50,7 @@ public class ResolveNamesMethod extends EWSMethod {
             reader.next();
         }
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Resolution")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Mailbox".equals(tagLocalName)) {
@@ -65,7 +65,7 @@ public class ResolveNamesMethod extends EWSMethod {
 
     protected void handleMailbox(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Mailbox")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Name".equals(tagLocalName)) {
@@ -77,7 +77,7 @@ public class ResolveNamesMethod extends EWSMethod {
 
     protected void handleContact(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Contact")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("EmailAddresses".equals(tagLocalName)) {
@@ -95,7 +95,7 @@ public class ResolveNamesMethod extends EWSMethod {
 
     protected void handlePhysicalAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "PhysicalAddresses")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 // TODO
@@ -105,7 +105,7 @@ public class ResolveNamesMethod extends EWSMethod {
 
     protected void handlePhoneNumbers(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "PhoneNumbers")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 // TODO
@@ -115,7 +115,7 @@ public class ResolveNamesMethod extends EWSMethod {
 
     protected void handleEmailAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "EmailAddresses")) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Entry".equals(tagLocalName)) {

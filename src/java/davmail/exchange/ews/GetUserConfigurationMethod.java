@@ -57,7 +57,7 @@ public class GetUserConfigurationMethod extends EWSMethod {
     private Item handleUserConfiguration(XMLStreamReader reader) throws XMLStreamException {
         Item responseItem = new Item();
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "UserConfiguration"))) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("DictionaryEntry".equals(tagLocalName)) {
@@ -71,7 +71,7 @@ public class GetUserConfigurationMethod extends EWSMethod {
     private void handleDictionaryEntry(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         String key = null;
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "DictionaryEntry"))) {
-            reader.nextTag();
+            reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Value".equals(tagLocalName)) {
