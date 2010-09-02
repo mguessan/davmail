@@ -1,3 +1,49 @@
+** DavMail 3.8.3 released **
+Another bugfix release with major regressions fixed:
+missing calendar meeting messages and delivery status notification on
+some external addresses. Also includes improved autodiscover support.
+
+Enhancements:
+- Disable broken rpm generation
+- Fix test cases
+- Upgrade swt to 3.6
+- workaround for TLS Renegotiation issue, 
+  see http://java.sun.com/javase/javaseforbusiness/docs/TLSReadme.html    
+- Switch back to StreamReader.next instead of nextTag
+- Fix autodiscover support
+- Merge patch 3053324: Implement per service SSL flag (patch provided by scairt)
+- Fix XMLStreamUtil regression
+- Refactor XMLStreamUtil
+
+Exchange Web Services:
+- EWS: improve autodiscover implementation
+- EWS: fix possible NullPonterException
+- EWS: implement autodiscover to find actual EWS endpoint url
+
+Caldav:
+- Caldav: extend Lightning broken tests to all 1.* versions
+- Caldav: switch back to contentclass to get calendarmessages over webdav
+- Caldav : revert previous changes and fix meeting cancel support (IPM.Schedule.Meeting.Canceled)
+- Caldav: move to trash on processItem
+- Caldav: fix request parser regression on nextTag
+- Caldav: improve filter handling, support VTODO/VEVENT comp-filter
+- Caldav: make timezone name retrieval more robust
+
+SMTP:
+- SMTP: make duplicates check optional with davmail.smtpCheckDuplicates setting
+- SMTP: always remove From header with Exchange 2007 and 2010
+- SMTP: Improve message on MAIL FROM without authentication
+- SMTP: experimental, advertise 8BITMIME
+
+IMAP:
+- IMAP: implement shared mailbox access
+
+Documentation:
+- minor doc fix
+- Doc: Additional Exchange Webdav setup documentation
+- Add ohloh widget on home page
+- Doc: a few doc fixes and update roadmap
+
 ** DavMail 3.8.2 released **
 Bugfix release with improved Exchange 2010 IMAP support, CardDav fixes and
 improved error handling
