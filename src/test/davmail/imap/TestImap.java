@@ -64,10 +64,13 @@ public class TestImap extends AbstractDavMailTestCase {
 
     @Override
     public void setUp() throws IOException {
+        boolean needStart = !loaded;
         super.setUp();
-        if (clientSocket == null) {
+        if (needStart) {
             // start gateway
             DavGateway.start();
+        }
+        if (clientSocket == null) {
             clientSocket = new Socket("localhost", Settings.getIntProperty("davmail.imapPort"));
             socketWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             socketReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -294,6 +297,7 @@ public class TestImap extends AbstractDavMailTestCase {
     public void testLogout() throws IOException {
         writeLine(". LOGOUT");
         assertEquals("* BYE Closing connection", socketReader.readLine());
+        clientSocket = null;
     }
 
     public void testBrokenPipe() throws IOException, InterruptedException {

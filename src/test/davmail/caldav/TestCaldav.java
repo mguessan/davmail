@@ -164,8 +164,7 @@ public class TestCaldav extends AbstractDavMailTestCase {
                 session.lt("dtend", session.formatSearchDate(end))
         );
         List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/",
-                session.or(session.isNull("instancetype"),
-                        session.isEqualTo("instancetype", 1),
+                session.or(session.isEqualTo("instancetype", 1),
                         session.and(session.isEqualTo("instancetype", 0), dateCondition))
 
         );

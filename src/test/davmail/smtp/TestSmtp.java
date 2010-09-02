@@ -42,7 +42,6 @@ public class TestSmtp extends AbstractDavMailTestCase {
     static Socket clientSocket;
     static BufferedOutputStream socketOutputStream;
     static BufferedInputStream socketInputStream;
-    static final byte[] CRLF = {13, 10};
 
     enum State {
         CHAR, CR, CRLF
@@ -55,7 +54,8 @@ public class TestSmtp extends AbstractDavMailTestCase {
 
     protected void writeLine(String line) throws IOException {
         write(line);
-        socketOutputStream.write(CRLF);
+        socketOutputStream.write(13);
+        socketOutputStream.write(10);
         socketOutputStream.flush();
     }
 
@@ -140,9 +140,12 @@ public class TestSmtp extends AbstractDavMailTestCase {
             Thread.sleep(1000);
         }
         assertEquals(1, messages.size());
-        ExchangeSession.Message message = messages.get(0);
-        message.getMimeMessage().writeTo(System.out);
-        assertEquals(mimeMessage.getDataHandler().getContent(), (String) message.getMimeMessage().getDataHandler().getContent());
+        ExchangeSession.Message sentMessage = messages.get(0);
+        sentMessage.getMimeMessage().writeTo(System.out);
+        // message is converted to html over Dav
+        if (Settings.getBooleanProperty("davmail.enableEws")) {
+            assertEquals(mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
+        }
     }
 
     public void testSendSimpleMessage() throws IOException, MessagingException, InterruptedException {
@@ -193,6 +196,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void testSendMessageTwice() throws IOException, MessagingException, InterruptedException {
+        Settings.setProperty("davmail.smtpCheckDuplicates", "true");
         String body = "First line\r\n.\r\nSecond line";
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
