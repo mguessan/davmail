@@ -125,13 +125,13 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
-     * Update http client configuration (proxy)
+     * Set http client current host configuration.
      *
      * @param httpClient current Http client
      * @param url        target url
      * @throws DavMailException on error
      */
-    public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
+    public static void setClientHost(HttpClient httpClient, String url) throws DavMailException {
         try {
             HostConfiguration hostConfig = httpClient.getHostConfiguration();
             URI httpURI = new URI(url, true);
@@ -139,6 +139,17 @@ public final class DavGatewayHttpClientFacade {
         } catch (URIException e) {
             throw new DavMailException("LOG_INVALID_URL", url);
         }
+    }
+
+    /**
+     * Update http client configuration (proxy)
+     *
+     * @param httpClient current Http client
+     * @param url        target url
+     * @throws DavMailException on error
+     */
+    public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
+        setClientHost(httpClient, url);
 
         synchronized (LOCK) {
             httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);

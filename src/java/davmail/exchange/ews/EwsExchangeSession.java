@@ -148,8 +148,17 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
+        AutoDiscoverMethod(String autodiscoverHost, String userEmail) {
+            super("https://"+autodiscoverHost+"/autodiscover/autodiscover.xml");
+            setAutoDiscoverRequestEntity(userEmail);
+        }
+
         AutoDiscoverMethod(String userEmail) {
             super("/autodiscover/autodiscover.xml");
+            setAutoDiscoverRequestEntity(userEmail);
+        }
+
+        void setAutoDiscoverRequestEntity(String userEmail) {
             String body = "<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006\">" +
                     "<Request>" +
                     "<EMailAddress>" + userEmail + "</EMailAddress>" +
@@ -197,19 +206,40 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected String getEwsUrlFromAutoDiscover() throws DavMailAuthenticationException {
         String ewsUrl;
-        AutoDiscoverMethod autoDiscoverMethod = new AutoDiscoverMethod(email);
+        try {
+            ewsUrl = getEwsUrlFromAutoDiscover(null);
+        } catch (IOException e) {
+            try {
+                ewsUrl = getEwsUrlFromAutoDiscover("autodiscover." + email.substring(email.indexOf('@') + 1));
+            } catch (IOException e2) {
+                LOGGER.error(e2.getMessage());
+                throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+            }
+        }
+        return ewsUrl;
+    }
+
+    protected String getEwsUrlFromAutoDiscover(String autodiscoverHostname) throws IOException {
+        String ewsUrl;
+        AutoDiscoverMethod autoDiscoverMethod;
+        if (autodiscoverHostname != null) {
+            autoDiscoverMethod = new AutoDiscoverMethod(autodiscoverHostname, email);
+        } else {
+            autoDiscoverMethod = new AutoDiscoverMethod(email);
+        }
         try {
             int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, autoDiscoverMethod);
             if (status != HttpStatus.SC_OK) {
                 throw DavGatewayHttpClientFacade.buildHttpException(autoDiscoverMethod);
             }
             ewsUrl = autoDiscoverMethod.ewsUrl;
+
+            // update host name
+            DavGatewayHttpClientFacade.setClientHost(httpClient, ewsUrl);
+
             if (ewsUrl == null) {
                 throw new IOException("Ews url not found");
             }
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         } finally {
             autoDiscoverMethod.releaseConnection();
         }
