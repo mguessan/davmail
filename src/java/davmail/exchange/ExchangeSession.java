@@ -2115,7 +2115,7 @@ public abstract class ExchangeSession {
 
                     String status = vCalendar.getAttendeeStatus();
                     if (status != null) {
-                        writer.writeHeader("Subject", BundleMessage.format(status) + subject);
+                        writer.writeHeader("Subject", BundleMessage.format(status) + vEventSubject);
                     } else {
                         writer.writeHeader("Subject", subject);
                     }
