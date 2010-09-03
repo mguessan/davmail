@@ -321,6 +321,7 @@ public class VCalendar extends VObject {
 
     /**
      * Return VTimezone object
+     *
      * @return VTimezone
      */
     public VObject getVTimezone() {
@@ -361,6 +362,12 @@ public class VCalendar extends VObject {
         }
     }
 
+    /**
+     * Get property value from first VEVENT in VCALENDAR.
+     *
+     * @param name property name
+     * @return property value
+     */
     public String getFirstVeventPropertyValue(String name) {
         if (firstVevent == null) {
             return null;
@@ -386,12 +393,21 @@ public class VCalendar extends VObject {
         }
     }
 
-    class Recipients {
+    /**
+     * VCalendar recipients for notifications
+     */
+    public static class Recipients {
         String attendees;
         String optionalAttendees;
         String organizer;
     }
 
+    /**
+     * Build recipients value for VCalendar.
+     *
+     * @param isNotification if true, filter recipients that should receive meeting notifications
+     * @return notification/event recipients
+     */
     public Recipients getRecipients(boolean isNotification) {
 
         HashSet<String> attendees = new HashSet<String>();

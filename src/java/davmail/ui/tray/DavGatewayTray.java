@@ -225,7 +225,6 @@ public final class DavGatewayTray {
      */
     public static void init() {
         if (!Settings.getBooleanProperty("davmail.server")) {
-            String javaVersion = System.getProperty("java.specification.version");
             // first try to load SWT before with Java before 1.7
             if ("1.7".compareTo(System.getProperty("java.specification.version")) > 0) {
                 ClassLoader classloader = DavGatewayTray.class.getClassLoader();
