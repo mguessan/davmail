@@ -336,6 +336,9 @@ public class DavExchangeSession extends ExchangeSession {
             // iCal search, do not call gallookup
         } else if (returningAttributes.contains("apple-serviceslocator")) {
             return false;
+            // Lightning search, no need to gallookup
+        } else if ("sn".equals(searchAttributeName)) {
+            return returningAttributes.contains("sn");
             // search attribute is gallookup attribute, need to fetch value for isMatch
         } else if (GALLOOKUP_ATTRIBUTES.contains(searchAttributeName)) {
             return true;
@@ -431,8 +434,8 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * Exchange 2003: get mailPath from welcome page
      *
-     * @param method
-     * @return
+     * @param method current http method
+     * @return mail path from body
      */
     protected String getMailpathFromWelcomePage(HttpMethod method) {
         String welcomePageMailPath = null;
@@ -821,7 +824,7 @@ public class DavExchangeSession extends ExchangeSession {
             String lowerCaseValue = value.toLowerCase();
             String actualValue = contact.get(attributeName);
             Operator actualOperator = operator;
-            // patch for iCal search without galLookup
+            // patch for iCal or Lightning search without galLookup
             if (actualValue == null && ("givenName".equals(attributeName) || "sn".equals(attributeName))) {
                 actualValue = contact.get("cn");
                 actualOperator = Operator.Like;
@@ -2001,7 +2004,7 @@ public class DavExchangeSession extends ExchangeSession {
             while (reader.hasNext()) {
                 reader.next();
                 if (XMLStreamUtil.isStartTag(reader, "e")
-                        && "18-timezone".equals( XMLStreamUtil.getAttributeValue(reader, "k"))) {
+                        && "18-timezone".equals(XMLStreamUtil.getAttributeValue(reader, "k"))) {
                     String value = XMLStreamUtil.getAttributeValue(reader, "v");
                     if (value != null && value.startsWith("18-")) {
                         timezoneName = value.substring(3);
