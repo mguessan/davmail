@@ -23,6 +23,9 @@ import davmail.util.StringUtil;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -118,7 +121,7 @@ public class VCalendar extends VObject {
     }
 
     protected void fixVCalendar(boolean fromServer) {
-        // iCal 4 global private flag
+        // set iCal 4 global X-CALENDARSERVER-ACCESS from CLASS
         if (fromServer) {
             setPropertyValue("X-CALENDARSERVER-ACCESS", getCalendarServerAccess());
         }
@@ -239,11 +242,18 @@ public class VCalendar extends VObject {
         // remove TZID
         property.removeParam("TZID");
         String value = property.getValue();
-        int tIndex = value.indexOf('T');
-        if (tIndex >= 0) {
-            value = value.substring(0, tIndex);
-        } else {
-            LOGGER.warn("Invalid date value in allday event: " + value);
+        if (value.length() != 8) {
+            // try to convert datetime value to date value
+            try {
+                Calendar calendar = Calendar.getInstance();
+                SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                calendar.setTime(dateParser.parse(value));
+                calendar.add(Calendar.HOUR_OF_DAY, 12);
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
+                value = dateFormatter.format(calendar.getTime());
+            } catch (ParseException e) {
+                LOGGER.warn("Invalid date value in allday event: " + value);
+            }
         }
         property.setValue(value);
     }
