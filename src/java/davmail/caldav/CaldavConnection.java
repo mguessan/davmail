@@ -685,7 +685,7 @@ public class CaldavConnection extends AbstractConnection {
                         } catch (HttpNotFoundException e) {
                             // workaround for Lightning bug
                             if (request.isBrokenLightning() && eventName.indexOf('%') >= 0) {
-                                item = session.getItem(folderPath, URIUtil.decode(eventName));
+                                item = session.getItem(folderPath, URIUtil.decode(StringUtil.encodePlusSign(eventName)));
                             } else {
                                 throw e;
                             }
