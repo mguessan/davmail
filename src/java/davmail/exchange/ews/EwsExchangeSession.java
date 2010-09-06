@@ -149,7 +149,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected static class AutoDiscoverMethod extends PostMethod {
         AutoDiscoverMethod(String autodiscoverHost, String userEmail) {
-            super("https://"+autodiscoverHost+"/autodiscover/autodiscover.xml");
+            super("https://" + autodiscoverHost + "/autodiscover/autodiscover.xml");
             setAutoDiscoverRequestEntity(userEmail);
         }
 
@@ -529,6 +529,16 @@ public class EwsExchangeSession extends ExchangeSession {
             // encode urlcompname
             if (fieldURI instanceof ExtendedFieldURI && "0x10f3".equals(((ExtendedFieldURI) fieldURI).propertyTag)) {
                 buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
+            } else if (fieldURI instanceof ExtendedFieldURI
+                    && ((ExtendedFieldURI) fieldURI).propertyType == ExtendedFieldURI.PropertyType.Integer) {
+                // check value
+                try {
+                    Integer.parseInt(value);
+                    buffer.append(value);
+                } catch (NumberFormatException e) {
+                    // invalid value, replace with 0
+                    buffer.append('0');
+                }
             } else {
                 buffer.append(StringUtil.xmlEncode(value));
             }
@@ -1487,7 +1497,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
 
     static {
-        GALFIND_ATTRIBUTE_MAP.put("uid", "Name");
+        GALFIND_ATTRIBUTE_MAP.put("imapUid", "Name");
         GALFIND_ATTRIBUTE_MAP.put("cn", "DisplayName");
         GALFIND_ATTRIBUTE_MAP.put("givenName", "GivenName");
         GALFIND_ATTRIBUTE_MAP.put("sn", "Surname");
@@ -1499,7 +1509,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Contact buildGalfindContact(EWSMethod.Item response) {
         Contact contact = new Contact();
         contact.setName(response.get("Name"));
-        contact.put("uid", response.get("Name"));
+        contact.put("imapUid", response.get("Name"));
         for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
             String attributeValue = response.get(entry.getValue());
             if (attributeValue != null) {

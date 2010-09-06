@@ -27,7 +27,6 @@ import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
-import davmail.imap.ImapConnection;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
@@ -208,14 +207,14 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nsaimid", "im");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nscpaimscreenname", "im");
 
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillasecondemail", "email2");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillasecondemail", "smtpemail2");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("notes", "description");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("pagerphone", "pager");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("locality", "l");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homephone", "homePhone");
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillasecondemail", "email2");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillasecondemail", "smtpemail2");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("zip", "postalcode");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomestate", "homeState");
