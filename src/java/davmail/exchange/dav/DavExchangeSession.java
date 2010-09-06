@@ -2182,10 +2182,8 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void sendMessage(byte[] messageBody) throws IOException {
-        String messageName = UUID.randomUUID().toString() + ".EML";
-
         try {
-            createMessage(SENDMSG, messageName, null, new MimeMessage(null, new SharedByteArrayInputStream(messageBody)));
+            sendMessage(new MimeMessage(null, new SharedByteArrayInputStream(messageBody)));
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
         }
