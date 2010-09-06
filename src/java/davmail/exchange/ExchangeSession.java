@@ -1033,6 +1033,8 @@ public abstract class ExchangeSession {
         }
     }
 
+    protected String lastSentMessageId;
+
     /**
      * Send message in reader to recipients.
      * Detect visible recipients in message body to determine bcc recipients
@@ -1043,14 +1045,13 @@ public abstract class ExchangeSession {
      * @throws MessagingException on error
      */
     public void sendMessage(List<String> rcptToRecipients, MimeMessage mimeMessage) throws IOException, MessagingException {
-        // check Sent folder for duplicates
-        if (Settings.getBooleanProperty("davmail.smtpCheckDuplicates")) {
-            ExchangeSession.MessageList messages = searchMessages(SENT, headerIsEqualTo("message-id", mimeMessage.getMessageID()));
-            if (!messages.isEmpty()) {
-                LOGGER.debug("Dropping message id " + mimeMessage.getMessageID() + ": already sent");
-                return;
-            }
+        // detect duplicate send command
+        String messageId = mimeMessage.getMessageID();
+        if (lastSentMessageId != null && lastSentMessageId.equals(messageId)) {
+            LOGGER.debug("Dropping message id " + messageId + ": already sent");
+            return;
         }
+        lastSentMessageId = messageId;
 
         convertResentHeader(mimeMessage, "From");
         convertResentHeader(mimeMessage, "To");
