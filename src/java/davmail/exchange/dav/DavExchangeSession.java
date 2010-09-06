@@ -2193,22 +2193,12 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
-        try {
-            if (mimeMessage.getHeader("Bcc") != null) {
-                // need to create draft first
-                String itemName = UUID.randomUUID().toString() + ".EML";
-                HashMap<String, String> properties = new HashMap<String, String>();
-                properties.put("draft", "9");
-                createMessage(DRAFTS, itemName, properties, mimeMessage);
-                moveMessage(DRAFTS + '/' + itemName, SENDMSG);
-            } else {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                mimeMessage.writeTo(baos);
-                sendMessage(baos.toByteArray());
-            }
-        } catch (MessagingException e) {
-            throw new IOException(e.getMessage());
-        }
+        // need to create draft first
+        String itemName = UUID.randomUUID().toString() + ".EML";
+        HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put("draft", "9");
+        createMessage(DRAFTS, itemName, properties, mimeMessage);
+        moveMessage(DRAFTS + '/' + itemName, SENDMSG);
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {
