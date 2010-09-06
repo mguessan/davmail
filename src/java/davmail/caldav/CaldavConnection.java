@@ -902,7 +902,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
-            if (request.isUserAgent("Address%20Book")) {
+            if (request.isUserAgent("Address%20Book") || request.isUserAgent("Darwin")) {
                 response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + '/');
             } else {
                 response.appendHrefProperty("E:addressbook-home-set", "/users/" + actualPrincipal + "/contacts/");
