@@ -1198,6 +1198,8 @@ public abstract class ExchangeSession {
      */
     public abstract void moveFolder(String folderName, String targetName) throws IOException;
 
+    public abstract void moveItem(String sourcePath, String targetPath) throws IOException;
+
     protected abstract void moveToTrash(Message message) throws IOException;
 
     /**

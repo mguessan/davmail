@@ -840,6 +840,16 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
+    @Override
+    public void moveItem(String sourcePath, String targetPath) throws IOException {
+        FolderPath sourceFolderPath = new FolderPath(sourcePath);
+        Item item = getItem(sourceFolderPath.parentPath, sourceFolderPath.folderName);
+        FolderPath targetFolderPath = new FolderPath(targetPath);
+        FolderId toFolderId = getFolderId(targetFolderPath.parentPath);
+        MoveItemMethod moveItemMethod = new MoveItemMethod(((Event)item).itemId, toFolderId);
+        executeMethod(moveItemMethod);
+    }
+
     /**
      * @inheritDoc
      */

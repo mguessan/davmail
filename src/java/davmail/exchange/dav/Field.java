@@ -134,7 +134,7 @@ public class Field {
 
         // unused: force message encoding
         createField("messageFormat", 0x5909, PropertyType.Integer);//PR_MSG_EDITOR_FORMAT EDITOR_FORMAT_PLAINTEXT = 1 EDITOR_FORMAT_HTML = 2
-        createField("mailOverrideFormat", 0x5909, PropertyType.Integer);//PR_INETMAIL_OVERRIDE_FORMAT ENCODING_PREFERENCE = 2 BODY_ENCODING_TEXT_AND_HTML = 1 ENCODING_MIME = 4
+        createField("mailOverrideFormat", 0x5902, PropertyType.Integer);//PR_INETMAIL_OVERRIDE_FORMAT ENCODING_PREFERENCE = 2 BODY_ENCODING_TEXT_AND_HTML = 1 ENCODING_MIME = 4
 
         // IMAP search
 

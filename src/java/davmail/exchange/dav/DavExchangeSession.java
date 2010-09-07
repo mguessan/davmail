@@ -1560,14 +1560,18 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected void moveMessage(String sourcePath, String targetPath) throws IOException {
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void moveItem(String sourcePath, String targetPath) throws IOException {
         MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
                 URIUtil.encodePath(getFolderPath(targetPath)), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_FOLDER");
-            } else if (statusCode != HttpStatus.SC_OK) {
+                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_ITEM");
+            } else if (statusCode != HttpStatus.SC_CREATED && statusCode != HttpStatus.SC_OK) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
             }
         } finally {
@@ -2196,7 +2200,7 @@ public class DavExchangeSession extends ExchangeSession {
         HashMap<String, String> properties = new HashMap<String, String>();
         properties.put("draft", "9");
         createMessage(DRAFTS, itemName, properties, mimeMessage);
-        moveMessage(DRAFTS + '/' + itemName, SENDMSG);
+        moveItem(DRAFTS + '/' + itemName, SENDMSG);
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {

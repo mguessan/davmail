@@ -43,6 +43,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -313,6 +314,10 @@ public class CaldavConnection extends AbstractConnection {
             //properties.put("displayname", request.getProperty("displayname"));
             int status = session.createCalendarFolder(request.getFolderPath(), properties);
             sendHttpResponse(status, null);
+        } else if (request.isMove()) {
+            String destinationUrl = request.getHeader("destination");
+            session.moveItem(request.path,  new URL(destinationUrl).getPath());
+            sendHttpResponse(HttpStatus.SC_CREATED, null);
         } else {
             sendUnsupported(request);
         }
@@ -1269,6 +1274,10 @@ public class CaldavConnection extends AbstractConnection {
 
         public boolean isMkCalendar() {
             return "MKCALENDAR".equals(command);
+        }
+
+        public boolean isMove() {
+            return "MOVE".equals(command);
         }
 
         /**
