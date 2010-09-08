@@ -225,7 +225,7 @@
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>swt</artifactId>
-            <version>3.3.0-v3346</version>
+            <version>3.6.0</version>
             <optional>true</optional>
         </dependency>
         <dependency>
