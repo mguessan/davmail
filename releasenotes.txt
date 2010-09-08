@@ -1,3 +1,34 @@
+** DavMail 3.8.4 released **
+Yet another bugfix release with more regressions fixes on SMTP,
+a few LDAP fixes and a caldav timezone update. 
+
+Documentation:
+- Doc: Update release guide
+- Doc: Update swt version in maven pom
+
+SMTP:
+- SMTP: try to force IMS encoding mode according to message contenttype
+- SMTP: switching back to Draft then send mode over DAV for calendar messages
+- SMTP: switching back to Draft then send mode over DAV
+- SMTP: new duplicate message-id detection implementation, no need to search Sent folder
+
+LDAP:
+- LDAP: improve EWS filter support
+- LDAP: another gallookup detection fix to improve address completion in thunderbird
+
+Carddav:
+- Carddav: improve OSX client detection
+
+Enhancements
+- Fixes from audit
+
+Caldav:
+- Caldav: accept login as alias in caldav principals path
+- Caldav: basic move item implementation
+- Caldav: adjust Lightning bug workaround
+- Caldav: yet another timezone fix, adjust Outlook created event time before allday conversion
+- Caldav: fix regression on meeting response subject
+
 ** DavMail 3.8.3 released **
 Another bugfix release with major regressions fixed:
 missing calendar meeting messages and delivery status notification on
