@@ -215,6 +215,24 @@ public class TestSmtp extends AbstractDavMailTestCase {
         sendAndCheckMessage(mimeMessage);
     }
 
+    public void testSendPlainTextMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "Test plain text message";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test text/plain message");
+        mimeMessage.setText(body);
+        sendAndCheckMessage(mimeMessage);
+    }
+
+    public void testSendHtmlMessage() throws IOException, MessagingException, InterruptedException {
+        String body = "Test html message <font color=\"#ff0000\">red</font>";
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        mimeMessage.setSubject("Test html message");
+        mimeMessage.setContent(body, "text/html");
+        sendAndCheckMessage(mimeMessage);
+    }
+
     public void testQuit() throws IOException {
         writeLine("QUIT");
         assertEquals("221 Closing connection", readLine());

@@ -2079,6 +2079,9 @@ public class DavExchangeSession extends ExchangeSession {
             // note: draft is readonly after create, create the message first with requested messageFlags
             davProperties.add(Field.createDavProperty("messageFlags", properties.get("draft")));
         }
+        if (properties != null && properties.containsKey("mailOverrideFormat")) {
+            davProperties.add(Field.createDavProperty("mailOverrideFormat", properties.get("mailOverrideFormat")));
+        }
         if (!davProperties.isEmpty()) {
             patchMethod = new PropPatchMethod(messageUrl, davProperties);
             try {
@@ -2195,12 +2198,22 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
-        // need to create draft first
-        String itemName = UUID.randomUUID().toString() + ".EML";
-        HashMap<String, String> properties = new HashMap<String, String>();
-        properties.put("draft", "9");
-        createMessage(DRAFTS, itemName, properties, mimeMessage);
-        moveItem(DRAFTS + '/' + itemName, SENDMSG);
+        try {
+            // need to create draft first
+            String itemName = UUID.randomUUID().toString() + ".EML";
+            HashMap<String, String> properties = new HashMap<String, String>();
+            properties.put("draft", "9");
+            String contentType = mimeMessage.getContentType();
+            if (contentType != null && contentType.startsWith("text/plain")) {
+                properties.put("mailOverrideFormat", "2");
+            } else {
+                properties.put("mailOverrideFormat", "1");
+            }
+            createMessage(DRAFTS, itemName, properties, mimeMessage);
+            moveItem(DRAFTS + '/' + itemName, SENDMSG);
+        } catch (MessagingException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     protected boolean isGzipEncoded(HttpMethod method) {
