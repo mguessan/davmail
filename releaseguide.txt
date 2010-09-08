@@ -10,5 +10,6 @@ Release guide :
 - create news message at https://sourceforge.net/news/admin/?group_id=184600
 - create tag in subversion
 - upload version.txt
+- change default download files on frs
 - send user mailing list message
 
