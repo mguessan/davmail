@@ -2663,14 +2663,14 @@ public abstract class ExchangeSession {
      *
      * @return user name
      */
-    protected String getAliasFromLogin() {
+    public String getAliasFromLogin() {
         // login is email, not alias
         if (this.userName.indexOf('@') >= 0) {
             return null;
         }
         String result = this.userName;
         // remove domain name
-        int index = result.indexOf('\\');
+        int index = Math.max(result.indexOf('\\'), result.indexOf('/'));
         if (index >= 0) {
             result = result.substring(index + 1);
         }
