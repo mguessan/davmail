@@ -22,7 +22,6 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exchange.AbstractExchangeSessionTestCase;
 import davmail.exchange.ExchangeSessionFactory;
-import org.apache.log4j.Level;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -138,4 +137,12 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         searchControls.setReturningAttributes(new String[]{"sn"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(cn=*)", searchControls);
     }
+
+    public void testSearchByCnReturnGivenName() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"givenName"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(cn=*a*)", searchControls);
+    }
+    
 }

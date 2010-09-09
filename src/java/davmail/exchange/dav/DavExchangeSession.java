@@ -318,6 +318,12 @@ public class DavExchangeSession extends ExchangeSession {
                     buildGalfindContact(contact, result);
                     if (needGalLookup(searchAttributeName, returningAttributes)) {
                         galLookup(contact);
+                        // iCal fix to suit both iCal 3 and 4:  move cn to sn, remove cn
+                    } else if (returningAttributes.contains("apple-serviceslocator")) {
+                        if (contact.get("cn") != null && returningAttributes.contains("sn")) {
+                            contact.put("sn", contact.get("cn"));
+                            contact.remove("cn");
+                        }
                     }
                     if (condition.isMatch(contact)) {
                         contacts.put(contact.getName().toLowerCase(), contact);
