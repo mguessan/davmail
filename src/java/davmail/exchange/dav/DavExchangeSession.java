@@ -2088,6 +2088,9 @@ public class DavExchangeSession extends ExchangeSession {
         if (properties != null && properties.containsKey("mailOverrideFormat")) {
             davProperties.add(Field.createDavProperty("mailOverrideFormat", properties.get("mailOverrideFormat")));
         }
+        if (properties != null && properties.containsKey("messageFormat")) {
+            davProperties.add(Field.createDavProperty("messageFormat", properties.get("messageFormat")));
+        }
         if (!davProperties.isEmpty()) {
             patchMethod = new PropPatchMethod(messageUrl, davProperties);
             try {
@@ -2202,6 +2205,16 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    public static final long MAPI_SEND_NO_RICH_INFO = 0x00010000L;
+    public static final long ENCODING_PREFERENCE = 0x00020000L;
+    public static final long ENCODING_MIME = 0x00040000L;
+    public static final long BODY_ENCODING_HTML = 0x00080000L;
+    public static final long BODY_ENCODING_TEXT_AND_HTML = 0x00100000L;
+    public static final long MAC_ATTACH_ENCODING_UUENCODE = 0x00200000L;
+    public static final long MAC_ATTACH_ENCODING_APPLESINGLE = 0x00400000L;
+    public static final long MAC_ATTACH_ENCODING_APPLEDOUBLE = 0x00600000L;
+    public static final long OOP_DONT_LOOKUP = 0x10000000L;
+
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
         try {
@@ -2211,9 +2224,10 @@ public class DavExchangeSession extends ExchangeSession {
             properties.put("draft", "9");
             String contentType = mimeMessage.getContentType();
             if (contentType != null && contentType.startsWith("text/plain")) {
-                properties.put("mailOverrideFormat", "2");
+                properties.put("messageFormat", "1");
             } else {
-                properties.put("mailOverrideFormat", "1");
+                properties.put("mailOverrideFormat", String.valueOf(ENCODING_PREFERENCE | ENCODING_MIME | BODY_ENCODING_TEXT_AND_HTML));
+                properties.put("messageFormat", "2");
             }
             createMessage(DRAFTS, itemName, properties, mimeMessage);
             moveItem(DRAFTS + '/' + itemName, SENDMSG);

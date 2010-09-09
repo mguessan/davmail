@@ -112,6 +112,9 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void sendAndCheckMessage(MimeMessage mimeMessage, String from, String bcc) throws IOException, MessagingException, InterruptedException {
+        // copy Message-id to references header
+        mimeMessage.writeTo(System.out);
+        mimeMessage.addHeader("references", mimeMessage.getHeader("message-id")[0]);
         if (from != null) {
             writeLine("MAIL FROM:" + from);
         } else {
@@ -133,7 +136,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         // wait for asynchronous message send
         ExchangeSession.MessageList messages = null;
         for (int i = 0; i < 5; i++) {
-            messages = session.searchMessages("Sent", session.headerIsEqualTo("message-id", mimeMessage.getMessageID()));
+            messages = session.searchMessages("Sent", session.headerIsEqualTo("references", mimeMessage.getMessageID()));
             if (messages.size() > 0) {
                 break;
             }
@@ -142,10 +145,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
         assertEquals(1, messages.size());
         ExchangeSession.Message sentMessage = messages.get(0);
         sentMessage.getMimeMessage().writeTo(System.out);
-        // message is converted to html over Dav
-        if (Settings.getBooleanProperty("davmail.enableEws")) {
-            assertEquals(mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
-        }
+        assertEquals(mimeMessage.getDataHandler().getContent(), sentMessage.getMimeMessage().getDataHandler().getContent());
     }
 
     public void testSendSimpleMessage() throws IOException, MessagingException, InterruptedException {
