@@ -657,9 +657,11 @@ public class ImapConnection extends AbstractConnection {
                 } else if (param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
                     // get full param
                     if (param.indexOf('[') >= 0) {
+                        StringBuilder paramBuffer = new StringBuilder(param);
                         while (paramTokens.hasMoreTokens() && param.indexOf(']') < 0) {
-                            param += ' ' + paramTokens.nextToken();
+                            paramBuffer.append(' ').append(paramTokens.nextToken());
                         }
+                        param = paramBuffer.toString();
                     }
                     // parse buffer size
                     int startIndex = 0;

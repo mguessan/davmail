@@ -1198,6 +1198,12 @@ public abstract class ExchangeSession {
      */
     public abstract void moveFolder(String folderName, String targetName) throws IOException;
 
+    /**
+     * Move item from source path to target path.
+     * @param sourcePath item source path
+     * @param targetPath item target path
+     * @throws IOException on error
+     */
     public abstract void moveItem(String sourcePath, String targetPath) throws IOException;
 
     protected abstract void moveToTrash(Message message) throws IOException;
@@ -2487,11 +2493,11 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
-    protected static final String[] VCARD_ADR_HOME_PROPERTIES = {"homepostofficebox", null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
-    protected static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
-    protected static final String[] VCARD_ADR_OTHER_PROPERTIES = {"otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry"};
-    protected static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
+    static final String[] VCARD_N_PROPERTIES = {"sn", "givenName", "middlename", "personaltitle", "namesuffix"};
+    static final String[] VCARD_ADR_HOME_PROPERTIES = {"homepostofficebox", null, "homeStreet", "homeCity", "homeState", "homePostalCode", "homeCountry"};
+    static final String[] VCARD_ADR_WORK_PROPERTIES = {"postofficebox", "roomnumber", "street", "l", "st", "postalcode", "co"};
+    static final String[] VCARD_ADR_OTHER_PROPERTIES = {"otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry"};
+    static final String[] VCARD_ORG_PROPERTIES = {"o", "department"};
 
     protected void convertContactProperties(Map<String, String> properties, String[] contactProperties, List<String> values) {
         for (int i = 0; i < values.size() && i < contactProperties.length; i++) {
