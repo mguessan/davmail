@@ -886,7 +886,7 @@ public class CaldavConnection extends AbstractConnection {
         // actual principal is email address
         String actualPrincipal = principal;
         if ("users".equals(prefix) &&
-                (session.getAlias().equalsIgnoreCase(principal) || session.getAliasFromLogin().equalsIgnoreCase(principal))) {
+                (principal.equalsIgnoreCase(session.getAlias()) || (principal.equalsIgnoreCase(session.getAliasFromLogin())))) {
             actualPrincipal = session.getEmail();
         }
 
