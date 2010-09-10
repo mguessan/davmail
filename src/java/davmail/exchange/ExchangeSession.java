@@ -168,6 +168,10 @@ public abstract class ExchangeSession {
                         method.releaseConnection();
                         throw DavGatewayHttpClientFacade.buildHttpException(method);
                     }
+                    // workaround for basic authentication on /exchange and form based authentication at /owa
+                    if ("/owa/auth/logon.aspx".equals(method.getPath())) {
+                        method = formLogin(httpClient, method, userName, password);
+                    }
                 } else {
                     method = formLogin(httpClient, method, userName, password);
                 }
