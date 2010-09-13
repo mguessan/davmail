@@ -675,9 +675,9 @@ public class ImapConnection extends AbstractConnection {
                         }
                     }
 
-                    InputStream partInputStream;
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    OutputStream partOutputStream;
+                    InputStream partInputStream = null;
+                    OutputStream partOutputStream = null;
 
                     // load message
                     MimeMessage mimeMessage = message.getMimeMessage();
@@ -692,9 +692,20 @@ public class ImapConnection extends AbstractConnection {
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         partInputStream = mimeMessage.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
-                        // write headers only
-                        partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
-                        partInputStream = message.getRawInputStream();
+                        // Header requested fetch  headers
+                        String[] requestedHeaders = getRequestedHeaders(partIndexString);
+                        if (requestedHeaders != null) {
+                            Enumeration headerEnumeration = message.getMimeMessage().getMatchingHeaderLines(requestedHeaders);
+                            while (headerEnumeration.hasMoreElements()) {
+                                baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
+                                baos.write(13);
+                                baos.write(10);
+                            }
+                        } else {
+                            // write headers only
+                            partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
+                            partInputStream = message.getRawInputStream();
+                        }
                     } else {
                         MimePart bodyPart = mimeMessage;
                         String[] partIndexStrings = partIndexString.split("\\.");
@@ -734,15 +745,15 @@ public class ImapConnection extends AbstractConnection {
                     }
 
                     // copy selected content to baos
-                    IOUtil.write(partInputStream, partOutputStream);
-                    partInputStream.close();
-                    partOutputStream.close();
+                    if (partInputStream != null && partOutputStream != null) {
+                        IOUtil.write(partInputStream, partOutputStream);
+                        partInputStream.close();
+                        partOutputStream.close();
+                    }
                     baos.close();
 
                     if ("RFC822.HEADER".equals(param)) {
                         buffer.append(" RFC822.HEADER ");
-                    } else if (partIndexString.startsWith("HEADER.FIELDS")) {
-                        buffer.append(" BODY[HEADER.FIELDS ()]");
                     } else {
                         buffer.append(" BODY[").append(partIndexString).append(']');
                     }
@@ -762,6 +773,16 @@ public class ImapConnection extends AbstractConnection {
         sendClient(buffer.toString());
         // do not keep message content in memory
         message.dropMimeMessage();
+    }
+
+    protected String[] getRequestedHeaders(String partIndexString) {
+        int startIndex = partIndexString.indexOf('(');
+        int endIndex = partIndexString.indexOf(')');
+        if (startIndex >= 0 && endIndex >= 0) {
+            return partIndexString.substring(startIndex + 1, endIndex - 1).split(" ");
+        } else {
+            return null;
+        }
     }
 
     protected void handleStore(String commandId, AbstractRangeIterator rangeIterator, String action, String flags) throws IOException {
