@@ -298,7 +298,11 @@ public class VProperty {
                 char c = value.charAt(i);
                 if (c == '\\') {
                     //noinspection AssignmentToForLoopParameter
-                    c = value.charAt(++i);
+                    i++;
+                    if (i == value.length()) {
+                        break;
+                    }
+                    c = value.charAt(i);
                     if (c == 'n' || c == 'N') {
                         c = '\n';
                     } else if (c == 'r') {
