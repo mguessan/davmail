@@ -160,8 +160,43 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "instancetype"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:instancetype/Integer
         createField(URN_SCHEMAS_CALENDAR, "dtstart"); // 0x10C3 SystemTime
         createField(URN_SCHEMAS_CALENDAR, "dtend"); // 0x10C4 SystemTime
+
+        //createField(URN_SCHEMAS_CALENDAR, "prodid"); //  // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:prodid/String
+        createField("calendarversion", URN_SCHEMAS_CALENDAR, "version"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:version/String
+        createField(URN_SCHEMAS_CALENDAR, "method"); //  // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:method/String
+
+        createField("calendarlastmodified", URN_SCHEMAS_CALENDAR, "lastmodified"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:isorganizer/Boolean
+        createField(URN_SCHEMAS_CALENDAR, "dtstamp"); // PidLidOwnerCriticalChange
+        createField("calendaruid", URN_SCHEMAS_CALENDAR, "uid"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:uid/String
+        createField(URN_SCHEMAS_CALENDAR, "transparent"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:transparent/String
+
+        createField(URN_SCHEMAS_CALENDAR, "organizer");
+        createField(URN_SCHEMAS_CALENDAR, "created"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:created/SystemTime
+        createField(URN_SCHEMAS_CALENDAR, "alldayevent"); // DistinguishedPropertySetType.Appointment/0x8215 Boolean
+
+        // TODO
+        createField(SCHEMAS_MAPI, "allattendeesstring"); // PidLidAllAttendeesString
+        createField(SCHEMAS_MAPI, "required_attendees"); // PidLidRequiredAttendees
+        createField(SCHEMAS_MAPI, "apptendtime"); // PidLidAppointmentEndTime
+        createField(SCHEMAS_MAPI, "apptstateflags"); // PidLidAppointmentStateFlags 1: Meeting, 2: Received, 4: Cancelled
+
+        createField(URN_SCHEMAS_CALENDAR, "isorganizer"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:isorganizer/Boolean
+        createField(URN_SCHEMAS_CALENDAR, "location"); // DistinguishedPropertySetType.Appointment/0x8208 String
+        createField(URN_SCHEMAS_CALENDAR, "attendeerole"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:attendeerole/Integer
+        createField(URN_SCHEMAS_CALENDAR, "busystatus"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:busystatus/String
+        createField(URN_SCHEMAS_CALENDAR, "exdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exdate/PtypMultipleTime
+        createField(URN_SCHEMAS_CALENDAR, "exrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exrule/PtypMultipleString
+        createField(URN_SCHEMAS_CALENDAR, "recurrenceidrange"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:recurrenceidrange/String
+        createField(URN_SCHEMAS_CALENDAR, "rdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rdate/PtypMultipleTime        
+        createField(URN_SCHEMAS_CALENDAR, "rrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rrule/PtypMultipleString
+        createField(URN_SCHEMAS_CALENDAR, "reminderoffset"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:reminderoffset/Integer
+        createField(URN_SCHEMAS_CALENDAR, "timezone"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezone/String
+
+
+
         createField(SCHEMAS_EXCHANGE, "sensitivity"); // PR_SENSITIVITY 0x0036 Integer
         createField(URN_SCHEMAS_CALENDAR, "timezoneid"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezoneid/Integer
+        // should use PidLidServerProcessed ?
         createField("processed", 0x65e8, PropertyType.Boolean);// PR_MESSAGE_PROCESSED
 
         createField(DAV, "contentclass");

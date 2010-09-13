@@ -230,7 +230,7 @@ public class VProperty {
         addParam(paramName, (String) null);
     }
 
-    protected void addParam(String paramName, String paramValue) {
+    public void addParam(String paramName, String paramValue) {
         List<String> paramValues = new ArrayList<String>();
         paramValues.add(paramValue);
         addParam(paramName, paramValues);

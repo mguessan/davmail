@@ -24,9 +24,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
-import davmail.exchange.ExchangeSession;
-import davmail.exchange.VObject;
-import davmail.exchange.XMLStreamUtil;
+import davmail.exchange.*;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
@@ -49,6 +47,7 @@ import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
@@ -1279,7 +1278,7 @@ public class DavExchangeSession extends ExchangeSession {
          */
         @Override
         public byte[] getEventContent() throws IOException {
-            byte[] result;
+            byte[] result = null;
             LOGGER.debug("Get event subject: " + subject + " permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
@@ -1298,11 +1297,105 @@ public class DavExchangeSession extends ExchangeSession {
             } catch (DavException e) {
                 throw buildHttpException(e);
             } catch (IOException e) {
-                deleteBroken();
-                throw buildHttpException(e);
+                LOGGER.warn(e.getMessage());
             } catch (MessagingException e) {
                 throw buildHttpException(e);
             }
+
+            // failover: rebuild event from MAPI properties
+            if (result == null) {
+                    result = getICSFromItemProperties();
+            }
+            // debug code
+            //if (new String(result).indexOf("VTODO") < 0) {
+            //    LOGGER.debug("Rebuilt body: " + new String(getICSFromItemProperties()));
+            //}
+
+            return result;
+        }
+
+        private byte[] getICSFromItemProperties() throws IOException {
+            byte[] result = null;
+
+            // experimental: build VCALENDAR from properties
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(Field.getPropertyName("method"));
+
+            davPropertyNameSet.add(Field.getPropertyName("created"));
+            davPropertyNameSet.add(Field.getPropertyName("calendarlastmodified"));
+            davPropertyNameSet.add(Field.getPropertyName("dtstamp"));
+            davPropertyNameSet.add(Field.getPropertyName("calendaruid"));
+            davPropertyNameSet.add(Field.getPropertyName("subject"));
+            davPropertyNameSet.add(Field.getPropertyName("dtstart"));
+            davPropertyNameSet.add(Field.getPropertyName("dtend"));
+            davPropertyNameSet.add(Field.getPropertyName("transparent"));
+            davPropertyNameSet.add(Field.getPropertyName("organizer"));
+            davPropertyNameSet.add(Field.getPropertyName("to"));
+            davPropertyNameSet.add(Field.getPropertyName("description"));
+            davPropertyNameSet.add(Field.getPropertyName("alldayevent"));
+            davPropertyNameSet.add(Field.getPropertyName("busystatus"));
+
+            PropFindMethod propFindMethod = new PropFindMethod(permanentUrl, davPropertyNameSet, 0);
+            try {
+                MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                if (responses.length == 0) {
+                    throw new HttpNotFoundException(permanentUrl + " not found");
+                }
+                DavPropertySet davPropertySet = responses[0].getProperties(HttpStatus.SC_OK);
+                VCalendar localVCalendar = new VCalendar();
+                localVCalendar.setPropertyValue("PRODID", "-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN");
+                localVCalendar.setPropertyValue("VERSION", "2.0");
+                localVCalendar.setPropertyValue("METHOD", getPropertyIfExists(davPropertySet, "method"));
+                VObject vEvent = new VObject();
+                vEvent.type = "VEVENT";
+                vEvent.setPropertyValue("CREATED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "created")));
+                vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "calendarlastmodified")));
+                vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
+                vEvent.setPropertyValue("UID", getPropertyIfExists(davPropertySet, "calendaruid"));
+                vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
+                vEvent.setPropertyValue("DTSTART", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstart")));
+                vEvent.setPropertyValue("DTEND", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtend")));
+                vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
+                String organizer = getPropertyIfExists(davPropertySet, "organizer");
+                String organizerEmail = null;
+                if (organizer != null) {
+                    InternetAddress organizerAddress = new InternetAddress(organizer);
+                    organizerEmail = organizerAddress.getAddress();
+                    vEvent.setPropertyValue("ORGANIZER", "MAILTO:" + organizerEmail);
+                }
+
+                // Parse attendee list
+                String toHeader = getPropertyIfExists(davPropertySet, "to");
+                if (toHeader != null && !organizerEmail.equals(toHeader)) {
+                    InternetAddress[] attendees = InternetAddress.parseHeader(toHeader, false);
+                    for (InternetAddress attendee : attendees) {
+                        if (!attendee.getAddress().equalsIgnoreCase(organizerEmail)) {
+                            VProperty vProperty = new VProperty("ATTENDEE", attendee.getAddress());
+                            if (attendee.getPersonal() != null) {
+                                vProperty.addParam("CN", attendee.getPersonal());
+                            }
+                            vEvent.addProperty(vProperty);
+                        }
+                    }
+
+                }
+                vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT",
+                        "1".equals(getPropertyIfExists(davPropertySet, "alldayevent")) ? "TRUE" : "FALSE");
+                vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", getPropertyIfExists(davPropertySet, "busystatus"));
+
+                localVCalendar.addVObject(vEvent);
+                result = localVCalendar.toString().getBytes("UTF-8");
+            } catch (MessagingException e) {
+                LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
+                throw buildHttpException(e);
+            } catch (IOException e) {
+                LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
+                throw buildHttpException(e);
+            } finally {
+                propFindMethod.releaseConnection();
+            }
+
             return result;
         }
 

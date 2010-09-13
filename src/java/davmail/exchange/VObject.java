@@ -84,6 +84,9 @@ public class VObject {
         this(new ICSBufferedReader(new StringReader(itemBody)));
     }
 
+    public VObject() {
+    }
+
 
     protected void handleLine(String line, BufferedReader reader) throws IOException {
         // skip empty lines
@@ -98,14 +101,14 @@ public class VObject {
         }
     }
 
-    protected void addVObject(VObject vObject) {
+    public void addVObject(VObject vObject) {
         if (vObjects == null) {
             vObjects = new ArrayList<VObject>();
         }
         vObjects.add(vObject);
     }
 
-    protected void addProperty(VProperty property) {
+    public void addProperty(VProperty property) {
         if (property.getValue() != null) {
             if (properties == null) {
                 properties = new ArrayList<VProperty>();

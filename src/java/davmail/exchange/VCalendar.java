@@ -84,8 +84,15 @@ public class VCalendar extends VObject {
         this(new ICSBufferedReader(new InputStreamReader(new ByteArrayInputStream(vCalendarContent), "UTF-8")), email, vTimezone);
     }
 
+    /**
+     * Empty constructor
+     */
+    public VCalendar() {
+        type="VCALENDAR";
+    }
+
     @Override
-    protected void addVObject(VObject vObject) {
+    public void addVObject(VObject vObject) {
         super.addVObject(vObject);
         if (firstVevent == null && "VEVENT".equals(vObject.type)) {
             firstVevent = vObject;
