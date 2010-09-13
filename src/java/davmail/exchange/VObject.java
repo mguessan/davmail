@@ -205,6 +205,13 @@ public class VObject {
         }
     }
 
+    public void addPropertyValue(String name, String value) {
+        if (value != null) {
+            VProperty property = new VProperty(name, value);
+                addProperty(property);
+        }
+    }
+
     public void removeProperty(String name) {
         if (properties != null) {
             VProperty property = getProperty(name);

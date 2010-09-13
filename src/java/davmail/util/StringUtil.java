@@ -22,6 +22,9 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -310,6 +313,24 @@ public final class StringUtil {
         String result = value;
         if (result.indexOf('\'') >= 0) {
             result = APOS_PATTERN.matcher(result).replaceAll("''");
+        }
+        return result;
+    }
+
+    public static String convertZuluDateTimeToAllDay(String value) {
+        String result = value;
+        if (value != null && value.length() != 8) {
+            // try to convert datetime value to date value
+            try {
+                Calendar calendar = Calendar.getInstance();
+                SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+                calendar.setTime(dateParser.parse(value));
+                calendar.add(Calendar.HOUR_OF_DAY, 12);
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
+                result = dateFormatter.format(calendar.getTime());
+            } catch (ParseException e) {
+                // ignore
+            }
         }
         return result;
     }

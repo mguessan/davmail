@@ -1307,9 +1307,10 @@ public class DavExchangeSession extends ExchangeSession {
                     result = getICSFromItemProperties();
             }
             // debug code
-            //if (new String(result).indexOf("VTODO") < 0) {
-            //    LOGGER.debug("Rebuilt body: " + new String(getICSFromItemProperties()));
-            //}
+            if (new String(result).indexOf("VTODO") < 0) {
+                result = getICSFromItemProperties();
+                LOGGER.debug("Rebuilt body: " + new String(result));
+            }
 
             return result;
         }
@@ -1332,6 +1333,9 @@ public class DavExchangeSession extends ExchangeSession {
             davPropertyNameSet.add(Field.getPropertyName("organizer"));
             davPropertyNameSet.add(Field.getPropertyName("to"));
             davPropertyNameSet.add(Field.getPropertyName("description"));
+            davPropertyNameSet.add(Field.getPropertyName("rrule"));
+            davPropertyNameSet.add(Field.getPropertyName("exdate"));
+            davPropertyNameSet.add(Field.getPropertyName("sensitivity"));
             davPropertyNameSet.add(Field.getPropertyName("alldayevent"));
             davPropertyNameSet.add(Field.getPropertyName("busystatus"));
 
@@ -1356,6 +1360,23 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("DTSTART", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstart")));
                 vEvent.setPropertyValue("DTEND", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtend")));
                 vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
+                vEvent.setPropertyValue("RRULE", getPropertyIfExists(davPropertySet, "rrule"));
+                String exdates = getPropertyIfExists(davPropertySet, "exdate");
+                if (exdates != null) {
+                    String[] exdatearray = exdates.split(",");
+                    for (String exdate:exdatearray) {
+                        vEvent.addPropertyValue("EXDATE",
+                                StringUtil.convertZuluDateTimeToAllDay(convertDateFromExchange(exdate)));
+                    }
+                }
+                String sensitivity = getPropertyIfExists(davPropertySet, "sensitivity");
+                if ("2".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "PRIVATE");
+                } else if ("3".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "CONFIDENTIAL");
+                } else if ("0".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "PUBLIC");
+                }
                 String organizer = getPropertyIfExists(davPropertySet, "organizer");
                 String organizerEmail = null;
                 if (organizer != null) {

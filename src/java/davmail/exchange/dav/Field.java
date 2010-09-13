@@ -174,6 +174,9 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "created"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:created/SystemTime
         createField(URN_SCHEMAS_CALENDAR, "alldayevent"); // DistinguishedPropertySetType.Appointment/0x8215 Boolean
 
+        createField(URN_SCHEMAS_CALENDAR, "rrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rrule/PtypMultipleString
+        createField(URN_SCHEMAS_CALENDAR, "exdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exdate/PtypMultipleTime
+
         // TODO
         createField(SCHEMAS_MAPI, "allattendeesstring"); // PidLidAllAttendeesString
         createField(SCHEMAS_MAPI, "required_attendees"); // PidLidRequiredAttendees
@@ -184,11 +187,9 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "location"); // DistinguishedPropertySetType.Appointment/0x8208 String
         createField(URN_SCHEMAS_CALENDAR, "attendeerole"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:attendeerole/Integer
         createField(URN_SCHEMAS_CALENDAR, "busystatus"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:busystatus/String
-        createField(URN_SCHEMAS_CALENDAR, "exdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exdate/PtypMultipleTime
         createField(URN_SCHEMAS_CALENDAR, "exrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exrule/PtypMultipleString
         createField(URN_SCHEMAS_CALENDAR, "recurrenceidrange"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:recurrenceidrange/String
         createField(URN_SCHEMAS_CALENDAR, "rdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rdate/PtypMultipleTime        
-        createField(URN_SCHEMAS_CALENDAR, "rrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rrule/PtypMultipleString
         createField(URN_SCHEMAS_CALENDAR, "reminderoffset"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:reminderoffset/Integer
         createField(URN_SCHEMAS_CALENDAR, "timezone"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezone/String
 
