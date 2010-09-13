@@ -1307,10 +1307,11 @@ public class DavExchangeSession extends ExchangeSession {
                     result = getICSFromItemProperties();
             }
             // debug code
-            if (new String(result).indexOf("VTODO") < 0) {
+            /*if (new String(result).indexOf("VTODO") < 0) {
+                LOGGER.debug("Original body: " + new String(result));
                 result = getICSFromItemProperties();
                 LOGGER.debug("Rebuilt body: " + new String(result));
-            }
+            }*/
 
             return result;
         }
@@ -1338,6 +1339,8 @@ public class DavExchangeSession extends ExchangeSession {
             davPropertyNameSet.add(Field.getPropertyName("sensitivity"));
             davPropertyNameSet.add(Field.getPropertyName("alldayevent"));
             davPropertyNameSet.add(Field.getPropertyName("busystatus"));
+            davPropertyNameSet.add(Field.getPropertyName("reminderset"));
+            davPropertyNameSet.add(Field.getPropertyName("reminderdelta"));            
 
             PropFindMethod propFindMethod = new PropFindMethod(permanentUrl, davPropertyNameSet, 0);
             try {
@@ -1404,6 +1407,18 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT",
                         "1".equals(getPropertyIfExists(davPropertySet, "alldayevent")) ? "TRUE" : "FALSE");
                 vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", getPropertyIfExists(davPropertySet, "busystatus"));
+
+                if ("1".equals(getPropertyIfExists(davPropertySet, "reminderset"))) {
+                    VObject vAlarm = new VObject();
+                    vAlarm.type = "VALARM";
+                    vAlarm.setPropertyValue("ACTION", "DISPLAY");
+                    vAlarm.setPropertyValue("DISPLAY", "Reminder");
+                    String reminderdelta = getPropertyIfExists(davPropertySet, "reminderdelta");
+                    VProperty vProperty = new VProperty("TRIGGER", "-PT"+reminderdelta+ 'M');
+                    vProperty.addParam("VALUE", "DURATION");
+                    vAlarm.addProperty(vProperty);
+                    vEvent.addVObject(vAlarm);
+                }
 
                 localVCalendar.addVObject(vEvent);
                 result = localVCalendar.toString().getBytes("UTF-8");

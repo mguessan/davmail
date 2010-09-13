@@ -177,6 +177,9 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "rrule"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:rrule/PtypMultipleString
         createField(URN_SCHEMAS_CALENDAR, "exdate"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:exdate/PtypMultipleTime
 
+        createField(SCHEMAS_MAPI, "reminderset"); // PidLidReminderSet
+        createField(SCHEMAS_MAPI, "reminderdelta"); // PidLidReminderDelta         
+
         // TODO
         createField(SCHEMAS_MAPI, "allattendeesstring"); // PidLidAllAttendeesString
         createField(SCHEMAS_MAPI, "required_attendees"); // PidLidRequiredAttendees
