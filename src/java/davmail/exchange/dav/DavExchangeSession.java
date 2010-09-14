@@ -1304,7 +1304,12 @@ public class DavExchangeSession extends ExchangeSession {
 
             // failover: rebuild event from MAPI properties
             if (result == null) {
+                try {
                     result = getICSFromItemProperties();
+                } catch (HttpException e) {
+                    deleteBroken();
+                    throw e;
+                }
             }
             // debug code
             /*if (new String(result).indexOf("VTODO") < 0) {
