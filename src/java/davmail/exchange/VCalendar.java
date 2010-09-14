@@ -172,6 +172,17 @@ public class VCalendar extends VObject {
                     vObject.removeProperty("X-ENTOURAGE_UUID");
 
                     splitExDate(vObject);
+
+                    // remove empty properties
+                    if ("".equals(vObject.getPropertyValue("LOCATION"))) {
+                        vObject.removeProperty("LOCATION");
+                    }
+                    if ("".equals(vObject.getPropertyValue("DESCRIPTION"))) {
+                        vObject.removeProperty("DESCRIPTION");
+                    }
+                    if ("".equals(vObject.getPropertyValue("CLASS"))) {
+                        vObject.removeProperty("CLASS");
+                    }
                 } else {
                     // add organizer line to all events created in Exchange for active sync
                     String organizer = getEmailValue(vObject.getProperty("ORGANIZER"));
