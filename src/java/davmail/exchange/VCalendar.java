@@ -357,8 +357,10 @@ public class VCalendar extends VObject {
             return "CONFIDENTIAL";
         } else if ("CONFIDENTIAL".equalsIgnoreCase(calendarServerAccess) || "RESTRICTED".equalsIgnoreCase(calendarServerAccess)) {
             return "PRIVATE";
-        } else {
+        } else if (calendarServerAccess != null && calendarServerAccess.length() > 0) {
             return calendarServerAccess;
+        } else {
+            return null;
         }
     }
 
@@ -374,8 +376,10 @@ public class VCalendar extends VObject {
             return "CONFIDENTIAL";
         } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
             return "PRIVATE";
-        } else {
+        } else if (eventClass != null && eventClass.length() > 0) {
             return eventClass;
+        } else  {
+            return null;
         }
     }
 
