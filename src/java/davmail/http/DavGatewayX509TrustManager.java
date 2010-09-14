@@ -125,17 +125,17 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         buffer.append(BundleMessage.format("UI_FINGERPRINT")).append(": ").append(sha1Hash).append('\n');
         buffer.append('\n');
         buffer.append(BundleMessage.format("UI_UNTRUSTED_CERTIFICATE")).append('\n');
-        while (!yes.equals(answer) && !no.equals(answer)) {
-            System.out.println(buffer.toString());
-            try {
+        try {
+            while (!yes.equals(answer) && !no.equals(answer)) {
+                System.out.println(buffer.toString());
                 answer = inReader.readLine();
                 if (answer == null) {
                     answer = no;
                 }
                 answer = answer.toLowerCase();
-            } catch (IOException e) {
-                System.err.println(e);
             }
+        } catch (IOException e) {
+            System.err.println(e);
         }
         return yes.equals(answer);
     }
