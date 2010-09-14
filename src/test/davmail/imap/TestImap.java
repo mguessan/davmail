@@ -98,6 +98,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testFetchBodyStructure() throws IOException {
+        writeLine(". UID FETCH 1:* (FLAGS BODYSTRUCTURE)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
     public void testUidSearchUnDeleted() throws IOException {
         writeLine(". UID SEARCH UNDELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));

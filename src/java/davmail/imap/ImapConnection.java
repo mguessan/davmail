@@ -938,23 +938,7 @@ public class ImapConnection extends AbstractConnection {
             MimeMessage mimeMessage = message.getMimeMessage();
             Object mimeBody = mimeMessage.getContent();
             if (mimeBody instanceof MimeMultipart) {
-                buffer.append('(');
-                MimeMultipart multiPart = (MimeMultipart) mimeBody;
-
-                for (int i = 0; i < multiPart.getCount(); i++) {
-                    MimeBodyPart bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
-                    appendBodyStructure(buffer, bodyPart);
-                }
-                int slashIndex = multiPart.getContentType().indexOf('/');
-                if (slashIndex < 0) {
-                    throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", multiPart.getContentType());
-                }
-                int semiColonIndex = multiPart.getContentType().indexOf(';');
-                if (semiColonIndex < 0) {
-                    buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1).toUpperCase()).append("\")");
-                } else {
-                    buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append("\")");
-                }
+                appendBodyStructure(buffer, (MimeMultipart) mimeBody);
             } else {
                 // no multipart, single body
                 appendBodyStructure(buffer, mimeMessage);
@@ -967,6 +951,31 @@ public class ImapConnection extends AbstractConnection {
             DavGatewayTray.warn(me);
             // failover: send default bodystructure
             buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
+        }
+    }
+
+    protected void appendBodyStructure(StringBuilder buffer, MimeMultipart multiPart) throws IOException, MessagingException {
+        buffer.append('(');
+
+        for (int i = 0; i < multiPart.getCount(); i++) {
+            MimeBodyPart bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
+            Object mimeBody = bodyPart.getContent();
+            if (mimeBody instanceof MimeMultipart) {
+                appendBodyStructure(buffer, (MimeMultipart) mimeBody);
+            } else {
+                // no multipart, single body
+                appendBodyStructure(buffer, bodyPart);
+            }
+        }
+        int slashIndex = multiPart.getContentType().indexOf('/');
+        if (slashIndex < 0) {
+            throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", multiPart.getContentType());
+        }
+        int semiColonIndex = multiPart.getContentType().indexOf(';');
+        if (semiColonIndex < 0) {
+            buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1).toUpperCase()).append("\")");
+        } else {
+            buffer.append(" \"").append(multiPart.getContentType().substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append("\")");
         }
     }
 
