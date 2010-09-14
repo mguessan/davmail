@@ -497,6 +497,15 @@ public class DavExchangeSession extends ExchangeSession {
             disableGalLookup = true;
 
             getEmailAndAliasFromOptions();
+            // failover: try to get email through Webdav and Galfind
+            if (mailPath == null || email == null) {
+                try {
+                    buildEmail(method.getURI().getHost());
+                } catch (URIException uriException) {
+                    LOGGER.warn(uriException);
+                }
+            }
+
             // build standard mailbox link with email
             mailPath = "/exchange/" + email + '/';
         }
@@ -1345,7 +1354,7 @@ public class DavExchangeSession extends ExchangeSession {
             davPropertyNameSet.add(Field.getPropertyName("alldayevent"));
             davPropertyNameSet.add(Field.getPropertyName("busystatus"));
             davPropertyNameSet.add(Field.getPropertyName("reminderset"));
-            davPropertyNameSet.add(Field.getPropertyName("reminderdelta"));            
+            davPropertyNameSet.add(Field.getPropertyName("reminderdelta"));
 
             PropFindMethod propFindMethod = new PropFindMethod(permanentUrl, davPropertyNameSet, 0);
             try {
@@ -1372,7 +1381,7 @@ public class DavExchangeSession extends ExchangeSession {
                 String exdates = getPropertyIfExists(davPropertySet, "exdate");
                 if (exdates != null) {
                     String[] exdatearray = exdates.split(",");
-                    for (String exdate:exdatearray) {
+                    for (String exdate : exdatearray) {
                         vEvent.addPropertyValue("EXDATE",
                                 StringUtil.convertZuluDateTimeToAllDay(convertDateFromExchange(exdate)));
                     }
@@ -1419,7 +1428,7 @@ public class DavExchangeSession extends ExchangeSession {
                     vAlarm.setPropertyValue("ACTION", "DISPLAY");
                     vAlarm.setPropertyValue("DISPLAY", "Reminder");
                     String reminderdelta = getPropertyIfExists(davPropertySet, "reminderdelta");
-                    VProperty vProperty = new VProperty("TRIGGER", "-PT"+reminderdelta+ 'M');
+                    VProperty vProperty = new VProperty("TRIGGER", "-PT" + reminderdelta + 'M');
                     vProperty.addParam("VALUE", "DURATION");
                     vAlarm.addProperty(vProperty);
                     vEvent.addVObject(vAlarm);
