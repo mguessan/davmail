@@ -177,6 +177,9 @@ public class Field {
         // calendar
         FIELD_MAP.put("processed", new ExtendedFieldURI(0x65e8, ExtendedFieldURI.PropertyType.Boolean));
 
+        FIELD_MAP.put("reminderset", new UnindexedFieldURI("item:ReminderIsSet"));
+        FIELD_MAP.put("ismeeting", new UnindexedFieldURI("item:IsMeeting"));        
+
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
     }

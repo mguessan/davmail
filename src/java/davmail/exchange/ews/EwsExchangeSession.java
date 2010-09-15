@@ -262,8 +262,8 @@ public class EwsExchangeSession extends ExchangeSession {
      * @param properties flag values map
      * @return field values
      */
-    protected Set<FieldUpdate> buildProperties(Map<String, String> properties) {
-        HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
+    protected List<FieldUpdate> buildProperties(Map<String, String> properties) {
+        ArrayList<FieldUpdate> list = new ArrayList<FieldUpdate>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
                 list.add(Field.createFieldUpdate("read", Boolean.toString("1".equals(entry.getValue()))));
@@ -306,7 +306,7 @@ public class EwsExchangeSession extends ExchangeSession {
         baos.close();
         item.mimeContent = Base64.encodeBase64(baos.toByteArray());
 
-        Set<FieldUpdate> fieldUpdates = buildProperties(properties);
+        List<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
             // need to force draft flag to false
             if (properties.containsKey("read")) {
@@ -375,8 +375,15 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
+        getItemMethod.addAdditionalProperty(Field.get("reminderset"));
         executeMethod(getItemMethod);
-        return getItemMethod.getMimeContent();
+        byte[] mimeContent = getItemMethod.getMimeContent();
+        VCalendar vCalendar = new VCalendar(mimeContent, email, getVTimezone());
+        // remove additional reminder
+        if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
+           vCalendar.removeVAlarm();
+        }
+        return vCalendar.toString().getBytes("UTF-8");
     }
 
     protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
@@ -833,7 +840,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         // rename folder
         if (!path.folderName.equals(targetPath.folderName)) {
-            Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+            ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
             updates.add(new FieldUpdate(Field.get("folderDisplayName"), targetPath.folderName));
             UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(folderId, updates);
             executeMethod(updateFolderMethod);
@@ -898,8 +905,8 @@ public class EwsExchangeSession extends ExchangeSession {
         protected Contact() {
         }
 
-        protected Set<FieldUpdate> buildProperties() {
-            HashSet<FieldUpdate> list = new HashSet<FieldUpdate>();
+        protected List<FieldUpdate> buildProperties() {
+            ArrayList<FieldUpdate> list = new ArrayList<FieldUpdate>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
                     list.add(Field.createFieldUpdate("haspicture", "true"));
@@ -955,7 +962,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
-            Set<FieldUpdate> properties = buildProperties();
+            List<FieldUpdate> properties = buildProperties();
             if (currentItemId != null) {
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1046,7 +1053,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
-            byte[] itemContent = Base64.encodeBase64(createMimeContent());
+            byte[] itemContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
 
             ItemResult itemResult = new ItemResult();
             EWSMethod createOrUpdateItemMethod;
@@ -1090,9 +1097,16 @@ public class EwsExchangeSession extends ExchangeSession {
             EWSMethod.Item newItem = new EWSMethod.Item();
             newItem.type = "CalendarItem";
             newItem.mimeContent = itemContent;
-            HashSet<FieldUpdate> updates = new HashSet<FieldUpdate>();
+            ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+            if (!vCalendar.hasVAlarm()) {
+                updates.add(Field.createFieldUpdate("reminderset", "false"));
+            }
             // force urlcompname
             updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+            // does not work
+            /*if (!vCalendar.isMeeting()) {
+                updates.add(Field.createFieldUpdate("ismeeting", "false"));
+            }*/
             //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
             newItem.setFieldUpdates(updates);
             createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);

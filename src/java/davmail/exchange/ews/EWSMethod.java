@@ -56,7 +56,7 @@ public abstract class EWSMethod extends PostMethod {
     protected ElementOption unresolvedEntry;
     protected int maxCount;
 
-    protected Set<FieldUpdate> updates;
+    protected List<FieldUpdate> updates;
 
     protected FileAttachment attachment;
 
@@ -429,7 +429,7 @@ public abstract class EWSMethod extends PostMethod {
          */
         public String type;
         protected byte[] mimeContent;
-        protected Set<FieldUpdate> fieldUpdates;
+        protected List<FieldUpdate> fieldUpdates;
         protected List<FileAttachment> attachments;
         protected List<String> fieldNames = new ArrayList<String>();
 
@@ -496,7 +496,7 @@ public abstract class EWSMethod extends PostMethod {
          *
          * @param fieldUpdates field updates
          */
-        public void setFieldUpdates(Set<FieldUpdate> fieldUpdates) {
+        public void setFieldUpdates(List<FieldUpdate> fieldUpdates) {
             this.fieldUpdates = fieldUpdates;
         }
 
@@ -574,7 +574,9 @@ public abstract class EWSMethod extends PostMethod {
     public void checkSuccess() throws EWSException {
         if (errorDetail != null) {
             if (!"ErrorAccessDenied".equals(errorDetail)
-                    && !"ErrorMailRecipientNotFound".equals(errorDetail)) {
+                    && !"ErrorMailRecipientNotFound".equals(errorDetail)
+                    && !"ErrorItemNotFound".equals(errorDetail)
+                    ) {
                 try {
                     throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
                 } catch (UnsupportedEncodingException e) {

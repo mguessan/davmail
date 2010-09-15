@@ -88,7 +88,7 @@ public class VCalendar extends VObject {
      * Empty constructor
      */
     public VCalendar() {
-        type="VCALENDAR";
+        type = "VCALENDAR";
     }
 
     @Override
@@ -385,7 +385,7 @@ public class VCalendar extends VObject {
             return "CONFIDENTIAL";
         } else if ("CONFIDENTIAL".equalsIgnoreCase(eventClass)) {
             return "PRIVATE";
-        } else  {
+        } else {
             return null;
         }
     }
@@ -420,6 +420,36 @@ public class VCalendar extends VObject {
             return firstVevent.getProperties(name);
         }
     }
+
+    public void removeVAlarm() {
+        if (vObjects != null) {
+            for (VObject vObject:vObjects) {
+                if ("VEVENT".equals(vObject.type)) {
+                    if (vObject.vObjects != null) {
+                        vObject.vObjects = null;
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean hasVAlarm() {
+        if (vObjects != null) {
+            for (VObject vObject:vObjects) {
+                if ("VEVENT".equals(vObject.type)) {
+                    if (vObject.vObjects != null) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isMeeting() {
+        return getFirstVeventProperty("ATTENDEE") != null;
+    }
+
 
     /**
      * VCalendar recipients for notifications
