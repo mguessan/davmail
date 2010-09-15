@@ -2129,7 +2129,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected String getTimezoneIdFromExchange() {
         String timezoneId = null;
-
+        String timezoneName = null;
         try {
             Set<String> attributes = new HashSet<String>();
             attributes.add("roamingdictionary");
@@ -2138,9 +2138,12 @@ public class DavExchangeSession extends ExchangeSession {
             if (responses.length == 1) {
                 byte[] roamingdictionary = getBinaryPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "roamingdictionary");
                 if (roamingdictionary != null) {
-                    timezoneId = ResourceBundle.getBundle("timezoneids").getString(getTimezoneNameFromRoamingDictionary(roamingdictionary));
+                    timezoneName = getTimezoneNameFromRoamingDictionary(roamingdictionary);
+                    timezoneId = ResourceBundle.getBundle("timezoneids").getString(timezoneName);
                 }
             }
+        } catch (MissingResourceException e) {
+            LOGGER.warn("Unable to retrieve Exchange timezone id for name "+timezoneName);
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
         } catch (IOException e) {
