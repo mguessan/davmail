@@ -498,7 +498,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             getEmailAndAliasFromOptions();
             // failover: try to get email through Webdav and Galfind
-            if (mailPath == null || email == null) {
+            if (alias == null || email == null) {
                 try {
                     buildEmail(method.getURI().getHost());
                 } catch (URIException uriException) {
