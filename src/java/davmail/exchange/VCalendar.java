@@ -450,6 +450,10 @@ public class VCalendar extends VObject {
         return getFirstVeventProperty("ATTENDEE") != null;
     }
 
+    public void setFirstVeventPropertyValue(String propertyName, String propertyValue) {
+        firstVevent.setPropertyValue(propertyName, propertyValue);
+    }
+
 
     /**
      * VCalendar recipients for notifications

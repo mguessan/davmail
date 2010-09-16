@@ -376,12 +376,17 @@ public class EwsExchangeSession extends ExchangeSession {
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
         getItemMethod.addAdditionalProperty(Field.get("reminderset"));
+        getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
         executeMethod(getItemMethod);
         byte[] mimeContent = getItemMethod.getMimeContent();
         VCalendar vCalendar = new VCalendar(mimeContent, email, getVTimezone());
         // remove additional reminder
         if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
            vCalendar.removeVAlarm();
+        }
+        String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+         if (calendaruid != null) {
+           vCalendar.setFirstVeventPropertyValue("UID", calendaruid);
         }
         return vCalendar.toString().getBytes("UTF-8");
     }
@@ -1101,13 +1106,15 @@ public class EwsExchangeSession extends ExchangeSession {
             if (!vCalendar.hasVAlarm()) {
                 updates.add(Field.createFieldUpdate("reminderset", "false"));
             }
+            //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
             // force urlcompname
             updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
             // does not work
-            /*if (!vCalendar.isMeeting()) {
-                updates.add(Field.createFieldUpdate("ismeeting", "false"));
-            }*/
-            //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
+            if (vCalendar.isMeeting()) {
+                updates.add(Field.createFieldUpdate("apptstateflags", "1"));
+            } else {
+                updates.add(Field.createFieldUpdate("apptstateflags", "0"));
+            }
             newItem.setFieldUpdates(updates);
             createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
             //}
