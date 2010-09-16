@@ -375,20 +375,8 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
-        getItemMethod.addAdditionalProperty(Field.get("reminderset"));
-        getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
         executeMethod(getItemMethod);
-        byte[] mimeContent = getItemMethod.getMimeContent();
-        VCalendar vCalendar = new VCalendar(mimeContent, email, getVTimezone());
-        // remove additional reminder
-        if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
-           vCalendar.removeVAlarm();
-        }
-        String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
-         if (calendaruid != null) {
-           vCalendar.setFirstVeventPropertyValue("UID", calendaruid);
-        }
-        return vCalendar.toString().getBytes("UTF-8");
+        return getItemMethod.getMimeContent();
     }
 
     protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
@@ -1146,10 +1134,25 @@ public class EwsExchangeSession extends ExchangeSession {
         public byte[] getEventContent() throws IOException {
             byte[] content;
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Get event: " + folderPath + '/' + itemName);
+                LOGGER.debug("Get event: " + itemName);
             }
             try {
-                content = getContent(itemId);
+                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
+                getItemMethod.addAdditionalProperty(Field.get("reminderset"));
+                getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+                executeMethod(getItemMethod);
+                content = getItemMethod.getMimeContent();
+                VCalendar vCalendar = new VCalendar(content, email, getVTimezone());
+                // remove additional reminder
+                if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
+                   vCalendar.removeVAlarm();
+                }
+                String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+                 if (calendaruid != null) {
+                   vCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                }
+                content = vCalendar.toString().getBytes("UTF-8");
+
             } catch (IOException e) {
                 throw buildHttpException(e);
             }
@@ -1353,7 +1356,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     timezoneId = item.get("timezone");
                 }
             } else {
-                getTimezoneidFromOptions();
+                timezoneId = getTimezoneidFromOptions();
             }
             if (timezoneId != null) {
                 createCalendarFolder("davmailtemp", null);

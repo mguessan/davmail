@@ -54,7 +54,7 @@ public class VCalendar extends VObject {
         }
         this.email = email;
         // set OWA timezone information
-        if (this.vTimezone == null) {
+        if (this.vTimezone == null && vTimezone != null) {
             this.vObjects.add(0, vTimezone);
             this.vTimezone = vTimezone;
         }
@@ -239,17 +239,19 @@ public class VCalendar extends VObject {
     }
 
     protected void setServerAllday(VProperty property) {
-        // set TZID param
-        if (!property.hasParam("TZID")) {
-            property.addParam("TZID", vTimezone.getPropertyValue("TZID"));
+        if (vTimezone != null) {
+            // set TZID param
+            if (!property.hasParam("TZID")) {
+                property.addParam("TZID", vTimezone.getPropertyValue("TZID"));
+            }
+            // remove VALUE
+            property.removeParam("VALUE");
+            String value = property.getValue();
+            if (value.length() != 8) {
+                LOGGER.warn("Invalid date value in allday event: " + value);
+            }
+            property.setValue(property.getValue() + "T000000");
         }
-        // remove VALUE
-        property.removeParam("VALUE");
-        String value = property.getValue();
-        if (value.length() != 8) {
-            LOGGER.warn("Invalid date value in allday event: " + value);
-        }
-        property.setValue(property.getValue() + "T000000");
     }
 
     protected void setClientAllday(VProperty property) {
@@ -423,7 +425,7 @@ public class VCalendar extends VObject {
 
     public void removeVAlarm() {
         if (vObjects != null) {
-            for (VObject vObject:vObjects) {
+            for (VObject vObject : vObjects) {
                 if ("VEVENT".equals(vObject.type)) {
                     if (vObject.vObjects != null) {
                         vObject.vObjects = null;
@@ -435,7 +437,7 @@ public class VCalendar extends VObject {
 
     public boolean hasVAlarm() {
         if (vObjects != null) {
-            for (VObject vObject:vObjects) {
+            for (VObject vObject : vObjects) {
                 if ("VEVENT".equals(vObject.type)) {
                     if (vObject.vObjects != null) {
                         return true;
