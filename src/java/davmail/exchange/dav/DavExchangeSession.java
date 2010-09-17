@@ -525,7 +525,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void buildEmail(String hostName) {
         String mailBoxPath = getMailboxPath();
         // mailPath contains either alias or email
-        if (mailBoxPath.indexOf('@') >= 0) {
+        if (mailBoxPath != null && mailBoxPath.indexOf('@') >= 0) {
             email = mailBoxPath;
             alias = getAliasFromMailboxDisplayName();
             if (alias == null) {
