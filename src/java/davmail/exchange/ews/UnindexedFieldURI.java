@@ -49,6 +49,8 @@ public class UnindexedFieldURI implements FieldURI {
     public void appendValue(StringBuilder buffer, String itemType, String value) {
         if (fieldURI.startsWith("message") && itemType != null) {
             itemType = "Message";
+        } else if (fieldURI.startsWith("calendar") && itemType != null) {
+            itemType = "CalendarItem";
         }
         if (itemType != null) {
             appendTo(buffer);
@@ -56,13 +58,23 @@ public class UnindexedFieldURI implements FieldURI {
             buffer.append(itemType);
             buffer.append('>');
         }
-        buffer.append("<t:");
-        buffer.append(fieldName);
-        buffer.append('>');
-        buffer.append(StringUtil.xmlEncode(value));
-        buffer.append("</t:");
-        buffer.append(fieldName);
-        buffer.append('>');
+        if ("MeetingTimeZone".equals(fieldName)) {
+            buffer.append("<t:MeetingTimeZone TimeZoneName=\"");
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("\"></t:MeetingTimeZone>");
+        } else if ("StartTimeZone".equals(fieldName)) {
+            buffer.append("<t:StartTimeZone Id=\"");
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("\"></t:StartTimeZone>");
+        } else {
+            buffer.append("<t:");
+            buffer.append(fieldName);
+            buffer.append('>');
+            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append("</t:");
+            buffer.append(fieldName);
+            buffer.append('>');
+        }
         if (itemType != null) {
             buffer.append("</t:");
             buffer.append(itemType);

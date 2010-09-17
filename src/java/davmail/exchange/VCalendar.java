@@ -111,6 +111,10 @@ public class VCalendar extends VObject {
         return "TRUE".equals(vObject.getPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT"));
     }
 
+    public boolean isCdoAllDay() {
+        return firstVevent != null && isCdoAllDay(firstVevent);
+    }
+
     protected String getEmailValue(VProperty property) {
         if (property == null) {
             return null;
@@ -450,6 +454,10 @@ public class VCalendar extends VObject {
 
     public boolean isMeeting() {
         return getFirstVeventProperty("ATTENDEE") != null;
+    }
+
+    public boolean isMeetingOrganizer() {
+        return email.equals(getEmailValue(getFirstVeventProperty("ORGANIZER")));
     }
 
     public void setFirstVeventPropertyValue(String propertyName, String propertyValue) {

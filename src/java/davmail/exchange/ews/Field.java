@@ -48,8 +48,10 @@ public class Field {
 
         FIELD_MAP.put("permanenturl", new ExtendedFieldURI(0x670E, ExtendedFieldURI.PropertyType.String)); //PR_FLAT_URL_NAME
         FIELD_MAP.put("instancetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:instancetype"));
-        FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
-        FIELD_MAP.put("dtend", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
+        //FIELD_MAP.put("dtstart", new ExtendedFieldURI(0x10C3, ExtendedFieldURI.PropertyType.SystemTime));
+        //FIELD_MAP.put("dtend", new ExtendedFieldURI(0x10C4, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start"));
+        FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End"));
 
         FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 
@@ -181,6 +183,9 @@ public class Field {
         FIELD_MAP.put("ismeeting", new UnindexedFieldURI("item:IsMeeting"));
         FIELD_MAP.put("apptstateflags", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8217, ExtendedFieldURI.PropertyType.Integer)); // PidLidAppointmentStateFlags 1: Meeting, 2: Received, 4: Cancelled
         FIELD_MAP.put("calendaruid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:uid", ExtendedFieldURI.PropertyType.String));
+
+        FIELD_MAP.put("meetingtimezone", new UnindexedFieldURI("calendar:MeetingTimeZone"));
+        FIELD_MAP.put("starttimezone", new UnindexedFieldURI("calendar:StartTimeZone"));
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));

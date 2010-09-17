@@ -846,7 +846,7 @@ public class EwsExchangeSession extends ExchangeSession {
         Item item = getItem(sourceFolderPath.parentPath, sourceFolderPath.folderName);
         FolderPath targetFolderPath = new FolderPath(targetPath);
         FolderId toFolderId = getFolderId(targetFolderPath.parentPath);
-        MoveItemMethod moveItemMethod = new MoveItemMethod(((Event)item).itemId, toFolderId);
+        MoveItemMethod moveItemMethod = new MoveItemMethod(((Event) item).itemId, toFolderId);
         executeMethod(moveItemMethod);
     }
 
@@ -1076,6 +1076,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             if (currentItemId != null) {
                 /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+                // TODO: update properties instead of brute force delete/add
                 updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64(itemContent))));
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1097,17 +1098,47 @@ public class EwsExchangeSession extends ExchangeSession {
             //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
             // force urlcompname
             updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-            // does not work
-            if (vCalendar.isMeeting()) {
+            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
                 updates.add(Field.createFieldUpdate("apptstateflags", "1"));
             } else {
                 updates.add(Field.createFieldUpdate("apptstateflags", "0"));
             }
+            /*
+            // patch allday date values
+            if (vCalendar.isCdoAllDay()) {
+                if ("Exchange2010".equals(serverVersion)) {
+                    updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                } else {
+                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                }
+                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+            }
+            */
+
             newItem.setFieldUpdates(updates);
             createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
             //}
 
             executeMethod(createOrUpdateItemMethod);
+
+            // patch allday date values
+            if (vCalendar.isCdoAllDay()) {
+                updates = new ArrayList<FieldUpdate>();
+                if ("Exchange2010".equals(serverVersion)) {
+                    updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                } else {
+                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                }
+                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                        ConflictResolution.AutoResolve,
+                        SendMeetingInvitationsOrCancellations.SendToNone,
+                        new ItemId(createOrUpdateItemMethod.getResponseItem()), updates);
+                executeMethod(createOrUpdateItemMethod);
+            }
+
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {
@@ -1142,16 +1173,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
-                VCalendar vCalendar = new VCalendar(content, email, getVTimezone());
+                VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
                 // remove additional reminder
                 if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
-                   vCalendar.removeVAlarm();
+                    localVCalendar.removeVAlarm();
                 }
                 String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
-                 if (calendaruid != null) {
-                   vCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                if (calendaruid != null) {
+                    localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
                 }
-                content = vCalendar.toString().getBytes("UTF-8");
+                content = localVCalendar.toString().getBytes("UTF-8");
 
             } catch (IOException e) {
                 throw buildHttpException(e);
@@ -1607,6 +1638,22 @@ public class EwsExchangeSession extends ExchangeSession {
                 zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));
             } catch (ParseException e) {
                 throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+        }
+        return zuluDateValue;
+    }
+
+    protected String convertCalendarDateToExchange(String vcalendarDateValue) throws DavMailException {
+        String zuluDateValue = null;
+        if (vcalendarDateValue != null) {
+            try {
+                SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                dateParser.setTimeZone(GMT_TIMEZONE);
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+                dateFormatter.setTimeZone(GMT_TIMEZONE);
+                zuluDateValue = dateFormatter.format(dateParser.parse(vcalendarDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", vcalendarDateValue);
             }
         }
         return zuluDateValue;
