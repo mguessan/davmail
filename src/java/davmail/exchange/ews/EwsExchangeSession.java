@@ -1103,42 +1103,25 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 updates.add(Field.createFieldUpdate("apptstateflags", "0"));
             }
-            /*
             // patch allday date values
+            if (vCalendar.isCdoAllDay()) {
+                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+            }
+            updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))?"Busy":"Free"));
             if (vCalendar.isCdoAllDay()) {
                 if ("Exchange2010".equals(serverVersion)) {
                     updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
                 } else {
                     updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
                 }
-                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
             }
-            */
 
             newItem.setFieldUpdates(updates);
             createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
             //}
 
             executeMethod(createOrUpdateItemMethod);
-
-            // patch allday date values
-            if (vCalendar.isCdoAllDay()) {
-                updates = new ArrayList<FieldUpdate>();
-                if ("Exchange2010".equals(serverVersion)) {
-                    updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
-                } else {
-                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
-                }
-                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
-                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AutoResolve,
-                        SendMeetingInvitationsOrCancellations.SendToNone,
-                        new ItemId(createOrUpdateItemMethod.getResponseItem()), updates);
-                executeMethod(createOrUpdateItemMethod);
-            }
-
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
             if (itemResult.status == HttpURLConnection.HTTP_OK) {

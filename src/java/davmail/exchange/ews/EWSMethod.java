@@ -276,16 +276,8 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeUpdates(Writer writer) throws IOException {
         if (updates != null) {
             writer.write("<t:Updates>");
-            // write extended properties first
             for (FieldUpdate fieldUpdate : updates) {
-                if (fieldUpdate.fieldURI instanceof ExtendedFieldURI) {
-                    fieldUpdate.write(itemType, writer);
-                }
-            }
-            for (FieldUpdate fieldUpdate : updates) {
-                if (!(fieldUpdate.fieldURI instanceof ExtendedFieldURI)) {
-                    fieldUpdate.write(itemType, writer);
-                }
+                fieldUpdate.write(itemType, writer);
             }
             writer.write("</t:Updates>");
         }
@@ -457,7 +449,7 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(type);
             writer.write(">");
             // write ordered fields
-            for (String key:fieldNames) {
+            for (String key : fieldNames) {
                 if ("MeetingTimeZone".equals(key)) {
                     writer.write("<t:MeetingTimeZone TimeZoneName=\"");
                     writer.write(StringUtil.xmlEncode(get(key)));

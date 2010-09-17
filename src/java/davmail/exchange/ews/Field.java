@@ -186,6 +186,8 @@ public class Field {
 
         FIELD_MAP.put("meetingtimezone", new UnindexedFieldURI("calendar:MeetingTimeZone"));
         FIELD_MAP.put("starttimezone", new UnindexedFieldURI("calendar:StartTimeZone"));
+        FIELD_MAP.put("busystatus", new UnindexedFieldURI("calendar:LegacyFreeBusyStatus"));
+
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
