@@ -688,6 +688,7 @@ public class DavExchangeSession extends ExchangeSession {
             // default public folder path
             publicFolderUrl = PUBLIC_ROOT;
 
+            Cookie[] currentCookies = httpClient.getState().getCookies();
             // check public folder access
             try {
                 if (inboxUrl != null) {
@@ -711,6 +712,8 @@ public class DavExchangeSession extends ExchangeSession {
                 // update public folder URI
                 publicFolderUrl = propFindMethod.getURI().getURI();
             } catch (IOException e) {
+                // restore cookies on error
+                httpClient.getState().addCookies(currentCookies);
                 LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
                 publicFolderUrl = "/public";
             }

@@ -2716,6 +2716,7 @@ public abstract class ExchangeSession {
     static final String MAILBOX_BASE = "/cn=";
 
     protected void getEmailAndAliasFromOptions() {
+        Cookie[] currentCookies = httpClient.getState().getCookies();
         // get user mail URL from html body
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
@@ -2741,6 +2742,8 @@ public abstract class ExchangeSession {
 
             }
         } catch (IOException e) {
+            // restore cookies on error
+            httpClient.getState().addCookies(currentCookies);
             LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
         } finally {
             if (optionsPageReader != null) {
@@ -2752,7 +2755,6 @@ public abstract class ExchangeSession {
             }
             optionsMethod.releaseConnection();
         }
-
     }
 
     /**
