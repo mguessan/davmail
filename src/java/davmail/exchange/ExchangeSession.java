@@ -2286,10 +2286,10 @@ public abstract class ExchangeSession {
             SimpleDateFormat parser = getZuluDateFormat();
             ExchangeSession.MultiCondition andCondition = and();
             if (timeRangeStart != null) {
-                andCondition.add(gte("dtstart", formatSearchDate(parser.parse(timeRangeStart))));
+                andCondition.add(gt("dtend", formatSearchDate(parser.parse(timeRangeStart))));
             }
             if (timeRangeEnd != null) {
-                andCondition.add(lte("dtend", formatSearchDate(parser.parse(timeRangeEnd))));
+                andCondition.add(lt("dtstart", formatSearchDate(parser.parse(timeRangeEnd))));
             }
             return andCondition;
         } catch (ParseException e) {
