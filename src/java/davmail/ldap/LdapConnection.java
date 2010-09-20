@@ -231,6 +231,7 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("labeleduri", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-generateduid", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uidnumber", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("gidnumber", null);
 
         // iCal search attribute
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", "apple-serviceslocator");
