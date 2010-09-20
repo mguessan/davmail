@@ -34,6 +34,9 @@ import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.apache.log4j.Level;
 
 import java.io.IOException;
@@ -245,4 +248,21 @@ public class TestCaldav extends AbstractDavMailTestCase {
         httpClient.executeMethod(getMethod);
         assertEquals(HttpStatus.SC_OK, getMethod.getStatusCode());
     }
+
+    public void testPropfindPrincipal() throws IOException, DavException {
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        davPropertyNameSet.add(DavPropertyName.create("calendar-home-set", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
+        davPropertyNameSet.add(DavPropertyName.create("calendar-user-address-set", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
+        davPropertyNameSet.add(DavPropertyName.create("schedule-inbox-URL", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
+        davPropertyNameSet.add(DavPropertyName.create("schedule-outbox-URL", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
+        PropFindMethod method = new PropFindMethod("/principals/users/" + session.getEmail() + "/", davPropertyNameSet, 0);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+        assertEquals(1, responses.length);
+    }
+
 }
