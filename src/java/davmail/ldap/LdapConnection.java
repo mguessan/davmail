@@ -190,6 +190,7 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("cellphone", "mobile");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homeurl", "personalHomePage");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomeurl", "personalHomePage");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-user-homeurl", "personalHomePage");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomepostalcode", "homePostalCode");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("fax", "facsimiletelephonenumber");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("mozillahomecountryname", "homeCountry");
@@ -206,6 +207,7 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("carphone", "othermobile");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nsaimid", "im");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nscpaimscreenname", "im");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-imhandle", "im");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillasecondemail", "smtpemail2");
 
@@ -235,7 +237,23 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("jpegphoto", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-emailcontacts", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-user-picture", null);
-        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-imhandle", null);
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_usercertificate", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_realname", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_jpegphoto", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_guest", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_linkedidentity", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_defaultlanguage", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_hint", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers__defaultlanguage", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("_writers_picture", null);
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-user-authenticationhint", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("external", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("userpassword", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("linkedidentity", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homedirectory", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("authauthority", null);
 
         // iCal search attribute
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", "apple-serviceslocator");
