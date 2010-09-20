@@ -669,14 +669,19 @@ public class LdapConnection extends AbstractConnection {
         }
     }
 
+    protected String currentHostName;
+
     protected String getCurrentHostName() throws UnknownHostException {
-        if (client.getInetAddress().isLoopbackAddress()) {
-            // local address, probably using localhost in iCal URL
-            return "localhost";
-        } else {
-            // remote address, send fully qualified domain name
-            return InetAddress.getLocalHost().getCanonicalHostName();
+        if (currentHostName == null) {
+            if (client.getInetAddress().isLoopbackAddress()) {
+                // local address, probably using localhost in iCal URL
+                currentHostName = "localhost";
+            } else {
+                // remote address, send fully qualified domain name
+                currentHostName = InetAddress.getLocalHost().getCanonicalHostName();
+            }
         }
+        return currentHostName;
     }
 
     /**
