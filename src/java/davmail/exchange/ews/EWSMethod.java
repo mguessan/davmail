@@ -677,6 +677,8 @@ public abstract class EWSMethod extends PostMethod {
                     handleMimeContent(reader, responseItem);
                 } else if ("Attachments".equals(tagLocalName)) {
                     responseItem.attachments = handleAttachments(reader);
+                } else if ("EmailAddresses".equals(tagLocalName)) {
+                    handleEmailAddresses(reader, responseItem);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -693,6 +695,18 @@ public abstract class EWSMethod extends PostMethod {
             }
         }
         return responseItem;
+    }
+
+    protected void handleEmailAddresses(XMLStreamReader reader, Item item) throws XMLStreamException {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "EmailAddresses"))) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Entry".equals(tagLocalName)) {
+                    item.put(reader.getAttributeValue(null, "Key"), reader.getElementText());
+                }
+            }
+        }
     }
 
     protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {

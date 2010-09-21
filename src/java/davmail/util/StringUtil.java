@@ -267,6 +267,12 @@ public final class StringUtil {
         if (result.indexOf(':') >= 0) {
             result = COLON_PATTERN.matcher(result).replaceAll("%3A");
         }
+        if (result.indexOf('<') >= 0) {
+            result = LT_PATTERN.matcher(result).replaceAll("%3C");
+        }
+        if (result.indexOf('>') >= 0) {
+            result = GT_PATTERN.matcher(result).replaceAll("%3E");
+        }
         return result;
     }
 

@@ -469,9 +469,9 @@ public class VCalendar extends VObject {
      * VCalendar recipients for notifications
      */
     public static class Recipients {
-        String attendees;
-        String optionalAttendees;
-        String organizer;
+        public String attendees;
+        public String optionalAttendees;
+        public String organizer;
     }
 
     /**

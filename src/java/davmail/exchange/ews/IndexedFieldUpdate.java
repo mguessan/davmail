@@ -20,27 +20,22 @@ package davmail.exchange.ews;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Field update
+ * Field update with multiple values.
  */
-public class FieldUpdate {
-    FieldURI fieldURI;
-    String value;
+public class IndexedFieldUpdate extends FieldUpdate {
+    Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+    protected String collectionName;
 
-    /**
-     * Create field update with value.
-     *
-     * @param fieldURI target field
-     * @param value    field value
-     */
-    public FieldUpdate(FieldURI fieldURI, String value) {
-        this.fieldURI = fieldURI;
-        this.value = value;
+    public IndexedFieldUpdate(String collectionName) {
+        this.collectionName = collectionName;
     }
 
-    protected FieldUpdate() {
-        // empty constructor for subclass
+    public void addFieldValue(FieldUpdate fieldUpdate) {
+        updates.add(fieldUpdate);
     }
 
     /**
@@ -50,37 +45,29 @@ public class FieldUpdate {
      * @param writer   request writer
      * @throws IOException on error
      */
+    @Override
     public void write(String itemType, Writer writer) throws IOException {
-        String action;
-        //noinspection VariableNotUsedInsideIf
-        if (value == null) {
-            action = "Delete";
-        } else {
-            action = "Set";
-        }
-        if (itemType != null) {
+        if (itemType == null) {
+            // use collection name on create
             writer.write("<t:");
-            writer.write(action);
-            writer.write(itemType);
-            writer.write("Field>");
-        }
+            writer.write(collectionName);
+            writer.write(">");
 
-        // do not try to set empty value on create
-        if (itemType != null || value != null) {
             StringBuilder buffer = new StringBuilder();
-            if (value == null) {
-                fieldURI.appendTo(buffer);
-            } else {
-                fieldURI.appendValue(buffer, itemType, value);
+            for (FieldUpdate fieldUpdate : updates) {
+                fieldUpdate.fieldURI.appendValue(buffer, itemType, fieldUpdate.value);
             }
             writer.write(buffer.toString());
-        }
 
-        if (itemType != null) {
             writer.write("</t:");
-            writer.write(action);
-            writer.write(itemType);
-            writer.write("Field>");
+            writer.write(collectionName);
+            writer.write(">");
+        } else {
+            // on update, write each fieldupdate
+            for (FieldUpdate fieldUpdate : updates) {
+                fieldUpdate.write(itemType, writer);
+            }
         }
     }
+
 }

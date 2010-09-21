@@ -898,16 +898,27 @@ public class EwsExchangeSession extends ExchangeSession {
         protected Contact() {
         }
 
-        protected List<FieldUpdate> buildProperties() {
-            ArrayList<FieldUpdate> list = new ArrayList<FieldUpdate>();
+        protected void buildProperties(List<FieldUpdate> updates) {
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
-                    list.add(Field.createFieldUpdate("haspicture", "true"));
-                } else if (!entry.getKey().startsWith("email")) {
-                    list.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
+                    updates.add(Field.createFieldUpdate("haspicture", "true"));
+                } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")) {
+                    updates.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }
-            return list;
+            // handle email addresses
+            IndexedFieldUpdate emailFieldUpdate = null;
+            for (Map.Entry<String, String> entry : entrySet()) {
+                if (entry.getKey().startsWith("smtpemail")) {
+                    if (emailFieldUpdate == null) {
+                        emailFieldUpdate = new IndexedFieldUpdate("EmailAddresses");
+                    }
+                    emailFieldUpdate.addFieldValue(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
+                }
+            }
+            if (emailFieldUpdate != null) {
+                updates.add(emailFieldUpdate);
+            }
         }
 
 
@@ -955,8 +966,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
-            List<FieldUpdate> properties = buildProperties();
+            List<FieldUpdate> properties = new ArrayList<FieldUpdate>();
             if (currentItemId != null) {
+                buildProperties(properties);
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
@@ -968,6 +980,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 newItem.type = "Contact";
                 // force urlcompname on create
                 properties.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                buildProperties(properties);
                 newItem.setFieldUpdates(properties);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
             }
@@ -1103,12 +1116,26 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 updates.add(Field.createFieldUpdate("apptstateflags", "0"));
             }
+
+            if (vCalendar.isMeeting()) {
+                VCalendar.Recipients recipients = vCalendar.getRecipients(false);
+                if (recipients.attendees != null) {
+                    updates.add(Field.createFieldUpdate("to", recipients.attendees));
+                }
+                if (recipients.optionalAttendees != null) {
+                    updates.add(Field.createFieldUpdate("cc", recipients.optionalAttendees));
+                }
+                if (recipients.organizer != null && !vCalendar.isMeetingOrganizer()) {
+                    updates.add(Field.createFieldUpdate("from", recipients.optionalAttendees));
+                }
+            }
+
             // patch allday date values
             if (vCalendar.isCdoAllDay()) {
                 updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                 updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
             }
-            updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))?"Busy":"Free"));
+            updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
             if (vCalendar.isCdoAllDay()) {
                 if ("Exchange2010".equals(serverVersion)) {
                     updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));

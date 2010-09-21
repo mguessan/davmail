@@ -633,6 +633,10 @@ public abstract class ExchangeSession {
      */
     public abstract MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException;
 
+    public String getServerVersion() {
+        return serverVersion;
+    }
+
     @SuppressWarnings({"JavaDoc"})
     public enum Operator {
         Or, And, Not, IsEqualTo,

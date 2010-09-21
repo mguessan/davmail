@@ -18,6 +18,7 @@
  */
 package davmail.exchange;
 
+import davmail.Settings;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
@@ -179,7 +180,9 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("http://fburl", contact.get("fburl"));
 
         assertEquals("true", contact.get("haspicture"));
-        assertNotNull(session.getContactPhoto(contact));
+        if (!Settings.getBooleanProperty("davmail.enableEws") || "Exchange2010".equals(session.getServerVersion())) {
+            assertNotNull(session.getContactPhoto(contact));
+        }
     }
 
     public void testUpdateContact() throws IOException {
