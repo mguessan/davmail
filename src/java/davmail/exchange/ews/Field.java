@@ -193,6 +193,9 @@ public class Field {
         FIELD_MAP.put("busystatus", new UnindexedFieldURI("calendar:LegacyFreeBusyStatus"));
 
 
+        FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
+        FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
+
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
     }

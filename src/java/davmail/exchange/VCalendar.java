@@ -464,6 +464,9 @@ public class VCalendar extends VObject {
         firstVevent.setPropertyValue(propertyName, propertyValue);
     }
 
+    public void addFirstVeventProperty(VProperty vProperty) {
+        firstVevent.addProperty(vProperty);
+    }
 
     /**
      * VCalendar recipients for notifications

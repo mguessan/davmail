@@ -23,6 +23,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
+import davmail.exchange.VProperty;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -1181,6 +1182,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                 getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                 getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+                getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
+                getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
                 VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
@@ -1191,6 +1195,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
                 if (calendaruid != null) {
                     localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                }
+                List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
+                if (attendees != null) {
+                    for (EWSMethod.Attendee attendee : attendees) {
+                        VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:"+attendee.email);
+                        attendeeProperty.addParam("CN", attendee.name);
+                        attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                        attendeeProperty.addParam("ROLE", attendee.role);
+                        localVCalendar.addFirstVeventProperty(attendeeProperty);
+                    }
                 }
                 content = localVCalendar.toString().getBytes("UTF-8");
 

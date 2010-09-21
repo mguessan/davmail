@@ -412,6 +412,13 @@ public abstract class EWSMethod extends PostMethod {
         this.serverVersion = serverVersion;
     }
 
+    public static class Attendee {
+        public String role;
+        public String email;
+        public String partstat;
+        public String name;
+    }
+
     /**
      * Item
      */
@@ -423,6 +430,7 @@ public abstract class EWSMethod extends PostMethod {
         protected byte[] mimeContent;
         protected List<FieldUpdate> fieldUpdates;
         protected List<FileAttachment> attachments;
+        protected List<Attendee> attendees;
         protected List<String> fieldNames = new ArrayList<String>();
 
         @Override
@@ -556,6 +564,17 @@ public abstract class EWSMethod extends PostMethod {
             }
             return result;
         }
+
+        public List<Attendee> getAttendees() {
+            return attendees;
+        }
+
+        public void addAttendee(Attendee attendee) {
+            if (attendees == null) {
+                attendees = new ArrayList<Attendee>();
+            }
+            attendees.add(attendee);
+        }
     }
 
     /**
@@ -679,6 +698,8 @@ public abstract class EWSMethod extends PostMethod {
                     responseItem.attachments = handleAttachments(reader);
                 } else if ("EmailAddresses".equals(tagLocalName)) {
                     handleEmailAddresses(reader, responseItem);
+                } else if ("RequiredAttendees".equals(tagLocalName) || "OptionalAttendees".equals(tagLocalName)) {
+                    handleAttendees(reader, responseItem, tagLocalName);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -707,6 +728,50 @@ public abstract class EWSMethod extends PostMethod {
                 }
             }
         }
+    }
+
+    protected void handleAttendees(XMLStreamReader reader, Item item, String attendeeType) throws XMLStreamException {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, attendeeType))) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Attendee".equals(tagLocalName)) {
+                    handleAttendee(reader, item, attendeeType);
+                }
+            }
+        }
+    }
+
+    protected void handleAttendee(XMLStreamReader reader, Item item, String attendeeType) throws XMLStreamException {
+        Attendee attendee = new Attendee();
+        if ("RequiredAttendees".equals(attendeeType)) {
+            attendee.role = "REQ-PARTICIPANT";
+        } else {
+            attendee.role = "OPT-PARTICIPANT";
+        }
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Attendee"))) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("EmailAddress".equals(tagLocalName)) {
+                    attendee.email = reader.getElementText();
+                } else if ("Name".equals(tagLocalName)) {
+                    attendee.name = reader.getElementText();
+                } else if ("ResponseType".equals(tagLocalName)) {
+                    String responseType = reader.getElementText();
+                    if ("Accept".equals(responseType)) {
+                        attendee.partstat = "ACCEPTED";
+                    } else if ("Tentative".equals(responseType)) {
+                        attendee.partstat = "TENTATIVE";
+                    } else if ("Decline".equals(responseType)) {
+                        attendee.partstat = "DECLINED";
+                    } else {
+                        attendee.partstat = "NEEDS-ACTION";
+                    }
+                }
+            }
+        }
+        item.addAttendee(attendee);
     }
 
     protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {
