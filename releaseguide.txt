@@ -4,6 +4,9 @@ Release guide :
 - update staging (clean checkout) directory
 - launch ant release, check generated packages
 - upload packages: ant upload-release
+- make sure swt and jcifs are available in local maven repository:
+mvn install:install-file -DgroupId=org.eclipse -DartifactId=swt -Dversion=3.6.0 -Dpackaging=jar -Dfile=lib/swt-3.6-win32-x86.jar
+mvn install:install-file -DgroupId=org.samba.jcifs -DartifactId=jcifs -Dversion=1.3.14 -Dpackaging=jar -Dfile=lib/jcifs-1.3.14.jar
 - generate site: mvn site
 - upload site: ant upload-site
 - upload releasenotes.txt to sourceforge
