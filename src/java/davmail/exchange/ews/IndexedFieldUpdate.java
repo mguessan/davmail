@@ -55,7 +55,7 @@ public class IndexedFieldUpdate extends FieldUpdate {
 
             StringBuilder buffer = new StringBuilder();
             for (FieldUpdate fieldUpdate : updates) {
-                fieldUpdate.fieldURI.appendValue(buffer, itemType, fieldUpdate.value);
+                fieldUpdate.fieldURI.appendValue(buffer, null, fieldUpdate.value);
             }
             writer.write(buffer.toString());
 

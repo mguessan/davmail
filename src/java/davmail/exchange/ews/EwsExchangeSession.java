@@ -1117,6 +1117,15 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 updates.add(Field.createFieldUpdate("apptstateflags", "0"));
             }
+            // handle mozilla alarm
+            String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+            if (xMozLastack != null) {
+                 updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+            }
+            String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+            if (xMozSnoozeTime != null) {
+                 updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
+            }
 
             if (vCalendar.isMeeting()) {
                 VCalendar.Recipients recipients = vCalendar.getRecipients(false);
@@ -1184,6 +1193,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                 getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
                 getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
+                getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
 
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
@@ -1206,6 +1217,11 @@ public class EwsExchangeSession extends ExchangeSession {
                         localVCalendar.addFirstVeventProperty(attendeeProperty);
                     }
                 }
+                // restore mozilla alarm status
+                localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
+                        getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
+                localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
+                        getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
                 content = localVCalendar.toString().getBytes("UTF-8");
 
             } catch (IOException e) {

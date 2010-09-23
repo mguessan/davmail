@@ -192,9 +192,11 @@ public class Field {
         FIELD_MAP.put("starttimezone", new UnindexedFieldURI("calendar:StartTimeZone"));
         FIELD_MAP.put("busystatus", new UnindexedFieldURI("calendar:LegacyFreeBusyStatus"));
 
-
         FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
         FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
+
+        FIELD_MAP.put("xmozlastack", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozlastack"));
+        FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
