@@ -113,6 +113,7 @@ public class ResolveNamesMethod extends EWSMethod {
         }
     }
 
+    @Override
     protected void handleEmailAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "EmailAddresses")) {
             reader.next();

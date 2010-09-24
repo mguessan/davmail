@@ -36,7 +36,7 @@ import java.security.KeyStore;
  * Generic abstract server common to SMTP and POP3 implementations
  */
 public abstract class AbstractServer extends Thread {
-	protected boolean nosslFlag = false; // will cause same behavior as before with unchanged config files
+	protected boolean nosslFlag; // will cause same behavior as before with unchanged config files
     private final int port;
     private ServerSocket serverSocket;
 

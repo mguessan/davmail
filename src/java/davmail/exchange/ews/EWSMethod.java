@@ -431,7 +431,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<FieldUpdate> fieldUpdates;
         protected List<FileAttachment> attachments;
         protected List<Attendee> attendees;
-        protected List<String> fieldNames = new ArrayList<String>();
+        protected final List<String> fieldNames = new ArrayList<String>();
 
         @Override
         public String toString() {

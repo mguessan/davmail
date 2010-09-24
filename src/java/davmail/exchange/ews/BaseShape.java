@@ -21,6 +21,7 @@ package davmail.exchange.ews;
 /**
  * Item or folder base shape.
  */
+@SuppressWarnings({"UnusedDeclaration"})
 public final class BaseShape extends ElementOption {
     private BaseShape(String value) {
         super("t:BaseShape", value);

@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * Contains comparison mode.
  */
-@SuppressWarnings({"UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
 public class ContainmentComparison extends AttributeOption {
     private ContainmentComparison(String value) {
         super("ContainmentComparison", value);

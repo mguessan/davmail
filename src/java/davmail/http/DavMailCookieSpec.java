@@ -26,6 +26,7 @@ import org.apache.commons.httpclient.cookie.RFC2109Spec;
  * Custom CookieSpec to allow extended domain names.
  */
 public class DavMailCookieSpec extends RFC2109Spec {
+    @Override
     public void validate(String host, int port, String path,
         boolean secure, final Cookie cookie) throws MalformedCookieException {
         String hostWithoutDomain = host.substring(0, host.length()

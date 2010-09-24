@@ -29,11 +29,11 @@ import java.io.Writer;
  * GetUserAvailability method.
  */
 public class GetUserAvailabilityMethod extends EWSMethod {
-    protected String attendee;
-    protected String start;
-    protected String end;
+    protected final String attendee;
+    protected final String start;
+    protected final String end;
     protected String mergedFreeBusy;
-    protected int interval;
+    protected final int interval;
 
     /**
      * Build EWS method
@@ -92,7 +92,7 @@ public class GetUserAvailabilityMethod extends EWSMethod {
         writer.write(end);
         writer.write("</t:EndTime>" +
                 "</t:TimeWindow>" +
-                "<t:MergedFreeBusyIntervalInMinutes>60</t:MergedFreeBusyIntervalInMinutes>" +
+                "<t:MergedFreeBusyIntervalInMinutes>"+interval+"</t:MergedFreeBusyIntervalInMinutes>" +
                 "<t:RequestedView>MergedOnly</t:RequestedView>" +
                 "</t:FreeBusyViewOptions>");
     }

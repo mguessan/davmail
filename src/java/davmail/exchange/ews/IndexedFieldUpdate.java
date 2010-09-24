@@ -27,8 +27,8 @@ import java.util.Set;
  * Field update with multiple values.
  */
 public class IndexedFieldUpdate extends FieldUpdate {
-    Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-    protected String collectionName;
+    final Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+    protected final String collectionName;
 
     public IndexedFieldUpdate(String collectionName) {
         this.collectionName = collectionName;
