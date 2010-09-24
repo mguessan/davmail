@@ -913,7 +913,7 @@ public class EwsExchangeSession extends ExchangeSession {
             // handle email addresses
             IndexedFieldUpdate emailFieldUpdate = null;
             for (Map.Entry<String, String> entry : entrySet()) {
-                if (entry.getKey().startsWith("smtpemail")) {
+                if (entry.getKey().startsWith("smtpemail") && entry.getValue() != null) {
                     if (emailFieldUpdate == null) {
                         emailFieldUpdate = new IndexedFieldUpdate("EmailAddresses");
                     }
