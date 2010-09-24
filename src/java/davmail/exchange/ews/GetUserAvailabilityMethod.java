@@ -92,7 +92,7 @@ public class GetUserAvailabilityMethod extends EWSMethod {
         writer.write(end);
         writer.write("</t:EndTime>" +
                 "</t:TimeWindow>" +
-                "<t:MergedFreeBusyIntervalInMinutes>"+interval+"</t:MergedFreeBusyIntervalInMinutes>" +
+                "<t:MergedFreeBusyIntervalInMinutes>" + interval + "</t:MergedFreeBusyIntervalInMinutes>" +
                 "<t:RequestedView>MergedOnly</t:RequestedView>" +
                 "</t:FreeBusyViewOptions>");
     }
@@ -104,6 +104,11 @@ public class GetUserAvailabilityMethod extends EWSMethod {
         }
     }
 
+    /**
+     * Get merged freebusy string.
+     *
+     * @return freebusy string
+     */
     public String getMergedFreeBusy() {
         return mergedFreeBusy;
     }

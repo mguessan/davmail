@@ -28,6 +28,7 @@ public class FindItemMethod extends EWSMethod {
      * @param traversal      folder traversal mode
      * @param baseShape      base item shape
      * @param parentFolderId parent folder id
+     * @param maxCount       maximum result count
      */
     public FindItemMethod(FolderQueryTraversal traversal, BaseShape baseShape, FolderId parentFolderId, int maxCount) {
         super("Item", "FindItem");

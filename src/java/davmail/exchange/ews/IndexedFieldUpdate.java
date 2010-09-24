@@ -30,10 +30,20 @@ public class IndexedFieldUpdate extends FieldUpdate {
     final Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
     protected final String collectionName;
 
+    /**
+     * Create indexed field update object.
+     *
+     * @param collectionName values collection name e.g. EmailAddresses
+     */
     public IndexedFieldUpdate(String collectionName) {
         this.collectionName = collectionName;
     }
 
+    /**
+     * Add indexed field value.
+     *
+     * @param fieldUpdate field update object
+     */
     public void addFieldValue(FieldUpdate fieldUpdate) {
         updates.add(fieldUpdate);
     }

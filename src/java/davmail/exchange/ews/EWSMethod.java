@@ -412,10 +412,25 @@ public abstract class EWSMethod extends PostMethod {
         this.serverVersion = serverVersion;
     }
 
+    /**
+     * Meeting attendee object
+     */
     public static class Attendee {
+        /**
+         * attendee role
+         */
         public String role;
+        /**
+         * attendee email address
+         */
         public String email;
+        /**
+         * attendee participation status
+         */
         public String partstat;
+        /**
+         * attendee fullname
+         */
         public String name;
     }
 
@@ -565,10 +580,18 @@ public abstract class EWSMethod extends PostMethod {
             return result;
         }
 
+        /**
+         * Get all attendees.
+         * @return all attendees
+         */
         public List<Attendee> getAttendees() {
             return attendees;
         }
 
+        /**
+         * Add attendee.
+         * @param attendee attendee object
+         */
         public void addAttendee(Attendee attendee) {
             if (attendees == null) {
                 attendees = new ArrayList<Attendee>();

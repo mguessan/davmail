@@ -38,6 +38,11 @@ public class ItemId {
         this.changeKey = item.get("ChangeKey");
     }
 
+    /**
+     * Build Item id object from item id.
+     *
+     * @param itemId item id
+     */
     public ItemId(String itemId) {
         this.id = itemId;
         this.changeKey = null;

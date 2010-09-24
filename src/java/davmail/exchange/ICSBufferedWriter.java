@@ -42,9 +42,15 @@ public class ICSBufferedWriter {
      * @param line ics event line
      */
     public void writeLine(String line) {
-         writeLine(line, false);
+        writeLine(line, false);
     }
 
+    /**
+     * Write line with or without continuation prefix.
+     *
+     * @param line   line content
+     * @param prefix continuation flag
+     */
     public void writeLine(String line, boolean prefix) {
         int maxLength = 77;
         if (prefix) {

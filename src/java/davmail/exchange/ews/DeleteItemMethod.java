@@ -25,8 +25,9 @@ public class DeleteItemMethod extends EWSMethod {
     /**
      * Delete item method.
      *
-     * @param itemId     item id
-     * @param deleteType delete mode
+     * @param itemId                   item id
+     * @param deleteType               delete mode
+     * @param sendMeetingCancellations send meeting cancellation notifications
      */
     public DeleteItemMethod(ItemId itemId, DeleteType deleteType, SendMeetingCancellations sendMeetingCancellations) {
         super("Item", "DeleteItem");

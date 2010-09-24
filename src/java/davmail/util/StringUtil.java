@@ -293,7 +293,7 @@ public final class StringUtil {
 
     public static String base64ToUrl(String value) {
         String result = value;
-        if (value != null) {
+        if (result != null) {
             if (result.indexOf('+') >= 0) {
                 result = PLUS_PATTERN.matcher(result).replaceAll("-");
             }

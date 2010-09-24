@@ -252,7 +252,7 @@ public class ExchangePropPatchMethod extends PostMethod {
 
 
     protected void handleProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
-        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "prop")){
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "prop")) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
@@ -288,6 +288,12 @@ public class ExchangePropPatchMethod extends PostMethod {
         return responses.get(0);
     }
 
+    /**
+     * Return method http status code.
+     *
+     * @return http status code
+     * @throws HttpException on error
+     */
     public int getResponseStatusCode() throws HttpException {
         String responseDescription = getResponse().getResponseDescription();
         if ("HTTP/1.1 201 Created".equals(responseDescription)) {

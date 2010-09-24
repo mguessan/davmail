@@ -29,12 +29,22 @@ public class FileAttachment {
     protected String contentType;
     protected String content;
     protected String attachmentId;
-    protected boolean isContactPhoto;    
+    protected boolean isContactPhoto;
 
+    /**
+     * Default constructor
+     */
     public FileAttachment() {
         // empty constructor
     }
 
+    /**
+     * Build file attachment.
+     *
+     * @param name        attachment name
+     * @param contentType content type
+     * @param content     body as string
+     */
     public FileAttachment(String name, String contentType, String content) {
         this.name = name;
         this.contentType = contentType;
@@ -49,7 +59,7 @@ public class FileAttachment {
      */
     public void write(Writer writer) throws IOException {
         writer.write("<t:FileAttachment>");
-         if (name != null) {
+        if (name != null) {
             writer.write("<t:Name>");
             writer.write(name);
             writer.write("</t:Name>");
@@ -70,8 +80,13 @@ public class FileAttachment {
         writer.write("</t:FileAttachment>");
     }
 
+    /**
+     * Exchange 2010 only: set contact photo flag on attachment.
+     *
+     * @param isContactPhoto contact photo flag
+     */
     public void setIsContactPhoto(boolean isContactPhoto) {
-      this.isContactPhoto = isContactPhoto;
+        this.isContactPhoto = isContactPhoto;
     }
 
 }
