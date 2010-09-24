@@ -35,7 +35,6 @@ import org.htmlcleaner.CommentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
-import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
@@ -633,6 +632,11 @@ public abstract class ExchangeSession {
      */
     public abstract MessageList searchMessages(String folderName, Set<String> attributes, Condition condition) throws IOException;
 
+    /**
+     * Get server version (Exchange2003, Exchange2007 or Exchange2010)
+     *
+     * @return server version
+     */
     public String getServerVersion() {
         return serverVersion;
     }
@@ -1074,11 +1078,9 @@ public abstract class ExchangeSession {
 
         // remove visible recipients from list
         Set<String> visibleRecipients = new HashSet<String>();
-        Address[] recipients = mimeMessage.getAllRecipients();
-        if (recipients != null) {
-            for (Address address : recipients) {
-                visibleRecipients.add(((InternetAddress) address).getAddress().toLowerCase());
-            }
+        List<InternetAddress> recipients = getAllRecipients(mimeMessage);
+        for (InternetAddress address : recipients) {
+            visibleRecipients.add((address.getAddress().toLowerCase()));
         }
         for (String recipient : rcptToRecipients) {
             if (!visibleRecipients.contains(recipient.toLowerCase())) {
@@ -1087,6 +1089,21 @@ public abstract class ExchangeSession {
         }
         sendMessage(mimeMessage);
 
+    }
+
+    protected static final String[] RECIPIENT_HEADERS = {"to", "cc", "bcc"};
+
+    protected List<InternetAddress> getAllRecipients(MimeMessage mimeMessage) throws MessagingException {
+        List<InternetAddress> recipientList = new ArrayList<InternetAddress>();
+        for (String recipientHeader : RECIPIENT_HEADERS) {
+            final String recipientHeaderValue = mimeMessage.getHeader(recipientHeader, ",");
+            if (recipientHeaderValue != null) {
+                // parse headers in non strict mode
+                recipientList.addAll(Arrays.asList(InternetAddress.parseHeader(recipientHeaderValue, false)));
+            }
+
+        }
+        return recipientList;
     }
 
     /**
@@ -1208,6 +1225,7 @@ public abstract class ExchangeSession {
 
     /**
      * Move item from source path to target path.
+     *
      * @param sourcePath item source path
      * @param targetPath item target path
      * @throws IOException on error
