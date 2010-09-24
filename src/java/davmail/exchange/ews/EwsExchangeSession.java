@@ -132,6 +132,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
         try {
             folderIdMap = new HashMap<String, String>();
+            // workaround for Exchange bug: send fake request
+            internalGetFolder("");
             // load actual well known folder ids
             folderIdMap.put(internalGetFolder(INBOX).folderId.value, INBOX);
             folderIdMap.put(internalGetFolder(CALENDAR).folderId.value, CALENDAR);
@@ -775,6 +777,7 @@ public class EwsExchangeSession extends ExchangeSession {
         } else {
             throw new HttpNotFoundException("Folder " + folderPath + " not found");
         }
+        System.out.println(folderPath+": "+folder.folderId.value);
         return folder;
     }
 
