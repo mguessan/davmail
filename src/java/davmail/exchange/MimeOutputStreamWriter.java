@@ -28,14 +28,21 @@ import java.text.SimpleDateFormat;
  * Mime OutputStreamWriter to build in memory Mime message.
  */
 public class MimeOutputStreamWriter extends OutputStreamWriter {
+    /**
+     * Build MIME outputStreamWriter
+     *
+     * @param out outputstream
+     * @throws UnsupportedEncodingException on error
+     */
     public MimeOutputStreamWriter(OutputStream out) throws UnsupportedEncodingException {
-        super(out,"ASCII");
+        super(out, "ASCII");
     }
 
     /**
      * Write MIME header
+     *
      * @param header header name
-     * @param value header value
+     * @param value  header value
      * @throws IOException on error
      */
     public void writeHeader(String header, String value) throws IOException {
@@ -50,8 +57,9 @@ public class MimeOutputStreamWriter extends OutputStreamWriter {
 
     /**
      * Write MIME header
+     *
      * @param header header name
-     * @param value header value
+     * @param value  header value
      * @throws IOException on error
      */
     public void writeHeader(String header, Date value) throws IOException {
@@ -72,7 +80,7 @@ public class MimeOutputStreamWriter extends OutputStreamWriter {
 
     /**
      * Write CRLF.
-     * 
+     *
      * @throws IOException on error
      */
     public void writeLn() throws IOException {

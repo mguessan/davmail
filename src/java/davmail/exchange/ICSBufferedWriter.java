@@ -67,6 +67,9 @@ public class ICSBufferedWriter {
         }
     }
 
+    /**
+     * Append CRLF.
+     */
     public void newLine() {
         buffer.append((char) 13).append((char) 10);
     }

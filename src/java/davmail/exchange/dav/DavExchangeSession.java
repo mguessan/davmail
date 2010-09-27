@@ -1380,7 +1380,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // check mandatory dtstart value
                 String dtstart = getPropertyIfExists(davPropertySet, "dtstart");
                 if (dtstart != null) {
-                    vEvent.setPropertyValue("DTSTART", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstart")));
+                    vEvent.setPropertyValue("DTSTART", convertDateFromExchange(dtstart));
                 } else {
                     LOGGER.warn("missing dtstart on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
                     vEvent.setPropertyValue("DTSTART", "20000101T000000Z");

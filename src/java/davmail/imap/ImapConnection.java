@@ -149,9 +149,11 @@ public class ImapConnection extends AbstractConnection {
                                 session = ExchangeSessionFactory.getInstance(session, userName, password);
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        if (baseMailboxPath != null) {
-                                            folderContext = baseMailboxPath + folderContext;
+                                        String folderContext;
+                                        if (baseMailboxPath == null) {
+                                            folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        } else {
+                                            folderContext = baseMailboxPath + BASE64MailboxDecoder.decode(tokens.nextToken());
                                         }
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());

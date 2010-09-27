@@ -291,6 +291,12 @@ public final class StringUtil {
         return result;
     }
 
+    /**
+     * Encode EWS base64 itemId to url compatible value.
+     *
+     * @param value base64 value
+     * @return url compatible value
+     */
     public static String base64ToUrl(String value) {
         String result = value;
         if (result != null) {
@@ -304,6 +310,12 @@ public final class StringUtil {
         return result;
     }
 
+    /**
+     * Encode EWS url compatible itemId back to base64 value.
+     *
+     * @param value url compatible value
+     * @return base64 value
+     */
     public static String urlToBase64(String value) {
         String result = value;
         if (result.indexOf('-') >= 0) {
@@ -315,6 +327,12 @@ public final class StringUtil {
         return result;
     }
 
+    /**
+     * Encode quotes in Dav search parameter.
+     *
+     * @param value search parameter
+     * @return escaped value
+     */
     public static String davSearchEncode(String value) {
         String result = value;
         if (result.indexOf('\'') >= 0) {
@@ -323,6 +341,12 @@ public final class StringUtil {
         return result;
     }
 
+    /**
+     * Get allday date value from zulu timestamp.
+     *
+     * @param value zulu datetime
+     * @return yyyyMMdd allday date value 
+     */
     public static String convertZuluDateTimeToAllDay(String value) {
         String result = value;
         if (value != null && value.length() != 8) {

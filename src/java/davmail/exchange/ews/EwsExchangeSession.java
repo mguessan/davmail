@@ -777,7 +777,6 @@ public class EwsExchangeSession extends ExchangeSession {
         } else {
             throw new HttpNotFoundException("Folder " + folderPath + " not found");
         }
-        System.out.println(folderPath+": "+folder.folderId.value);
         return folder;
     }
 
