@@ -1377,7 +1377,15 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
                 vEvent.setPropertyValue("UID", getPropertyIfExists(davPropertySet, "calendaruid"));
                 vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
-                vEvent.setPropertyValue("DTSTART", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstart")));
+                // check mandatory dtstart value
+                String dtstart = getPropertyIfExists(davPropertySet, "dtstart");
+                if (dtstart != null) {
+                    vEvent.setPropertyValue("DTSTART", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstart")));
+                } else {
+                    LOGGER.warn("missing dtstart on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
+                    vEvent.setPropertyValue("DTSTART", "20000101T000000Z");
+                    deleteBroken();
+                }
                 vEvent.setPropertyValue("DTEND", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtend")));
                 vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
                 vEvent.setPropertyValue("RRULE", getPropertyIfExists(davPropertySet, "rrule"));
@@ -2146,7 +2154,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
             }
         } catch (MissingResourceException e) {
-            LOGGER.warn("Unable to retrieve Exchange timezone id for name "+timezoneName);
+            LOGGER.warn("Unable to retrieve Exchange timezone id for name " + timezoneName);
         } catch (UnsupportedEncodingException e) {
             LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
         } catch (IOException e) {
@@ -2354,15 +2362,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    public static final long MAPI_SEND_NO_RICH_INFO = 0x00010000L;
-    public static final long ENCODING_PREFERENCE = 0x00020000L;
-    public static final long ENCODING_MIME = 0x00040000L;
-    public static final long BODY_ENCODING_HTML = 0x00080000L;
-    public static final long BODY_ENCODING_TEXT_AND_HTML = 0x00100000L;
-    public static final long MAC_ATTACH_ENCODING_UUENCODE = 0x00200000L;
-    public static final long MAC_ATTACH_ENCODING_APPLESINGLE = 0x00400000L;
-    public static final long MAC_ATTACH_ENCODING_APPLEDOUBLE = 0x00600000L;
-    public static final long OOP_DONT_LOOKUP = 0x10000000L;
+    protected static final long MAPI_SEND_NO_RICH_INFO = 0x00010000L;
+    protected static final long ENCODING_PREFERENCE = 0x00020000L;
+    protected static final long ENCODING_MIME = 0x00040000L;
+    protected static final long BODY_ENCODING_HTML = 0x00080000L;
+    protected static final long BODY_ENCODING_TEXT_AND_HTML = 0x00100000L;
+    protected static final long MAC_ATTACH_ENCODING_UUENCODE = 0x00200000L;
+    protected static final long MAC_ATTACH_ENCODING_APPLESINGLE = 0x00400000L;
+    protected static final long MAC_ATTACH_ENCODING_APPLEDOUBLE = 0x00600000L;
+    protected static final long OOP_DONT_LOOKUP = 0x10000000L;
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
