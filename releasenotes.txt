@@ -1,3 +1,71 @@
+** DavMail 3.8.5 released **
+Includes much progress on Caldav over EWS support, a few regression fixes 
+and improved IMAP BODYSTRUCTURE implementation for complex messages.
+
+Bugfixes:
+- Fix regression in Exchange 2007 over Dav session
+
+Enhancements:
+- Detect and submit language selection automatically
+- More fixes from audit
+- Fixes from audit
+- Restore cookies on error
+- Improve buildSessionInfo failover
+- Fix ssl trustmanager error handling
+- Enable Webdav/Galfind failover on Exchange 2007
+- Workaround for basic authentication on /exchange and form based authentication at /owa
+
+Caldav:
+- Caldav: detect invalid events with empty dtstart property
+- Caldav: implement mozilla alarm flags X-MOZ-LASTACK and X-MOZ-SNOOZE-TIME over EWS
+- Caldav: EWS, rebuild attendee list from properties
+- Caldav: test principal request
+- Caldav: fix 3067915 getRangeCondition too restrictive
+- Caldav: implememnt Busy flag over EWS and refactor create code
+- Caldav: fix create allday event over EWS and check if current user is organizer
+- Caldav: Fixed regression in allday event handling
+- Caldav: improve EWS implementation
+- Caldav: improve timezone error handling
+- Caldav: remove empty properties
+- Caldav: avoid invalid X-CALENDARSERVER-ACCESS and CLASS
+- Caldav: avoid empty X-CALENDARSERVER-ACCESS and CLASS
+- Caldav: reinsert the deleteBroken check
+- Caldav: fix VProperty parser
+- Caldav: additional VCalendar properties for rebuilt item: VALARM (reminder)
+- Caldav: additional VCalendar properties for rebuilt item: RRULE, EXDATE, CLASS
+- Caldav: failover for broken event, rebuild VCalendar content from raw properties
+- Caldav: fix 3063407, regression in sendPrincipal
+
+Carddav:
+- Carddav: fix null value in email address
+- Carddav: fix email address handling over EWS
+
+Exchange Web Services:
+- EWS: fix 3047563 double inbox
+- EWS: more caldav ews fixes
+
+SMTP:
+- SMTP: rewrite getAllRecipients to disable strict header check
+- SMTP: new try at encoding fix: set mailOverrideFormat and messageFormat
+
+Documentation:
+- Upgrade maven site-plugin and update release guide
+
+IMAP:
+- IMAP: fix 3072497 Imap server too picky about case
+- IMAP: improve BODYSTRUCTURE implementation, make it recursive
+- IMAP: implement partial header fetch
+
+LDAP:
+- LDAP: new attribute mapping
+- LDAP: cache current hostname value in sendComputerContext to improve iCal address completion performance
+- LDAP: additional ignore attributes
+- LDAP: add gidnumber to attribute ignore list
+- LDAP: fix regression on iCal 3 search completion
+
+SWT:
+- SWT: allow libswt-gtk-3.6-java on debian, available from ppa:aelmahmoudy/ppa
+
 ** DavMail 3.8.4 released **
 Yet another bugfix release with more regressions fixes on SMTP,
 a few LDAP fixes and a caldav timezone update. 
