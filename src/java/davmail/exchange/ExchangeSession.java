@@ -469,7 +469,66 @@ public abstract class ExchangeSession {
             }
         }
 
+        // check for language selection form
+        if ("/owa/languageselection.aspx".equals(logonMethod.getPath())) {
+            // need to submit form
+            logonMethod = submitLanguageSelectionForm(logonMethod);
+        }
+
         return logonMethod;
+    }
+
+    protected HttpMethod submitLanguageSelectionForm(HttpMethod logonMethod) throws IOException {
+        PostMethod postLanguageFormMethod;
+        // create an instance of HtmlCleaner
+        HtmlCleaner cleaner = new HtmlCleaner();
+
+        try {
+            TagNode node = cleaner.clean(logonMethod.getResponseBodyAsStream());
+            List forms = node.getElementListByName("form", true);
+            TagNode languageForm;
+            // select form
+            if (forms.size() == 1) {
+                languageForm = (TagNode) forms.get(0);
+            } else {
+                throw new IOException("Form not found");
+            }
+            String languageMethodPath = languageForm.getAttributeByName("action");
+
+            postLanguageFormMethod = new PostMethod(getAbsoluteUri(logonMethod, languageMethodPath));
+
+            List inputList = languageForm.getElementListByName("input", true);
+            for (Object input : inputList) {
+                String name = ((TagNode) input).getAttributeByName("name");
+                String value = ((TagNode) input).getAttributeByName("value");
+                if (name != null && value != null) {
+                    postLanguageFormMethod.addParameter(name, value);
+                }
+            }
+            List selectList = languageForm.getElementListByName("select", true);
+            for (Object select : selectList) {
+                String name = ((TagNode) select).getAttributeByName("name");
+                List optionList = ((TagNode) select).getElementListByName("option", true);
+                String value = null;
+                for (Object option:optionList) {
+                    if (((TagNode) option).getAttributeByName("selected") != null) {
+                        value = ((TagNode) option).getAttributeByName("value");
+                        break;
+                    }
+                }
+                if (name != null && value != null) {
+                    postLanguageFormMethod.addParameter(name, value);
+                }
+            }
+        } catch (IOException e) {
+            String errorMessage = "Error parsing language selection form at " + logonMethod.getURI();
+            LOGGER.error(errorMessage);
+            throw new IOException(errorMessage);
+        } finally {
+            logonMethod.releaseConnection();
+        }
+
+        return DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, postLanguageFormMethod);
     }
 
     /**
@@ -1091,7 +1150,7 @@ public abstract class ExchangeSession {
 
     }
 
-    protected static final String[] RECIPIENT_HEADERS = {"to", "cc", "bcc"};
+    static final String[] RECIPIENT_HEADERS = {"to", "cc", "bcc"};
 
     protected List<InternetAddress> getAllRecipients(MimeMessage mimeMessage) throws MessagingException {
         List<InternetAddress> recipientList = new ArrayList<InternetAddress>();
