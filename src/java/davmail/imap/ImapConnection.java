@@ -467,33 +467,37 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("idle".equalsIgnoreCase(command) && imapIdleDelay > 0) {
-                                    sendClient("+ idling ");
-                                    // clear cache before going to idle mode
-                                    currentFolder.clearCache();
-                                    DavGatewayTray.resetIcon();
-                                    try {
-                                        int count = 0;
-                                        while (in.available() == 0) {
-                                            if (++count >= imapIdleDelay) {
-                                                count = 0;
-                                                List<Long> previousImapUidList = currentFolder.getImapUidList();
-                                                if (session.refreshFolder(currentFolder)) {
-                                                    handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                    if (currentFolder != null) {
+                                        sendClient("+ idling ");
+                                        // clear cache before going to idle mode
+                                        currentFolder.clearCache();
+                                        DavGatewayTray.resetIcon();
+                                        try {
+                                            int count = 0;
+                                            while (in.available() == 0) {
+                                                if (++count >= imapIdleDelay) {
+                                                    count = 0;
+                                                    List<Long> previousImapUidList = currentFolder.getImapUidList();
+                                                    if (session.refreshFolder(currentFolder)) {
+                                                        handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                                    }
                                                 }
+                                                // sleep 1 second
+                                                Thread.sleep(1000);
                                             }
-                                            // sleep 1 second
-                                            Thread.sleep(1000);
+                                            // read DONE line
+                                            line = readClient();
+                                            if ("DONE".equals(line)) {
+                                                sendClient(commandId + " OK " + command + " terminated");
+                                            } else {
+                                                sendClient(commandId + " BAD command unrecognized");
+                                            }
+                                        } catch (IOException e) {
+                                            // client connection closed
+                                            throw new SocketException(e.getMessage());
                                         }
-                                        // read DONE line
-                                        line = readClient();
-                                        if ("DONE".equals(line)) {
-                                            sendClient(commandId + " OK " + command + " terminated");
-                                        } else {
-                                            sendClient(commandId + " BAD command unrecognized");
-                                        }
-                                    } catch (IOException e) {
-                                        // client connection closed
-                                        throw new SocketException(e.getMessage());
+                                    } else {
+                                        sendClient(commandId + " NO no folder selected");
                                     }
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
