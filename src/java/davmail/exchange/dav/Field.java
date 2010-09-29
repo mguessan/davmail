@@ -145,6 +145,8 @@ public class Field {
         //createField("from", DistinguishedPropertySetType.PublicStrings, 0x001f);//urn:schemas:httpmail:from
         createField(URN_SCHEMAS_MAILHEADER, "to"); // DistinguishedPropertySetType.InternetHeaders/To/String
         createField(URN_SCHEMAS_MAILHEADER, "cc"); // DistinguishedPropertySetType.InternetHeaders/To/String
+        createField(URN_SCHEMAS_MAILHEADER, "message-id"); // DistinguishedPropertySetType.InternetHeaders/message-id/String
+        createField(URN_SCHEMAS_MAILHEADER, "htmldescription"); // DistinguishedPropertySetType.InternetHeaders/htmldescription/String
 
         createField("lastmodified", DAV, "getlastmodified"); // PR_LAST_MODIFICATION_TIME 0x3008 SystemTime
 

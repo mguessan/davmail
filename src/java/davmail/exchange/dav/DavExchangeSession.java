@@ -47,6 +47,7 @@ import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
@@ -2411,7 +2412,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream contentInputStream;
+        InputStream contentInputStream = null;
         try {
             try {
                 contentInputStream = getContentInputStream(message.messageUrl);
@@ -2419,24 +2420,84 @@ public class DavExchangeSession extends ExchangeSession {
                 LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
                 contentInputStream = getContentInputStream(message.permanentUrl);
             }
-        } catch (HttpException e) {
+
+            try {
+                IOUtil.write(contentInputStream, baos);
+            } finally {
+                contentInputStream.close();
+            }
+
+        } catch (IOException e) {
+            LOGGER.warn("Broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl + ", trying to rebuild from properties");
+
+            try {
+                DavPropertyNameSet messageProperties = new DavPropertyNameSet();
+                messageProperties.add(Field.getPropertyName("contentclass"));
+                messageProperties.add(Field.getPropertyName("message-id"));
+                messageProperties.add(Field.getPropertyName("from"));
+                messageProperties.add(Field.getPropertyName("to"));
+                messageProperties.add(Field.getPropertyName("cc"));
+                messageProperties.add(Field.getPropertyName("subject"));
+                messageProperties.add(Field.getPropertyName("htmldescription"));
+                messageProperties.add(Field.getPropertyName("body"));
+                PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(message.permanentUrl), messageProperties, 0);
+                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+                if (responses.getResponses().length > 0) {
+                    MimeMessage mimeMessage = new MimeMessage((Session) null);
+
+                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+                    String propertyValue = getPropertyIfExists(properties, "contentclass");
+                    if (propertyValue != null) {
+                        mimeMessage.addHeader("Content-class", propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "from");
+                    if (propertyValue != null) {
+                        mimeMessage.addHeader("From", propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "to");
+                    if (propertyValue != null) {
+                        mimeMessage.addHeader("To", propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "cc");
+                    if (propertyValue != null) {
+                        mimeMessage.addHeader("Cc", propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "subject");
+                    if (propertyValue != null) {
+                        mimeMessage.setSubject(propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "htmldescription");
+                    if (propertyValue != null) {
+                        mimeMessage.setContent(propertyValue, "text/html");
+                    } else {
+                        propertyValue = getPropertyIfExists(properties, "body");
+                        mimeMessage.setText(propertyValue);
+                    }
+                    mimeMessage.writeTo(baos);
+                }
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray()));
+                }
+            } catch (IOException e2) {
+                LOGGER.warn(e2);
+            } catch (DavException e2) {
+                LOGGER.warn(e2);
+            } catch (MessagingException e2) {
+                LOGGER.warn(e2);
+            }
             // other exception
-            if (Settings.getBooleanProperty("davmail.deleteBroken")) {
+            if (baos.size() == 0 && Settings.getBooleanProperty("davmail.deleteBroken")) {
                 LOGGER.warn("Deleting broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl);
                 try {
                     message.delete();
                 } catch (IOException ioe) {
                     LOGGER.warn("Unable to delete broken message at: " + message.permanentUrl);
                 }
+                throw e;
             }
-            throw e;
         }
 
-        try {
-            IOUtil.write(contentInputStream, baos);
-        } finally {
-            contentInputStream.close();
-        }
         return baos.toByteArray();
     }
 
