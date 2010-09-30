@@ -316,7 +316,7 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(status, null);
         } else if (request.isMove()) {
             String destinationUrl = request.getHeader("destination");
-            session.moveItem(request.path,  new URL(destinationUrl).getPath());
+            session.moveItem(request.path, new URL(destinationUrl).getPath());
             sendHttpResponse(HttpStatus.SC_CREATED, null);
         } else {
             sendUnsupported(request);
@@ -636,8 +636,13 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void patchCalendar(CaldavRequest request) throws IOException {
-        if (request.hasProperty("displayname")) {
-            session.moveFolder(request.getFolderPath(), request.getParentFolderPath() + '/' + request.getProperty("displayname"));
+        String displayname = request.getProperty("displayname");
+        String folderPath = request.getFolderPath();
+        if (displayname != null && !folderPath.equalsIgnoreCase("/users/"+session.getEmail()+"/calendar")) {
+            String targetPath = request.getParentFolderPath() + '/' + displayname;
+            if (!targetPath.equals(folderPath)) {
+                session.moveFolder(folderPath, targetPath);
+            }
         }
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -710,7 +715,7 @@ public class CaldavConnection extends AbstractConnection {
         } else {
             // TODO: handle contacts ?
             if (request.vTodoOnly) {
-                 events = session.searchTasksOnly(request.getFolderPath());
+                events = session.searchTasksOnly(request.getFolderPath());
             } else if (request.vEventOnly) {
                 events = session.searchEventsOnly(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
             } else {
@@ -1456,7 +1461,7 @@ public class CaldavConnection extends AbstractConnection {
                 if (XMLStreamUtil.isStartTag(reader)) {
                     String tagLocalName = reader.getLocalName();
                     String tagText = null;
-                    if (reader.hasText()) {
+                    if ("displayname".equals(tagLocalName) || reader.hasText()) {
                         tagText = reader.getElementText();
                     }
                     properties.put(tagLocalName, tagText);
