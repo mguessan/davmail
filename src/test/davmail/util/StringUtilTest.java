@@ -62,4 +62,39 @@ public class StringUtilTest extends TestCase {
         assertEquals("%26", StringUtil.urlEncodeAmpersand("&"));
         assertEquals("&", StringUtil.urlDecodeAmpersand("%26"));
     }
+
+    public void testPerf() {
+        String value = "dqsdqs+dsqds+dsqdqs";
+        for (int j = 0; j < 5; j++) {
+            long startTime = System.currentTimeMillis();
+            for (int i = 0; i < 1000000; i++) {
+                //String result = StringUtil.encodePlusSign(value);
+                //String result = StringUtil.replaceAll(value, '+', "%2B");
+                                                 
+                /*int length = value.length();
+                StringBuilder buffer = new StringBuilder(length);
+                int startIndex = 0;
+                int endIndex = value.indexOf('+');
+                while (endIndex >= 0) {
+                    buffer.append(value.substring(startIndex, endIndex));
+                    buffer.append("%2B");
+                    startIndex = endIndex + 1;
+                    endIndex = value.indexOf('+', startIndex);
+                }
+                buffer.append(value.substring(startIndex)); */
+                /*
+                for (int k = 0; k < length; k++) {
+                    char c = value.charAt(k);
+                    if (c == '+') {
+                        buffer.append("%2B");
+                    } else {
+                        buffer.append(c);
+                    }
+                }*/
+                //String result = buffer.toString();
+                //String result = value.replaceAll("\\+", "%2B");
+            }
+            System.out.println("Elapsed: " + (System.currentTimeMillis() - startTime) + " ms");
+        }
+    }
 }

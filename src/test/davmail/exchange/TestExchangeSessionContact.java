@@ -71,8 +71,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("ADR;TYPE=other", "otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry");
 
         vCardWriter.appendProperty("EMAIL;TYPE=work", "email1@local.net");
-        vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
-        vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
+        //vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
+        //vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
 
         vCardWriter.appendProperty("ORG", "o", "department");
 

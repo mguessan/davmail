@@ -33,6 +33,7 @@ import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
+import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
@@ -263,6 +264,43 @@ public class TestCaldav extends AbstractDavMailTestCase {
         MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
         MultiStatusResponse[] responses = multiStatus.getResponses();
         assertEquals(1, responses.length);
+    }
+
+    public void testRenameCalendar() throws IOException {
+        String folderName = "testcalendarfolder";
+        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/" + folderName + '/');
+        // first delete calendar
+        session.deleteFolder("calendar/" + folderName);
+        String body =
+                "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
+                        "   <C:mkcalendar xmlns:D=\"DAV:\"\n" +
+                        "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n" +
+                        "     <D:set>\n" +
+                        "       <D:prop>\n" +
+                        "         <D:displayname>" + StringUtil.xmlEncode(folderName) + "</D:displayname>\n" +
+                        "         <C:calendar-description xml:lang=\"en\">Calendar description</C:calendar-description>\n" +
+                        "         <C:supported-calendar-component-set>\n" +
+                        "           <C:comp name=\"VEVENT\"/>\n" +
+                        "         </C:supported-calendar-component-set>\n" +
+                        "       </D:prop>\n" +
+                        "     </D:set>\n" +
+                        "   </C:mkcalendar>";
+
+        SearchReportMethod method = new SearchReportMethod(encodedFolderpath, body) {
+            @Override
+            public String getName() {
+                return "MKCALENDAR";
+            }
+        };
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_CREATED, method.getStatusCode());
+        MoveMethod moveMethod = new MoveMethod(encodedFolderpath, "http://localhost:" + Settings.getProperty("davmail.caldavPort")+"/users/" + session.getEmail() + "/movedcalendarfolder", true);
+        httpClient.executeMethod(moveMethod);
+    }
+
+    public void testRenameMainCalendar() throws IOException {
+        MoveMethod moveMethod = new MoveMethod("/users/" + session.getEmail() + "/Calendrierzzz", "http://localhost:" + Settings.getProperty("davmail.caldavPort")+"/users/" + session.getEmail() + "/Calendrier", true);
+        httpClient.executeMethod(moveMethod);
     }
 
 }

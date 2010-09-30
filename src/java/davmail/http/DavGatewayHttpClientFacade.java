@@ -33,6 +33,7 @@ import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
@@ -234,6 +235,8 @@ public final class DavGatewayHttpClientFacade {
         testMethod.setDoAuthentication(false);
         try {
             status = httpClient.executeMethod(testMethod);
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage(), e);
         } finally {
             testMethod.releaseConnection();
         }
@@ -294,8 +297,13 @@ public final class DavGatewayHttpClientFacade {
             while (redirectCount++ < 10
                     && location != null
                     && isRedirect(status)) {
+                // Novell iChain workaround
+                String locationValue = location.getValue();
+                if (locationValue.indexOf('"') >= 0) {
+                    locationValue = URIUtil.encodePath(locationValue);
+                }
                 currentMethod.releaseConnection();
-                currentMethod = new GetMethod(location.getValue());
+                currentMethod = new GetMethod(locationValue);
                 currentMethod.setFollowRedirects(false);
                 DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS_COUNT", currentMethod.getURI(), redirectCount));
                 httpClient.executeMethod(currentMethod);
