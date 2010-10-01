@@ -437,7 +437,12 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("displayname")) {
             if (subFolder == null || subFolder.length() == 0) {
-                response.appendProperty("D:displayname", request.getLastPath());
+                // use i18n calendar name as display name
+                String displayname = request.getLastPath();
+                if ("calendar".equals(displayname)) {
+                    displayname = folder.displayName;
+                }
+                response.appendProperty("D:displayname", displayname);
             } else {
                 response.appendProperty("D:displayname", subFolder);
             }
@@ -638,7 +643,7 @@ public class CaldavConnection extends AbstractConnection {
     public void patchCalendar(CaldavRequest request) throws IOException {
         String displayname = request.getProperty("displayname");
         String folderPath = request.getFolderPath();
-        if (displayname != null && !folderPath.equalsIgnoreCase("/users/"+session.getEmail()+"/calendar")) {
+        if (displayname != null && !folderPath.equalsIgnoreCase("/users/" + session.getEmail() + "/calendar")) {
             String targetPath = request.getParentFolderPath() + '/' + displayname;
             if (!targetPath.equals(folderPath)) {
                 session.moveFolder(folderPath, targetPath);
