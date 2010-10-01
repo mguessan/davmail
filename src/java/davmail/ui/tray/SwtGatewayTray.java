@@ -18,17 +18,18 @@
  */
 package davmail.ui.tray;
 
-import davmail.Settings;
 import davmail.BundleMessage;
 import davmail.DavGateway;
+import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
-import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.*;
 
@@ -183,7 +184,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             @Override
             public void run() {
                 try {
-                    display = new Display();
+                    DeviceData data = new DeviceData();
+                    data.debug = true;
+                    display = new Display(data);
+
                     shell = new Shell(display);
 
                     final Tray tray = display.getSystemTray();
