@@ -318,4 +318,22 @@ public class TestImap extends AbstractDavMailTestCase {
         clientSocket.close();
         Thread.sleep(5000);
     }
+
+    public void testCopyMessage() throws IOException, InterruptedException, MessagingException {
+        testCreateFolder();
+        testCreateMessage();
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf("UID ") + 4;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        writeLine(". UID COPY "+messageUid+" Trash");
+        assertEquals(". OK copy completed", readFullAnswer("."));
+
+        writeLine(". COPY 1 Trash");
+        assertEquals(". OK copy completed", readFullAnswer("."));
+
+        testDeleteFolder();
+    }
 }

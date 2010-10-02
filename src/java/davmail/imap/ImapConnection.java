@@ -389,6 +389,19 @@ public class ImapConnection extends AbstractConnection {
                                     String flags = tokens.nextToken();
                                     handleStore(commandId, rangeIterator, action, flags);
 
+                                } else if ("copy".equalsIgnoreCase(command)) {
+                                    try {
+                                        RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
+                                        String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        while (rangeIterator.hasNext()) {
+                                            DavGatewayTray.switchIcon();
+                                            ExchangeSession.Message message = rangeIterator.next();
+                                            session.copyMessage(message, targetName);
+                                        }
+                                        sendClient(commandId + " OK copy completed");
+                                    } catch (HttpException e) {
+                                        sendClient(commandId + " NO " + e.getMessage());
+                                    }
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                     HashMap<String, String> properties = new HashMap<String, String>();
