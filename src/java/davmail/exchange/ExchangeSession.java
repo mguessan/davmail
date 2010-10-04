@@ -443,8 +443,9 @@ public abstract class ExchangeSession {
         ((PostMethod) logonMethod).addParameter("trusted", "4");
         ((PostMethod) logonMethod).addParameter("flags", "4");
 
-        // add exchange 2010 cookie
-        logonMethod.addRequestHeader("Cookie", "PBack=0");
+        // add exchange 2010 PBack cookie in compatibility mode
+        httpClient.getState().addCookie(new Cookie(httpClient.getHostConfiguration().getHost(), "PBack", "0", "/", null, false));
+
         logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
 
         // test form based authentication
