@@ -25,6 +25,7 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
@@ -643,7 +644,7 @@ public class CaldavConnection extends AbstractConnection {
     public void patchCalendar(CaldavRequest request) throws IOException {
         String displayname = request.getProperty("displayname");
         String folderPath = request.getFolderPath();
-        if (displayname != null && !folderPath.equalsIgnoreCase("/users/" + session.getEmail() + "/calendar")) {
+        if (displayname != null) {
             String targetPath = request.getParentFolderPath() + '/' + displayname;
             if (!targetPath.equals(folderPath)) {
                 session.moveFolder(folderPath, targetPath);
@@ -1042,6 +1043,8 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (e instanceof HttpNotFoundException) {
             sendErr(HttpStatus.SC_NOT_FOUND, message);
+        } else if (e instanceof HttpPreconditionFailedException) {
+            sendErr(HttpStatus.SC_PRECONDITION_FAILED, message);
         } else {
             sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
         }

@@ -20,10 +20,7 @@ package davmail.exchange.dav;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.exception.DavMailAuthenticationException;
-import davmail.exception.DavMailException;
-import davmail.exception.HttpNotFoundException;
-import davmail.exception.InsufficientStorageException;
+import davmail.exception.*;
 import davmail.exchange.*;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
@@ -1712,9 +1709,12 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_FOLDER");
+                throw new HttpPreconditionFailedException(BundleMessage.format("EXCEPTION_UNABLE_TO_MOVE_FOLDER"));
             } else if (statusCode != HttpStatus.SC_CREATED) {
                 throw DavGatewayHttpClientFacade.buildHttpException(method);
+            } else if (folderPath.equalsIgnoreCase("/users/" + getEmail() + "/calendar")) {
+                // calendar renamed, need to reload well known folders 
+                getWellKnownFolders();
             }
         } finally {
             method.releaseConnection();

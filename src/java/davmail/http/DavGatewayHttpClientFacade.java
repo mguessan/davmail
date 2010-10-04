@@ -642,6 +642,8 @@ public final class DavGatewayHttpClientFacade {
             return new HttpForbiddenException(message.toString());
         } else if (status == HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
+        } else if (status == HttpStatus.SC_PRECONDITION_FAILED) {
+            return new HttpPreconditionFailedException(message.toString());
         } else if (status == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return new HttpServerErrorException(message.toString());
         } else {
