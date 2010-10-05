@@ -294,17 +294,14 @@ public class TestExchangeSessionEvent extends TestCase {
                 "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
                 "VERSION:2.0\n" +
                 "BEGIN:VEVENT\n" +
-                "CREATED:20090906T141628Z\n" +
-                "LAST-MODIFIED:20090906T141630Z\n" +
-                "DTSTAMP:20090820T162854Z\n" +
-                "UID:20090820T182854CEST-774934hSZ6@education.gouv.fr\n" +
-                "SUMMARY:RentrÃ©e scolaire des enseignants - Zone C\n" +
-                "DTSTART;TZID=\"null\":20080901T000000\n" +
-                "DESCRIPTION:RentrÃ©e scolaire des enseignants\n" +
-                "LOCATION:France\n" +
-                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
-                "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\n" +
-                "ORGANIZER:MAILTO:laurent.bazin@chu-bordeaux.fr\n" +
+                "CREATED:20100916T115132Z\n" +
+                "LAST-MODIFIED:20100916T115138Z\n" +
+                "DTSTAMP:20100916T115138Z\n" +
+                "UID:d72ff8cc-f3ee-4fbc-b44d-1aaf78d92847\n" +
+                "SUMMARY:New Event\n" +
+                "DTSTART;VALUE=DATE:20100929\n" +
+                "DTEND;VALUE=DATE:20100930\n" +
+                "TRANSP:TRANSPARENT\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR";
         String toServer = fixICS(itemBody, true);
