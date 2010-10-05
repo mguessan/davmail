@@ -259,27 +259,29 @@ public class VCalendar extends VObject {
     }
 
     protected void setClientAllday(VProperty property) {
-        // set VALUE=DATE param
-        if (!property.hasParam("VALUE")) {
-            property.addParam("VALUE", "DATE");
-        }
-        // remove TZID
-        property.removeParam("TZID");
-        String value = property.getValue();
-        if (value.length() != 8) {
-            // try to convert datetime value to date value
-            try {
-                Calendar calendar = Calendar.getInstance();
-                SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
-                calendar.setTime(dateParser.parse(value));
-                calendar.add(Calendar.HOUR_OF_DAY, 12);
-                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
-                value = dateFormatter.format(calendar.getTime());
-            } catch (ParseException e) {
-                LOGGER.warn("Invalid date value in allday event: " + value);
+        if (property != null) {
+            // set VALUE=DATE param
+            if (!property.hasParam("VALUE")) {
+                property.addParam("VALUE", "DATE");
             }
+            // remove TZID
+            property.removeParam("TZID");
+            String value = property.getValue();
+            if (value.length() != 8) {
+                // try to convert datetime value to date value
+                try {
+                    Calendar calendar = Calendar.getInstance();
+                    SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+                    calendar.setTime(dateParser.parse(value));
+                    calendar.add(Calendar.HOUR_OF_DAY, 12);
+                    SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
+                    value = dateFormatter.format(calendar.getTime());
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid date value in allday event: " + value);
+                }
+            }
+            property.setValue(value);
         }
-        property.setValue(value);
     }
 
     protected void fixAlarm(VObject vObject, boolean fromServer) {
