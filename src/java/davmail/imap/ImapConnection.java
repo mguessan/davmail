@@ -879,10 +879,11 @@ public class ImapConnection extends AbstractConnection {
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From", ","));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Sender", ","));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Reply-To", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("To", ","));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("CC", ","));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC", ","));
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To", ","));
-            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Messagee-Id"));
+            appendEnvelopeHeader(buffer, mimeMessage.getHeader("Message-Id"));
 
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
@@ -1159,7 +1160,7 @@ public class ImapConnection extends AbstractConnection {
             }
         } else if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
             // ignore
-        } else if (token.indexOf(':') >= 0) {
+        } else if (token.indexOf(':') >= 0 || token.matches("\\d+")) {
             // range search
             conditions.indexRange = token;
         } else {
