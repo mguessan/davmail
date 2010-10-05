@@ -1384,7 +1384,15 @@ public class DavExchangeSession extends ExchangeSession {
                     vEvent.setPropertyValue("DTSTART", "20000101T000000Z");
                     deleteBroken();
                 }
-                vEvent.setPropertyValue("DTEND", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtend")));
+                // same on DTEND
+                String dtend = getPropertyIfExists(davPropertySet, "dtend");
+                if (dtend != null) {
+                    vEvent.setPropertyValue("DTEND", convertDateFromExchange(dtstart));
+                } else {
+                    LOGGER.warn("missing dtend on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
+                    vEvent.setPropertyValue("DTEND", "20000101T010000Z");
+                    deleteBroken();
+                }
                 vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
                 vEvent.setPropertyValue("RRULE", getPropertyIfExists(davPropertySet, "rrule"));
                 String exdates = getPropertyIfExists(davPropertySet, "exdate");
