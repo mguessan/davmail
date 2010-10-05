@@ -18,6 +18,8 @@
  */
 package davmail.exchange;
 
+import org.apache.log4j.Logger;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -33,6 +35,8 @@ import java.util.Map;
  * XmlStreamReader utility methods
  */
 public final class XMLStreamUtil {
+    protected static final Logger LOGGER = Logger.getLogger(XMLStreamUtil.class);
+
     private XMLStreamUtil() {
     }
 
@@ -94,23 +98,6 @@ public final class XMLStreamUtil {
             }
         }
         return results;
-    }
-
-    /**
-     * Get attribute value for attribute name.
-     * reader must be at START_ELEMENT state
-     *
-     * @param reader        xml stream reader
-     * @param attributeName attribute name
-     * @return attribute value
-     */
-    public static String getAttributeValue(XMLStreamReader reader, String attributeName) {
-        for (int i = 0; i < reader.getAttributeCount(); i++) {
-            if (attributeName.equals(reader.getAttributeLocalName(i))) {
-                return reader.getAttributeValue(i);
-            }
-        }
-        return null;
     }
 
     /**
@@ -178,6 +165,19 @@ public final class XMLStreamUtil {
     public static XMLStreamReader createXMLStreamReader(InputStream inputStream) throws XMLStreamException {
         XMLInputFactory xmlInputFactory = XMLStreamUtil.getXmlInputFactory();
         return xmlInputFactory.createXMLStreamReader(inputStream);
+    }
+
+    public static String getElementText(XMLStreamReader reader) {
+        String value = null;
+        try {
+            value = reader.getElementText();
+        } catch (XMLStreamException e) {
+            LOGGER.warn(e.getMessage());
+        } catch (RuntimeException e) {
+            // probably com.ctc.wstx.exc.WstxLazyException on invalid character sequence
+            LOGGER.warn(e.getMessage());
+        }
+        return value;
     }
 
 }

@@ -1470,7 +1470,7 @@ public class CaldavConnection extends AbstractConnection {
                     String tagLocalName = reader.getLocalName();
                     String tagText = null;
                     if ("displayname".equals(tagLocalName) || reader.hasText()) {
-                        tagText = reader.getElementText();
+                        tagText = XMLStreamUtil.getElementText(reader);
                     }
                     properties.put(tagLocalName, tagText);
                 }

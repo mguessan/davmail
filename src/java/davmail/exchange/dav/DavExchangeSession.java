@@ -2172,8 +2172,8 @@ public class DavExchangeSession extends ExchangeSession {
             while (reader.hasNext()) {
                 reader.next();
                 if (XMLStreamUtil.isStartTag(reader, "e")
-                        && "18-timezone".equals(XMLStreamUtil.getAttributeValue(reader, "k"))) {
-                    String value = XMLStreamUtil.getAttributeValue(reader, "v");
+                        && "18-timezone".equals(reader.getAttributeValue(null, "k"))) {
+                    String value = reader.getAttributeValue(null, "v");
                     if (value != null && value.startsWith("18-")) {
                         timezoneName = value.substring(3);
                     }

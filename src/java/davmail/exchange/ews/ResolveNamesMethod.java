@@ -69,7 +69,7 @@ public class ResolveNamesMethod extends EWSMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Name".equals(tagLocalName)) {
-                    responseItem.put(tagLocalName, reader.getElementText());
+                    responseItem.put(tagLocalName, XMLStreamUtil.getElementText(reader));
                 }
             }
         }
@@ -87,7 +87,7 @@ public class ResolveNamesMethod extends EWSMethod {
                 } else if ("PhoneNumbers".equals(tagLocalName)) {
                     handlePhoneNumbers(reader, responseItem);
                 } else {
-                    responseItem.put(tagLocalName, reader.getElementText());
+                    responseItem.put(tagLocalName, XMLStreamUtil.getElementText(reader));
                 }
             }
         }
@@ -121,8 +121,8 @@ public class ResolveNamesMethod extends EWSMethod {
                 String tagLocalName = reader.getLocalName();
                 if ("Entry".equals(tagLocalName)) {
                     String key = getAttributeValue(reader, "Key");
-                    String value = reader.getElementText();
-                    if (value.startsWith("smtp:") || value.startsWith("SMTP:")) {
+                    String value = XMLStreamUtil.getElementText(reader);
+                    if (value != null && (value.startsWith("smtp:") || value.startsWith("SMTP:"))) {
                         value = value.substring(5);
                     }
                     responseItem.put(key, value);

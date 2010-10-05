@@ -78,7 +78,7 @@ public class GetUserConfigurationMethod extends EWSMethod {
                     if (key == null) {
                         key = reader.getElementText();
                     } else {
-                        responseItem.put(key, reader.getElementText());
+                        responseItem.put(key, XMLStreamUtil.getElementText(reader));
                     }
                 }
             }

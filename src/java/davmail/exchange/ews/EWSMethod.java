@@ -455,10 +455,14 @@ public abstract class EWSMethod extends PostMethod {
 
         @Override
         public String put(String key, String value) {
-            if (get(key) == null) {
-                fieldNames.add(key);
+            if (value != null) {
+                if (get(key) == null) {
+                    fieldNames.add(key);
+                }
+                return super.put(key, value);
+            } else {
+                return null;
             }
-            return super.put(key, value);
         }
 
         /**
@@ -582,6 +586,7 @@ public abstract class EWSMethod extends PostMethod {
 
         /**
          * Get all attendees.
+         *
          * @return all attendees
          */
         public List<Attendee> getAttendees() {
@@ -590,6 +595,7 @@ public abstract class EWSMethod extends PostMethod {
 
         /**
          * Add attendee.
+         *
          * @param attendee attendee object
          */
         public void addAttendee(Attendee attendee) {
@@ -701,7 +707,7 @@ public abstract class EWSMethod extends PostMethod {
             errorDetail = result;
         }
         if (XMLStreamUtil.isStartTag(reader, "faultstring")) {
-            errorDetail = reader.getElementText();
+            errorDetail = XMLStreamUtil.getElementText(reader);
         }
     }
 
@@ -747,7 +753,7 @@ public abstract class EWSMethod extends PostMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Entry".equals(tagLocalName)) {
-                    item.put(reader.getAttributeValue(null, "Key"), reader.getElementText());
+                    item.put(reader.getAttributeValue(null, "Key"), XMLStreamUtil.getElementText(reader));
                 }
             }
         }
@@ -779,9 +785,9 @@ public abstract class EWSMethod extends PostMethod {
                 if ("EmailAddress".equals(tagLocalName)) {
                     attendee.email = reader.getElementText();
                 } else if ("Name".equals(tagLocalName)) {
-                    attendee.name = reader.getElementText();
+                    attendee.name = XMLStreamUtil.getElementText(reader);
                 } else if ("ResponseType".equals(tagLocalName)) {
-                    String responseType = reader.getElementText();
+                    String responseType = XMLStreamUtil.getElementText(reader);
                     if ("Accept".equals(responseType)) {
                         attendee.partstat = "ACCEPTED";
                     } else if ("Tentative".equals(responseType)) {
@@ -852,7 +858,7 @@ public abstract class EWSMethod extends PostMethod {
                         propertyTag = getAttributeValue(reader, "PropertyName");
                     }
                 } else if ("Value".equals(tagLocalName)) {
-                    propertyValue = reader.getElementText();
+                    propertyValue = XMLStreamUtil.getElementText(reader);
                 } else if ("Values".equals(tagLocalName)) {
                     StringBuilder buffer = new StringBuilder();
                     while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Values"))) {
@@ -862,7 +868,10 @@ public abstract class EWSMethod extends PostMethod {
                             if (buffer.length() > 0) {
                                 buffer.append(',');
                             }
-                            buffer.append(reader.getElementText());
+                            String singleValue = XMLStreamUtil.getElementText(reader);
+                            if (singleValue != null) {
+                                buffer.append(singleValue);
+                            }
                         }
                     }
                     propertyValue = buffer.toString();

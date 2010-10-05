@@ -100,7 +100,7 @@ public class GetUserAvailabilityMethod extends EWSMethod {
     @Override
     protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
         if (XMLStreamUtil.isStartTag(reader, "MergedFreeBusy")) {
-            this.mergedFreeBusy = reader.getElementText();
+            this.mergedFreeBusy = XMLStreamUtil.getElementText(reader);
         }
     }
 
