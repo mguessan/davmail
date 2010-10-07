@@ -41,6 +41,7 @@
             <item name="Mac OS X" href="/macosxsetup.html"/>
             <item name="Server Setup" href="/serversetup.html"/>
             <item name="Getting Started" href="/gettingstarted.html"/>
+            <item name="SSL Setup" href="/sslsetup.html"/>
         </menu>
 
         <menu name="Thunderbird Setup">

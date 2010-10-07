@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - SSL setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="SSL setup">
+            <p>SSL is not necessary when DavMail is used in workstation mode, as communication between clients and
+                DavMail remain local. However, in server (shared) mode e.g. with a smartphone connecting to DavMail over
+                the internet, you should make sure encryption is enabled.
+            </p>
+
+            <p>The simplest way to secure communication between mail/calendar clients and DavMail is to create a
+                self signed certificate:
+            </p>
+            <source>
+<![CDATA[keytool -genkey -keyalg rsa -keysize 2048 -storepass password -keystore davmail.p12 -storetype pkcs12 -validity 3650 -dname cn=davmailhostname.company.com,ou=davmail,o=sf,o=net]]>
+            </source>
+
+            <p>Then add this keystore to DavMail settings:
+            </p>
+            <source><![CDATA[
+davmail.ssl.keystoreType=PKCS12
+davmail.ssl.keyPass=password
+davmail.ssl.keystoreFile=davmail.p12
+davmail.ssl.keystorePass=password]]>
+            </source>
+            <p>Restart DavMail, all DavMail listeners will switch to secure mode. You will also need to enable SSL in
+                client applications and manually accept the certificate as it's not signed by a trusted
+                Certification Authority.
+            </p>
+        </section>
+    </body>
+</document>
