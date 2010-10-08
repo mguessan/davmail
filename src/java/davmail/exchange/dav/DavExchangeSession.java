@@ -662,7 +662,7 @@ public class DavExchangeSession extends ExchangeSession {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(
                     httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
             if (responses.length == 0) {
-                throw new DavMailException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
+                throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
             }
             DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
             inboxUrl = getURIPropertyIfExists(properties, "inbox");
@@ -728,7 +728,7 @@ public class DavExchangeSession extends ExchangeSession {
             );
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
-            throw new DavMailAuthenticationException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
+            throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
     }
 

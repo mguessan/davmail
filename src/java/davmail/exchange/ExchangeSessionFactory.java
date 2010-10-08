@@ -22,6 +22,7 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
@@ -114,7 +115,16 @@ public final class ExchangeSessionFactory {
                 if (Settings.getBooleanProperty("davmail.enableEws")) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
-                    session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                    try {
+                        session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                    } catch (WebdavNotAvailableException e) {
+                        ExchangeSession.LOGGER.debug(e.getMessage()+", retry with EWS");
+                        session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                        // success, enable EWS flag
+                        ExchangeSession.LOGGER.debug("EWS found, changing davmail.enableEws setting");
+                        Settings.setProperty("davmail.enableEws", "true");
+                        Settings.save();
+                    }
                 }
                 ExchangeSession.LOGGER.debug("Created new session: " + session);
             }
