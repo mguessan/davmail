@@ -15,14 +15,6 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="3.8.3">
-                <p>
-                    <strong>Next bugfix release</strong>
-                </p>
-                <ul>
-                    <li>Per service SSL setting</li>
-                </ul>
-            </subsection>
             <subsection name="3.9.0">
                 <p>
                     <strong>Next minor release</strong>
@@ -31,9 +23,6 @@
                     <li>Create a new RPM package with redline rpm ant task</li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>
-                    <li>Implement multiple mailbox access over IMAP with domain/user/mailbox:
-                        http://msexchangeteam.com/archive/2004/03/31/105275.aspx
-                    </li>
                 </ul>
             </subsection>
             <subsection name="4.0">

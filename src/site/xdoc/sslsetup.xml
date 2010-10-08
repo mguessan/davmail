@@ -20,8 +20,7 @@
                 <p>The simplest way to secure communication between mail/calendar clients and DavMail is to create a
                     self signed certificate:
                 </p>
-                <source>
-                    keytool -genkey -keyalg rsa -keysize 2048 -storepass password -keystore davmail.p12 -storetype
+                <source>keytool -genkey -keyalg rsa -keysize 2048 -storepass password -keystore davmail.p12 -storetype
                     pkcs12 -validity 3650 -dname cn=davmailhostname.company.com,ou=davmail,o=sf,o=net
                 </source>
 
@@ -31,8 +30,7 @@
 davmail.ssl.keystoreType=PKCS12
 davmail.ssl.keyPass=password
 davmail.ssl.keystoreFile=davmail.p12
-davmail.ssl.keystorePass=password]]>
-                </source>
+davmail.ssl.keystorePass=password]]></source>
                 <p>Restart DavMail, all DavMail listeners will switch to secure mode. You will also need to enable SSL
                     in
                     client applications and manually accept the certificate as it's not signed by a trusted
@@ -47,8 +45,7 @@ davmail.ssl.keystorePass=password]]>
                 <source><![CDATA[
 davmail.ssl.clientKeystoreType=PKCS12
 davmail.ssl.clientKeystoreFile=client.p12
-davmail.ssl.clientKeystorePass=password]]>
-                </source>
+davmail.ssl.clientKeystorePass=password]]></source>
             </subsection>
         </section>
     </body>
