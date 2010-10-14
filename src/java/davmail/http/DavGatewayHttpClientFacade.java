@@ -591,7 +591,10 @@ public final class DavGatewayHttpClientFacade {
             status = httpClient.executeMethod(method);
         }
         if (status != HttpStatus.SC_OK && (followRedirects || !isRedirect(status))) {
-            LOGGER.warn("GET failed with status " + status + " at " + method.getURI() + ": " + method.getResponseBodyAsString());
+            LOGGER.warn("GET failed with status " + status + " at " + method.getURI());
+            if (status != HttpStatus.SC_NOT_FOUND && status != HttpStatus.SC_FORBIDDEN) {
+                LOGGER.warn(method.getResponseBodyAsString());
+            }
             throw DavGatewayHttpClientFacade.buildHttpException(method);
         }
         // check for expired session
