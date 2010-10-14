@@ -32,12 +32,13 @@ import java.util.Random;
 /**
  * IMAP tests, an instance of DavMail Gateway must be available
  */
+@SuppressWarnings({"JavaDoc", "UseOfSystemOutOrSystemErr"})
 public class TestImap extends AbstractDavMailTestCase {
     static Socket clientSocket;
     static BufferedWriter socketWriter;
     static BufferedReader socketReader;
 
-    static String messageUid = null;
+    static String messageUid;
 
     protected void write(String line) throws IOException {
         socketWriter.write(line);
@@ -95,11 +96,6 @@ public class TestImap extends AbstractDavMailTestCase {
 
     public void testFetchFlags() throws IOException {
         writeLine(". UID FETCH 1:* (FLAGS)");
-        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
-    }
-
-    public void testFetchBodyStructure() throws IOException {
-        writeLine(". UID FETCH 1:* (FLAGS BODYSTRUCTURE)");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
@@ -310,15 +306,6 @@ public class TestImap extends AbstractDavMailTestCase {
         clientSocket = null;
     }
 
-    public void testBrokenPipe() throws IOException, InterruptedException {
-        testSelectInbox();
-        writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
-        socketReader.readLine();
-        // force close connection
-        clientSocket.close();
-        Thread.sleep(5000);
-    }
-
     public void testCopyMessage() throws IOException, InterruptedException, MessagingException {
         testCreateFolder();
         testCreateMessage();
@@ -335,5 +322,26 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK copy completed", readFullAnswer("."));
 
         testDeleteFolder();
+    }
+
+    public void testFetchInboxEnvelope() throws IOException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (ENVELOPE)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testFetchInboxBodyStructure() throws IOException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (BODYSTRUCTURE)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testBrokenPipe() throws IOException, InterruptedException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
+        socketReader.readLine();
+        // force close connection
+        clientSocket.close();
+        Thread.sleep(5000);
     }
 }
