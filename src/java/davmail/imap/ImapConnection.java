@@ -103,7 +103,7 @@ public class ImapConnection extends AbstractConnection {
                             sendClient(commandId + " OK CAPABILITY completed");
                         } else if ("login".equalsIgnoreCase(command)) {
                             parseCredentials(tokens);
-                            // detect shared mailbox access 
+                            // detect shared mailbox access
                             splitUserName();
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
@@ -1014,8 +1014,12 @@ public class ImapConnection extends AbstractConnection {
             // extended content type
             buffer.append(contentType.substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append('\"');
             int charsetindex = contentType.indexOf("charset=");
+            int nameindex = contentType.indexOf("name=");
+            if (charsetindex >= 0 || nameindex >= 0) {
+            	buffer.append(" (");
+
             	if (charsetindex >=0) {
-                buffer.append(" (\"CHARSET\" ");
+                    buffer.append("\"CHARSET\" ");
                     int charsetSemiColonIndex = contentType.indexOf(';', charsetindex);
                     int charsetEndIndex;
                     if (charsetSemiColonIndex > 0) {
@@ -1031,6 +1035,30 @@ public class ImapConnection extends AbstractConnection {
                     if (!charSet.endsWith("\"")) {
                         buffer.append('"');
                     }
+            	}
+
+            	if (nameindex >= 0) {
+            		if (charsetindex >=0) {
+                        buffer.append(' ');
+                    }
+
+                    buffer.append("\"NAME\" ");
+                    int nameSemiColonIndex = contentType.indexOf(';', nameindex);
+                    int nameEndIndex;
+                    if (nameSemiColonIndex > 0) {
+                        nameEndIndex = nameSemiColonIndex;
+                    } else {
+                        nameEndIndex = contentType.length();
+                    }
+                    String name = contentType.substring(nameindex + "name=".length(), nameEndIndex);
+                    if (!name.startsWith("\"")) {
+                        buffer.append('"');
+                    }
+                    buffer.append(name.trim());
+                    if (!name.endsWith("\"")) {
+                        buffer.append('"');
+                    }
+            	}
                 buffer.append(')');
             } else {
                 buffer.append(" NIL");
