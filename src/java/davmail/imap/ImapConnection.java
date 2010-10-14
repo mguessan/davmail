@@ -1068,8 +1068,8 @@ public class ImapConnection extends AbstractConnection {
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
         appendBodyStructureValue(buffer, bodyPart.getSize());
-        // line count not implemented in JavaMail, return 0
-        appendBodyStructureValue(buffer, 0);
+        // line count not implemented in JavaMail, return fake line count
+        appendBodyStructureValue(buffer, bodyPart.getSize() / 80);
         buffer.append(')');
     }
 
@@ -1697,6 +1697,10 @@ public class ImapConnection extends AbstractConnection {
             }
             while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '('
                     && nextToken.charAt(nextToken.length() - 1) != ')') {
+                nextToken.append(' ').append(super.nextToken());
+            }
+            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.indexOf("[") != -1
+            		&& nextToken.charAt(nextToken.length() - 1) != ']') {
                 nextToken.append(' ').append(super.nextToken());
             }
             return nextToken.toString();
