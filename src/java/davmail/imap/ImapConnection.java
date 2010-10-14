@@ -876,13 +876,13 @@ public class ImapConnection extends AbstractConnection {
             // Envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Date"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Subject"));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Sender", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Reply-To", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("To", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("CC", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC", ","));
-            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To", ","));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("From"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Sender"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("Reply-To"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("To"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("CC"));
+            appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC"));
+            appendEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Message-Id"));
 
         } catch (MessagingException me) {
@@ -912,11 +912,12 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected void appendMailEnvelopeHeader(StringBuilder buffer, String value) {
+    protected void appendMailEnvelopeHeader(StringBuilder buffer, String[] value) {
         buffer.append(' ');
-        if (value != null) {
+        if (value != null && value.length > 0) {
             try {
-                InternetAddress[] addresses = InternetAddress.parseHeader(value, false);
+                String unfoldedValue = MimeUtility.unfold(value[0]);
+                InternetAddress[] addresses = InternetAddress.parseHeader(unfoldedValue, false);
                 buffer.append('(');
                 for (InternetAddress address : addresses) {
                     buffer.append('(');
@@ -1008,28 +1009,28 @@ public class ImapConnection extends AbstractConnection {
         buffer.append("(\"").append(contentType.substring(0, slashIndex).toUpperCase()).append("\" \"");
         int semiColonIndex = contentType.indexOf(';');
         if (semiColonIndex < 0) {
-            buffer.append(contentType.substring(slashIndex + 1).toUpperCase()).append("\" ()");
+            buffer.append(contentType.substring(slashIndex + 1).toUpperCase()).append("\" NIL");
         } else {
             // extended content type
             buffer.append(contentType.substring(slashIndex + 1, semiColonIndex).trim().toUpperCase()).append('\"');
             int charsetindex = contentType.indexOf("charset=");
-            if (charsetindex >= 0) {
+            	if (charsetindex >=0) {
                 buffer.append(" (\"CHARSET\" ");
-                int charsetSemiColonIndex = contentType.indexOf(';', charsetindex);
-                int charsetEndIndex;
-                if (charsetSemiColonIndex > 0) {
-                    charsetEndIndex = charsetSemiColonIndex;
-                } else {
-                    charsetEndIndex = contentType.length();
-                }
-                String charSet = contentType.substring(charsetindex + "charset=".length(), charsetEndIndex);
-                if (!charSet.startsWith("\"")) {
-                    buffer.append('"');
-                }
-                buffer.append(charSet.trim().toUpperCase());
-                if (!charSet.endsWith("\"")) {
-                    buffer.append('"');
-                }
+                    int charsetSemiColonIndex = contentType.indexOf(';', charsetindex);
+                    int charsetEndIndex;
+                    if (charsetSemiColonIndex > 0) {
+                        charsetEndIndex = charsetSemiColonIndex;
+                    } else {
+                        charsetEndIndex = contentType.length();
+                    }
+                    String charSet = contentType.substring(charsetindex + "charset=".length(), charsetEndIndex);
+                    if (!charSet.startsWith("\"")) {
+                        buffer.append('"');
+                    }
+                    buffer.append(charSet.trim().toUpperCase());
+                    if (!charSet.endsWith("\"")) {
+                        buffer.append('"');
+                    }
                 buffer.append(')');
             } else {
                 buffer.append(" NIL");
