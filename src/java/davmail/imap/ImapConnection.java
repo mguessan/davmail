@@ -22,6 +22,7 @@ import com.sun.mail.imap.protocol.BASE64MailboxDecoder;
 import com.sun.mail.imap.protocol.BASE64MailboxEncoder;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
@@ -80,7 +81,7 @@ public class ImapConnection extends AbstractConnection {
         IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail server ready");
+            sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail " + DavGateway.getCurrentVersion() + "server ready");
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?
@@ -1016,9 +1017,9 @@ public class ImapConnection extends AbstractConnection {
             int charsetindex = contentType.indexOf("charset=");
             int nameindex = contentType.indexOf("name=");
             if (charsetindex >= 0 || nameindex >= 0) {
-            	buffer.append(" (");
+                buffer.append(" (");
 
-            	if (charsetindex >=0) {
+                if (charsetindex >= 0) {
                     buffer.append("\"CHARSET\" ");
                     int charsetSemiColonIndex = contentType.indexOf(';', charsetindex);
                     int charsetEndIndex;
@@ -1035,10 +1036,10 @@ public class ImapConnection extends AbstractConnection {
                     if (!charSet.endsWith("\"")) {
                         buffer.append('"');
                     }
-            	}
+                }
 
-            	if (nameindex >= 0) {
-            		if (charsetindex >=0) {
+                if (nameindex >= 0) {
+                    if (charsetindex >= 0) {
                         buffer.append(' ');
                     }
 
@@ -1058,7 +1059,7 @@ public class ImapConnection extends AbstractConnection {
                     if (!name.endsWith("\"")) {
                         buffer.append('"');
                     }
-            	}
+                }
                 buffer.append(')');
             } else {
                 buffer.append(" NIL");
@@ -1700,7 +1701,7 @@ public class ImapConnection extends AbstractConnection {
                 nextToken.append(' ').append(super.nextToken());
             }
             while (hasMoreTokens() && nextToken.length() > 0 && nextToken.indexOf("[") != -1
-            		&& nextToken.charAt(nextToken.length() - 1) != ']') {
+                    && nextToken.charAt(nextToken.length() - 1) != ']') {
                 nextToken.append(' ').append(super.nextToken());
             }
             return nextToken.toString();

@@ -154,7 +154,7 @@ public final class DavGateway {
             @Override
             public void run() {
                 String releasedVersion = getReleasedVersion();
-                if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+                if (currentVersion != null && currentVersion.length() > 0  && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
                     DavGatewayTray.info(new BundleMessage("LOG_NEW_VERSION_AVAILABLE", releasedVersion));
                 }
 
@@ -187,13 +187,13 @@ public final class DavGateway {
 
     private static void stopServers() {
         for (AbstractServer server : SERVER_LIST) {
-           server.close();
-           try {
-               server.join();
-           } catch (InterruptedException e) {
-               DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
-           }
-       }
+            server.close();
+            try {
+                server.join();
+            } catch (InterruptedException e) {
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
+            }
+        }
     }
 
     /**
@@ -203,7 +203,11 @@ public final class DavGateway {
      */
     public static String getCurrentVersion() {
         Package davmailPackage = DavGateway.class.getPackage();
-        return davmailPackage.getImplementationVersion();
+        String currentVersion = davmailPackage.getImplementationVersion();
+        if (currentVersion == null) {
+            currentVersion = "";
+        }
+        return currentVersion;
     }
 
     /**

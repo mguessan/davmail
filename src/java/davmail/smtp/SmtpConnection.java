@@ -20,6 +20,7 @@ package davmail.smtp;
 
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.exception.DavMailException;
 import davmail.exchange.DoubleDotInputStream;
 import davmail.exchange.ExchangeSessionFactory;
@@ -61,7 +62,7 @@ public class SmtpConnection extends AbstractConnection {
 
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("220 DavMail SMTP ready at " + new Date());
+            sendClient("220 DavMail "+ DavGateway.getCurrentVersion()+" SMTP ready at " + new Date());
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?

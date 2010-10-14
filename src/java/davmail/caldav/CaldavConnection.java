@@ -1158,8 +1158,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         if (status != HttpStatus.SC_UNAUTHORIZED) {
-            String version = DavGateway.getCurrentVersion();
-            sendClient("Server: DavMail Gateway " + (version == null ? "" : version));
+            sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
             sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events, addressbook");
             SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
             // force GMT timezone
