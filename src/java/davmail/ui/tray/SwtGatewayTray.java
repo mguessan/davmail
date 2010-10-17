@@ -29,11 +29,14 @@ import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 
@@ -174,20 +177,24 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             // workaround for bug when SWT and AWT both try to access Gtk
             if (lafClassName.indexOf("gtk") > 0) {
                 lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
+                // replace AWT event queue Gdk error handler to avoid application crash
+                Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
+                SwtAwtEventQueue.registerErrorHandler();
+                UIManager.setLookAndFeel(lafClassName);
+                SwtAwtEventQueue.handleGdkError();
+            } else {
+                UIManager.setLookAndFeel(lafClassName);
             }
-            UIManager.setLookAndFeel(lafClassName);
         } catch (Exception e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
         }
+
 
         new Thread("SWT") {
             @Override
             public void run() {
                 try {
-                    DeviceData data = new DeviceData();
-                    data.debug = true;
-                    display = new Display(data);
-
+                    display = new Display();
                     shell = new Shell(display);
 
                     final Tray tray = display.getSystemTray();
