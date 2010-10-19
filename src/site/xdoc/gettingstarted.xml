@@ -97,6 +97,11 @@
                     <td>true</td>
                 </tr>
                 <tr>
+                    <td>Enable EWS</td>
+                    <td>Enable EWS mode on Exchange 2010 or Exchange 2007 with Webdav disabled</td>
+                    <td>false</td>
+                </tr>
+                <tr>
                     <td>Display startup banner</td>
                     <td>Whether to show the initial startup notification window or not</td>
                     <td>true</td>
