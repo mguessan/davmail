@@ -80,6 +80,7 @@ public abstract class ExchangeSession {
 
     static {
         TOKEN_FIELDS.add("SafeWordPassword");
+        TOKEN_FIELDS.add("passcode");
     }
 
     protected static final int FREE_BUSY_INTERVAL = 15;
