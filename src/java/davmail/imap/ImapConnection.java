@@ -81,7 +81,7 @@ public class ImapConnection extends AbstractConnection {
         IMAPTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail " + DavGateway.getCurrentVersion() + "server ready");
+            sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail " + DavGateway.getCurrentVersion() + " server ready");
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?
@@ -466,7 +466,7 @@ public class ImapConnection extends AbstractConnection {
 
                                         properties.put("datereceived", dateFormatter.format(dateReceived));
                                     }
-                                    int size = Integer.parseInt(nextToken);
+                                    int size = Integer.parseInt(removeQuotes(nextToken));
                                     sendClient("+ send literal data");
                                     byte[] buffer = in.readContent(size);
                                     // empty line
