@@ -22,8 +22,10 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
+import davmail.exception.WebdavNotAvailableException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
+import davmail.ui.NotificationDialog;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -191,6 +193,8 @@ public abstract class ExchangeSession {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
+        } catch (WebdavNotAvailableException exc) {
+            throw exc;
         } catch (IOException exc) {
             LOGGER.error(BundleMessage.formatLog("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc));
             throw new DavMailException("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc);
@@ -2206,22 +2210,37 @@ public abstract class ExchangeSession {
                         return null;
                     }
                 } else {
-                    // reset body
-                    description = "";
-
                     String status = vCalendar.getAttendeeStatus();
-                    if (status != null) {
-                        writer.writeHeader("Subject", BundleMessage.format(status) + vEventSubject);
-                    } else {
-                        writer.writeHeader("Subject", subject);
+                    // notify only organizer
+                    String to = recipients.organizer;
+                    String cc = null;
+                    String notificationSubject = (status != null)?(BundleMessage.format(status) + vEventSubject):subject;
+                    description = "";
+                    // Allow end user notification edit
+                    if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                        // create notification edit dialog
+                        NotificationDialog notificationDialog = new NotificationDialog(recipients.organizer,
+                                null, notificationSubject);
+                        if (!notificationDialog.getSendNotification()) {
+                            LOGGER.debug("Notification canceled by user");
+                            return null;
+                        }
+                        // get description from dialog
+                        to = notificationDialog.getTo();
+                        cc = notificationDialog.getCc();
+                        notificationSubject = notificationDialog.getSubject();
+                        description = notificationDialog.getBody();
                     }
 
-                    // notify only organizer
-                    writer.writeHeader("To", recipients.organizer);
                     // do not send notification if no recipients found
-                    if (recipients.organizer == null) {
+                    if (to == null || to.length() == 0) {
                         return null;
                     }
+
+                    writer.writeHeader("To", to);
+                    writer.writeHeader("Cc", cc);
+                    writer.writeHeader("Subject", notificationSubject);
+
                 }
                 if (LOGGER.isDebugEnabled()) {
                     StringBuilder logBuffer = new StringBuilder("Sending notification");
