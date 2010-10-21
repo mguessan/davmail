@@ -18,7 +18,7 @@
                     <strong>How do I create a WIRE debug log ?</strong>
                 </p>
                 <p>In DavMail trackers and forums, I often ask for a WIRE debug log. To create this
-                    log file, you will need to change DavMail settings under the advanced tab.
+                    log file, you will need to change DavMail settings under the Logging tab.
                     Set the WIRE logging category to DEBUG level.
                 </p>
                 <p>You can then reproduce your issue and send the log file to
@@ -83,7 +83,7 @@
                     <li>Select the IIS role, then add Role Services</li>
                     <li>Add WebDav Publishing (both Cas server and Mailbox Server)</li>
                     <li>On the Mailbox server, add the ISAPI extensions Role Service to the IIS role</li>
-                    <li>On the Default Web Site (each server) , enable WebDav</li>
+                    <li>On the Default Web Site (each server), enable WebDav</li>
                     <li>Should not have to enable any additional WebDav rules</li>
                     <li>Install the server roles</li>
                     <li>Create a test mailbox (see Exchange Docs)</li>
@@ -99,9 +99,13 @@
                 <p>
                     <strong>Is Exchange 2010 supported ?</strong>
                 </p>
-                <p>Currently, the answer is no. As Microsoft decided to drop WebDav support in Exchange 2010, DavMail
-                    will not work with this new version. Experimental Exchange Web Service support compatible with
-                    Exchange 2010 is available in subversion, but not complete yet.
+                <p>As Microsoft decided to drop WebDav support in Exchange 2010, I had to implement a new backend from
+                    scratch to support the new Exchange Web Services interface. This support is still experimental,
+                    but is working quite well. However, you still need to enable it manually in .davmail.properties
+                    with the following line:
+                    <br/>
+                    <source>davmail.enableEws=true</source>
+                    <br/>
                 </p>
             </subsection>
 
@@ -126,19 +130,10 @@
                 <p>Communication between the messaging client and DavMail is
                     <em>not</em>
                     secured by default. This is not an issue in standalone mode as all communication is local, but you
-                    may want
-                    to improve this in server (shared) mode.
+                    may want to improve this in server (shared) mode.
                 </p>
                 <p>This is quite simple: you just need to get a server certificate in PKCS12 or JKS format and add it in
-                    the key store section in DavMail settings, see&#x20;<a href="gettingstarted.html">Getting
-                        started</a>.
-                    You need to choose the key store type in davmail.ssl.keystoreType: PKCS12 for .p12 file and JKS for
-                    java generated key stores. Then set the full path to your certificate file in
-                    davmail.ssl.keystoreFile
-                    and the certificate file password in davmail.ssl.keystorePass. You may also have a key password in
-                    addition
-                    to the file password, specify it in davmail.ssl.keyPass. This will switch all DavMail services to
-                    SSL mode: POP3S/IMAPS/SMTPS/HTTPS/LDAPS.
+                    the key store section in DavMail settings, see&#x20;<a href="sslsetup.html">SSL Setup</a>.
                 </p>
 
                 <p>
@@ -166,8 +161,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>Lightning 0.9 mail notifications are broken, activate
                     Caldav notifications to outbox instead:
                 </p>
-                <p>Check the following parameter in Thunderbird, it should be set
-                    to true
+                <p>Check the following parameter in Thunderbird, it should be set to true
                 </p>
                 <source>calendar.caldav.sched.enabled=true</source>
 
@@ -196,7 +190,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>
                     <strong>Message deleted over IMAP still visible through OWA</strong>
                 </p>
-                <p>Message move does not exist in IMAP, thus the move is a delete followed by a create.
+                <p>Message move does not exist in IMAP, thus the move is a copy followed by a delete.
                     And a delete is not immediate with IMAP: you need to EXPUNGE the folder to actually
                     delete a message.
                 </p>

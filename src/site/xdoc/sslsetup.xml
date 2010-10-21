@@ -24,6 +24,8 @@
                     pkcs12 -validity 3650 -dname cn=davmailhostname.company.com,ou=davmail,o=sf,o=net
                 </source>
 
+                <p>Note to iPhone users: iOS does not support the default DSA algorithm, make sure you use an RSA key pair</p>
+
                 <p>Then add this keystore to DavMail settings:
                 </p>
                 <source><![CDATA[
@@ -31,12 +33,16 @@ davmail.ssl.keystoreType=PKCS12
 davmail.ssl.keyPass=password
 davmail.ssl.keystoreFile=davmail.p12
 davmail.ssl.keystorePass=password]]></source>
-                <p>Restart DavMail, all DavMail listeners will switch to secure mode. You will also need to enable SSL
-                    in
-                    client applications and manually accept the certificate as it's not signed by a trusted
-                    Certification Authority.
+                <p>If your already have your keystore in JKS format, just set keystoreType to JKS in DavMail
+                    settings. keystorePass is the password used to open the KeyStore, keyPass protects the private key
+                    inside the KeyStore. 
+                </p>
+                <p>Restart DavMail, all DavMail listeners will switch to secure mode: POP3S/IMAPS/SMTPS/HTTPS/LDAPS.
+                    You will also need to enable SSL in client applications and manually accept the certificate as it's
+                    not signed by a trusted Certification Authority.
                 </p>
             </subsection>
+
             <subsection name="DavMail to Exchange">
                 <p>In most cases, using https in OWA url is enough to secure communication between DavMail and Exchange.
                     However, with Exchange servers setup to require mutual authentication, you will have to register
