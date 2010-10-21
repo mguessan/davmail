@@ -1656,12 +1656,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (operator == Operator.IsEqualTo) {
                     searchValue = '=' + searchValue;
                 }
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("ResolveNames(" + searchValue + ')');
-                }
                 ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(searchValue);
                 executeMethod(resolveNamesMethod);
                 List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("ResolveNames(" + searchValue + ") returned "+responses.size()+" results");
+                }
                 for (EWSMethod.Item response : responses) {
                     Contact contact = buildGalfindContact(response);
                     if (condition.isMatch(contact)) {
