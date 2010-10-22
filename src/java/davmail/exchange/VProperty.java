@@ -370,7 +370,9 @@ public class VProperty {
     }
 
     protected void appendParamValue(StringBuilder buffer, String value) {
-        if (value.indexOf(';') >= 0 || value.indexOf(',') >= 0 || value.indexOf('(') >= 0 || value.indexOf('/') >= 0) {
+        if (value.indexOf(';') >= 0 || value.indexOf(',') >= 0
+                || value.indexOf('(') >= 0 || value.indexOf('/') >= 0
+                || value.indexOf(':') >= 0) {
             buffer.append('"').append(value).append('"');
         } else {
             buffer.append(value);
