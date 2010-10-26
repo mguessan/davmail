@@ -259,7 +259,7 @@ public final class Settings {
 
             // disable ConsoleAppender in gui mode
             if (!Settings.getBooleanProperty("davmail.server")) {
-                ConsoleAppender consoleAppender = (ConsoleAppender)rootLogger.getAppender("ConsoleAppender");
+                ConsoleAppender consoleAppender = (ConsoleAppender) rootLogger.getAppender("ConsoleAppender");
                 if (consoleAppender != null) {
                     consoleAppender.setThreshold(Level.OFF);
                 }
@@ -280,18 +280,21 @@ public final class Settings {
      * Save settings in current file path (command line or default).
      */
     public static synchronized void save() {
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream(configFilePath);
-            SETTINGS.store(fileOutputStream, "DavMail settings");
-        } catch (IOException e) {
-            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
-        } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
+        // configFilePath is null in some test cases
+        if (configFilePath != null) {
+            FileOutputStream fileOutputStream = null;
+            try {
+                fileOutputStream = new FileOutputStream(configFilePath);
+                SETTINGS.store(fileOutputStream, "DavMail settings");
+            } catch (IOException e) {
+                DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
+            } finally {
+                if (fileOutputStream != null) {
+                    try {
+                        fileOutputStream.close();
+                    } catch (IOException e) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
+                    }
                 }
             }
         }
