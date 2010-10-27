@@ -912,35 +912,41 @@ public abstract class EWSMethod extends PostMethod {
     protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
         Header contentTypeHeader = getResponseHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
-            responseItems = new ArrayList<Item>();
-            XMLStreamReader reader;
             try {
-                reader = XMLStreamUtil.createXMLStreamReader(getResponseBodyAsStream());
-                while (reader.hasNext()) {
-                    reader.next();
-                    handleErrors(reader);
-                    if (serverVersion == null && XMLStreamUtil.isStartTag(reader, "ServerVersionInfo")) {
-                        String majorVersion = getAttributeValue(reader, "MajorVersion");
-                        if ("14".equals(majorVersion)) {
-                            serverVersion = "Exchange2010";
-                        } else {
-                            serverVersion = "Exchange2007_SP1";
-                        }
-                    } else if (XMLStreamUtil.isStartTag(reader, responseCollectionName)) {
-                        handleItems(reader);
-                    } else {
-                        handleCustom(reader);
-                    }
-                }
-
+                processResponseStream(getResponseBodyAsStream());
             } catch (IOException e) {
                 logger.error("Error while parsing soap response: " + e, e);
-            } catch (XMLStreamException e) {
-                logger.error("Error while parsing soap response: " + e, e);
             }
-            if (errorDetail != null) {
-                logger.debug(errorDetail);
+        }
+    }
+
+    protected void processResponseStream(InputStream inputStream) {
+        responseItems = new ArrayList<Item>();
+        XMLStreamReader reader;
+        try {
+            reader = XMLStreamUtil.createXMLStreamReader(inputStream);
+            while (reader.hasNext()) {
+                reader.next();
+                handleErrors(reader);
+                if (serverVersion == null && XMLStreamUtil.isStartTag(reader, "ServerVersionInfo")) {
+                    String majorVersion = getAttributeValue(reader, "MajorVersion");
+                    if ("14".equals(majorVersion)) {
+                        serverVersion = "Exchange2010";
+                    } else {
+                        serverVersion = "Exchange2007_SP1";
+                    }
+                } else if (XMLStreamUtil.isStartTag(reader, responseCollectionName)) {
+                    handleItems(reader);
+                } else {
+                    handleCustom(reader);
+                }
             }
+
+        } catch (XMLStreamException e) {
+            logger.error("Error while parsing soap response: " + e, e);
+        }
+        if (errorDetail != null) {
+            logger.debug(errorDetail);
         }
     }
 

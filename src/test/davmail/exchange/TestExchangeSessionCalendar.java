@@ -98,6 +98,21 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         }
     }
 
+     public void testReportCalendar() throws IOException {
+        List<ExchangeSession.Event> events = null;
+        try {
+            events = session.getAllEvents("/users/" + session.getEmail() + "/calendar");
+            for (ExchangeSession.Event event : events) {
+                System.out.println(event.subject);
+                ExchangeSession.Item item = session.getItem("/users/" + session.getEmail() + "/calendar", event.itemName);
+                System.out.println(item.getBody());
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
     public void testGetFreeBusyData() throws IOException, MessagingException {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.set(Calendar.MONTH, 7);

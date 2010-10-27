@@ -79,7 +79,6 @@ public class EwsExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
-
     /**
      * Check endpoint url.
      *
@@ -109,6 +108,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
+        // no need to check logon method body
+        method.releaseConnection();
+
         // also need to retrieve email and alias
         getEmailAndAliasFromOptions();
         if (email == null || alias == null) {
@@ -1038,9 +1040,12 @@ public class EwsExchangeSession extends ExchangeSession {
     protected class Event extends ExchangeSession.Event {
         // item id
         ItemId itemId;
+        String type;
 
         protected Event(EWSMethod.Item response) {
             itemId = new ItemId(response);
+
+            type = response.type;
 
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
@@ -1122,11 +1127,11 @@ public class EwsExchangeSession extends ExchangeSession {
             // handle mozilla alarm
             String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
             if (xMozLastack != null) {
-                 updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+                updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
             }
             String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
             if (xMozSnoozeTime != null) {
-                 updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
+                updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
             }
 
             if (vCalendar.isMeeting()) {
@@ -1191,12 +1196,14 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             try {
                 GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
-                getItemMethod.addAdditionalProperty(Field.get("reminderset"));
-                getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
-                getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
-                getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
-                getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
-                getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
+                if (!"Message".equals(type)) {
+                    getItemMethod.addAdditionalProperty(Field.get("reminderset"));
+                    getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+                    getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
+                    getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                    getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
+                    getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
+                }
 
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
@@ -1212,7 +1219,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
                 if (attendees != null) {
                     for (EWSMethod.Attendee attendee : attendees) {
-                        VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:"+attendee.email);
+                        VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                         attendeeProperty.addParam("CN", attendee.name);
                         attendeeProperty.addParam("PARTSTAT", attendee.partstat);
                         attendeeProperty.addParam("ROLE", attendee.role);
@@ -1259,7 +1266,19 @@ public class EwsExchangeSession extends ExchangeSession {
                 condition,
                 FolderQueryTraversal.SHALLOW, 0);
         for (EWSMethod.Item response : responses) {
-            events.add(new Event(response));
+            Event event = new Event(response);
+            if ("Message".equals(event.type)) {
+                // need to check body
+                try {
+                    event.getEventContent();
+                    events.add(event);
+                } catch (HttpException e) {
+                    LOGGER.warn("Ignore invalid event "+event.getHref());
+                }
+            } else {
+                events.add(event);
+            }
+
         }
 
         return events;
@@ -1319,7 +1338,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
-                || "MeetingRequest".equals(itemType)) {
+                || "MeetingRequest".equals(itemType)
+                // VTODOs appear as Messages
+                || "Message".equals(itemType)) {
             return new Event(item);
         } else {
             throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
@@ -1660,7 +1681,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(resolveNamesMethod);
                 List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("ResolveNames(" + searchValue + ") returned "+responses.size()+" results");
+                    LOGGER.debug("ResolveNames(" + searchValue + ") returned " + responses.size() + " results");
                 }
                 for (EWSMethod.Item response : responses) {
                     Contact contact = buildGalfindContact(response);
