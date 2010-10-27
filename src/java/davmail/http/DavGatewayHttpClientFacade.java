@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
+import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
@@ -638,6 +639,9 @@ public final class DavGatewayHttpClientFacade {
         message.append(status).append(' ').append(method.getStatusText());
         try {
             message.append(" at ").append(method.getURI().getURI());
+            if (method instanceof CopyMethod) {
+                message.append(" to ").append(method.getRequestHeader("Destination"));
+            }
         } catch (URIException e) {
             message.append(method.getPath());
         }

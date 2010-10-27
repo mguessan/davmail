@@ -2548,8 +2548,17 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+        try {
+            copyMessage(message.permanentUrl, targetFolder);
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug("404 not found at permanenturl: " + message.permanentUrl + ", retry with messageurl");
+            copyMessage(message.messageUrl, targetFolder);
+        }
+    }
+
+    protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        CopyMethod method = new CopyMethod(message.permanentUrl, targetPath, false);
+        CopyMethod method = new CopyMethod(sourceUrl, targetPath, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
