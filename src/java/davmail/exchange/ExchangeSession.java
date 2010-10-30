@@ -119,7 +119,7 @@ public abstract class ExchangeSession {
     protected String currentMailboxPath;
     protected final HttpClient httpClient;
 
-    private final String userName;
+    protected final String userName;
 
     protected String serverVersion;
 
@@ -429,15 +429,7 @@ public abstract class ExchangeSession {
         return logonMethod;
     }
 
-    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
-        LOGGER.debug("Form based authentication detected");
-
-        HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
-        if (logonMethod == null) {
-            LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", trying default url");
-            logonMethod = new PostMethod("/owa/auth/owaauth.dll");
-        }
-
+    protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
         // make sure username and password fields are empty
         ((PostMethod) logonMethod).removeParameter(userNameInput);
         ((PostMethod) logonMethod).removeParameter(passwordInput);
@@ -480,6 +472,18 @@ public abstract class ExchangeSession {
             // need to submit form
             logonMethod = submitLanguageSelectionForm(logonMethod);
         }
+        return logonMethod;
+    }
+
+    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
+        LOGGER.debug("Form based authentication detected");
+
+        HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
+        if (logonMethod == null) {
+            LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", trying default url");
+            logonMethod = new PostMethod("/owa/auth/owaauth.dll");
+        }
+        logonMethod = postLogonMethod(httpClient, logonMethod, userName, password);
 
         return logonMethod;
     }

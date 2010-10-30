@@ -79,6 +79,21 @@ public class EwsExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
+    @Override
+    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
+        LOGGER.debug("Form based authentication detected");
+
+        HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
+        if (logonMethod == null) {
+            LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", will try direct EWS access");
+        } else {
+            logonMethod = postLogonMethod(httpClient, logonMethod, userName, password);
+        }
+
+        return logonMethod;
+    }
+
+
     /**
      * Check endpoint url.
      *
@@ -90,7 +105,9 @@ public class EwsExchangeSession extends ExchangeSession {
         getMethod.setFollowRedirects(false);
         try {
             int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
-            if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
+            if (status == HttpStatus.SC_UNAUTHORIZED) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+            } else if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
                 throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
             }
             // check Location
@@ -109,10 +126,19 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
         // no need to check logon method body
-        method.releaseConnection();
+        if (method != null) {
+            method.releaseConnection();
+            // need to retrieve email and alias
+            getEmailAndAliasFromOptions();
+        } else {
+            // OWA authentication failed, get email address from login
+            if (userName.indexOf('@') >= 0) {
+                // userName is email address
+                email = userName;
+                alias = userName.substring(0, userName.indexOf('@'));
+            }
+        }
 
-        // also need to retrieve email and alias
-        getEmailAndAliasFromOptions();
         if (email == null || alias == null) {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
@@ -122,6 +148,8 @@ public class EwsExchangeSession extends ExchangeSession {
         // check EWS access
         try {
             checkEndPointUrl("/ews/exchange.asmx");
+        } catch (DavMailAuthenticationException e) {
+            throw e;
         } catch (IOException e) {
             try {
                 // failover, try to retrieve EWS url from autodiscover
@@ -1273,7 +1301,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     event.getEventContent();
                     events.add(event);
                 } catch (HttpException e) {
-                    LOGGER.warn("Ignore invalid event "+event.getHref());
+                    LOGGER.warn("Ignore invalid event " + event.getHref());
                 }
             } else {
                 events.add(event);
