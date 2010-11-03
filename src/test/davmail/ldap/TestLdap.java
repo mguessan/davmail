@@ -144,5 +144,12 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         searchControls.setReturningAttributes(new String[]{"givenName"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(cn=*a*)", searchControls);
     }
+
+    public void testSearchIPad() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"postalcode", "labeleduri", "street", "givenname", "telephonenumber", "facsimiletelephonenumber", "title", "imhandle", "homepostaladdress", "st", "homephone", "applefloor", "jpegphoto", "pager", "mail", "sn", "buildingname", "ou", "destinationindicator", "c", "o", "l", "co", "postaladdress", "cn", "mobile"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(|(mail=Test*)(cn=Test*)(givenname=Test*)(sn=Test*))", searchControls);
+    }
     
 }

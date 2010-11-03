@@ -208,11 +208,13 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nsaimid", "im");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("nscpaimscreenname", "im");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-imhandle", "im");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("imhandle", "im");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("xmozillasecondemail", "smtpemail2");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("notes", "description");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("pagerphone", "pager");
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("pager", "pager");
 
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("locality", "l");
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homephone", "homePhone");
@@ -254,6 +256,12 @@ public class LdapConnection extends AbstractConnection {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("linkedidentity", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homedirectory", null);
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("authauthority", null);
+
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("applefloor", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("buildingname", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("destinationindicator", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("postaladdress", null);
+        LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("homepostaladdress", null);
 
         // iCal search attribute
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("apple-serviceslocator", "apple-serviceslocator");
