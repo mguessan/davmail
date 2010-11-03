@@ -93,12 +93,26 @@ public class ResolveNamesMethod extends EWSMethod {
         }
     }
 
+    protected void handlePhysicalAddress(XMLStreamReader reader, Item responseItem, String addressType) throws XMLStreamException {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Entry")) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                String value = XMLStreamUtil.getElementText(reader);
+                responseItem.put(addressType+tagLocalName, value);
+            }
+        }
+    }
+
     protected void handlePhysicalAddresses(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "PhysicalAddresses")) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
-                // TODO
+                if ("Entry".equals(tagLocalName)) {
+                    String key = getAttributeValue(reader, "Key");
+                    handlePhysicalAddress(reader, responseItem, key);
+                }
             }
         }
     }
@@ -108,7 +122,11 @@ public class ResolveNamesMethod extends EWSMethod {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
-                // TODO
+                if ("Entry".equals(tagLocalName)) {
+                    String key = getAttributeValue(reader, "Key");
+                    String value = XMLStreamUtil.getElementText(reader);
+                    responseItem.put(key, value);
+                }
             }
         }
     }

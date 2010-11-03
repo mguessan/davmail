@@ -1660,12 +1660,39 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("email1", "EmailAddress1");
         GALFIND_ATTRIBUTE_MAP.put("email2", "EmailAddress2");
         GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress3");
+
+        GALFIND_ATTRIBUTE_MAP.put("roomnumber", "OfficeLocation");
+        GALFIND_ATTRIBUTE_MAP.put("street", "BusinessStreet");
+        GALFIND_ATTRIBUTE_MAP.put("l", "BusinessCity");
+        GALFIND_ATTRIBUTE_MAP.put("o", "CompanyName");
+        GALFIND_ATTRIBUTE_MAP.put("postalcode", "BusinessPostalCode");
+
+        GALFIND_ATTRIBUTE_MAP.put("manager", "Manager");
+        GALFIND_ATTRIBUTE_MAP.put("middlename", "Initials");
+        GALFIND_ATTRIBUTE_MAP.put("title", "JobTitle");
+        GALFIND_ATTRIBUTE_MAP.put("department", "Department");
+
+        GALFIND_ATTRIBUTE_MAP.put("otherTelephone", "AssistantPhone");
+        GALFIND_ATTRIBUTE_MAP.put("telephoneNumber", "BusinessPhone");
+    }
+
+    protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<String>();
+    static {
+       IGNORE_ATTRIBUTE_SET.add("ContactSource");
+       IGNORE_ATTRIBUTE_SET.add("Culture");
     }
 
     protected Contact buildGalfindContact(EWSMethod.Item response) {
         Contact contact = new Contact();
         contact.setName(response.get("Name"));
         contact.put("imapUid", response.get("Name"));
+        if (LOGGER.isDebugEnabled()) {
+            for (String key : response.keySet()) {
+                if (!IGNORE_ATTRIBUTE_SET.contains(key) && !GALFIND_ATTRIBUTE_MAP.containsValue(key)) {
+                    LOGGER.debug("Unsupported ResolveNames response attribute: " + key + " value: " + response.get(key));
+                }
+            }
+        }
         for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
             String attributeValue = response.get(entry.getValue());
             if (attributeValue != null) {
