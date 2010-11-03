@@ -1387,7 +1387,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // same on DTEND
                 String dtend = getPropertyIfExists(davPropertySet, "dtend");
                 if (dtend != null) {
-                    vEvent.setPropertyValue("DTEND", convertDateFromExchange(dtstart));
+                    vEvent.setPropertyValue("DTEND", convertDateFromExchange(dtend));
                 } else {
                     LOGGER.warn("missing dtend on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
                     vEvent.setPropertyValue("DTEND", "20000101T010000Z");
