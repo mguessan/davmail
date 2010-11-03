@@ -20,6 +20,7 @@ package davmail.pop;
 
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
+import davmail.DavGateway;
 import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
@@ -92,7 +93,7 @@ public class PopConnection extends AbstractConnection {
 
         try {
             ExchangeSessionFactory.checkConfig();
-            sendOK("DavMail POP ready at " + new Date());
+            sendOK("DavMail "+ DavGateway.getCurrentVersion()+" POP ready at " + new Date());
 
             for (; ;) {
                 line = readClient();
