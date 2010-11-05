@@ -2842,8 +2842,8 @@ public abstract class ExchangeSession {
                 int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf('<', start);
                 alias = line.substring(start, end);
-                start = line.indexOf('[') + 1;
-                end = line.indexOf(']', start);
+                start = line.lastIndexOf('[') + 1;
+                end = line.lastIndexOf(']', start);
                 email = line.substring(start, end);
 
             }
