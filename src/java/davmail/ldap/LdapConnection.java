@@ -1369,7 +1369,7 @@ public class LdapConnection extends AbstractConnection {
                             // full search
                             for (char c = 'A'; c <= 'Z'; c++) {
                                 if (!abandon && persons.size() < sizeLimit) {
-                                    for (ExchangeSession.Contact person : session.galFind(session.startsWith("imapUid", String.valueOf(c)),
+                                    for (ExchangeSession.Contact person : session.galFind(session.startsWith("cn", String.valueOf(c)),
                                             convertLdapToContactReturningAttributes(returningAttributes), sizeLimit).values()) {
                                         persons.put(person.get("uid"), person);
                                         if (persons.size() == sizeLimit) {

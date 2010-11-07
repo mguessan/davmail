@@ -1691,6 +1691,7 @@ public class EwsExchangeSession extends ExchangeSession {
         Contact contact = new Contact();
         contact.setName(response.get("Name"));
         contact.put("imapUid", response.get("Name"));
+        contact.put("uid", response.get("Name"));
         if (LOGGER.isDebugEnabled()) {
             for (String key : response.keySet()) {
                 if (!IGNORE_ATTRIBUTE_SET.contains(key) && !GALFIND_ATTRIBUTE_MAP.containsValue(key)) {
