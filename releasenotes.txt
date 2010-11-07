@@ -1,3 +1,71 @@
+** DavMail 3.8.6 released **
+First release with automatic EWS mode detection, also includes many bugfixes
+on LDAP support over EWS, IMAP enhancements, Exchange 2010 SP1 cookie bug workaround
+and a brand new UI frame to let users edit Caldav notifications.
+
+LDAP:
+- LDAP: fix galfind search: add uid in response and use cn in fullsearch filter
+- LDAP: additional EWS attributes
+- LDAP: additional attributes for iPad
+
+Enhancements:
+- Fix 3103349: Cannot login if display name contains [brackets], regression after first patch
+- Fix 3103349: Cannot login if display name contains [brackets]
+- configFilePath is null in some test cases
+- Added passcode as token field for RSA support
+- Add DavMail version in welcome IMAP and SMTP header
+- Update test case
+- Handle exceptions on invalid UTF-8 characters or unexpected content triggered by XmlStreamReader.getElementText (based on patch 3081264)
+- Add exchange 2010 PBack cookie in compatibility mode
+- Novell iChain workaround
+
+POP:
+- POP: add version in welcome banner
+
+Caldav:
+- Caldav: Fix bug in Dav mode with broken events dtstart -> dtend
+- Caldav: fix french notification message
+- Caldav: protect ':' in VCALENDAR property params
+- Caldav: initial edit notification implementation
+- Caldav: Create fake DTEND on broken event
+- Caldav: fix nullpointer in VCalendar on missing DTEND
+- Caldav: implement main calendar folder rename
+- Caldav: use i18n calendar name as display name for iCal
+- Caldav: avoid renaming default calendar to null
+
+EWS:
+- Ews: improve ResolveNames implementation, parse addresses and phone attributes
+- EWS: implement failover on OWA authentication failure (e.g. with outlook.com)
+- Ews: improve invalid item in calendar error handling
+- EWS: improve resolveNames logging
+- EWS: add enableEws flag in UI settings frame
+- EWS: automatically detect Webdav not available and set davmail.enableEws flag
+
+IMAP:
+- IMAP: failover in message copy on 404 not found
+- IMAP: Fix append with no optional parameters
+- IMAP: additional test cases
+- IMAP: fix from kolos_dm: implement fake line count in BODYSTRUCTURE and [] block in IMAPTokenizer
+- IMAP: fix from kolos_dm: implement attachment name in BODYSTRUCTURE
+- IMAP: improve logging, do not log message content on 404 or 403
+- IMAP: fix from kolos_dm: In-Reply-To is not email header and unfold header to remove CRLF in ENVELOPE response
+- IMAP: merge fix from Kolos, search command with message sequence set
+- IMAP: implement index (non uid) COPY
+- IMAP: workaround for broken message (500 error), rebuild mime message from properties
+- IMAP: send error on idle command without selected folder (Outlook)
+
+Documentation:
+- Doc: fixes and updates on ssl setup and build
+- Doc: update roadmap
+- Doc: Update architecture image
+- Doc: update ssl server certificate doc
+- Doc: Document PKCS12 self signed certificate creation to enable SSL in DavMail
+- Doc: iPhone screenshots
+
+SWT:
+- SWT: Custom AWT event queue to trap X errors and avoid application crash
+- SWT:enable debug mode
+
 ** DavMail 3.8.5 released **
 Includes much progress on Caldav over EWS support, a few regression fixes 
 and improved IMAP BODYSTRUCTURE implementation for complex messages.

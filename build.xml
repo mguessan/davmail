@@ -1,6 +1,6 @@
 <project name="DavMail" default="dist" basedir=".">
     <property file="user.properties"/>
-    <property name="version" value="3.8.5"/>
+    <property name="version" value="3.8.6"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
