@@ -2842,10 +2842,9 @@ public abstract class ExchangeSession {
                 int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
                 int end = line.indexOf('<', start);
                 alias = line.substring(start, end);
-                start = line.lastIndexOf('[') + 1;
-                end = line.lastIndexOf(']', start);
+                end = line.lastIndexOf(']');
+                start = line.lastIndexOf('[', end) + 1;
                 email = line.substring(start, end);
-
             }
         } catch (IOException e) {
             // restore cookies on error
