@@ -87,6 +87,11 @@
                     <td>false</td>
                 </tr>
                 <tr>
+                    <td>Edit Caldav notifications</td>
+                    <td>Enable interactive Caldav edit notification window</td>
+                    <td>false</td>
+                </tr>
+                <tr>
                     <td>Force Active Sync update</td>
                     <td>Use double event update to trigger ActiveSync mobile phones sync</td>
                     <td>false</td>

@@ -90,6 +90,7 @@ public class SettingsFrame extends JFrame {
     JComboBox wireLoggingLevelField;
     JTextField logFilePathField;
 
+    JCheckBox caldavEditNotificationsField;
     JTextField caldavAlarmSoundField;
     JCheckBox forceActiveSyncUpdateCheckBox;
     JTextField defaultDomainField;
@@ -394,9 +395,11 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(6, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(7, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
+        caldavEditNotificationsField = new JCheckBox();
+        caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
         forceActiveSyncUpdateCheckBox = new JCheckBox();
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
@@ -408,6 +411,8 @@ public class SettingsFrame extends JFrame {
         enableEwsCheckBox = new JCheckBox();
         enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
 
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS"), caldavEditNotificationsField,
+                BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
                 BundleMessage.format("UI_CALDAV_ALARM_SOUND_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_FORCE_ACTIVESYNC_UPDATE"), forceActiveSyncUpdateCheckBox,
@@ -513,6 +518,7 @@ public class SettingsFrame extends JFrame {
         certHashField.setText(Settings.getProperty("davmail.server.certificate.hash"));
         disableUpdateCheck.setSelected(Settings.getBooleanProperty(("davmail.disableUpdateCheck")));
 
+        caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
         caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
         defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
@@ -650,6 +656,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
                 Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
 
+                Settings.setProperty("davmail.caldavEditNotifications", String.valueOf(caldavEditNotificationsField.isSelected()));
                 Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
                 Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateCheckBox.isSelected()));
                 Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
