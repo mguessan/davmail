@@ -148,13 +148,15 @@ public class EwsExchangeSession extends ExchangeSession {
         // check EWS access
         try {
             checkEndPointUrl("/ews/exchange.asmx");
-        } catch (DavMailAuthenticationException e) {
-            throw e;
         } catch (IOException e) {
             try {
                 // failover, try to retrieve EWS url from autodiscover
                 checkEndPointUrl(getEwsUrlFromAutoDiscover());
             } catch (IOException e2) {
+                // autodiscover failed and initial exception was authentication failure => throw original exception
+                if (e instanceof DavMailAuthenticationException) {
+                    throw (DavMailAuthenticationException)e;
+                }
                 LOGGER.error(e2.getMessage());
                 throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
             }
