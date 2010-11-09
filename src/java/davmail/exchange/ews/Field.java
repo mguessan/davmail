@@ -120,9 +120,9 @@ public class Field {
         FIELD_MAP.put("displayemail2", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8090, ExtendedFieldURI.PropertyType.String)); // Email2DisplayName
         FIELD_MAP.put("displayemail3", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80A0, ExtendedFieldURI.PropertyType.String)); // Email3DisplayName
         */
-        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1"));
-        FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2"));
-        FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3"));
+        FIELD_MAP.put("smtpemail1", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress1", "Contact", "EmailAddresses"));
+        FIELD_MAP.put("smtpemail2", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress2", "Contact", "EmailAddresses"));
+        FIELD_MAP.put("smtpemail3", new IndexedFieldURI("contacts:EmailAddress", "EmailAddress3", "Contact", "EmailAddresses"));
 
         FIELD_MAP.put("facsimiletelephonenumber", new ExtendedFieldURI(0x3A24, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("givenName", new ExtendedFieldURI(0x3A06, ExtendedFieldURI.PropertyType.String));

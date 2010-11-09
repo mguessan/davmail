@@ -26,6 +26,8 @@ import davmail.util.StringUtil;
 public class IndexedFieldURI implements FieldURI {
     protected final String fieldURI;
     protected final String fieldIndex;
+    protected final String fieldItemType;
+    protected final String collectionName;
 
     /**
      * Create indexed field uri.
@@ -33,9 +35,11 @@ public class IndexedFieldURI implements FieldURI {
      * @param fieldURI   base field uri
      * @param fieldIndex field name
      */
-    public IndexedFieldURI(String fieldURI, String fieldIndex) {
+    public IndexedFieldURI(String fieldURI, String fieldIndex, String fieldItemType, String collectionName) {
         this.fieldURI = fieldURI;
         this.fieldIndex = fieldIndex;
+        this.fieldItemType = fieldItemType;
+        this.collectionName = collectionName;
     }
 
     public void appendTo(StringBuilder buffer) {
@@ -45,9 +49,19 @@ public class IndexedFieldURI implements FieldURI {
     }
 
     public void appendValue(StringBuilder buffer, String itemType, String value) {
+        if (itemType != null) {
+            // append IndexedFieldURI
+            appendTo(buffer);
+            buffer.append("<t:").append(fieldItemType).append('>');
+            buffer.append("<t:").append(collectionName).append('>');
+        }
         buffer.append("<t:Entry Key=\"").append(fieldIndex).append("\">");
         buffer.append(StringUtil.xmlEncode(value));
         buffer.append("</t:Entry>");
+        if (itemType != null) {
+            buffer.append("</t:").append(collectionName).append('>');
+            buffer.append("</t:").append(fieldItemType).append('>');
+        }
     }
 
     public String getResponseName() {
