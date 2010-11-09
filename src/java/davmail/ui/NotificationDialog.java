@@ -123,6 +123,7 @@ public class NotificationDialog extends JDialog {
                         getSize().height / 2);
         bodyField.requestFocus();
         setVisible(true);
+        requestFocus();
     }
 
     protected JPanel getRecipientsPanel() {
