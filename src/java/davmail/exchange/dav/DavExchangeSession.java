@@ -2435,6 +2435,10 @@ public class DavExchangeSession extends ExchangeSession {
                 contentInputStream.close();
             }
 
+        } catch (LoginTimeoutException e) {
+            // throw error on expired session
+            LOGGER.warn(e.getMessage());
+            throw e;
         } catch (IOException e) {
             LOGGER.warn("Broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl + ", trying to rebuild from properties");
 

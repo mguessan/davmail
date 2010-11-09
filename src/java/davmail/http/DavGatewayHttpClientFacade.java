@@ -631,10 +631,6 @@ public final class DavGatewayHttpClientFacade {
      */
     public static HttpException buildHttpException(HttpMethod method) {
         int status = method.getStatusCode();
-        // 440 means forbidden on Exchange
-        if (status == 440) {
-            status = HttpStatus.SC_FORBIDDEN;
-        }
         StringBuilder message = new StringBuilder();
         message.append(status).append(' ').append(method.getStatusText());
         try {
@@ -645,7 +641,10 @@ public final class DavGatewayHttpClientFacade {
         } catch (URIException e) {
             message.append(method.getPath());
         }
-        if (status == HttpStatus.SC_FORBIDDEN) {
+        // 440 means forbidden on Exchange
+        if (status == 440) {
+          return new LoginTimeoutException(message.toString());
+        } else if (status == HttpStatus.SC_FORBIDDEN) {
             return new HttpForbiddenException(message.toString());
         } else if (status == HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
