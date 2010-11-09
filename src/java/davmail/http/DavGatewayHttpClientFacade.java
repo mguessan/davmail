@@ -602,10 +602,6 @@ public final class DavGatewayHttpClientFacade {
         if (followRedirects) {
             String queryString = method.getQueryString();
             checkExpiredSession(queryString);
-            if (queryString != null && queryString.contains("reason=2")) {
-                LOGGER.warn("GET failed, session expired  at " + method.getURI() + ": " + method.getResponseBodyAsString());
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
-            }
         }
     }
 
@@ -617,8 +613,8 @@ public final class DavGatewayHttpClientFacade {
     }
 
     private static void checkExpiredSession(String queryString) throws DavMailAuthenticationException {
-        if (queryString != null && queryString.contains("reason=2")) {
-            LOGGER.warn("Request failed, session expired  (reason=2) ");
+        if (queryString != null && (queryString.contains("reason=2") || queryString.contains("reason=0"))) {
+            LOGGER.warn("Request failed, session expired");
             throw new DavMailAuthenticationException("EXCEPTION_SESSION_EXPIRED");
         }
     }
