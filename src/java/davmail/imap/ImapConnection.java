@@ -678,7 +678,7 @@ public class ImapConnection extends AbstractConnection {
                     // get full param
                     if (param.indexOf('[') >= 0) {
                         StringBuilder paramBuffer = new StringBuilder(param);
-                        while (paramTokens.hasMoreTokens() && param.indexOf(']') < 0) {
+                        while (paramTokens.hasMoreTokens() && paramBuffer.indexOf("]") < 0) {
                             paramBuffer.append(' ').append(paramTokens.nextToken());
                         }
                         param = paramBuffer.toString();

@@ -289,6 +289,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testHeaderBodyFetch() throws IOException {
+        writeLine(". UID FETCH " + messageUid + " (UID BODY.PEEK[HEADER.FIELDS (Content-Type Content-Transfer-Encoding)] BODY.PEEK[TEXT]<0.2048>)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
     public void testFetchInternalDate() throws IOException {
         writeLine(". UID FETCH " + messageUid + " (INTERNALDATE)");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
