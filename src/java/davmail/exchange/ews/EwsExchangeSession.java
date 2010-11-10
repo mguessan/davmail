@@ -148,10 +148,14 @@ public class EwsExchangeSession extends ExchangeSession {
         // check EWS access
         try {
             checkEndPointUrl("/ews/exchange.asmx");
+            // workaround for Exchange bug: send fake request
+            internalGetFolder("");
         } catch (IOException e) {
             try {
                 // failover, try to retrieve EWS url from autodiscover
                 checkEndPointUrl(getEwsUrlFromAutoDiscover());
+                // workaround for Exchange bug: send fake request
+                internalGetFolder("");
             } catch (IOException e2) {
                 // autodiscover failed and initial exception was authentication failure => throw original exception
                 if (e instanceof DavMailAuthenticationException) {
@@ -164,8 +168,6 @@ public class EwsExchangeSession extends ExchangeSession {
 
         try {
             folderIdMap = new HashMap<String, String>();
-            // workaround for Exchange bug: send fake request
-            internalGetFolder("");
             // load actual well known folder ids
             folderIdMap.put(internalGetFolder(INBOX).folderId.value, INBOX);
             folderIdMap.put(internalGetFolder(CALENDAR).folderId.value, CALENDAR);

@@ -303,6 +303,10 @@ public final class DavGatewayHttpClientFacade {
                 if (locationValue.indexOf('"') >= 0) {
                     locationValue = URIUtil.encodePath(locationValue);
                 }
+                // workaround for invalid relative location
+                if (locationValue.startsWith("./")) {
+                  locationValue = locationValue.substring(1);
+                }
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(locationValue);
                 currentMethod.setFollowRedirects(false);
