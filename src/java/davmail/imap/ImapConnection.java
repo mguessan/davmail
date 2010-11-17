@@ -796,12 +796,16 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected String[] getRequestedHeaders(String partIndexString) {
-        int startIndex = partIndexString.indexOf('(');
-        int endIndex = partIndexString.indexOf(')');
-        if (startIndex >= 0 && endIndex >= 0) {
-            return partIndexString.substring(startIndex + 1, endIndex - 1).split(" ");
-        } else {
+        if (partIndexString == null) {
             return null;
+        } else {
+            int startIndex = partIndexString.indexOf('(');
+            int endIndex = partIndexString.indexOf(')');
+            if (startIndex >= 0 && endIndex >= 0) {
+                return partIndexString.substring(startIndex + 1, endIndex - 1).split(" ");
+            } else {
+                return null;
+            }
         }
     }
 
