@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Logger;
+import org.codehaus.stax2.XMLStreamReader2;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -837,8 +838,14 @@ public abstract class EWSMethod extends PostMethod {
 
 
     protected void handleMimeContent(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        byte[] base64MimeContent = reader.getElementText().getBytes();
-        responseItem.mimeContent = Base64.decodeBase64(base64MimeContent);
+        if (reader instanceof XMLStreamReader2) {
+            // Stax2 parser: use enhanced base64 conversion
+            responseItem.mimeContent = ((XMLStreamReader2) reader).getElementAsBinary();
+        } else {
+            // failover: slow and memory consuming conversion
+            byte[] base64MimeContent = reader.getElementText().getBytes();
+            responseItem.mimeContent = Base64.decodeBase64(base64MimeContent);
+        }
     }
 
     protected void addExtendedPropertyValue(XMLStreamReader reader, Item item) throws XMLStreamException {
