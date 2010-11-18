@@ -24,7 +24,14 @@
                     pkcs12 -validity 3650 -dname cn=davmailhostname.company.com,ou=davmail,o=sf,o=net
                 </source>
 
-                <p>Note to iPhone users: iOS does not support the default DSA algorithm, make sure you use an RSA key pair</p>
+                <p>Note to iPhone users: iOS does not support the default DSA algorithm, make sure you use an RSA key
+                    pair
+                </p>
+
+                <p>If you have an official certificate in PEM form, convert it to PKCS12 with the following command:</p>
+                <source>openssl pkcs12 -export -in cert-davmail.pem -inkey privatekey-davmail.key -certfile
+                    chain-davmail.pem -out davmail.p12
+                </source>
 
                 <p>Then add this keystore to DavMail settings:
                 </p>
@@ -35,7 +42,7 @@ davmail.ssl.keystoreFile=davmail.p12
 davmail.ssl.keystorePass=password]]></source>
                 <p>If your already have your keystore in JKS format, just set keystoreType to JKS in DavMail
                     settings. keystorePass is the password used to open the KeyStore, keyPass protects the private key
-                    inside the KeyStore. 
+                    inside the KeyStore. With PKCS12, keyPass and keystorePass are often identical.
                 </p>
                 <p>Restart DavMail, all DavMail listeners will switch to secure mode: POP3S/IMAPS/SMTPS/HTTPS/LDAPS.
                     You will also need to enable SSL in client applications and manually accept the certificate as it's
