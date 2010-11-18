@@ -703,7 +703,7 @@ public class ImapConnection extends AbstractConnection {
                     MimeMessage mimeMessage = message.getMimeMessage();
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
-                    if ("".equals(partIndexString)) {
+                    if ("".equals(partIndexString) || partIndexString == null) {
                         // write message with headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         partInputStream = message.getRawInputStream();
