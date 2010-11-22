@@ -349,4 +349,16 @@ public class TestImap extends AbstractDavMailTestCase {
         clientSocket.close();
         Thread.sleep(5000);
     }
+
+    public void testFetchRfc822Header() throws IOException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (UID RFC822.HEADER RFC822.SIZE FLAGS)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testThunderbirdHeaderFetch() throws IOException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
 }
