@@ -2562,7 +2562,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        CopyMethod method = new CopyMethod(sourceUrl, targetPath, false);
+        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
