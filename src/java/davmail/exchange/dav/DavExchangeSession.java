@@ -1305,11 +1305,11 @@ public class DavExchangeSession extends ExchangeSession {
                     }
                 }
             } catch (DavException e) {
-                throw buildHttpException(e);
+                LOGGER.warn(e.getMessage());
             } catch (IOException e) {
                 LOGGER.warn(e.getMessage());
             } catch (MessagingException e) {
-                throw buildHttpException(e);
+                LOGGER.warn(e.getMessage());
             }
 
             // failover: rebuild event from MAPI properties
@@ -2371,15 +2371,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected static final long MAPI_SEND_NO_RICH_INFO = 0x00010000L;
+    //protected static final long MAPI_SEND_NO_RICH_INFO = 0x00010000L;
     protected static final long ENCODING_PREFERENCE = 0x00020000L;
     protected static final long ENCODING_MIME = 0x00040000L;
-    protected static final long BODY_ENCODING_HTML = 0x00080000L;
+    //protected static final long BODY_ENCODING_HTML = 0x00080000L;
     protected static final long BODY_ENCODING_TEXT_AND_HTML = 0x00100000L;
-    protected static final long MAC_ATTACH_ENCODING_UUENCODE = 0x00200000L;
-    protected static final long MAC_ATTACH_ENCODING_APPLESINGLE = 0x00400000L;
-    protected static final long MAC_ATTACH_ENCODING_APPLEDOUBLE = 0x00600000L;
-    protected static final long OOP_DONT_LOOKUP = 0x10000000L;
+    //protected static final long MAC_ATTACH_ENCODING_UUENCODE = 0x00200000L;
+    //protected static final long MAC_ATTACH_ENCODING_APPLESINGLE = 0x00400000L;
+    //protected static final long MAC_ATTACH_ENCODING_APPLEDOUBLE = 0x00600000L;
+    //protected static final long OOP_DONT_LOOKUP = 0x10000000L;
 
     @Override
     public void sendMessage(MimeMessage mimeMessage) throws IOException {
@@ -2420,7 +2420,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     protected byte[] getContent(ExchangeSession.Message message) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream contentInputStream = null;
+        InputStream contentInputStream;
         try {
             try {
                 contentInputStream = getContentInputStream(message.messageUrl);
