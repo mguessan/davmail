@@ -28,14 +28,24 @@ import org.apache.commons.httpclient.cookie.RFC2109Spec;
 public class DavMailCookieSpec extends RFC2109Spec {
     @Override
     public void validate(String host, int port, String path,
-        boolean secure, final Cookie cookie) throws MalformedCookieException {
+                         boolean secure, final Cookie cookie) throws MalformedCookieException {
+        String cookieName = cookie.getName();
+        if (cookieName != null && cookieName.indexOf(' ') >= 0) {
+            cookie.setName(cookieName.replaceAll(" ", ""));
+        } else {
+            cookieName = null;
+        }
         String hostWithoutDomain = host.substring(0, host.length()
-            - cookie.getDomain().length());
-        if (hostWithoutDomain.indexOf('.') != -1) {
+                - cookie.getDomain().length());
+        int dotIndex = hostWithoutDomain.indexOf('.');
+        if (dotIndex != -1) {
             // discard additional host name part
-            super.validate(host.substring(hostWithoutDomain.indexOf('.')+1), port, path, secure, cookie);
+            super.validate(host.substring(dotIndex + 1), port, path, secure, cookie);
         } else {
             super.validate(host, port, path, secure, cookie);
+        }
+        if (cookieName != null) {
+            cookie.setName(cookieName);
         }
     }
 }
