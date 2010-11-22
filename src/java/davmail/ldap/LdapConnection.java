@@ -56,6 +56,7 @@ public class LdapConnection extends AbstractConnection {
     static final String OD_USER_CONTEXT = "cn=users, o=od";
     static final String OD_CONFIG_CONTEXT = "cn=config, o=od";
     static final String COMPUTER_CONTEXT = "cn=computers, o=od";
+    static final String OD_GROUP_CONTEXT = "cn=groups, o=od";
 
     /**
      * Root DSE naming contexts (default and OpenDirectory)
@@ -1414,7 +1415,7 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_ANONYMOUS_ACCESS_FORBIDDEN", currentMessageId, dn));
                     }
-                } else if (dn != null && dn.length() > 0 && !OD_CONFIG_CONTEXT.equals(dn)) {
+                } else if (dn != null && dn.length() > 0 && !OD_CONFIG_CONTEXT.equals(dn) && !OD_GROUP_CONTEXT.equals(dn)) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                 }
 
