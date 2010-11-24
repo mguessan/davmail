@@ -1489,6 +1489,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 EWSMethod.Item item = new EWSMethod.Item();
                 item.type = "CalendarItem";
                 if ("Exchange2010".equals(serverVersion)) {
+                    SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+                    dateFormatter.setTimeZone(GMT_TIMEZONE);
+                    Calendar cal = Calendar.getInstance();
+                    item.put("Start", dateFormatter.format(cal.getTime()));
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                    item.put("End", dateFormatter.format(cal.getTime()));
                     item.put("StartTimeZone", timezoneId);
                 } else {
                     item.put("MeetingTimeZone", timezoneId);
