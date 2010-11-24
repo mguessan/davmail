@@ -1,0 +1,7 @@
+/var/log/davmail.log {
+    missingok
+    notifempty
+    size 30k
+    monthly
+    create 0640 davmail davmail
+}

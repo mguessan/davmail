@@ -1,0 +1,134 @@
+#!/bin/sh
+#
+# davmail:	davmail exchange gateway daemon
+#
+# chkconfig:	345 98 02
+# description:	DavMail gateway for Microsoft Exchange
+# processname:	davmail
+# config:	/etc/davmail.properties
+
+# LSB init-info
+### BEGIN INIT INFO
+# Provides:          davmail
+# Required-Start:    $network
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: DavMail gateway for Microsoft Exchange
+### END INIT INFO
+
+# Source function library.
+if [ -e /etc/init.d/functions ]; then
+	. /etc/init.d/functions
+fi
+
+# LSB functions
+. /lib/lsb/init-functions
+
+# Check that networking is configured.
+[ "${NETWORKING}" = "no" ] && exit 0
+
+DAVMAIL_CONF=/etc/davmail.properties
+test -f $DAVMAIL_CONF || exit 4
+DAVMAIL_HOME=/var/lib/davmail
+test -d $DAVMAIL_HOME || exit 5
+
+LOGFILE=/var/log/davmail.log
+PIDFILE=/var/run/davmail.pid
+LOCKFILE=/var/lock/subsys/davmail
+
+start() {
+	echo -n $"Starting DavMail gateway: "
+	dostatus > /dev/null 2>&1
+	if [ $RETVAL -eq 0 ]
+	then
+		echo -n $"DavMail gateway already running"
+		log_failure_msg
+		RETVAL=1
+		return
+	fi
+	runuser - davmail -s /bin/sh -c "exec nohup $DAVMAIL_HOME/davmail $DAVMAIL_CONF >> $LOGFILE 2>&1 &"
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ]
+	then
+		sleep 1
+		cat $DAVMAIL_HOME/pid > $PIDFILE
+		touch $LOCKFILE
+		log_success_msg
+	else
+		log_failure_msg
+	fi
+	return $RETVAL
+}
+
+stop() {
+	echo -n $"Shutting down DavMail gateway: "
+	kill $(cat $PIDFILE 2>/dev/null) > /dev/null 2>&1
+	RETVAL=$?
+	sleep 1
+	if [ $RETVAL -eq 0 ]
+	then
+		rm -f $PIDFILE $LOCKFILE
+		log_success_msg
+	else
+		log_failure_msg
+	fi
+	return $RETVAL
+}
+
+restart() {
+	stop
+	start
+}
+
+condrestart() {
+	[ -f $LOCKFILE ] && restart || :
+}
+
+dostatus() {
+	kill -0 $(cat $PIDFILE 2>/dev/null) > /dev/null 2>&1
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ]
+	then
+		echo "DavMail gateway (pid $(cat $PIDFILE 2>/dev/null)) is running..."
+	else
+		if [ -f $PIDFILE ]
+		then
+			echo "DavMail gateway dead but pid file exists"
+			RETVAL=1
+			return
+		fi
+		if [ -f $LOCKFILE ]
+		then
+			echo "DavMail gateway dead but subsys locked"
+			RETVAL=2
+			return
+		fi
+		echo "DavMail gateway is stopped"
+		RETVAL=3
+	fi
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+	dostatus
+	;;
+  restart|reload)
+	restart
+	;;
+  condrestart)
+	condrestart
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+	exit 1
+esac
+
+exit $RETVAL

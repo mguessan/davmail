@@ -1,0 +1,13 @@
+#!/bin/sh
+
+LOGFILE=/var/log/davmail.log
+PIDFILE=/var/lib/davmail/pid
+
+for class in /usr/share/davmail/lib/*
+do
+	export CLASSPATH=${CLASSPATH}:${class}
+done
+
+echo $$ > $PIDFILE
+exec java -cp /usr/share/davmail/davmail.jar:${CLASSPATH} \
+	davmail.DavGateway "$@" >> $LOGFILE 2>&1
