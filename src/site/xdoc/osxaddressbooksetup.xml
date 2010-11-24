@@ -18,6 +18,9 @@
                 <code>localhost:1080</code>
                 as server location to sync with the default personal address book.
             </p>
+            <p>
+                <em>Note: uncheck SSL mode if DavMail is in cleartext (default) mode.</em>
+            </p>
 
         </section>
     </body>

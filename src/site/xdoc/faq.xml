@@ -180,10 +180,8 @@ calendar.debug.log.verbose=true]]></source>
                     don't keep copies at all.
                 </p>
                 <p>Under Thunderbird, you can try to change IMAP timeout values
-                    (
-                    <code>mail.server.server<em>index</em>.timeout
-                    </code>
-                    and&#x20;<code>mailnews.tcptimeout</code>)or avoid full
+                    (<code>mail.server.server<em>index</em>.timeout</code>
+                    and&#x20;<code>mailnews.tcptimeout</code>) or avoid full
                     mailbox sync: disable global search and indexer under advanced options and change
                     Synchronization &amp; Storage options under Account Settings.
                 </p>
