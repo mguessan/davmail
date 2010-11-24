@@ -1,3 +1,48 @@
+** DavMail 3.8.7 released **
+Bugfix and performance release with new Woodstox parser to reduce memory
+footprint in EWS mode, more Caldav broken events fixes and IMAP regression
+fixes.
+
+Documentation:
+- Doc: Update Carddav setup doc
+- Doc: ssl setup doc update from kerstkonijn
+
+Enhancements
+- Unzip contribs content
+- Update rpm ant task parameters to create valid rpm package
+- Workaround for malformed cookies with space in name
+- From Geert Stappers: add includeantruntime="false" to avoid ant 1.8 warning
+- Workaround for invalid redirect location
+- Improve error handling: detect redirect to reason=0 as session expired
+- Suggestion from Geert Stappers: add svn:ignore property
+- RPM spec from Marko Myllynen
+
+Caldav:
+- Caldav: Fix timezone support with Exchange 2010 SP1
+- Caldav: use rebuild event from MAPI properties failover in all error cases
+- Caldav: add requestFocus() to bring notification dialog to foreground
+- Caldav: added edit notifications checkbox in settings frame
+
+IMAP:
+- IMAP: include current folder in recursive search
+- IMAP: encode source path in copyMessage
+- IMAP: new test case to show Thunderbird perf issue
+- IMAP: Fix 3109303 Handle null string during mail fetch
+- IMAP: fix nullpointerException in header fetch
+- IMAP: fix 3106803, IMAP client stuck scanning Inbox, fix header and body fetch in same request
+- IMAP: throw error on 440 Login Timeout to avoid message corruption
+
+LDAP:
+- LDAP: do not log error on OSX groups request
+
+EWS:
+- EWS: Upgrade woodstox version to use enhanced base64 conversion (reduced memory usage)
+- EWS: allow autodiscover after authentication failure
+- EWS: fix contact email update
+
+OSX:
+- OSX: search and replace on existing file, spotted by Geert Stappers
+
 ** DavMail 3.8.6 released **
 First release with automatic EWS mode detection, also includes many bugfixes
 on LDAP support over EWS, IMAP enhancements, Exchange 2010 SP1 cookie bug workaround
