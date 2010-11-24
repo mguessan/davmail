@@ -89,6 +89,11 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK LSUB completed", readFullAnswer("."));
     }
 
+    public void testListSubFolders() throws IOException {
+        writeLine(". LIST \"\" \"INBOX*\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+    }
+
     public void testSelectInbox() throws IOException {
         writeLine(". SELECT INBOX");
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
