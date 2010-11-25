@@ -54,6 +54,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -2414,6 +2415,9 @@ public class DavExchangeSession extends ExchangeSession {
         return false;
     }
 
+    // wrong hostname fix flag
+    protected boolean restoreHostName = false;
+
     /**
      * @inheritDoc
      */
@@ -2423,10 +2427,16 @@ public class DavExchangeSession extends ExchangeSession {
         InputStream contentInputStream;
         try {
             try {
-                contentInputStream = getContentInputStream(message.messageUrl);
+                try {
+                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
+                } catch (UnknownHostException e) {
+                    // failover for misconfigured Exchange server, replace host name in url
+                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
+                    restoreHostName = true;
+                }
             } catch (HttpNotFoundException e) {
                 LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
-                contentInputStream = getContentInputStream(message.permanentUrl);
+                contentInputStream = getContentInputStream(message.permanentUrl, restoreHostName);
             }
 
             try {
@@ -2513,8 +2523,16 @@ public class DavExchangeSession extends ExchangeSession {
         return baos.toByteArray();
     }
 
-    protected InputStream getContentInputStream(String url) throws IOException {
-        final GetMethod method = new GetMethod(URIUtil.encodePath(url));
+    protected InputStream getContentInputStream(String url, boolean fixHostName) throws IOException {
+        String actualUrl = URIUtil.encodePath(url);
+        if (fixHostName) {
+            String targetPath = new URI(actualUrl, true).getEscapedPath();
+            URI targetUri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
+            targetUri.setEscapedPath(targetPath);
+            actualUrl = targetUri.getEscapedURI();
+        }
+
+        final GetMethod method = new GetMethod(actualUrl);
         method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");
