@@ -1736,7 +1736,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void moveItem(String sourcePath, String targetPath) throws IOException {
         MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
-                URIUtil.encodePath(getFolderPath(targetPath)), false);
+                getEscapedUrlFromPath(URIUtil.encodePath(getFolderPath(targetPath))), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -2525,13 +2525,17 @@ public class DavExchangeSession extends ExchangeSession {
         return baos.toByteArray();
     }
 
+    protected String getEscapedUrlFromPath(String escapdePath) throws URIException {
+        URI uri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
+        uri.setEscapedPath(escapdePath);
+        return uri.getEscapedURI();
+    }
+
     protected InputStream getContentInputStream(String url, boolean fixHostName) throws IOException {
         String actualUrl = URIUtil.encodePath(url);
         if (fixHostName) {
             String targetPath = new URI(actualUrl, true).getEscapedPath();
-            URI targetUri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
-            targetUri.setEscapedPath(targetPath);
-            actualUrl = targetUri.getEscapedURI();
+            actualUrl = getEscapedUrlFromPath(targetPath);
         }
 
         final GetMethod method = new GetMethod(actualUrl);
@@ -2582,7 +2586,8 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
+        String targetUri = getEscapedUrlFromPath(targetPath);
+        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetUri, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
