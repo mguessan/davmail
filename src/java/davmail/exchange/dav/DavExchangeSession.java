@@ -2086,18 +2086,20 @@ public class DavExchangeSession extends ExchangeSession {
             String folderPath = getFolderPath("davmailtemp");
             createCalendarFolder(folderPath, null);
 
-            PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
-            postMethod.addParameter("Cmd", "saveappt");
-            postMethod.addParameter("FORMTYPE", "appointment");
             String fakeEventUrl = null;
-            try {
-                // create fake event
-                int statusCode = httpClient.executeMethod(postMethod);
-                if (statusCode == HttpStatus.SC_OK) {
-                    fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+            if ("Exchange2003".equals(serverVersion)) {
+                PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
+                postMethod.addParameter("Cmd", "saveappt");
+                postMethod.addParameter("FORMTYPE", "appointment");
+                try {
+                    // create fake event
+                    int statusCode = httpClient.executeMethod(postMethod);
+                    if (statusCode == HttpStatus.SC_OK) {
+                        fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                    }
+                } finally {
+                    postMethod.releaseConnection();
                 }
-            } finally {
-                postMethod.releaseConnection();
             }
             // failover for Exchange 2007, use PROPPATCH with forced timezone
             if (fakeEventUrl == null) {
