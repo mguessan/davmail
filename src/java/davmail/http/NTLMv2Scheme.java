@@ -180,7 +180,8 @@ public class NTLMv2Scheme implements AuthScheme {
             int flags = NtlmFlags.NTLMSSP_NEGOTIATE_NTLM2 | NtlmFlags.NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
                     NtlmFlags.NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED | NtlmFlags.NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED |
                     NtlmFlags.NTLMSSP_NEGOTIATE_NTLM | NtlmFlags.NTLMSSP_REQUEST_TARGET |
-                    NtlmFlags.NTLMSSP_NEGOTIATE_OEM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE;
+                    NtlmFlags.NTLMSSP_NEGOTIATE_OEM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE |
+                    NtlmFlags.NTLMSSP_NEGOTIATE_56 | NtlmFlags.NTLMSSP_NEGOTIATE_128;
             Type1Message type1Message = new Type1Message(flags, ntcredentials.getDomain(), ntcredentials.getHost());
             response = EncodingUtil.getAsciiString(Base64.encodeBase64(type1Message.toByteArray()));
             this.state = TYPE1_MSG_GENERATED;
