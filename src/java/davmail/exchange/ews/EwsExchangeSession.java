@@ -50,6 +50,24 @@ import java.util.*;
  */
 public class EwsExchangeSession extends ExchangeSession {
 
+    protected static Set<String> MESSAGE_TYPES = new HashSet<String>();
+    static {
+        MESSAGE_TYPES.add("Message");
+        MESSAGE_TYPES.add("CalendarItem");
+
+        MESSAGE_TYPES.add("MeetingMessage");
+        MESSAGE_TYPES.add("MeetingRequest");
+        MESSAGE_TYPES.add("MeetingResponse");
+        MESSAGE_TYPES.add("MeetingCancellation");
+
+        // exclude types from IMAP
+        //MESSAGE_TYPES.add("Item");
+        //MESSAGE_TYPES.add("PostItem");
+        //MESSAGE_TYPES.add("Contact");
+        //MESSAGE_TYPES.add("DistributionList");
+        //MESSAGE_TYPES.add("Task");
+    }
+
     protected Map<String, String> folderIdMap;
 
     protected class Folder extends ExchangeSession.Folder {
@@ -159,7 +177,7 @@ public class EwsExchangeSession extends ExchangeSession {
             } catch (IOException e2) {
                 // autodiscover failed and initial exception was authentication failure => throw original exception
                 if (e instanceof DavMailAuthenticationException) {
-                    throw (DavMailAuthenticationException)e;
+                    throw (DavMailAuthenticationException) e;
                 }
                 LOGGER.error(e2.getMessage());
                 throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
@@ -459,9 +477,11 @@ public class EwsExchangeSession extends ExchangeSession {
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW, 0);
 
         for (EWSMethod.Item response : responses) {
-            Message message = buildMessage(response);
-            message.messageList = messages;
-            messages.add(message);
+            if (MESSAGE_TYPES.contains(response.type)) {
+                Message message = buildMessage(response);
+                message.messageList = messages;
+                messages.add(message);
+            }
         }
         Collections.sort(messages);
         return messages;
@@ -1692,10 +1712,11 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<String>();
+
     static {
-       IGNORE_ATTRIBUTE_SET.add("ContactSource");
-       IGNORE_ATTRIBUTE_SET.add("Culture");
-       IGNORE_ATTRIBUTE_SET.add("AssistantPhone");
+        IGNORE_ATTRIBUTE_SET.add("ContactSource");
+        IGNORE_ATTRIBUTE_SET.add("Culture");
+        IGNORE_ATTRIBUTE_SET.add("AssistantPhone");
     }
 
     protected Contact buildGalfindContact(EWSMethod.Item response) {
@@ -1706,7 +1727,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (LOGGER.isDebugEnabled()) {
             for (String key : response.keySet()) {
                 if (!IGNORE_ATTRIBUTE_SET.contains(key) && !GALFIND_ATTRIBUTE_MAP.containsValue(key)) {
-                    LOGGER.debug("Unsupported ResolveNames in "+contact.getName()+" response attribute: " + key + " value: " + response.get(key));
+                    LOGGER.debug("Unsupported ResolveNames in " + contact.getName() + " response attribute: " + key + " value: " + response.get(key));
                 }
             }
         }
