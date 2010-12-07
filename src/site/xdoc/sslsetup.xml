@@ -53,12 +53,50 @@ davmail.ssl.keystorePass=password]]></source>
             <subsection name="DavMail to Exchange">
                 <p>In most cases, using https in OWA url is enough to secure communication between DavMail and Exchange.
                     However, with Exchange servers setup to require mutual authentication, you will have to register
-                    client certificate in DavMail settings, either through PKCS11 (smartcard) or file certificate:
+                    your client certificate in DavMail settings, either through PKCS11 (smartcard) or file certificate.
                 </p>
+                <p>To use a client certificate provided as a PKCS12 file, set the following keys in DavMail:</p>
                 <source><![CDATA[
 davmail.ssl.clientKeystoreType=PKCS12
 davmail.ssl.clientKeystoreFile=client.p12
 davmail.ssl.clientKeystorePass=password]]></source>
+                <p>For a smartcard, first make sure you PKCS11 module is correctly installed by testing mutual
+                    authentication through a browser. Then set the following properties in DavMail:</p>
+                <source><![CDATA[
+davmail.ssl.clientKeystoreType=PKCS11
+davmail.ssl.pkcs11Library=/full/path/to/pkcs11Module
+davmail.ssl.pkcs11Config=]]></source>
+                <p>PKCS11 library is the full path to the PKCS11 module (.so on Unix, .dll on windows) or simple
+                    library name if PATH (Windows) or LD_LIBRARY_PATH (Unix) already contains the full path. Add any
+                    additional PKCS11 parameter in PKCS11 Config parameter, e.g. <code>slot = 2</code>.
+                </p>
+                <p>To adjust your settings, you can try to access the smartcard with java keytool. First create a file
+                    named pkcs11.config with the following lines:</p>
+                <source><![CDATA[
+name = moduleName
+library = /path/to/pkcs11module]]></source>
+                <p>and list certificates with keytool:</p>
+                <source>keytool -keystore NONE -storetype PKCS11 -providerClass sun.security.pkcs11.SunPKCS11 -providerArg pkcs11.config -list -v</source>
+
+                <p>Sample pkcs11.config for NSS Soft token (Thunderbird/Firefox):</p>
+<source><![CDATA[
+name=NSS
+library=softokn3
+nssArgs="configdir='/path/to/firefox/profile' certPrefix='' keyPrefix='' secmod='secmod.db' flags=readOnly"
+slot = 2
+]]></source>                
+
+                <p>Another one for Coolkey (see <a href="http://pkg-coolkey.alioth.debian.org/">Coolkey for Debian</a>
+                    and <a href="http://www7320.nrlssc.navy.mil/pubs/2006/CommonAccessCardLinux.pdf">United States Department of Defense Common Access Cards</a>):</p>
+<source><![CDATA[
+name=CoolKey
+library=/usr/cac/lib/pkcs11/libcoolkeypk11.so
+]]></source>
+
+                <p>More details on java PKCS11 setup in
+                    <a href="http://java.sun.com/javase/6/docs/technotes/guides/security/p11guide.html">Sun PKCS11 guide</a>
+                </p>
+
             </subsection>
         </section>
     </body>
