@@ -1677,6 +1677,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("o", "CompanyName");
         GALFIND_ATTRIBUTE_MAP.put("postalcode", "BusinessPostalCode");
         GALFIND_ATTRIBUTE_MAP.put("st", "BusinessState");
+        GALFIND_ATTRIBUTE_MAP.put("co", "BusinessCountryOrRegion");
 
         GALFIND_ATTRIBUTE_MAP.put("manager", "Manager");
         GALFIND_ATTRIBUTE_MAP.put("middlename", "Initials");
