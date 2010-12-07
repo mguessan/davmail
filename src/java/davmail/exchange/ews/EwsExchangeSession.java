@@ -1667,9 +1667,9 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("cn", "DisplayName");
         GALFIND_ATTRIBUTE_MAP.put("givenName", "GivenName");
         GALFIND_ATTRIBUTE_MAP.put("sn", "Surname");
-        GALFIND_ATTRIBUTE_MAP.put("email1", "EmailAddress1");
-        GALFIND_ATTRIBUTE_MAP.put("email2", "EmailAddress2");
-        GALFIND_ATTRIBUTE_MAP.put("email3", "EmailAddress3");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "EmailAddress1");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail2", "EmailAddress2");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail3", "EmailAddress3");
 
         GALFIND_ATTRIBUTE_MAP.put("roomnumber", "OfficeLocation");
         GALFIND_ATTRIBUTE_MAP.put("street", "BusinessStreet");
