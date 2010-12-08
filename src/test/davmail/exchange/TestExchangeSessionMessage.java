@@ -42,6 +42,11 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         session.createMessage("testfolder", messageName, properties, mimeMessage);
     }
 
+    public void testSearchInbox() throws IOException, MessagingException {
+        ExchangeSession.MessageList messageList = session.searchMessages("INBOX");
+        assertNotNull(messageList);
+    }
+
     public void testSearchMessage() throws IOException, MessagingException {
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);

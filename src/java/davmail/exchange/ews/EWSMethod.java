@@ -28,7 +28,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Logger;
-import org.codehaus.stax2.XMLStreamReader2;
+import org.codehaus.stax2.typed.TypedXMLStreamReader;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -55,7 +55,12 @@ public abstract class EWSMethod extends PostMethod {
     protected Disposal deleteType;
     protected Set<AttributeOption> methodOptions;
     protected ElementOption unresolvedEntry;
+
+    // paging request
     protected int maxCount;
+    protected int offset;
+    // paging response
+    protected boolean includesLastItemInRange;
 
     protected List<FieldUpdate> updates;
 
@@ -368,7 +373,10 @@ public abstract class EWSMethod extends PostMethod {
         if (maxCount > 0) {
             writer.write("<m:IndexedPageItemView MaxEntriesReturned=\"");
             writer.write(String.valueOf(maxCount));
-            writer.write("\" Offset=\"0\" BasePoint=\"Beginning\"/>");
+            writer.write("\" Offset=\"");
+            writer.write(String.valueOf(offset));
+            writer.write("\" BasePoint=\"Beginning\"/>");
+
         }
     }
 
@@ -838,9 +846,9 @@ public abstract class EWSMethod extends PostMethod {
 
 
     protected void handleMimeContent(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        if (reader instanceof XMLStreamReader2) {
+        if (reader instanceof TypedXMLStreamReader) {
             // Stax2 parser: use enhanced base64 conversion
-            responseItem.mimeContent = ((XMLStreamReader2) reader).getElementAsBinary();
+            responseItem.mimeContent = ((TypedXMLStreamReader) reader).getElementAsBinary();
         } else {
             // failover: slow and memory consuming conversion
             byte[] base64MimeContent = reader.getElementText().getBytes();
@@ -942,6 +950,8 @@ public abstract class EWSMethod extends PostMethod {
                     } else {
                         serverVersion = "Exchange2007_SP1";
                     }
+                } else if (XMLStreamUtil.isStartTag(reader, "RootFolder")) {
+                    includesLastItemInRange = "true".equals(reader.getAttributeValue(null, "IncludesLastItemInRange"));
                 } else if (XMLStreamUtil.isStartTag(reader, responseCollectionName)) {
                     handleItems(reader);
                 } else {

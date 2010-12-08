@@ -50,7 +50,10 @@ import java.util.*;
  */
 public class EwsExchangeSession extends ExchangeSession {
 
+    protected static final int PAGE_SIZE = 100;
+
     protected static Set<String> MESSAGE_TYPES = new HashSet<String>();
+
     static {
         MESSAGE_TYPES.add("Message");
         MESSAGE_TYPES.add("CalendarItem");
@@ -488,15 +491,26 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal, int maxCount) throws IOException {
-        FindItemMethod findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath), maxCount);
-        for (String attribute : attributes) {
-            findItemMethod.addAdditionalProperty(Field.get(attribute));
-        }
-        if (condition != null && !condition.isEmpty()) {
-            findItemMethod.setSearchExpression((SearchExpression) condition);
-        }
-        executeMethod(findItemMethod);
-        return findItemMethod.getResponseItems();
+        int offset = 0;
+        List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>();
+        FindItemMethod findItemMethod;
+        do {
+            int fetchCount = PAGE_SIZE;
+            if (maxCount > 0) {
+                fetchCount = Math.min(PAGE_SIZE, maxCount - offset);
+            }
+            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath), offset, fetchCount);
+            for (String attribute : attributes) {
+                findItemMethod.addAdditionalProperty(Field.get(attribute));
+            }
+            if (condition != null && !condition.isEmpty()) {
+                findItemMethod.setSearchExpression((SearchExpression) condition);
+            }
+            executeMethod(findItemMethod);
+            results.addAll(findItemMethod.getResponseItems());
+            offset = results.size();
+        } while (!(findItemMethod.includesLastItemInRange || (maxCount > 0 && offset == maxCount)));
+        return results;
     }
 
     protected static class MultiCondition extends ExchangeSession.MultiCondition implements SearchExpression {
