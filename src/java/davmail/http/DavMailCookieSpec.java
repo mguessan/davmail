@@ -29,11 +29,19 @@ public class DavMailCookieSpec extends RFC2109Spec {
     @Override
     public void validate(String host, int port, String path,
                          boolean secure, final Cookie cookie) throws MalformedCookieException {
+        // workaround for space in cookie name
         String cookieName = cookie.getName();
         if (cookieName != null && cookieName.indexOf(' ') >= 0) {
             cookie.setName(cookieName.replaceAll(" ", ""));
         } else {
             cookieName = null;
+        }
+        // workaround for invalid cookie path
+        String cookiePath = cookie.getPath();
+        if (cookiePath != null && !path.startsWith(cookiePath)) {
+            cookie.setPath(path);
+        } else {
+            cookiePath = null;
         }
         String hostWithoutDomain = host.substring(0, host.length()
                 - cookie.getDomain().length());
@@ -46,6 +54,9 @@ public class DavMailCookieSpec extends RFC2109Spec {
         }
         if (cookieName != null) {
             cookie.setName(cookieName);
+        }
+        if (cookiePath != null) {
+            cookie.setPath(cookiePath);
         }
     }
 }
