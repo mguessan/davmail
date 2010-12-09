@@ -405,9 +405,9 @@ public abstract class ExchangeSession {
                             if (content instanceof CommentToken) {
                                 String scriptValue = ((CommentToken) content).getCommentedContent();
                                 String sUrl = StringUtil.getToken(scriptValue, "var a_sUrl = \"", "\"");
-                                String sLgn = StringUtil.getToken(scriptValue, "var a_sLgn = \"", "\"");
+                                String sLgn = StringUtil.getToken(scriptValue, "var a_sLgnQS = \"", "\"");
                                 if (sLgn == null) {
-                                    sLgn = StringUtil.getToken(scriptValue, "var a_sLgnQS = \"", "\"");
+                                    sLgn = StringUtil.getToken(scriptValue, "var a_sLgn = \"", "\"");
                                 }
                                 if (sUrl != null && sLgn != null) {
                                     String src = getScriptBasedFormURL(initmethod, sLgn + sUrl);
