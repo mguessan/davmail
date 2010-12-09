@@ -103,6 +103,12 @@ public abstract class ExchangeSession {
     protected static final String JUNK = "Junk";
     protected static final String UNSENT = "Unsent Messages";
 
+    static {
+        // Adjust Mime decoder settings
+        System.setProperty("mail.mime.ignoreunknownencoding", "true");
+        System.setProperty("mail.mime.decodetext.strict", "true");
+    }
+
     protected String publicFolderUrl;
 
     /**
