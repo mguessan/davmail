@@ -106,6 +106,10 @@ davmail.logFilePath=/var/log/davmail.log]]>
                 <code>davmail-*/WEB-INF/classes</code>.
             </p>
 
+            <p>Note: DavMail does not use the standard Tomcat HTTP connector and uses the same listeners
+                in war and server modes. This means the HTTP port for Caldav url is specified in davmail.properties
+            </p>
+
             <p>See above and
                 <a href="gettingstarted.html">Getting started</a>
                 for more information on
