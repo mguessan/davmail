@@ -106,7 +106,7 @@ public abstract class ExchangeSession {
     static {
         // Adjust Mime decoder settings
         System.setProperty("mail.mime.ignoreunknownencoding", "true");
-        System.setProperty("mail.mime.decodetext.strict", "true");
+        System.setProperty("mail.mime.decodetext.strict", "false");
     }
 
     protected String publicFolderUrl;
