@@ -25,10 +25,7 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * VCalendar object.
@@ -146,6 +143,20 @@ public class VCalendar extends VObject {
             setPropertyValue("METHOD", "PUBLISH");
         }
 
+        // rename TZID for maximum iCal/iPhone compatibility
+        String tzid = null;
+        if (fromServer) {
+            // get current tzid
+            VObject vObject = getVTimezone();
+            if (vObject != null) {
+                try {
+                    tzid = ResourceBundle.getBundle("timezones").getString(vObject.getPropertyValue("TZID"));
+                } catch (MissingResourceException e) {
+                    LOGGER.debug("Timezone rename failed, timezone "+vObject.getPropertyValue("TZID")+" not found in table");
+                }
+            }
+        }
+
         // iterate over vObjects
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
@@ -186,6 +197,17 @@ public class VCalendar extends VObject {
                     }
                     if ("".equals(vObject.getPropertyValue("CLASS"))) {
                         vObject.removeProperty("CLASS");
+                    }
+                    // rename TZID
+                    if (tzid != null) {
+                        VProperty dtStart = vObject.getProperty("DTSTART");
+                        if (dtStart != null && dtStart.getParam("TZID") != null) {
+                            dtStart.setParam("TZID", tzid);
+                        }
+                        VProperty dtEnd = vObject.getProperty("DTEND");
+                        if (dtEnd != null && dtStart.getParam("TZID") != null) {
+                            dtEnd.setParam("TZID", tzid);
+                        }
                     }
                 } else {
                     // add organizer line to all events created in Exchange for active sync

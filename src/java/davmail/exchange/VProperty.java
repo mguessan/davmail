@@ -230,6 +230,14 @@ public class VProperty {
         addParam(paramName, (String) null);
     }
 
+    public void setParam(String paramName, String paramValue) {
+        Param currentParam = getParam(paramName);
+        if (currentParam != null) {
+            getParams().remove(currentParam);
+        }
+        addParam(paramName, paramValue);
+    }
+
     public void addParam(String paramName, String paramValue) {
         List<String> paramValues = new ArrayList<String>();
         paramValues.add(paramValue);
