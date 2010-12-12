@@ -71,8 +71,8 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("ADR;TYPE=other", "otherpostofficebox", null, "otherstreet", "othercity", "otherstate", "otherpostalcode", "othercountry");
 
         vCardWriter.appendProperty("EMAIL;TYPE=work", "email1@local.net");
-        //vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
-        //vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
+        vCardWriter.appendProperty("EMAIL;TYPE=home", "email2@local.net");
+        vCardWriter.appendProperty("EMAIL;TYPE=other", "email3@local.net");
 
         vCardWriter.appendProperty("ORG", "o", "department");
 
@@ -264,6 +264,24 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertTrue(contact.get("haspicture") == null || "false".equals(contact.get("haspicture")));
 
         assertNull(session.getContactPhoto(contact));
+    }
+
+
+    public void testUpdateEmail() throws IOException {
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("EMAIL;TYPE=work", "email1.test@local.net");
+        vCardWriter.endCard();
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), contact.etag, null);
+        assertEquals(200, result.status);
+
+        contact = getCurrentContact();
+
+        assertEquals("email1.test@local.net", contact.get("smtpemail1"));
+
     }
 
     public void testUpperCaseParamName() throws IOException {
@@ -465,6 +483,14 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         ExchangeSession.Contact contact = getCurrentContact();
 
         assertEquals("common name", contact.get("cn"));
+    }
+
+    public void testPagingSearchContacts() throws IOException {
+        int maxCount = 0;
+        List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, maxCount);
+        int folderSize = contacts.size();
+        assertEquals(50, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 50).size());
+        assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize+1).size());
     }
 
 }
