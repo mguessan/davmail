@@ -64,6 +64,9 @@ public class Field {
         FIELD_MAP.put("read", new UnindexedFieldURI("message:IsRead"));
         FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x0e08, ExtendedFieldURI.PropertyType.Integer));
         FIELD_MAP.put("date", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));
+        // always empty on Exchange 2007
+        //FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x6746, ExtendedFieldURI.PropertyType.Integer)); // PR_MIME_SIZE
+        //FIELD_MAP.put("date", new ExtendedFieldURI(0x65f5, ExtendedFieldURI.PropertyType.SystemTime)); // PR_IMAP_INTERNAL_DATE
         FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
 
