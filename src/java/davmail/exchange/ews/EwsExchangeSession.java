@@ -1546,8 +1546,6 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    protected static final String TMZN = "tblTmZn";
-
     protected String getTimezoneidFromOptions() {
         String result = null;
         // get user mail URL from html body
@@ -1560,12 +1558,19 @@ public class EwsExchangeSession extends ExchangeSession {
             // find email
             //noinspection StatementWithEmptyBody
             while ((line = optionsPageReader.readLine()) != null
-                    && (line.indexOf(TMZN) == -1)) {
+                    && (line.indexOf("tblTmZn") == -1)
+                    && (line.indexOf("selTmZn") == -1)) {
             }
             if (line != null) {
-                int start = line.indexOf("oV=\"") + 4;
-                int end = line.indexOf('\"', start);
-                result = line.substring(start, end);
+                if (line.indexOf("tblTmZn") >= 0) {
+                    int start = line.indexOf("oV=\"") + 4;
+                    int end = line.indexOf('\"', start);
+                    result = line.substring(start, end);
+                } else {
+                    int end = line.lastIndexOf("\" selected>");
+                    int start = line.lastIndexOf('\"', end - 1);
+                    result = line.substring(start+1, end);
+                }
             }
         } catch (IOException e) {
             LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
@@ -1817,7 +1822,12 @@ public class EwsExchangeSession extends ExchangeSession {
         String zuluDateValue = null;
         if (vcalendarDateValue != null) {
             try {
-                SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                SimpleDateFormat dateParser;
+                if (vcalendarDateValue.length() == 8) {
+                    dateParser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                } else {
+                    dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                }
                 dateParser.setTimeZone(GMT_TIMEZONE);
                 SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
                 dateFormatter.setTimeZone(GMT_TIMEZONE);
