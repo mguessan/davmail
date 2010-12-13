@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - iPhone Carddav setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="iPhone Carddav setup">
+            <p>Note: you can't install DavMail directly on an iPhone, you need a separate DavMail server,
+                see<a href="iphonesetup.html">iPhone setup</a>.
+            </p>
+
+            <subsection name="Create a new account">
+                <p>Open iPhone Settings application and choose Mail, Contacts, Calendar:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneAccount1.png" alt=""/>
+                </div>
+
+                <p>Then select Add Account...:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneAccount2.png" alt=""/>
+                </div>
+
+                <p>DavMail is not an Exchange ActiveSync server, press Other:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneAccount3.png" alt=""/>
+                </div>
+
+                <p>Choose Add CardDAV Account:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneCarddav1.png" alt=""/>
+                </div>
+
+                <p>Enter your DavMail server hostname in the Server field,
+                    append ':' and port if DavMail HTTP (Caldav and Carddav) port is not 80,
+                    provide your username and password then press Next:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneCarddav2.png" alt=""/>
+                </div>
+
+                <p>On the account page, open Advanced Settings:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneCarddav3.png" alt=""/>
+                </div>
+
+                <p>Enable SSL and check port:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/iphone/iphoneCarddav4.png" alt=""/>
+                </div>
+
+                <p>Contact setup is complete, proceed to
+                    <a href="iphonecaldavsetup.html">iPhone Caldav setup</a>
+                </p>
+            </subsection>
+        </section>
+    </body>
+</document>

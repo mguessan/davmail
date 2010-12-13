@@ -57,6 +57,12 @@
             <item name="IMAP Mail setup" href="/osximapmailsetup.html"/>
             <item name="Address book setup" href="/osxaddressbooksetup.html"/>
         </menu>
+        <menu name="iPhone Setup">
+            <item name="iPhone setup" href="/iphonesetup.html"/>
+            <item name="Mail setup" href="/iphonemailsetup.html"/>
+            <item name="Contact setup" href="/iphonecarddavsetup.html"/>
+            <item name="Calendar setup" href="/iphonecaldavsetup.html"/>
+        </menu>
         <menu ref="reports"/>
     </body>
 </project>

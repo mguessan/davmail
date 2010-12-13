@@ -13,12 +13,24 @@
         <section name="iPhone setup">
             <p>In order to use DavMail with an iPhone, you need to install DavMail in server mode.
                 This server should be available directly on the internet or through a Wifi connection.
-                See <a href="serversetup.html">Server setup</a> for more information.
+                See
+                <a href="serversetup.html">Server setup</a>
+                for more information.
             </p>
 
+            <p>As mail data between your iPhone and DavMail travels on the internet, you probably want
+                to switch DavMail to encrypted mode, see
+                <a href="sslsetup.html">SSL setup</a>
+            </p>
 
             <p>Once you have a working DavMail server, proceed to:
                 <a href="iphonemailsetup.html">iPhone Mail setup</a>
+            </p>
+            <p>Then sync your Exchange contacts:
+                <a href="iphonecarddavsetup.html">iPhone Carddav setup</a>
+            </p>
+            <p>And add your calendar:
+                <a href="iphonecaldavsetup.html">iPhone Caldav setup</a>
             </p>
         </section>
 
