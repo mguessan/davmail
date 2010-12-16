@@ -802,7 +802,7 @@ public class ImapConnection extends AbstractConnection {
             int startIndex = partIndexString.indexOf('(');
             int endIndex = partIndexString.indexOf(')');
             if (startIndex >= 0 && endIndex >= 0) {
-                return partIndexString.substring(startIndex + 1, endIndex - 1).split(" ");
+                return partIndexString.substring(startIndex + 1, endIndex).split(" ");
             } else {
                 return null;
             }
