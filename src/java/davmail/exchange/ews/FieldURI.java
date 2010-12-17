@@ -28,7 +28,7 @@ public interface FieldURI {
      *
      * @param buffer current buffer
      */
-    public void appendTo(StringBuilder buffer);
+    void appendTo(StringBuilder buffer);
 
     /**
      * Append updated field value to buffer
@@ -37,13 +37,13 @@ public interface FieldURI {
      * @param itemType item type
      * @param value    field value
      */
-    public void appendValue(StringBuilder buffer, String itemType, String value);
+    void appendValue(StringBuilder buffer, String itemType, String value);
 
     /**
      * Property name in EWS response.
      *
      * @return property name
      */
-    public String getResponseName();
+    String getResponseName();
 
 }

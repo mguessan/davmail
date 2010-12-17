@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * EWS MAPI fields;
  */
-public class Field {
+public final class Field {
     protected static final Map<String, FieldURI> FIELD_MAP = new HashMap<String, FieldURI>();
 
     private Field() {

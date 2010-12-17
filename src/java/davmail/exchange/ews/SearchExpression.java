@@ -27,5 +27,5 @@ public interface SearchExpression {
      *
      * @param buffer search buffer
      */
-    public void appendTo(StringBuilder buffer);
+    void appendTo(StringBuilder buffer);
 }

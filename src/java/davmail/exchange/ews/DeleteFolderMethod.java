@@ -30,6 +30,6 @@ public class DeleteFolderMethod extends EWSMethod {
     public DeleteFolderMethod(FolderId folderId) {
         super("Folder", "DeleteFolder");
         this.folderId = folderId;
-        this.deleteType = Disposal.HARD_DELETE;
+        this.deleteType = Disposal.HardDelete;
     }
 }

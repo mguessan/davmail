@@ -52,7 +52,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected static final int PAGE_SIZE = 100;
 
-    protected static Set<String> MESSAGE_TYPES = new HashSet<String>();
+    protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
 
     static {
         MESSAGE_TYPES.add("Message");

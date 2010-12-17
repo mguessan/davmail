@@ -26,7 +26,7 @@ import java.io.*;
 /**
  * Input output functions.
  */
-public class IOUtil {
+public final class IOUtil {
     private IOUtil() {
     }
 

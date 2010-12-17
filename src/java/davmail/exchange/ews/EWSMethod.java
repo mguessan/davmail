@@ -40,7 +40,7 @@ import java.util.*;
  * EWS SOAP method.
  */
 public abstract class EWSMethod extends PostMethod {
-    protected static final Logger logger = Logger.getLogger(EWSMethod.class);
+    protected static final Logger LOGGER = Logger.getLogger(EWSMethod.class);
 
     protected FolderQueryTraversal traversal;
     protected BaseShape baseShape;
@@ -930,7 +930,7 @@ public abstract class EWSMethod extends PostMethod {
             try {
                 processResponseStream(getResponseBodyAsStream());
             } catch (IOException e) {
-                logger.error("Error while parsing soap response: " + e, e);
+                LOGGER.error("Error while parsing soap response: " + e, e);
             }
         }
     }
@@ -960,10 +960,10 @@ public abstract class EWSMethod extends PostMethod {
             }
 
         } catch (XMLStreamException e) {
-            logger.error("Error while parsing soap response: " + e, e);
+            LOGGER.error("Error while parsing soap response: " + e, e);
         }
         if (errorDetail != null) {
-            logger.debug(errorDetail);
+            LOGGER.debug(errorDetail);
         }
     }
 

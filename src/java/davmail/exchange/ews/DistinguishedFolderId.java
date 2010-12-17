@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Distinguished Folder Id.
  */
-public class DistinguishedFolderId extends FolderId {
+public final class DistinguishedFolderId extends FolderId {
 
     private DistinguishedFolderId(String value) {
         super("t:DistinguishedFolderId", value, null);

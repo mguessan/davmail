@@ -24,7 +24,7 @@ import davmail.ui.PasswordPromptDialog;
 /**
  * Ask user one time password.
  */
-public class DavGatewayOTPPrompt {
+public final class DavGatewayOTPPrompt {
     private DavGatewayOTPPrompt() {
     }
 

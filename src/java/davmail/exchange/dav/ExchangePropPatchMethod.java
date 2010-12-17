@@ -37,7 +37,7 @@ import java.util.*;
  * Supports extended property update with type.
  */
 public class ExchangePropPatchMethod extends PostMethod {
-    protected static final Logger logger = Logger.getLogger(ExchangePropPatchMethod.class);
+    protected static final Logger LOGGER = Logger.getLogger(ExchangePropPatchMethod.class);
 
     static final String TYPE_NAMESPACE = "urn:schemas-microsoft-com:datatypes";
     final Set<PropertyValue> propertyValues;
@@ -202,9 +202,9 @@ public class ExchangePropPatchMethod extends PostMethod {
                 }
 
             } catch (IOException e) {
-                logger.error("Error while parsing soap response: " + e, e);
+                LOGGER.error("Error while parsing soap response: " + e, e);
             } catch (XMLStreamException e) {
-                logger.error("Error while parsing soap response: " + e, e);
+                LOGGER.error("Error while parsing soap response: " + e, e);
             }
         }
     }

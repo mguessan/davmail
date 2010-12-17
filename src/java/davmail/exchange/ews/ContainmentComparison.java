@@ -22,7 +22,7 @@ package davmail.exchange.ews;
  * Contains comparison mode.
  */
 @SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
-public class ContainmentComparison extends AttributeOption {
+public final class ContainmentComparison extends AttributeOption {
     private ContainmentComparison(String value) {
         super("ContainmentComparison", value);
     }

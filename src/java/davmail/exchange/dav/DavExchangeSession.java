@@ -771,20 +771,20 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    static final Map<Operator, String> operatorMap = new HashMap<Operator, String>();
+    static final Map<Operator, String> OPERATOR_MAP = new HashMap<Operator, String>();
 
     static {
-        operatorMap.put(Operator.IsEqualTo, " = ");
-        operatorMap.put(Operator.IsGreaterThanOrEqualTo, " >= ");
-        operatorMap.put(Operator.IsGreaterThan, " > ");
-        operatorMap.put(Operator.IsLessThanOrEqualTo, " <= ");
-        operatorMap.put(Operator.IsLessThan, " < ");
-        operatorMap.put(Operator.Like, " like ");
-        operatorMap.put(Operator.IsNull, " is null");
-        operatorMap.put(Operator.IsFalse, " = false");
-        operatorMap.put(Operator.IsTrue, " = true");
-        operatorMap.put(Operator.StartsWith, " = ");
-        operatorMap.put(Operator.Contains, " = ");
+        OPERATOR_MAP.put(Operator.IsEqualTo, " = ");
+        OPERATOR_MAP.put(Operator.IsGreaterThanOrEqualTo, " >= ");
+        OPERATOR_MAP.put(Operator.IsGreaterThan, " > ");
+        OPERATOR_MAP.put(Operator.IsLessThanOrEqualTo, " <= ");
+        OPERATOR_MAP.put(Operator.IsLessThan, " < ");
+        OPERATOR_MAP.put(Operator.Like, " like ");
+        OPERATOR_MAP.put(Operator.IsNull, " is null");
+        OPERATOR_MAP.put(Operator.IsFalse, " = false");
+        OPERATOR_MAP.put(Operator.IsTrue, " = true");
+        OPERATOR_MAP.put(Operator.StartsWith, " = ");
+        OPERATOR_MAP.put(Operator.Contains, " = ");
     }
 
     protected static class AttributeCondition extends ExchangeSession.AttributeCondition {
@@ -802,7 +802,7 @@ public class DavExchangeSession extends ExchangeSession {
         public void appendTo(StringBuilder buffer) {
             Field field = Field.get(attributeName);
             buffer.append('"').append(field.getUri()).append('"');
-            buffer.append(operatorMap.get(operator));
+            buffer.append(OPERATOR_MAP.get(operator));
             //noinspection VariableNotUsedInsideIf
             if (field.cast != null) {
                 buffer.append("CAST (\"");
@@ -864,7 +864,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public void appendTo(StringBuilder buffer) {
             buffer.append('"').append(Field.getHeader(attributeName).getUri()).append('"');
-            buffer.append(operatorMap.get(operator));
+            buffer.append(OPERATOR_MAP.get(operator));
             buffer.append('\'');
             if (Operator.Like == operator) {
                 buffer.append('%');
@@ -884,7 +884,7 @@ public class DavExchangeSession extends ExchangeSession {
 
         public void appendTo(StringBuilder buffer) {
             buffer.append('"').append(Field.get(attributeName).getUri()).append('"');
-            buffer.append(operatorMap.get(operator));
+            buffer.append(OPERATOR_MAP.get(operator));
         }
     }
 

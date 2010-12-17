@@ -22,12 +22,12 @@ package davmail.exchange.ews;
  * Disposal.
  */
 @SuppressWarnings({"JavaDoc"})
-public class Disposal extends AttributeOption {
+public final class Disposal extends AttributeOption {
     private Disposal(String value) {
         super("DeleteType", value);
     }
 
-    public static final Disposal HARD_DELETE = new Disposal("HardDelete");
-    public static final Disposal SOFT_DELETE = new Disposal("SoftDelete");
-    public static final Disposal MOVE_TO_DELETED_ITEMS = new Disposal("MoveToDeletedItems");
+    public static final Disposal HardDelete = new Disposal("HardDelete");
+    public static final Disposal SoftDelete = new Disposal("SoftDelete");
+    public static final Disposal MoveToDeletedItems = new Disposal("MoveToDeletedItems");
 }

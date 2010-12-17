@@ -734,14 +734,14 @@ public abstract class ExchangeSession {
          *
          * @param buffer search filter buffer
          */
-        public void appendTo(StringBuilder buffer);
+        void appendTo(StringBuilder buffer);
 
         /**
          * True if condition is empty.
          *
          * @return true if condition is empty
          */
-        public boolean isEmpty();
+        boolean isEmpty();
 
         /**
          * Test if the contact matches current condition.
@@ -749,7 +749,7 @@ public abstract class ExchangeSession {
          * @param contact Exchange Contact
          * @return true if contact matches condition
          */
-        public abstract boolean isMatch(ExchangeSession.Contact contact);
+        boolean isMatch(ExchangeSession.Contact contact);
     }
 
     /**
