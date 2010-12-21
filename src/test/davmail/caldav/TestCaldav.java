@@ -129,6 +129,12 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_OK, method.getStatusCode());
     }
 
+    public void testGetInbox() throws IOException {
+        GetMethod method = new GetMethod("/users/" + session.getEmail() + "/inbox/");
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_OK, method.getStatusCode());
+    }
+
     public void testGetOtherUserCalendar() throws IOException {
         Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         PropFindMethod method = new PropFindMethod("/principals/users/" + Settings.getProperty("davmail.to") + "/calendar/");
@@ -174,6 +180,31 @@ public class TestCaldav extends AbstractDavMailTestCase {
         );
 
         assertEquals(events.size(), responses.length);
+    }
+
+    public void testReportInbox() throws IOException, DavException {
+
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        buffer.append("<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">");
+        buffer.append("<D:prop>");
+        buffer.append("<C:calendar-data/>");
+        buffer.append("</D:prop>");
+        buffer.append("<C:filter>");
+        buffer.append("</C:filter>");
+        buffer.append("</C:calendar-query>");
+        SearchReportMethod method = new SearchReportMethod("/users/" + session.getEmail() + "/inbox/", buffer.toString());
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        MultiStatus multiStatus = method.getResponseBodyAsMultiStatus();
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+        /*List<ExchangeSession.Event> events = session.searchEvents("/users/" + session.getEmail() + "/calendar/",
+                session.or(session.isEqualTo("instancetype", 1),
+                        session.and(session.isEqualTo("instancetype", 0), dateCondition))
+
+        );*/
+
+        //assertEquals(events.size(), responses.length);
     }
 
     public void testReportTasks() throws IOException, DavException {

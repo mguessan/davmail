@@ -35,6 +35,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -1273,6 +1274,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
+                if (!"CalendarItem".equals(type)) {
+                    content = getICS(new SharedByteArrayInputStream(content));
+                }
                 VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
                 // remove additional reminder
                 if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
@@ -1301,6 +1305,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
             } catch (IOException e) {
                 throw buildHttpException(e);
+            } catch (MessagingException e) {
+                 throw buildHttpException(e);
             }
             return content;
         }

@@ -40,6 +40,8 @@ import org.htmlcleaner.TagNode;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.NoRouteToHostException;
@@ -2106,6 +2108,66 @@ public abstract class ExchangeSession {
          * @throws HttpException on error
          */
         public abstract byte[] getEventContent() throws IOException;
+
+        protected static final String TEXT_CALENDAR = "text/calendar";
+        protected static final String APPLICATION_ICS = "application/ics";
+
+        protected boolean isCalendarContentType(String contentType) {
+            return TEXT_CALENDAR.regionMatches(true, 0, contentType, 0, TEXT_CALENDAR.length()) ||
+                    APPLICATION_ICS.regionMatches(true, 0, contentType, 0, APPLICATION_ICS.length());
+        }
+
+        protected MimePart getCalendarMimePart(MimeMultipart multiPart) throws IOException, MessagingException {
+            MimePart bodyPart = null;
+            for (int i = 0; i < multiPart.getCount(); i++) {
+                String contentType = multiPart.getBodyPart(i).getContentType();
+                if (isCalendarContentType(contentType)) {
+                    bodyPart = (MimePart) multiPart.getBodyPart(i);
+                    break;
+                } else if (contentType.startsWith("multipart")) {
+                    Object content = multiPart.getBodyPart(i).getContent();
+                    if (content instanceof MimeMultipart) {
+                        bodyPart = getCalendarMimePart((MimeMultipart) content);
+                    }
+                }
+            }
+
+            return bodyPart;
+        }
+
+        /**
+         * Load ICS content from MIME message input stream
+         *
+         * @param mimeInputStream mime message input stream
+         * @return mime message ics attachment body
+         * @throws IOException        on error
+         * @throws MessagingException on error
+         */
+        protected byte[] getICS(InputStream mimeInputStream) throws IOException, MessagingException {
+            byte[] result;
+            MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+            Object mimeBody = mimeMessage.getContent();
+            MimePart bodyPart = null;
+            if (mimeBody instanceof MimeMultipart) {
+                bodyPart = getCalendarMimePart((MimeMultipart) mimeBody);
+            } else if (isCalendarContentType(mimeMessage.getContentType())) {
+                // no multipart, single body
+                bodyPart = mimeMessage;
+            }
+
+            if (bodyPart != null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bodyPart.getDataHandler().writeTo(baos);
+                baos.close();
+                result = baos.toByteArray();
+            } else {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                mimeMessage.writeTo(baos);
+                baos.close();
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
+            }
+            return result;
+        }
 
         protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
