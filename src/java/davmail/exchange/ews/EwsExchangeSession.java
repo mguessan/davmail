@@ -1191,6 +1191,11 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 updates.add(Field.createFieldUpdate("apptstateflags", "0"));
             }
+            // store mozilla invitations option
+            String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+            if (xMozSendInvitations != null) {
+                updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
+            }
             // handle mozilla alarm
             String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
             if (xMozLastack != null) {
@@ -1270,6 +1275,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
+                    getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
                 }
 
                 executeMethod(getItemMethod);
@@ -1292,21 +1298,27 @@ public class EwsExchangeSession extends ExchangeSession {
                         VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                         attendeeProperty.addParam("CN", attendee.name);
                         attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                        //attendeeProperty.addParam("RSVP", "TRUE");
                         attendeeProperty.addParam("ROLE", attendee.role);
                         localVCalendar.addFirstVeventProperty(attendeeProperty);
                     }
                 }
+                // restore mozilla invitations option
+                localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
+                        getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
                 // restore mozilla alarm status
                 localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
                         getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
                 localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
                         getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
+                // overwrite method
+                // localVCalendar.setPropertyValue("METHOD", "REQUEST");
                 content = localVCalendar.toString().getBytes("UTF-8");
 
             } catch (IOException e) {
                 throw buildHttpException(e);
             } catch (MessagingException e) {
-                 throw buildHttpException(e);
+                throw buildHttpException(e);
             }
             return content;
         }
@@ -1575,7 +1587,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     int end = line.lastIndexOf("\" selected>");
                     int start = line.lastIndexOf('\"', end - 1);
-                    result = line.substring(start+1, end);
+                    result = line.substring(start + 1, end);
                 }
             }
         } catch (IOException e) {

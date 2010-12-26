@@ -200,6 +200,7 @@ public final class Field {
 
         FIELD_MAP.put("xmozlastack", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozlastack"));
         FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
+        FIELD_MAP.put("xmozsendinvitations", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations"));
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
