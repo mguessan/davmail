@@ -47,8 +47,6 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -2228,6 +2226,37 @@ public class DavExchangeSession extends ExchangeSession {
             int code = httpClient.executeMethod(putmethod);
 
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
+                LOGGER.warn("Draft message creation failed, failover to property update. Note: attachments are lost");
+
+                ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                propertyList.add(Field.createDavProperty("to", mimeMessage.getHeader("to", ",")));
+                propertyList.add(Field.createDavProperty("cc", mimeMessage.getHeader("cc", ",")));
+                propertyList.add(Field.createDavProperty("message-id", mimeMessage.getHeader("message-id", ",")));
+
+                String contentType = mimeMessage.getContentType();
+
+                if (contentType.startsWith("text/plain")) {
+                    propertyList.add(Field.createDavProperty("description", (String)mimeMessage.getContent()));
+                } else if (contentType.startsWith("text/html")) {
+                    propertyList.add(Field.createDavProperty("htmldescription", (String)mimeMessage.getContent()));
+                } else {
+                    LOGGER.warn("Unsupported content type: "+contentType+" message body will be empty");
+                }
+
+                propertyList.add(Field.createDavProperty("subject", mimeMessage.getHeader("subject", ",")));
+                PropPatchMethod propPatchMethod = new PropPatchMethod(messageUrl, propertyList);
+                try {
+                    int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+                    if (patchStatus == HttpStatus.SC_MULTI_STATUS) {
+                        code = HttpStatus.SC_OK;
+                    }
+                } finally {
+                    propPatchMethod.releaseConnection();
+                }
+            }
+
+            if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
+
                 // first delete draft message
                 if (!davProperties.isEmpty()) {
                     try {
