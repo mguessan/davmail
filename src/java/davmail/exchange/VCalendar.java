@@ -149,10 +149,13 @@ public class VCalendar extends VObject {
             // get current tzid
             VObject vObject = getVTimezone();
             if (vObject != null) {
-                try {
-                    tzid = ResourceBundle.getBundle("timezones").getString(vObject.getPropertyValue("TZID"));
-                } catch (MissingResourceException e) {
-                    LOGGER.debug("Timezone rename failed, timezone "+vObject.getPropertyValue("TZID")+" not found in table");
+                String currentTzid = vObject.getPropertyValue("TZID");
+                if (currentTzid != null && currentTzid.indexOf(' ') >= 0) {
+                    try {
+                        tzid = ResourceBundle.getBundle("timezones").getString(currentTzid);
+                    } catch (MissingResourceException e) {
+                        LOGGER.debug("Timezone rename failed, timezone " + currentTzid + " not found in table");
+                    }
                 }
             }
         }
