@@ -158,6 +158,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 // userName is email address
                 email = userName;
                 alias = userName.substring(0, userName.indexOf('@'));
+            } else {
+                // userName or domain\username, rebuild email address
+                alias = getAliasFromLogin();
+                String domain = httpClient.getHostConfiguration().getHost();
+                int start = domain.lastIndexOf('.', domain.lastIndexOf('.') - 1);
+                if (start >= 0) {
+                    email = alias + '@' + domain.substring(start + 1);
+                } else {
+                    email = alias + '@' + domain;
+                }
             }
         }
 
