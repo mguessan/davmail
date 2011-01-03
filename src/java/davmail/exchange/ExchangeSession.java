@@ -1154,10 +1154,7 @@ public abstract class ExchangeSession {
         convertResentHeader(mimeMessage, "Bcc");
         convertResentHeader(mimeMessage, "Message-Id");
 
-        // fix From header for Exchange 2007
-        if (!"Exchange2003".equals(serverVersion)) {
-            mimeMessage.removeHeader("From");
-        }
+        mimeMessage.removeHeader("From");
 
         // remove visible recipients from list
         Set<String> visibleRecipients = new HashSet<String>();
