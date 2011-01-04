@@ -152,7 +152,9 @@ public class EwsExchangeSession extends ExchangeSession {
             method.releaseConnection();
             // need to retrieve email and alias
             getEmailAndAliasFromOptions();
-        } else {
+        }
+
+        if (email == null || alias == null) {
             // OWA authentication failed, get email address from login
             if (userName.indexOf('@') >= 0) {
                 // userName is email address
@@ -170,13 +172,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         }
-
-        if (email == null || alias == null) {
-            throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
-        }
+        
         currentMailboxPath = "/users/" + email.toLowerCase();
 
-        // nothing to do, mailPath not used in EWS mode
         // check EWS access
         try {
             checkEndPointUrl("/ews/exchange.asmx");
