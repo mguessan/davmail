@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# davmailpd: Davmail private daemon
+# 
+# copyright Geert Stappers <stappers@stappers.nl> 2010
+# distributed under the terms of the GNU General Public License
+#
+usage() {
+  cat << USAGE
+
+   davmailpd {status|start|stop|restart}
+
+     restart: stops and starts davmail
+     status: tells if davmail is running for the executing user
+     start: starts davmail
+     stop: sends SIGHUP to davmail proces of the executing user
+
+USAGE
+}
+
+#### Example output of commands used in find_process_id()
+## # Executing User
+## $ who am i
+## stappers pts/4        2010-09-06 07:22 (:0.0)
+## # Possible Processes
+## $ ps -ef | grep -e  "^stappers.*gv.*vol.*tor$"
+## stappers 23201  1  0 Sep06 ?  00:00:00 /usr/lib/gvfs-gdu-volume-monitor
+## stappers 23203  1  0 Sep06 ?  00:00:00 /usr/lib/gvfs-gphoto2-volume-monitor
+
+find_process_id() {
+  EU=$( who ami | awk '{ print $1 }' )
+  PP=$(ps -ef | grep -e  "^${EU}.*java.*\.jar.*\.jar.*davmail\.DavGateway" )
+  if [ -z "${PP}" ] ; then
+    echo -n 'None'
+  else
+    echo ${PP} | awk '{ printf(" %s",$2) }'
+  fi
+}
+
+status_cmd() {
+  if [ $(find_process_id) == 'None' ] ; then
+    echo 'NO Davmail running for you'
+  else
+    echo 'OKay, you have running Davmail process(es)'
+  fi
+}
+
+send_signal_hangup() {
+  if [ $(find_process_id) != 'None' ] ; then
+    kill -n SIGHUP $(find_process_id)
+  fi
+}
+
+case "$1" in
+  status)
+    status_cmd
+    exit 0
+  ;;
+  stop)
+    send_signal_hangup
+    exit 0
+  ;;
+  start)
+    shift # remove first parameter ( and leave others untouched )
+    # continue, no exit here
+  ;;
+  restart)
+    shift # remove first parameter ( and leave others untouched )
+    send_signal_hangup
+    # continue, no exit here
+  ;;
+  processes|proc*|debug|d*)
+    EU=$( who ami | awk '{ print $1 }' )
+    ps -ef | grep -e  "^${EU}.*java.*\.jar.*\.jar.*davmail\.DavGateway"
+    find_process_id ; echo
+    exit 0
+  ;;
+  *)
+    usage
+    exit 0
+  ;;
+esac
+# the actual start
+export LD_LIBRARY_PATH=/usr/lib/jni
+for i in /usr/share/davmail/lib/*; do export CLASSPATH=$CLASSPATH:$i; done
+java -Xmx512M -cp /usr/share/davmail/davmail.jar:$CLASSPATH davmail.DavGateway "$@" > /dev/null 2>&1 &
