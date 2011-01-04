@@ -269,6 +269,18 @@ public final class DavGatewayHttpClientFacade {
         return executeFollowRedirects(httpClient, method);
     }
 
+    private static int checkNTLM(HttpClient httpClient, HttpMethod currentMethod) throws IOException {
+        int status = currentMethod.getStatusCode();
+        if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+                && acceptsNTLMOnly(currentMethod) && !hasNTLM(httpClient)) {
+            LOGGER.debug("Received " + status + " unauthorized at " + currentMethod.getURI() + ", retrying with NTLM");
+            resetMethod(currentMethod);
+            addNTLM(httpClient);
+            status = httpClient.executeMethod(currentMethod);
+        }
+        return status;
+    }
+
     /**
      * Execute method with httpClient, follow 30x redirects.
      *
@@ -281,15 +293,9 @@ public final class DavGatewayHttpClientFacade {
         HttpMethod currentMethod = method;
         try {
             DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS", currentMethod.getURI()));
-            int status = httpClient.executeMethod(currentMethod);
-            // check NTLM
-            if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
-                    && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
-                LOGGER.debug("Received " + status + " unauthorized at " + currentMethod.getURI() + ", retrying with NTLM");
-                resetMethod(currentMethod);
-                addNTLM(httpClient);
-                status = httpClient.executeMethod(currentMethod);
-            }
+            httpClient.executeMethod(currentMethod);
+            int status = checkNTLM(httpClient, currentMethod);
+
             Header location = currentMethod.getResponseHeader("Location");
             int redirectCount = 0;
             while (redirectCount++ < 10
@@ -302,13 +308,14 @@ public final class DavGatewayHttpClientFacade {
                 }
                 // workaround for invalid relative location
                 if (locationValue.startsWith("./")) {
-                  locationValue = locationValue.substring(1);
+                    locationValue = locationValue.substring(1);
                 }
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(locationValue);
                 currentMethod.setFollowRedirects(false);
                 DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS_COUNT", currentMethod.getURI(), redirectCount));
                 httpClient.executeMethod(currentMethod);
+                checkNTLM(httpClient, currentMethod);
                 location = currentMethod.getResponseHeader("Location");
             }
             if (location != null && isRedirect(currentMethod.getStatusCode())) {
@@ -640,7 +647,7 @@ public final class DavGatewayHttpClientFacade {
         }
         // 440 means forbidden on Exchange
         if (status == 440) {
-          return new LoginTimeoutException(message.toString());
+            return new LoginTimeoutException(message.toString());
         } else if (status == HttpStatus.SC_FORBIDDEN) {
             return new HttpForbiddenException(message.toString());
         } else if (status == HttpStatus.SC_NOT_FOUND) {
@@ -659,11 +666,11 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void stop() {
         synchronized (LOCK) {
-                if (httpConnectionManagerThread != null) {
-                    httpConnectionManagerThread.interrupt();
-                    httpConnectionManagerThread = null;
-                }
-                MultiThreadedHttpConnectionManager.shutdownAll();
+            if (httpConnectionManagerThread != null) {
+                httpConnectionManagerThread.interrupt();
+                httpConnectionManagerThread = null;
+            }
+            MultiThreadedHttpConnectionManager.shutdownAll();
         }
     }
 
