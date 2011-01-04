@@ -60,7 +60,6 @@ public final class DavGatewayHttpClientFacade {
     static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)";
     static final int MAX_REDIRECTS = 10;
     static final Object LOCK = new Object();
-    private static MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
     private static boolean needNTLM;
 
     static final long ONE_MINUTE = 60000;
@@ -153,9 +152,7 @@ public final class DavGatewayHttpClientFacade {
     public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
         setClientHost(httpClient, url);
 
-        synchronized (LOCK) {
-            httpClient.setHttpConnectionManager(multiThreadedHttpConnectionManager);
-        }
+        httpClient.setHttpConnectionManager(createConnectionManager());
 
         if (!needNTLM) {
             ArrayList<String> authPrefs = new ArrayList<String>();
@@ -662,13 +659,11 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void stop() {
         synchronized (LOCK) {
-            if (multiThreadedHttpConnectionManager != null) {
                 if (httpConnectionManagerThread != null) {
                     httpConnectionManagerThread.interrupt();
+                    httpConnectionManagerThread = null;
                 }
                 MultiThreadedHttpConnectionManager.shutdownAll();
-                multiThreadedHttpConnectionManager = null;
-            }
         }
     }
 
@@ -687,14 +682,12 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void start() {
         synchronized (LOCK) {
-            if (multiThreadedHttpConnectionManager == null) {
+            if (httpConnectionManagerThread == null) {
                 httpConnectionManagerThread = new IdleConnectionTimeoutThread();
                 httpConnectionManagerThread.setName(IdleConnectionTimeoutThread.class.getSimpleName());
                 httpConnectionManagerThread.setConnectionTimeout(ONE_MINUTE);
                 httpConnectionManagerThread.setTimeoutInterval(ONE_MINUTE);
                 httpConnectionManagerThread.start();
-
-                multiThreadedHttpConnectionManager = createConnectionManager();
             }
         }
     }
