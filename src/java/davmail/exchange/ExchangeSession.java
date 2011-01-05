@@ -158,9 +158,12 @@ public abstract class ExchangeSession {
     public ExchangeSession(String url, String userName, String password) throws IOException {
         this.userName = userName;
         try {
-            boolean isBasicAuthentication = isBasicAuthentication(url);
+            httpClient = DavGatewayHttpClientFacade.getInstance(url);
+            // set private connection pool
+            DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
+            boolean isBasicAuthentication = isBasicAuthentication(httpClient, url);
 
-            httpClient = DavGatewayHttpClientFacade.getInstance(url, userName, password);
+            DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
 
             // get webmail root url
             // providing credentials
@@ -280,11 +283,12 @@ public abstract class ExchangeSession {
      * Test authentication mode : form based or basic.
      *
      * @param url exchange base URL
+     * @param httpClient httpClient instance
      * @return true if basic authentication detected
      * @throws IOException unable to connect to exchange
      */
-    protected boolean isBasicAuthentication(String url) throws IOException {
-        return DavGatewayHttpClientFacade.getHttpStatus(url) == HttpStatus.SC_UNAUTHORIZED;
+    protected boolean isBasicAuthentication(HttpClient httpClient, String url) throws IOException {
+        return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
     protected String getAbsoluteUri(HttpMethod method, String path) throws URIException {

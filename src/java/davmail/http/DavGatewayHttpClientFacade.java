@@ -108,21 +108,16 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
-     * Build an HttpClient instance for the provided url and credentials.
+     * Set credentials on HttpClient instance.
      *
-     * @param url      http(s) url
+     * @param httpClient httpClient instance
      * @param userName user name
      * @param password user password
-     * @return HttpClient instance
-     * @throws DavMailException on error
      */
-    public static HttpClient getInstance(String url, String userName, String password) throws DavMailException {
-        HttpClient httpClient = getBaseInstance();
-        configureClient(httpClient, url);
+    public static void setCredentials(HttpClient httpClient, String userName, String password) {
         // some Exchange servers redirect to a different host for freebusy, use wide auth scope
         AuthScope authScope = new AuthScope(null, -1);
         httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "", ""));
-        return httpClient;
     }
 
     /**
@@ -151,8 +146,6 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
         setClientHost(httpClient, url);
-
-        httpClient.setHttpConnectionManager(createConnectionManager());
 
         if (!needNTLM) {
             ArrayList<String> authPrefs = new ArrayList<String>();
@@ -222,13 +215,13 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Get Http Status code for the given URL
      *
+     * @param httpClient httpClient instance
      * @param url url string
      * @return HttpStatus code
      * @throws IOException on error
      */
-    public static int getHttpStatus(String url) throws IOException {
+    public static int getHttpStatus(HttpClient httpClient, String url) throws IOException {
         int status = 0;
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
         HttpMethod testMethod = new GetMethod(url);
         testMethod.setDoAuthentication(false);
         try {
@@ -497,8 +490,7 @@ public final class DavGatewayHttpClientFacade {
     public static void addNTLM(HttpClient httpClient) {
         // disable preemptive authentication
         httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, false);
-        // NTLM authentication uses persistent connections, use private connection manager
-        httpClient.setHttpConnectionManager(createConnectionManager());
+
         // register the jcifs based NTLMv2 implementation
         AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
 
@@ -674,14 +666,19 @@ public final class DavGatewayHttpClientFacade {
         }
     }
 
-    private static MultiThreadedHttpConnectionManager createConnectionManager() {
+    /**
+     * Create and set connection pool.
+     *
+     * @param httpClient httpClient instance
+     */
+    public static void createMultiThreadedHttpConnectionManager(HttpClient httpClient) {
         MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
         connectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
         connectionManager.getParams().setConnectionTimeout(10000);
         synchronized (LOCK) {
             httpConnectionManagerThread.addConnectionManager(connectionManager);
         }
-        return connectionManager;
+        httpClient.setHttpConnectionManager(connectionManager);
     }
 
     /**
