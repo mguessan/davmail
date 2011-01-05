@@ -127,7 +127,7 @@ public abstract class ExchangeSession {
     protected String currentMailboxPath;
     protected final HttpClient httpClient;
 
-    protected final String userName;
+    protected String userName;
 
     protected String serverVersion;
 
@@ -282,7 +282,7 @@ public abstract class ExchangeSession {
     /**
      * Test authentication mode : form based or basic.
      *
-     * @param url exchange base URL
+     * @param url        exchange base URL
      * @param httpClient httpClient instance
      * @return true if basic authentication detected
      * @throws IOException unable to connect to exchange
@@ -443,19 +443,28 @@ public abstract class ExchangeSession {
 
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
         String userNameInput;
-        if (userNameInputs.isEmpty()) {
-            // should not happen
+        if (userNameInputs.size() == 2) {
+            // multiple username fields, split userid|username on |
+            int pipeIndex = userName.indexOf('|');
+            if (pipeIndex < 0) {
+                LOGGER.warn("Multiple user fields detected, please use userid|username as user name in client");
+            } else {
+                String userid = userName.substring(0, pipeIndex);
+                ((PostMethod) logonMethod).removeParameter("userid");
+                ((PostMethod) logonMethod).addParameter("userid", userid);
+                userName = userName.substring(pipeIndex + 1);
+                // adjust credentials
+                this.userName = userName;
+                DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
+            }
+
             userNameInput = "username";
         } else if (userNameInputs.size() == 1) {
             // simple username field
             userNameInput = userNameInputs.get(0);
         } else {
-            // multiple username fields, set domain\\username in username and email address in userid
+            // should not happen
             userNameInput = "username";
-            String userid = getAliasFromLogin() + getEmailSuffixFromHostname();
-            ((PostMethod) logonMethod).removeParameter("userid");
-            ((PostMethod) logonMethod).addParameter("userid", userid);
-
         }
         // make sure username and password fields are empty
         ((PostMethod) logonMethod).removeParameter(userNameInput);
