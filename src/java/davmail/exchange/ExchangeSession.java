@@ -138,9 +138,9 @@ public abstract class ExchangeSession {
     private static final String YYYY_MM_DD_T_HHMMSS_SSS_Z = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     /**
-     * Logon form user name field, default is username.
+     * Logon form user name fields.
      */
-    private String userNameInput = "username";
+    private final List<String> userNameInputs = new ArrayList<String>();
     /**
      * Logon form password field, default is password.
      */
@@ -382,7 +382,7 @@ public abstract class ExchangeSession {
                     }
                     // custom login form
                     if (USER_NAME_FIELDS.contains(name)) {
-                        userNameInput = name;
+                        userNameInputs.add(name);
                     } else if (PASSWORD_FIELDS.contains(name)) {
                         passwordInput = name;
                     } else if ("addr".equals(name)) {
@@ -438,6 +438,21 @@ public abstract class ExchangeSession {
     }
 
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
+        String userNameInput;
+        if (userNameInputs.isEmpty()) {
+            // should not happen
+            userNameInput = "username";
+        } else if (userNameInputs.size() == 1) {
+            // simple username field
+            userNameInput = userNameInputs.get(0);
+        } else {
+            // multiple username fields, set domain\\username in username and email address in userid
+            userNameInput = "username";
+            String userid = getAliasFromLogin() + getEmailSuffixFromHostname();
+            ((PostMethod) logonMethod).removeParameter("userid");
+            ((PostMethod) logonMethod).addParameter("userid", userid);
+
+        }
         // make sure username and password fields are empty
         ((PostMethod) logonMethod).removeParameter(userNameInput);
         ((PostMethod) logonMethod).removeParameter(passwordInput);
@@ -476,7 +491,7 @@ public abstract class ExchangeSession {
         }
 
         // check for language selection form
-        if ("/owa/languageselection.aspx".equals(logonMethod.getPath())) {
+        if (logonMethod != null && "/owa/languageselection.aspx".equals(logonMethod.getPath())) {
             // need to submit form
             logonMethod = submitLanguageSelectionForm(logonMethod);
         }
@@ -528,7 +543,7 @@ public abstract class ExchangeSession {
                 String name = ((TagNode) select).getAttributeByName("name");
                 List optionList = ((TagNode) select).getElementListByName("option", true);
                 String value = null;
-                for (Object option:optionList) {
+                for (Object option : optionList) {
                     if (((TagNode) option).getAttributeByName("selected") != null) {
                         value = ((TagNode) option).getAttributeByName("value");
                         break;
@@ -999,6 +1014,7 @@ public abstract class ExchangeSession {
      * @param value         attribute value
      * @return condition
      */
+    @SuppressWarnings({"UnusedDeclaration"})
     public abstract Condition lte(String attributeName, String value);
 
     /**
@@ -2289,7 +2305,7 @@ public abstract class ExchangeSession {
                     // notify only organizer
                     String to = recipients.organizer;
                     String cc = null;
-                    String notificationSubject = (status != null)?(BundleMessage.format(status) + vEventSubject):subject;
+                    String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
                     description = "";
                     // Allow end user notification edit
                     if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
@@ -2862,6 +2878,16 @@ public abstract class ExchangeSession {
             result = result.substring(index + 1);
         }
         return result;
+    }
+
+    protected String getEmailSuffixFromHostname() {
+        String domain = httpClient.getHostConfiguration().getHost();
+        int start = domain.lastIndexOf('.', domain.lastIndexOf('.') - 1);
+        if (start >= 0) {
+            return '@' + domain.substring(start + 1);
+        } else {
+            return '@' + domain;
+        }
     }
 
     /**
