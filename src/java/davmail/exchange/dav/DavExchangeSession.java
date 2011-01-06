@@ -510,7 +510,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
-        LOGGER.debug("Current user email is " + email + ", alias is " + alias + ", mailPath is " + mailPath);
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + ", mailPath is " + mailPath + " on "+ serverVersion);
         rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
     }
 

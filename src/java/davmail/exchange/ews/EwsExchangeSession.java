@@ -205,7 +205,7 @@ public class EwsExchangeSession extends ExchangeSession {
             LOGGER.error(e.getMessage(), e);
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
-
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on "+ serverVersion);
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
