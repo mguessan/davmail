@@ -147,7 +147,11 @@ public class VProperty {
                     state = State.VALUE;
                 }
             }
-            addValue(line.substring(startIndex));
+            if (state == State.VALUE) {
+                addValue(line.substring(startIndex));
+            } else {
+                throw new IllegalArgumentException("Invalid property line: "+line);
+            }
         }
     }
 

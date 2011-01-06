@@ -150,11 +150,17 @@ public class VCalendar extends VObject {
             VObject vObject = getVTimezone();
             if (vObject != null) {
                 String currentTzid = vObject.getPropertyValue("TZID");
+                // fix TZID with \n (Exchange 2010 bug)
+                if (currentTzid != null && currentTzid.endsWith("\n")) {
+                    currentTzid = currentTzid.substring(0, currentTzid.length() - 1);
+                    vObject.setPropertyValue("TZID", currentTzid);
+                }
                 if (currentTzid != null && currentTzid.indexOf(' ') >= 0) {
                     try {
                         tzid = ResourceBundle.getBundle("timezones").getString(currentTzid);
+                        vObject.setPropertyValue("TZID", tzid);
                     } catch (MissingResourceException e) {
-                        LOGGER.debug("Timezone rename failed, timezone " + currentTzid + " not found in table");
+                        LOGGER.debug("Timezone " + currentTzid + " not found in rename table");
                     }
                 }
             }

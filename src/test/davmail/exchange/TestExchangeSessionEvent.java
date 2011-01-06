@@ -308,4 +308,81 @@ public class TestExchangeSessionEvent extends TestCase {
         System.out.println(toServer);
     }
 
+    public void testFloatingTimezone() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:Microsoft CDO for Microsoft Exchange\n" +
+                "VERSION:2.0\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Pacific Time (US & Canada)\\; Tijuana\n" +
+                "BEGIN:STANDARD\n" +
+                "DTSTART:16010101T030000\n" +
+                "TZOFFSETFROM:-0700\n" +
+                "TZOFFSETTO:-0800\n" +
+                "RRULE:FREQ=YEARLY;WKST=MO;INTERVAL=1;BYMONTH=11;BYDAY=1SU\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "DTSTART:16010101T010000\n" +
+                "TZOFFSETFROM:-0800\n" +
+                "TZOFFSETTO:-0700\n" +
+                "RRULE:FREQ=YEARLY;WKST=MO;INTERVAL=1;BYMONTH=3;BYDAY=2SU\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE" +
+                "BEGIN:VEVENT\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toServer = fixICS(itemBody, true);
+        System.out.println(toServer);
+    }
+
+    public void testAnotherBroken() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\n" +
+                "METHOD:PUBLISH\n" +
+                "PRODID:Microsoft Exchange Server 2010\n" +
+                "VERSION:2.0\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:GMT -0800 (Standard) / GMT -0700 (Daylight)\\n\n" +
+                "BEGIN:STANDARD\n" +
+                "DTSTART:16010101T020000\n" +
+                "TZOFFSETFROM:-0700\n" +
+                "TZOFFSETTO:-0800\n" +
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=11\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "DTSTART:16010101T020000\n" +
+                "TZOFFSETFROM:-0800\n" +
+                "TZOFFSETTO:-0700\n" +
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=2SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "ORGANIZER;CN=John Doe:MAILTO:aTargetAddress@dummy.com\n" +
+                "DESCRIPTION;LANGUAGE=en-US:Look over broken timezone.\\n\n" +
+                "SUMMARY;LANGUAGE=en-US:meeting\n" +
+                "DTSTART;TZID=GMT -0800 (Standard) / GMT -0700 (Daylight)\n" +
+                ":20060210T130000\n" +
+                "DTEND;TZID=GMT -0800 (Standard) / GMT -0700 (Daylight)\n" +
+                ":20060210T143000\n" +
+                "UID:040000008200E00074C5B7101A82E00800000000D01FF309972CC601000000000000000\n" +
+                " 010000000B389A3C5092D7640A06D2EF5A2125577\n" +
+                "CLASS:PUBLIC\n" +
+                "PRIORITY:5\n" +
+                "DTSTAMP:20060208T180425Z\n" +
+                "TRANSP:OPAQUE\n" +
+                "STATUS:CONFIRMED\n" +
+                "SEQUENCE:0\n" +
+                "LOCATION;LANGUAGE=en-US:not sure\n" +
+                "X-MICROSOFT-CDO-APPT-SEQUENCE:0\n" +
+                "X-MICROSOFT-CDO-OWNERAPPTID:1602758614\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
+                "X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY\n" +
+                "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
+                "X-MICROSOFT-CDO-IMPORTANCE:1\n" +
+                "X-MICROSOFT-CDO-INSTTYPE:0\n" +
+                "X-MICROSOFT-DISALLOW-COUNTER:FALSE\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toClient = fixICS(icsBody, true);
+        System.out.println(toClient);
+
+    }
 }

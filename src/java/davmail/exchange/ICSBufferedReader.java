@@ -51,8 +51,16 @@ public class ICSBufferedReader extends BufferedReader {
             currentLine.setLength(0);
             currentLine.append(nextLine);
             nextLine = super.readLine();
-            while (nextLine != null && !(nextLine.length() == 0) && nextLine.charAt(0) == ' ') {
-                currentLine.append(nextLine.substring(1));
+            while (nextLine != null && !(nextLine.length() == 0) &&
+                    (nextLine.charAt(0) == ' '
+                            // workaround for Exchange 2010 bug
+                            || nextLine.charAt(0) == ':')) {
+                // Timezone ends with \n => next line starts with :
+                if (nextLine.charAt(0) == ':') {
+                    currentLine.append(nextLine);
+                } else {
+                    currentLine.append(nextLine.substring(1));
+                }
                 nextLine = super.readLine();
             }
             return currentLine.toString();
