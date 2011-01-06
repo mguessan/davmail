@@ -1406,7 +1406,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public Item getItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item == null) {
-            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+            throw new HttpNotFoundException(itemName + " not found in "+folderPath);
         }
 
         String itemType = item.type;
@@ -1420,7 +1420,7 @@ public class EwsExchangeSession extends ExchangeSession {
             executeMethod(getItemMethod);
             item = getItemMethod.getResponseItem();
             if (item == null) {
-                throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+                throw new HttpNotFoundException(itemName + " not found in "+folderPath);
             }
             return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
@@ -1429,7 +1429,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "Message".equals(itemType)) {
             return new Event(item);
         } else {
-            throw new DavMailException("EXCEPTION_ITEM_NOT_FOUND");
+            throw new HttpNotFoundException(itemName + " not found in "+folderPath);
         }
 
     }
