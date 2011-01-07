@@ -18,7 +18,7 @@
             <div style="width: 100%;text-align: center">
                 <img src="images/davmailSettings.png" alt=""/>
             </div>
-            <p>The following table describes the main and advanced options :</p>
+            <p>The following table describes the main options :</p>
             <table>
                 <tr>
                     <th>Parameter</th>
@@ -58,154 +58,10 @@
                     <td>Local LDAP server port to configure in directory (address book) client</td>
                     <td>389</td>
                 </tr>
-                <tr>
-                    <td>Keep Delay (POP)</td>
-                    <td>Number of days to keep messages in Exchange trash folder before actual deletion,
-                        only for POP service
-                    </td>
-                    <td>30</td>
-                </tr>
-                <tr>
-                    <td>Sent Keep Delay (POP)</td>
-                    <td>Number of days to keep sent messages in Exchange sent folder,
-                        only for POP service</td>
-                    <td>90</td>
-                </tr>
-                <tr>
-                    <td>Calendar past events (Caldav)</td>
-                    <td>Get events in the past not older than specified days count, leave empty for no limits</td>
-                    <td>90</td>
-                </tr>
-                <tr>
-                    <td>IDLE folder monitor delay (IMAP):</td>
-                    <td>IMAP folder idle monitor delay in minutes, leave empty to disable IDLE support</td>
-                    <td>1</td>
-                </tr>
-                <tr>
-                    <td>Allow remote connections</td>
-                    <td>Allow remote connections to the gateway (server mode)</td>
-                    <td>false</td>
-                </tr>
-                <tr>
-                    <td>Edit Caldav notifications</td>
-                    <td>Enable interactive Caldav edit notification window</td>
-                    <td>false</td>
-                </tr>
-                <tr>
-                    <td>Force Active Sync update</td>
-                    <td>Use double event update to trigger ActiveSync mobile phones sync</td>
-                    <td>false</td>
-                </tr>
-                <tr>
-                    <td>IMAP auto expunge</td>
-                    <td>Delete messages immediately on the server over IMAP</td>
-                    <td>true</td>
-                </tr>
-                <tr>
-                    <td>Enable EWS</td>
-                    <td>Enable EWS mode on Exchange 2010 or Exchange 2007 with Webdav disabled</td>
-                    <td>false</td>
-                </tr>
-                <tr>
-                    <td>Display startup banner</td>
-                    <td>Whether to show the initial startup notification window or not</td>
-                    <td>true</td>
-                </tr>
-                <tr>
-                    <td>Caldav alarm sound</td>
-                    <td>Convert Caldav alarm to sound alarm supported by iCal, e.g. Basso. Leave empty for no
-                        conversion
-                    </td>
-                    <td>Basso</td>
-                </tr>
-                <tr>
-                    <td>Default domain</td>
-                    <td>Default windows domain name</td>
-                    <td>DOMAIN</td>
-                </tr>
-                <tr>
-                    <td>Key store type</td>
-                    <td>To encrypt communication between client and DavMail, create a server certificate,
-                        choose key store type and set key store path
-                    </td>
-                    <td>JKS</td>
-                </tr>
-                <tr>
-                    <td>Key store</td>
-                    <td>SSL certificate key store file path</td>
-                    <td>path/to/keystore</td>
-                </tr>
-                <tr>
-                    <td>Key store password</td>
-                    <td>Key store password</td>
-                    <td>password</td>
-                </tr>
-                <tr>
-                    <td>Key password</td>
-                    <td>SSL key password inside key store</td>
-                    <td>password</td>
-                </tr>
-                <tr>
-                    <td>Client key store type</td>
-                    <td>When the Exchange server requires mutual authentication,
-                        choose client certificate key store type, PKCS11 for smartcard,
-                        PKCS12 or JKS for certificate file
-                    </td>
-                    <td>PKCS11</td>
-                </tr>
-                <tr>
-                    <td>Client key store</td>
-                    <td>SSL client certificate key store file path</td>
-                    <td>path/to/keystore</td>
-                </tr>
-                <tr>
-                    <td>Client key store password</td>
-                    <td>Client key store password, leave empty for runtime prompt</td>
-                    <td>password</td>
-                </tr>
-                <tr>
-                    <td>PKCS11 library</td>
-                    <td>PKCS11 (smartcard) library path (.so or .dll)</td>
-                    <td>softokn3.dll</td>
-                </tr>
-                <tr>
-                    <td>PKCS11 config</td>
-                    <td>Optional additional PKCS11 settings (slot, nssArgs, ...)</td>
-                    <td>slot=2</td>
-                </tr>
-                <tr>
-                    <td>Bind Address</td>
-                    <td>Bind only to the specified network address</td>
-                    <td>10.0.1.2</td>
-                </tr>
-                <tr>
-                    <td>Server certificate hash</td>
-                    <td>Manually accepted server certificate hash, contains the SHA1 hash of
-                        a manually accepted certificate (invalid or self signed)
-                    </td>
-                    <td>9F:CC:59:82:1F:C:CD:29:7C:70:F0:D8:37:B1:77:3F:48:84:AE:C4</td>
-                </tr>
-                <tr>
-                    <td>Disable update check</td>
-                    <td>Disable DavMail check for new version</td>
-                    <td>false</td>
-                </tr>
-                <tr>
-                    <td>Logging levels</td>
-                    <td>Default, DavMail and HttpClient logging levels, see Log4J documentation for more details
-                    </td>
-                    <td>WARN</td>
-                </tr>
-                <tr>
-                    <td>Log file Path</td>
-                    <td>DavMail log file path (default is davmail.log in working directory on Unix and Windows,
-                        ~/Library/Logs/DavMail/davmail.log on OSX)
-                    </td>
-                    <td>davmail.log</td>
-                </tr>
             </table>
             <p>Uncheck a port to disable matching service.</p>
             <p>Activate panel under Proxy tab to set an HTTP proxy and associated credentials if needed</p>
+            <p>If you need to adjust other advanced settings, check <a href="advanced.html">Advanced settings</a></p>
             <p>Proceed to
                 <a href="thunderbirdmailsetup.html">Thunderbird mail setup</a>
                 or

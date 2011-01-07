@@ -12,7 +12,7 @@
 
         <section name="iPhone Mail setup">
             <p>Note: you can't install DavMail directly on an iPhone, you need a separate DavMail server,
-                see<a href="iphonesetup.html">iPhone setup</a>.
+                see&#x20;<a href="iphonesetup.html">iPhone setup</a>.
             </p>
 
             <subsection name="Create a new account">

@@ -12,7 +12,7 @@
 
         <section name="iPhone Caldav setup">
             <p>Note: you can't install DavMail directly on an iPhone, you need a separate DavMail server,
-                see<a href="iphonesetup.html">iPhone setup</a>.
+                see&#x20;<a href="iphonesetup.html">iPhone setup</a>.
             </p>
 
             <subsection name="Create a new account">
@@ -55,7 +55,7 @@
                 </div>
 
                 <p>Enable SSL and check port, make sure Account URL is
-                    <em>https://davmailhost:1080/principals/users/username@ompany.com</em>:
+                    <em>https://davmailhost:1080/principals/users/username@company.com</em>:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/iphone/iphoneCaldav4.png" alt=""/>
