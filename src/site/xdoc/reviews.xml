@@ -14,13 +14,23 @@
             <p>In this page you find some independent reviews of DavMail and additional documentation on DavMail setup.
             </p>
 
-                <ul>
-                    <li>
-                        <a href="http://olex.openlogic.com/wazi/2009/escaping-microsoft-exchange-via-davmail-fetchmail-postfix-courier-imap/">
-                            Escaping Microsoft Exchange via Davmail + Fetchmail + Postfix + Courier IMAP
-                        </a>
-                    </li>
-                </ul>
+            <ul>
+                <li>
+                    <a href="http://olex.openlogic.com/wazi/2009/escaping-microsoft-exchange-via-davmail-fetchmail-postfix-courier-imap/">
+                        Escaping Microsoft Exchange via Davmail + Fetchmail + Postfix + Courier IMAP
+                    </a>
+                </li>
+                <li>
+                    <a href="http://www.intrasection.com/pjmorr/2010/01/21/snow-leopard-and-exchange-2003/">
+                        Getting mac mail, ical and address book to talk to Exchange 2003
+                    </a>
+                </li>
+                <li>
+                    <a href="http://www.oucs.ox.ac.uk/nexus/calendar/iCal/davmail.xml">
+                        Nexus Calendaring using Davmail and iCal
+                    </a>
+                </li>
+            </ul>
         </section>
     </body>
 </document>
