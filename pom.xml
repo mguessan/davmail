@@ -279,7 +279,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>2.3-SNAPSHOT</version>
+                <version>2.2</version>
             </plugin>
         </plugins>
     </build>
