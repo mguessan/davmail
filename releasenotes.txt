@@ -1,3 +1,72 @@
+** DavMail 3.8.8 released **
+Yet another bugfix release with many EWS support enhancements and fixes,
+many documentation improvements (still need to update Thunderbird/OSX instructions
+to latest versions though).
+
+Documentation:
+- Doc: change Maven site plugin version
+- Doc: additional external links
+- Doc: Add anew reviews page
+- Doc: Update POM and release guide
+- Doc: move advanced settings to a separate page to keep getting started page simple
+- Doc: add SWT bug reference to FAQ, on Ubuntu, notify text conflicts with default theme
+- Doc: full iPhone setup instructions
+- Doc: update war deployment description
+- Doc: Additional smartcard PKCS11 setup instructions with NSS and Coolkey examples
+
+Caldav:
+- Caldav: Additional timezone mappings
+- Caldav: workaround for Exchange 2010 bug, \n in timezone name generates invalid ICS content
+- Caldav: improve timezone rename error message
+- Caldav: fix floating timezone in iCal: rename TZID for maximum iCal/iPhone compatibility
+- Do not send Exchange 2003 appointment creation request to Exchange 2007
+
+EWS:
+- EWS: return HttpNotFoundException on event not found to trigger Lightning workaround
+- EWS: fix instancetype field definition: Integer instead of String (fix Caldav filter over EWS)
+- EWS: improved email/alias failover fix
+- EWS: fix regression in comment
+- EWS: additional failover mail build on logon form failure
+- EWS: store X-MOZ-SEND-INVITATIONS property to fix no notification issue with Lightning
+- EWS: fix Caldav inbox handling over EWS
+- EWS: improve timezone handling
+- EWS: Update Field list
+- EWS: fix 3098008, implement result paging to handle message folders with more than 1000 messages 
+- EWS: exclude non message types from searchMessages
+- EWS: fix email mapping on LDAP response
+- EWS: add BusinessCountryOrRegion contact field
+
+Enhancements
+- Additional session create log statement
+- New multiple user fields implementation: expect userid|username as login value
+- Improve connection pool handling: do not pool simple checkConfig and getVersion connections.
+- Implement OTP form with multiple username fields (username and userid)
+- Contribution from Geert Stappers: start/stop script
+- Improve NTLM authentication detection
+- Always use private connection manager to avoid session conflict
+- Fixes from audit
+- Update javamail to 1.4.3
+- Adjust Mime decoder settings (fix)
+- Adjust Mime decoder settings
+- Workaround for space in cookie name
+- Use a_sLgnQS instead of a_sLgn first to support new OWA 8.3.83.4
+- Additional NTLM flags to match Firefox flags
+- Add UTF-7 support with jcharset
+- Failover for misconfigured Exchange server, replace host name in url
+
+SMTP:
+- SMTP: fix 3132569, always remove From header to avoid 403 error on send
+- SMTP: workaround for misconfigured Exchange servers: failover on Draft message creation through properties. Warning: attachments are lost
+
+IMAP:
+- IMAP: Fix 3137275 Imap header fetch bug
+
+WebDav:
+- Dav: make sure Destination contains full url and not only path, may fix SMTP send and IMAP copyMessage on Exchange 2003
+
+Carddav
+- Carddav: Update contact test
+
 ** DavMail 3.8.7 released **
 Bugfix and performance release with new Woodstox parser to reduce memory
 footprint in EWS mode, more Caldav broken events fixes and IMAP regression
