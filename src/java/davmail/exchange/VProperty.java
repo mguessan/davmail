@@ -150,7 +150,7 @@ public class VProperty {
             if (state == State.VALUE) {
                 addValue(line.substring(startIndex));
             } else {
-                throw new IllegalArgumentException("Invalid property line: "+line);
+                throw new IllegalArgumentException("Invalid property line: " + line);
             }
         }
     }
@@ -360,9 +360,7 @@ public class VProperty {
                 buffer.append(';').append(param.name);
                 if (param.values != null) {
                     buffer.append('=');
-                    for (String value : param.values) {
-                        appendParamValue(buffer, value);
-                    }
+                    appendParamValues(buffer, param);
                 }
             }
         }
@@ -381,13 +379,24 @@ public class VProperty {
         return buffer.toString();
     }
 
-    protected void appendParamValue(StringBuilder buffer, String value) {
-        if (value.indexOf(';') >= 0 || value.indexOf(',') >= 0
-                || value.indexOf('(') >= 0 || value.indexOf('/') >= 0
-                || value.indexOf(':') >= 0) {
-            buffer.append('"').append(value).append('"');
-        } else {
-            buffer.append(value);
+    protected void appendParamValues(StringBuilder buffer, Param param) {
+        boolean first = true;
+        for (String value : param.values) {
+            if (first) {
+                first = false;
+            } else {
+                buffer.append(',');
+            }
+            // always quote CN param
+            if ("CN".equalsIgnoreCase(param.name)
+                    // quote param values with special characters
+                    || value.indexOf(';') >= 0 || value.indexOf(',') >= 0
+                    || value.indexOf('(') >= 0 || value.indexOf('/') >= 0
+                    || value.indexOf(':') >= 0) {
+                buffer.append('"').append(value).append('"');
+            } else {
+                buffer.append(value);
+            }
         }
     }
 
