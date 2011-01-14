@@ -117,7 +117,7 @@ public final class DavGatewayHttpClientFacade {
     public static void setCredentials(HttpClient httpClient, String userName, String password) {
         // some Exchange servers redirect to a different host for freebusy, use wide auth scope
         AuthScope authScope = new AuthScope(null, -1);
-        httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "", ""));
+        httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", ""));
     }
 
     /**
@@ -200,11 +200,11 @@ public final class DavGatewayHttpClientFacade {
                 if (backslashindex > 0) {
                     httpClient.getState().setProxyCredentials(authScope,
                             new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                    proxyPassword, "",
+                                    proxyPassword, "UNKNOWN",
                                     proxyUser.substring(0, backslashindex)));
                 } else {
                     httpClient.getState().setProxyCredentials(authScope,
-                            new NTCredentials(proxyUser, proxyPassword, "", ""));
+                            new NTCredentials(proxyUser, proxyPassword, "UNKNOWN", ""));
                 }
             }
         }
@@ -508,7 +508,7 @@ public final class DavGatewayHttpClientFacade {
         if (backSlashIndex >= 0) {
             String domain = userName.substring(0, backSlashIndex);
             userName = userName.substring(backSlashIndex + 1);
-            credentials = new NTCredentials(userName, credentials.getPassword(), "", domain);
+            credentials = new NTCredentials(userName, credentials.getPassword(), "UNKNOWN", domain);
             httpClient.getState().setCredentials(authScope, credentials);
         }
 
