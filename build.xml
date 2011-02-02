@@ -135,7 +135,7 @@
                 comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
                 exec="davmail"
                 icon="/usr/share/davmail/davmail.png"
-                categories="Network"
+                categories="Network;"
                 />
         <deb todir="dist"
              package="davmail"
