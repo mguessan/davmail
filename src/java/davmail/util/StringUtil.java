@@ -132,6 +132,8 @@ public final class StringUtil {
     private static final Pattern LT_PATTERN = Pattern.compile("<");
     private static final Pattern GT_PATTERN = Pattern.compile(">");
 
+    private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
+
     private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
@@ -193,6 +195,9 @@ public final class StringUtil {
             }
             if (name.indexOf('>') >= 0) {
                 result = GT_PATTERN.matcher(result).replaceAll("&gt;");
+            }
+            if (name.indexOf('"') >= 0) {
+                result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
             }
         }
         return result;
@@ -272,6 +277,9 @@ public final class StringUtil {
         }
         if (result.indexOf('>') >= 0) {
             result = GT_PATTERN.matcher(result).replaceAll("%3E");
+        }
+        if (result.indexOf('"') >= 0) {
+            result = QUOTE_PATTERN.matcher(result).replaceAll("%22");
         }
         return result;
     }
