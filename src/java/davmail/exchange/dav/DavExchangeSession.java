@@ -1858,8 +1858,10 @@ public class DavExchangeSession extends ExchangeSession {
             condition.appendTo(searchRequest);
         }
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
-        return DavGatewayHttpClientFacade.executeSearchMethod(
+        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString(), maxCount);
+        DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_RESULT", responses.length));
+        return responses;
     }
 
     protected static final Set<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
@@ -2387,7 +2389,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     // wrong hostname fix flag
-    protected boolean restoreHostName = false;
+    protected boolean restoreHostName;
 
     /**
      * @inheritDoc
