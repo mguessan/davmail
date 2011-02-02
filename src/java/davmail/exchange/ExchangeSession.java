@@ -1736,7 +1736,9 @@ public abstract class ExchangeSession {
                 messageList.cachedMimeBody = mimeBody;
                 messageList.cachedMimeMessage = mimeMessage;
             }
+            // drop curent message body to save memory
             mimeMessage = null;
+            mimeBody = null;
         }
 
         /**

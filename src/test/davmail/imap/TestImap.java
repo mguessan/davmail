@@ -18,71 +18,20 @@
  */
 package davmail.imap;
 
-import davmail.AbstractDavMailTestCase;
-import davmail.DavGateway;
 import davmail.Settings;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
-import java.io.*;
-import java.net.Socket;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Random;
 
 /**
  * IMAP tests, an instance of DavMail Gateway must be available
  */
 @SuppressWarnings({"JavaDoc", "UseOfSystemOutOrSystemErr"})
-public class TestImap extends AbstractDavMailTestCase {
-    static Socket clientSocket;
-    static BufferedWriter socketWriter;
-    static BufferedReader socketReader;
-
-    static String messageUid;
-
-    protected void write(String line) throws IOException {
-        socketWriter.write(line);
-        socketWriter.flush();
-    }
-
-    protected void writeLine(String line) throws IOException {
-        socketWriter.write(line);
-        socketWriter.newLine();
-        socketWriter.flush();
-    }
-
-    protected String readLine() throws IOException {
-        return socketReader.readLine();
-    }
-
-    protected String readFullAnswer(String prefix) throws IOException {
-        String line = socketReader.readLine();
-        while (!line.startsWith(prefix)) {
-            line = socketReader.readLine();
-        }
-        return line;
-    }
-
-    @Override
-    public void setUp() throws IOException {
-        boolean needStart = !loaded;
-        super.setUp();
-        if (needStart) {
-            // start gateway
-            DavGateway.start();
-        }
-        if (clientSocket == null) {
-            clientSocket = new Socket("localhost", Settings.getIntProperty("davmail.imapPort"));
-            socketWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-            socketReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-            String banner = socketReader.readLine();
-            assertNotNull(banner);
-
-            writeLine(". LOGIN " + Settings.getProperty("davmail.username").replaceAll("\\\\", "\\\\\\\\") + ' ' + Settings.getProperty("davmail.password"));
-            assertEquals(". OK Authenticated", socketReader.readLine());
-        }
-    }
+public class TestImap extends AbstractImapTestCase {
 
     public void testListFolders() throws IOException {
         writeLine(". LSUB \"\" \"*\"");
@@ -138,8 +87,8 @@ public class TestImap extends AbstractDavMailTestCase {
         mimeMessage.addHeader("bcc", Settings.getProperty("davmail.bcc"));
         Random random = new Random();
         StringBuilder randomText = new StringBuilder();
-        for (int i=0;i<10*1024*1024;i++) {
-           randomText.append((char)('a'+random.nextInt(26))); 
+        for (int i = 0; i < 10 * 1024 * 1024; i++) {
+            randomText.append((char) ('a' + random.nextInt(26)));
         }
         mimeMessage.setText(randomText.toString());
         mimeMessage.setSubject("Big subject");
@@ -151,13 +100,13 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals("+ send literal data", readLine());
         writeLine(new String(content));
         assertEquals(". OK APPEND completed", readFullAnswer("."));
-        System.out.println("Create time: "+(System.currentTimeMillis()-start)+" ms");
+        System.out.println("Create time: " + (System.currentTimeMillis() - start) + " ms");
         writeLine(". NOOP");
         assertEquals(". OK NOOP completed", readFullAnswer("."));
         start = System.currentTimeMillis();
         writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
         readFullAnswer(".");
-        System.out.println("Fetch time: "+(System.currentTimeMillis()-start)+" ms");
+        System.out.println("Fetch time: " + (System.currentTimeMillis() - start) + " ms");
 
     }
 
@@ -325,7 +274,7 @@ public class TestImap extends AbstractDavMailTestCase {
         messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
-        writeLine(". UID COPY "+messageUid+" Trash");
+        writeLine(". UID COPY " + messageUid + " Trash");
         assertEquals(". OK copy completed", readFullAnswer("."));
 
         writeLine(". COPY 1 Trash");
@@ -346,15 +295,6 @@ public class TestImap extends AbstractDavMailTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
-    public void testBrokenPipe() throws IOException, InterruptedException {
-        testSelectInbox();
-        writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
-        socketReader.readLine();
-        // force close connection
-        clientSocket.close();
-        Thread.sleep(5000);
-    }
-
     public void testFetchRfc822Header() throws IOException {
         testSelectInbox();
         writeLine(". UID FETCH 1:* (UID RFC822.HEADER RFC822.SIZE FLAGS)");
@@ -365,5 +305,14 @@ public class TestImap extends AbstractDavMailTestCase {
         testSelectInbox();
         writeLine(". UID FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testBrokenPipe() throws IOException, InterruptedException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
+        socketReader.readLine();
+        // force close connection
+        clientSocket.close();
+        Thread.sleep(5000);
     }
 }
