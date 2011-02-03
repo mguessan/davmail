@@ -60,7 +60,6 @@ public final class DavGatewayHttpClientFacade {
     static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)";
     static final int MAX_REDIRECTS = 10;
     static final Object LOCK = new Object();
-    static final Object PROXY_LOCK = new Object();
     private static boolean needNTLM;
 
     static final long ONE_MINUTE = 60000;
@@ -75,6 +74,12 @@ public final class DavGatewayHttpClientFacade {
 
         // register custom cookie policy
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
+
+        // Load system proxy settings to avoid futex deadlock on linux
+        if (Settings.getBooleanProperty("davmail.useSystemProxies")) {
+            System.setProperty("java.net.useSystemProxies", "true");
+            ProxySelector.getDefault();
+        }
     }
 
 
@@ -166,21 +171,19 @@ public final class DavGatewayHttpClientFacade {
         if (useSystemProxies) {
             // get proxy for url from system settings
             System.setProperty("java.net.useSystemProxies", "true");
-            synchronized (PROXY_LOCK) {
-                try {
-                    List<Proxy> proxyList = ProxySelector.getDefault().select(new java.net.URI(url));
-                    if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
-                        InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
-                        proxyHost = inetSocketAddress.getHostName();
-                        proxyPort = inetSocketAddress.getPort();
+            try {
+                List<Proxy> proxyList = ProxySelector.getDefault().select(new java.net.URI(url));
+                if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
+                    InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
+                    proxyHost = inetSocketAddress.getHostName();
+                    proxyPort = inetSocketAddress.getPort();
 
-                        // we may still need authentication credentials
-                        proxyUser = Settings.getProperty("davmail.proxyUser");
-                        proxyPassword = Settings.getProperty("davmail.proxyPassword");
-                    }
-                } catch (URISyntaxException e) {
-                    throw new DavMailException("LOG_INVALID_URL", url);
+                    // we may still need authentication credentials
+                    proxyUser = Settings.getProperty("davmail.proxyUser");
+                    proxyPassword = Settings.getProperty("davmail.proxyPassword");
                 }
+            } catch (URISyntaxException e) {
+                throw new DavMailException("LOG_INVALID_URL", url);
             }
         } else if (enableProxy) {
             proxyHost = Settings.getProperty("davmail.proxyHost");
