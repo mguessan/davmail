@@ -310,6 +310,7 @@ public class LdapConnection extends AbstractConnection {
     // LDAP filter code
     static final int LDAP_FILTER_AND = 0xa0;
     static final int LDAP_FILTER_OR = 0xa1;
+    static final int LDAP_FILTER_NOT = 0xa2;
 
     // LDAP filter operators
     static final int LDAP_FILTER_SUBSTRINGS = 0xa4;
@@ -604,7 +605,8 @@ public class LdapConnection extends AbstractConnection {
     protected LdapFilter parseNestedFilter(BerDecoder reqBer, int ldapFilterType, int end) throws IOException {
         LdapFilter nestedFilter;
 
-        if ((ldapFilterType == LDAP_FILTER_OR) || (ldapFilterType == LDAP_FILTER_AND)) {
+        if ((ldapFilterType == LDAP_FILTER_OR) || (ldapFilterType == LDAP_FILTER_AND)
+                || ldapFilterType == LDAP_FILTER_NOT) {
             nestedFilter = new CompoundFilter(ldapFilterType);
 
             while (reqBer.getParsePosition() < end && reqBer.bytesLeft() > 0) {
@@ -915,8 +917,10 @@ public class LdapConnection extends AbstractConnection {
 
             if (type == LDAP_FILTER_OR) {
                 buffer.append("(|");
-            } else {
+            } else if (type == LDAP_FILTER_AND) {
                 buffer.append("(&");
+            } else {
+                buffer.append("(!");
             }
 
             for (LdapFilter child : criteria) {
