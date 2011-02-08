@@ -1282,6 +1282,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 executeMethod(getItemMethod);
                 content = getItemMethod.getMimeContent();
+                if (content == null) {
+                    throw new IOException("empty event body");
+                }
                 if (!"CalendarItem".equals(type)) {
                     content = getICS(new SharedByteArrayInputStream(content));
                 }
