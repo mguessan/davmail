@@ -2484,9 +2484,18 @@ public abstract class ExchangeSession {
             dateCondition = gt("dtstart", formatSearchDate(cal.getTime()));
         }
 
-        return searchEvents(folderPath, or(isNull("instancetype"),
+        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
+        Condition condition;
+        if (caldavDisableTasks) {
+            condition = or(isEqualTo("instancetype", 1),
+                and(isEqualTo("instancetype", 0), dateCondition));
+        } else {
+            condition = or(isNull("instancetype"),
                 isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition)));
+                and(isEqualTo("instancetype", 0), dateCondition));
+        }
+
+        return searchEvents(folderPath, condition);
     }
 
     protected Condition getRangeCondition(String timeRangeStart, String timeRangeEnd) throws IOException {
@@ -2516,9 +2525,18 @@ public abstract class ExchangeSession {
      */
     public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
-        return searchEvents(folderPath, or(isNull("instancetype"),
+        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
+        Condition condition;
+        if (caldavDisableTasks) {
+            condition = or(isEqualTo("instancetype", 1),
+                and(isEqualTo("instancetype", 0), dateCondition));
+        } else {
+            condition = or(isNull("instancetype"),
                 isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition)));
+                and(isEqualTo("instancetype", 0), dateCondition));
+        }
+
+        return searchEvents(folderPath, condition);
     }
 
     /**
