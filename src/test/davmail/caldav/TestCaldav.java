@@ -334,4 +334,13 @@ public class TestCaldav extends AbstractDavMailTestCase {
         httpClient.executeMethod(moveMethod);
     }
 
+    public void testWellKnown() throws IOException {
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        davPropertyNameSet.add(DavPropertyName.create("current-user-principal", Namespace.getNamespace("DAV:")));
+        PropFindMethod method = new PropFindMethod("/.well-known/caldav", davPropertyNameSet, 0);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, method.getStatusCode());
+    }
+
+
 }

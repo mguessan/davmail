@@ -205,6 +205,8 @@ public class CaldavConnection extends AbstractConnection {
             handleFolder(request);
         } else if (request.isPath(1, "directory")) {
             sendDirectory(request);
+        } else if (request.isPath(1, ".well-known")) {
+            sendWellKnown(request);
         } else {
             sendUnsupported(request);
         }
@@ -883,6 +885,18 @@ public class CaldavConnection extends AbstractConnection {
         response.endResponse();
         response.endMultistatus();
         response.close();
+    }
+
+    /**
+     * Send caldav response for /.well-known/ request.
+     *
+     * @param request Caldav request
+     * @throws IOException on error
+     */
+    public void sendWellKnown(CaldavRequest request) throws IOException {
+        HashMap<String, String> headers = new HashMap<String, String>();
+        headers.put("Location", "/");
+        sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, headers);
     }
 
     /**
