@@ -30,9 +30,7 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.*;
@@ -471,8 +469,8 @@ public class LdapConnection extends AbstractConnection {
                 }
 
                 DavGatewayTray.switchIcon();
-                //Ber.dumpBER(System.out, "request\n", inbuf, 0, offset);
-                handleRequest(new BerDecoder(inbuf, 0, offset));
+                
+                handleRequest(inbuf, offset);
             }
 
         } catch (SocketException e) {
@@ -492,7 +490,8 @@ public class LdapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    protected void handleRequest(BerDecoder reqBer) throws IOException {
+    protected void handleRequest(byte[] inbuf, int offset) throws IOException {
+        BerDecoder reqBer = new BerDecoder(inbuf, 0, offset);
         int currentMessageId = 0;
         try {
             reqBer.parseSeq(null);
@@ -577,12 +576,24 @@ public class LdapConnection extends AbstractConnection {
                 sendClient(currentMessageId, LDAP_REP_RESULT, LDAP_OTHER, "Unsupported operation");
             }
         } catch (IOException e) {
+            dumpBer(inbuf, offset);
             try {
                 sendErr(currentMessageId, LDAP_REP_RESULT, e);
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
             throw e;
+        }
+    }
+
+    protected void dumpBer(byte[] inbuf, int offset) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Ber.dumpBER(baos, "LDAP request buffer\n", inbuf, 0, offset);
+        try {
+            LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            // should not happen
+            LOGGER.error(e);
         }
     }
 
