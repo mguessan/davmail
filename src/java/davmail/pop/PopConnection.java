@@ -209,7 +209,7 @@ public class PopConnection extends AbstractConnection {
                                     LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
                                 } catch (Exception e) {
                                     DavGatewayTray.error(new BundleMessage("LOG_ERROR_RETRIEVING_MESSAGE"), e);
-                                    sendERR("error retreiving message " + e + ' ' + e.getMessage());
+                                    sendERR("error retrieving message " + e + ' ' + e.getMessage());
                                 }
                             } else {
                                 sendERR("invalid message index");

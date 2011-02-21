@@ -23,14 +23,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Replace single dot lines with double dot.
+ * RFC 1939: 3 Basic Operations
+ * [...]
+ * If any line begins with the termination octet, the line is "byte-stuffed" by
+ * pre-pending the termination octet to that line of the response.
  */
 public class DoubleDotOutputStream extends FilterOutputStream {
-    enum State {
-        CR, CRLF, CRLFDOT
-    }
 
-    State currentState;
+    // remember last 2 bytes written
+    int[] buf = {0, 0};
 
     /**
      * @inheritDoc
@@ -41,30 +42,29 @@ public class DoubleDotOutputStream extends FilterOutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        if (currentState == null && b == '\r') {
-            currentState = State.CR;
-        } else if (currentState == State.CR && b == '\n') {
-            currentState = State.CRLF;
-        } else if (currentState == State.CRLF && b == '.') {
-            currentState = State.CRLFDOT;
-        } else if (currentState == State.CRLFDOT && b == '\r') {
+        if (b == '.' && (buf[0] == '\r' || buf[0] == '\n' || buf[0] == 0)) {
+            // line starts with '.', prepend it with an additional '.'
             out.write('.');
-            currentState = null;
-        } else {
-            currentState = null;
         }
         out.write(b);
+
+        buf[1] = buf[0];
+        buf[0] = b;
     }
 
     /**
-     * Send termination characters.
+     * RFC 1939: 3 Basic Operations
+     * [...]
+     * Hence a multi-line response is terminated with the five octets
+     * "CRLF.CRLF"
+     * <p/>
      * Do not close actual outputstream
      *
      * @throws IOException on error
      */
     @Override
     public void close() throws IOException {
-        if (currentState != State.CRLF) {
+        if (buf[1] != '\r' || buf[0] != '\n') {
             out.write('\r');
             out.write('\n');
         }
