@@ -12,9 +12,8 @@ mvn install:install-file -DgroupId=net.freeutils.charset -DartifactId=jcharset -
 - generate site: mvn site
 - upload site: ant upload-site
 - upload releasenotes.txt to sourceforge
-- create news message at https://sourceforge.net/news/admin/?group_id=184600
 - create tag in subversion
-- upload version.txt
-- change default download files on frs
+- create news message at https://sourceforge.net/news/admin/?group_id=184600
 - send user mailing list message
-
+- change default download files on frs
+- upload version.txt
