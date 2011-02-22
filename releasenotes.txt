@@ -1,3 +1,43 @@
+** DavMail 3.9.0 released **
+Making progress towards 4.0 and full EWS support, some issues remaining on recurring
+events. This is mainly a bugfix release, with some Caldav enhancements, huge memory usage fix
+on IMAP and a workaround for Linux 64 bits futex issue (deadlock on first connection).
+
+POP:
+- POP: test new double dot implementation
+- POP: Fix from Stefan Guggisberg, handle invalid CR or LF line feeds in DoubleDotOutputStream
+
+Caldav:
+- Caldav: additional timezone names in table
+- Caldav: 3132513, implement well-known url, see http://tools.ietf.org/html/draft-daboo-srv-caldav-10
+- Caldav: implement a new setting to disable task (VTODO) support: davmail.caldavDisableTasks and probably exclude most broken events
+- Caldav: throw exception on empty event body (EWS)
+- Caldav: fix multivalued param support in VProperty and always quote CN values
+
+Documentation:
+- Doc: Update release guide
+- Doc: Additional FAQ entry on public calendar access with iCal
+- Doc: Add Manchester wiki review
+
+LDAP:
+- LDAP: dump BER content on error
+- LDAP: fix 3166460, do not fail on NOT (0xa2) filter
+
+Bugfix:
+- New workaround for bug 3168560, load system proxy settings in static block
+- Fix 3161913 klauncher says davmail.desktop misses trailing semicolon
+- Restore stax-api jar for Java 1.5 compatibility
+- Fix 3150426 huge memory usage with IMAP
+- Workaround for bug 3168560, synchronize system proxy access
+- New NTLMv2 patch: provide fake workstation name and adjust Type3 message flags
+
+EWS:
+- EWS: Fix 3165749, exception with quotes in meeting subject and EWS
+
+Webdav:
+- Dav: log search response count
+
+
 ** DavMail 3.8.8 released **
 Yet another bugfix release with many EWS support enhancements and fixes,
 many documentation improvements (still need to update Thunderbird/OSX instructions
