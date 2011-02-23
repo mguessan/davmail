@@ -53,9 +53,9 @@ public class TwoOperandExpression implements SearchExpression {
         buffer.append("<t:FieldURIOrConstant><t:Constant Value=\"");
         // encode urlcompname
         if (fieldURI instanceof ExtendedFieldURI && "0x10f3".equals(((ExtendedFieldURI) fieldURI).propertyTag)) {
-            buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
+            buffer.append(StringUtil.xmlEncodeAttribute(StringUtil.encodeUrlcompname(value)));
         } else {
-            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
         }
         buffer.append("\"/></t:FieldURIOrConstant>");
 

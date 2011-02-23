@@ -488,11 +488,11 @@ public abstract class EWSMethod extends PostMethod {
             for (String key : fieldNames) {
                 if ("MeetingTimeZone".equals(key)) {
                     writer.write("<t:MeetingTimeZone TimeZoneName=\"");
-                    writer.write(StringUtil.xmlEncode(get(key)));
+                    writer.write(StringUtil.xmlEncodeAttribute(get(key)));
                     writer.write("\"></t:MeetingTimeZone>");
                 } else if ("StartTimeZone".equals(key)) {
                     writer.write("<t:StartTimeZone Id=\"");
-                    writer.write(StringUtil.xmlEncode(get(key)));
+                    writer.write(StringUtil.xmlEncodeAttribute(get(key)));
                     writer.write("\"></t:StartTimeZone>");
                 } else {
                     writer.write("<t:");

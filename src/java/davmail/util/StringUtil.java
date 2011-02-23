@@ -179,7 +179,7 @@ public final class StringUtil {
     }
 
     /**
-     * Need to encode xml for iCal.
+     * Xml encode content.
      *
      * @param name decoded name
      * @return name encoded name
@@ -197,6 +197,22 @@ public final class StringUtil {
                 result = GT_PATTERN.matcher(result).replaceAll("&gt;");
             }
             if (name.indexOf('"') >= 0) {
+                result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Xml encode inside attribute.
+     *
+     * @param name decoded name
+     * @return name encoded name
+     */
+    public static String xmlEncodeAttribute(String name) {
+        String result = xmlEncode(name);
+        if (result != null) {
+            if (result.indexOf('"') >= 0) {
                 result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
             }
         }

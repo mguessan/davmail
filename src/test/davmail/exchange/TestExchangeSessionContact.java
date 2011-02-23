@@ -475,7 +475,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         vCardWriter.appendProperty("FN", "common name");
         vCardWriter.endCard();
 
-        itemName = "test {<:&'>+} accentué.vcf";
+        itemName = "test {<:&'>} \"accentué.vcf";
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
         assertEquals(201, result.status);

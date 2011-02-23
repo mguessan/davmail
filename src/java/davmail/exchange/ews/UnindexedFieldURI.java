@@ -60,17 +60,17 @@ public class UnindexedFieldURI implements FieldURI {
         }
         if ("MeetingTimeZone".equals(fieldName)) {
             buffer.append("<t:MeetingTimeZone TimeZoneName=\"");
-            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
             buffer.append("\"></t:MeetingTimeZone>");
         } else if ("StartTimeZone".equals(fieldName)) {
             buffer.append("<t:StartTimeZone Id=\"");
-            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
             buffer.append("\"></t:StartTimeZone>");
         } else {
             buffer.append("<t:");
             buffer.append(fieldName);
             buffer.append('>');
-            buffer.append(StringUtil.xmlEncode(value));
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
             buffer.append("</t:");
             buffer.append(fieldName);
             buffer.append('>');

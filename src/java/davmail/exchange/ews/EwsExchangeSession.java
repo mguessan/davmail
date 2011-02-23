@@ -53,6 +53,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected static final int PAGE_SIZE = 100;
 
+    /**
+     * Message types.
+     * @see http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx
+     */
     protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
 
     static {
@@ -70,6 +74,18 @@ public class EwsExchangeSession extends ExchangeSession {
         //MESSAGE_TYPES.add("Contact");
         //MESSAGE_TYPES.add("DistributionList");
         //MESSAGE_TYPES.add("Task");
+
+        //ReplyToItem
+        //ForwardItem
+        //ReplyAllToItem
+        //AcceptItem
+        //TentativelyAcceptItem
+        //DeclineItem
+        //CancelCalendarItem
+        //RemoveItem
+        //PostReplyItem
+        //SuppressReadReceipt
+        //AcceptSharingInvitation
     }
 
     protected Map<String, String> folderIdMap;
@@ -602,7 +618,7 @@ public class EwsExchangeSession extends ExchangeSession {
             buffer.append("<t:Constant Value=\"");
             // encode urlcompname
             if (fieldURI instanceof ExtendedFieldURI && "0x10f3".equals(((ExtendedFieldURI) fieldURI).propertyTag)) {
-                buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
+                buffer.append(StringUtil.xmlEncodeAttribute(StringUtil.encodeUrlcompname(value)));
             } else if (fieldURI instanceof ExtendedFieldURI
                     && ((ExtendedFieldURI) fieldURI).propertyType == ExtendedFieldURI.PropertyType.Integer) {
                 // check value
@@ -614,7 +630,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     buffer.append('0');
                 }
             } else {
-                buffer.append(StringUtil.xmlEncode(value));
+                buffer.append(StringUtil.xmlEncodeAttribute(value));
             }
             buffer.append("\"/>");
             if (operator != Operator.Contains) {
