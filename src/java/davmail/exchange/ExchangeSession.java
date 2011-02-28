@@ -34,6 +34,7 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentToken;
+import org.htmlcleaner.ContentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
@@ -69,6 +70,7 @@ public abstract class ExchangeSession {
         USER_NAME_FIELDS.add("txtUserName");
         USER_NAME_FIELDS.add("userid");
         USER_NAME_FIELDS.add("SafeWordUser");
+        USER_NAME_FIELDS.add("user_name");
     }
 
     protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
@@ -190,8 +192,8 @@ public abstract class ExchangeSession {
                 }
             }
 
-            // avoid 401 roundtrips, only if NTLM is disabled
-            if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+            // avoid 401 roundtrips, only if NTLM is disabled and basic authentication enabled
+            if (isBasicAuthentication && !DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 
@@ -350,9 +352,9 @@ public abstract class ExchangeSession {
      * @return logon method
      * @throws IOException on error
      */
-    protected PostMethod buildLogonMethod(HttpClient httpClient, HttpMethod initmethod) throws IOException {
+    protected HttpMethod buildLogonMethod(HttpClient httpClient, HttpMethod initmethod) throws IOException {
 
-        PostMethod logonMethod = null;
+        HttpMethod logonMethod = null;
 
         // create an instance of HtmlCleaner
         HtmlCleaner cleaner = new HtmlCleaner();
@@ -376,13 +378,15 @@ public abstract class ExchangeSession {
 
                 logonMethod = new PostMethod(getAbsoluteUri(initmethod, logonMethodPath));
 
-                List inputList = logonForm.getElementListByName("input", true);
+                // retrieve lost inputs attached to body
+                List inputList = node.getElementListByName("input", true);
+
                 for (Object input : inputList) {
                     String type = ((TagNode) input).getAttributeByName("type");
                     String name = ((TagNode) input).getAttributeByName("name");
                     String value = ((TagNode) input).getAttributeByName("value");
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
-                        logonMethod.addParameter(name, value);
+                        ((PostMethod) logonMethod).addParameter(name, value);
                     }
                     // custom login form
                     if (USER_NAME_FIELDS.contains(name)) {
@@ -395,7 +399,7 @@ public abstract class ExchangeSession {
                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
                     } else if (TOKEN_FIELDS.contains(name)) {
                         // one time password, ask user
-                        logonMethod.addParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
+                        ((PostMethod) logonMethod).addParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
                     }
                 }
             } else {
@@ -426,6 +430,15 @@ public abstract class ExchangeSession {
                                     LOGGER.debug("Detected script based logon, redirect to form at " + src);
                                     HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, src);
                                     logonMethod = buildLogonMethod(httpClient, newInitMethod);
+                                }
+
+                            } else if (content instanceof ContentToken) {
+                                // Microsoft Forefront Unified Access Gateway redirect
+                                String scriptValue = ((ContentToken) content).getContent();
+                                String location = StringUtil.getToken(scriptValue, "window.location.replace(\"", "\"");
+                                if (location != null) {
+                                    LOGGER.debug("Post logon redirect to: " + location);
+                                    logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, location);
                                 }
                             }
                         }
@@ -2488,11 +2501,11 @@ public abstract class ExchangeSession {
         Condition condition;
         if (caldavDisableTasks) {
             condition = or(isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition));
+                    and(isEqualTo("instancetype", 0), dateCondition));
         } else {
             condition = or(isNull("instancetype"),
-                isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition));
+                    isEqualTo("instancetype", 1),
+                    and(isEqualTo("instancetype", 0), dateCondition));
         }
 
         return searchEvents(folderPath, condition);
@@ -2529,11 +2542,11 @@ public abstract class ExchangeSession {
         Condition condition;
         if (caldavDisableTasks) {
             condition = or(isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition));
+                    and(isEqualTo("instancetype", 0), dateCondition));
         } else {
             condition = or(isNull("instancetype"),
-                isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition));
+                    isEqualTo("instancetype", 1),
+                    and(isEqualTo("instancetype", 0), dateCondition));
         }
 
         return searchEvents(folderPath, condition);

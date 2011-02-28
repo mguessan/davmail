@@ -55,6 +55,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     /**
      * Message types.
+     *
      * @see http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx
      */
     protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
@@ -153,9 +154,6 @@ public class EwsExchangeSession extends ExchangeSession {
             if (locationHeader == null || !"/ews/services.wsdl".equalsIgnoreCase(locationHeader.getValue())) {
                 throw new IOException("Ews endpoint not available at " + getMethod.getURI().toString());
             }
-        } catch (IOException e) {
-            LOGGER.debug(e.getMessage());
-            throw e;
         } finally {
             getMethod.releaseConnection();
         }
@@ -182,7 +180,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 email = getAliasFromLogin() + getEmailSuffixFromHostname();
             }
         }
-        
+
         currentMailboxPath = "/users/" + email.toLowerCase();
 
         // check EWS access
@@ -191,18 +189,27 @@ public class EwsExchangeSession extends ExchangeSession {
             // workaround for Exchange bug: send fake request
             internalGetFolder("");
         } catch (IOException e) {
+            // first failover: retry with NTLM
+            DavGatewayHttpClientFacade.addNTLM(httpClient);
             try {
-                // failover, try to retrieve EWS url from autodiscover
-                checkEndPointUrl(getEwsUrlFromAutoDiscover());
+                checkEndPointUrl("/ews/exchange.asmx");
                 // workaround for Exchange bug: send fake request
                 internalGetFolder("");
             } catch (IOException e2) {
-                // autodiscover failed and initial exception was authentication failure => throw original exception
-                if (e instanceof DavMailAuthenticationException) {
-                    throw (DavMailAuthenticationException) e;
+                LOGGER.debug(e2.getMessage());
+                try {
+                    // failover, try to retrieve EWS url from autodiscover
+                    checkEndPointUrl(getEwsUrlFromAutoDiscover());
+                    // workaround for Exchange bug: send fake request
+                    internalGetFolder("");
+                } catch (IOException e3) {
+                    // autodiscover failed and initial exception was authentication failure => throw original exception
+                    if (e instanceof DavMailAuthenticationException) {
+                        throw (DavMailAuthenticationException) e;
+                    }
+                    LOGGER.error(e2.getMessage());
+                    throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
                 }
-                LOGGER.error(e2.getMessage());
-                throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
             }
         }
 
@@ -221,7 +228,7 @@ public class EwsExchangeSession extends ExchangeSession {
             LOGGER.error(e.getMessage(), e);
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
-        LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on "+ serverVersion);
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
@@ -1425,7 +1432,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public Item getItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item == null) {
-            throw new HttpNotFoundException(itemName + " not found in "+folderPath);
+            throw new HttpNotFoundException(itemName + " not found in " + folderPath);
         }
 
         String itemType = item.type;
@@ -1439,7 +1446,7 @@ public class EwsExchangeSession extends ExchangeSession {
             executeMethod(getItemMethod);
             item = getItemMethod.getResponseItem();
             if (item == null) {
-                throw new HttpNotFoundException(itemName + " not found in "+folderPath);
+                throw new HttpNotFoundException(itemName + " not found in " + folderPath);
             }
             return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
@@ -1448,7 +1455,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "Message".equals(itemType)) {
             return new Event(item);
         } else {
-            throw new HttpNotFoundException(itemName + " not found in "+folderPath);
+            throw new HttpNotFoundException(itemName + " not found in " + folderPath);
         }
 
     }
