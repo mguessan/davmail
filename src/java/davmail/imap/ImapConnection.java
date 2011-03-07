@@ -900,7 +900,9 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) {
-        buffer.append(' ');
+        if (buffer.charAt(buffer.length() - 1) != '(') {
+            buffer.append(' ');
+        }
         if (value != null && value.length > 0) {
             String unfoldedValue = MimeUtility.unfold(value[0]);
             if (unfoldedValue.indexOf('"') >= 0) {
