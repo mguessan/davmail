@@ -262,6 +262,7 @@ public class TestImap extends AbstractImapTestCase {
     public void testLogout() throws IOException {
         writeLine(". LOGOUT");
         assertEquals("* BYE Closing connection", socketReader.readLine());
+        assertEquals(". OK LOGOUT completed", socketReader.readLine());
         clientSocket = null;
     }
 

@@ -97,6 +97,7 @@ public class ImapConnection extends AbstractConnection {
 
                         if ("LOGOUT".equalsIgnoreCase(command)) {
                             sendClient("* BYE Closing connection");
+                            sendClient(commandId + " OK LOGOUT completed");
                             break;
                         }
                         if ("capability".equalsIgnoreCase(command)) {
