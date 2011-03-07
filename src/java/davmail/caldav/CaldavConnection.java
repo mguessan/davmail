@@ -711,6 +711,9 @@ public class CaldavConnection extends AbstractConnection {
                         }
                         appendItemResponse(response, request, item);
                     }
+                } catch (SocketException e) {
+                    // rethrow SocketException (client closed connection)
+                    throw e;
                 } catch (Exception e) {
                     wireLogger.debug(e.getMessage(), e);
                     DavGatewayTray.warn(new BundleMessage("LOG_ITEM_NOT_AVAILABLE", eventName, href));
