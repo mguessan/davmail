@@ -56,7 +56,7 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Message types.
      *
-     * @see http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx
+     * @see <a href="http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx">http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx</a>
      */
     protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
 
@@ -1418,7 +1418,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             executeMethod(getItemMethod);
             item = getItemMethod.getResponseItem();
-        } else {
+        }
+        // find item by urlcompname
+        if (item == null) {
             List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW, 0);
             if (!responses.isEmpty()) {
                 item = responses.get(0);
