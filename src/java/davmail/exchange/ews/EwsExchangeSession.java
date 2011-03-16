@@ -460,7 +460,11 @@ public class EwsExchangeSession extends ExchangeSession {
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
         executeMethod(getItemMethod);
-        return getItemMethod.getMimeContent();
+        byte[] mimeContent = getItemMethod.getMimeContent();
+        if (mimeContent == null) {
+            throw new IOException("GetItem returned null MimeContent");
+        }
+        return mimeContent;
     }
 
     protected Message buildMessage(EWSMethod.Item response) throws DavMailException {
