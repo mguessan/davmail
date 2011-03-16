@@ -196,9 +196,6 @@ public final class StringUtil {
             if (name.indexOf('>') >= 0) {
                 result = GT_PATTERN.matcher(result).replaceAll("&gt;");
             }
-            if (name.indexOf('"') >= 0) {
-                result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
-            }
         }
         return result;
     }
