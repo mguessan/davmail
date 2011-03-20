@@ -1758,9 +1758,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("cn", "DisplayName");
         GALFIND_ATTRIBUTE_MAP.put("givenName", "GivenName");
         GALFIND_ATTRIBUTE_MAP.put("sn", "Surname");
-        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "EmailAddress1");
-        GALFIND_ATTRIBUTE_MAP.put("smtpemail2", "EmailAddress2");
-        GALFIND_ATTRIBUTE_MAP.put("smtpemail3", "EmailAddress3");
+        GALFIND_ATTRIBUTE_MAP.put("smtpemail1", "EmailAddress");
 
         GALFIND_ATTRIBUTE_MAP.put("roomnumber", "OfficeLocation");
         GALFIND_ATTRIBUTE_MAP.put("street", "BusinessStreet");
@@ -1798,7 +1796,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (LOGGER.isDebugEnabled()) {
             for (String key : response.keySet()) {
                 if (!IGNORE_ATTRIBUTE_SET.contains(key) && !GALFIND_ATTRIBUTE_MAP.containsValue(key)) {
-                    LOGGER.debug("Unsupported ResolveNames in " + contact.getName() + " response attribute: " + key + " value: " + response.get(key));
+                    LOGGER.debug("Unsupported ResolveNames " + contact.getName() + " response attribute: " + key + " value: " + response.get(key));
                 }
             }
         }

@@ -70,6 +70,8 @@ public class ResolveNamesMethod extends EWSMethod {
                 String tagLocalName = reader.getLocalName();
                 if ("Name".equals(tagLocalName)) {
                     responseItem.put(tagLocalName, XMLStreamUtil.getElementText(reader));
+                } else if ("EmailAddress".equals(tagLocalName)) {
+                    responseItem.put(tagLocalName, XMLStreamUtil.getElementText(reader));
                 }
             }
         }
@@ -99,7 +101,7 @@ public class ResolveNamesMethod extends EWSMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 String value = XMLStreamUtil.getElementText(reader);
-                responseItem.put(addressType+tagLocalName, value);
+                responseItem.put(addressType + tagLocalName, value);
             }
         }
     }
@@ -138,12 +140,16 @@ public class ResolveNamesMethod extends EWSMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
                 if ("Entry".equals(tagLocalName)) {
-                    String key = getAttributeValue(reader, "Key");
                     String value = XMLStreamUtil.getElementText(reader);
-                    if (value != null && (value.startsWith("smtp:") || value.startsWith("SMTP:"))) {
-                        value = value.substring(5);
+                    if (value != null) {
+                        if (value.startsWith("smtp:") || value.startsWith("SMTP:")) {
+                            value = value.substring(5);
+                            // get smtp address only if not already available through Mailbox info
+                            if (responseItem.get("EmailAddress") == null) {
+                                responseItem.put("EmailAddress", value);
+                            }
+                        }
                     }
-                    responseItem.put(key, value);
                 }
             }
         }
