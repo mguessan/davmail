@@ -1,3 +1,34 @@
+** DavMail 3.9.1 released **
+Another bugfix release, mainly on EWS Caldav support (fix 404 not found).
+Also implemented Microsoft Forefront Unified Access Gateway support.
+
+Documentation:
+- Doc: additional FAQ entry on shared calendars
+
+Caldav:
+- Caldav: first check that email address is valid to avoid InvalidSmtpAddress error on FreeBusy request and new timezone name mapping
+- Caldav: New fix for fix 3190219, regression on quote encoding since 3165749 fix
+- Caldav: rethrow SocketException to avoid event not available on client connection close or DavMail listener restart
+- Caldav: Fix timezone name
+- Caldav: fix 3190219, regression on quote encoding since 3165749 fix
+
+Exchange Web Services:
+- EWS: fix 3190774, LDAP galfind email address handling, use Mailbox value instead of EmailAddress1/2/3
+- EWS: fix NullPointerException in item getContent
+- EWS: fix 404 not found with Exchange 2010 calendars
+
+Enhancements
+- Convert shell script to unix LF
+- Implement Microsoft Forefront Unified Access Gateway logon form compatibility
+
+IMAP:
+- IMAP: fix 3201374 envelope superflous space
+- IMAP: fix LOGOUT implementation to improve SquirrelMail compatibility
+
+OSX:
+- OSX: Avoid sending null message to Growl
+
+
 ** DavMail 3.9.0 released **
 Making progress towards 4.0 and full EWS support, some issues remaining on recurring
 events. This is mainly a bugfix release, with some Caldav enhancements, huge memory usage fix
