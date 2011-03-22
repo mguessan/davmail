@@ -29,6 +29,7 @@
             </p>
             <source><![CDATA[
 davmail.url=http://exchangeServer/exchange/
+davmail.enableEws=false
 davmail.popPort=1110
 davmail.imapPort=1143
 davmail.smtpPort=1025

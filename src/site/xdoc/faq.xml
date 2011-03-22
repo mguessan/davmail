@@ -184,6 +184,18 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <source>http://localhost:<i>1080</i>/principals/public/<i>path/to/calendar</i></source>
 
+                <p>
+                    <strong>Shared calendars</strong>
+                </p>
+                <p>To access a shared calendar in Lightning, the URL scheme is:
+                </p>
+                <source>http://localhost:<i>1080</i>/users/<i>user@company.com</i>
+                </source>
+                <p>To access a shared calendar in iCal, the URL scheme is:
+                </p>
+                <source>http://localhost:<i>1080</i>/principals/users/<i>user@company.com</i>
+                </source>
+
             </subsection>
 
             <subsection name="Mail">
@@ -199,7 +211,9 @@ calendar.debug.log.verbose=true]]></source>
                     don't keep copies at all.
                 </p>
                 <p>Under Thunderbird, you can try to change IMAP timeout values
-                    (<code>mail.server.server<em>index</em>.timeout</code>
+                    (
+                    <code>mail.server.server<em>index</em>.timeout
+                    </code>
                     and&#x20;<code>mailnews.tcptimeout</code>) or avoid full
                     mailbox sync: disable global search and indexer under advanced options and change
                     Synchronization &amp; Storage options under Account Settings.
