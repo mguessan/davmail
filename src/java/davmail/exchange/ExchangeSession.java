@@ -3128,6 +3128,11 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
+        // first check that email address is valid to avoid InvalidSmtpAddress error
+        if (attendee == null || attendee.indexOf('@') < 0 || attendee.charAt(attendee.length() - 1) == '@') {
+            return null;
+        }
+        
         attendee = replaceIcal4Principal(attendee);
         if (attendee.startsWith("mailto:") || attendee.startsWith("MAILTO:")) {
             attendee = attendee.substring("mailto:".length());
