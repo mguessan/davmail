@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
@@ -1570,29 +1571,37 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 timezoneId = getTimezoneidFromOptions();
             }
-            if (timezoneId != null) {
-                createCalendarFolder("davmailtemp", null);
-                EWSMethod.Item item = new EWSMethod.Item();
-                item.type = "CalendarItem";
-                if ("Exchange2010".equals(serverVersion)) {
-                    SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
-                    dateFormatter.setTimeZone(GMT_TIMEZONE);
-                    Calendar cal = Calendar.getInstance();
-                    item.put("Start", dateFormatter.format(cal.getTime()));
-                    cal.add(Calendar.DAY_OF_MONTH, 1);
-                    item.put("End", dateFormatter.format(cal.getTime()));
-                    item.put("StartTimeZone", timezoneId);
-                } else {
-                    item.put("MeetingTimeZone", timezoneId);
-                }
-                CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
-                executeMethod(createItemMethod);
-                item = createItemMethod.getResponseItem();
-                VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
-                this.vTimezone = vCalendar.getVTimezone();
-                // delete temporary folder
-                deleteFolder("davmailtemp");
+            // failover: use timezone id from settings file
+            if (timezoneId == null) {
+                timezoneId = Settings.getProperty("davmail.timezoneId");
             }
+            // last failover: use GMT
+            if (timezoneId == null) {
+                LOGGER.warn("Unable to get user timezone, using GMT Standard Time. Set davmail.timezoneId setting to override this.");
+                timezoneId = "GMT Standard Time";
+            }
+
+            createCalendarFolder("davmailtemp", null);
+            EWSMethod.Item item = new EWSMethod.Item();
+            item.type = "CalendarItem";
+            if ("Exchange2010".equals(serverVersion)) {
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+                dateFormatter.setTimeZone(GMT_TIMEZONE);
+                Calendar cal = Calendar.getInstance();
+                item.put("Start", dateFormatter.format(cal.getTime()));
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+                item.put("End", dateFormatter.format(cal.getTime()));
+                item.put("StartTimeZone", timezoneId);
+            } else {
+                item.put("MeetingTimeZone", timezoneId);
+            }
+            CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
+            executeMethod(createItemMethod);
+            item = createItemMethod.getResponseItem();
+            VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
+            this.vTimezone = vCalendar.getVTimezone();
+            // delete temporary folder
+            deleteFolder("davmailtemp");
         } catch (IOException e) {
             LOGGER.warn("Unable to get VTIMEZONE info: " + e, e);
         }
