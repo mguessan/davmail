@@ -317,8 +317,11 @@ public class Field {
         createField("attachmentContactPhoto", 0x7FFF, PropertyType.Boolean); // PR_ATTACHMENT_CONTACTPHOTO
         createField("renderingPosition", 0x370B, PropertyType.Integer);// PR_RENDERING_POSITION
         //createField("attachFilename", 0x3704, PropertyType.String); // PR_ATTACH_FILENAME
-        createField("attachExtension", 0x3703, PropertyType.String); // PR_ATTACH_FILENAME
+        createField("attachExtension", 0x3703, PropertyType.String); // PR_ATTACH_EXTENSION
 
+        createField("xmozlastack", DistinguishedPropertySetType.PublicStrings);
+        createField("xmozsnoozetime", DistinguishedPropertySetType.PublicStrings);
+        createField("xmozsendinvitations", DistinguishedPropertySetType.PublicStrings);
     }
 
     protected static String toHexString(int propertyTag) {
@@ -337,6 +340,12 @@ public class Field {
         } else {
             field = new Field(alias, SCHEMAS_MAPI_PROPTAG, name, propertyType);
         }
+        fieldMap.put(field.alias, field);
+    }
+
+    protected static void createField(String alias, DistinguishedPropertySetType propertySetType) {
+        Field field = new Field(Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
+                '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), alias);
         fieldMap.put(field.alias, field);
     }
 
