@@ -178,8 +178,11 @@ calendar.debug.log.verbose=true]]></source>
                 <source>calendar.caldav.sched.enabled=true</source>
 
                 <p>
-                    <strong>Public calendars in iCal</strong>
+                    <strong>Public calendars</strong>
                 </p>
+                <p>To access public folders in Lightning, the URL scheme is:
+                </p>
+                <source>http://localhost:<i>1080</i>/public/<i>path/to/calendar</i></source>
                 <p>To access public folders in iCal, the URL scheme is:
                 </p>
                 <source>http://localhost:<i>1080</i>/principals/public/<i>path/to/calendar</i></source>
