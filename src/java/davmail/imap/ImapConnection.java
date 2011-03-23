@@ -457,6 +457,9 @@ public class ImapConnection extends AbstractConnection {
                                                 properties.put("junk", "1");
                                             }
                                         }
+                                    } else {
+                                        // no flags, force not draft and unread
+                                        properties.put("draft", "0");
                                     }
                                     // handle optional date
                                     if (date != null) {
