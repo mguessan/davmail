@@ -199,7 +199,7 @@
                     </tr>
                     <tr>
                         <td>IMAP auto expunge</td>
-                        <td>Delete messages immediately on the server over IMAP</td>
+                        <td>Delete messages immediately on the server over IMAP, i.e. expunge message on \Deleted flag set</td>
                         <td>true</td>
                     </tr>
                 </table>
