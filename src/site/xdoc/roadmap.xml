@@ -15,14 +15,13 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="3.9.0">
+            <subsection name="3.9.2">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Create a new RPM package with redline rpm ant task</li>
-                    <li>Implement Caldav attachments</li>
                     <li>Implement hide from Dock option on OSX</li>
+                    <li>Fix caldav support in EWS mode, implement recurring event exception</li>
                 </ul>
             </subsection>
             <subsection name="4.0">
@@ -34,8 +33,18 @@
                     <li>Exchange 2010 support through EWS: Experimental implementation already available but not
                         complete, set davmail.enableEws=true in davmail.properties to test
                     </li>
+                </ul>
+            </subsection>
+            <subsection name="4.x">
+                <p>
+                    <strong>Future version</strong>
+                </p>
+                <ul>
+                    <li>Implement Caldav attachments</li>
+                    <li>Test the RPM package</li>
                     <li>Jsmooth Windows 64 bit wrappers</li>
-                    <li>Include Unix init.d script to help users use DavMail in server mode</li>
+                    <li>Implement ActiveSync backend</li>
+                    <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
                     <li>Implement custom authenticator interface to handle specific authentications
                         (e.g. token based)
                     </li>
