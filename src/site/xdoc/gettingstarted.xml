@@ -29,7 +29,17 @@
                     <td>OWA url</td>
                     <td>Outlook Web Access URL to access the exchange server, i.e. the base webmail URL
                         <br/>
-                        Note: use /owa/ path for Exchange 2007 or 2010, /exchange/ for older versions
+                        The path depends on Exchange version and configuration, with or without a reverse proxy.
+                        DavMail must be able to find the authentication form at the provided URL.<br/>
+                        Usual paths for different versions:<br/>
+                        <ul>
+                          <li>Exchange 2003: <code>https://exchangeServer/exchange/</code></li>
+                          <li>Exchange 2007 Webdav mode: <code>https://exchangeServer/owa/</code></li>
+                          <li>Exchange 2007 EWS mode: <code>https://exchangeServer/owa/</code></li>
+                          <li>Exchange 2010 EWS mode: <code>https://exchangeServer/owa/</code></li>
+                          <li>Exchange 2010 EWS mode with unsupported authentication form e.g. Windows Live login:
+                              <code>https://exchangeServer/ews/exchange.asmx</code></li>
+                        </ul>
                     </td>
                     <td>https://exchangeServer/owa/</td>
                 </tr>
