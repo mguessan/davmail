@@ -105,7 +105,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
                             icon = UIManager.getIcon("OptionPane.errorIcon");
                         }
 
-                        if (icon != null && message != null) {
+                        if (icon != null && message != null && message.length() > 0) {
                             try {
                                 String title = BundleMessage.format("UI_DAVMAIL_GATEWAY");
                                 Growl growl = GrowlUtils.getGrowlInstance("DavMail");
