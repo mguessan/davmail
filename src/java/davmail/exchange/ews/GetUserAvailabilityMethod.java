@@ -58,16 +58,16 @@ public class GetUserAvailabilityMethod extends EWSMethod {
                 "<t:Bias>0</t:Bias>" +
                 "<t:StandardTime>" +
                 "<t:Bias>0</t:Bias>" +
-                "<t:Time>00:00:00</t:Time>" +
+                "<t:Time>02:00:00</t:Time>" +
                 "<t:DayOrder>1</t:DayOrder>" +
-                "<t:Month>1</t:Month>" +
+                "<t:Month>3</t:Month>" +
                 "<t:DayOfWeek>Sunday</t:DayOfWeek>" +
                 "</t:StandardTime>" +
                 "<t:DaylightTime>" +
                 "<t:Bias>0</t:Bias>" +
-                "<t:Time>00:00:00</t:Time>" +
+                "<t:Time>02:00:00</t:Time>" +
                 "<t:DayOrder>1</t:DayOrder>" +
-                "<t:Month>1</t:Month>" +
+                "<t:Month>10</t:Month>" +
                 "<t:DayOfWeek>Sunday</t:DayOfWeek>" +
                 "</t:DaylightTime>" +
                 "</t:TimeZone>");
