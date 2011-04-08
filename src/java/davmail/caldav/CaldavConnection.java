@@ -206,7 +206,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPath(1, "directory")) {
             sendDirectory(request);
         } else if (request.isPath(1, ".well-known")) {
-            sendWellKnown(request);
+            sendWellKnown();
         } else {
             sendUnsupported(request);
         }
@@ -566,7 +566,7 @@ public class CaldavConnection extends AbstractConnection {
         appendInbox(response, request, null);
         // do not try to access inbox on shared calendar
         if (!session.isSharedFolder(request.getFolderPath(null)) && request.getDepth() == 1
-                && !request.isBrokenLightning()) {
+                && !request.isLightning()) {
             try {
                 DavGatewayTray.debug(new BundleMessage("LOG_SEARCHING_CALENDAR_MESSAGES"));
                 List<ExchangeSession.Event> events = session.getEventMessages(request.getFolderPath());
@@ -893,10 +893,9 @@ public class CaldavConnection extends AbstractConnection {
     /**
      * Send caldav response for /.well-known/ request.
      *
-     * @param request Caldav request
      * @throws IOException on error
      */
-    public void sendWellKnown(CaldavRequest request) throws IOException {
+    public void sendWellKnown() throws IOException {
         HashMap<String, String> headers = new HashMap<String, String>();
         headers.put("Location", "/");
         sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, headers);
@@ -1375,11 +1374,11 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isBrokenHrefEncoding() {
-            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/") || isUserAgent("Lightning/1");
+            return isUserAgent("DAVKit/3") || isUserAgent("eM Client/") || isBrokenLightning();
         }
 
         protected boolean isBrokenLightning() {
-            return isUserAgent("Lightning/1");
+            return isUserAgent("Lightning/1.0b2");
         }
 
         protected boolean isLightning() {
