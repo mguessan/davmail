@@ -31,14 +31,14 @@
                         <br/>
                         The path depends on Exchange version and configuration, with or without a reverse proxy.
                         DavMail must be able to find the authentication form at the provided URL.<br/>
-                        Usual paths for different versions:<br/>
+                        Usual paths for different Exchange versions:<br/>
                         <ul>
-                          <li>Exchange 2003: <code>https://exchangeServer/exchange/</code></li>
-                          <li>Exchange 2007 Webdav mode: <code>https://exchangeServer/owa/</code></li>
-                          <li>Exchange 2007 EWS mode: <code>https://exchangeServer/owa/</code></li>
-                          <li>Exchange 2010 EWS mode: <code>https://exchangeServer/owa/</code></li>
+                          <li>Exchange 2003: <code>https://<i>mail.company.com</i>/exchange/</code></li>
+                          <li>Exchange 2007 Webdav mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
+                          <li>Exchange 2007 EWS mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
+                          <li>Exchange 2010 EWS mode: <code>https://<i>mail.company.com</i>/owa/</code></li>
                           <li>Exchange 2010 EWS mode with unsupported authentication form e.g. Windows Live login:
-                              <code>https://exchangeServer/ews/exchange.asmx</code></li>
+                              <code>https://<i>mail.company.com</i>/ews/exchange.asmx</code></li>
                         </ul>
                     </td>
                     <td>https://exchangeServer/owa/</td>
@@ -55,12 +55,13 @@
                 </tr>
                 <tr>
                     <td>Local SMTP port</td>
-                    <td>Local SMTP server port to configure in POP client</td>
+                    <td>Local SMTP server port to configure in SMTP client</td>
                     <td>25</td>
                 </tr>
                 <tr>
-                    <td>Local Caldav HTTP port</td>
-                    <td>Local Caldav server port to configure in Caldav (calendar) client</td>
+                    <td>Local Caldav/Carddav HTTP port</td>
+                    <td>Local Caldav/Carddav server port to configure in Caldav (calendar)
+                        or Carddav (address book) client</td>
                     <td>80</td>
                 </tr>
                 <tr>

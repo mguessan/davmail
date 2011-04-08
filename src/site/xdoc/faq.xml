@@ -33,6 +33,18 @@
             </subsection>
             <subsection name="General">
                 <p>
+                    <strong>EWS endpoint not available</strong>
+                </p>
+                <p>Unfortunately, this probably means your Exchange administrators blocked EWS access.</p>
+                <p>To check this, try to connect to <code>https://<i>mail.company.com</i>/ews/exchange.asmx</code>
+                    in your favorite web browser: you should get an authentication popup. On authentication success,
+                    you should get the EWS wsdl definition. If you don't, please contact the Exchange administrators
+                    to let them fix the broken Exchange server setup.
+                </p>
+                <p>Note: Microsoft Outlook 2011 on OSX and native OSX applications also rely on EWS to connect to
+                    Exchange. Mobile devices (Android phones, iPhones, Windows mobile) use ActiveSync on a different
+                    endpoint.</p>
+                <p>
                     <strong>Authentication fails with invalid user or password message</strong>
                 </p>
                 <p>Authentication fails with the following message:
