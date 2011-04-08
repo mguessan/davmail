@@ -489,6 +489,9 @@ public class EwsExchangeSession extends ExchangeSession {
         message.date = convertDateFromExchange(response.get(Field.get("date").getResponseName()));
         message.deleted = "1".equals(response.get(Field.get("deleted").getResponseName()));
 
+        String lastmodified = convertDateFromExchange(response.get(Field.get("lastmodified").getResponseName()));
+        message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
+
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
             buffer.append("Message");

@@ -708,6 +708,7 @@ public abstract class ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add("read");
         IMAP_MESSAGE_ATTRIBUTES.add("deleted");
         IMAP_MESSAGE_ATTRIBUTES.add("date");
+        IMAP_MESSAGE_ATTRIBUTES.add("lastmodified");
     }
 
     protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<String>();
@@ -1398,6 +1399,10 @@ public abstract class ExchangeSession {
          */
         public int uidNext;
         /**
+         * recent count
+         */
+        public int recent;
+        /**
          * Folder message list, empty before loadMessages call.
          */
         public ExchangeSession.MessageList messages;
@@ -1429,6 +1434,12 @@ public abstract class ExchangeSession {
         public void loadMessages() throws IOException {
             messages = ExchangeSession.this.searchMessages(folderPath, null);
             fixUids(messages);
+            recent = 0;
+            for (Message message:messages) {
+                if (message.recent) {
+                    recent++;
+                }
+            }
         }
 
         /**
@@ -1588,6 +1599,10 @@ public abstract class ExchangeSession {
          */
         public boolean flagged;
         /**
+         * Message flag: recent.
+         */
+        public boolean recent;
+        /**
          * Message flag: draft.
          */
         public boolean draft;
@@ -1657,6 +1672,9 @@ public abstract class ExchangeSession {
             }
             if (deleted) {
                 buffer.append("\\Deleted ");
+            }
+            if (recent) {
+               buffer.append("\\Recent ");
             }
             if (flagged) {
                 buffer.append("\\Flagged ");

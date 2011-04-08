@@ -1761,6 +1761,9 @@ public class DavExchangeSession extends ExchangeSession {
         message.date = convertDateFromExchange(getPropertyIfExists(properties, "date"));
         message.deleted = "1".equals(getPropertyIfExists(properties, "deleted"));
 
+        String lastmodified = convertDateFromExchange(getPropertyIfExists(properties, "lastmodified"));
+        message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
+
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
             buffer.append("Message");

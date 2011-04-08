@@ -217,7 +217,7 @@ public class ImapConnection extends AbstractConnection {
                                             currentFolder = session.getFolder(folderName);
                                             currentFolder.loadMessages();
                                             sendClient("* " + currentFolder.count() + " EXISTS");
-                                            sendClient("* " + currentFolder.count() + " RECENT");
+                                            sendClient("* " + currentFolder.recent + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
                                             if (currentFolder.count() == 0) {
                                                 sendClient("* OK [UIDNEXT 1]");
@@ -544,7 +544,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("MESSAGES ").append(folder.count()).append(' ');
                                             }
                                             if ("RECENT".equalsIgnoreCase(token)) {
-                                                answer.append("RECENT ").append(folder.count()).append(' ');
+                                                answer.append("RECENT ").append(folder.recent).append(' ');
                                             }
                                             if ("UIDNEXT".equalsIgnoreCase(token)) {
                                                 if (folder.count() == 0) {
@@ -649,7 +649,7 @@ public class ImapConnection extends AbstractConnection {
             }
         }
         sendClient("* " + currentFolder.count() + " EXISTS");
-        sendClient("* " + currentFolder.count() + " RECENT");
+        sendClient("* " + currentFolder.recent + " RECENT");
     }
 
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException {
@@ -1394,6 +1394,8 @@ public class ImapConnection extends AbstractConnection {
         }
         if (!properties.isEmpty()) {
             session.updateMessage(message, properties);
+            // message is no longer recent
+            message.recent = false;
         }
     }
 
