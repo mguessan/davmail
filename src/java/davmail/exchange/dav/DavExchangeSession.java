@@ -2230,7 +2230,7 @@ public class DavExchangeSession extends ExchangeSession {
             putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray()));
             int code = httpClient.executeMethod(putmethod);
 
-            if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
+            if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED && code != HttpStatus.SC_INSUFFICIENT_STORAGE) {
                 LOGGER.warn("Draft message creation failed, failover to property update. Note: attachments are lost");
 
                 ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
