@@ -51,6 +51,17 @@ davmail.ssl.keystorePass=password]]></source>
             </subsection>
 
             <subsection name="DavMail to Exchange">
+                <p>
+                    <strong>Custom certificate authority</strong>
+                </p>
+                <p>Most users rely on the interactive accept certificate dialog to handle non public certificate authorities.
+                    However, this will not work with an Exchange server cluster with a different certificate on each server.
+                    In this case, you need to update global Java truststore with the custom certificate authority:
+                </p>
+                <source>keytool -import -alias root -keystore /path/to/jre/lib/security/cacerts -trustcacerts -file rootca.crt -storepass changeit -noprompt</source>
+                <p>
+                    <strong>Client certificate</strong>
+                </p>
                 <p>In most cases, using https in OWA url is enough to secure communication between DavMail and Exchange.
                     However, with Exchange servers setup to require mutual authentication, you will have to register
                     your client certificate in DavMail settings, either through PKCS11 (smartcard) or file certificate.
@@ -84,7 +95,7 @@ name=NSS
 library=softokn3
 nssArgs="configdir='/path/to/firefox/profile' certPrefix='' keyPrefix='' secmod='secmod.db' flags=readOnly"
 slot = 2
-]]></source>                
+]]></source>
 
                 <p>Another one for Coolkey (see <a href="http://pkg-coolkey.alioth.debian.org/">Coolkey for Debian</a>
                     and <a href="http://www7320.nrlssc.navy.mil/pubs/2006/CommonAccessCardLinux.pdf">United States Department of Defense Common Access Cards</a>):</p>
