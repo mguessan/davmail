@@ -135,6 +135,14 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_OK, method.getStatusCode());
     }
 
+    public void testPropfindCalendar() throws IOException {
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        PropFindMethod method = new PropFindMethod("/users/" + session.getAlias() + "/calendar/", null, 1);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_OK, method.getStatusCode());
+    }
+
+
     public void testGetOtherUserCalendar() throws IOException {
         Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         PropFindMethod method = new PropFindMethod("/principals/users/" + Settings.getProperty("davmail.to") + "/calendar/");

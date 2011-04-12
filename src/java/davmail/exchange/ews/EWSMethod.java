@@ -444,6 +444,13 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     /**
+     * Recurring event occurrence
+     */
+    public static class Occurrence {
+        public String originalStart;
+    }
+
+    /**
      * Item
      */
     public static class Item extends HashMap<String, String> {
@@ -456,6 +463,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<FileAttachment> attachments;
         protected List<Attendee> attendees;
         protected final List<String> fieldNames = new ArrayList<String>();
+        protected List<Occurrence> occurrences;
 
         @Override
         public String toString() {
@@ -613,6 +621,22 @@ public abstract class EWSMethod extends PostMethod {
             }
             attendees.add(attendee);
         }
+
+        /**
+         * Add occurrence.
+         *
+         * @param attendee attendee object
+         */
+        public void addOccurrence(Occurrence occurrence) {
+            if (occurrences == null) {
+                occurrences = new ArrayList<Occurrence>();
+            }
+            occurrences.add(occurrence);
+        }
+
+        public List<Occurrence> getOccurrences() {
+            return occurrences;
+        }
     }
 
     /**
@@ -738,6 +762,8 @@ public abstract class EWSMethod extends PostMethod {
                     handleEmailAddresses(reader, responseItem);
                 } else if ("RequiredAttendees".equals(tagLocalName) || "OptionalAttendees".equals(tagLocalName)) {
                     handleAttendees(reader, responseItem, tagLocalName);
+                } else if ("ModifiedOccurrences".equals(tagLocalName)) {
+                    handleModifiedOccurrences(reader, responseItem);
                 } else {
                     if (tagLocalName.endsWith("Id")) {
                         value = getAttributeValue(reader, "Id");
@@ -775,6 +801,32 @@ public abstract class EWSMethod extends PostMethod {
                 String tagLocalName = reader.getLocalName();
                 if ("Attendee".equals(tagLocalName)) {
                     handleAttendee(reader, item, attendeeType);
+                }
+            }
+        }
+    }
+
+    protected void handleModifiedOccurrences(XMLStreamReader reader, Item item) throws XMLStreamException {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "ModifiedOccurrences"))) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Occurrence".equals(tagLocalName)) {
+                    handleOccurrence(reader, item);
+                }
+            }
+        }
+    }
+
+     protected void handleOccurrence(XMLStreamReader reader, Item item) throws XMLStreamException {
+        while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Occurrence"))) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("OriginalStart".equals(tagLocalName)) {
+                    Occurrence occurrence = new Occurrence();
+                    occurrence.originalStart = XMLStreamUtil.getElementText(reader);
+                    item.addOccurrence(occurrence);
                 }
             }
         }

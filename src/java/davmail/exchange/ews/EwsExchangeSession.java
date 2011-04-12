@@ -24,6 +24,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
+import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
@@ -1306,6 +1307,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                    getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
@@ -1337,6 +1339,25 @@ public class EwsExchangeSession extends ExchangeSession {
                         //attendeeProperty.addParam("RSVP", "TRUE");
                         attendeeProperty.addParam("ROLE", attendee.role);
                         localVCalendar.addFirstVeventProperty(attendeeProperty);
+                    }
+                }
+                // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
+                List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
+                if (occurences != null) {
+                    Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
+                    for (EWSMethod.Occurrence occurrence : occurences) {
+                        if (modifiedOccurrencesIterator.hasNext()) {
+                            VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
+                            // fix uid, should be the same as main VEVENT
+                            if (calendaruid != null) {
+                                modifiedOccurrence.setPropertyValue("UID", calendaruid);
+                            }
+                            VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                            if (recurrenceId != null) {
+                                recurrenceId.removeParam("TZID");
+                                recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                            }
+                        }
                     }
                 }
                 // restore mozilla invitations option

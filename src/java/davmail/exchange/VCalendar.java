@@ -573,4 +573,18 @@ public class VCalendar extends VObject {
         return status;
     }
 
+    public List<VObject> getModifiedOccurrences() {
+        boolean first = true;
+        ArrayList<VObject> results = new ArrayList<VObject>();
+        for (VObject vObject:vObjects) {
+           if ("VEVENT".equals(vObject.type)) {
+               if (first) {
+                   first = false;
+               } else {
+                   results.add(vObject);
+               }
+           }
+        }
+        return results;
+    }
 }
