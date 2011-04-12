@@ -84,9 +84,20 @@ public final class ExchangeSessionFactory {
      * @throws IOException on error
      */
     public static ExchangeSession getInstance(String userName, String password) throws IOException {
+        String baseUrl = Settings.getProperty("davmail.url");
+        if (Settings.getBooleanProperty("davmail.server")) {
+            return getInstance(baseUrl, userName, password);
+        } else {
+            // serialize session creation in workstation mode to avoid multiple OTP requests
+            synchronized (LOCK) {
+                return getInstance(baseUrl, userName, password);
+            }
+        }
+    }
+
+    public static ExchangeSession getInstance(String baseUrl, String userName, String password) throws IOException {
         ExchangeSession session = null;
         try {
-            String baseUrl = Settings.getProperty("davmail.url");
 
             // prepend default windows domain prefix
             String defaultDomain = Settings.getProperty("davmail.defaultDomain");
