@@ -51,6 +51,7 @@ import javax.mail.util.SharedByteArrayInputStream;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
+import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -102,6 +103,25 @@ public class DavExchangeSession extends ExchangeSession {
     protected String outboxName;
 
     protected static final String USERS = "/users/";
+
+    @Override
+    public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
+        // experimental: try to reset session timeout
+        GetMethod getMethod = null;
+        try {
+            getMethod = new GetMethod(URIUtil.encodePath(getFolderPath("")));
+            httpClient.executeMethod(getMethod);
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage());
+        } finally {
+            if (getMethod != null) {
+                getMethod.releaseConnection();
+            }
+        }
+
+        return super.isExpired();
+    }
+
 
     /**
      * Convert logical or relative folder path to exchange folder path.
