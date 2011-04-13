@@ -92,6 +92,9 @@ public class ImapConnection extends AbstractConnection {
                 tokens = new IMAPTokenizer(line);
                 if (tokens.hasMoreTokens()) {
                     commandId = tokens.nextToken();
+
+                    checkInfiniteLoop(line);
+                    
                     if (tokens.hasMoreTokens()) {
                         String command = tokens.nextToken();
 
@@ -209,6 +212,7 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
+                                        @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
                                         String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
                                         if (baseMailboxPath != null && !folderName.startsWith("/")) {
                                             folderName = baseMailboxPath + folderName;
@@ -611,6 +615,36 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    protected String lastCommand;
+    protected int lastCommandCount;
+
+    /**
+     * Detect infinite loop on the client side.
+     * @param line IMAP command line
+     * @throws IOException on infinite loop
+     */
+    protected void checkInfiniteLoop(String line) throws IOException {
+        int spaceIndex = line.indexOf(' ');
+        if (spaceIndex < 0) {
+            // invalid command line, reset
+            lastCommand = null;
+            lastCommandCount = 0;
+        } else {
+            String command = line.substring(spaceIndex);
+            if (command.equals(lastCommand)) {
+                lastCommandCount++;
+                if (lastCommandCount > 100 && !"NOOP".equalsIgnoreCase(lastCommand)) {
+                    // more than a hundred times the same command => this is a client infinite loop, close connection
+                    throw new IOException("Infinite loop on command "+command+" detected");
+                }
+            } else {
+                // new command, reset
+                lastCommand = command;
+                lastCommandCount = 0;
+            }
+        }
     }
 
     /**
