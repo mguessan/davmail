@@ -347,6 +347,10 @@
                        replace="">
             <fileset dir="target/site"/>
         </replaceregexp>
+        <replaceregexp match="&lt;a href=&quot;http://sourceforge.net/projects/davmail&quot; id=&quot;bannerRight&quot;&gt;"
+                       replace="&lt;script type=&quot;text/javascript&quot;&gt;&lt;!-- ${line.separator}var pkBaseURL = ((&quot;https:&quot; == document.location.protocol) ? &quot;https://sourceforge.net/apps/piwik/davmail/&quot; : &quot;http://sourceforge.net/apps/piwik/davmail/&quot;); ${line.separator}document.write(unescape(&quot;%3Cscript src='&quot; + pkBaseURL + &quot;piwik.js' type='text/javascript'%3E%3C/script%3E&quot;)); ${line.separator}//--&gt;&lt;/script&gt;${line.separator}&lt;script type=&quot;text/javascript&quot;&gt;${line.separator}try {var piwikTracker = Piwik.getTracker(pkBaseURL + &quot;piwik.php&quot;, 1);piwikTracker.trackPageView();piwikTracker.enableLinkTracking();}catch(err){}${line.separator}&lt;/script&gt;&lt;noscript&gt;&lt;p&gt;&lt;img src=&quot;http://sourceforge.net/apps/piwik/davmail/piwik.php?idsite=1&quot; style=&quot;border:0&quot; alt=&quot;&quot;/&gt;&lt;/p&gt;&lt;/noscript&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
     </target>
 
     <target name='upload-site' depends="fix-site">
