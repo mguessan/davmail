@@ -107,15 +107,18 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         // experimental: try to reset session timeout
-        GetMethod getMethod = null;
-        try {
-            getMethod = new GetMethod(URIUtil.encodePath(getFolderPath("")));
-            httpClient.executeMethod(getMethod);
-        } catch (IOException e) {
-            LOGGER.warn(e.getMessage());
-        } finally {
-            if (getMethod != null) {
-                getMethod.releaseConnection();
+        if ("Exchange2007".equals(serverVersion)) {
+            GetMethod getMethod = null;
+            try {
+                getMethod = new GetMethod("/owa/");
+                getMethod.setFollowRedirects(false);
+                httpClient.executeMethod(getMethod);
+            } catch (IOException e) {
+                LOGGER.warn(e.getMessage());
+            } finally {
+                if (getMethod != null) {
+                    getMethod.releaseConnection();
+                }
             }
         }
 
@@ -530,7 +533,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath == null || email == null) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_PASSWORD_EXPIRED");
         }
-        LOGGER.debug("Current user email is " + email + ", alias is " + alias + ", mailPath is " + mailPath + " on "+ serverVersion);
+        LOGGER.debug("Current user email is " + email + ", alias is " + alias + ", mailPath is " + mailPath + " on " + serverVersion);
         rootPath = mailPath.substring(0, mailPath.lastIndexOf('/', mailPath.length() - 2) + 1);
     }
 
@@ -2261,11 +2264,11 @@ public class DavExchangeSession extends ExchangeSession {
                 String contentType = mimeMessage.getContentType();
 
                 if (contentType.startsWith("text/plain")) {
-                    propertyList.add(Field.createDavProperty("description", (String)mimeMessage.getContent()));
+                    propertyList.add(Field.createDavProperty("description", (String) mimeMessage.getContent()));
                 } else if (contentType.startsWith("text/html")) {
-                    propertyList.add(Field.createDavProperty("htmldescription", (String)mimeMessage.getContent()));
+                    propertyList.add(Field.createDavProperty("htmldescription", (String) mimeMessage.getContent()));
                 } else {
-                    LOGGER.warn("Unsupported content type: "+contentType+" message body will be empty");
+                    LOGGER.warn("Unsupported content type: " + contentType + " message body will be empty");
                 }
 
                 propertyList.add(Field.createDavProperty("subject", mimeMessage.getHeader("subject", ",")));
