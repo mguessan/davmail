@@ -632,7 +632,7 @@ public class ImapConnection extends AbstractConnection {
             lastCommand = null;
             lastCommandCount = 0;
         } else {
-            String command = line.substring(spaceIndex);
+            String command = line.substring(spaceIndex + 1);
             if (command.equals(lastCommand)) {
                 lastCommandCount++;
                 if (lastCommandCount > 100 && !"NOOP".equalsIgnoreCase(lastCommand)) {
