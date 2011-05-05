@@ -583,6 +583,13 @@ public class LdapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
             throw e;
+        } finally {
+            // cancel all search threads
+            synchronized (searchThreadMap) {
+                for (SearchRunnable searchRunnable:searchThreadMap.values()) {
+                    searchRunnable.abandon();
+                }
+            }
         }
     }
 
