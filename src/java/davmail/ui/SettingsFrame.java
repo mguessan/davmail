@@ -89,6 +89,7 @@ public class SettingsFrame extends JFrame {
     JComboBox httpclientLoggingLevelField;
     JComboBox wireLoggingLevelField;
     JTextField logFilePathField;
+    JTextField logFileSizeField;
 
     JCheckBox caldavEditNotificationsField;
     JTextField caldavAlarmSoundField;
@@ -444,6 +445,7 @@ public class SettingsFrame extends JFrame {
         httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
         wireLoggingLevelField = new JComboBox(LOG_LEVELS);
         logFilePathField = new JTextField(Settings.getProperty("davmail.logFilePath"), 15);
+        logFileSizeField = new JTextField(Settings.getProperty("davmail.logFileSize"), 15);
 
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
@@ -455,8 +457,9 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(rightLoggingPanel, BundleMessage.format("UI_LOG_HTTPCLIENT"), httpclientLoggingLevelField);
         addSettingComponent(rightLoggingPanel, BundleMessage.format("UI_LOG_WIRE"), wireLoggingLevelField);
 
-        JPanel logFilePathPanel = new JPanel();
+        JPanel logFilePathPanel = new JPanel(new GridLayout(2, 2));
         addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_PATH"), logFilePathField);
+        addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_SIZE"), logFileSizeField);
 
         JPanel loggingPanel = new JPanel();
         loggingPanel.setLayout(new BoxLayout(loggingPanel, BoxLayout.Y_AXIS));
@@ -540,6 +543,7 @@ public class SettingsFrame extends JFrame {
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
         logFilePathField.setText(Settings.getProperty("davmail.logFilePath"));
+        logFileSizeField.setText(Settings.getProperty("davmail.logFileSize"));
     }
 
     protected boolean isSslEnabled() {
@@ -680,6 +684,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
                 Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
+                Settings.setProperty("davmail.logFileSize", logFileSizeField.getText());
 
                 setVisible(false);
                 Settings.save();
