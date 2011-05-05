@@ -247,6 +247,13 @@ calendar.debug.log.verbose=true]]></source>
                     <code>davmail.imapAutoExpunge=true</code>
                 </p>
                 <p>
+                    <strong>Duplicate messages in Sent folder</strong>
+                </p>
+                <p>Messages sent through DavMail appear twice in Sent folder when the IMAP client is setup
+                    to store sent messages on the server as Exchange already saves sent messages in this folder.
+                    Change IMAP client settings to avoid this issue.
+                </p>
+                <p>
                     <strong>Sent messages encoding issue with Thunderbird</strong>
                 </p>
                 <p>If special characters appear replaced with ? in sent messages, set
