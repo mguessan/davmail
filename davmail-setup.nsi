@@ -3,7 +3,7 @@
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "DavMail"
 !define PRODUCT_VERSION "${VERSION}"
-!define PRODUCT_PUBLISHER "Mickaël Guessant"
+!define PRODUCT_PUBLISHER "MickaÃ«l Guessant"
 !define PRODUCT_WEB_SITE "http://sourceforge.net/projects/davmail"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\davmail.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
@@ -84,6 +84,7 @@ Section "MainSection" SEC01
   File "dist\davmail.jar"
   File "dist\davmailconsole.exe"
   File "dist\davmailservice.exe"
+  File "dist\davmail64.exe"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
   File "dist\lib\commons-codec-1.3.jar"
@@ -102,6 +103,7 @@ Section "MainSection" SEC01
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\stax2-api-3.0.3.jar"
   File "dist\lib\swt-3.6-win32-x86.jar"
+  File "dist\lib\swt-3.6.2-win32-x86_64.jar"
   File "dist\lib\woodstox-core-asl-4.0.9.jar"
   File "dist\lib\xercesImpl-2.8.1.jar"
 
@@ -175,9 +177,11 @@ no_quest:
   Delete "dist\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.0.3.jar"
   Delete "$INSTDIR\lib\swt-3.6-win32-x86.jar"
+  Delete "$INSTDIR\lib\swt-3.6.2-win32-x86_64.jar"  
   Delete "$INSTDIR\lib\woodstox-core-asl-4.0.9.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
+  Delete "$INSTDIR\davmail64.exe"
   Delete "$INSTDIR\davmailservice.exe"
   Delete "$INSTDIR\davmailconsole.exe"
   Delete "$INSTDIR\davmail.log"

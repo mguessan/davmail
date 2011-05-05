@@ -266,6 +266,7 @@
         <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailservice.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
+        <jsmoothgen project="davmail64.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <zip file="dist/davmail-${release-name}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
@@ -306,7 +307,7 @@
                 <include name="lib/swt-*-gtk-linux-x86.jar"/>
                 <exclude name="lib/swt-*-gtk-linux-x86_64.jar"/>
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
-                <exclude name="lib/swt-*-win32-x86.jar"/>
+                <exclude name="lib/swt-*-win32-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
         </tar>
@@ -321,7 +322,7 @@
                 <include name="lib/swt-*-gtk-linux-x86_64.jar"/>
                 <exclude name="lib/swt-*-gtk-linux-x86.jar"/>
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
-                <exclude name="lib/swt-*-win32-x86.jar"/>
+                <exclude name="lib/swt-*-win32-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
         </tar>

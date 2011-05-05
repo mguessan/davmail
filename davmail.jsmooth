@@ -29,7 +29,7 @@
 <classPath>dist/lib/xercesImpl-2.8.1.jar</classPath>
 <embeddedJar>false</embeddedJar>
 <executableName>dist/davmail.exe</executableName>
-<iconLocation>src/java/tray32.png</iconLocation>
+<iconLocation>src/java/tray48.png</iconLocation>
 <initialMemoryHeap>-1</initialMemoryHeap>
 <javaProperties>
 <name>sun.net.inetaddr.ttl</name>
