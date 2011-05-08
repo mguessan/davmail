@@ -47,6 +47,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     protected SwtGatewayTray() {
     }
 
+    SettingsFrame settingsFrame;
+    AboutFrame aboutFrame;
+
     private static TrayItem trayItem;
     private static java.awt.Image awtImage;
     private static Image image;
@@ -167,28 +170,35 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         return result;
     }
 
+    boolean lookAndFeelSet;
+
+    protected void setLookAndFeel() {
+        if (!lookAndFeelSet) {
+            lookAndFeelSet = true;
+            try {
+                String lafClassName = UIManager.getSystemLookAndFeelClassName();
+                // workaround for bug when SWT and AWT both try to access Gtk
+                if (lafClassName.indexOf("gtk") > 0) {
+                    lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
+                    // replace AWT event queue Gdk error handler to avoid application crash
+                    Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
+                    SwtAwtEventQueue.registerErrorHandler();
+                    UIManager.setLookAndFeel(lafClassName);
+                    SwtAwtEventQueue.handleGdkError();
+                } else {
+                    UIManager.setLookAndFeel(lafClassName);
+                }
+            } catch (Exception e) {
+                DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
+            }
+        }
+    }
+
+
     /**
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        // set native look and feel
-        try {
-            String lafClassName = UIManager.getSystemLookAndFeelClassName();
-            // workaround for bug when SWT and AWT both try to access Gtk
-            if (lafClassName.indexOf("gtk") > 0) {
-                lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
-                // replace AWT event queue Gdk error handler to avoid application crash
-                Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
-                SwtAwtEventQueue.registerErrorHandler();
-                UIManager.setLookAndFeel(lafClassName);
-                SwtAwtEventQueue.handleGdkError();
-            } else {
-                UIManager.setLookAndFeel(lafClassName);
-            }
-        } catch (Exception e) {
-            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
-        }
-
 
         new Thread("SWT") {
             @Override
@@ -225,12 +235,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
                         aboutItem.setText(BundleMessage.format("UI_ABOUT"));
-                        final AboutFrame aboutFrame = new AboutFrame();
                         aboutItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
                                 SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
+                                                if (aboutFrame == null) {
+                                                    setLookAndFeel();
+                                                    aboutFrame = new AboutFrame();
+                                                }
                                                 aboutFrame.update();
                                                 aboutFrame.setVisible(true);
                                             }
@@ -238,12 +251,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         });
 
-                        final SettingsFrame settingsFrame = new SettingsFrame();
                         trayItem.addListener(SWT.DefaultSelection, new Listener() {
                             public void handleEvent(Event event) {
                                 SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
+                                                // create frame on first call
+                                                if (settingsFrame == null) {
+                                                    setLookAndFeel();
+                                                    settingsFrame = new SettingsFrame();
+                                                }
                                                 settingsFrame.reload();
                                                 settingsFrame.setVisible(true);
                                                 // workaround for focus on first open
@@ -261,6 +278,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
+                                                // create frame on first call
+                                                if (settingsFrame == null) {
+                                                    setLookAndFeel();
+                                                    settingsFrame = new SettingsFrame();
+                                                }
                                                 settingsFrame.reload();
                                                 settingsFrame.setVisible(true);
                                                 // workaround for focus on first open
@@ -281,6 +303,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                                 Logger rootLogger = Logger.getRootLogger();
                                                 LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
                                                 if (lf5Appender == null) {
+                                                    setLookAndFeel();
                                                     logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
                                                         @Override
                                                         protected void closeAfterConfirm() {
@@ -308,6 +331,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         // display settings frame on first start
                         if (Settings.isFirstStart()) {
+                            // create frame on first call
+                            if (settingsFrame == null) {
+                                setLookAndFeel();
+                                settingsFrame = new SettingsFrame();
+                            }
                             settingsFrame.setVisible(true);
                         }
                         synchronized (mainThread) {
@@ -341,8 +369,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             // already disposed
                         }
                         // dispose AWT frames
-                        settingsFrame.dispose();
-                        aboutFrame.dispose();
+                        if (settingsFrame != null) {
+                            settingsFrame.dispose();
+                        }
+                        if (aboutFrame != null) {
+                            aboutFrame.dispose();
+                        }
                         if (logBrokerMonitor != null) {
                             logBrokerMonitor.dispose();
                         }
