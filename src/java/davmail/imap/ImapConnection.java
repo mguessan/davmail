@@ -941,17 +941,7 @@ public class ImapConnection extends AbstractConnection {
             buffer.append(' ');
         }
         if (value != null && value.length > 0) {
-            String unfoldedValue = MimeUtility.unfold(value[0]);
-            if (unfoldedValue.indexOf('"') >= 0) {
-                buffer.append('{');
-                buffer.append(unfoldedValue.length());
-                buffer.append("}\r\n");
-                buffer.append(unfoldedValue);
-            } else {
-                buffer.append('"');
-                buffer.append(unfoldedValue);
-                buffer.append('"');
-            }
+            appendEnvelopeHeaderValue(buffer, MimeUtility.unfold(value[0]));
         } else {
             buffer.append("NIL");
         }
@@ -995,6 +985,20 @@ public class ImapConnection extends AbstractConnection {
         } else {
             buffer.append("NIL");
         }
+    }
+
+    protected void appendEnvelopeHeaderValue(StringBuilder buffer, String unfoldedValue) {
+        if (unfoldedValue.indexOf('"') >= 0) {
+            buffer.append('{');
+            buffer.append(unfoldedValue.length());
+            buffer.append("}\r\n");
+            buffer.append(unfoldedValue);
+        } else {
+            buffer.append('"');
+            buffer.append(unfoldedValue);
+            buffer.append('"');
+        }
+
     }
 
     protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
