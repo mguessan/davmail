@@ -936,7 +936,7 @@ public class ImapConnection extends AbstractConnection {
         buffer.append(')');
     }
 
-    protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) {
+    protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) throws UnsupportedEncodingException {
         if (buffer.charAt(buffer.length() - 1) != '(') {
             buffer.append(' ');
         }
@@ -958,7 +958,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append('(');
                     String personal = address.getPersonal();
                     if (personal != null) {
-                        buffer.append('"').append(MimeUtility.encodeText(personal)).append('"');
+                        appendEnvelopeHeaderValue(buffer, personal);
                     } else {
                         buffer.append("NIL");
                     }
@@ -987,15 +987,15 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected void appendEnvelopeHeaderValue(StringBuilder buffer, String unfoldedValue) {
-        if (unfoldedValue.indexOf('"') >= 0) {
+    protected void appendEnvelopeHeaderValue(StringBuilder buffer, String value) throws UnsupportedEncodingException {
+        if (value.indexOf('"') >= 0) {
             buffer.append('{');
-            buffer.append(unfoldedValue.length());
+            buffer.append(value.length());
             buffer.append("}\r\n");
-            buffer.append(unfoldedValue);
+            buffer.append(value);
         } else {
             buffer.append('"');
-            buffer.append(unfoldedValue);
+            buffer.append(MimeUtility.encodeText(value));
             buffer.append('"');
         }
 
