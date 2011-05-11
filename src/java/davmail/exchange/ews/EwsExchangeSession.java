@@ -1394,6 +1394,19 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
+    protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
+        // instancetype 0 single appointment / 1 master recurring appointment
+        if (excludeTasks) {
+            return or(isTrue("isrecurring"),
+                and(isFalse("isrecurring"), dateCondition));
+        } else {
+            return or(not(isEqualTo("outlookmessageclass", "IPM.Appointment")),
+                    isTrue("isrecurring"),
+                    and(isFalse("isrecurring"), dateCondition));
+        }
+    }
+
+    @Override
     public List<ExchangeSession.Event> getEventMessages(String folderPath) throws IOException {
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(startsWith("outlookmessageclass", "IPM.Schedule.Meeting."),

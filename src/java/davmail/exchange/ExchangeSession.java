@@ -2516,18 +2516,12 @@ public abstract class ExchangeSession {
         }
 
         boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        Condition condition;
-        if (caldavDisableTasks) {
-            condition = or(isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        } else {
-            condition = or(isNull("instancetype"),
-                    isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        }
+        Condition condition = getCalendarItemCondition(caldavDisableTasks, dateCondition);
 
         return searchEvents(folderPath, condition);
     }
+
+    protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
 
     protected Condition getRangeCondition(String timeRangeStart, String timeRangeEnd) throws IOException {
         try {
@@ -2557,15 +2551,7 @@ public abstract class ExchangeSession {
     public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
         boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        Condition condition;
-        if (caldavDisableTasks) {
-            condition = or(isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        } else {
-            condition = or(isNull("instancetype"),
-                    isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        }
+        Condition condition = getCalendarItemCondition(caldavDisableTasks, dateCondition);
 
         return searchEvents(folderPath, condition);
     }
@@ -2581,19 +2567,18 @@ public abstract class ExchangeSession {
      */
     public List<Event> searchEventsOnly(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
-        return searchEvents(folderPath, or(isEqualTo("instancetype", 1),
-                and(isEqualTo("instancetype", 0), dateCondition)));
+        return searchEvents(folderPath, getCalendarItemCondition(true, dateCondition));
     }
 
     /**
      * Search tasks only (VTODO).
      *
      * @param folderPath Exchange folder path
-     * @return list of calendar events
+     * @return list of tasks
      * @throws IOException on error
      */
     public List<Event> searchTasksOnly(String folderPath) throws IOException {
-        return searchEvents(folderPath, isNull("instancetype"));
+        return searchEvents(folderPath, not(isEqualTo("outlookmessageclass", "IPM.Appointment")));
     }
 
     /**
@@ -2611,7 +2596,7 @@ public abstract class ExchangeSession {
             LOGGER.debug("Shared or public calendar: exclude private events");
             privateCondition = isEqualTo("sensitivity", 0);
         }
-        // instancetype 0 single appointment / 1 master recurring appointment
+        
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(filter, privateCondition));
     }

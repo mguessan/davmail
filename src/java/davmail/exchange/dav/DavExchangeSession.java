@@ -1867,6 +1867,19 @@ public class DavExchangeSession extends ExchangeSession {
         return events;
     }
 
+    @Override
+    protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
+        // instancetype 0 single appointment / 1 master recurring appointment
+        if (excludeTasks) {
+            return or(isEqualTo("instancetype", 1),
+                    and(isEqualTo("instancetype", 0), dateCondition));
+        } else {
+            return or(isNull("instancetype"),
+                    isEqualTo("instancetype", 1),
+                    and(isEqualTo("instancetype", 0), dateCondition));
+        }
+    }
+
     protected MultiStatusResponse[] searchItems(String folderPath, Set<String> attributes, Condition condition,
                                                 FolderQueryTraversal folderQueryTraversal, int maxCount) throws IOException {
         String folderUrl = getFolderPath(folderPath);
