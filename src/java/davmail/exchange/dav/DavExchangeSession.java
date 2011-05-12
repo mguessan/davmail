@@ -2564,6 +2564,18 @@ public class DavExchangeSession extends ExchangeSession {
                 inputStream = method.getResponseBodyAsStream();
             }
             inputStream = new FilterInputStream(inputStream) {
+                int totalCount;
+                int lastLogCount;
+
+                public int read(byte buffer[], int offset, int length) throws IOException {
+                    int count = super.read(buffer, offset, length);
+                    totalCount += count;
+                    if (totalCount - lastLogCount > 1024*1024) {
+                        LOGGER.debug("Downloaded " + (totalCount/1024) + " KBytes from " + method.getURI());
+                        lastLogCount = totalCount;
+                    }
+                    return count;
+                }
 
                 @Override
                 public void close() throws IOException {
