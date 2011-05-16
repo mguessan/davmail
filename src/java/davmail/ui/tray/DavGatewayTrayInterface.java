@@ -68,8 +68,4 @@ public interface DavGatewayTrayInterface {
      */
     void init();
 
-    /**
-     * Set Look and Feel to system LAF
-     */
-    void setLookAndFeel();
 }

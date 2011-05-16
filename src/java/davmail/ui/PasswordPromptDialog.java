@@ -52,7 +52,6 @@ public class PasswordPromptDialog extends JDialog {
      * @param prompt password prompt from PKCS11 module
      */
     public PasswordPromptDialog(String prompt) {
-        DavGatewayTray.setLookAndFeel();
         setAlwaysOnTop(true);
 
         setTitle(BundleMessage.format("UI_PASSWORD_PROMPT"));

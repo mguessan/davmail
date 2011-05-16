@@ -253,22 +253,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         menu.add(exitItem);
     }
 
-    boolean lookAndFeelSet;
-
-    public void setLookAndFeel() {
-        if (!lookAndFeelSet) {
-            lookAndFeelSet = true;
-            // set native look and feel
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_SYSTEM_LOOK_AND_FEEL"), e);
-            }
-        }
-    }
-
     protected void createAndShowGUI() {
-        setLookAndFeel();
+        System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
 
         image = DavGatewayTray.loadImage("tray.png");
         image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);

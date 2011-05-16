@@ -57,7 +57,6 @@ public class NotificationDialog extends JDialog {
     }
 
     public NotificationDialog(String to, String cc, String subject) {
-        DavGatewayTray.setLookAndFeel();
         setModal(true);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_CALDAV_NOTIFICATION"));

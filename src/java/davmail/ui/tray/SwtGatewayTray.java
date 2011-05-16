@@ -182,11 +182,13 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
                     // replace AWT event queue Gdk error handler to avoid application crash
                     Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
-                    SwtAwtEventQueue.registerErrorHandler();
-                    UIManager.setLookAndFeel(lafClassName);
-                    SwtAwtEventQueue.handleGdkError();
+                    //SwtAwtEventQueue.registerErrorHandler();
+                    //UIManager.setLookAndFeel(lafClassName);
+                    //SwtAwtEventQueue.handleGdkError();
+                    System.setProperty("swing.defaultlaf", lafClassName);
                 } else {
-                    UIManager.setLookAndFeel(lafClassName);
+                    //UIManager.setLookAndFeel(lafClassName);
+                    System.setProperty("swing.defaultlaf", lafClassName);
                 }
             } catch (Exception e) {
                 DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
@@ -194,11 +196,24 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         }
     }
 
-
     /**
      * Create tray icon and register frame listeners.
      */
     public void init() {
+        try {
+            String lafClassName = UIManager.getSystemLookAndFeelClassName();
+            // workaround for bug when SWT and AWT both try to access Gtk
+            if (lafClassName.indexOf("gtk") > 0) {
+                lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
+                // replace AWT event queue Gdk error handler to avoid application crash
+                Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
+                System.setProperty("swing.defaultlaf", lafClassName);
+            } else {
+                System.setProperty("swing.defaultlaf", lafClassName);
+            }
+        } catch (Exception e) {
+            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
+        }
 
         new Thread("SWT") {
             @Override
@@ -300,7 +315,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                                 Logger rootLogger = Logger.getRootLogger();
                                                 LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
                                                 if (lf5Appender == null) {
-                                                    setLookAndFeel();
                                                     logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
                                                         @Override
                                                         protected void closeAfterConfirm() {
@@ -330,7 +344,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         if (Settings.isFirstStart()) {
                             // create frame on first call
                             if (settingsFrame == null) {
-                                setLookAndFeel();
                                 settingsFrame = new SettingsFrame();
                             }
                             settingsFrame.setVisible(true);
