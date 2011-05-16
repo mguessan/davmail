@@ -2572,6 +2572,7 @@ public class DavExchangeSession extends ExchangeSession {
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024*1024) {
                         LOGGER.debug("Downloaded " + (totalCount/1024) + " KBytes from " + method.getURI());
+                        DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
                     return count;
