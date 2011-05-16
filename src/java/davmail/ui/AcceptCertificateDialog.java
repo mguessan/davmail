@@ -70,6 +70,7 @@ public class AcceptCertificateDialog extends JDialog {
      * @param certificate certificate sent by server
      */
     public AcceptCertificateDialog(X509Certificate certificate) {
+        DavGatewayTray.setLookAndFeel();
         setAlwaysOnTop(true);
         String sha1Hash = DavGatewayX509TrustManager.getFormattedHash(certificate);
         DateFormat formatter = DateFormat.getDateInstance(DateFormat.MEDIUM);

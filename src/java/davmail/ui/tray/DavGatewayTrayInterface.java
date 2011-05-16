@@ -67,4 +67,9 @@ public interface DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     void init();
+
+    /**
+     * Set Look and Feel to system LAF
+     */
+    void setLookAndFeel();
 }

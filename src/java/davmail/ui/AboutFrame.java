@@ -46,6 +46,7 @@ public class AboutFrame extends JFrame {
      * About frame.
      */
     public AboutFrame() {
+        DavGatewayTray.setLookAndFeel();
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
         setIconImage(DavGatewayTray.getFrameIcon());

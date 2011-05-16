@@ -291,4 +291,8 @@ public final class DavGatewayTray {
         }
         return result;
     }
+
+    public static void setLookAndFeel() {
+        davGatewayTray.setLookAndFeel();
+    }
 }

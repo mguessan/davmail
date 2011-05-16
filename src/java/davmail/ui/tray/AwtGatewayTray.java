@@ -175,14 +175,22 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    boolean lookAndFeelSet;
+
+    public void setLookAndFeel() {
+        if (!lookAndFeelSet) {
+            lookAndFeelSet = true;
+            // set native look and feel
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_SYSTEM_LOOK_AND_FEEL"), e);
+            }
+        }
+    }
 
     protected void createAndShowGUI() {
-        // set native look and feel
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_SYSTEM_LOOK_AND_FEEL"), e);
-        }
+        setLookAndFeel();
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();

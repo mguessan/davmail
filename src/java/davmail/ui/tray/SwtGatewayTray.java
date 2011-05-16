@@ -172,7 +172,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     boolean lookAndFeelSet;
 
-    protected void setLookAndFeel() {
+    public void setLookAndFeel() {
         if (!lookAndFeelSet) {
             lookAndFeelSet = true;
             try {
@@ -241,7 +241,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                         new Runnable() {
                                             public void run() {
                                                 if (aboutFrame == null) {
-                                                    setLookAndFeel();
                                                     aboutFrame = new AboutFrame();
                                                 }
                                                 aboutFrame.update();
@@ -258,7 +257,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                             public void run() {
                                                 // create frame on first call
                                                 if (settingsFrame == null) {
-                                                    setLookAndFeel();
                                                     settingsFrame = new SettingsFrame();
                                                 }
                                                 settingsFrame.reload();
@@ -280,7 +278,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                             public void run() {
                                                 // create frame on first call
                                                 if (settingsFrame == null) {
-                                                    setLookAndFeel();
                                                     settingsFrame = new SettingsFrame();
                                                 }
                                                 settingsFrame.reload();
