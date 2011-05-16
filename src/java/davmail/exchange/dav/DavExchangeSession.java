@@ -1697,7 +1697,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void moveItem(String sourcePath, String targetPath) throws IOException {
         MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
-                getEscapedUrlFromPath(URIUtil.encodePath(getFolderPath(targetPath))), false);
+                URIUtil.encodePath(getFolderPath(targetPath)), false);
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -2537,9 +2537,9 @@ public class DavExchangeSession extends ExchangeSession {
         return baos.toByteArray();
     }
 
-    protected String getEscapedUrlFromPath(String escapdePath) throws URIException {
+    protected String getEscapedUrlFromPath(String escapedPath) throws URIException {
         URI uri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
-        uri.setEscapedPath(escapdePath);
+        uri.setEscapedPath(escapedPath);
         return uri.getEscapedURI();
     }
 
@@ -2611,8 +2611,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void copyMessage(String sourceUrl, String targetFolder) throws IOException {
         String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
-        String targetUri = getEscapedUrlFromPath(targetPath);
-        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetUri, false);
+        CopyMethod method = new CopyMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
         // allow rename if a message with the same name exists
         method.addRequestHeader("Allow-Rename", "t");
         try {
