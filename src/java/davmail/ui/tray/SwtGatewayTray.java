@@ -171,10 +171,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
+        // register error handler to avoid application crash on concurrent X access from SWT and AWT
+        try {
+            OS.gdk_error_trap_push();
+        } catch (NoClassDefFoundError e) {
+            // ignore
+        }
         final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
-            if (systemLookAndFeelClassName.indexOf("gtk") >=0) {
+            if (systemLookAndFeelClassName.indexOf("gtk") >= 0) {
                 System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
             } else {
                 System.setProperty("swing.defaultlaf", systemLookAndFeelClassName);
@@ -307,11 +313,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 shell.dispose();
                             }
                         });
-
-                        // register error handler to avoid application crash on concurrent X access from SWT and AWT
-                        if (systemLookAndFeelClassName.indexOf("gtk") >=0) {
-                            OS.gdk_error_trap_push();
-                        }
 
                         // display settings frame on first start
                         if (Settings.isFirstStart()) {
