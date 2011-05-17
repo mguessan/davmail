@@ -30,13 +30,10 @@ import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 
@@ -170,46 +167,17 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         return result;
     }
 
-    boolean lookAndFeelSet;
-
-    public void setLookAndFeel() {
-        if (!lookAndFeelSet) {
-            lookAndFeelSet = true;
-            try {
-                String lafClassName = UIManager.getSystemLookAndFeelClassName();
-                // workaround for bug when SWT and AWT both try to access Gtk
-                if (lafClassName.indexOf("gtk") > 0) {
-                    lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
-                    // replace AWT event queue Gdk error handler to avoid application crash
-                    Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
-                    //SwtAwtEventQueue.registerErrorHandler();
-                    //UIManager.setLookAndFeel(lafClassName);
-                    //SwtAwtEventQueue.handleGdkError();
-                    System.setProperty("swing.defaultlaf", lafClassName);
-                } else {
-                    //UIManager.setLookAndFeel(lafClassName);
-                    System.setProperty("swing.defaultlaf", lafClassName);
-                }
-            } catch (Exception e) {
-                DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
-            }
-        }
-    }
-
     /**
      * Create tray icon and register frame listeners.
      */
     public void init() {
+        final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
         try {
-            String lafClassName = UIManager.getSystemLookAndFeelClassName();
             // workaround for bug when SWT and AWT both try to access Gtk
-            if (lafClassName.indexOf("gtk") > 0) {
-                lafClassName = UIManager.getCrossPlatformLookAndFeelClassName();
-                // replace AWT event queue Gdk error handler to avoid application crash
-                Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SwtAwtEventQueue());
-                System.setProperty("swing.defaultlaf", lafClassName);
+            if (systemLookAndFeelClassName.indexOf("gtk") >=0) {
+                System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
             } else {
-                System.setProperty("swing.defaultlaf", lafClassName);
+                System.setProperty("swing.defaultlaf", systemLookAndFeelClassName);
             }
         } catch (Exception e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
@@ -252,7 +220,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         aboutItem.setText(BundleMessage.format("UI_ABOUT"));
                         aboutItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
+                                display.asyncExec(
                                         new Runnable() {
                                             public void run() {
                                                 if (aboutFrame == null) {
@@ -267,7 +235,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         trayItem.addListener(SWT.DefaultSelection, new Listener() {
                             public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
+                                display.asyncExec(
                                         new Runnable() {
                                             public void run() {
                                                 // create frame on first call
@@ -288,7 +256,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
                         defaultItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
+                                display.asyncExec(
                                         new Runnable() {
                                             public void run() {
                                                 // create frame on first call
@@ -308,7 +276,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
                         logItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
+                                display.asyncExec(
                                         new Runnable() {
                                             public void run() {
 
@@ -340,6 +308,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         });
 
+                        // register error handler to avoid application crash on concurrent X access from SWT and AWT
+                        if (systemLookAndFeelClassName.indexOf("gtk") >=0) {
+                            OS.gdk_error_trap_push();
+                        }
+
                         // display settings frame on first start
                         if (Settings.isFirstStart()) {
                             // create frame on first call
@@ -348,6 +321,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                             settingsFrame.setVisible(true);
                         }
+
                         synchronized (mainThread) {
                             // ready
                             isReady = true;
