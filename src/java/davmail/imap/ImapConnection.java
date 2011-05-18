@@ -1055,7 +1055,8 @@ public class ImapConnection extends AbstractConnection {
         if (slashIndex < 0) {
             throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", contentType);
         }
-        buffer.append("(\"").append(contentType.substring(0, slashIndex).toUpperCase()).append("\" \"");
+        String type = contentType.substring(0, slashIndex).toUpperCase();
+        buffer.append("(\"").append(type).append("\" \"");
         int semiColonIndex = contentType.indexOf(';');
         if (semiColonIndex < 0) {
             buffer.append(contentType.substring(slashIndex + 1).toUpperCase()).append("\" NIL");
@@ -1117,8 +1118,13 @@ public class ImapConnection extends AbstractConnection {
         appendBodyStructureValue(buffer, bodyPart.getDescription());
         appendBodyStructureValue(buffer, bodyPart.getEncoding());
         appendBodyStructureValue(buffer, bodyPart.getSize());
-        // line count not implemented in JavaMail, return fake line count
-        appendBodyStructureValue(buffer, bodyPart.getSize() / 80);
+        if ("MESSAGE".equals(type) || "TEXT".equals(type)) {
+            // line count not implemented in JavaMail, return fake line count
+            appendBodyStructureValue(buffer, bodyPart.getSize() / 80);
+        } else {
+            // do not send line count for non text bodyparts
+            appendBodyStructureValue(buffer, -1);
+        }
         buffer.append(')');
     }
 
