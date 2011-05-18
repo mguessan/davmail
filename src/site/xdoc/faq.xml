@@ -55,6 +55,9 @@
                     but DavMail can not execute javascript. Thus you need to prefix your user name
                     with the Active Directory domain followed by \
                 </p>
+                <p>Note to Mac users: OSX applications do not like username with backslash, you have to set windows
+                    domain name in DavMail advanced settings and use the simple username in client application.
+                </p>
 
                 <p>
                     <strong>Authentication fails with error in parsing the status line</strong>
