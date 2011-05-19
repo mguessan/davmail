@@ -980,12 +980,20 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public Condition isTrue(String attributeName) {
-        return new MonoCondition(attributeName, Operator.IsTrue);
+        if ("Exchange2003".equals(this.serverVersion) && "deleted".equals(attributeName)) {
+            return isEqualTo(attributeName, "1");
+        } else {
+            return new MonoCondition(attributeName, Operator.IsTrue);
+        }
     }
 
     @Override
     public Condition isFalse(String attributeName) {
-        return new MonoCondition(attributeName, Operator.IsFalse);
+        if ("Exchange2003".equals(this.serverVersion) && "deleted".equals(attributeName)) {
+           return or(isEqualTo(attributeName, "0"), isNull(attributeName)); 
+        } else {
+            return new MonoCondition(attributeName, Operator.IsFalse);
+        }
     }
 
     /**
