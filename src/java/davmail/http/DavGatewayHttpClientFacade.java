@@ -75,11 +75,6 @@ public final class DavGatewayHttpClientFacade {
         // register custom cookie policy
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
 
-        // Load system proxy settings to avoid futex deadlock on linux
-        if (Settings.getBooleanProperty("davmail.useSystemProxies")) {
-            System.setProperty("java.net.useSystemProxies", "true");
-            ProxySelector.getDefault();
-        }
     }
 
 
@@ -172,7 +167,7 @@ public final class DavGatewayHttpClientFacade {
             // get proxy for url from system settings
             System.setProperty("java.net.useSystemProxies", "true");
             try {
-                List<Proxy> proxyList = ProxySelector.getDefault().select(new java.net.URI(url));
+                List<Proxy> proxyList = getDefaultProxySelector().select(new java.net.URI(url));
                 if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
                     InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
                     proxyHost = inetSocketAddress.getHostName();
@@ -213,6 +208,18 @@ public final class DavGatewayHttpClientFacade {
             }
         }
 
+    }
+
+    /**
+     * Retrieve Proxy Selector
+     *
+     * @return proxy selector
+     */
+    private static ProxySelector getDefaultProxySelector() {
+        LOGGER.debug("Loading system proxy settings...");
+        ProxySelector proxySelector = ProxySelector.getDefault();
+        LOGGER.debug("Loaded ProxySelector " + proxySelector);
+        return proxySelector;
     }
 
 
