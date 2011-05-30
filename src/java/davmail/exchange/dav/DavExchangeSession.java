@@ -990,7 +990,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public Condition isFalse(String attributeName) {
         if ("Exchange2003".equals(this.serverVersion) && "deleted".equals(attributeName)) {
-           return or(isEqualTo(attributeName, "0"), isNull(attributeName)); 
+            return or(isEqualTo(attributeName, "0"), isNull(attributeName));
         } else {
             return new MonoCondition(attributeName, Operator.IsFalse);
         }
@@ -2149,7 +2149,9 @@ public class DavExchangeSession extends ExchangeSession {
                 byte[] roamingdictionary = getBinaryPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "roamingdictionary");
                 if (roamingdictionary != null) {
                     timezoneName = getTimezoneNameFromRoamingDictionary(roamingdictionary);
-                    timezoneId = ResourceBundle.getBundle("timezoneids").getString(timezoneName);
+                    if (timezoneName != null) {
+                        timezoneId = ResourceBundle.getBundle("timezoneids").getString(timezoneName);
+                    }
                 }
             }
         } catch (MissingResourceException e) {
@@ -2578,8 +2580,8 @@ public class DavExchangeSession extends ExchangeSession {
                 public int read(byte buffer[], int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
-                    if (totalCount - lastLogCount > 1024*1024) {
-                        LOGGER.debug("Downloaded " + (totalCount/1024) + " KBytes from " + method.getURI());
+                    if (totalCount - lastLogCount > 1024 * 1024) {
+                        LOGGER.debug("Downloaded " + (totalCount / 1024) + " KBytes from " + method.getURI());
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
