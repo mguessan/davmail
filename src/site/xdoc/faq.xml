@@ -70,12 +70,22 @@
                     OWA url.
                 </p>
                 <p>
-                    <strong>Where can I find DavMail settings file</strong>
+                    <strong>Where can I find DavMail settings file ?</strong>
                 </p>
                 <p>The default location for DavMail settings is a file named .davmail.properties in user home
                     folder. This file is hidden under Linux and OSX. On windows, the user home folder is under
                     <code>Document and Settings</code>
                 </p>
+                <p>
+                    <strong>How to run multiple instances of DavMail ?</strong>
+                </p>
+                <p>Just create multiple configuration files and provide them as a command line option, see previous
+                    question:
+                </p>
+                <source>
+davmail server1.properties
+davmail server2.properties
+                </source>
 
             </subsection>
 
