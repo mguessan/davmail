@@ -201,6 +201,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>To access public folders in iCal, the URL scheme is:
                 </p>
                 <source>http://localhost:<i>1080</i>/principals/public/<i>path/to/calendar</i></source>
+                <p>Note: iCal does not support folder names with spaces or special characters</p>
 
                 <p>
                     <strong>Shared calendars</strong>
