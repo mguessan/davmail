@@ -52,7 +52,7 @@ public class ICSBufferedReader extends BufferedReader {
             currentLine.append(nextLine);
             nextLine = super.readLine();
             while (nextLine != null && !(nextLine.length() == 0) &&
-                    (nextLine.charAt(0) == ' '
+                    (nextLine.charAt(0) == ' ' || nextLine.charAt(0) == '\t'
                             // workaround for Exchange 2010 bug
                             || nextLine.charAt(0) == ':')) {
                 // Timezone ends with \n => next line starts with :
