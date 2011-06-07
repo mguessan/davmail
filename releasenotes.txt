@@ -1,3 +1,76 @@
+** DavMail 3.9.2 released **
+This release includes some documentation updates, implement IMAP Recent flag, 
+Caldav support enhancements, 64 bits wrapper on windows, hanging issue with SWT 
+on Linux 64 and many other bugfixes.
+
+LDAP:
+- LDAP: cancel search threads on connection close
+
+Enhancements:
+- Adjust system proxy log statement
+- Jsmooth patch with 64 bits skeletons
+- Additional statement on proxy load
+- SWT: register error handler early
+- Serialize session creation in workstation mode to avoid multiple OTP requests
+- SWT: register error handler to avoid application crash on concurrent X access from SWT and AWT
+- Revert LookAndFeel changes, switch to System.setProperty to set default LAF
+- SWT: make sure we don't start AWT threads too early
+- Update Jsmooth patch with 64bits exe support
+- SWT: delayed AWT frames creation to reduce memory usage
+- Experimental 64 bits windows exe
+- Add a log file size field in UI
+
+DAV:
+- Dav: back to old path in Destination header behavior
+- DAV: switch icon on large message download
+- Dav: Log message download progress
+- Dav: new patch to reset session timeout with a GET method on /owa/
+- Dav: experimental, try to reset session timeout with a GET method
+- Dav: do not try property update failover on 507 SC_INSUFFICIENT_STORAGE
+
+OSX:
+- OSX: Avoid sending empty message to Growl
+
+IMAP:
+- IMAP: test custom header search
+- IMAP: workaround for Exchange 2003 search deleted support
+- IMAP: fix 3303767, do not send line count for non text bodyparts
+- IMAP: another fix for 3297849, ENVELOPE formating error/bogus quotes
+- IMAP: fix 3297849, ENVELOPE formating error/bogus quotes
+- IMAP: Fix nullpointer in broken message handling
+- IMAP: fix infinite loop detection
+- IMAP: detect infinite loop on the client side
+- IMAP: implement Recent flag on new messages based on read flag and creation/modification date
+- IMAP: fix 3223513 default flags on append
+
+Documentation:
+- Doc: How to run multiple instances of DavMail
+- Doc: FAQ note, iCal does not support folder names with spaces or special characters
+- Doc: Add reference to default windows domain setting in FAQ
+- Doc: additional Thunderbird and DavMail review
+- Doc: add Duplicate messages in Sent folder FAQ entry
+- Doc: add Piwik code to DavMail site
+- Doc: New (french) review
+- Doc: document custom certificate authority handling
+- Doc: improve initial setup documentation
+- Doc: describe the usual paths to use in OWA url field
+- Doc: update imapAutoExpunge flag doc
+- Doc: update roadmap
+- Doc: document public folder access in Lightning
+
+Caldav:
+- Caldav: allow tab as folding character, see RFC2445
+- Caldav: Fix NullPointerException in getTimezoneIdFromExchange
+- Caldav: instancetype is null on Exchange 2010, switch to isrecurring in EWS FindItem
+- Caldav: Disable schedule-inbox for all Lightning versions
+- Caldav: prepare xmoz custom property support over DAV
+
+EWS:
+- EWS: fix UID and RECURRENCE-ID, broken at least on Exchange 2007 with recurring events
+- EWS: fix 3105534 GetUserAvailability default timezone compatibility with Exchange 2010
+- EWS: new failovers on Timezone settings: use davmail.timezoneId setting or default to GMT Standard Time
+
+
 ** DavMail 3.9.1 released **
 Another bugfix release, mainly on EWS Caldav support (fix 404 not found).
 Also implemented Microsoft Forefront Unified Access Gateway support.
