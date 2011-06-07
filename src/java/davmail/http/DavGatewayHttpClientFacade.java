@@ -218,7 +218,7 @@ public final class DavGatewayHttpClientFacade {
     private static ProxySelector getDefaultProxySelector() {
         LOGGER.debug("Loading system proxy settings...");
         ProxySelector proxySelector = ProxySelector.getDefault();
-        LOGGER.debug("Loaded ProxySelector " + proxySelector);
+        LOGGER.debug("Loaded system proxy settings");
         return proxySelector;
     }
 
