@@ -308,6 +308,14 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testSearchHeader() throws IOException {
+        testSelectInbox();
+        writeLine(". UID SEARCH HEADER X-TUID testvalue");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        writeLine(". UID SEARCH HEADER X-OfflineIMAP \"testvalue\"");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
     public void testBrokenPipe() throws IOException, InterruptedException {
         testSelectInbox();
         writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
