@@ -50,7 +50,16 @@ bool SunJVMExe::run(const std::string& mainclass, bool useconsole)
 
   execv.push_back(StringUtils::requoteForCommandLine(lookUpExecutable(useconsole)));
 
-  if (m_maxHeap > 0)
+   if (m_vmParameter != "")
+    {
+      std::vector<std::string> vmParameter = StringUtils::split(m_vmParameter, " ", " ", false);
+      for (std::vector<std::string>::iterator i=vmParameter.begin(); i != vmParameter.end(); i++)
+      {
+        execv.push_back(*i);
+      }
+    }
+    
+   if (m_maxHeap > 0)
     {
       if ((m_version.getMajor()==1)&&(m_version.getMinor()==1))
 	execv.push_back("-mx" + StringUtils::toString(m_maxHeap));
@@ -70,7 +79,7 @@ bool SunJVMExe::run(const std::string& mainclass, bool useconsole)
     if(m_properties[i].getName()[0]=='-') {
         execv.push_back( StringUtils::requoteForCommandLine(m_properties[i].getName()));
     } else {
-        execv.push_back( StringUtils::requoteForCommandLine("-D" + m_properties[i].getName()) + "=" + StringUtils::requoteForCommandLine(m_properties[i].getValue()));
+    execv.push_back( StringUtils::requoteForCommandLine("-D" + m_properties[i].getName()) + "=" + StringUtils::requoteForCommandLine(m_properties[i].getValue()));
     }
 
   std::string classpath;

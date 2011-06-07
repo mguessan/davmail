@@ -119,6 +119,15 @@ bool SunJVMDLL::instanciate()
 bool SunJVMDLL::setupVM12DLL(CreateJavaVM_t CreateJavaVM, GetDefaultJavaVMInitArgs_t GetDefaultJavaVMInitArgs)
 {
   vector<string> jpropstrv;
+   if (m_vmParameter != "")
+    {
+      std::vector<std::string> vmParameter = StringUtils::split(m_vmParameter, " ", " ", false);
+      for (std::vector<std::string>::iterator i=vmParameter.begin(); i != vmParameter.end(); i++)
+      {
+        jpropstrv.push_back(*i);
+      }
+    }
+
   for (int i=0; i<m_properties.size(); i++)
     if(m_properties[i].getName()[0]=='-') {
         jpropstrv.push_back( StringUtils::requoteForCommandLine(m_properties[i].getName()));

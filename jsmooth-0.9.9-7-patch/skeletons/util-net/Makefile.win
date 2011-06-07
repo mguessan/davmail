@@ -1,0 +1,34 @@
+# Project: CommonJava
+
+PROJECTNAME=util-net
+RM   = rm -f
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+MINGW = "c:/MinGW"
+FLTK-LDFLAGS = $(shell fltk-config --ldflags)
+FLTK-CXXFLAGS = $(shell fltk-config --cxxflags)
+RES  = 
+OBJ  = WinHttpClient.o HttpClient.o URL.o downloadgui.o httpdownload.o $(RES)
+LIBS =  -static-libgcc -L"$(MINGW)/lib" -lws2_32 -lwininet $(FLTK-LDFLAGS)
+CXXINCS = -Os -I"../util-core" -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32"  $(FLTK-CXXFLAGS)
+BIN  = $(PROJECTNAME).a
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+
+.PHONY: all all-before all-after clean clean-custom $(PROJECTNAME)
+
+all: all-before $(PROJECTNAME).a testmain.cpp all-after
+
+clean: clean-custom
+	$(RM) $(OBJ) $(BIN) test.exe testmain.o
+
+$(BIN): $(OBJ)
+	ar r $(BIN) $(OBJ)
+	ranlib $(BIN)
+	$(CPP) -g $(OBJ)  ../util-core/util-core.a testmain.o -o test.exe $(LIBS)
+
+$(PROJECTNAME).a: $(OBJ) testmain.o
+
+
+testmain.o: testmain.cpp
+	$(CPP) -c testmain.cpp -o testmain.o $(CXXFLAGS)

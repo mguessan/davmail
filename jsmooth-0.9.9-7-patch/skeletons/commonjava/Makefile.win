@@ -1,0 +1,60 @@
+# Project: CommonJava
+# Makefile created by Dev-C++ 4.9.8.0
+
+RM   = rm -f
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+MINGW =
+RES  = 
+OBJ  = JniSmooth.o JVMBase.o SunJVMExe.o JArgs.o JClassProxy.o SunJVMDLL.o JavaMachineManager.o JVMEnvVarLookup.o JVMRegistryLookup.o MSJViewLauncher.o Properties.o ResourceManager.o SunJVMLauncher.o Version.o global.o JavaProperty.o JMethodCaller.o $(RES)
+LINKOBJ  = JniSmooth.o JVMBase.o SunJVMExe.o JArgs.o JClassProxy.o SunJVMDLL.o JavaMachineManager.o JVMEnvVarLookup.o JVMRegistryLookup.o MSJViewLauncher.o Properties.o ResourceManager.o SunJVMLauncher.o Version.o global.o JavaProperty.o JMethodCaller.o $(RES)
+LIBS =  -static-libgcc -L"$(MINGW)/lib"
+INCS =  -I"../util-core" -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+CXXINCS = -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" -I"../commonjava" -I"../util-core" -I"../util-net" $(FLTK-CXXFLAGS) 
+BIN  = CommonJava.a
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+CFLAGS = $(INCS) 
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before CommonJava.a all-after
+
+
+clean: clean-custom
+	$(RM) $(OBJ) $(BIN)
+
+$(BIN): $(LINKOBJ) test.cpp
+	ar r $(BIN) $(LINKOBJ)
+	ranlib $(BIN)
+	$(CPP) $(CXXFLAGS) test.cpp $(BIN) ../util-core/util-core.a -o test.exe
+
+JavaMachineManager.o: JavaMachineManager.cpp
+	$(CPP) -c JavaMachineManager.cpp -o JavaMachineManager.o $(CXXFLAGS)
+
+JVMEnvVarLookup.o: JVMEnvVarLookup.cpp
+	$(CPP) -c JVMEnvVarLookup.cpp -o JVMEnvVarLookup.o $(CXXFLAGS)
+
+JVMRegistryLookup.o: JVMRegistryLookup.cpp
+	$(CPP) -c JVMRegistryLookup.cpp -o JVMRegistryLookup.o $(CXXFLAGS)
+
+MSJViewLauncher.o: MSJViewLauncher.cpp
+	$(CPP) -c MSJViewLauncher.cpp -o MSJViewLauncher.o $(CXXFLAGS)
+
+Properties.o: Properties.cpp
+	$(CPP) -c Properties.cpp -o Properties.o $(CXXFLAGS)
+
+ResourceManager.o: ResourceManager.cpp
+	$(CPP) -c ResourceManager.cpp -o ResourceManager.o $(CXXFLAGS)
+
+SunJVMLauncher.o: SunJVMLauncher.cpp
+	$(CPP) -c SunJVMLauncher.cpp -o SunJVMLauncher.o $(CXXFLAGS)
+
+Version.o: Version.cpp
+	$(CPP) -c Version.cpp -o Version.o $(CXXFLAGS)
+
+global.o: global.cpp
+	$(CPP) -c global.cpp -o global.o $(CXXFLAGS)
+
+JavaProperty.o: JavaProperty.cpp
+	$(CPP) -c JavaProperty.cpp -o JavaProperty.o $(CXXFLAGS)

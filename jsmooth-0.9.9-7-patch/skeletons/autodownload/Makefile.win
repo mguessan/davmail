@@ -1,0 +1,46 @@
+# Project: util-core
+
+PROJECTNAME=autodownload
+##libmscabd_la_SOURCES = mspack/system.c mspack/cabd.c mspack/lzxd.c mspack/mszipd.c mspack/qtmd.c
+##libmscabd_la_OBJS = system.o cabd.o lzxd.o mszipd.o qtmd.o
+
+SHELL = /bin/sh
+RM   = rm -f
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+MINGW =
+RES  = JWrap_private.res
+LINKOBJ  = main.o execcab.o execexe.o $(RES)
+OBJ  = main.o execcab.o execexe.o $(libmscabd_la_OBJS) $(RES)
+FLTK-LDFLAGS = $(shell fltk-config --ldflags --use-images)
+FLTK-CXXFLAGS = $(shell fltk-config --cxxflags --use-images)
+##LINKLIBS = ../commonjava/CommonJava.a ../util-core/util-core.a mspack.a ../util-net/util-net.a
+LINKLIBS = ../commonjava/CommonJava.a ../util-net/util-net.a ../util-core/util-core.a 
+LIBS =  -static-libgcc -L. -L"$(MINGW)/lib" -lws2_32 -L"${MINGW}/bin/libgcc_s_sjlj-1.dll" -L"/lib" -L"../commonjava" -mwindows -L"../util-core" -L"../util-net" $(LINKLIBS) $(FLTK-LDFLAGS) -lsetupapi -lwininet
+INCS =  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+CXXINCS = -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" -I"../commonjava" -I"../util-core" -I"../util-net" $(FLTK-CXXFLAGS)
+BIN  = autodownload.exe
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+CFLAGS = $(INCS) 
+
+.PHONY: all all-before all-after clean clean-custom $(PROJECTNAME)
+
+all: all-before $(BIN) all-after
+
+clean: 	clean-custom
+	$(RM) $(OBJ) $(BIN) JWrap_private.res
+
+$(BIN): $(LINKOBJ) $(LINKLIBS)
+	$(CPP) $(CXXFLAGS) $(LINKOBJ) $(LIBS) -o $(BIN)
+
+#mspack.a: $(libmscabd_la_SOURCES)
+#	$(CC) -c -Imspack $(libmscabd_la_SOURCES)
+#	ar r mspack.a $(libmscabd_la_OBJS)
+#	ranlib mspack.a
+
+JWrap_private.res: JWrap_private.rc mainres.rc 
+	$(WINDRES) -i JWrap_private.rc -J rc -o JWrap_private.res -O coff 
+
+main.o:	main.cpp
+	$(CPP) -c main.cpp $(CXXFLAGS)

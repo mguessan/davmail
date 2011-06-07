@@ -1,0 +1,32 @@
+# Project: ConsoleWrapper
+# Makefile created by Dev-C++ 4.9.8.0
+
+RM   = rm -f
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+RES  = ConsoleWrapper_private.res
+OBJ  = main.o $(RES)
+LINKOBJ  = main.o $(RES)
+LIBS =  -static-libgcc -L"${MINGW}/lib" -L"../commonjava" -L"../util-core" ../commonjava/CommonJava.a ../util-core/util-core.a 
+INCS =  -I"/include"  -I"../commonjava"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+CXXINCS = -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" -I"../commonjava" -I"../util-core" -I"../util-net" $(FLTK-CXXFLAGS)
+BIN  = ConsoleWrapper.exe
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+CFLAGS = $(INCS) 
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before ConsoleWrapper.exe all-after
+
+clean: clean-custom
+	$(RM) $(OBJ) $(BIN) ConsoleWrapper_private.res
+
+$(BIN): $(LINKOBJ)  ../commonjava/CommonJava.a
+	$(CPP) $(LINKOBJ) -o "ConsoleWrapper.exe" $(LIBS)
+
+main.o: main.cpp
+	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
+
+ConsoleWrapper_private.res: ConsoleWrapper_private.rc mainres.rc 
+	$(WINDRES) -i ConsoleWrapper_private.rc -J rc -o ConsoleWrapper_private.res -O coff 

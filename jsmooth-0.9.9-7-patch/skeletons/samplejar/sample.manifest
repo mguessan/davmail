@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" 
+                    name="myOrganization.myDivision.mySampleApp" 
+                    version="0.0.0.0" 
+                    processorArchitecture="ia64/x86" 
+  />
+ <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+  <security>
+   <requestedPrivileges>
+    <requestedExecutionLevel level="requireAdministrator"/>
+   </requestedPrivileges>
+  </security>
+ </trustInfo>
+</assembly>

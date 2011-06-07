@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<jsmoothproject>
+<JVMSearchPath>registry</JVMSearchPath>
+<JVMSearchPath>javahome</JVMSearchPath>
+<JVMSearchPath>jrepath</JVMSearchPath>
+<JVMSearchPath>jdkpath</JVMSearchPath>
+<JVMSearchPath>exepath</JVMSearchPath>
+<JVMSearchPath>jview</JVMSearchPath>
+<arguments>simpleargument "multiple tokens" c:\my\test\here</arguments>
+<embeddedJar>true</embeddedJar>
+<executableName>..\proof-test.exe</executableName>
+<iconLocation>..\src\icons\stock_web-support.png</iconLocation>
+<initialMemoryHeap>-1</initialMemoryHeap>
+<jarLocation>..\sample\sample.jar</jarLocation>
+<mainClassName>JSmoothPropertiesDisplayer</mainClassName>
+<maximumMemoryHeap>-1</maximumMemoryHeap>
+<maximumVersion></maximumVersion>
+<minimumVersion>1.1</minimumVersion>
+<uacRequireAdministrator>0</uacRequireAdministrator>
+<skeletonName>Console Wrapper</skeletonName>
+<skeletonProperties>
+<key>Message</key>
+<value>This program needs Java 1.4 or higher to run.
+Please download it at http://www.java.com</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>PressKey</key>
+<value>0</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>Debug</key>
+<value>1</value>
+</skeletonProperties>
+</jsmoothproject>

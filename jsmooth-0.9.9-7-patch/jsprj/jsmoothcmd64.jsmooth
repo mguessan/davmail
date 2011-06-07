@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<jsmoothproject>
+<JVMSearchPath>registry</JVMSearchPath>
+<JVMSearchPath>javahome</JVMSearchPath>
+<JVMSearchPath>jrepath</JVMSearchPath>
+<JVMSearchPath>jdkpath</JVMSearchPath>
+<JVMSearchPath>exepath</JVMSearchPath>
+<JVMSearchPath>jview</JVMSearchPath>
+<classPath>..\lib\jox116.jar</classPath>
+<classPath>..\lib\JimiProClasses.zip</classPath>
+<classPath>..\lib\dtdparser113.jar</classPath>
+<classPath>..\lib\jsmoothgen.jar</classPath>
+<embeddedJar>false</embeddedJar>
+<executableName>..\jsmoothcmd64.exe</executableName>
+<iconLocation>..\src\icons\gnome-application-x-jar-bm.gif</iconLocation>
+<initialMemoryHeap>-1</initialMemoryHeap>
+<javaProperties>
+<name>jsmooth.basedir</name>
+<value>${EXECUTABLEPATH} </value>
+</javaProperties>
+<mainClassName>net.charabia.jsmoothgen.application.cmdline.CommandLine</mainClassName>
+<maximumMemoryHeap>-1</maximumMemoryHeap>
+<maximumVersion></maximumVersion>
+<minimumVersion>1.4</minimumVersion>
+<uacRequireAdministrator>0</uacRequireAdministrator>
+<skeletonName>Console Wrapper x64</skeletonName>
+<skeletonProperties>
+<key>Message</key>
+<value>This program needs Java 1.4 or higher to run.
+Please download it at http://www.java.com</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>PressKey</key>
+<value>0</value>
+</skeletonProperties>
+<skeletonProperties>
+<key>Debug</key>
+<value>0</value>
+</skeletonProperties>
+</jsmoothproject>

@@ -1,0 +1,32 @@
+# Project: util-core
+
+PROJECTNAME=util-core
+RM   = rm -f
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+MINGW =
+RES  = 
+OBJ  = SingleInstanceManager.o Process.o Log.o Thread.o FileUtils.o StringUtils.o DebugConsole.o $(RES)
+LIBS =  -static-libgcc -L"$(MINGW)/lib"
+INCS =  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+CXXINCS = -Os  -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+BIN  = $(PROJECTNAME).a
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+CFLAGS = $(INCS) 
+
+.PHONY: all all-before all-after clean clean-custom $(PROJECTNAME)
+
+all: all-before $(PROJECTNAME).a testmain.cpp all-after
+
+
+clean: clean-custom
+	$(RM) $(OBJ) $(BIN) testmain.o test.exe
+
+$(BIN): $(OBJ)
+	ar r $(BIN) $(OBJ)
+	ranlib $(BIN)
+	$(CPP) $(OBJ) testmain.o -o test.exe $(LIBS) 
+
+$(PROJECTNAME).a: $(OBJ) testmain.o
+

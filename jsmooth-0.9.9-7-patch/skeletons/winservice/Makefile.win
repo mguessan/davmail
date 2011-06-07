@@ -1,0 +1,33 @@
+# Project: WinService Wrapper
+# Makefile created by Dev-C++ 4.9.8.0
+
+RM   = rm -f
+#cmd /C DEL
+CPP  = ${MINGW}/bin/${TARGET}-g++.exe
+CC   = ${MINGW}/bin/${TARGET}-gcc.exe
+WINDRES = windres.exe
+RES  = winservice_private.res
+OBJ  = main.o $(RES)
+LINKOBJ  = WinService.o main.o $(RES)
+LIBS =  -static-libgcc -L"${MINGW}/lib" -L"../commonjava" -L"../util-core" ../commonjava/CommonJava.a ../util-core/util-core.a 
+INCS =  -I"/include" -I"../util-core"  -I"../commonjava"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" 
+CXXINCS = -I"$(MINGW)/include/c++"  -I"$(MINGW)/include/c++/mingw32"  -I"$(MINGW)/include/c++/backward"  -I"$(MINGW)/include"  -I"$(JDK)/include"  -I"$(JDK)/include/win32" -I"../commonjava" -I"../util-core" -I"../util-net" $(FLTK-CXXFLAGS)
+BIN  = winservice.exe
+CXXFLAGS = $(CUSTOMFLAGS) $(CXXINCS) -DJDK="$(JDK)"
+CFLAGS = $(INCS) 
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before winservice.exe all-after
+
+clean: clean-custom
+	$(RM) $(OBJ) $(BIN) winservice.o winservice_private.res
+
+$(BIN): $(LINKOBJ)  ../commonjava/CommonJava.a
+	$(CPP) $(LINKOBJ) -o "winservice.exe" $(LIBS)
+
+main.o: main.cpp
+	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
+
+winservice_private.res: winservice_private.rc mainres.rc 
+	$(WINDRES) -i winservice_private.rc -J rc -o winservice_private.res -O coff 
