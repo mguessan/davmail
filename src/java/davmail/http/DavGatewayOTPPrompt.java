@@ -30,10 +30,11 @@ public final class DavGatewayOTPPrompt {
 
     /**
      * Ask user token password
+     *
      * @return user provided one time password
      */
     public static String getOneTimePassword() {
-    PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(BundleMessage.format("UI_OTP_PASSWORD_PROMPT"));
+        PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(BundleMessage.format("UI_OTP_PASSWORD_PROMPT"));
         return String.valueOf(passwordPromptDialog.getPassword());
     }
 }

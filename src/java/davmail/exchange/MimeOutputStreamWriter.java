@@ -19,10 +19,13 @@
 package davmail.exchange;
 
 import javax.mail.internet.MimeUtility;
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.text.SimpleDateFormat;
 
 /**
  * Mime OutputStreamWriter to build in memory Mime message.

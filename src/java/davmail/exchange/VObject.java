@@ -84,6 +84,9 @@ public class VObject {
         this(new ICSBufferedReader(new StringReader(itemBody)));
     }
 
+    /**
+     * Create empty VCalendar object;
+     */
     public VObject() {
     }
 
@@ -101,6 +104,11 @@ public class VObject {
         }
     }
 
+    /**
+     * Add vObject.
+     *
+     * @param vObject inner object
+     */
     public void addVObject(VObject vObject) {
         if (vObjects == null) {
             vObjects = new ArrayList<VObject>();
@@ -108,6 +116,11 @@ public class VObject {
         vObjects.add(vObject);
     }
 
+    /**
+     * Add vProperty.
+     *
+     * @param property vProperty
+     */
     public void addProperty(VProperty property) {
         if (property.getValue() != null) {
             if (properties == null) {
@@ -154,6 +167,12 @@ public class VObject {
         return properties;
     }
 
+    /**
+     * Get vProperty by name.
+     *
+     * @param name property name
+     * @return property object
+     */
     public VProperty getProperty(String name) {
         if (properties != null) {
             for (VProperty property : properties) {
@@ -166,6 +185,12 @@ public class VObject {
         return null;
     }
 
+    /**
+     * Get multivalued vProperty by name.
+     *
+     * @param name property name
+     * @return property list
+     */
     public List<VProperty> getProperties(String name) {
         List<VProperty> result = null;
         if (properties != null) {
@@ -182,6 +207,12 @@ public class VObject {
         return result;
     }
 
+    /**
+     * Get vProperty value by name.
+     *
+     * @param name property name
+     * @return property value
+     */
     public String getPropertyValue(String name) {
         VProperty property = getProperty(name);
         if (property != null) {
@@ -191,6 +222,12 @@ public class VObject {
         }
     }
 
+    /**
+     * Set vProperty value on vObject, remove property if value is null.
+     *
+     * @param name  property name
+     * @param value property value
+     */
     public void setPropertyValue(String name, String value) {
         if (value == null) {
             removeProperty(name);
@@ -205,13 +242,24 @@ public class VObject {
         }
     }
 
+    /**
+     * Add vProperty value on vObject.
+     *
+     * @param name  property name
+     * @param value property value
+     */
     public void addPropertyValue(String name, String value) {
         if (value != null) {
             VProperty property = new VProperty(name, value);
-                addProperty(property);
+            addProperty(property);
         }
     }
 
+    /**
+     * Remove vProperty from vObject.
+     *
+     * @param name property name
+     */
     public void removeProperty(String name) {
         if (properties != null) {
             VProperty property = getProperty(name);
@@ -221,6 +269,11 @@ public class VObject {
         }
     }
 
+    /**
+     * Remove vProperty object from vObject.
+     *
+     * @param property object
+     */
     public void removeProperty(VProperty property) {
         if (properties != null) {
             properties.remove(property);

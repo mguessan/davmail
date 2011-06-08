@@ -20,9 +20,9 @@ package davmail.http;
 
 import sun.security.pkcs11.SunPKCS11;
 
+import java.io.ByteArrayInputStream;
 import java.security.Provider;
 import java.security.Security;
-import java.io.ByteArrayInputStream;
 
 /**
  * Add the SunPKCS11 Provider.

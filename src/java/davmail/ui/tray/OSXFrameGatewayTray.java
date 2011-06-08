@@ -18,9 +18,9 @@
  */
 package davmail.ui.tray;
 
-import davmail.ui.OSXAdapter;
 import davmail.BundleMessage;
 import davmail.DavGateway;
+import davmail.ui.OSXAdapter;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

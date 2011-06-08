@@ -18,9 +18,9 @@
  */
 package davmail.ui.browser;
 
-import davmail.ui.tray.DavGatewayTray;
-import davmail.ui.AboutFrame;
 import davmail.BundleMessage;
+import davmail.ui.AboutFrame;
+import davmail.ui.tray.DavGatewayTray;
 
 import java.net.URI;
 import java.net.URISyntaxException;

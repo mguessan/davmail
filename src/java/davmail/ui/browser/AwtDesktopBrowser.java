@@ -18,9 +18,9 @@
  */
 package davmail.ui.browser;
 
+import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
-import java.awt.*;
 
 /**
  * Wrapper class to call Java6 Desktop class to launch default browser.

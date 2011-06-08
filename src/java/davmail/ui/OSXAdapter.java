@@ -18,7 +18,10 @@
  */
 package davmail.ui;
 
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 /**
  * Reflection based MacOS handler
@@ -195,6 +198,7 @@ public class OSXAdapter implements InvocationHandler {
 
     //
     //
+
     /**
      * Compare the method that was called to the intended method when the OSXAdapter instance was created
      * (e.g. handleAbout, handleQuit, handleOpenFile, etc.).

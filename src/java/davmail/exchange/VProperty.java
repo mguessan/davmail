@@ -234,6 +234,12 @@ public class VProperty {
         addParam(paramName, (String) null);
     }
 
+    /**
+     * Set param value on property.
+     *
+     * @param paramName param name
+     * @param paramValue param value
+     */
     public void setParam(String paramName, String paramValue) {
         Param currentParam = getParam(paramName);
         if (currentParam != null) {
@@ -242,6 +248,12 @@ public class VProperty {
         addParam(paramName, paramValue);
     }
 
+    /**
+     * Add param value on property.
+     *
+     * @param paramName param name
+     * @param paramValue param value
+     */
     public void addParam(String paramName, String paramValue) {
         List<String> paramValues = new ArrayList<String>();
         paramValues.add(paramValue);

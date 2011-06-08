@@ -187,7 +187,7 @@ public class NTLMv2Scheme implements AuthScheme {
             this.state = TYPE1_MSG_GENERATED;
         } else {
             int flags = NtlmFlags.NTLMSSP_NEGOTIATE_NTLM2 | NtlmFlags.NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
-                NtlmFlags.NTLMSSP_NEGOTIATE_NTLM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE;
+                    NtlmFlags.NTLMSSP_NEGOTIATE_NTLM | NtlmFlags.NTLMSSP_NEGOTIATE_UNICODE;
             Type3Message type3Message = new Type3Message(type2Message, ntcredentials.getPassword(),
                     ntcredentials.getDomain(), ntcredentials.getUserName(), ntcredentials.getHost(), flags);
             response = EncodingUtil.getAsciiString(Base64.encodeBase64(type3Message.toByteArray()));

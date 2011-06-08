@@ -31,7 +31,7 @@ import java.io.OutputStream;
 public class DoubleDotOutputStream extends FilterOutputStream {
 
     // remember last 2 bytes written
-    int[] buf = {0, 0};
+    final int[] buf = {0, 0};
 
     /**
      * @inheritDoc

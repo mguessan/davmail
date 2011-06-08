@@ -18,15 +18,15 @@
  */
 package davmail.web;
 
-import davmail.Settings;
-import davmail.DavGateway;
 import davmail.BundleMessage;
+import davmail.DavGateway;
+import davmail.Settings;
 import davmail.ui.tray.DavGatewayTray;
 
-import javax.servlet.ServletContextListener;
 import javax.servlet.ServletContextEvent;
-import java.io.InputStream;
+import javax.servlet.ServletContextListener;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Context Listener to start/stop DavMail

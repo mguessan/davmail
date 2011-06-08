@@ -18,10 +18,10 @@
  */
 package davmail.ui;
 
-import davmail.DavGateway;
 import davmail.BundleMessage;
-import davmail.ui.tray.DavGatewayTray;
+import davmail.DavGateway;
 import davmail.ui.browser.DesktopBrowser;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

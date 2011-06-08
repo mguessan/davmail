@@ -154,7 +154,7 @@ public final class DavGateway {
             @Override
             public void run() {
                 String releasedVersion = getReleasedVersion();
-                if (currentVersion != null && currentVersion.length() > 0  && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+                if (currentVersion != null && currentVersion.length() > 0 && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
                     DavGatewayTray.info(new BundleMessage("LOG_NEW_VERSION_AVAILABLE", releasedVersion));
                 }
 

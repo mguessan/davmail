@@ -447,6 +447,9 @@ public abstract class EWSMethod extends PostMethod {
      * Recurring event occurrence
      */
     public static class Occurrence {
+        /**
+         * Original occurence start date
+         */
         public String originalStart;
     }
 
@@ -625,7 +628,7 @@ public abstract class EWSMethod extends PostMethod {
         /**
          * Add occurrence.
          *
-         * @param attendee attendee object
+         * @param occurrence event occurence
          */
         public void addOccurrence(Occurrence occurrence) {
             if (occurrences == null) {
@@ -634,6 +637,11 @@ public abstract class EWSMethod extends PostMethod {
             occurrences.add(occurrence);
         }
 
+        /**
+         * Get occurences.
+         *
+         * @return event occurences
+         */
         public List<Occurrence> getOccurrences() {
             return occurrences;
         }
@@ -818,7 +826,7 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
-     protected void handleOccurrence(XMLStreamReader reader, Item item) throws XMLStreamException {
+    protected void handleOccurrence(XMLStreamReader reader, Item item) throws XMLStreamException {
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Occurrence"))) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {

@@ -199,7 +199,6 @@ public class Field {
         createField(URN_SCHEMAS_CALENDAR, "timezone"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezone/String
 
 
-
         createField(SCHEMAS_EXCHANGE, "sensitivity"); // PR_SENSITIVITY 0x0036 Integer
         createField(URN_SCHEMAS_CALENDAR, "timezoneid"); // DistinguishedPropertySetType.PublicStrings/urn:schemas:calendar:timezoneid/Integer
         // should use PidLidServerProcessed ?

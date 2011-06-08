@@ -95,6 +95,15 @@ public final class ExchangeSessionFactory {
         }
     }
 
+    /**
+     * Create authenticated Exchange session
+     *
+     * @param baseUrl OWA base URL
+     * @param userName user login
+     * @param password user password
+     * @return authenticated session
+     * @throws IOException on error
+     */
     public static ExchangeSession getInstance(String baseUrl, String userName, String password) throws IOException {
         ExchangeSession session = null;
         try {
@@ -129,7 +138,7 @@ public final class ExchangeSessionFactory {
                     try {
                         session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                     } catch (WebdavNotAvailableException e) {
-                        ExchangeSession.LOGGER.debug(e.getMessage()+", retry with EWS");
+                        ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
                         session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                         // success, enable EWS flag
                         ExchangeSession.LOGGER.debug("EWS found, changing davmail.enableEws setting");

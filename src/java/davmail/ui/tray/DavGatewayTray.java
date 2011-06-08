@@ -18,11 +18,11 @@
  */
 package davmail.ui.tray;
 
-import davmail.Settings;
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exchange.NetworkDownException;
-import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;

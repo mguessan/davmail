@@ -62,7 +62,7 @@ public class SmtpConnection extends AbstractConnection {
 
         try {
             ExchangeSessionFactory.checkConfig();
-            sendClient("220 DavMail "+ DavGateway.getCurrentVersion()+" SMTP ready at " + new Date());
+            sendClient("220 DavMail " + DavGateway.getCurrentVersion() + " SMTP ready at " + new Date());
             for (; ;) {
                 line = readClient();
                 // unable to read line, connection closed ?

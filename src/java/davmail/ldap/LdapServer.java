@@ -39,9 +39,9 @@ public class LdapServer extends AbstractServer {
      *
      * @param port pop listen port, 389 if not defined (0)
      */
-    public LdapServer(int port)  {
+    public LdapServer(int port) {
         super(LdapServer.class.getName(), port, LdapServer.DEFAULT_PORT);
-		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureldap");
+        nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureldap");
     }
 
     @Override

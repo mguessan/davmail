@@ -469,7 +469,7 @@ public class LdapConnection extends AbstractConnection {
                 }
 
                 DavGatewayTray.switchIcon();
-                
+
                 handleRequest(inbuf, offset);
             }
 
@@ -487,7 +487,7 @@ public class LdapConnection extends AbstractConnection {
         } finally {
             // cancel all search threads
             synchronized (searchThreadMap) {
-                for (SearchRunnable searchRunnable:searchThreadMap.values()) {
+                for (SearchRunnable searchRunnable : searchThreadMap.values()) {
                     searchRunnable.abandon();
                 }
             }

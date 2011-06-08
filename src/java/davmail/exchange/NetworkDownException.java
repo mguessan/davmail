@@ -26,6 +26,7 @@ import davmail.exception.DavMailException;
 public class NetworkDownException extends DavMailException {
     /**
      * Build a network down exception with the provided BundleMessage key.
+     *
      * @param key message key
      */
     public NetworkDownException(String key) {
@@ -34,7 +35,8 @@ public class NetworkDownException extends DavMailException {
 
     /**
      * Build a network down exception with the provided BundleMessage key.
-     * @param key message key
+     *
+     * @param key     message key
      * @param message detailed message
      */
     public NetworkDownException(String key, Object message) {

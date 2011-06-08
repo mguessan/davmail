@@ -35,7 +35,7 @@ import java.util.Map;
  * XmlStreamReader utility methods
  */
 public final class XMLStreamUtil {
-    protected static final Logger LOGGER = Logger.getLogger(XMLStreamUtil.class);
+    private static final Logger LOGGER = Logger.getLogger(XMLStreamUtil.class);
 
     private XMLStreamUtil() {
     }
@@ -114,7 +114,7 @@ public final class XMLStreamUtil {
     /**
      * Test if reader is on a start tag.
      *
-     * @param reader       xml stream reader
+     * @param reader xml stream reader
      * @return true if reader is on a start tag
      */
     public static boolean isStartTag(XMLStreamReader reader) {
@@ -167,6 +167,12 @@ public final class XMLStreamUtil {
         return xmlInputFactory.createXMLStreamReader(inputStream);
     }
 
+    /**
+     * Get element text.
+     *
+     * @param reader stream reader
+     * @return element text
+     */
     public static String getElementText(XMLStreamReader reader) {
         String value = null;
         try {

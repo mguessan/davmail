@@ -1398,7 +1398,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // instancetype 0 single appointment / 1 master recurring appointment
         if (excludeTasks) {
             return or(isTrue("isrecurring"),
-                and(isFalse("isrecurring"), dateCondition));
+                    and(isFalse("isrecurring"), dateCondition));
         } else {
             return or(not(isEqualTo("outlookmessageclass", "IPM.Appointment")),
                     isTrue("isrecurring"),

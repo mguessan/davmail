@@ -94,7 +94,7 @@ public class ImapConnection extends AbstractConnection {
                     commandId = tokens.nextToken();
 
                     checkInfiniteLoop(line);
-                    
+
                     if (tokens.hasMoreTokens()) {
                         String command = tokens.nextToken();
 
@@ -622,6 +622,7 @@ public class ImapConnection extends AbstractConnection {
 
     /**
      * Detect infinite loop on the client side.
+     *
      * @param line IMAP command line
      * @throws IOException on infinite loop
      */
@@ -637,7 +638,7 @@ public class ImapConnection extends AbstractConnection {
                 lastCommandCount++;
                 if (lastCommandCount > 100 && !"NOOP".equalsIgnoreCase(lastCommand)) {
                     // more than a hundred times the same command => this is a client infinite loop, close connection
-                    throw new IOException("Infinite loop on command "+command+" detected");
+                    throw new IOException("Infinite loop on command " + command + " detected");
                 }
             } else {
                 // new command, reset

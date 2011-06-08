@@ -366,7 +366,7 @@ public final class StringUtil {
      * Get allday date value from zulu timestamp.
      *
      * @param value zulu datetime
-     * @return yyyyMMdd allday date value 
+     * @return yyyyMMdd allday date value
      */
     public static String convertZuluDateTimeToAllDay(String value) {
         String result = value;

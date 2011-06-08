@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * Disposal.
  */
-@SuppressWarnings({"JavaDoc"})
+@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
 public final class Disposal extends AttributeOption {
     private Disposal(String value) {
         super("DeleteType", value);

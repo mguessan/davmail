@@ -18,23 +18,23 @@
  */
 package davmail.http;
 
-import davmail.Settings;
 import davmail.BundleMessage;
-import davmail.ui.tray.DavGatewayTray;
+import davmail.Settings;
 import davmail.ui.AcceptCertificateDialog;
+import davmail.ui.tray.DavGatewayTray;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 /**
  * Custom Trust Manager, let user accept or deny.

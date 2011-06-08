@@ -77,7 +77,7 @@ public class DoubleDotInputStream extends PushbackInputStream {
             }
             // push back characters
             if (index >= 0) {
-                while(index >= 0) {
+                while (index >= 0) {
                     unread(buffer[index--]);
                 }
             }

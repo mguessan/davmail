@@ -32,7 +32,6 @@ public class GetUserConfigurationMethod extends EWSMethod {
 
     /**
      * Get User Configuration method.
-     *
      */
     public GetUserConfigurationMethod() {
         super("UserConfiguration", "GetUserConfiguration");

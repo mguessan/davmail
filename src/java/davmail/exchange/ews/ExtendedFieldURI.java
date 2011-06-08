@@ -139,7 +139,7 @@ public class ExtendedFieldURI implements FieldURI {
         } else {
             buffer.append("<t:Value>");
             if ("0x10f3".equals(propertyTag)) {
-               buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
+                buffer.append(StringUtil.xmlEncode(StringUtil.encodeUrlcompname(value)));
             } else {
                 buffer.append(StringUtil.xmlEncode(value));
             }

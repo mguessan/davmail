@@ -19,8 +19,8 @@
 package davmail.exchange;
 
 import java.io.BufferedReader;
-import java.io.Reader;
 import java.io.IOException;
+import java.io.Reader;
 
 /**
  * ICS Buffered Reader.
@@ -32,6 +32,7 @@ public class ICSBufferedReader extends BufferedReader {
 
     /**
      * Create an ICS reader on the provided reader
+     *
      * @param in input reader
      * @throws IOException on error
      */

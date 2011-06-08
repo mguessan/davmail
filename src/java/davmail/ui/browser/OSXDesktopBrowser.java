@@ -36,6 +36,6 @@ public final class OSXDesktopBrowser {
      * @throws IOException on error
      */
     public static void browse(URI location) throws IOException {
-       Runtime.getRuntime().exec("open "+location.toString());
+        Runtime.getRuntime().exec("open " + location.toString());
     }
 }

@@ -658,7 +658,7 @@ public abstract class ExchangeSession {
     public abstract void deleteMessage(Message message) throws IOException;
 
     /**
-     * Send message to recipients, properties contains bcc recipients and other non MIME flags.
+     * Send message.
      *
      * @param messageBody MIME message body
      * @throws IOException on error
@@ -1435,7 +1435,7 @@ public abstract class ExchangeSession {
             messages = ExchangeSession.this.searchMessages(folderPath, null);
             fixUids(messages);
             recent = 0;
-            for (Message message:messages) {
+            for (Message message : messages) {
                 if (message.recent) {
                     recent++;
                 }
@@ -1674,7 +1674,7 @@ public abstract class ExchangeSession {
                 buffer.append("\\Deleted ");
             }
             if (recent) {
-               buffer.append("\\Recent ");
+                buffer.append("\\Recent ");
             }
             if (flagged) {
                 buffer.append("\\Flagged ");
@@ -2596,7 +2596,7 @@ public abstract class ExchangeSession {
             LOGGER.debug("Shared or public calendar: exclude private events");
             privateCondition = isEqualTo("sensitivity", 0);
         }
-        
+
         return searchEvents(folderPath, ITEM_PROPERTIES,
                 and(filter, privateCondition));
     }
@@ -3135,7 +3135,7 @@ public abstract class ExchangeSession {
         if (attendee == null || attendee.indexOf('@') < 0 || attendee.charAt(attendee.length() - 1) == '@') {
             return null;
         }
-        
+
         attendee = replaceIcal4Principal(attendee);
         if (attendee.startsWith("mailto:") || attendee.startsWith("MAILTO:")) {
             attendee = attendee.substring("mailto:".length());

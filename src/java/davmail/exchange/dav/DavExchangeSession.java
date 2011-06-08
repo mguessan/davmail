@@ -2577,7 +2577,8 @@ public class DavExchangeSession extends ExchangeSession {
                 int totalCount;
                 int lastLogCount;
 
-                public int read(byte buffer[], int offset, int length) throws IOException {
+                @Override
+                public int read(byte[] buffer, int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024 * 1024) {

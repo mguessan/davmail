@@ -57,7 +57,7 @@ public class FolderId extends Option {
      * Build Folder id from response item.
      *
      * @param mailbox mailbox name
-     * @param item response item
+     * @param item    response item
      */
     public FolderId(String mailbox, EWSMethod.Item item) {
         this("t:FolderId", item.get("FolderId"), item.get("ChangeKey"), mailbox);

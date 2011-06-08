@@ -32,7 +32,7 @@ import java.awt.event.ActionListener;
  */
 public class NotificationDialog extends JDialog {
 
-    protected boolean sendNotification = false;
+    protected boolean sendNotification;
 
     protected JTextField toField;
     protected JTextField ccField;
@@ -56,6 +56,13 @@ public class NotificationDialog extends JDialog {
         }
     }
 
+    /**
+     * Notification dialog to let user edit message body or cancel notification.
+     *
+     * @param to      main recipients
+     * @param cc      copy recipients
+     * @param subject notification subject
+     */
     public NotificationDialog(String to, String cc, String subject) {
         setModal(true);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -157,22 +164,47 @@ public class NotificationDialog extends JDialog {
         return bodyPanel;
     }
 
+    /**
+     * Cancel notification flag.
+     *
+     * @return false if user chose to cancel notification
+     */
     public boolean getSendNotification() {
         return sendNotification;
     }
 
+    /**
+     * Get edited recipients.
+     *
+     * @return recipients string
+     */
     public String getTo() {
         return toField.getText();
     }
 
+    /**
+     * Get edited copy recipients.
+     *
+     * @return copy recipients string
+     */
     public String getCc() {
         return ccField.getText();
     }
 
+    /**
+     * Get edited subject.
+     *
+     * @return subject
+     */
     public String getSubject() {
         return subjectField.getText();
     }
 
+    /**
+     * Get edited body.
+     *
+     * @return edited notification body
+     */
     public String getBody() {
         return bodyField.getText();
     }

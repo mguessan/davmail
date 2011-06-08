@@ -37,11 +37,12 @@ public class PopServer extends AbstractServer {
     /**
      * Create a ServerSocket to listen for connections.
      * Start the thread.
+     *
      * @param port pop listen port, 110 if not defined (0)
      */
-    public PopServer(int port)  {
+    public PopServer(int port) {
         super(PopServer.class.getName(), port, PopServer.DEFAULT_PORT);
-		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecurepop");
+        nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecurepop");
     }
 
     @Override

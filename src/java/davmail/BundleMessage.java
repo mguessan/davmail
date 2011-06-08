@@ -20,11 +20,11 @@ package davmail;
 
 import davmail.exception.DavMailException;
 
+import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.io.Serializable;
 
 /**
  * Internationalization message.

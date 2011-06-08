@@ -93,7 +93,7 @@ public class PopConnection extends AbstractConnection {
 
         try {
             ExchangeSessionFactory.checkConfig();
-            sendOK("DavMail "+ DavGateway.getCurrentVersion()+" POP ready at " + new Date());
+            sendOK("DavMail " + DavGateway.getCurrentVersion() + " POP ready at " + new Date());
 
             for (; ;) {
                 line = readClient();

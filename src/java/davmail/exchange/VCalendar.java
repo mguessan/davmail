@@ -108,6 +108,11 @@ public class VCalendar extends VObject {
         return "TRUE".equals(vObject.getPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT"));
     }
 
+    /**
+     * Check if vCalendar is CDO allday.
+     *
+     * @return true if vCalendar has X-MICROSOFT-CDO-ALLDAYEVENT property set to TRUE
+     */
     public boolean isCdoAllDay() {
         return firstVevent != null && isCdoAllDay(firstVevent);
     }
@@ -147,7 +152,7 @@ public class VCalendar extends VObject {
         String tzid = null;
         if (fromServer) {
             // get current tzid
-            VObject vObject = getVTimezone();
+            VObject vObject = vTimezone;
             if (vObject != null) {
                 String currentTzid = vObject.getPropertyValue("TZID");
                 // fix TZID with \n (Exchange 2010 bug)
@@ -460,10 +465,14 @@ public class VCalendar extends VObject {
         }
     }
 
+    /**
+     * Remove VAlarm from VCalendar.
+     */
     public void removeVAlarm() {
         if (vObjects != null) {
             for (VObject vObject : vObjects) {
                 if ("VEVENT".equals(vObject.type)) {
+                    // As VALARM is the only possible inner object, just drop all objects
                     if (vObject.vObjects != null) {
                         vObject.vObjects = null;
                     }
@@ -472,6 +481,11 @@ public class VCalendar extends VObject {
         }
     }
 
+    /**
+     * Check if VCalendar has a VALARM item.
+     *
+     * @return true if VCalendar has a VALARM
+     */
     public boolean hasVAlarm() {
         if (vObjects != null) {
             for (VObject vObject : vObjects) {
@@ -485,18 +499,39 @@ public class VCalendar extends VObject {
         return false;
     }
 
+    /**
+     * Check if this VCalendar is a meeting.
+     *
+     * @return true if this VCalendar has attendees
+     */
     public boolean isMeeting() {
         return getFirstVeventProperty("ATTENDEE") != null;
     }
 
+    /**
+     * Check if current user is meeting organizer.
+     *
+     * @return true it user email matched organizer email
+     */
     public boolean isMeetingOrganizer() {
-        return email.equals(getEmailValue(getFirstVeventProperty("ORGANIZER")));
+        return email.equalsIgnoreCase(getEmailValue(getFirstVeventProperty("ORGANIZER")));
     }
 
+    /**
+     * Set property value on first VEVENT.
+     *
+     * @param propertyName  property name
+     * @param propertyValue property value
+     */
     public void setFirstVeventPropertyValue(String propertyName, String propertyValue) {
         firstVevent.setPropertyValue(propertyName, propertyValue);
     }
 
+    /**
+     * Add property on first VEVENT.
+     *
+     * @param vProperty property object
+     */
     public void addFirstVeventProperty(VProperty vProperty) {
         firstVevent.addProperty(vProperty);
     }
@@ -505,8 +540,19 @@ public class VCalendar extends VObject {
      * VCalendar recipients for notifications
      */
     public static class Recipients {
+        /**
+         * attendee list
+         */
         public String attendees;
+
+        /**
+         * optional attendee list
+         */
         public String optionalAttendees;
+
+        /**
+         * vCalendar organizer
+         */
         public String organizer;
     }
 
@@ -573,17 +619,22 @@ public class VCalendar extends VObject {
         return status;
     }
 
+    /**
+     * Get recurring VCalendar occurence exceptions.
+     *
+     * @return event occurences
+     */
     public List<VObject> getModifiedOccurrences() {
         boolean first = true;
         ArrayList<VObject> results = new ArrayList<VObject>();
-        for (VObject vObject:vObjects) {
-           if ("VEVENT".equals(vObject.type)) {
-               if (first) {
-                   first = false;
-               } else {
-                   results.add(vObject);
-               }
-           }
+        for (VObject vObject : vObjects) {
+            if ("VEVENT".equals(vObject.type)) {
+                if (first) {
+                    first = false;
+                } else {
+                    results.add(vObject);
+                }
+            }
         }
         return results;
     }

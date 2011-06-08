@@ -229,9 +229,8 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient httpClient instance
      * @param url        url string
      * @return HttpStatus code
-     * @throws IOException on error
      */
-    public static int getHttpStatus(HttpClient httpClient, String url) throws IOException {
+    public static int getHttpStatus(HttpClient httpClient, String url) {
         int status = 0;
         HttpMethod testMethod = new GetMethod(url);
         testMethod.setDoAuthentication(false);

@@ -571,7 +571,7 @@ public class SettingsFrame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 DesktopBrowser.browse("http://davmail.sourceforge.net");
             }
-        });             
+        });
         tabbedPane.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
                 boolean isSslEnabled = isSslEnabled();

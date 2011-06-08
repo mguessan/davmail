@@ -43,7 +43,7 @@ public final class DistinguishedFolderId extends FolderId {
         publicfoldersroot, root, junkemail, searchfolders, voicemail
     }
 
-    protected static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();
+    private static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();
 
     static {
         for (Name name : Name.values()) {

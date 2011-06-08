@@ -42,7 +42,7 @@ public class ImapServer extends AbstractServer {
      */
     public ImapServer(int port) {
         super(ImapServer.class.getName(), port, ImapServer.DEFAULT_PORT);
-		nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureimap");
+        nosslFlag = Settings.getBooleanProperty("davmail.ssl.nosecureimap");
     }
 
     @Override

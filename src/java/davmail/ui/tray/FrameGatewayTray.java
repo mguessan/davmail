@@ -18,13 +18,13 @@
  */
 package davmail.ui.tray;
 
-import davmail.Settings;
 import davmail.BundleMessage;
 import davmail.DavGateway;
+import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
-import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
