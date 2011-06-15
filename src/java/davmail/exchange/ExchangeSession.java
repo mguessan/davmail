@@ -2592,7 +2592,7 @@ public abstract class ExchangeSession {
     public List<Event> searchEvents(String folderPath, Condition filter) throws IOException {
 
         Condition privateCondition = null;
-        if (isSharedFolder(folderPath)) {
+        if (isSharedFolder(folderPath) && Settings.getBooleanProperty("davmail.excludePrivateEvents", true)) {
             LOGGER.debug("Shared or public calendar: exclude private events");
             privateCondition = isEqualTo("sensitivity", 0);
         }
