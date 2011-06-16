@@ -478,7 +478,7 @@ public class DavExchangeSession extends ExchangeSession {
                 int end = line.indexOf('\"', start);
                 String mailBoxBaseHref = line.substring(start, end);
                 URL baseURL = new URL(mailBoxBaseHref);
-                welcomePageMailPath = baseURL.getPath();
+                welcomePageMailPath = URIUtil.decode(baseURL.getPath());
                 LOGGER.debug("Base href found in body, mailPath is " + welcomePageMailPath);
             }
         } catch (IOException e) {
