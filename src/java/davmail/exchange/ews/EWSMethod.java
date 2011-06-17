@@ -19,6 +19,7 @@
 package davmail.exchange.ews;
 
 import davmail.exchange.XMLStreamUtil;
+import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
@@ -35,6 +36,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * EWS SOAP method.
@@ -102,6 +104,7 @@ public abstract class EWSMethod extends PostMethod {
         this.itemType = itemType;
         this.methodName = methodName;
         this.responseCollectionName = responseCollectionName;
+        setRequestHeader("Accept-Encoding", "gzip");
         setRequestEntity(new RequestEntity() {
             byte[] content;
 
@@ -988,7 +991,11 @@ public abstract class EWSMethod extends PostMethod {
         Header contentTypeHeader = getResponseHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
             try {
-                processResponseStream(getResponseBodyAsStream());
+                if (DavGatewayHttpClientFacade.isGzipEncoded(this)) {
+                    processResponseStream(new GZIPInputStream(getResponseBodyAsStream()));
+                } else {
+                    processResponseStream(getResponseBodyAsStream());
+                }
             } catch (IOException e) {
                 LOGGER.error("Error while parsing soap response: " + e, e);
             }

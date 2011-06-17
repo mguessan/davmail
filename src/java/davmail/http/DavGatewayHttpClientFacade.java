@@ -664,6 +664,23 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
+     * Test if the method response is gzip encoded
+     * @param method http method
+     * @return true if response is gzip encoded
+     */
+    public static boolean isGzipEncoded(HttpMethod method) {
+        Header[] contentEncodingHeaders = method.getResponseHeaders("Content-Encoding");
+        if (contentEncodingHeaders != null) {
+            for (Header header : contentEncodingHeaders) {
+                if ("gzip".equals(header.getValue())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Stop HttpConnectionManager.
      */
     public static void stop() {

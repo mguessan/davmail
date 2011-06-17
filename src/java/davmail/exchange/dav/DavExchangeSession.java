@@ -1997,7 +1997,7 @@ public class DavExchangeSession extends ExchangeSession {
             InputStream inputStream = null;
             try {
                 DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                if (isGzipEncoded(method)) {
+                if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
                     inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
                 } else {
                     inputStream = method.getResponseBodyAsStream();
@@ -2425,18 +2425,6 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected boolean isGzipEncoded(HttpMethod method) {
-        Header[] contentEncodingHeaders = method.getResponseHeaders("Content-Encoding");
-        if (contentEncodingHeaders != null) {
-            for (Header header : contentEncodingHeaders) {
-                if ("gzip".equals(header.getValue())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     // wrong hostname fix flag
     protected boolean restoreHostName;
 
@@ -2568,7 +2556,7 @@ public class DavExchangeSession extends ExchangeSession {
         InputStream inputStream;
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            if (isGzipEncoded(method)) {
+            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
                 inputStream = new GZIPInputStream(method.getResponseBodyAsStream());
             } else {
                 inputStream = method.getResponseBodyAsStream();
