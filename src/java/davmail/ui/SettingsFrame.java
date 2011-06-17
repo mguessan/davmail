@@ -98,6 +98,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox showStartupBannerCheckBox;
     JCheckBox imapAutoExpungeCheckBox;
     JCheckBox enableEwsCheckBox;
+    JCheckBox smtpSaveInSentCheckBox;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
@@ -370,7 +371,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getNetworkSettingsPanel() {
-        JPanel networkSettingsPanel = new JPanel(new GridLayout(4, 2));
+        JPanel networkSettingsPanel = new JPanel(new GridLayout(3, 2));
         networkSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_NETWORK")));
 
         allowRemoteField = new JCheckBox();
@@ -380,25 +381,22 @@ public class SettingsFrame extends JFrame {
 
         certHashField = new JTextField(Settings.getProperty("davmail.server.certificate.hash"), 15);
 
-        disableUpdateCheck = new JCheckBox();
-        disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
-
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_BIND_ADDRESS"), bindAddressField,
                 BundleMessage.format("UI_BIND_ADDRESS_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION"), allowRemoteField,
                 BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_SERVER_CERTIFICATE_HASH"), certHashField,
                 BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
-        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
-                BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
         updateMaximumSize(networkSettingsPanel);
         return networkSettingsPanel;
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(7, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(9, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
+        enableEwsCheckBox = new JCheckBox();
+        enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
         caldavEditNotificationsField = new JCheckBox();
         caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
@@ -409,9 +407,13 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
-        enableEwsCheckBox = new JCheckBox();
-        enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
+        smtpSaveInSentCheckBox = new JCheckBox();
+        smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
+        disableUpdateCheck = new JCheckBox();
+        disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
 
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsCheckBox,
+                BundleMessage.format("UI_ENABLE_EWS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS"), caldavEditNotificationsField,
                 BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
@@ -424,8 +426,10 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SHOW_STARTUP_BANNER_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsCheckBox,
-                BundleMessage.format("UI_ENABLE_EWS_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SAVE_IN_SENT"), smtpSaveInSentCheckBox,
+                BundleMessage.format("UI_SAVE_IN_SENT_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
+                BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
 
         Dimension preferredSize = otherSettingsPanel.getPreferredSize();
         preferredSize.width = Integer.MAX_VALUE;
@@ -528,6 +532,7 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
+        smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -594,9 +599,8 @@ public class SettingsFrame extends JFrame {
         JPanel proxyPanel = new JPanel();
         proxyPanel.setLayout(new BoxLayout(proxyPanel, BoxLayout.Y_AXIS));
         proxyPanel.add(getProxyPanel());
-        // empty panel
-        proxyPanel.add(new JPanel());
-        tabbedPane.add(BundleMessage.format("UI_TAB_PROXY"), proxyPanel);
+        proxyPanel.add(getNetworkSettingsPanel());
+        tabbedPane.add(BundleMessage.format("UI_TAB_NETWORK"), proxyPanel);
 
         JPanel encryptionPanel = new JPanel();
         encryptionPanel.setLayout(new BoxLayout(encryptionPanel, BoxLayout.Y_AXIS));
@@ -617,7 +621,6 @@ public class SettingsFrame extends JFrame {
         JPanel advancedPanel = new JPanel();
         advancedPanel.setLayout(new BoxLayout(advancedPanel, BoxLayout.Y_AXIS));
 
-        advancedPanel.add(getNetworkSettingsPanel());
         advancedPanel.add(getOtherSettingsPanel());
         // empty panel
         advancedPanel.add(new JPanel());
@@ -667,6 +670,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
                 Settings.setProperty("davmail.enableEws", String.valueOf(enableEwsCheckBox.isSelected()));
+                Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
                 Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());

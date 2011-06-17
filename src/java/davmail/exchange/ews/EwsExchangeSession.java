@@ -429,7 +429,14 @@ public class EwsExchangeSession extends ExchangeSession {
         item.type = "Message";
         item.mimeContent = Base64.encodeBase64(messageBody);
 
-        CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, getFolderId(SENT), item);
+        MessageDisposition messageDisposition;
+        if (Settings.getBooleanProperty("davmail.smtpSaveInSent", true)) {
+            messageDisposition = MessageDisposition.SendAndSaveCopy;
+        } else {
+            messageDisposition = MessageDisposition.SendOnly;
+        }
+
+        CreateItemMethod createItemMethod = new CreateItemMethod(messageDisposition, getFolderId(SENT), item);
         executeMethod(createItemMethod);
     }
 

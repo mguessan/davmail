@@ -1706,6 +1706,10 @@ public class DavExchangeSession extends ExchangeSession {
     public void moveItem(String sourcePath, String targetPath) throws IOException {
         MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(sourcePath)),
                 URIUtil.encodePath(getFolderPath(targetPath)), false);
+        moveItem(method);
+    }
+
+    protected void moveItem(MoveMethod method) throws IOException {
         try {
             int statusCode = httpClient.executeMethod(method);
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -2419,7 +2423,13 @@ public class DavExchangeSession extends ExchangeSession {
                 properties.put("messageFormat", "2");
             }
             createMessage(DRAFTS, itemName, properties, mimeMessage);
-            moveItem(DRAFTS + '/' + itemName, SENDMSG);
+            MoveMethod method = new MoveMethod(URIUtil.encodePath(getFolderPath(DRAFTS + '/' + itemName)),
+                    URIUtil.encodePath(getFolderPath(SENDMSG)), false);
+            // set header if saveInSent is disabled 
+            if (!Settings.getBooleanProperty("davmail.smtpSaveInSent", true)) {
+                method.setRequestHeader("Saveinsent", "f");
+            }
+            moveItem(method);
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
         }
