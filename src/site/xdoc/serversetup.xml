@@ -49,6 +49,7 @@ davmail.ssl.keystoreType=JKS
 davmail.ssl.keyPass=
 davmail.ssl.keystoreFile=
 davmail.ssl.keystorePass=
+davmail.smtpSaveInSent=true
 davmail.server=true
 davmail.server.certificate.hash=
 davmail.bindAddress=

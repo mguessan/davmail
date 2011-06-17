@@ -65,7 +65,7 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="Security">
+            <subsection name="Encryption">
                 <table>
                     <tr>
                         <th>Parameter</th>
@@ -200,6 +200,20 @@
                     <tr>
                         <td>IMAP auto expunge</td>
                         <td>Delete messages immediately on the server over IMAP, i.e. expunge message on \Deleted flag set</td>
+                        <td>true</td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="SMTP">
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Sample value</th>
+                    </tr>
+                    <tr>
+                        <td>SMTP save in sent:</td>
+                        <td>Save messages sent over SMTP in server Sent folder</td>
                         <td>true</td>
                     </tr>
                 </table>
