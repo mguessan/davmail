@@ -20,6 +20,7 @@ package davmail.exchange.ews;
 
 import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.Header;
@@ -1006,6 +1007,26 @@ public abstract class EWSMethod extends PostMethod {
         responseItems = new ArrayList<Item>();
         XMLStreamReader reader;
         try {
+            inputStream = new FilterInputStream(inputStream) {
+                int totalCount;
+                int lastLogCount;
+
+                @Override
+                public int read(byte[] buffer, int offset, int length) throws IOException {
+                    int count = super.read(buffer, offset, length);
+                    // workaround for Exchange bug: replace xml 1.0 header with xml 1.1
+                    if (totalCount == 0 && count > 18 && buffer[17] == '0') {
+                       buffer[17] = '1'; 
+                    }
+                    totalCount += count;
+                    if (totalCount - lastLogCount > 1024 * 1024) {
+                        LOGGER.debug("Downloaded " + (totalCount / 1024) + " KBytes");
+                        DavGatewayTray.switchIcon();
+                        lastLogCount = totalCount;
+                    }
+                    return count;
+                }
+            };
             reader = XMLStreamUtil.createXMLStreamReader(inputStream);
             while (reader.hasNext()) {
                 reader.next();
