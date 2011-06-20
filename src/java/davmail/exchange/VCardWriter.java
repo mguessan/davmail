@@ -31,40 +31,6 @@ public class VCardWriter extends ICSBufferedWriter {
     }
 
     /**
-     * Append single value property
-     *
-     * @param propertyName  property name
-     * @param propertyValue property value
-     */
-    public void appendProperty(String propertyName, String propertyValue) {
-        if ((propertyValue != null) && (propertyValue.length() > 0)) {
-            StringBuilder lineBuffer = new StringBuilder();
-            lineBuffer.append(propertyName);
-            lineBuffer.append(':');
-            appendMultilineEncodedValue(lineBuffer, propertyValue);
-            writeLine(lineBuffer.toString());
-        }
-
-    }
-
-    /**
-     * Append and encode \n to \\n in value.
-     *
-     * @param buffer line buffer
-     * @param value  value
-     */
-    protected void appendMultilineEncodedValue(StringBuilder buffer, String value) {
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c == '\n') {
-                buffer.append("\\n");
-            } else {
-                buffer.append(value.charAt(i));
-            }
-        }
-    }
-
-    /**
      * Append compound value
      *
      * @param propertyName  property name
