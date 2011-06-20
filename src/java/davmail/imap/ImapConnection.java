@@ -996,7 +996,7 @@ public class ImapConnection extends AbstractConnection {
             buffer.append(value);
         } else {
             buffer.append('"');
-            buffer.append(MimeUtility.encodeText(value));
+            buffer.append(MimeUtility.encodeText(value, "UTF-8", null));
             buffer.append('"');
         }
 
