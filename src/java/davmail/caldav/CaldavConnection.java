@@ -1396,7 +1396,9 @@ public class CaldavConnection extends AbstractConnection {
 
         protected void buildDepth() {
             String depthValue = headers.get("depth");
-            if (depthValue != null) {
+            if ("infinity".equalsIgnoreCase(depthValue)) {
+                depth = Integer.MAX_VALUE;
+            } else if (depthValue != null) {
                 try {
                     depth = Integer.valueOf(depthValue);
                 } catch (NumberFormatException e) {
