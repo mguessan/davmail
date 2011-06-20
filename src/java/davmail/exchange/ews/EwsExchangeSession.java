@@ -1956,7 +1956,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static boolean isItemId(String itemName) {
-        return itemName.length() == 156;
+        return itemName.length() == 156 || itemName.length() == 152;
     }
 }
 
