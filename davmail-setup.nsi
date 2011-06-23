@@ -102,8 +102,8 @@ Section "MainSection" SEC01
   File "dist\lib\slf4j-log4j12-1.3.1.jar"
   File "dist\lib\stax-api-1.0.1.jar"
   File "dist\lib\stax2-api-3.0.3.jar"
-  File "dist\lib\swt-3.6-win32-x86.jar"
-  File "dist\lib\swt-3.6.2-win32-x86_64.jar"
+  File "dist\lib\swt-3.7-win32-x86.jar"
+  File "dist\lib\swt-3.7-win32-x86_64.jar"
   File "dist\lib\woodstox-core-asl-4.0.9.jar"
   File "dist\lib\xercesImpl-2.8.1.jar"
 
@@ -176,8 +176,8 @@ no_quest:
   Delete "$INSTDIR\lib\slf4j-log4j12-1.3.1.jar"
   Delete "dist\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.0.3.jar"
-  Delete "$INSTDIR\lib\swt-3.6-win32-x86.jar"
-  Delete "$INSTDIR\lib\swt-3.6.2-win32-x86_64.jar"  
+  Delete "$INSTDIR\lib\swt-3.7-win32-x86.jar"
+  Delete "$INSTDIR\lib\swt-3.7-win32-x86_64.jar"  
   Delete "$INSTDIR\lib\woodstox-core-asl-4.0.9.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
