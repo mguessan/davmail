@@ -87,6 +87,13 @@
             </roles>
         </contributor>
         <contributor>
+            <name>Jeremiah Albrant</name>
+            <url>http://sourceforge.net/users/?user_id=2903536</url>
+            <roles>
+                <role>Java Contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
             <name>Henning Holtschneider</name>
             <email>hehol@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/hehol</url>
@@ -225,7 +232,7 @@
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>swt</artifactId>
-            <version>3.6.0</version>
+            <version>3.7.0</version>
             <optional>true</optional>
         </dependency>
         <dependency>

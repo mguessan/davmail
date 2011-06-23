@@ -128,8 +128,20 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         ManagerFactoryParameters keyStoreBuilderParameters = new KeyStoreBuilderParameters(keyStoreBuilders);
         keyManagerFactory.init(keyStoreBuilderParameters);
 
+        // Get a list of key managers
+        KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
+
+        // Walk through the key managers and replace all X509 Key Managers with
+        // a specialized wrapped DavMail X509 Key Manager
+        for (int i = 0; i < keyManagers.length; i++) {
+            KeyManager keyManager = keyManagers[i];
+            if (keyManager instanceof X509KeyManager) {
+                keyManagers[i] = new DavMailX509KeyManager((X509KeyManager) keyManager);
+            }
+        }
+
         SSLContext context = SSLContext.getInstance("SSL");
-        context.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{new DavGatewayX509TrustManager()}, null);
+        context.init(keyManagers, new TrustManager[]{new DavGatewayX509TrustManager()}, null);
         return context;
     }
 
@@ -139,7 +151,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         }
         return this.sslcontext;
     }
-
 
     public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort) throws IOException {
         try {
@@ -168,7 +179,6 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             throw new IOException(e + " " + e.getMessage());
         }
     }
-
 
     public Socket createSocket(String host, int port) throws IOException {
         try {
