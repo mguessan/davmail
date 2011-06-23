@@ -566,7 +566,11 @@ public class SettingsFrame extends JFrame {
     public SettingsFrame() {
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_DAVMAIL_SETTINGS"));
-        setIconImage(DavGatewayTray.getFrameIcon());
+        try {
+            setIconImage(DavGatewayTray.getFrameIcon());
+        } catch (NoSuchMethodError error) {
+            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
+        }
 
         JTabbedPane tabbedPane = new JTabbedPane();
         // add help (F1 handler)

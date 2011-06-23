@@ -67,7 +67,11 @@ public class NotificationDialog extends JDialog {
         setModal(true);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_CALDAV_NOTIFICATION"));
-        setIconImage(DavGatewayTray.getFrameIcon());
+        try {
+            setIconImage(DavGatewayTray.getFrameIcon());
+        } catch (NoSuchMethodError error) {
+            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
+        }
 
         JPanel mainPanel = new JPanel();
         // add help (F1 handler)
