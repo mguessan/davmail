@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import davmail.BundleMessage;
 import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
@@ -1019,8 +1020,8 @@ public abstract class EWSMethod extends PostMethod {
                        buffer[17] = '1'; 
                     }
                     totalCount += count;
-                    if (totalCount - lastLogCount > 1024 * 1024) {
-                        LOGGER.debug("Downloaded " + (totalCount / 1024) + " KBytes");
+                    if (totalCount - lastLogCount > 1024 * 128) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), EWSMethod.this.getURI()));
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }

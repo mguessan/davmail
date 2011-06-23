@@ -2579,8 +2579,8 @@ public class DavExchangeSession extends ExchangeSession {
                 public int read(byte[] buffer, int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
-                    if (totalCount - lastLogCount > 1024 * 1024) {
-                        LOGGER.debug("Downloaded " + (totalCount / 1024) + " KBytes from " + method.getURI());
+                    if (totalCount - lastLogCount > 1024 * 128) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), method.getURI()));
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
