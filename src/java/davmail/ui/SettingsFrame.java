@@ -296,7 +296,7 @@ public class SettingsFrame extends JFrame {
 
     protected JPanel getKeystorePanel() {
         JPanel keyStorePanel = new JPanel(new GridLayout(4, 2));
-        keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_SERVER_CERTIFICATE")));
+        keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DAVMAIL_SERVER_CERTIFICATE")));
 
         keystoreTypeCombo = new JComboBox(new String[]{"JKS", "PKCS12"});
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
