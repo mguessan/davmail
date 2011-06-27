@@ -1098,8 +1098,8 @@ public abstract class ExchangeSession {
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
         List<Folder> results = getSubFolders(folderName, or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass")),
                 recursive);
-        // need to include base folder in recursive search
-        if (recursive) {
+        // need to include base folder in recursive search, except on root
+        if (recursive && folderName.length() > 0) {
             results.add(getFolder(folderName));
         }
 
