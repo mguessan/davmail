@@ -71,7 +71,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
         // Build a list of all aliases
         ArrayList<String> aliases = new ArrayList<String>();
         for (String keyTypeValue : keyType) {
-            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, issuers);
+            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, null);
 
             if (keyAliases != null) {
                 aliases.addAll(Arrays.asList(keyAliases));
@@ -99,7 +99,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
 
             LOGGER.debug("User selected Key Alias: " + selectCertificateDialog.getSelectedAlias());
 
-            cachedAlias = stripAlias(selectCertificateDialog.getSelectedAlias().substring(10));
+            cachedAlias = stripAlias(selectCertificateDialog.getSelectedAlias());
             LOGGER.debug("Stored Key Alias Pattern: " + cachedAlias);
 
             return selectCertificateDialog.getSelectedAlias();
