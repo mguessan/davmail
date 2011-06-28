@@ -2773,7 +2773,7 @@ public abstract class ExchangeSession {
      * @return fixed value
      */
     protected String replaceIcal4Principal(String value) {
-        if (value.contains("/principals/__uuids__/")) {
+        if (value != null && value.contains("/principals/__uuids__/")) {
             return value.replaceAll("/principals/__uuids__/([^/]*)__AT__([^/]*)/", "mailto:$1@$2");
         } else {
             return value;
@@ -3216,12 +3216,14 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public FreeBusy getFreebusy(String attendee, String startDateValue, String endDateValue) throws IOException {
-        // first check that email address is valid to avoid InvalidSmtpAddress error
+        // replace ical encoded attendee name
+        attendee = replaceIcal4Principal(attendee);
+
+        // then check that email address is valid to avoid InvalidSmtpAddress error
         if (attendee == null || attendee.indexOf('@') < 0 || attendee.charAt(attendee.length() - 1) == '@') {
             return null;
         }
 
-        attendee = replaceIcal4Principal(attendee);
         if (attendee.startsWith("mailto:") || attendee.startsWith("MAILTO:")) {
             attendee = attendee.substring("mailto:".length());
         }
