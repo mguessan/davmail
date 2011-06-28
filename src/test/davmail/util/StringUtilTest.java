@@ -97,4 +97,9 @@ public class StringUtilTest extends TestCase {
             System.out.println("Elapsed: " + (System.currentTimeMillis() - startTime) + " ms");
         }
     }
+
+    public void testRemoveQuotes() {
+        assertEquals("test", StringUtil.removeQuotes("test"));
+        assertEquals("test", StringUtil.removeQuotes("\"test\""));
+    }
 }

@@ -385,4 +385,21 @@ public final class StringUtil {
         }
         return result;
     }
+
+    /**
+     * Remove quotes if present on value.
+     * @param value input value
+     * @return unquoted string
+     */
+    public static String removeQuotes(String value) {
+        String result = value;
+        if (result.startsWith("\"") || result.startsWith("{") || result.startsWith("(")) {
+            result = result.substring(1);
+        }
+        if (result.endsWith("\"") || result.endsWith("}") || result.endsWith(")")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
+    }
+    
 }
