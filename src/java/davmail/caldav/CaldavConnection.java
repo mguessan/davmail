@@ -259,8 +259,7 @@ public class CaldavConnection extends AbstractConnection {
             reportItems(request);
             // event requests
         } else if (request.isPut()) {
-            // remove quotes on etag for Evolution
-            String etag = StringUtil.removeQuotes(request.getHeader("if-match"));
+            String etag = request.getHeader("if-match");
             String noneMatch = request.getHeader("if-none-match");
             ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getFolderPath(), lastPath, request.getBody(), etag, noneMatch);
             sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);

@@ -1580,12 +1580,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        return new Contact(folderPath, itemName, properties, etag, noneMatch).createOrUpdate();
+        return new Contact(folderPath, itemName, properties, StringUtil.removeQuotes(etag), noneMatch).createOrUpdate();
     }
 
     @Override
     protected ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException {
-        return new Event(folderPath, itemName, contentClass, icsBody, etag, noneMatch).createOrUpdate();
+        return new Event(folderPath, itemName, contentClass, icsBody, StringUtil.removeQuotes(etag), noneMatch).createOrUpdate();
     }
 
     @Override
