@@ -3032,24 +3032,6 @@ public abstract class ExchangeSession {
      */
     public abstract boolean isSharedFolder(String folderPath);
 
-    /**
-     * Build base path for cmd commands (galfind, gallookup).
-     * This does not work with freebusy, which requires /public/
-     *
-     * @return cmd base path
-     */
-    public String getCmdBasePath() {
-        if (mailPath == null) {
-            if (publicFolderUrl == null) {
-                return "/public/";
-            } else {
-                return publicFolderUrl + '/';
-            }
-        } else {
-            return mailPath;
-        }
-    }
-
     static final String MAILBOX_BASE = "/cn=";
 
     protected void getEmailAndAliasFromOptions() {

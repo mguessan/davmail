@@ -204,6 +204,22 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
+     * Build base path for cmd commands (galfind, gallookup).
+     *
+     * @return cmd base path
+     */
+    public String getCmdBasePath() {
+        if (PUBLIC_ROOT.equals(publicFolderUrl)) {
+            // public folder is not available => try to use mailbox path
+            // Note: This does not work with freebusy, which requires /public/
+            return mailPath;
+        } else {
+            // use public folder url
+            return publicFolderUrl;
+        }
+    }
+
+    /**
      * LDAP to Exchange Criteria Map
      */
     static final HashMap<String, String> GALFIND_CRITERIA_MAP = new HashMap<String, String>();
@@ -448,6 +464,8 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
+        checkPublicFolder();
+
         buildMailPath(method);
 
         // get base http mailbox http urls
@@ -677,6 +695,35 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected void checkPublicFolder() {
+
+        Cookie[] currentCookies = httpClient.getState().getCookies();
+        // check public folder access
+        try {
+            publicFolderUrl = httpClient.getHostConfiguration().getHostURL()+PUBLIC_ROOT;
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(Field.getPropertyName("displayname"));
+            PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
+            try {
+                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+            } catch (IOException e) {
+                // workaround for NTLM authentication only on /public
+                if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+                    DavGatewayHttpClientFacade.addNTLM(httpClient);
+                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                }
+            }
+            // update public folder URI
+            publicFolderUrl = propFindMethod.getURI().getURI();
+        } catch (IOException e) {
+            // restore cookies on error
+            httpClient.getState().addCookies(currentCookies);
+            LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
+            // default public folder path
+            publicFolderUrl = PUBLIC_ROOT;
+        }
+    }
+
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
         MultiStatusResponse[] responses;
@@ -704,39 +751,6 @@ public class DavExchangeSession extends ExchangeSession {
             outboxUrl = getURIPropertyIfExists(properties, "outbox");
             outboxName = getFolderName(outboxUrl);
             // junk folder not available over webdav
-
-            // default public folder path
-            publicFolderUrl = PUBLIC_ROOT;
-
-            Cookie[] currentCookies = httpClient.getState().getCookies();
-            // check public folder access
-            try {
-                if (inboxUrl != null) {
-                    // try to build full public URI from inboxUrl
-                    URI publicUri = new URI(inboxUrl, false);
-                    publicUri.setPath(PUBLIC_ROOT);
-                    publicFolderUrl = publicUri.getURI();
-                }
-                DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-                davPropertyNameSet.add(Field.getPropertyName("displayname"));
-                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
-                try {
-                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                } catch (IOException e) {
-                    // workaround for NTLM authentication only on /public
-                    if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
-                        DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                    }
-                }
-                // update public folder URI
-                publicFolderUrl = propFindMethod.getURI().getURI();
-            } catch (IOException e) {
-                // restore cookies on error
-                httpClient.getState().addCookies(currentCookies);
-                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-                publicFolderUrl = "/public";
-            }
 
             LOGGER.debug("Inbox URL: " + inboxUrl +
                     " Trash URL: " + deleteditemsUrl +
