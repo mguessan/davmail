@@ -1460,7 +1460,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String urlcompname = convertItemNameToEML(itemName);
         // workaround for missing urlcompname in Exchange 2010
         if (isItemId(urlcompname)) {
-            ItemId itemId = new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, 152)));
+            ItemId itemId = new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, itemName.length() - 4)));
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
             for (String attribute : EVENT_REQUEST_PROPERTIES) {
                 getItemMethod.addAdditionalProperty(Field.get(attribute));
