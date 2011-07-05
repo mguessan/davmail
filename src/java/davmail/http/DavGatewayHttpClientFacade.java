@@ -38,6 +38,7 @@ import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
 import org.apache.jackrabbit.webdav.client.methods.DavMethodBase;
+import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
@@ -167,7 +168,7 @@ public final class DavGatewayHttpClientFacade {
             // get proxy for url from system settings
             System.setProperty("java.net.useSystemProxies", "true");
             try {
-                List<Proxy> proxyList = getDefaultProxySelector().select(new java.net.URI(url));
+                List<Proxy> proxyList = getProxyForURI(new java.net.URI(url));
                 if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
                     InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
                     proxyHost = inetSocketAddress.getHostName();
@@ -213,13 +214,14 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Retrieve Proxy Selector
      *
+     * @param uri target uri
      * @return proxy selector
      */
-    private static ProxySelector getDefaultProxySelector() {
-        LOGGER.debug("Loading system proxy settings...");
-        ProxySelector proxySelector = ProxySelector.getDefault();
-        LOGGER.debug("Loaded system proxy settings");
-        return proxySelector;
+    private static List<Proxy> getProxyForURI(java.net.URI uri) {
+        LOGGER.debug("getProxyForURI(" + uri + ')');
+        List<Proxy> proxies = ProxySelector.getDefault().select(uri);
+        LOGGER.debug("got system proxies:" + proxies);
+        return proxies;
     }
 
 
@@ -641,7 +643,7 @@ public final class DavGatewayHttpClientFacade {
         message.append(status).append(' ').append(method.getStatusText());
         try {
             message.append(" at ").append(method.getURI().getURI());
-            if (method instanceof CopyMethod) {
+            if (method instanceof CopyMethod || method instanceof MoveMethod) {
                 message.append(" to ").append(method.getRequestHeader("Destination"));
             }
         } catch (URIException e) {
@@ -665,6 +667,7 @@ public final class DavGatewayHttpClientFacade {
 
     /**
      * Test if the method response is gzip encoded
+     *
      * @param method http method
      * @return true if response is gzip encoded
      */
