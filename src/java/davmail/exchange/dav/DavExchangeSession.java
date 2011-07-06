@@ -464,7 +464,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
-        checkPublicFolder();
+        checkPublicFolder(method);
 
         buildMailPath(method);
 
@@ -695,11 +695,14 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected void checkPublicFolder() {
+    protected void checkPublicFolder(HttpMethod method) {
 
         Cookie[] currentCookies = httpClient.getState().getCookies();
         // check public folder access
         try {
+            // update client host
+            httpClient.getHostConfiguration().setHost(method.getURI());
+            
             publicFolderUrl = httpClient.getHostConfiguration().getHostURL()+PUBLIC_ROOT;
             DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
             davPropertyNameSet.add(Field.getPropertyName("displayname"));
