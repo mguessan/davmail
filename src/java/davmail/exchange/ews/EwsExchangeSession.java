@@ -1149,6 +1149,7 @@ public class EwsExchangeSession extends ExchangeSession {
         // item id
         ItemId itemId;
         String type;
+        boolean isException;
 
         protected Event(EWSMethod.Item response) {
             itemId = new ItemId(response);
@@ -1164,6 +1165,10 @@ public class EwsExchangeSession extends ExchangeSession {
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
             }
+            String instancetype = response.get(Field.get("instancetype").getResponseName());
+            boolean isrecurring = "true".equals(response.get(Field.get("isrecurring").getResponseName()));
+            String calendaritemtype = response.get(Field.get("calendaritemtype").getResponseName());
+            isException = "3".equals(instancetype) || (isrecurring && "Single".equals(calendaritemtype));
         }
 
         /**
@@ -1187,7 +1192,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
-                LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: "+etag+" id: " + currentItemId.id);
+                LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
             if ("*".equals(noneMatch)) {
                 // create requested
@@ -1402,15 +1407,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
-        // instancetype 0 single appointment / 1 master recurring appointment
-        if (excludeTasks) {
-            return or(isTrue("isrecurring"),
-                    and(isFalse("isrecurring"), dateCondition));
-        } else {
-            return or(not(isEqualTo("outlookmessageclass", "IPM.Appointment")),
-                    isTrue("isrecurring"),
-                    and(isFalse("isrecurring"), dateCondition));
-        }
+        // tasks in calendar not supported over EWS
+        return or(isTrue("isrecurring"),
+                and(isFalse("isrecurring"), dateCondition));
     }
 
     @Override
@@ -1436,6 +1435,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 } catch (HttpException e) {
                     LOGGER.warn("Ignore invalid event " + event.getHref());
                 }
+            // exclude exceptions
+            } else if (event.isException) {
+                LOGGER.debug("Exclude recurrence exception " + event.getHref());
             } else {
                 events.add(event);
             }
@@ -1443,6 +1445,11 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         return events;
+    }
+
+    static {
+        ITEM_PROPERTIES.add("calendaritemtype");
+        ITEM_PROPERTIES.add("isrecurring");
     }
 
     protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();

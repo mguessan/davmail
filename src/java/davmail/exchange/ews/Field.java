@@ -200,6 +200,7 @@ public final class Field {
         FIELD_MAP.put("modifiedoccurrences", new UnindexedFieldURI("calendar:ModifiedOccurrences"));
 
         FIELD_MAP.put("isrecurring", new UnindexedFieldURI("calendar:IsRecurring"));
+        FIELD_MAP.put("calendaritemtype", new UnindexedFieldURI("calendar:CalendarItemType"));
 
         FIELD_MAP.put("xmozlastack", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozlastack"));
         FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
