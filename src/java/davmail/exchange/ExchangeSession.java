@@ -1540,6 +1540,15 @@ public abstract class ExchangeSession {
         }
 
         /**
+         * Task folder flag.
+         *
+         * @return true if this is a task folder
+         */
+        public boolean isTask() {
+            return "IPF.Task".equals(folderClass);
+        }
+
+        /**
          * drop cached message
          */
         public void clearCache() {
@@ -2465,13 +2474,14 @@ public abstract class ExchangeSession {
 
                 }
                 if (LOGGER.isDebugEnabled()) {
-                    StringBuilder logBuffer = new StringBuilder("Sending notification");
+                    StringBuilder logBuffer = new StringBuilder("Sending notification ");
                     if (recipients.attendees != null) {
                         logBuffer.append("to: ").append(recipients.attendees);
                     }
                     if (recipients.optionalAttendees != null) {
                         logBuffer.append("cc: ").append(recipients.optionalAttendees);
                     }
+                    LOGGER.debug(logBuffer.toString());
                 }
             } else {
                 // need to parse attendees and organizer to build recipients
