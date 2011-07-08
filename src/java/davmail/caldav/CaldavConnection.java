@@ -608,12 +608,14 @@ public class CaldavConnection extends AbstractConnection {
         List<ExchangeSession.Contact> contacts = null;
         List<ExchangeSession.Event> events = null;
         List<ExchangeSession.Folder> folderList = null;
-        if (folder.isContact()) {
-            contacts = session.getAllContacts(folderPath);
-        } else if (folder.isCalendar()) {
-            events = session.getAllEvents(folderPath);
-            if (!folderPath.startsWith("/public")) {
-                folderList = session.getSubCalendarFolders(folderPath, false);
+        if (request.getDepth() == 1) {
+            if (folder.isContact()) {
+                contacts = session.getAllContacts(folderPath);
+            } else if (folder.isCalendar()) {
+                events = session.getAllEvents(folderPath);
+                if (!folderPath.startsWith("/public")) {
+                    folderList = session.getSubCalendarFolders(folderPath, false);
+                }
             }
         }
 
