@@ -319,7 +319,7 @@ public class CaldavConnection extends AbstractConnection {
             sendHttpResponse(status, null);
         } else if (request.isMove()) {
             String destinationUrl = request.getHeader("destination");
-            session.moveItem(request.path, new URL(destinationUrl).getPath());
+            session.moveItem(request.path, URIUtil.decode(new URL(destinationUrl).getPath()));
             sendHttpResponse(HttpStatus.SC_CREATED, null);
         } else {
             sendUnsupported(request);
