@@ -133,6 +133,7 @@ public final class StringUtil {
     private static final Pattern GT_PATTERN = Pattern.compile(">");
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
+    private static final Pattern LF_PATTERN = Pattern.compile("\n");    
 
     private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
 
@@ -293,6 +294,9 @@ public final class StringUtil {
         }
         if (result.indexOf('"') >= 0) {
             result = QUOTE_PATTERN.matcher(result).replaceAll("%22");
+        }
+        if (result.indexOf('\n') >= 0) {
+            result = LF_PATTERN.matcher(result).replaceAll("%0A");
         }
         return result;
     }
