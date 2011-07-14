@@ -67,11 +67,8 @@ public class DoubleDotInputStream extends PushbackInputStream {
                         }
                         // \r\n..
                     } else if (buffer[index] == '.') {
-                        // \r\n..\r
-                        if ((readNextByte()) == '\r') {
-                            // replace double dot
-                            buffer[--index] = '\r';
-                        }
+                        // replace double dot
+                        index--;
                     }
                 }
             }

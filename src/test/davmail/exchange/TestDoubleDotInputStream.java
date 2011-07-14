@@ -101,7 +101,7 @@ public class TestDoubleDotInputStream extends TestCase {
 
     public void testAnotherTest() throws IOException {
         String value = "foo\r\n..bar";
-        assertEquals(value, doubleDotRead(value));
+        assertEquals(value.replaceAll("\\.\\.", "."), doubleDotRead(value));
     }
 
 }
