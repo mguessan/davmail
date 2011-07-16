@@ -1180,7 +1180,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
         @Override
         public ItemResult createOrUpdate() throws IOException {
-            byte[] itemContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
+            if (vCalendar.isTodo() && isMainCalendar(folderPath)) {
+                // task item, move to tasks folder
+                folderPath = "tasks";
+            }
 
             ItemResult itemResult = new ItemResult();
             EWSMethod createOrUpdateItemMethod;
@@ -1207,82 +1210,105 @@ public class EwsExchangeSession extends ExchangeSession {
                     return itemResult;
                 }
             }
-
-            if (currentItemId != null) {
-                /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-                // TODO: update properties instead of brute force delete/add
-                updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64(itemContent))));
-                // update
-                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AutoResolve,
-                        SendMeetingInvitationsOrCancellations.SendToNone,
-                        currentItemId, updates);*/
-                // hard method: delete/create on update
-                DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-                executeMethod(deleteItemMethod);
-            } //else {
-            // create
-            EWSMethod.Item newItem = new EWSMethod.Item();
-            newItem.type = "CalendarItem";
-            newItem.mimeContent = itemContent;
-            ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-            if (!vCalendar.hasVAlarm()) {
-                updates.add(Field.createFieldUpdate("reminderset", "false"));
-            }
-            //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
-            // force urlcompname
-            updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
-                updates.add(Field.createFieldUpdate("apptstateflags", "1"));
-            } else {
-                updates.add(Field.createFieldUpdate("apptstateflags", "0"));
-            }
-            // store mozilla invitations option
-            String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
-            if (xMozSendInvitations != null) {
-                updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
-            }
-            // handle mozilla alarm
-            String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
-            if (xMozLastack != null) {
-                updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
-            }
-            String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
-            if (xMozSnoozeTime != null) {
-                updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
-            }
-
-            if (vCalendar.isMeeting()) {
-                VCalendar.Recipients recipients = vCalendar.getRecipients(false);
-                if (recipients.attendees != null) {
-                    updates.add(Field.createFieldUpdate("to", recipients.attendees));
-                }
-                if (recipients.optionalAttendees != null) {
-                    updates.add(Field.createFieldUpdate("cc", recipients.optionalAttendees));
-                }
-                if (recipients.organizer != null && !vCalendar.isMeetingOrganizer()) {
-                    updates.add(Field.createFieldUpdate("from", recipients.optionalAttendees));
-                }
-            }
-
-            // patch allday date values
-            if (vCalendar.isCdoAllDay()) {
-                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
-            }
-            updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
-            if (vCalendar.isCdoAllDay()) {
-                if ("Exchange2010".equals(serverVersion)) {
-                    updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+            if (vCalendar.isTodo()) {
+                // create or update task method
+                EWSMethod.Item newItem = new EWSMethod.Item();
+                newItem.type = "Task";
+                List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                updates.add(Field.createFieldUpdate("calendaruid", vCalendar.getFirstVeventPropertyValue("UID")));
+                // force urlcompname
+                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
+                updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+                if (currentItemId != null) {
+                    // update
+                    createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                            ConflictResolution.AutoResolve,
+                            SendMeetingInvitationsOrCancellations.SendToNone,
+                            currentItemId, updates);
                 } else {
-                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                    newItem.setFieldUpdates(updates);
+                    // create
+                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
                 }
+
+            } else {
+
+                if (currentItemId != null) {
+                    /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+                    // TODO: update properties instead of brute force delete/add
+                    updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64(itemContent))));
+                    // update
+                    createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                           ConflictResolution.AutoResolve,
+                           SendMeetingInvitationsOrCancellations.SendToNone,
+                           currentItemId, updates);*/
+                    // hard method: delete/create on update
+                    DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
+                    executeMethod(deleteItemMethod);
+                } //else {
+                // create
+                EWSMethod.Item newItem = new EWSMethod.Item();
+                newItem.type = "CalendarItem";
+                newItem.mimeContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
+                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                if (!vCalendar.hasVAlarm()) {
+                    updates.add(Field.createFieldUpdate("reminderset", "false"));
+                }
+                //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
+                // force urlcompname
+                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
+                    updates.add(Field.createFieldUpdate("apptstateflags", "1"));
+                } else {
+                    updates.add(Field.createFieldUpdate("apptstateflags", "0"));
+                }
+                // store mozilla invitations option
+                String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+                if (xMozSendInvitations != null) {
+                    updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
+                }
+                // handle mozilla alarm
+                String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                if (xMozLastack != null) {
+                    updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+                }
+                String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                if (xMozSnoozeTime != null) {
+                    updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
+                }
+
+                if (vCalendar.isMeeting()) {
+                    VCalendar.Recipients recipients = vCalendar.getRecipients(false);
+                    if (recipients.attendees != null) {
+                        updates.add(Field.createFieldUpdate("to", recipients.attendees));
+                    }
+                    if (recipients.optionalAttendees != null) {
+                        updates.add(Field.createFieldUpdate("cc", recipients.optionalAttendees));
+                    }
+                    if (recipients.organizer != null && !vCalendar.isMeetingOrganizer()) {
+                        updates.add(Field.createFieldUpdate("from", recipients.optionalAttendees));
+                    }
+                }
+
+                // patch allday date values
+                if (vCalendar.isCdoAllDay()) {
+                    updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                    updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+                }
+                updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
+                if (vCalendar.isCdoAllDay()) {
+                    if ("Exchange2010".equals(serverVersion)) {
+                        updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                    } else {
+                        updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                    }
+                }
+
+                newItem.setFieldUpdates(updates);
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
+                //}
             }
-
-            newItem.setFieldUpdates(updates);
-            createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
-            //}
-
             executeMethod(createOrUpdateItemMethod);
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
@@ -1290,7 +1316,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 //noinspection VariableNotUsedInsideIf
                 if (currentItemId == null) {
                     itemResult.status = HttpStatus.SC_CREATED;
-                    LOGGER.debug("Updated event " + getHref());
+                    LOGGER.debug("Created event " + getHref());
                 } else {
                     LOGGER.warn("Overwritten event " + getHref());
                 }
@@ -1313,8 +1339,16 @@ public class EwsExchangeSession extends ExchangeSession {
                 LOGGER.debug("Get event: " + itemName);
             }
             try {
-                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
-                if (!"Message".equals(type)) {
+                GetItemMethod getItemMethod;
+                if ("Task".equals(type)) {
+                    getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+                    getItemMethod.addAdditionalProperty(Field.get("subject"));
+                    getItemMethod.addAdditionalProperty(Field.get("created"));
+                    getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
+                    getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+                    getItemMethod.addAdditionalProperty(Field.get("description"));
+                } else if (!"Message".equals(type)) {
+                    getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
@@ -1323,67 +1357,86 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("xmozlastack"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsnoozetime"));
                     getItemMethod.addAdditionalProperty(Field.get("xmozsendinvitations"));
+                } else {
+                    getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                 }
 
                 executeMethod(getItemMethod);
-                content = getItemMethod.getMimeContent();
-                if (content == null) {
-                    throw new IOException("empty event body");
-                }
-                if (!"CalendarItem".equals(type)) {
-                    content = getICS(new SharedByteArrayInputStream(content));
-                }
-                VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
-                // remove additional reminder
-                if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
-                    localVCalendar.removeVAlarm();
-                }
-                String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
-                if (calendaruid != null) {
-                    localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
-                }
-                List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
-                if (attendees != null) {
-                    for (EWSMethod.Attendee attendee : attendees) {
-                        VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
-                        attendeeProperty.addParam("CN", attendee.name);
-                        attendeeProperty.addParam("PARTSTAT", attendee.partstat);
-                        //attendeeProperty.addParam("RSVP", "TRUE");
-                        attendeeProperty.addParam("ROLE", attendee.role);
-                        localVCalendar.addFirstVeventProperty(attendeeProperty);
+                if ("Task".equals(type)) {
+                    VCalendar localVCalendar = new VCalendar();
+                    VObject vTodo = new VObject();
+                    vTodo.type = "VTODO";
+                    vTodo.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+                    vTodo.setPropertyValue("CREATED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("created").getResponseName())));
+                    String calendarUid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+                    if (calendarUid == null) {
+                        // use item id as uid for Exchange created tasks
+                        calendarUid = itemId.id;
                     }
-                }
-                // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
-                List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
-                if (occurences != null) {
-                    Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
-                    for (EWSMethod.Occurrence occurrence : occurences) {
-                        if (modifiedOccurrencesIterator.hasNext()) {
-                            VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
-                            // fix uid, should be the same as main VEVENT
-                            if (calendaruid != null) {
-                                modifiedOccurrence.setPropertyValue("UID", calendaruid);
-                            }
-                            VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                            if (recurrenceId != null) {
-                                recurrenceId.removeParam("TZID");
-                                recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                    vTodo.setPropertyValue("UID", calendarUid);
+                    vTodo.setPropertyValue("SUMMARY", getItemMethod.getResponseItem().get(Field.get("subject").getResponseName()));
+                    vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
+                    localVCalendar.addVObject(vTodo);
+                    content = localVCalendar.toString().getBytes("UTF-8");
+                } else {
+                    content = getItemMethod.getMimeContent();
+                    if (content == null) {
+                        throw new IOException("empty event body");
+                    }
+                    if (!"CalendarItem".equals(type)) {
+                        content = getICS(new SharedByteArrayInputStream(content));
+                    }
+                    VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
+                    // remove additional reminder
+                    if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
+                        localVCalendar.removeVAlarm();
+                    }
+                    String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
+                    if (calendaruid != null) {
+                        localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                    }
+                    List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
+                    if (attendees != null) {
+                        for (EWSMethod.Attendee attendee : attendees) {
+                            VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
+                            attendeeProperty.addParam("CN", attendee.name);
+                            attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                            //attendeeProperty.addParam("RSVP", "TRUE");
+                            attendeeProperty.addParam("ROLE", attendee.role);
+                            localVCalendar.addFirstVeventProperty(attendeeProperty);
+                        }
+                    }
+                    // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
+                    List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
+                    if (occurences != null) {
+                        Iterator<VObject> modifiedOccurrencesIterator = localVCalendar.getModifiedOccurrences().iterator();
+                        for (EWSMethod.Occurrence occurrence : occurences) {
+                            if (modifiedOccurrencesIterator.hasNext()) {
+                                VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
+                                // fix uid, should be the same as main VEVENT
+                                if (calendaruid != null) {
+                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
+                                }
+                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                                if (recurrenceId != null) {
+                                    recurrenceId.removeParam("TZID");
+                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                                }
                             }
                         }
                     }
+                    // restore mozilla invitations option
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
+                            getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
+                    // restore mozilla alarm status
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
+                            getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
+                    localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
+                            getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
+                    // overwrite method
+                    // localVCalendar.setPropertyValue("METHOD", "REQUEST");
+                    content = localVCalendar.toString().getBytes("UTF-8");
                 }
-                // restore mozilla invitations option
-                localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
-                        getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
-                // restore mozilla alarm status
-                localVCalendar.setFirstVeventPropertyValue("X-MOZ-LASTACK",
-                        getItemMethod.getResponseItem().get(Field.get("xmozlastack").getResponseName()));
-                localVCalendar.setFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME",
-                        getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
-                // overwrite method
-                // localVCalendar.setPropertyValue("METHOD", "REQUEST");
-                content = localVCalendar.toString().getBytes("UTF-8");
-
             } catch (IOException e) {
                 throw buildHttpException(e);
             } catch (MessagingException e) {
@@ -1428,6 +1481,7 @@ public class EwsExchangeSession extends ExchangeSession {
         for (EWSMethod.Item response : responses) {
             Event event = new Event(response);
             if ("Message".equals(event.type)) {
+                // TODO: just exclude
                 // need to check body
                 try {
                     event.getEventContent();
@@ -1435,7 +1489,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 } catch (HttpException e) {
                     LOGGER.warn("Ignore invalid event " + event.getHref());
                 }
-            // exclude exceptions
+                // exclude exceptions
             } else if (event.isException) {
                 LOGGER.debug("Exclude recurrence exception " + event.getHref());
             } else {
@@ -1489,6 +1543,11 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        if (item == null && isMainCalendar(folderPath)) {
+            // look for item in task folder
+            item = getEwsItem("tasks", itemName);
+        }
+
         if (item == null) {
             throw new HttpNotFoundException(itemName + " not found in " + folderPath);
         }
@@ -1509,6 +1568,7 @@ public class EwsExchangeSession extends ExchangeSession {
             return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
                 || "MeetingRequest".equals(itemType)
+                || "Task".equals(itemType)
                 // VTODOs appear as Messages
                 || "Message".equals(itemType)) {
             return new Event(item);
@@ -1598,6 +1658,11 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public boolean isSharedFolder(String folderPath) {
         return folderPath.startsWith("/") && !folderPath.toLowerCase().startsWith(currentMailboxPath);
+    }
+
+    @Override
+    public boolean isMainCalendar(String folderPath) {
+        return "calendar".equals(folderPath) || (currentMailboxPath + "/calendar").equals(folderPath);
     }
 
     @Override
@@ -1747,6 +1812,9 @@ public class EwsExchangeSession extends ExchangeSession {
         } else if (folderPath.startsWith(CALENDAR)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.calendar);
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
+        } else if (folderPath.startsWith(TASKS)) {
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.tasks);
+            folderNames = folderPath.substring(TASKS.length()).split("/");
         } else if (folderPath.startsWith(CONTACTS)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.contacts);
             folderNames = folderPath.substring(CONTACTS.length()).split("/");

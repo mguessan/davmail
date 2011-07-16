@@ -204,6 +204,17 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
+     * Test if folderPath is main calendar.
+     *
+     * @param folderPath absolute folder path
+     * @return true if folderPath is a public or shared folder
+     */
+    @Override
+    public boolean isMainCalendar(String folderPath) {
+        return getFolderPath(folderPath).toLowerCase().equals(getFolderPath("calendar"));
+    }
+
+    /**
      * Build base path for cmd commands (galfind, gallookup).
      *
      * @return cmd base path

@@ -36,6 +36,7 @@ public final class Field {
         FIELD_MAP.put("displayname", new ExtendedFieldURI(0x3001, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("urlcompname", new ExtendedFieldURI(0x10f3, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("lastmodified", new ExtendedFieldURI(0x3008, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("created", new ExtendedFieldURI(0x3007, ExtendedFieldURI.PropertyType.SystemTime));
 
         // folder
         FIELD_MAP.put("ctag", new ExtendedFieldURI(0x670a, ExtendedFieldURI.PropertyType.SystemTime)); // PR_LOCAL_COMMIT_TIME_MAX

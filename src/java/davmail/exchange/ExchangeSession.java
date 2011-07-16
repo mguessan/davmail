@@ -93,6 +93,7 @@ public abstract class ExchangeSession {
 
     protected static final String PUBLIC_ROOT = "/public/";
     protected static final String CALENDAR = "calendar";
+    protected static final String TASKS = "tasks";    
     /**
      * Contacts folder logical name
      */
@@ -2602,21 +2603,29 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> getAllEvents(String folderPath) throws IOException {
-        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
+        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
+        List<Event> results = searchEvents(folderPath, getCalendarItemCondition(caldavDisableTasks, getPastDelayCondition()));
+
+        if (isMainCalendar(folderPath)) {
+            // retrieve tasks from main tasks folder
+            results.addAll(searchTasksOnly("tasks"));
+        }
+
+        return results;
+    }
+
+    protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
+
+    protected Condition getPastDelayCondition() throws IOException {
+         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
         Condition dateCondition = null;
         if (caldavPastDelay != 0) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
             dateCondition = gt("dtstart", formatSearchDate(cal.getTime()));
         }
-
-        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        Condition condition = getCalendarItemCondition(caldavDisableTasks, dateCondition);
-
-        return searchEvents(folderPath, condition);
+        return dateCondition;
     }
-
-    protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
 
     protected Condition getRangeCondition(String timeRangeStart, String timeRangeEnd) throws IOException {
         try {
@@ -3041,6 +3050,14 @@ public abstract class ExchangeSession {
      * @return true if folderPath is a public or shared folder
      */
     public abstract boolean isSharedFolder(String folderPath);
+
+    /**
+     * Test if folderPath is main calendar.
+     *
+     * @param folderPath absolute folder path
+     * @return true if folderPath is a public or shared folder
+     */
+    public abstract boolean isMainCalendar(String folderPath);
 
     static final String MAILBOX_BASE = "/cn=";
 

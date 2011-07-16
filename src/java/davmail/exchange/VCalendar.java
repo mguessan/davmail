@@ -91,7 +91,7 @@ public class VCalendar extends VObject {
     @Override
     public void addVObject(VObject vObject) {
         super.addVObject(vObject);
-        if (firstVevent == null && "VEVENT".equals(vObject.type)) {
+        if (firstVevent == null && ("VEVENT".equals(vObject.type)|| "VTODO".equals(vObject.type))) {
             firstVevent = vObject;
         }
         if ("VTIMEZONE".equals(vObject.type)) {
@@ -534,6 +534,10 @@ public class VCalendar extends VObject {
      */
     public void addFirstVeventProperty(VProperty vProperty) {
         firstVevent.addProperty(vProperty);
+    }
+
+    public boolean isTodo() {
+        return "VTODO".equals(firstVevent.type);
     }
 
     /**
