@@ -91,6 +91,23 @@ public class EwsExchangeSession extends ExchangeSession {
         //AcceptSharingInvitation
     }
 
+    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
+    static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
+
+    static {
+        //taskTovTodoStatusMap.put("NotStarted", null);
+        taskTovTodoStatusMap.put("InProgress", "IN-PROCESS");
+        taskTovTodoStatusMap.put("Completed", "COMPLETED");
+        taskTovTodoStatusMap.put("WaitingOnOthers", "NEEDS-ACTION");
+        taskTovTodoStatusMap.put("Deferred", "CANCELLED");
+
+        //vTodoToTaskStatusMap.put(null, "NotStarted");
+        vTodoToTaskStatusMap.put("IN-PROCESS", "InProgress");
+        vTodoToTaskStatusMap.put("COMPLETED", "Completed");
+        vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
+        vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
+    }
+
     protected Map<String, String> folderIdMap;
 
     protected class Folder extends ExchangeSession.Folder {
@@ -1220,6 +1237,17 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
                 updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+                String percentComplete = vCalendar.getFirstVeventPropertyValue("PERCENT-COMPLETE");
+                if (percentComplete == null) {
+                    percentComplete = "0";
+                }
+                updates.add(Field.createFieldUpdate("percentcomplete", percentComplete));
+                String vTodoStatus = vCalendar.getFirstVeventPropertyValue("STATUS");
+                if (vTodoStatus == null) {
+                    updates.add(Field.createFieldUpdate("status", "NotStarted"));
+                } else {
+                    updates.add(Field.createFieldUpdate("status", vTodoToTaskStatusMap.get(vTodoStatus)));
+                }
                 if (currentItemId != null) {
                     // update
                     createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1347,6 +1375,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("description"));
+                    getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
+                    getItemMethod.addAdditionalProperty(Field.get("status"));
                 } else if (!"Message".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
@@ -1376,6 +1406,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("UID", calendarUid);
                     vTodo.setPropertyValue("SUMMARY", getItemMethod.getResponseItem().get(Field.get("subject").getResponseName()));
                     vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
+                    vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
+                    vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("status").getResponseName())));
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes("UTF-8");
                 } else {

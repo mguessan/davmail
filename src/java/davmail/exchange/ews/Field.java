@@ -207,6 +207,10 @@ public final class Field {
         FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
         FIELD_MAP.put("xmozsendinvitations", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations"));
 
+        // task
+        FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
+        FIELD_MAP.put("status", new UnindexedFieldURI("task:Status"));        
+
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
     }
