@@ -52,8 +52,7 @@ public class VCalendar extends VObject {
         this.email = email;
         // set OWA timezone information
         if (this.vTimezone == null && vTimezone != null) {
-            this.vObjects.add(0, vTimezone);
-            this.vTimezone = vTimezone;
+            setTimezone(vTimezone);
         }
     }
 
@@ -88,10 +87,24 @@ public class VCalendar extends VObject {
         type = "VCALENDAR";
     }
 
+    /**
+     * Set timezone on vObject
+     *
+     * @param vTimezone timezone object
+     */
+    public void setTimezone(VObject vTimezone) {
+        if (vObjects == null) {
+            addVObject(vTimezone);
+        } else {
+            vObjects.add(0, vTimezone);
+        }
+        this.vTimezone = vTimezone;
+    }
+
     @Override
     public void addVObject(VObject vObject) {
         super.addVObject(vObject);
-        if (firstVevent == null && ("VEVENT".equals(vObject.type)|| "VTODO".equals(vObject.type))) {
+        if (firstVevent == null && ("VEVENT".equals(vObject.type) || "VTODO".equals(vObject.type))) {
             firstVevent = vObject;
         }
         if ("VTIMEZONE".equals(vObject.type)) {

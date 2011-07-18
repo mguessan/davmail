@@ -1,6 +1,6 @@
 /*
  * DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway
- * Copyright (C) 2010  Mickael Guessant
+ * Copyright (C) 2011  Mickael Guessant
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,22 +19,14 @@
 package davmail.exchange.ews;
 
 /**
- * Delete Item method.
+ * Item delete option.
  */
-public class DeleteItemMethod extends EWSMethod {
-    /**
-     * Delete item method.
-     *
-     * @param itemId                   item id
-     * @param deleteType               delete mode
-     * @param sendMeetingCancellations send meeting cancellation notifications
-     */
-    public DeleteItemMethod(ItemId itemId, DeleteType deleteType, SendMeetingCancellations sendMeetingCancellations) {
-        super("Item", "DeleteItem");
-        addMethodOption(deleteType);
-        addMethodOption(sendMeetingCancellations);
-        addMethodOption(AffectedTaskOccurrences.AllOccurrences);
-        this.itemId = itemId;
+@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+public final class AffectedTaskOccurrences extends AttributeOption {
+    private AffectedTaskOccurrences(String value) {
+        super("AffectedTaskOccurrences", value);
     }
 
+    public static final AffectedTaskOccurrences AllOccurrences = new AffectedTaskOccurrences("AllOccurrences");
+    public static final AffectedTaskOccurrences SpecifiedOccurrenceOnly = new AffectedTaskOccurrences("SpecifiedOccurrenceOnly");
 }

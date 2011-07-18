@@ -882,7 +882,12 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
-        return internalGetFolder(folderPath);
+        Folder folder = internalGetFolder(folderPath);
+        if (isMainCalendar(folderPath)) {
+            Folder taskFolder = internalGetFolder(TASKS);
+            folder.ctag += taskFolder.ctag; 
+        }
+        return folder;
     }
 
     /**
@@ -1199,7 +1204,7 @@ public class EwsExchangeSession extends ExchangeSession {
         public ItemResult createOrUpdate() throws IOException {
             if (vCalendar.isTodo() && isMainCalendar(folderPath)) {
                 // task item, move to tasks folder
-                folderPath = "tasks";
+                folderPath = TASKS;
             }
 
             ItemResult itemResult = new ItemResult();
@@ -1248,6 +1253,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     updates.add(Field.createFieldUpdate("status", vTodoToTaskStatusMap.get(vTodoStatus)));
                 }
+                updates.add(Field.createFieldUpdate("duedate", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 if (currentItemId != null) {
                     // update
                     createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1377,6 +1383,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("description"));
                     getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
                     getItemMethod.addAdditionalProperty(Field.get("status"));
+                    getItemMethod.addAdditionalProperty(Field.get("duedate"));
                 } else if (!"Message".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
@@ -1393,9 +1400,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 executeMethod(getItemMethod);
                 if ("Task".equals(type)) {
+                    VObject vTimezone = getVTimezone();
                     VCalendar localVCalendar = new VCalendar();
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
+                    localVCalendar.setTimezone(vTimezone);
                     vTodo.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
                     vTodo.setPropertyValue("CREATED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("created").getResponseName())));
                     String calendarUid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
@@ -1408,6 +1417,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
                     vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("status").getResponseName())));
+                    VProperty vProperty = new VProperty("DUE", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName())));
+                    vProperty.setParam("TZID", vTimezone.getPropertyValue("TZID"));
+                    vTodo.addProperty(vProperty);
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes("UTF-8");
                 } else {
@@ -1577,7 +1589,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item == null && isMainCalendar(folderPath)) {
             // look for item in task folder
-            item = getEwsItem("tasks", itemName);
+            item = getEwsItem(TASKS, itemName);
         }
 
         if (item == null) {
@@ -1643,6 +1655,10 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        if (item == null && isMainCalendar(folderPath)) {
+            // look for item in task folder
+            item = getEwsItem(TASKS, itemName);
+        }
         if (item != null) {
             DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
             executeMethod(deleteItemMethod);
