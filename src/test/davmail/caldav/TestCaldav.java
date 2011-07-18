@@ -350,5 +350,13 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, method.getStatusCode());
     }
 
+    public void testPrincipalUrl() throws IOException, DavException {
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
+        PropFindMethod method = new PropFindMethod("/principals/users/"+session.getEmail(), davPropertyNameSet, 0);
+        httpClient.executeMethod(method);
+        method.getResponseBodyAsMultiStatus();
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+    }
 
 }
