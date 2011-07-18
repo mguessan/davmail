@@ -96,6 +96,7 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "sendmsg");
         createField(URN_SCHEMAS_HTTPMAIL, "drafts");
         createField(URN_SCHEMAS_HTTPMAIL, "calendar");
+        createField(URN_SCHEMAS_HTTPMAIL, "tasks");
         createField(URN_SCHEMAS_HTTPMAIL, "contacts");
         createField(URN_SCHEMAS_HTTPMAIL, "outbox");
 

@@ -77,6 +77,7 @@ public class DavExchangeSession extends ExchangeSession {
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("sendmsg"));
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("drafts"));
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("calendar"));
+        WELL_KNOWN_FOLDERS.add(Field.getPropertyName("tasks"));
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("contacts"));
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("outbox"));
     }
@@ -90,6 +91,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected String sendmsgUrl;
     protected String draftsUrl;
     protected String calendarUrl;
+    protected String tasksUrl;
     protected String contactsUrl;
     protected String outboxUrl;
 
@@ -99,6 +101,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected String sendmsgName;
     protected String draftsName;
     protected String calendarName;
+    protected String tasksName;
     protected String contactsName;
     protected String outboxName;
 
@@ -149,6 +152,8 @@ public class DavExchangeSession extends ExchangeSession {
             exchangeFolderPath = mailPath + contactsName + folderPath.substring(CONTACTS.length());
         } else if (folderPath.startsWith(CALENDAR)) {
             exchangeFolderPath = mailPath + calendarName + folderPath.substring(CALENDAR.length());
+        } else if (folderPath.startsWith(TASKS)) {
+            exchangeFolderPath = mailPath + tasksName + folderPath.substring(TASKS.length());
         } else if (folderPath.startsWith("public")) {
             exchangeFolderPath = publicFolderUrl + folderPath.substring("public".length());
 
@@ -165,6 +170,8 @@ public class DavExchangeSession extends ExchangeSession {
                     localPath = inboxName + localPath.substring(LOWER_CASE_INBOX.length());
                 } else if (localPath.startsWith(CALENDAR)) {
                     localPath = calendarName + localPath.substring(CALENDAR.length());
+                } else if (localPath.startsWith(TASKS)) {
+                    localPath = tasksName + localPath.substring(TASKS.length());
                 } else if (localPath.startsWith(CONTACTS)) {
                     localPath = contactsName + localPath.substring(CONTACTS.length());
                 } else if (localPath.startsWith(ADDRESSBOOK)) {
@@ -211,7 +218,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public boolean isMainCalendar(String folderPath) {
-        return getFolderPath(folderPath).toLowerCase().equals(getFolderPath("calendar"));
+        return getFolderPath(folderPath).equalsIgnoreCase(getFolderPath("calendar"));
     }
 
     /**
@@ -713,8 +720,8 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             // update client host
             httpClient.getHostConfiguration().setHost(method.getURI());
-            
-            publicFolderUrl = httpClient.getHostConfiguration().getHostURL()+PUBLIC_ROOT;
+
+            publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
             DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
             davPropertyNameSet.add(Field.getPropertyName("displayname"));
             PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
@@ -760,6 +767,8 @@ public class DavExchangeSession extends ExchangeSession {
             draftsName = getFolderName(draftsUrl);
             calendarUrl = getURIPropertyIfExists(properties, "calendar");
             calendarName = getFolderName(calendarUrl);
+            tasksUrl = getURIPropertyIfExists(properties, "tasks");
+            tasksName = getFolderName(tasksUrl);
             contactsUrl = getURIPropertyIfExists(properties, "contacts");
             contactsName = getFolderName(contactsUrl);
             outboxUrl = getURIPropertyIfExists(properties, "outbox");
@@ -772,6 +781,7 @@ public class DavExchangeSession extends ExchangeSession {
                     " Send URL: " + sendmsgUrl +
                     " Drafts URL: " + draftsUrl +
                     " Calendar URL: " + calendarUrl +
+                    " Tasks URL: " + tasksUrl +
                     " Contacts URL: " + contactsUrl +
                     " Outbox URL: " + outboxUrl +
                     " Public folder URL: " + publicFolderUrl
@@ -1227,6 +1237,8 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     public class Event extends ExchangeSession.Event {
+        protected String instancetype;
+
         /**
          * Build Event instance from response info.
          *
@@ -1240,6 +1252,7 @@ public class DavExchangeSession extends ExchangeSession {
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
             subject = getPropertyIfExists(properties, "subject");
+            instancetype = getPropertyIfExists(properties, "instancetype");
         }
 
         protected String getPermanentUrl() {
@@ -1367,86 +1380,90 @@ public class DavExchangeSession extends ExchangeSession {
                 localVCalendar.setPropertyValue("VERSION", "2.0");
                 localVCalendar.setPropertyValue("METHOD", getPropertyIfExists(davPropertySet, "method"));
                 VObject vEvent = new VObject();
-                vEvent.type = "VEVENT";
                 vEvent.setPropertyValue("CREATED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "created")));
                 vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "calendarlastmodified")));
                 vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
                 vEvent.setPropertyValue("UID", getPropertyIfExists(davPropertySet, "calendaruid"));
                 vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
-                // check mandatory dtstart value
-                String dtstart = getPropertyIfExists(davPropertySet, "dtstart");
-                if (dtstart != null) {
-                    vEvent.setPropertyValue("DTSTART", convertDateFromExchange(dtstart));
+                if (instancetype == null) {
+                    vEvent.type = "VTODO";
                 } else {
-                    LOGGER.warn("missing dtstart on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
-                    vEvent.setPropertyValue("DTSTART", "20000101T000000Z");
-                    deleteBroken();
-                }
-                // same on DTEND
-                String dtend = getPropertyIfExists(davPropertySet, "dtend");
-                if (dtend != null) {
-                    vEvent.setPropertyValue("DTEND", convertDateFromExchange(dtend));
-                } else {
-                    LOGGER.warn("missing dtend on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
-                    vEvent.setPropertyValue("DTEND", "20000101T010000Z");
-                    deleteBroken();
-                }
-                vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
-                vEvent.setPropertyValue("RRULE", getPropertyIfExists(davPropertySet, "rrule"));
-                String exdates = getPropertyIfExists(davPropertySet, "exdate");
-                if (exdates != null) {
-                    String[] exdatearray = exdates.split(",");
-                    for (String exdate : exdatearray) {
-                        vEvent.addPropertyValue("EXDATE",
-                                StringUtil.convertZuluDateTimeToAllDay(convertDateFromExchange(exdate)));
+                    vEvent.type = "VEVENT";
+                    // check mandatory dtstart value
+                    String dtstart = getPropertyIfExists(davPropertySet, "dtstart");
+                    if (dtstart != null) {
+                        vEvent.setPropertyValue("DTSTART", convertDateFromExchange(dtstart));
+                    } else {
+                        LOGGER.warn("missing dtstart on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
+                        vEvent.setPropertyValue("DTSTART", "20000101T000000Z");
+                        deleteBroken();
                     }
-                }
-                String sensitivity = getPropertyIfExists(davPropertySet, "sensitivity");
-                if ("2".equals(sensitivity)) {
-                    vEvent.setPropertyValue("CLASS", "PRIVATE");
-                } else if ("3".equals(sensitivity)) {
-                    vEvent.setPropertyValue("CLASS", "CONFIDENTIAL");
-                } else if ("0".equals(sensitivity)) {
-                    vEvent.setPropertyValue("CLASS", "PUBLIC");
-                }
-                String organizer = getPropertyIfExists(davPropertySet, "organizer");
-                String organizerEmail = null;
-                if (organizer != null) {
-                    InternetAddress organizerAddress = new InternetAddress(organizer);
-                    organizerEmail = organizerAddress.getAddress();
-                    vEvent.setPropertyValue("ORGANIZER", "MAILTO:" + organizerEmail);
-                }
-
-                // Parse attendee list
-                String toHeader = getPropertyIfExists(davPropertySet, "to");
-                if (toHeader != null && !organizerEmail.equals(toHeader)) {
-                    InternetAddress[] attendees = InternetAddress.parseHeader(toHeader, false);
-                    for (InternetAddress attendee : attendees) {
-                        if (!attendee.getAddress().equalsIgnoreCase(organizerEmail)) {
-                            VProperty vProperty = new VProperty("ATTENDEE", attendee.getAddress());
-                            if (attendee.getPersonal() != null) {
-                                vProperty.addParam("CN", attendee.getPersonal());
-                            }
-                            vEvent.addProperty(vProperty);
+                    // same on DTEND
+                    String dtend = getPropertyIfExists(davPropertySet, "dtend");
+                    if (dtend != null) {
+                        vEvent.setPropertyValue("DTEND", convertDateFromExchange(dtend));
+                    } else {
+                        LOGGER.warn("missing dtend on item, using fake value. Set davmail.deleteBroken=true to delete broken events");
+                        vEvent.setPropertyValue("DTEND", "20000101T010000Z");
+                        deleteBroken();
+                    }
+                    vEvent.setPropertyValue("TRANSP", getPropertyIfExists(davPropertySet, "transparent"));
+                    vEvent.setPropertyValue("RRULE", getPropertyIfExists(davPropertySet, "rrule"));
+                    String exdates = getPropertyIfExists(davPropertySet, "exdate");
+                    if (exdates != null) {
+                        String[] exdatearray = exdates.split(",");
+                        for (String exdate : exdatearray) {
+                            vEvent.addPropertyValue("EXDATE",
+                                    StringUtil.convertZuluDateTimeToAllDay(convertDateFromExchange(exdate)));
                         }
                     }
+                    String sensitivity = getPropertyIfExists(davPropertySet, "sensitivity");
+                    if ("2".equals(sensitivity)) {
+                        vEvent.setPropertyValue("CLASS", "PRIVATE");
+                    } else if ("3".equals(sensitivity)) {
+                        vEvent.setPropertyValue("CLASS", "CONFIDENTIAL");
+                    } else if ("0".equals(sensitivity)) {
+                        vEvent.setPropertyValue("CLASS", "PUBLIC");
+                    }
+                    String organizer = getPropertyIfExists(davPropertySet, "organizer");
+                    String organizerEmail = null;
+                    if (organizer != null) {
+                        InternetAddress organizerAddress = new InternetAddress(organizer);
+                        organizerEmail = organizerAddress.getAddress();
+                        vEvent.setPropertyValue("ORGANIZER", "MAILTO:" + organizerEmail);
+                    }
 
-                }
-                vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
-                vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT",
-                        "1".equals(getPropertyIfExists(davPropertySet, "alldayevent")) ? "TRUE" : "FALSE");
-                vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", getPropertyIfExists(davPropertySet, "busystatus"));
+                    // Parse attendee list
+                    String toHeader = getPropertyIfExists(davPropertySet, "to");
+                    if (toHeader != null && !organizerEmail.equals(toHeader)) {
+                        InternetAddress[] attendees = InternetAddress.parseHeader(toHeader, false);
+                        for (InternetAddress attendee : attendees) {
+                            if (!attendee.getAddress().equalsIgnoreCase(organizerEmail)) {
+                                VProperty vProperty = new VProperty("ATTENDEE", attendee.getAddress());
+                                if (attendee.getPersonal() != null) {
+                                    vProperty.addParam("CN", attendee.getPersonal());
+                                }
+                                vEvent.addProperty(vProperty);
+                            }
+                        }
 
-                if ("1".equals(getPropertyIfExists(davPropertySet, "reminderset"))) {
-                    VObject vAlarm = new VObject();
-                    vAlarm.type = "VALARM";
-                    vAlarm.setPropertyValue("ACTION", "DISPLAY");
-                    vAlarm.setPropertyValue("DISPLAY", "Reminder");
-                    String reminderdelta = getPropertyIfExists(davPropertySet, "reminderdelta");
-                    VProperty vProperty = new VProperty("TRIGGER", "-PT" + reminderdelta + 'M');
-                    vProperty.addParam("VALUE", "DURATION");
-                    vAlarm.addProperty(vProperty);
-                    vEvent.addVObject(vAlarm);
+                    }
+                    vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
+                    vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT",
+                            "1".equals(getPropertyIfExists(davPropertySet, "alldayevent")) ? "TRUE" : "FALSE");
+                    vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", getPropertyIfExists(davPropertySet, "busystatus"));
+
+                    if ("1".equals(getPropertyIfExists(davPropertySet, "reminderset"))) {
+                        VObject vAlarm = new VObject();
+                        vAlarm.type = "VALARM";
+                        vAlarm.setPropertyValue("ACTION", "DISPLAY");
+                        vAlarm.setPropertyValue("DISPLAY", "Reminder");
+                        String reminderdelta = getPropertyIfExists(davPropertySet, "reminderdelta");
+                        VProperty vProperty = new VProperty("TRIGGER", "-PT" + reminderdelta + 'M');
+                        vProperty.addParam("VALUE", "DURATION");
+                        vAlarm.addProperty(vProperty);
+                        vEvent.addVObject(vAlarm);
+                    }
                 }
 
                 localVCalendar.addVObject(vEvent);
@@ -1970,6 +1987,10 @@ public class DavExchangeSession extends ExchangeSession {
         MultiStatusResponse[] responses = null;
         try {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+            if (responses.length == 0 && isMainCalendar(folderPath)) {
+                // look for item in tasks folder
+                responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(getFolderPath(TASKS) + '/' + emlItemName), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+            }
             if (responses.length == 0) {
                 throw new HttpNotFoundException(itemPath + " not found");
             }
@@ -1978,6 +1999,9 @@ public class DavExchangeSession extends ExchangeSession {
                 LOGGER.debug(itemPath + " not found, searching by urlcompname");
                 // failover: try to get event by displayname
                 responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", emlItemName), FolderQueryTraversal.Shallow, 1);
+                if (responses.length == 0 && isMainCalendar(folderPath)) {
+                    responses = searchItems(TASKS, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", emlItemName), FolderQueryTraversal.Shallow, 1);
+                }
                 if (responses.length == 0) {
                     throw new HttpNotFoundException(itemPath + " not found");
                 }

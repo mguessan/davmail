@@ -2129,91 +2129,6 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Contact object
-     */
-    public abstract class Task extends Item {
-
-        /**
-         * @inheritDoc
-         */
-        public Task(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
-            super(folderPath, itemName.endsWith(".vcf") ? itemName.substring(0, itemName.length() - 3) + "EML" : itemName, etag, noneMatch);
-            this.putAll(properties);
-        }
-
-        /**
-         * @inheritDoc
-         */
-        protected Task() {
-        }
-
-        /**
-         * Convert EML extension to ics.
-         *
-         * @return item name
-         */
-        @Override
-        public String getName() {
-            String name = super.getName();
-            if (name.endsWith(".EML")) {
-                name = name.substring(0, name.length() - 3) + "ics";
-            }
-            return name;
-        }
-
-        /**
-         * Set contact name
-         *
-         * @param name contact name
-         */
-        public void setName(String name) {
-            this.itemName = name;
-        }
-
-        /**
-         * Compute vtodo uid from name.
-         *
-         * @return uid
-         * @throws URIException on error
-         */
-        protected String getUid() throws URIException {
-            String uid = getName();
-            int dotIndex = uid.lastIndexOf('.');
-            if (dotIndex > 0) {
-                uid = uid.substring(0, dotIndex);
-            }
-            return URIUtil.encodePath(uid);
-        }
-
-        @Override
-        public String getContentType() {
-            return "text/calendar;charset=UTF-8";
-        }
-
-
-        @Override
-        public String getBody() throws HttpException {
-            // build VTODO from task information
-            ICSBufferedWriter writer = new ICSBufferedWriter();
-            writer.writeLine("BEGIN:VCALENDAR");
-            writer.writeLine("VERSION:2.0");
-            writer.writeLine("BEGIN:VTODO");
-
-            writer.appendProperty("UID", getUid());
-
-            writer.appendProperty("SUMMARY", get("subject"));
-
-            writer.appendProperty("LAST-MODIFIED", get("lastmodified"));
-            writer.appendProperty("DTSTAMP", get("dtstamp"));
-            writer.appendProperty("CREATED", get("created"));
-
-            writer.writeLine("END:VTODO");
-            writer.writeLine("END:VCALENDAR");
-            return writer.toString();
-        }
-    }
-
-    /**
      * Calendar event object.
      */
     public abstract class Event extends Item {
@@ -2608,7 +2523,7 @@ public abstract class ExchangeSession {
 
         if (isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
-            results.addAll(searchTasksOnly("tasks"));
+            results.addAll(searchTasksOnly(TASKS));
         }
 
         return results;
