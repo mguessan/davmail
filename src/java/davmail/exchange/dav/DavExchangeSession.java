@@ -1253,6 +1253,7 @@ public class DavExchangeSession extends ExchangeSession {
             displayName = getPropertyIfExists(properties, "displayname");
             subject = getPropertyIfExists(properties, "subject");
             instancetype = getPropertyIfExists(properties, "instancetype");
+            contentClass = getPropertyIfExists(properties, "contentclass");
         }
 
         protected String getPermanentUrl() {
@@ -1300,7 +1301,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result = null;
-            LOGGER.debug("Get event subject: " + subject + " permanentUrl: " + permanentUrl);
+            LOGGER.debug("Get event subject: " + subject + "href: "+getHref()+" permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
                 result = getICSFromInternetContentProperty();
@@ -1518,60 +1519,100 @@ public class DavExchangeSession extends ExchangeSession {
          */
         @Override
         public ItemResult createOrUpdate() throws IOException {
-            byte[] mimeContent = createMimeContent();
-            String encodedHref = URIUtil.encodePath(getHref());
-            PutMethod putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-            int status = putMethod.getStatusCode();
-
-            if (status == HttpStatus.SC_OK) {
-                LOGGER.debug("Updated event " + encodedHref);
-            } else if (status == HttpStatus.SC_CREATED) {
-                LOGGER.debug("Created event " + encodedHref);
-            } else if (status == HttpStatus.SC_NOT_FOUND) {
-                LOGGER.debug("Event not found at " + encodedHref + ", searching permanenturl by urlcompname");
-                // failover, search item by urlcompname
-                MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
-                if (responses.length == 1) {
-                    encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
-                    LOGGER.warn("Event found, permanenturl is " + encodedHref);
-                    putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-                    status = putMethod.getStatusCode();
-                    if (status == HttpStatus.SC_OK) {
-                        LOGGER.debug("Updated event " + encodedHref);
-                    } else {
-                        LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
-                    }
-                }
-            } else {
-                LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
-            }
-
             ItemResult itemResult = new ItemResult();
-            // 440 means forbidden on Exchange
-            if (status == 440) {
-                status = HttpStatus.SC_FORBIDDEN;
-            }
-            itemResult.status = status;
-            if (putMethod.getResponseHeader("GetETag") != null) {
-                itemResult.etag = putMethod.getResponseHeader("GetETag").getValue();
-            }
+            if (vCalendar.isTodo()) {
+                if ((mailPath + calendarName).equals(folderPath)) {
+                    folderPath = mailPath + tasksName;
+                }
+                String encodedHref = URIUtil.encodePath(getHref());
+                Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+                // set contentclass on create
+                if (noneMatch != null) {
+                    propertyValues.add(Field.createPropertyValue("contentclass", "urn:content-classes:task"));
+                    propertyValues.add(Field.createPropertyValue("outlookmessageclass", "IPM.Task"));
+                    propertyValues.add(Field.createPropertyValue("calendaruid", vCalendar.getFirstVeventPropertyValue("UID")));
+                }
+                propertyValues.add(Field.createPropertyValue("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
+                propertyValues.add(Field.createPropertyValue("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
 
-            // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
-            if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
-                    (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
-                ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
-                // Set contentclass to make ActiveSync happy
-                propertyList.add(Field.createDavProperty("contentclass", contentClass));
-                // ... but also set PR_INTERNET_CONTENT to preserve custom properties
-                propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(mimeContent))));
-                PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
-                int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
-                if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
-                    LOGGER.warn("Unable to patch event to trigger activeSync push");
-                } else {
-                    // need to retrieve new etag
+                ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
+                propPatchMethod.setRequestHeader("Translate", "f");
+                if (etag != null) {
+                    propPatchMethod.setRequestHeader("If-Match", etag);
+                }
+                if (noneMatch != null) {
+                    propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
+                }
+                try {
+                    httpClient.executeMethod(propPatchMethod);
+                } finally {
+                    propPatchMethod.releaseConnection();
+                }
+
+                int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+                if (status == HttpStatus.SC_MULTI_STATUS) {
                     Item newItem = getItem(folderPath, itemName);
+                    itemResult.status = propPatchMethod.getResponseStatusCode();
                     itemResult.etag = newItem.etag;
+                } else {
+                    itemResult.status = status;
+                }
+
+            } else {
+                String encodedHref = URIUtil.encodePath(getHref());
+                byte[] mimeContent = createMimeContent();
+                PutMethod putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
+                int status = putMethod.getStatusCode();
+
+                if (status == HttpStatus.SC_OK) {
+                    LOGGER.debug("Updated event " + encodedHref);
+                } else if (status == HttpStatus.SC_CREATED) {
+                    LOGGER.debug("Created event " + encodedHref);
+                } else if (status == HttpStatus.SC_NOT_FOUND) {
+                    LOGGER.debug("Event not found at " + encodedHref + ", searching permanenturl by urlcompname");
+                    // failover, search item by urlcompname
+                    MultiStatusResponse[] responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
+                    if (responses.length == 1) {
+                        encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
+                        LOGGER.warn("Event found, permanenturl is " + encodedHref);
+                        putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
+                        status = putMethod.getStatusCode();
+                        if (status == HttpStatus.SC_OK) {
+                            LOGGER.debug("Updated event " + encodedHref);
+                        } else {
+                            LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                        }
+                    }
+                } else {
+                    LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                }
+
+                // 440 means forbidden on Exchange
+                if (status == 440) {
+                    status = HttpStatus.SC_FORBIDDEN;
+                }
+                itemResult.status = status;
+                if (putMethod.getResponseHeader("GetETag") != null) {
+                    itemResult.etag = putMethod.getResponseHeader("GetETag").getValue();
+                }
+
+                // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
+                if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
+                        (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
+                    ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                    // Set contentclass to make ActiveSync happy
+                    propertyList.add(Field.createDavProperty("contentclass", contentClass));
+                    // ... but also set PR_INTERNET_CONTENT to preserve custom properties
+                    propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(mimeContent))));
+                    PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
+                    int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
+                    if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
+                        LOGGER.warn("Unable to patch event to trigger activeSync push");
+                    } else {
+                        // need to retrieve new etag
+                        Item newItem = getItem(folderPath, itemName);
+                        itemResult.etag = newItem.etag;
+                    }
                 }
             }
             return itemResult;
@@ -2032,7 +2073,8 @@ public class DavExchangeSession extends ExchangeSession {
             }
             return contacts.get(0);
         } else if ("urn:content-classes:appointment".equals(contentClass)
-                || "urn:content-classes:calendarmessage".equals(contentClass)) {
+                || "urn:content-classes:calendarmessage".equals(contentClass)
+                || "urn:content-classes:task".equals(contentClass)) {
             return new Event(responses[0]);
         } else {
             LOGGER.warn("wrong contentclass on item " + itemPath + ": " + contentClass);
@@ -2100,7 +2142,15 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        int status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        if (status == HttpStatus.SC_NOT_FOUND && isMainCalendar(folderPath)) {
+            // retry in tasks folder
+            eventPath = URIUtil.encodePath(getFolderPath(TASKS) + '/' + convertItemNameToEML(itemName));
+            status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
+        }
+        if (status == HttpStatus.SC_NOT_FOUND) {
+            LOGGER.debug("Unable to delete "+itemName+": item not found");
+        }
     }
 
     @Override

@@ -418,8 +418,9 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient Http client instance
      * @param path       Path to be deleted
      * @throws IOException on error
+     * @return http status
      */
-    public static void executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
+    public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
         DeleteMethod deleteMethod = new DeleteMethod(path);
         deleteMethod.setFollowRedirects(false);
 
@@ -428,6 +429,7 @@ public final class DavGatewayHttpClientFacade {
         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
             throw DavGatewayHttpClientFacade.buildHttpException(deleteMethod);
         }
+        return status;
     }
 
     /**
