@@ -1695,7 +1695,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
-    public Folder getFolder(String folderPath) throws IOException {
+    protected Folder internalGetFolder(String folderPath) throws IOException {
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
                 httpClient, URIUtil.encodePath(getFolderPath(folderPath)), 0, FOLDER_PROPERTIES_NAME_SET);
         Folder folder = null;

@@ -878,25 +878,13 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * @inheritDoc
-     */
-    @Override
-    public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
-        Folder folder = internalGetFolder(folderPath);
-        if (isMainCalendar(folderPath)) {
-            Folder taskFolder = internalGetFolder(TASKS);
-            folder.ctag += taskFolder.ctag; 
-        }
-        return folder;
-    }
-
-    /**
      * Get folder by path.
      *
      * @param folderPath folder path
      * @return folder object
      * @throws IOException on error
      */
+    @Override
     protected EwsExchangeSession.Folder internalGetFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderId(folderPath);
         GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, folderId, FOLDER_PROPERTIES);

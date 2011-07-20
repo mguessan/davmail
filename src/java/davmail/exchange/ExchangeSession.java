@@ -1247,7 +1247,16 @@ public abstract class ExchangeSession {
      * @return Folder object
      * @throws IOException on error
      */
-    public abstract Folder getFolder(String folderName) throws IOException;
+    public ExchangeSession.Folder getFolder(String folderPath) throws IOException {
+        Folder folder = internalGetFolder(folderPath);
+        if (isMainCalendar(folderPath)) {
+            Folder taskFolder = internalGetFolder(TASKS);
+            folder.ctag += taskFolder.ctag;
+        }
+        return folder;
+    }
+
+    protected abstract Folder internalGetFolder(String folderName) throws IOException;
 
     /**
      * Check folder ctag and reload messages as needed.
