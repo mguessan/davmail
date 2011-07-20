@@ -1544,18 +1544,17 @@ public class DavExchangeSession extends ExchangeSession {
                     propPatchMethod.setRequestHeader("If-None-Match", noneMatch);
                 }
                 try {
-                    httpClient.executeMethod(propPatchMethod);
+                    int status = httpClient.executeMethod(propPatchMethod);
+
+                    if (status == HttpStatus.SC_MULTI_STATUS) {
+                        Item newItem = getItem(folderPath, itemName);
+                        itemResult.status = propPatchMethod.getResponseStatusCode();
+                        itemResult.etag = newItem.etag;
+                    } else {
+                        itemResult.status = status;
+                    }
                 } finally {
                     propPatchMethod.releaseConnection();
-                }
-
-                int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
-                if (status == HttpStatus.SC_MULTI_STATUS) {
-                    Item newItem = getItem(folderPath, itemName);
-                    itemResult.status = propPatchMethod.getResponseStatusCode();
-                    itemResult.etag = newItem.etag;
-                } else {
-                    itemResult.status = status;
                 }
 
             } else {
