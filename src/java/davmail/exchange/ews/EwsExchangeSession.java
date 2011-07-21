@@ -1174,6 +1174,9 @@ public class EwsExchangeSession extends ExchangeSession {
             // workaround for missing urlcompname in Exchange 2010
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+            } else if (itemName.indexOf('\n') >= 0) {
+                // encode line feed
+                itemName = itemName.replaceAll("\n", "_x000D__x000A_");
             }
             String instancetype = response.get(Field.get("instancetype").getResponseName());
             boolean isrecurring = "true".equals(response.get(Field.get("isrecurring").getResponseName()));

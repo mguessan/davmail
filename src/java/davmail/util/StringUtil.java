@@ -133,7 +133,8 @@ public final class StringUtil {
     private static final Pattern GT_PATTERN = Pattern.compile(">");
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
-    private static final Pattern LF_PATTERN = Pattern.compile("\n");    
+    private static final Pattern CR_PATTERN = Pattern.compile("\r");
+    private static final Pattern LF_PATTERN = Pattern.compile("\n");
 
     private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
 
@@ -142,6 +143,8 @@ public final class StringUtil {
     private static final Pattern ENCODED_GT_PATTERN = Pattern.compile("&gt;");
 
     private static final Pattern F8FF_PATTERN = Pattern.compile("_xF8FF_");
+    private static final Pattern X0D0A_PATTERN = Pattern.compile("_x000D__x000A_");
+
     private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
@@ -212,6 +215,12 @@ public final class StringUtil {
         if (result != null) {
             if (result.indexOf('"') >= 0) {
                 result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
+            }
+            if (result.indexOf('\r') >=0) {
+                result = CR_PATTERN.matcher(result).replaceAll("&#x0D;");
+            }
+            if (result.indexOf('\n') >=0) {
+                result = LF_PATTERN.matcher(result).replaceAll("&#x0A;");
             }
         }
         return result;
@@ -295,8 +304,8 @@ public final class StringUtil {
         if (result.indexOf('"') >= 0) {
             result = QUOTE_PATTERN.matcher(result).replaceAll("%22");
         }
-        if (result.indexOf('\n') >= 0) {
-            result = LF_PATTERN.matcher(result).replaceAll("%0A");
+        if (result.indexOf("_x000D__x000A_") >= 0) {
+            result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
         }
         return result;
     }
