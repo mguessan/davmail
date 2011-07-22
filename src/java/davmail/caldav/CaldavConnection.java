@@ -34,6 +34,8 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 
@@ -59,6 +61,19 @@ public class CaldavConnection extends AbstractConnection {
     protected final Logger wireLogger = Logger.getLogger(this.getClass());
 
     protected boolean closed;
+
+    /**
+     * custom url encode path set for iCal 5
+     */
+    public static final BitSet ical_allowed_abs_path = new BitSet(256);
+    static {
+        ical_allowed_abs_path.or(URI.allowed_abs_path);
+        ical_allowed_abs_path.clear('@');
+    }
+
+    static String encodePath(String path) throws URIException {
+        return URIUtil.encode(path, ical_allowed_abs_path, "UTF-8");
+    }
 
     /**
      * Initialize the streams and start the thread.
@@ -359,7 +374,7 @@ public class CaldavConnection extends AbstractConnection {
 
     protected void appendItemResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Item item) throws IOException {
         StringBuilder eventPath = new StringBuilder();
-        eventPath.append(URIUtil.encodePath(request.getPath()));
+        eventPath.append(encodePath(request.getPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
@@ -403,7 +418,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void appendFolderOrItem(CaldavResponse response, CaldavRequest request, ExchangeSession.Folder folder, String subFolder) throws IOException {
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -488,7 +503,7 @@ public class CaldavConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
             }
         }
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -520,7 +535,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void appendOutbox(CaldavResponse response, CaldavRequest request, String subFolder) throws IOException {
-        response.startResponse(URIUtil.encodePath(request.getPath(subFolder)));
+        response.startResponse(encodePath(request.getPath(subFolder)));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -739,7 +754,7 @@ public class CaldavConnection extends AbstractConnection {
 
         // send not found events errors
         for (String href : notFound) {
-            response.startResponse(URIUtil.encodePath(href));
+            response.startResponse(encodePath(href));
             response.appendPropstatNotFound();
             response.endResponse();
         }
@@ -756,7 +771,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendPrincipalsFolder(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath(request.getPath()));
+        response.startResponse(encodePath(request.getPath()));
         response.startPropstat();
 
         if (request.hasProperty("current-user-principal")) {
@@ -777,7 +792,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendUserRoot(CaldavRequest request) throws IOException {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath(request.getPath()));
+        response.startResponse(encodePath(request.getPath()));
         response.startPropstat();
 
         if (request.hasProperty("resourcetype")) {
@@ -921,7 +936,7 @@ public class CaldavConnection extends AbstractConnection {
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        response.startResponse(URIUtil.encodePath("/principals/" + prefix + '/' + principal));
+        response.startResponse(encodePath("/principals/" + prefix + '/' + principal));
         response.startPropstat();
 
         if (request.hasProperty("principal-URL")) {
@@ -1658,9 +1673,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
 
-
         public void appendHrefProperty(String propertyName, String propertyValue) throws IOException {
-            appendProperty(propertyName, null, "<D:href>" + URIUtil.encodePath(StringUtil.xmlEncode(propertyValue)) + "</D:href>");
+            appendProperty(propertyName, null, "<D:href>" + encodePath(StringUtil.xmlEncode(propertyValue)) + "</D:href>");
         }
 
         public void appendProperty(String propertyName) throws IOException {
