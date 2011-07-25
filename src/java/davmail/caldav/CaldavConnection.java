@@ -775,7 +775,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startPropstat();
 
         if (request.hasProperty("current-user-principal")) {
-            response.appendHrefProperty("D:current-user-principal", "/principals/users/" + session.getEmail());
+            response.appendHrefProperty("D:current-user-principal", encodePath("/principals/users/" + session.getEmail()));
         }
         response.endPropStatOK();
         response.endResponse();
