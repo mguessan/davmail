@@ -952,7 +952,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         if (request.hasProperty("calendar-user-address-set") && "users".equals(prefix)) {
-            response.appendHrefProperty("C:calendar-user-address-set", "mailto:" + actualPrincipal);
+            response.appendProperty("C:calendar-user-address-set", null, "<D:href>" + "mailto:" + actualPrincipal + "</D:href>");
         }
 
         if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
