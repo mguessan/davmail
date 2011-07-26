@@ -342,9 +342,11 @@ public class TestCaldav extends AbstractDavMailTestCase {
         httpClient.executeMethod(moveMethod);
     }
 
-    public void testWellKnown() throws IOException {
+    public void testWellKnown() throws IOException, DavException {
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(DavPropertyName.create("current-user-principal", Namespace.getNamespace("DAV:")));
+        davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
+        davPropertyNameSet.add(DavPropertyName.create("resourcetype", Namespace.getNamespace("DAV:")));
         PropFindMethod method = new PropFindMethod("/.well-known/caldav", davPropertyNameSet, 0);
         httpClient.executeMethod(method);
         assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, method.getStatusCode());
@@ -357,6 +359,17 @@ public class TestCaldav extends AbstractDavMailTestCase {
         httpClient.executeMethod(method);
         method.getResponseBodyAsMultiStatus();
         assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+    }
+
+    public void testPropfindRoot() throws IOException, DavException {
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        davPropertyNameSet.add(DavPropertyName.create("current-user-principal", Namespace.getNamespace("DAV:")));
+        davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
+        davPropertyNameSet.add(DavPropertyName.create("resourcetype", Namespace.getNamespace("DAV:")));
+        PropFindMethod method = new PropFindMethod("/", davPropertyNameSet, 0);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        method.getResponseBodyAsMultiStatus();
     }
 
 }

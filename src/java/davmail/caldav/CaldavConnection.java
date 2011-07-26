@@ -940,7 +940,7 @@ public class CaldavConnection extends AbstractConnection {
         response.startPropstat();
 
         if (request.hasProperty("principal-URL")) {
-            response.appendProperty("D:principal-URL", "/principals/" + prefix + '/' + principal);
+            response.appendHrefProperty("D:principal-URL", "/principals/" + prefix + '/' + principal);
         }
 
         if (request.hasProperty("calendar-home-set")) {
