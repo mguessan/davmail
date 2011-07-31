@@ -1,3 +1,68 @@
+** DavMail 3.9.3 released **
+New release with improved iCal 5 (OSX Lion) support, partial VTODO conversion to Outlook tasks
+ and many other bugfixes including event move item url encoding and event filter over EWS fix
+
+Caldav:
+- Caldav: new fix for @ encoding
+- Caldav: fix regression, do not encode @ in calendar-user-address-set
+- Caldav: fix principal-URL response
+- Caldav: encode @ in current-user-principal
+- Caldav: force @ encode to %40 for iCal 5
+- Caldav: new CRLF in urlcompname patch for EWS, use _x000D__x000A_ as encoded value
+- Caldav: implement merged folder ctag over WebDav
+- Caldav: fix noneMatch handling over WebDav
+- Caldav: implement tasks delete over WebDav
+- Caldav: implement tasks support over WebDav
+- Caldav: send principal-URL for OSX Lion
+- Caldav: first duedate implementation on tasks, fix delete task and concat ctag to detect changes on both calendar and tasks folders
+- Caldav: implement percent complete and status VTODO updates
+- Caldav: implement task support over EWS
+- Caldav: decode destination path on move
+- Caldav: encode LF to %0A in urlcompname
+- Caldav: check Depth before search
+- Caldav: Task folder flag
+- Caldav: move remove quotes for Evolution to EWS mode only
+- Caldav: fix regression on iCal FreeBusy handling
+- Caldav: implement PROPFIND on single item
+- Caldav: remove quotes on etag for Evolution
+- Caldav: first Task (VTODO) implementation step
+- Caldav: allow infinity as Depth value
+
+Enhancements:
+- Fix DoubleDotInputStream
+- Improve system proxies and move item logging
+- Refactor buildSessionInfo to use /public first and mailbox path as failover for galfind requests
+- Fix bug in removeQuotes
+- Fix 3315942, patch cleanup
+- Fix server certificate label
+- Fixes from audit
+- Upgrade SWT to 3.7
+- Fix 3315942, merge patch provided by Jeremiah Albrant: Ask user to select client certificate
+- Improve message download progress logging, switch icon every 100KB
+- Remove unused SwtAwtEventQueue class
+- Implement davmail.smtpSaveInSent option and reorganize tabs
+- Fix 3153691: Username with apostrophe
+- Patch by Manuel Barkhau: exclude private events flag
+- Reformat and fixes from audit
+
+EWS:
+- EWS: new recurring event filter implementation, exclude recurrence exception in results
+- EWS: fix new Exchange 2010 ItemId length support
+- EWS: Fix for some Exchange 2010 ItemIds different length
+- EWS: workaround for Exchange bug, replace xml 1.0 header with xml 1.1 and log message download progress
+- EWS: implement gzip encoding on response
+
+Dav:
+- Dav: update httpClient host after login
+
+IMAP:
+- IMAP: need to include base folder in recursive search, except on root
+- IMAP: Fix 3151800, force UTF-8 in appendEnvelopeHeaderValue
+
+Documentation:
+- Doc: Add davmail.smtpSaveInSent description in doc
+
+
 ** DavMail 3.9.2 released **
 This release includes some documentation updates, implement IMAP Recent flag, 
 Caldav support enhancements, 64 bits wrapper on windows, hanging issue with SWT 
