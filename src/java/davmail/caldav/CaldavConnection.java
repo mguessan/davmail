@@ -619,7 +619,7 @@ public class CaldavConnection extends AbstractConnection {
     public void sendFolderOrItem(CaldavRequest request) throws IOException {
         String folderPath = request.getFolderPath();
         // process request before sending response to avoid sending headers twice on error
-        ExchangeSession.Folder folder = session.getFolder(request.getFolderPath(null));
+        ExchangeSession.Folder folder = session.getFolder(folderPath);
         List<ExchangeSession.Contact> contacts = null;
         List<ExchangeSession.Event> events = null;
         List<ExchangeSession.Folder> folderList = null;
@@ -987,6 +987,9 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("resourcetype")) {
             response.appendProperty("D:resourcetype", "<D:collection/><D:principal/>");
+        }
+        if (request.hasProperty("supported-report-set")) {
+            response.appendProperty("D:supported-report-set", "<D:supported-report><D:report><C:calendar-multiget/></D:report></D:supported-report>");
         }
         response.endPropStatOK();
         response.endResponse();
