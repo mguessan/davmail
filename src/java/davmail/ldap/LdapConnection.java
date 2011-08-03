@@ -508,7 +508,13 @@ public class LdapConnection extends AbstractConnection {
                 reqBer.parseSeq(null);
                 ldapVersion = reqBer.parseInt();
                 userName = reqBer.parseString(isLdapV3());
-                password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
+                if (reqBer.peekByte() == (Ber.ASN_CONTEXT | Ber.ASN_CONSTRUCTOR | 3)) {
+                    reqBer.parseSeq(null);
+                    String mechanism = reqBer.parseString(isLdapV3());
+                    throw new IOException("Unsupported authentication mechanism: "+mechanism);
+                } else {
+                    password = reqBer.parseStringWithTag(Ber.ASN_CONTEXT, isLdapV3(), null);
+                }
 
                 if (userName.length() > 0 && password.length() > 0) {
                     DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
