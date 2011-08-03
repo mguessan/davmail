@@ -1015,10 +1015,6 @@ public abstract class EWSMethod extends PostMethod {
                 @Override
                 public int read(byte[] buffer, int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
-                    // workaround for Exchange bug: replace xml 1.0 header with xml 1.1
-                    if (totalCount == 0 && count > 18 && buffer[17] == '0') {
-                       buffer[17] = '1'; 
-                    }
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024 * 128) {
                         DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), EWSMethod.this.getURI()));
