@@ -227,7 +227,7 @@ public class DavExchangeSession extends ExchangeSession {
      * @return cmd base path
      */
     public String getCmdBasePath() {
-        if (PUBLIC_ROOT.equals(publicFolderUrl)) {
+        if (PUBLIC_ROOT.equals(publicFolderUrl) && mailPath != null) {
             // public folder is not available => try to use mailbox path
             // Note: This does not work with freebusy, which requires /public/
             return mailPath;
