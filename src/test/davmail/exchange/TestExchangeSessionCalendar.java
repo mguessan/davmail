@@ -19,6 +19,8 @@
 package davmail.exchange;
 
 import davmail.Settings;
+import davmail.exchange.ews.EwsExchangeSession;
+import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import java.io.FileOutputStream;
@@ -98,7 +100,7 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         }
     }
 
-     public void testReportCalendar() throws IOException {
+    public void testReportCalendar() throws IOException {
         List<ExchangeSession.Event> events = null;
         try {
             events = session.getAllEvents("/users/" + session.getEmail() + "/calendar");
@@ -189,6 +191,23 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         }
     }
 
+    public void testSearchEventCount() throws IOException {
+        Settings.setLoggingLevel("davmail", Level.WARN);
+        System.out.println("Item count: " + session.searchEvents("calendar", null).size());
+        System.out.println("InstanceType null: " + session.searchEvents("calendar", session.isNull("instancetype")).size());
+        System.out.println("InstanceType not null: " + session.searchEvents("calendar", session.not(session.isNull("instancetype"))).size());
+        System.out.println("InstanceType 0: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 0)).size());
+        System.out.println("InstanceType 1: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 1)).size());
+        System.out.println("InstanceType 2: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 2)).size());
+        System.out.println("InstanceType 3: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 3)).size());
+
+        if (session instanceof EwsExchangeSession) {
+            System.out.println("Recurring: " + session.searchEvents("calendar", session.isTrue("isrecurring")).size());
+            System.out.println("Non recurring: " + session.searchEvents("calendar", session.isFalse("isrecurring")).size());
+            System.out.println("Null recurring: " + session.searchEvents("calendar", session.isNull("isrecurring")).size());
+        }
+
+    }
 
 }
 
