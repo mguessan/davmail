@@ -482,8 +482,6 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected void buildSessionInfo(HttpMethod method) throws DavMailException {
-        checkPublicFolder(method);
-
         buildMailPath(method);
 
         // get base http mailbox http urls
@@ -540,6 +538,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath != null) {
             // Exchange 2003
             serverVersion = "Exchange2003";
+            checkPublicFolder(method);
             try {
                 buildEmail(method.getURI().getHost());
             } catch (URIException uriException) {
@@ -553,6 +552,9 @@ public class DavExchangeSession extends ExchangeSession {
             disableGalLookup = true;
 
             getEmailAndAliasFromOptions();
+
+            checkPublicFolder(method);
+
             // failover: try to get email through Webdav and Galfind
             if (alias == null || email == null) {
                 try {
@@ -1301,7 +1303,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result = null;
-            LOGGER.debug("Get event subject: " + subject + "href: "+getHref()+" permanentUrl: " + permanentUrl);
+            LOGGER.debug("Get event subject: " + subject + " href: "+getHref()+" permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
                 result = getICSFromInternetContentProperty();
