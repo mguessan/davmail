@@ -2224,6 +2224,11 @@ public abstract class ExchangeSession {
         protected byte[] getICS(InputStream mimeInputStream) throws IOException, MessagingException {
             byte[] result;
             MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
+            String[] contentClass = mimeMessage.getHeader("Content-class");
+            // task item, return null
+            if (contentClass != null && contentClass.length > 0 && "urn:content-classes:task".equals(contentClass[0])) {
+                return null;
+            }
             Object mimeBody = mimeMessage.getContent();
             MimePart bodyPart = null;
             if (mimeBody instanceof MimeMultipart) {
