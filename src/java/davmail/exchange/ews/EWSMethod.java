@@ -500,6 +500,11 @@ public abstract class EWSMethod extends PostMethod {
             writer.write("<t:");
             writer.write(type);
             writer.write(">");
+            if (mimeContent != null) {
+                writer.write("<t:MimeContent>");
+                writer.write(new String(mimeContent));
+                writer.write("</t:MimeContent>");
+            }
             // write ordered fields
             for (String key : fieldNames) {
                 if ("MeetingTimeZone".equals(key)) {
@@ -519,11 +524,6 @@ public abstract class EWSMethod extends PostMethod {
                     writer.write(key);
                     writer.write(">");
                 }
-            }
-            if (mimeContent != null) {
-                writer.write("<t:MimeContent>");
-                writer.write(new String(mimeContent));
-                writer.write("</t:MimeContent>");
             }
             if (fieldUpdates != null) {
                 for (FieldUpdate fieldUpdate : fieldUpdates) {

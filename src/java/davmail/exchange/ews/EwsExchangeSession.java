@@ -440,11 +440,14 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(deleteItemMethod);
     }
 
-    @Override
-    public void sendMessage(byte[] messageBody) throws IOException {
+
+    public void sendMessage(String itemClass, byte[] messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         item.mimeContent = Base64.encodeBase64(messageBody);
+        if (itemClass != null) {
+            item.put("ItemClass", itemClass);
+        }
 
         MessageDisposition messageDisposition;
         if (Settings.getBooleanProperty("davmail.smtpSaveInSent", true)) {
@@ -458,14 +461,19 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void sendMessage(MimeMessage mimeMessage) throws IOException {
+    public void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
+        String itemClass = null;
+        if (mimeMessage.getContentType().startsWith("multipart/report")) {
+            itemClass = "REPORT.IPM.Note.IPNRN";
+        }
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             mimeMessage.writeTo(baos);
         } catch (MessagingException e) {
             throw new IOException(e.getMessage());
         }
-        sendMessage(baos.toByteArray());
+        sendMessage(itemClass, baos.toByteArray());
     }
 
     /**
@@ -1684,7 +1692,7 @@ public class EwsExchangeSession extends ExchangeSession {
             // no recipients, cancel
             return HttpStatus.SC_NO_CONTENT;
         } else {
-            sendMessage(mimeContent);
+            sendMessage(null, mimeContent);
             return HttpStatus.SC_OK;
         }
     }

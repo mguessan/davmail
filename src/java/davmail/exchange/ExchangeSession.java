@@ -659,14 +659,6 @@ public abstract class ExchangeSession {
     public abstract void deleteMessage(Message message) throws IOException;
 
     /**
-     * Send message.
-     *
-     * @param messageBody MIME message body
-     * @throws IOException on error
-     */
-    public abstract void sendMessage(byte[] messageBody) throws IOException;
-
-    /**
      * Get raw MIME message content
      *
      * @param message Exchange message
@@ -1236,7 +1228,7 @@ public abstract class ExchangeSession {
      * @param mimeMessage MIME message
      * @throws IOException on error
      */
-    public abstract void sendMessage(MimeMessage mimeMessage) throws IOException;
+    public abstract void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException;
 
     /**
      * Get folder object.
@@ -2224,9 +2216,9 @@ public abstract class ExchangeSession {
         protected byte[] getICS(InputStream mimeInputStream) throws IOException, MessagingException {
             byte[] result;
             MimeMessage mimeMessage = new MimeMessage(null, mimeInputStream);
-            String[] contentClass = mimeMessage.getHeader("Content-class");
+            String[] contentClassHeader = mimeMessage.getHeader("Content-class");
             // task item, return null
-            if (contentClass != null && contentClass.length > 0 && "urn:content-classes:task".equals(contentClass[0])) {
+            if (contentClassHeader != null && contentClassHeader.length > 0 && "urn:content-classes:task".equals(contentClassHeader[0])) {
                 return null;
             }
             Object mimeBody = mimeMessage.getContent();

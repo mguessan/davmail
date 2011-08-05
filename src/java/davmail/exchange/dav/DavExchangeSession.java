@@ -2490,9 +2490,11 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
-     * @inheritDoc
+     * Send message.
+     *
+     * @param messageBody MIME message body
+     * @throws IOException on error
      */
-    @Override
     public void sendMessage(byte[] messageBody) throws IOException {
         try {
             sendMessage(new MimeMessage(null, new SharedByteArrayInputStream(messageBody)));
