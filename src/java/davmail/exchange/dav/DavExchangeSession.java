@@ -1303,7 +1303,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result = null;
-            LOGGER.debug("Get event subject: " + subject + " href: "+getHref()+" permanentUrl: " + permanentUrl);
+            LOGGER.debug("Get event subject: " + subject + " href: " + getHref() + " permanentUrl: " + permanentUrl);
             // try to get PR_INTERNET_CONTENT
             try {
                 result = getICSFromInternetContentProperty();
@@ -1370,6 +1370,9 @@ public class DavExchangeSession extends ExchangeSession {
             davPropertyNameSet.add(Field.getPropertyName("busystatus"));
             davPropertyNameSet.add(Field.getPropertyName("reminderset"));
             davPropertyNameSet.add(Field.getPropertyName("reminderdelta"));
+            // task
+            davPropertyNameSet.add(Field.getPropertyName("importance"));
+            davPropertyNameSet.add(Field.getPropertyName("uid"));
 
             PropFindMethod propFindMethod = new PropFindMethod(permanentUrl, davPropertyNameSet, 0);
             try {
@@ -1386,8 +1389,13 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("CREATED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "created")));
                 vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "calendarlastmodified")));
                 vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
-                vEvent.setPropertyValue("UID", getPropertyIfExists(davPropertySet, "calendaruid"));
+                String uid = getPropertyIfExists(davPropertySet, "calendaruid");
+                if (uid == null) {
+                    uid = getPropertyIfExists(davPropertySet, "uid");
+                }
+                vEvent.setPropertyValue("UID", uid);
                 vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
+                vEvent.setPropertyValue("PRIORITY", convertPriorityFromExchange(getPropertyIfExists(davPropertySet, "importance")));
                 if (instancetype == null) {
                     vEvent.type = "VTODO";
                 } else {
@@ -1536,6 +1544,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
                 propertyValues.add(Field.createPropertyValue("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
                 propertyValues.add(Field.createPropertyValue("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+                propertyValues.add(Field.createPropertyValue("importance", convertPriorityToExchange(vCalendar.getFirstVeventPropertyValue("PRIORITY"))));
 
                 ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
                 propPatchMethod.setRequestHeader("Translate", "f");
@@ -2030,6 +2039,9 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             if (responses.length == 0 && isMainCalendar(folderPath)) {
+                if (itemName.endsWith(".ics")) {
+                    itemName = itemName.substring(0, itemName.length() - 3) + "EML";
+                }
                 // look for item in tasks folder
                 responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(getFolderPath(TASKS) + '/' + emlItemName), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             }
@@ -2150,7 +2162,7 @@ public class DavExchangeSession extends ExchangeSession {
             status = DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, eventPath);
         }
         if (status == HttpStatus.SC_NOT_FOUND) {
-            LOGGER.debug("Unable to delete "+itemName+": item not found");
+            LOGGER.debug("Unable to delete " + itemName + ": item not found");
         }
     }
 
@@ -2770,6 +2782,39 @@ public class DavExchangeSession extends ExchangeSession {
         }
         return zuluDateValue;
     }
+
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<String, String>();
+
+    static {
+        importanceToPriorityMap.put("high", "1");
+        importanceToPriorityMap.put("normal", "5");
+        importanceToPriorityMap.put("low", "9");
+    }
+
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<String, String>();
+
+    static {
+        priorityToImportanceMap.put("1", "high");
+        priorityToImportanceMap.put("5", "normal");
+        priorityToImportanceMap.put("9", "low");
+    }
+
+    protected String convertPriorityFromExchange(String exchangeImportanceValue) throws DavMailException {
+        String value = null;
+        if (exchangeImportanceValue != null) {
+            value = importanceToPriorityMap.get(exchangeImportanceValue);
+        }
+        return value;
+    }
+
+    protected String convertPriorityToExchange(String vTodoPriorityValue) throws DavMailException {
+        String value = null;
+        if (vTodoPriorityValue != null) {
+            value = priorityToImportanceMap.get(vTodoPriorityValue);
+        }
+        return value;
+    }
+
 
     /**
      * Format date to exchange search format.

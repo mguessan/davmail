@@ -322,6 +322,9 @@ public class Field {
         createField("xmozlastack", DistinguishedPropertySetType.PublicStrings);
         createField("xmozsnoozetime", DistinguishedPropertySetType.PublicStrings);
         createField("xmozsendinvitations", DistinguishedPropertySetType.PublicStrings);
+
+        // task
+        createField(URN_SCHEMAS_MAILHEADER, "importance");//PS_INTERNET_HEADERS/importance
     }
 
     protected static String toHexString(int propertyTag) {

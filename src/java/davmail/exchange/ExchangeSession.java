@@ -2144,6 +2144,10 @@ public abstract class ExchangeSession {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
             fixICS(itemBody.getBytes("UTF-8"), false);
+            // fix task item name
+            if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
+                this.itemName = itemName.substring(0, itemName.length() - 3)+".EML";
+            }
         }
 
         /**
