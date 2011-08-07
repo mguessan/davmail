@@ -131,6 +131,7 @@ public final class StringUtil {
     private static final Pattern AMP_PATTERN = Pattern.compile("&");
     private static final Pattern LT_PATTERN = Pattern.compile("<");
     private static final Pattern GT_PATTERN = Pattern.compile(">");
+    private static final Pattern PERCENT_PATTERN = Pattern.compile("%");
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
     private static final Pattern CR_PATTERN = Pattern.compile("\r");
@@ -306,6 +307,9 @@ public final class StringUtil {
         }
         if (result.indexOf("_x000D__x000A_") >= 0) {
             result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
+        }
+        if (result.indexOf('%') >= 0) {
+            result = PERCENT_PATTERN.matcher(result).replaceAll("%25");
         }
         return result;
     }
