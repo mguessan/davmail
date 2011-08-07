@@ -122,10 +122,14 @@ public class ExchangePropPatchMethod extends PostMethod {
                     writer.write(':');
                     writer.write(propertyValue.getName());
                     if (propertyType != null) {
+                        String typeString = propertyType.toString().toLowerCase();
+                        if ("integer".equals(typeString)) {
+                            typeString = "int";
+                        }
                         writer.write(' ');
                         writer.write(nameSpaceMap.get(TYPE_NAMESPACE));
                         writer.write(":dt=\"");
-                        writer.write(propertyType.toString().toLowerCase());
+                        writer.write(typeString);
                         writer.write("\"");
                     }
                     writer.write('>');

@@ -2146,7 +2146,7 @@ public abstract class ExchangeSession {
             fixICS(itemBody.getBytes("UTF-8"), false);
             // fix task item name
             if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
-                this.itemName = itemName.substring(0, itemName.length() - 3)+".EML";
+                this.itemName = itemName.substring(0, itemName.length() - 3)+"EML";
             }
         }
 

@@ -78,6 +78,7 @@ public class Field {
         propertyTypeMap.put(PropertyType.SystemTime, "0040"); // PT_SYSTIME
         propertyTypeMap.put(PropertyType.String, "001f"); // 001f is PT_UNICODE_STRING, 001E is PT_STRING
         propertyTypeMap.put(PropertyType.Binary, "0102"); // PT_BINARY
+        propertyTypeMap.put(PropertyType.Double, "0005"); // PT_DOUBLE
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
@@ -325,6 +326,8 @@ public class Field {
 
         // task
         createField(URN_SCHEMAS_MAILHEADER, "importance");//PS_INTERNET_HEADERS/importance
+        createField("percentcomplete", DistinguishedPropertySetType.Task, 0x8102, "percentcomplete", PropertyType.Double);
+        createField("taskstatus", DistinguishedPropertySetType.Task, 0x8101, "taskstatus", PropertyType.Integer);
     }
 
     protected static String toHexString(int propertyTag) {
@@ -362,11 +365,15 @@ public class Field {
         if (propertySetType == DistinguishedPropertySetType.Address) {
             // Address namespace expects integer names
             name = String.valueOf(propertyTag);
+            updateAlias = "_x0030_x" + toHexString(propertyTag);
+        } else if (propertySetType == DistinguishedPropertySetType.Task) {
+            name = "0x" + toHexString(propertyTag);
+            updateAlias = "0x0000" + toHexString(propertyTag);
         } else {
             // Common namespace expects hex names
             name = "0x" + toHexString(propertyTag);
+            updateAlias = "_x0030_x" + toHexString(propertyTag);
         }
-        updateAlias = "_x0030_x" + toHexString(propertyTag);
         Field field = new Field(alias, Namespace.getNamespace(SCHEMAS_MAPI_ID.getURI() +
                 '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), name, propertyType, responseAlias, null, updateAlias);
         fieldMap.put(field.alias, field);
@@ -397,6 +404,7 @@ public class Field {
     protected final boolean isIntValue;
     protected final boolean isMultivalued;
     protected final boolean isBooleanValue;
+    protected final boolean isFloatValue;
 
     /**
      * Create field for namespace and name, use name as alias.
@@ -443,6 +451,7 @@ public class Field {
         isMultivalued = propertyType != null && propertyType.toString().endsWith("Array");
         isIntValue = propertyType == PropertyType.Long || propertyType == PropertyType.Integer || propertyType == PropertyType.Short;
         isBooleanValue = propertyType == PropertyType.Boolean;
+        isFloatValue = propertyType == PropertyType.Float || propertyType == PropertyType.Double;
 
         this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
@@ -567,6 +576,10 @@ public class Field {
             } else {
                 throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }
+        } else if (field.isFloatValue) {
+            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value), PropertyType.Float);
+        } else if (field.isIntValue) {
+            return new PropertyValue(field.updatePropertyName.getNamespace().getURI(), field.updatePropertyName.getName(), StringUtil.xmlEncode(value), PropertyType.Integer);
         } else {
             return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value));
         }

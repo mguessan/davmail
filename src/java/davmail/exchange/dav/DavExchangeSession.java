@@ -82,6 +82,23 @@ public class DavExchangeSession extends ExchangeSession {
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("outbox"));
     }
 
+    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
+    static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
+
+    static {
+        //taskTovTodoStatusMap.put("0", null);
+        taskTovTodoStatusMap.put("1", "IN-PROCESS");
+        taskTovTodoStatusMap.put("2", "COMPLETED");
+        taskTovTodoStatusMap.put("3", "NEEDS-ACTION");
+        taskTovTodoStatusMap.put("4", "CANCELLED");
+
+        //vTodoToTaskStatusMap.put(null, "0");
+        vTodoToTaskStatusMap.put("IN-PROCESS", "1");
+        vTodoToTaskStatusMap.put("COMPLETED", "2");
+        vTodoToTaskStatusMap.put("NEEDS-ACTION", "3");
+        vTodoToTaskStatusMap.put("CANCELLED", "4");
+    }
+
     /**
      * Various standard mail boxes Urls
      */
@@ -1349,34 +1366,36 @@ public class DavExchangeSession extends ExchangeSession {
             byte[] result = null;
 
             // experimental: build VCALENDAR from properties
-            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-            davPropertyNameSet.add(Field.getPropertyName("method"));
 
-            davPropertyNameSet.add(Field.getPropertyName("created"));
-            davPropertyNameSet.add(Field.getPropertyName("calendarlastmodified"));
-            davPropertyNameSet.add(Field.getPropertyName("dtstamp"));
-            davPropertyNameSet.add(Field.getPropertyName("calendaruid"));
-            davPropertyNameSet.add(Field.getPropertyName("subject"));
-            davPropertyNameSet.add(Field.getPropertyName("dtstart"));
-            davPropertyNameSet.add(Field.getPropertyName("dtend"));
-            davPropertyNameSet.add(Field.getPropertyName("transparent"));
-            davPropertyNameSet.add(Field.getPropertyName("organizer"));
-            davPropertyNameSet.add(Field.getPropertyName("to"));
-            davPropertyNameSet.add(Field.getPropertyName("description"));
-            davPropertyNameSet.add(Field.getPropertyName("rrule"));
-            davPropertyNameSet.add(Field.getPropertyName("exdate"));
-            davPropertyNameSet.add(Field.getPropertyName("sensitivity"));
-            davPropertyNameSet.add(Field.getPropertyName("alldayevent"));
-            davPropertyNameSet.add(Field.getPropertyName("busystatus"));
-            davPropertyNameSet.add(Field.getPropertyName("reminderset"));
-            davPropertyNameSet.add(Field.getPropertyName("reminderdelta"));
-            // task
-            davPropertyNameSet.add(Field.getPropertyName("importance"));
-            davPropertyNameSet.add(Field.getPropertyName("uid"));
-
-            PropFindMethod propFindMethod = new PropFindMethod(permanentUrl, davPropertyNameSet, 0);
             try {
-                MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                //MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                Set<String> eventProperties = new HashSet<String>();
+                eventProperties.add("method");
+
+                eventProperties.add("created");
+                eventProperties.add("calendarlastmodified");
+                eventProperties.add("dtstamp");
+                eventProperties.add("calendaruid");
+                eventProperties.add("subject");
+                eventProperties.add("dtstart");
+                eventProperties.add("dtend");
+                eventProperties.add("transparent");
+                eventProperties.add("organizer");
+                eventProperties.add("to");
+                eventProperties.add("description");
+                eventProperties.add("rrule");
+                eventProperties.add("exdate");
+                eventProperties.add("sensitivity");
+                eventProperties.add("alldayevent");
+                eventProperties.add("busystatus");
+                eventProperties.add("reminderset");
+                eventProperties.add("reminderdelta");
+                // task
+                eventProperties.add("importance");
+                eventProperties.add("uid");
+                eventProperties.add("percentcomplete");
+
+                MultiStatusResponse[] responses = searchItems(folderPath, eventProperties, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
                 if (responses.length == 0) {
                     throw new HttpNotFoundException(permanentUrl + " not found");
                 }
@@ -1398,6 +1417,9 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("PRIORITY", convertPriorityFromExchange(getPropertyIfExists(davPropertySet, "importance")));
                 if (instancetype == null) {
                     vEvent.type = "VTODO";
+                    vEvent.setPropertyValue("PERCENT-COMPLETE", String.valueOf(getDoublePropertyIfExists(davPropertySet, "percentcomplete")*100));
+                    vEvent.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getPropertyIfExists(davPropertySet, "taskstatus")));
+
                 } else {
                     vEvent.type = "VEVENT";
                     // check mandatory dtstart value
@@ -1485,8 +1507,6 @@ public class DavExchangeSession extends ExchangeSession {
             } catch (IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
                 throw buildHttpException(e);
-            } finally {
-                propFindMethod.releaseConnection();
             }
 
             return result;
@@ -1545,6 +1565,12 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyValues.add(Field.createPropertyValue("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
                 propertyValues.add(Field.createPropertyValue("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
                 propertyValues.add(Field.createPropertyValue("importance", convertPriorityToExchange(vCalendar.getFirstVeventPropertyValue("PRIORITY"))));
+                String percentComplete = vCalendar.getFirstVeventPropertyValue("PERCENT-COMPLETE");
+                if (percentComplete == null) {
+                    percentComplete = "0";
+                }
+                propertyValues.add(Field.createPropertyValue("percentcomplete", String.valueOf(Double.parseDouble(percentComplete) / 100)));
+                propertyValues.add(Field.createPropertyValue("taskstatus", vTodoToTaskStatusMap.get(vCalendar.getFirstVeventPropertyValue("STATUS"))));
 
                 ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
                 propPatchMethod.setRequestHeader("Translate", "f");
@@ -1859,6 +1885,15 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected double getDoublePropertyIfExists(DavPropertySet properties, String alias) {
+        DavProperty property = properties.get(Field.getResponsePropertyName(alias));
+        if (property == null) {
+            return 0;
+        } else {
+            return Double.parseDouble((String) property.getValue());
+        }
+    }
+
     protected byte[] getBinaryPropertyIfExists(DavPropertySet properties, String alias) {
         byte[] property = null;
         String base64Property = getPropertyIfExists(properties, alias);
@@ -1990,7 +2025,12 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected MultiStatusResponse[] searchItems(String folderPath, Set<String> attributes, Condition condition,
                                                 FolderQueryTraversal folderQueryTraversal, int maxCount) throws IOException {
-        String folderUrl = getFolderPath(folderPath);
+        String folderUrl;
+        if (folderPath.startsWith("http")) {
+            folderUrl = folderPath;
+        } else {
+            folderUrl = getFolderPath(folderPath);
+        }
         StringBuilder searchRequest = new StringBuilder();
         searchRequest.append("SELECT ")
                 .append(Field.getRequestPropertyString("permanenturl"));
@@ -2037,15 +2077,19 @@ public class DavExchangeSession extends ExchangeSession {
         String itemPath = getFolderPath(folderPath) + '/' + emlItemName;
         MultiStatusResponse[] responses = null;
         try {
-            responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
-            if (responses.length == 0 && isMainCalendar(folderPath)) {
+            try {
+                responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(itemPath), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+            } catch (HttpNotFoundException e) {
+                // ignore
+            }
+            if (responses == null || responses.length == 0 && isMainCalendar(folderPath)) {
                 if (itemName.endsWith(".ics")) {
                     itemName = itemName.substring(0, itemName.length() - 3) + "EML";
                 }
                 // look for item in tasks folder
                 responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, URIUtil.encodePath(getFolderPath(TASKS) + '/' + emlItemName), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
             }
-            if (responses.length == 0) {
+            if (responses == null || responses.length == 0) {
                 throw new HttpNotFoundException(itemPath + " not found");
             }
         } catch (HttpNotFoundException e) {
