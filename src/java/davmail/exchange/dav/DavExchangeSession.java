@@ -1394,6 +1394,7 @@ public class DavExchangeSession extends ExchangeSession {
                 eventProperties.add("importance");
                 eventProperties.add("uid");
                 eventProperties.add("percentcomplete");
+                eventProperties.add("keywords");
 
                 MultiStatusResponse[] responses = searchItems(folderPath, eventProperties, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
                 if (responses.length == 0) {
@@ -1415,9 +1416,14 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("UID", uid);
                 vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
                 vEvent.setPropertyValue("PRIORITY", convertPriorityFromExchange(getPropertyIfExists(davPropertySet, "importance")));
+                vEvent.setPropertyValue("CATEGORIES", getPropertyIfExists(davPropertySet, "keywords"));
+
                 if (instancetype == null) {
                     vEvent.type = "VTODO";
-                    vEvent.setPropertyValue("PERCENT-COMPLETE", String.valueOf(getDoublePropertyIfExists(davPropertySet, "percentcomplete")*100));
+                    double percentComplete = getDoublePropertyIfExists(davPropertySet, "percentcomplete");
+                    if (percentComplete > 0) {
+                        vEvent.setPropertyValue("PERCENT-COMPLETE", String.valueOf((int) (percentComplete * 100)));
+                    }
                     vEvent.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getPropertyIfExists(davPropertySet, "taskstatus")));
 
                 } else {
@@ -1571,6 +1577,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
                 propertyValues.add(Field.createPropertyValue("percentcomplete", String.valueOf(Double.parseDouble(percentComplete) / 100)));
                 propertyValues.add(Field.createPropertyValue("taskstatus", vTodoToTaskStatusMap.get(vCalendar.getFirstVeventPropertyValue("STATUS"))));
+                propertyValues.add(Field.createPropertyValue("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
 
                 ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
                 propPatchMethod.setRequestHeader("Translate", "f");

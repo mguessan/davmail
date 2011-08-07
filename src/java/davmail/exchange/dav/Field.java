@@ -328,6 +328,8 @@ public class Field {
         createField(URN_SCHEMAS_MAILHEADER, "importance");//PS_INTERNET_HEADERS/importance
         createField("percentcomplete", DistinguishedPropertySetType.Task, 0x8102, "percentcomplete", PropertyType.Double);
         createField("taskstatus", DistinguishedPropertySetType.Task, 0x8101, "taskstatus", PropertyType.Integer);
+
+        createField("categories", DistinguishedPropertySetType.PublicStrings, 0x9000, "categories", PropertyType.StringArray);
     }
 
     protected static String toHexString(int propertyTag) {
