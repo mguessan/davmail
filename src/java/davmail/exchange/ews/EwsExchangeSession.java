@@ -399,7 +399,6 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
-        item.type = "Message";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             mimeMessage.writeTo(baos);
@@ -1248,10 +1247,11 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("percentcomplete", percentComplete));
                 String vTodoStatus = vCalendar.getFirstVeventPropertyValue("STATUS");
                 if (vTodoStatus == null) {
-                    updates.add(Field.createFieldUpdate("status", "NotStarted"));
+                    updates.add(Field.createFieldUpdate("taskstatus", "NotStarted"));
                 } else {
-                    updates.add(Field.createFieldUpdate("status", vTodoToTaskStatusMap.get(vTodoStatus)));
+                    updates.add(Field.createFieldUpdate("taskstatus", vTodoToTaskStatusMap.get(vTodoStatus)));
                 }
+                updates.add(Field.createFieldUpdate("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
                 updates.add(Field.createFieldUpdate("duedate", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 if (currentItemId != null) {
                     // update
@@ -1381,8 +1381,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("description"));
                     getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
-                    getItemMethod.addAdditionalProperty(Field.get("status"));
+                    getItemMethod.addAdditionalProperty(Field.get("taskstatus"));
                     getItemMethod.addAdditionalProperty(Field.get("duedate"));
+                    getItemMethod.addAdditionalProperty(Field.get("keywords"));                    
                 } else if (!"Message".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
@@ -1415,7 +1416,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("SUMMARY", getItemMethod.getResponseItem().get(Field.get("subject").getResponseName()));
                     vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
-                    vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("status").getResponseName())));
+                    vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("taskstatus").getResponseName())));
+                    vTodo.setPropertyValue("CATEGORIES", getItemMethod.getResponseItem().get(Field.get("keywords").getResponseName()));
+
                     VProperty vProperty = new VProperty("DUE", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName())));
                     vProperty.setParam("TZID", vTimezone.getPropertyValue("TZID"));
                     vTodo.addProperty(vProperty);

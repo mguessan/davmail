@@ -1363,7 +1363,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         private byte[] getICSFromItemProperties() throws IOException {
-            byte[] result = null;
+            byte[] result;
 
             // experimental: build VCALENDAR from properties
 
@@ -1482,7 +1482,7 @@ public class DavExchangeSession extends ExchangeSession {
 
                     // Parse attendee list
                     String toHeader = getPropertyIfExists(davPropertySet, "to");
-                    if (toHeader != null && !organizerEmail.equals(toHeader)) {
+                    if (toHeader != null && !toHeader.equals(organizerEmail)) {
                         InternetAddress[] attendees = InternetAddress.parseHeader(toHeader, false);
                         for (InternetAddress attendee : attendees) {
                             if (!attendee.getAddress().equalsIgnoreCase(organizerEmail)) {

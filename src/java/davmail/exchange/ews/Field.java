@@ -209,7 +209,7 @@ public final class Field {
 
         // task
         FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
-        FIELD_MAP.put("status", new UnindexedFieldURI("task:Status"));
+        FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status"));
         FIELD_MAP.put("duedate", new UnindexedFieldURI("task:DueDate"));        
 
         // attachments
