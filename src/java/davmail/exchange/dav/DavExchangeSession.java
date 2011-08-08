@@ -1393,10 +1393,12 @@ public class DavExchangeSession extends ExchangeSession {
                 // task
                 eventProperties.add("importance");
                 eventProperties.add("uid");
+                eventProperties.add("taskstatus");
                 eventProperties.add("percentcomplete");
                 eventProperties.add("keywords");
                 eventProperties.add("startdate");
                 eventProperties.add("duedate");
+                eventProperties.add("datecompleted");
 
                 MultiStatusResponse[] responses = searchItems(folderPath, eventProperties, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
                 if (responses.length == 0) {
@@ -1411,8 +1413,6 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("CREATED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "created")));
                 vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "calendarlastmodified")));
                 vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
-                vEvent.setPropertyValue("DUE;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "duedate")));
-                vEvent.setPropertyValue("DTSTART;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "startdate")));
 
                 String uid = getPropertyIfExists(davPropertySet, "calendaruid");
                 if (uid == null) {
@@ -1430,6 +1430,9 @@ public class DavExchangeSession extends ExchangeSession {
                         vEvent.setPropertyValue("PERCENT-COMPLETE", String.valueOf((int) (percentComplete * 100)));
                     }
                     vEvent.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getPropertyIfExists(davPropertySet, "taskstatus")));
+                    vEvent.setPropertyValue("DUE;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "duedate")));
+                    vEvent.setPropertyValue("DTSTART;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "startdate")));
+                    vEvent.setPropertyValue("COMPLETED;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "datecompleted")));
 
                 } else {
                     vEvent.type = "VEVENT";
@@ -1581,10 +1584,16 @@ public class DavExchangeSession extends ExchangeSession {
                     percentComplete = "0";
                 }
                 propertyValues.add(Field.createPropertyValue("percentcomplete", String.valueOf(Double.parseDouble(percentComplete) / 100)));
-                propertyValues.add(Field.createPropertyValue("taskstatus", vTodoToTaskStatusMap.get(vCalendar.getFirstVeventPropertyValue("STATUS"))));
+                String taskStatus = vTodoToTaskStatusMap.get(vCalendar.getFirstVeventPropertyValue("STATUS"));
+                propertyValues.add(Field.createPropertyValue("taskstatus", taskStatus));
                 propertyValues.add(Field.createPropertyValue("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
-                propertyValues.add(Field.createPropertyValue("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 propertyValues.add(Field.createPropertyValue("startdate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                propertyValues.add(Field.createPropertyValue("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
+                propertyValues.add(Field.createPropertyValue("datecompleted", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("COMPLETED"))));
+
+                propertyValues.add(Field.createPropertyValue("iscomplete", "2".equals(taskStatus)?"true":"false"));
+                propertyValues.add(Field.createPropertyValue("commonstart", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                propertyValues.add(Field.createPropertyValue("commonend", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
 
                 ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
                 propPatchMethod.setRequestHeader("Translate", "f");
@@ -2898,11 +2907,18 @@ public class DavExchangeSession extends ExchangeSession {
                 } else if (value.length() == 15) {
                     parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
                     parser.setTimeZone(GMT_TIMEZONE);
+                } else if (value.length() == 16) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
                 } else {
                     parser = ExchangeSession.getExchangeZuluDateFormat();
                 }
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
                 calendarValue.setTime(parser.parse(value));
+                // zulu time: add 12 hours
+                if (value.length() == 16) {
+                    calendarValue.add(Calendar.HOUR, 12);
+                }
                 calendarValue.set(Calendar.HOUR, 0);
                 calendarValue.set(Calendar.MINUTE, 0);
                 calendarValue.set(Calendar.SECOND, 0);

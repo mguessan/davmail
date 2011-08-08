@@ -330,6 +330,12 @@ public class Field {
         createField("taskstatus", DistinguishedPropertySetType.Task, 0x8101, "taskstatus", PropertyType.Integer);
         createField("startdate", DistinguishedPropertySetType.Task, 0x8104, "startdate", PropertyType.SystemTime);
         createField("duedate", DistinguishedPropertySetType.Task, 0x8105, "duedate", PropertyType.SystemTime);
+        createField("datecompleted", DistinguishedPropertySetType.Task, 0x810F, "datecompleted", PropertyType.SystemTime);
+        createField("iscomplete", DistinguishedPropertySetType.Task, 0x811C, "iscomplete", PropertyType.Boolean);
+
+
+        createField("commonstart", DistinguishedPropertySetType.Common, 0x8516, "commonstart", PropertyType.SystemTime);
+        createField("commonend", DistinguishedPropertySetType.Common, 0x8517, "commonend", PropertyType.SystemTime);
 
         createField("categories", DistinguishedPropertySetType.PublicStrings, 0x9000, "categories", PropertyType.StringArray);
     }
