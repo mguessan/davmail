@@ -1395,6 +1395,8 @@ public class DavExchangeSession extends ExchangeSession {
                 eventProperties.add("uid");
                 eventProperties.add("percentcomplete");
                 eventProperties.add("keywords");
+                eventProperties.add("startdate");
+                eventProperties.add("duedate");
 
                 MultiStatusResponse[] responses = searchItems(folderPath, eventProperties, DavExchangeSession.this.isEqualTo("urlcompname", convertItemNameToEML(itemName)), FolderQueryTraversal.Shallow, 1);
                 if (responses.length == 0) {
@@ -1409,6 +1411,9 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("CREATED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "created")));
                 vEvent.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getPropertyIfExists(davPropertySet, "calendarlastmodified")));
                 vEvent.setPropertyValue("DTSTAMP", convertDateFromExchange(getPropertyIfExists(davPropertySet, "dtstamp")));
+                vEvent.setPropertyValue("DUE;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "duedate")));
+                vEvent.setPropertyValue("DTSTART;VALUE=DATE", convertDateFromExchangeToTaskDate(getPropertyIfExists(davPropertySet, "startdate")));
+
                 String uid = getPropertyIfExists(davPropertySet, "calendaruid");
                 if (uid == null) {
                     uid = getPropertyIfExists(davPropertySet, "uid");
@@ -1578,6 +1583,8 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyValues.add(Field.createPropertyValue("percentcomplete", String.valueOf(Double.parseDouble(percentComplete) / 100)));
                 propertyValues.add(Field.createPropertyValue("taskstatus", vTodoToTaskStatusMap.get(vCalendar.getFirstVeventPropertyValue("STATUS"))));
                 propertyValues.add(Field.createPropertyValue("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
+                propertyValues.add(Field.createPropertyValue("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
+                propertyValues.add(Field.createPropertyValue("startdate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
 
                 ExchangePropPatchMethod propPatchMethod = new ExchangePropPatchMethod(encodedHref, propertyValues);
                 propPatchMethod.setRequestHeader("Translate", "f");
@@ -2880,4 +2887,45 @@ public class DavExchangeSession extends ExchangeSession {
         return dateFormatter.format(date);
     }
 
+    protected String convertTaskDateToZulu(String value) {
+        String result = null;
+        if (value != null && value.length() > 0) {
+            try {
+                SimpleDateFormat parser;
+                if (value.length() == 8) {
+                    parser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else if (value.length() == 15) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else {
+                    parser = ExchangeSession.getExchangeZuluDateFormat();
+                }
+                Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
+                calendarValue.setTime(parser.parse(value));
+                calendarValue.set(Calendar.HOUR, 0);
+                calendarValue.set(Calendar.MINUTE, 0);
+                calendarValue.set(Calendar.SECOND, 0);
+                result = ExchangeSession.getExchangeZuluDateFormatMillisecond().format(calendarValue.getTime());
+            } catch (ParseException e) {
+                LOGGER.warn("Invalid date: " + value);
+            }
+        }
+
+        return result;
+    }
+
+    protected String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
+        String result = null;
+        if (exchangeDateValue != null) {
+            try {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                dateFormat.setTimeZone(GMT_TIMEZONE);
+                result = dateFormat.format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+        }
+        return result;
+    }
 }

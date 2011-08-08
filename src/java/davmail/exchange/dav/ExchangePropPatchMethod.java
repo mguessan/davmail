@@ -87,7 +87,7 @@ public class ExchangePropPatchMethod extends PostMethod {
             final Set<PropertyValue> deletePropertyValues = new HashSet<PropertyValue>();
             for (PropertyValue propertyValue : propertyValues) {
                 // data type namespace
-                if (!nameSpaceMap.containsKey(TYPE_NAMESPACE) && propertyValue.getType() != null) {
+                if (!nameSpaceMap.containsKey(TYPE_NAMESPACE) && propertyValue.getTypeString() != null) {
                     nameSpaceMap.put(TYPE_NAMESPACE, currentChar++);
                 }
                 // property namespace
@@ -115,17 +115,13 @@ public class ExchangePropPatchMethod extends PostMethod {
             if (!setPropertyValues.isEmpty()) {
                 writer.write("<D:set><D:prop>");
                 for (PropertyValue propertyValue : setPropertyValues) {
-                    PropertyType propertyType = propertyValue.getType();
+                    String typeString = propertyValue.getTypeString();
                     char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
                     writer.write('<');
                     writer.write(nameSpaceChar);
                     writer.write(':');
                     writer.write(propertyValue.getName());
-                    if (propertyType != null) {
-                        String typeString = propertyType.toString().toLowerCase();
-                        if ("integer".equals(typeString)) {
-                            typeString = "int";
-                        }
+                    if (typeString != null) {
                         writer.write(' ');
                         writer.write(nameSpaceMap.get(TYPE_NAMESPACE));
                         writer.write(":dt=\"");

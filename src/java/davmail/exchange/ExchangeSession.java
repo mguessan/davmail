@@ -2111,22 +2111,6 @@ public abstract class ExchangeSession {
             return writer.toString();
         }
 
-        protected String convertZuluDateToBday(String value) {
-            String result = null;
-            if (value != null && value.length() > 0) {
-                try {
-                    SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(parser.parse(value));
-                    cal.add(Calendar.HOUR_OF_DAY, 12);
-                    result = ExchangeSession.getVcardBdayFormat().format(cal.getTime());
-                } catch (ParseException e) {
-                    LOGGER.warn("Invalid date: " + value);
-                }
-            }
-            return result;
-        }
-
     }
 
     /**
@@ -2910,6 +2894,22 @@ public abstract class ExchangeSession {
             }
         }
         return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
+    }
+
+    protected String convertZuluDateToBday(String value) {
+        String result = null;
+        if (value != null && value.length() > 0) {
+            try {
+                SimpleDateFormat parser = ExchangeSession.getZuluDateFormat();
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(parser.parse(value));
+                cal.add(Calendar.HOUR_OF_DAY, 12);
+                result = ExchangeSession.getVcardBdayFormat().format(cal.getTime());
+            } catch (ParseException e) {
+                LOGGER.warn("Invalid date: " + value);
+            }
+        }
+        return result;
     }
 
     protected String convertBDayToZulu(String value) {

@@ -25,7 +25,7 @@ public class PropertyValue {
     protected final String namespaceUri;
     protected final String name;
     protected final String xmlEncodedValue;
-    protected final PropertyType type;
+    protected final String typeString;
 
     /**
      * Create Dav property value.
@@ -54,13 +54,13 @@ public class PropertyValue {
      * @param namespaceUri    property namespace
      * @param name            property name
      * @param xmlEncodedValue xml encoded value
-     * @param type            property type
+     * @param typeString            property type
      */
-    public PropertyValue(String namespaceUri, String name, String xmlEncodedValue, PropertyType type) {
+    public PropertyValue(String namespaceUri, String name, String xmlEncodedValue, String typeString) {
         this.namespaceUri = namespaceUri;
         this.name = name;
         this.xmlEncodedValue = xmlEncodedValue;
-        this.type = type;
+        this.typeString = typeString;
     }
 
     /**
@@ -86,8 +86,8 @@ public class PropertyValue {
      *
      * @return property type
      */
-    public PropertyType getType() {
-        return type;
+    public String getTypeString() {
+        return typeString;
     }
 
     /**

@@ -328,6 +328,8 @@ public class Field {
         createField(URN_SCHEMAS_MAILHEADER, "importance");//PS_INTERNET_HEADERS/importance
         createField("percentcomplete", DistinguishedPropertySetType.Task, 0x8102, "percentcomplete", PropertyType.Double);
         createField("taskstatus", DistinguishedPropertySetType.Task, 0x8101, "taskstatus", PropertyType.Integer);
+        createField("startdate", DistinguishedPropertySetType.Task, 0x8104, "startdate", PropertyType.SystemTime);
+        createField("duedate", DistinguishedPropertySetType.Task, 0x8105, "duedate", PropertyType.SystemTime);
 
         createField("categories", DistinguishedPropertySetType.PublicStrings, 0x9000, "categories", PropertyType.StringArray);
     }
@@ -407,6 +409,7 @@ public class Field {
     protected final boolean isMultivalued;
     protected final boolean isBooleanValue;
     protected final boolean isFloatValue;
+    protected final boolean isDateValue;
 
     /**
      * Create field for namespace and name, use name as alias.
@@ -454,6 +457,7 @@ public class Field {
         isIntValue = propertyType == PropertyType.Long || propertyType == PropertyType.Integer || propertyType == PropertyType.Short;
         isBooleanValue = propertyType == PropertyType.Boolean;
         isFloatValue = propertyType == PropertyType.Float || propertyType == PropertyType.Double;
+        isDateValue = propertyType == PropertyType.SystemTime;
 
         this.uri = namespace.getURI() + name;
         if (responseAlias == null) {
@@ -572,16 +576,18 @@ public class Field {
             return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), buffer.toString());
         } else if (field.isBooleanValue) {
             if ("true".equals(value)) {
-                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "1", PropertyType.Boolean);
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "1", "boolean");
             } else if ("false".equals(value)) {
-                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "0", PropertyType.Boolean);
+                return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), "0", "boolean");
             } else {
                 throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }
         } else if (field.isFloatValue) {
-            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value), PropertyType.Float);
+            return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value), "float");
         } else if (field.isIntValue) {
-            return new PropertyValue(field.updatePropertyName.getNamespace().getURI(), field.updatePropertyName.getName(), StringUtil.xmlEncode(value), PropertyType.Integer);
+            return new PropertyValue(field.updatePropertyName.getNamespace().getURI(), field.updatePropertyName.getName(), StringUtil.xmlEncode(value), "int");
+        } else if (field.isDateValue) {
+            return new PropertyValue(field.updatePropertyName.getNamespace().getURI(), field.updatePropertyName.getName(), StringUtil.xmlEncode(value), "dateTime.tz");
         } else {
             return new PropertyValue(davPropertyName.getNamespace().getURI(), davPropertyName.getName(), StringUtil.xmlEncode(value));
         }
