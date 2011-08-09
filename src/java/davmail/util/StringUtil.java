@@ -144,7 +144,7 @@ public final class StringUtil {
     private static final Pattern URLENCODED_LT_PATTERN = Pattern.compile("%3C");
     private static final Pattern URLENCODED_GT_PATTERN = Pattern.compile("%3E");
     private static final Pattern URLENCODED_QUOTE_PATTERN = Pattern.compile("%22");
-    private static final Pattern URLENCODED_X0D0A_PATTERN = Pattern.compile("\r\n");
+    private static final Pattern URLENCODED_X0D0A_PATTERN = Pattern.compile("\n");
     private static final Pattern URLENCODED_PERCENT_PATTERN = Pattern.compile("%25");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
@@ -351,7 +351,8 @@ public final class StringUtil {
         if (result.indexOf("%22") >= 0) {
             result = URLENCODED_QUOTE_PATTERN.matcher(result).replaceAll("\"");
         }
-        if (result.indexOf("\r\n") >= 0) {
+        // CRLF is replaced with LF in response
+        if (result.indexOf('\n') >= 0) {
             result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
         }
         if (result.indexOf("%25") >= 0) {

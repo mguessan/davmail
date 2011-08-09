@@ -1000,7 +1000,7 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
-            itemName = response.get(Field.get("urlcompname").getResponseName());
+            itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
             // workaround for missing urlcompname in Exchange 2010
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
@@ -1182,9 +1182,6 @@ public class EwsExchangeSession extends ExchangeSession {
             // workaround for missing urlcompname in Exchange 2010
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
-            } else if (itemName.indexOf('\n') >= 0) {
-                // encode line feed
-                itemName = itemName.replaceAll("\n", "_x000D__x000A_");
             }
             String instancetype = response.get(Field.get("instancetype").getResponseName());
             boolean isrecurring = "true".equals(response.get(Field.get("isrecurring").getResponseName()));
