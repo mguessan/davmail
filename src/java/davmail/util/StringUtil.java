@@ -137,7 +137,15 @@ public final class StringUtil {
     private static final Pattern CR_PATTERN = Pattern.compile("\r");
     private static final Pattern LF_PATTERN = Pattern.compile("\n");
 
+    private static final Pattern URLENCODED_F8FF_PATTERN = Pattern.compile(String.valueOf((char) 0xF8FF));
     private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
+    private static final Pattern URLENCODED_PLUS_PATTERN = Pattern.compile("%2B");
+    private static final Pattern URLENCODED_COLON_PATTERN = Pattern.compile("%3A");
+    private static final Pattern URLENCODED_LT_PATTERN = Pattern.compile("%3C");
+    private static final Pattern URLENCODED_GT_PATTERN = Pattern.compile("%3E");
+    private static final Pattern URLENCODED_QUOTE_PATTERN = Pattern.compile("%22");
+    private static final Pattern URLENCODED_X0D0A_PATTERN = Pattern.compile("\r\n");
+    private static final Pattern URLENCODED_PERCENT_PATTERN = Pattern.compile("%25");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
@@ -284,6 +292,9 @@ public final class StringUtil {
      */
     public static String encodeUrlcompname(String value) {
         String result = value;
+        if (result.indexOf('%') >= 0) {
+            result = PERCENT_PATTERN.matcher(result).replaceAll("%25");
+        }
         if (result.indexOf("_xF8FF_") >= 0) {
             result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char) 0xF8FF));
         }
@@ -308,8 +319,43 @@ public final class StringUtil {
         if (result.indexOf("_x000D__x000A_") >= 0) {
             result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
         }
-        if (result.indexOf('%') >= 0) {
-            result = PERCENT_PATTERN.matcher(result).replaceAll("%25");
+        return result;
+    }
+
+    /**
+     * Decode urlcompname to get item name.
+     *
+     * @param urlcompname encoded value
+     * @return decoded value
+     */
+    public static String decodeUrlcompname(String urlcompname) {
+        String result = urlcompname;
+        if (result.indexOf((char) 0xF8FF) >= 0) {
+            result = URLENCODED_F8FF_PATTERN.matcher(result).replaceAll("_xF8FF_");
+        }
+        if (result.indexOf("%26") >= 0) {
+            result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
+        }
+        if (result.indexOf("%2B") >= 0) {
+            result = URLENCODED_PLUS_PATTERN.matcher(result).replaceAll("+");
+        }
+        if (result.indexOf("%3A") >= 0) {
+            result = URLENCODED_COLON_PATTERN.matcher(result).replaceAll(":");
+        }
+        if (result.indexOf("%3C") >= 0) {
+            result = URLENCODED_LT_PATTERN.matcher(result).replaceAll("<");
+        }
+        if (result.indexOf("%3E") >= 0) {
+            result = URLENCODED_GT_PATTERN.matcher(result).replaceAll(">");
+        }
+        if (result.indexOf("%22") >= 0) {
+            result = URLENCODED_QUOTE_PATTERN.matcher(result).replaceAll("\"");
+        }
+        if (result.indexOf("\r\n") >= 0) {
+            result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
+        }
+        if (result.indexOf("%25") >= 0) {
+            result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
         }
         return result;
     }

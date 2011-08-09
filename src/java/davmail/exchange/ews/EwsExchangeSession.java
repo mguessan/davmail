@@ -34,6 +34,7 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -1168,7 +1169,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String type;
         boolean isException;
 
-        protected Event(EWSMethod.Item response) {
+        protected Event(EWSMethod.Item response) throws URIException {
             itemId = new ItemId(response);
 
             type = response.type;
@@ -1177,7 +1178,7 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             subject = response.get(Field.get("subject").getResponseName());
-            itemName = response.get(Field.get("urlcompname").getResponseName());
+            itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
             // workaround for missing urlcompname in Exchange 2010
             if (itemName == null) {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
@@ -1252,7 +1253,15 @@ public class EwsExchangeSession extends ExchangeSession {
                     updates.add(Field.createFieldUpdate("taskstatus", vTodoToTaskStatusMap.get(vTodoStatus)));
                 }
                 updates.add(Field.createFieldUpdate("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
-                updates.add(Field.createFieldUpdate("duedate", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DUE"))));
+                updates.add(Field.createFieldUpdate("startdate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
+                updates.add(Field.createFieldUpdate("datecompleted", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("COMPLETED"))));
+
+                updates.add(Field.createFieldUpdate("commonstart", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("commonend", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
+
+                //updates.add(Field.createFieldUpdate("iscomplete", "COMPLETED".equals(vTodoStatus)?"True":"False"));
+
                 if (currentItemId != null) {
                     // update
                     createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1382,8 +1391,11 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("description"));
                     getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
                     getItemMethod.addAdditionalProperty(Field.get("taskstatus"));
+                    getItemMethod.addAdditionalProperty(Field.get("startdate"));
                     getItemMethod.addAdditionalProperty(Field.get("duedate"));
-                    getItemMethod.addAdditionalProperty(Field.get("keywords"));                    
+                    getItemMethod.addAdditionalProperty(Field.get("datecompleted"));
+                    getItemMethod.addAdditionalProperty(Field.get("keywords"));
+
                 } else if (!"Message".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
@@ -1417,11 +1429,13 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
                     vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("taskstatus").getResponseName())));
+
+                    vTodo.setPropertyValue("DUE;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName())));
+                    vTodo.setPropertyValue("DTSTART;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("startdate").getResponseName())));
+                    vTodo.setPropertyValue("COMPLETED;VALUE=DATE", convertDateFromExchangeToTaskDate(getItemMethod.getResponseItem().get(Field.get("datecompleted").getResponseName())));
+
                     vTodo.setPropertyValue("CATEGORIES", getItemMethod.getResponseItem().get(Field.get("keywords").getResponseName()));
 
-                    VProperty vProperty = new VProperty("DUE", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("duedate").getResponseName())));
-                    vProperty.setParam("TZID", vTimezone.getPropertyValue("TZID"));
-                    vTodo.addProperty(vProperty);
                     localVCalendar.addVObject(vTodo);
                     content = localVCalendar.toString().getBytes("UTF-8");
                 } else {
@@ -2070,6 +2084,55 @@ public class EwsExchangeSession extends ExchangeSession {
             }
         }
         return zuluDateValue;
+    }
+
+    protected String convertDateFromExchangeToTaskDate(String exchangeDateValue) throws DavMailException {
+        String zuluDateValue = null;
+        if (exchangeDateValue != null) {
+            try {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                dateFormat.setTimeZone(GMT_TIMEZONE);
+                zuluDateValue = dateFormat.format(getExchangeZuluDateFormat().parse(exchangeDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+        }
+        return zuluDateValue;
+    }
+
+    protected String convertTaskDateToZulu(String value) {
+        String result = null;
+        if (value != null && value.length() > 0) {
+            try {
+                SimpleDateFormat parser;
+                if (value.length() == 8) {
+                    parser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else if (value.length() == 15) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else if (value.length() == 16) {
+                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.ENGLISH);
+                    parser.setTimeZone(GMT_TIMEZONE);
+                } else {
+                    parser = ExchangeSession.getExchangeZuluDateFormat();
+                }
+                Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
+                calendarValue.setTime(parser.parse(value));
+                // zulu time: add 12 hours
+                if (value.length() == 16) {
+                    calendarValue.add(Calendar.HOUR, 12);
+                }
+                calendarValue.set(Calendar.HOUR, 0);
+                calendarValue.set(Calendar.MINUTE, 0);
+                calendarValue.set(Calendar.SECOND, 0);
+                result = ExchangeSession.getExchangeZuluDateFormat().format(calendarValue.getTime());
+            } catch (ParseException e) {
+                LOGGER.warn("Invalid date: " + value);
+            }
+        }
+
+        return result;
     }
 
     /**

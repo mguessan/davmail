@@ -336,8 +336,6 @@ public class Field {
 
         createField("commonstart", DistinguishedPropertySetType.Common, 0x8516, "commonstart", PropertyType.SystemTime);
         createField("commonend", DistinguishedPropertySetType.Common, 0x8517, "commonend", PropertyType.SystemTime);
-
-        createField("categories", DistinguishedPropertySetType.PublicStrings, 0x9000, "categories", PropertyType.StringArray);
     }
 
     protected static String toHexString(int propertyTag) {

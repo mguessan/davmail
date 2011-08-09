@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import davmail.exchange.dav.PropertyType;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,7 +58,7 @@ public final class Field {
 
         FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 
-        // use PR_RECORD_KEY as unique key 
+        // use PR_RECORD_KEY as unique key
         FIELD_MAP.put("uid", new ExtendedFieldURI(0x0FF9, ExtendedFieldURI.PropertyType.Binary));
         FIELD_MAP.put("messageFlags", new ExtendedFieldURI(0x0e07, ExtendedFieldURI.PropertyType.Integer));//PR_MESSAGE_FLAGS
         FIELD_MAP.put("imapUid", new ExtendedFieldURI(0x0e23, ExtendedFieldURI.PropertyType.Integer));
@@ -210,7 +212,14 @@ public final class Field {
         // task
         FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
         FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status"));
-        FIELD_MAP.put("duedate", new UnindexedFieldURI("task:DueDate"));        
+
+        FIELD_MAP.put("startdate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8104, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("duedate", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8105, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("datecompleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x810F, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("iscomplete", new UnindexedFieldURI("task:IsComplete"));
+
+        FIELD_MAP.put("commonstart", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8516, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("commonend", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Task, 0x8517, ExtendedFieldURI.PropertyType.SystemTime));
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
