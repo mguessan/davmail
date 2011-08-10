@@ -34,7 +34,6 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.util.URIUtil;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -400,6 +399,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
+        item.type = "Message";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             mimeMessage.writeTo(baos);
