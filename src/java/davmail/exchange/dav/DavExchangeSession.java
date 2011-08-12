@@ -2635,8 +2635,8 @@ public class DavExchangeSession extends ExchangeSession {
                     contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
                 } catch (UnknownHostException e) {
                     // failover for misconfigured Exchange server, replace host name in url
-                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
                     restoreHostName = true;
+                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
                 }
             } catch (HttpNotFoundException e) {
                 LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
