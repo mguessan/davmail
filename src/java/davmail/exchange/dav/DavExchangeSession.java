@@ -1292,9 +1292,18 @@ public class DavExchangeSession extends ExchangeSession {
             // PropFind PR_INTERNET_CONTENT
             DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
             davPropertyNameSet.add(Field.getPropertyName("internetContent"));
-            PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(permanentUrl), davPropertyNameSet, 0);
+            PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
             try {
-                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                try {
+                    DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                } catch (UnknownHostException e) {
+                    propFindMethod.releaseConnection();
+                    // failover for misconfigured Exchange server, replace host name in url
+                    restoreHostName = true;
+                    propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
+                    DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+                }
+
                 MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
                 if (responses.getResponses().length > 0) {
                     DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
@@ -1325,7 +1334,7 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 result = getICSFromInternetContentProperty();
                 if (result == null) {
-                    GetMethod method = new GetMethod(permanentUrl);
+                    GetMethod method = new GetMethod(encodeAndFixUrl(permanentUrl));
                     method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
                     method.setRequestHeader("Translate", "f");
                     try {
@@ -2069,7 +2078,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, URIUtil.encodePath(folderUrl), searchRequest.toString(), maxCount);
+                httpClient, encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_RESULT", responses.length));
         return responses;
     }
@@ -2632,15 +2641,15 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             try {
                 try {
-                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
+                    contentInputStream = getContentInputStream(message.messageUrl);
                 } catch (UnknownHostException e) {
                     // failover for misconfigured Exchange server, replace host name in url
                     restoreHostName = true;
-                    contentInputStream = getContentInputStream(message.messageUrl, restoreHostName);
+                    contentInputStream = getContentInputStream(message.messageUrl);
                 }
             } catch (HttpNotFoundException e) {
                 LOGGER.debug("Message not found at: " + message.messageUrl + ", retrying with permanenturl");
-                contentInputStream = getContentInputStream(message.permanentUrl, restoreHostName);
+                contentInputStream = getContentInputStream(message.permanentUrl);
             }
 
             try {
@@ -2735,14 +2744,19 @@ public class DavExchangeSession extends ExchangeSession {
         return uri.getEscapedURI();
     }
 
-    protected InputStream getContentInputStream(String url, boolean fixHostName) throws IOException {
-        String actualUrl = URIUtil.encodePath(url);
-        if (fixHostName) {
-            String targetPath = new URI(actualUrl, true).getEscapedPath();
-            actualUrl = getEscapedUrlFromPath(targetPath);
+    public String encodeAndFixUrl(String url) throws URIException {
+        String originalUrl = URIUtil.encodePath(url);
+        if (restoreHostName && originalUrl.startsWith("http")) {
+            String targetPath = new URI(originalUrl, true).getEscapedPath();
+            originalUrl = getEscapedUrlFromPath(targetPath);
         }
+        return originalUrl;
+    }
 
-        final GetMethod method = new GetMethod(actualUrl);
+    protected InputStream getContentInputStream(String url) throws IOException {
+        String encodedUrl = encodeAndFixUrl(url);
+
+        final GetMethod method = new GetMethod(encodedUrl);
         method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");
