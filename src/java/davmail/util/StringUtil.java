@@ -225,10 +225,10 @@ public final class StringUtil {
             if (result.indexOf('"') >= 0) {
                 result = QUOTE_PATTERN.matcher(result).replaceAll("&#x22;");
             }
-            if (result.indexOf('\r') >=0) {
+            if (result.indexOf('\r') >= 0) {
                 result = CR_PATTERN.matcher(result).replaceAll("&#x0D;");
             }
-            if (result.indexOf('\n') >=0) {
+            if (result.indexOf('\n') >= 0) {
                 result = LF_PATTERN.matcher(result).replaceAll("&#x0A;");
             }
         }
@@ -330,33 +330,35 @@ public final class StringUtil {
      */
     public static String decodeUrlcompname(String urlcompname) {
         String result = urlcompname;
-        if (result.indexOf((char) 0xF8FF) >= 0) {
-            result = URLENCODED_F8FF_PATTERN.matcher(result).replaceAll("_xF8FF_");
-        }
-        if (result.indexOf("%26") >= 0) {
-            result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
-        }
-        if (result.indexOf("%2B") >= 0) {
-            result = URLENCODED_PLUS_PATTERN.matcher(result).replaceAll("+");
-        }
-        if (result.indexOf("%3A") >= 0) {
-            result = URLENCODED_COLON_PATTERN.matcher(result).replaceAll(":");
-        }
-        if (result.indexOf("%3C") >= 0) {
-            result = URLENCODED_LT_PATTERN.matcher(result).replaceAll("<");
-        }
-        if (result.indexOf("%3E") >= 0) {
-            result = URLENCODED_GT_PATTERN.matcher(result).replaceAll(">");
-        }
-        if (result.indexOf("%22") >= 0) {
-            result = URLENCODED_QUOTE_PATTERN.matcher(result).replaceAll("\"");
-        }
-        // CRLF is replaced with LF in response
-        if (result.indexOf('\n') >= 0) {
-            result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
-        }
-        if (result.indexOf("%25") >= 0) {
-            result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
+        if (result != null) {
+            if (result.indexOf((char) 0xF8FF) >= 0) {
+                result = URLENCODED_F8FF_PATTERN.matcher(result).replaceAll("_xF8FF_");
+            }
+            if (result.indexOf("%26") >= 0) {
+                result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
+            }
+            if (result.indexOf("%2B") >= 0) {
+                result = URLENCODED_PLUS_PATTERN.matcher(result).replaceAll("+");
+            }
+            if (result.indexOf("%3A") >= 0) {
+                result = URLENCODED_COLON_PATTERN.matcher(result).replaceAll(":");
+            }
+            if (result.indexOf("%3C") >= 0) {
+                result = URLENCODED_LT_PATTERN.matcher(result).replaceAll("<");
+            }
+            if (result.indexOf("%3E") >= 0) {
+                result = URLENCODED_GT_PATTERN.matcher(result).replaceAll(">");
+            }
+            if (result.indexOf("%22") >= 0) {
+                result = URLENCODED_QUOTE_PATTERN.matcher(result).replaceAll("\"");
+            }
+            // CRLF is replaced with LF in response
+            if (result.indexOf('\n') >= 0) {
+                result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
+            }
+            if (result.indexOf("%25") >= 0) {
+                result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
+            }
         }
         return result;
     }
