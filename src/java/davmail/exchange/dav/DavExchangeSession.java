@@ -629,7 +629,11 @@ public class DavExchangeSession extends ExchangeSession {
                 // last failover: build email from domain name and mailbox display name
                 StringBuilder buffer = new StringBuilder();
                 // most reliable alias
-                alias = mailBoxPath;
+                if (mailBoxPath != null) {
+                    alias = mailBoxPath;
+                } else {
+                    alias = getAliasFromLogin();
+                }
                 buffer.append(alias);
                 if (alias.indexOf('@') < 0) {
                     buffer.append('@');
