@@ -555,6 +555,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (mailPath != null) {
             // Exchange 2003
             serverVersion = "Exchange2003";
+            fixClientHost(method);
             checkPublicFolder(method);
             try {
                 buildEmail(method.getURI().getHost());
@@ -567,7 +568,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             // Gallookup is an Exchange 2003 only feature
             disableGalLookup = true;
-
+            fixClientHost(method);
             getEmailAndAliasFromOptions();
 
             checkPublicFolder(method);
@@ -732,14 +733,23 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected void fixClientHost(HttpMethod method) {
+        try {
+            // update client host
+            URI currentUri = method.getURI();
+            if (currentUri != null) {
+                httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
+            }
+        } catch (URIException e) {
+            LOGGER.warn("Unable to update http client host:" + e.getMessage(), e);
+        }
+    }
+
     protected void checkPublicFolder(HttpMethod method) {
 
         Cookie[] currentCookies = httpClient.getState().getCookies();
         // check public folder access
         try {
-            // update client host
-            httpClient.getHostConfiguration().setHost(method.getURI());
-
             publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
             DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
             davPropertyNameSet.add(Field.getPropertyName("displayname"));
@@ -1600,7 +1610,7 @@ public class DavExchangeSession extends ExchangeSession {
                 propertyValues.add(Field.createPropertyValue("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 propertyValues.add(Field.createPropertyValue("datecompleted", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("COMPLETED"))));
 
-                propertyValues.add(Field.createPropertyValue("iscomplete", "2".equals(taskStatus)?"true":"false"));
+                propertyValues.add(Field.createPropertyValue("iscomplete", "2".equals(taskStatus) ? "true" : "false"));
                 propertyValues.add(Field.createPropertyValue("commonstart", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                 propertyValues.add(Field.createPropertyValue("commonend", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
 
