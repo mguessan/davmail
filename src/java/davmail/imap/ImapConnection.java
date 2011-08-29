@@ -905,7 +905,8 @@ public class ImapConnection extends AbstractConnection {
         while (iterator.hasNext()) {
             ExchangeSession.Message message = iterator.next();
             if ((conditions.flagged == null || message.flagged == conditions.flagged)
-                    && (conditions.answered == null || message.answered == conditions.answered)) {
+                    && (conditions.answered == null || message.answered == conditions.answered)
+                    && (conditions.draft == null || message.draft == conditions.draft)) {
                 uidList.add(message.getImapUid());
             }
         }
@@ -1169,6 +1170,7 @@ public class ImapConnection extends AbstractConnection {
     static final class SearchConditions {
         Boolean flagged;
         Boolean answered;
+        Boolean draft;
         String indexRange;
         String uidRange;
     }
@@ -1215,6 +1217,10 @@ public class ImapConnection extends AbstractConnection {
             return session.isTrue("read");
         } else if ("UNSEEN".equals(token) || "NEW".equals(token)) {
             return session.isFalse("read");
+        } else if ("DRAFT".equals(token)) {
+            conditions.draft = Boolean.TRUE;
+        } else if ("UNDRAFT".equals(token)) {
+            conditions.draft = Boolean.FALSE;
         } else if ("DELETED".equals(token)) {
             // conditions.deleted = Boolean.TRUE;
             return session.isEqualTo("deleted", "1");

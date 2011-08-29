@@ -316,6 +316,14 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
+    public void testSearchUndraft() throws IOException {
+        testSelectInbox();
+        writeLine(". UID SEARCH UNDRAFT");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        writeLine(". UID SEARCH DRAFT");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
     public void testBrokenPipe() throws IOException, InterruptedException {
         testSelectInbox();
         writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
