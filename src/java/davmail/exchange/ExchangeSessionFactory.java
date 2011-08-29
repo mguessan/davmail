@@ -235,6 +235,7 @@ public final class ExchangeSessionFactory {
     private static void handleNetworkDown(Exception exc) throws DavMailException {
         if (!checkNetwork() || configChecked) {
             ExchangeSession.LOGGER.warn(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
+            ExchangeSession.LOGGER.debug(exc);
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
         } else {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
