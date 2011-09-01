@@ -739,9 +739,9 @@ public class DavExchangeSession extends ExchangeSession {
 
     protected void fixClientHost(HttpMethod method) {
         try {
-            // update client host
+            // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
             URI currentUri = method.getURI();
-            if (currentUri != null) {
+            if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
                 httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
             }
         } catch (URIException e) {
