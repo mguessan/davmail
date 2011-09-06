@@ -676,7 +676,7 @@ public class CaldavConnection extends AbstractConnection {
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
         // ical calendar folder proppatch
-        if (hasIcalProperties) {
+        if (request.hasProperty("calendar-color") || request.hasProperty("calendar-order")) {
             response.startPropstat();
             if (request.hasProperty("calendar-color")) {
                 response.appendProperty("x1:calendar-color", "x1=\"http://apple.com/ns/ical/\"", null);
