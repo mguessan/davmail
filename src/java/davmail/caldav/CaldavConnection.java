@@ -675,10 +675,15 @@ public class CaldavConnection extends AbstractConnection {
         }
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
-        // just ignore calendar folder proppatch (color not supported in Exchange)
-        if (request.hasProperty("calendar-color")) {
+        // ical calendar folder proppatch
+        if (hasIcalProperties) {
             response.startPropstat();
-            response.appendProperty("x1:calendar-color", "x1=\"http://apple.com/ns/ical/\"", null);
+            if (request.hasProperty("calendar-color")) {
+                response.appendProperty("x1:calendar-color", "x1=\"http://apple.com/ns/ical/\"", null);
+            }
+            if (request.hasProperty("calendar-order")) {
+                response.appendProperty("x1:calendar-order", "x1=\"http://apple.com/ns/ical/\"", null);
+            }
             response.endPropStatOK();
         }
         response.endMultistatus();

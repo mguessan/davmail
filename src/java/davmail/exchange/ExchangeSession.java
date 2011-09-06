@@ -1323,6 +1323,16 @@ public abstract class ExchangeSession {
     public abstract int createFolder(String folderName, String folderClass, Map<String, String> properties) throws IOException;
 
     /**
+     * Update Exchange folder properties.
+     *
+     * @param folderName  logical folder name
+     * @param properties  folder properties
+     * @return status
+     * @throws IOException on error
+     */
+    public abstract int updateFolder(String folderName, Map<String, String> properties) throws IOException;
+
+    /**
      * Delete Exchange folder.
      *
      * @param folderName logical folder name
@@ -1404,6 +1414,16 @@ public abstract class ExchangeSession {
          * recent count
          */
         public int recent;
+
+        /**
+         * Calendar color
+         */
+        public String calendarColor;
+        /**
+         * Calendar order
+         */
+        public String calendarOrder;
+
         /**
          * Folder message list, empty before loadMessages call.
          */

@@ -556,7 +556,7 @@ public class DavExchangeSession extends ExchangeSession {
             // Exchange 2003
             serverVersion = "Exchange2003";
             fixClientHost(method);
-            checkPublicFolder(method);
+            checkPublicFolder();
             try {
                 buildEmail(method.getURI().getHost());
             } catch (URIException uriException) {
@@ -571,7 +571,7 @@ public class DavExchangeSession extends ExchangeSession {
             fixClientHost(method);
             getEmailAndAliasFromOptions();
 
-            checkPublicFolder(method);
+            checkPublicFolder();
 
             // failover: try to get email through Webdav and Galfind
             if (alias == null || email == null) {
@@ -749,7 +749,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected void checkPublicFolder(HttpMethod method) {
+    protected void checkPublicFolder() {
 
         Cookie[] currentCookies = httpClient.getState().getCookies();
         // check public folder access
@@ -1830,6 +1830,27 @@ public class DavExchangeSession extends ExchangeSession {
                 return "MKCOL";
             }
         };
+        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
+        if (status == HttpStatus.SC_MULTI_STATUS) {
+            status = method.getResponseStatusCode();
+        }
+        return status;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public int updateFolder(String folderPath, Map<String, String> properties) throws IOException {
+        Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+        if (properties != null) {
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                propertyValues.add(Field.createPropertyValue(entry.getKey(), entry.getValue()));
+            }
+        }
+
+        // standard MkColMethod does not take properties, override PropPatchMethod instead
+        ExchangePropPatchMethod method = new ExchangePropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues);
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         if (status == HttpStatus.SC_MULTI_STATUS) {
             status = method.getResponseStatusCode();

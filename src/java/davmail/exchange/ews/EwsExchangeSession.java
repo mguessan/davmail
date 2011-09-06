@@ -928,6 +928,21 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    public int updateFolder(String folderPath, Map<String, String> properties) throws IOException {
+        ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+        for (Map.Entry<String,String> entry:properties.entrySet()) {
+            updates.add(new FieldUpdate(Field.get(entry.getKey()), entry.getValue()));
+        }
+        UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(internalGetFolder(folderPath).folderId, updates);
+
+        executeMethod(updateFolderMethod);
+        return HttpStatus.SC_CREATED;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void deleteFolder(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId != null) {
