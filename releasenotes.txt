@@ -1,3 +1,58 @@
+** DavMail 3.9.4 released **
+First release with full Exchange tasks (VTODO) support, automatically convert VTODOs to tasks
+inside default task folder. Also includes many bugfixes on iCal OSX Snow Leopard support
+(note: need to recreate the calendar to fix sync), mixed Exchange 2010/2003 architecture support and
+IMAP DRAFT and UNDRAFT search condition support
+
+Caldav:
+- Caldav: fix regression
+- Caldav: implement update folder
+- Caldav: fix regression on Snow Leopard
+- Caldav: more general fix for misconfigured Exchange server, replace host name in url also over Caldav
+- Caldav: additional fix for CRLF in urlcompname
+- Caldav: additional task fields over EWS and fix urlcompname decoding
+- Caldav: implement task categories over EWS
+- Caldav: update additional MAPI properties for tasks
+- Caldav: implement startdate and duedate on tasks
+- Caldav: implement task categories
+- Caldav: Need to encode % in urlcompname
+- Caldav: implement task percent complete and status over WebDav
+- Caldav: improve task support over WebDav, rename .ics to .EML and implement priority (importance)
+- Caldav: do not try to get ICS content from tasks
+- Caldav: encode @ in path only for iCal 5 (OSX Lion)
+- Caldav: implement supported-report-set
+
+Enhancements:
+- Do not always log stacktrace in handleNetworkDown
+- Fix IllegalArgumentException in fixClientHost when scheme is null
+- Temporary fix: log exception stack trace in handleNetworkDown
+- Temporary fix: log exception in handleNetworkDown
+- Another init script
+- Small failover fix
+- Improve client host update fix
+- Test various event count
+
+IMAP:
+- IMAP: implement DRAFT and UNDRAFT search conditions, fix 3396248
+- IMAP: fix failover for misconfigured Exchange server, replace host name in url
+- IMAP: fix regression in EwsExchangeSession.createMessage
+- IMAP: Fix 3383832, set ItemClass to send read receipt over EWS to avoid ErrorObjectTypeChanged 
+
+EWS:
+- EWS: Allow null value in StringUtil.decodeUrlcompname
+- EWS: use isrecurring with Exchange 2010 and instancetype with Exchange 2007
+- EWS: revert 3317867 XML1.1 header workaround to fix 3385308
+
+DAV:
+- Dav: check checkPublicFolder calls
+- Dav: Avoid returning null in getCmdBasePath
+
+Documentation:
+- Doc: fix OSX iCal setup documentation for OSX Lion
+
+LDAP:
+- LDAP: send error on DIGEST-MD5 bind request
+
 ** DavMail 3.9.3 released **
 New release with improved iCal 5 (OSX Lion) support, partial VTODO conversion to Outlook tasks
  and many other bugfixes including event move item url encoding and event filter over EWS fix
