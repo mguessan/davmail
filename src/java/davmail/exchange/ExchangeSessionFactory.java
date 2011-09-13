@@ -33,6 +33,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -235,7 +236,10 @@ public final class ExchangeSessionFactory {
     private static void handleNetworkDown(Exception exc) throws DavMailException {
         if (!checkNetwork() || configChecked) {
             ExchangeSession.LOGGER.warn(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
-            ExchangeSession.LOGGER.debug(exc, exc);
+            // log full stack trace for unknown errors
+            if (!(exc instanceof UnknownHostException)) {
+                ExchangeSession.LOGGER.debug(exc, exc);
+            }
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
         } else {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
