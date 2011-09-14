@@ -265,7 +265,7 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>Messages sent through DavMail appear twice in Sent folder when the IMAP client is setup
                     to store sent messages on the server as Exchange already saves sent messages in this folder.
-                    Change IMAP client settings to avoid this issue.
+                    Change IMAP client settings or change Save in Sent option in DavMail settings to avoid this issue.
                 </p>
                 <p>
                     <strong>Sent messages encoding issue with Thunderbird</strong>
@@ -289,5 +289,9 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
             </subsection>
         </section>
+        Outlook anywhere uses MAPI RPC over HTTPS to access company LAN through the firewall.
+
+        DavMail does not use MAPI at all but relies on WebDav (Exchange 2003/2007) or EWS (Exchange 2007/2010) to access Exchange. This means you need direct access over HTTPS to either the OWA WebDav url (/exchange/mail@company.com) or EWS (/ews/exchange.asmx) to access Exchange with DavMail.
+        
     </body>
 </document>
