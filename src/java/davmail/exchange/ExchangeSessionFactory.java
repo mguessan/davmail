@@ -99,7 +99,7 @@ public final class ExchangeSessionFactory {
     /**
      * Create authenticated Exchange session
      *
-     * @param baseUrl OWA base URL
+     * @param baseUrl  OWA base URL
      * @param userName user login
      * @param password user password
      * @return authenticated session
@@ -254,6 +254,21 @@ public final class ExchangeSessionFactory {
                 throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
             }
         }
+    }
+
+    /**
+     * Get user password from session pool for SASL authentication
+     *
+     * @param userName Exchange user name
+     * @return user password
+     */
+    public static String getUserPassword(String userName) {
+        for (PoolKey poolKey : POOL_MAP.keySet()) {
+            if (poolKey.userName.equals(userName)) {
+                return poolKey.password;
+            }
+        }
+        return null;
     }
 
     /**
