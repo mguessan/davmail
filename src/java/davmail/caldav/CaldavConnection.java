@@ -297,7 +297,7 @@ public class CaldavConnection extends AbstractConnection {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
                     sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[]) null, true);
-                } else if (folder.isCalendar()) {
+                } else if (folder.isCalendar() || folder.isTask()) {
                     List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
                     ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
                     response.append("BEGIN:VCALENDAR\r\n");
@@ -429,7 +429,7 @@ public class CaldavConnection extends AbstractConnection {
             if (folder.isContact()) {
                 response.appendProperty("D:resourcetype", "<D:collection/>" +
                         "<E:addressbook/>");
-            } else if (folder.isCalendar()) {
+            } else if (folder.isCalendar() || folder.isTask()) {
                 response.appendProperty("D:resourcetype", "<D:collection/>" + "<C:calendar/>");
             } else {
                 response.appendProperty("D:resourcetype", "<D:collection/>");
@@ -448,6 +448,8 @@ public class CaldavConnection extends AbstractConnection {
                 response.appendProperty("D:getcontenttype", "text/x-vcard");
             } else if (folder.isCalendar()) {
                 response.appendProperty("D:getcontenttype", "text/calendar; component=vevent");
+            } else if (folder.isTask()) {
+                response.appendProperty("D:getcontenttype", "text/calendar; component=vtodo");
             }
         }
         if (request.hasProperty("getetag")) {
@@ -472,8 +474,12 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("calendar-description")) {
             response.appendProperty("C:calendar-description", "");
         }
-        if (request.hasProperty("supported-calendar-component-set") && folder.isCalendar()) {
-            response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/><C:comp name=\"VTODO\"/>");
+        if (request.hasProperty("supported-calendar-component-set")) {
+            if (folder.isCalendar()) {
+                response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VEVENT\"/><C:comp name=\"VTODO\"/>");
+            } else if (folder.isTask()) {
+                response.appendProperty("C:supported-calendar-component-set", "<C:comp name=\"VTODO\"/>");
+            }
         }
 
         if (request.hasProperty("current-user-privilege-set")) {
@@ -630,7 +636,7 @@ public class CaldavConnection extends AbstractConnection {
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
                 contacts = session.getAllContacts(folderPath);
-            } else if (folder.isCalendar()) {
+            } else if (folder.isCalendar() || folder.isTask()) {
                 events = session.getAllEvents(folderPath);
                 if (!folderPath.startsWith("/public")) {
                     folderList = session.getSubCalendarFolders(folderPath, false);
