@@ -218,8 +218,10 @@ public final class DavGatewayHttpClientFacade {
      * @return proxy selector
      */
     private static List<Proxy> getProxyForURI(java.net.URI uri) {
+        LOGGER.debug("get Default proxy selector");
+        ProxySelector proxySelector = ProxySelector.getDefault();
         LOGGER.debug("getProxyForURI(" + uri + ')');
-        List<Proxy> proxies = ProxySelector.getDefault().select(uri);
+        List<Proxy> proxies = proxySelector.select(uri);
         LOGGER.debug("got system proxies:" + proxies);
         return proxies;
     }
