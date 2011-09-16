@@ -30,7 +30,7 @@ import java.awt.event.ActionListener;
  * Let user select a client certificate
  */
 public class SelectCertificateDialog extends JDialog {
-    protected JList aliasListBox;
+    protected final JList aliasListBox;
     protected String selectedAlias;
 
     /**

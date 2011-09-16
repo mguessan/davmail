@@ -2915,7 +2915,7 @@ public class DavExchangeSession extends ExchangeSession {
         priorityToImportanceMap.put("9", "low");
     }
 
-    protected String convertPriorityFromExchange(String exchangeImportanceValue) throws DavMailException {
+    protected String convertPriorityFromExchange(String exchangeImportanceValue)  {
         String value = null;
         if (exchangeImportanceValue != null) {
             value = importanceToPriorityMap.get(exchangeImportanceValue);
@@ -2923,7 +2923,7 @@ public class DavExchangeSession extends ExchangeSession {
         return value;
     }
 
-    protected String convertPriorityToExchange(String vTodoPriorityValue) throws DavMailException {
+    protected String convertPriorityToExchange(String vTodoPriorityValue)  {
         String value = null;
         if (vTodoPriorityValue != null) {
             value = priorityToImportanceMap.get(vTodoPriorityValue);

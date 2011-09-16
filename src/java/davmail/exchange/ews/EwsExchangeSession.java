@@ -1184,7 +1184,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String type;
         boolean isException;
 
-        protected Event(EWSMethod.Item response) throws URIException {
+        protected Event(EWSMethod.Item response)  {
             itemId = new ItemId(response);
 
             type = response.type;
@@ -2003,9 +2003,10 @@ public class EwsExchangeSession extends ExchangeSession {
         contact.put("imapUid", response.get("Name"));
         contact.put("uid", response.get("Name"));
         if (LOGGER.isDebugEnabled()) {
-            for (String key : response.keySet()) {
+            for (Map.Entry<String, String> entry : response.entrySet()) {
+                String key = entry.getKey();
                 if (!IGNORE_ATTRIBUTE_SET.contains(key) && !GALFIND_ATTRIBUTE_MAP.containsValue(key)) {
-                    LOGGER.debug("Unsupported ResolveNames " + contact.getName() + " response attribute: " + key + " value: " + response.get(key));
+                    LOGGER.debug("Unsupported ResolveNames " + contact.getName() + " response attribute: " + key + " value: " + entry.getValue());
                 }
             }
         }
@@ -2161,7 +2162,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static boolean isItemId(String itemName) {
-        return itemName.length() == 156 || itemName.length() == 152;
+        return itemName.length() >= 152;
     }
 }
 

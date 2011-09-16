@@ -290,7 +290,7 @@ public abstract class ExchangeSession {
      * @return true if basic authentication detected
      * @throws IOException unable to connect to exchange
      */
-    protected boolean isBasicAuthentication(HttpClient httpClient, String url) throws IOException {
+    protected boolean isBasicAuthentication(HttpClient httpClient, String url)  {
         return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
@@ -1416,15 +1416,6 @@ public abstract class ExchangeSession {
         public int recent;
 
         /**
-         * Calendar color
-         */
-        public String calendarColor;
-        /**
-         * Calendar order
-         */
-        public String calendarOrder;
-
-        /**
          * Folder message list, empty before loadMessages call.
          */
         public ExchangeSession.MessageList messages;
@@ -2545,7 +2536,7 @@ public abstract class ExchangeSession {
 
     protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
 
-    protected Condition getPastDelayCondition() throws IOException {
+    protected Condition getPastDelayCondition()  {
          int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
         Condition dateCondition = null;
         if (caldavPastDelay != 0) {

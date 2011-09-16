@@ -263,19 +263,6 @@ public class ExchangePropPatchMethod extends PostMethod {
     }
 
     /**
-     * Get Multistatus responses.
-     *
-     * @return responses
-     * @throws HttpException on error
-     */
-    public List<MultiStatusResponse> getResponses() throws HttpException {
-        if (responses == null) {
-            throw new HttpException(getStatusLine().toString());
-        }
-        return responses;
-    }
-
-    /**
      * Get single Multistatus response.
      *
      * @return response
