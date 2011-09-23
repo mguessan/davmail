@@ -832,9 +832,9 @@ public class EwsExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add(Field.get("highestUid"));
     }
 
-    protected Folder buildFolder(String mailbox, EWSMethod.Item item) {
+    protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
-        folder.folderId = new FolderId(mailbox, item);
+        folder.folderId = new FolderId(item);
         folder.displayName = item.get(Field.get("folderDisplayName").getResponseName());
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
@@ -870,7 +870,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
         executeMethod(findFolderMethod);
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
-            Folder folder = buildFolder(parentFolderId.mailbox, item);
+            Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
                 folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
             } else if (folderIdMap.get(folder.folderId.value) != null) {
@@ -900,7 +900,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item item = getFolderMethod.getResponseItem();
         Folder folder;
         if (item != null) {
-            folder = buildFolder(folderId.mailbox, item);
+            folder = buildFolder(item);
             folder.folderPath = folderPath;
         } else {
             throw new HttpNotFoundException("Folder " + folderPath + " not found");
@@ -1942,7 +1942,7 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
         if (item != null) {
-            folderId = new FolderId(parentFolderId.mailbox, item);
+            folderId = new FolderId(item);
         }
         return folderId;
     }
