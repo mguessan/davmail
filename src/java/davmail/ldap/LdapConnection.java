@@ -510,7 +510,7 @@ public class LdapConnection extends AbstractConnection {
     protected static final byte[] EMPTY_BYTE_ARRAY= new byte[0];
 
     protected void handleRequest(byte[] inbuf, int offset) throws IOException {
-        dumpBer(inbuf, offset);
+        //dumpBer(inbuf, offset);
         BerDecoder reqBer = new BerDecoder(inbuf, 0, offset);
         int currentMessageId = 0;
         try {
@@ -575,7 +575,7 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         Map<String, String> properties = new HashMap<String, String>();
                         properties.put("javax.security.sasl.qop", "auth,auth-int");
-                        saslServer = Sasl.createSaslServer(mechanism, "ldap", InetAddress.getLocalHost().getHostName(), properties, callbackHandler);
+                        saslServer = Sasl.createSaslServer(mechanism, "ldap", client.getLocalAddress().getHostAddress(), properties, callbackHandler);
                         serverResponse = saslServer.evaluateResponse(EMPTY_BYTE_ARRAY);
                         status = LDAP_SASL_BIND_IN_PROGRESS;
                     }
@@ -792,6 +792,7 @@ public class LdapConnection extends AbstractConnection {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put("objectClass", "top");
         attributes.put("namingContexts", NAMING_CONTEXTS);
+        //attributes.put("supportedsaslmechanisms", "PLAIN");
 
         sendEntry(currentMessageId, "Root DSE", attributes);
     }

@@ -96,6 +96,16 @@ public final class ExchangeSessionFactory {
         }
     }
 
+    private static String convertUserName(String userName) {
+        String result = userName;
+        // prepend default windows domain prefix
+        String defaultDomain = Settings.getProperty("davmail.defaultDomain");
+        if (userName.indexOf('\\') < 0 && defaultDomain != null) {
+            result = defaultDomain + '\\' + userName;
+        }
+        return result;
+    }
+
     /**
      * Create authenticated Exchange session
      *
@@ -109,12 +119,7 @@ public final class ExchangeSessionFactory {
         ExchangeSession session = null;
         try {
 
-            // prepend default windows domain prefix
-            String defaultDomain = Settings.getProperty("davmail.defaultDomain");
-            if (userName.indexOf('\\') < 0 && defaultDomain != null) {
-                userName = defaultDomain + '\\' + userName;
-            }
-            PoolKey poolKey = new PoolKey(baseUrl, userName, password);
+            PoolKey poolKey = new PoolKey(baseUrl, convertUserName(userName), password);
 
             synchronized (LOCK) {
                 session = POOL_MAP.get(poolKey);
@@ -263,8 +268,9 @@ public final class ExchangeSessionFactory {
      * @return user password
      */
     public static String getUserPassword(String userName) {
+        String fullUserName = convertUserName(userName);
         for (PoolKey poolKey : POOL_MAP.keySet()) {
-            if (poolKey.userName.equals(userName)) {
+            if (poolKey.userName.equals(fullUserName)) {
                 return poolKey.password;
             }
         }
