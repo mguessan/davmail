@@ -1621,7 +1621,10 @@ public class EwsExchangeSession extends ExchangeSession {
     public Item getItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName);
         if (item == null && isMainCalendar(folderPath)) {
-            // look for item in task folder
+            // look for item in task folder, replace extension first
+            if (itemName.endsWith(".ics")) {
+                itemName = itemName.substring(0, itemName.length() - 3) + "EML";
+            }
             item = getEwsItem(TASKS, itemName);
         }
 
