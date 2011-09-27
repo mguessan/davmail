@@ -1253,6 +1253,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
                 updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+                updates.add(Field.createFieldUpdate("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
                 String percentComplete = vCalendar.getFirstVeventPropertyValue("PERCENT-COMPLETE");
                 if (percentComplete == null) {
                     percentComplete = "0";
@@ -1264,7 +1265,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     updates.add(Field.createFieldUpdate("taskstatus", vTodoToTaskStatusMap.get(vTodoStatus)));
                 }
-                updates.add(Field.createFieldUpdate("keywords", vCalendar.getFirstVeventPropertyValue("CATEGORIES")));
                 updates.add(Field.createFieldUpdate("startdate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                 updates.add(Field.createFieldUpdate("duedate", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("DUE"))));
                 updates.add(Field.createFieldUpdate("datecompleted", convertTaskDateToZulu(vCalendar.getFirstVeventPropertyValue("COMPLETED"))));
