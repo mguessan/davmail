@@ -1006,7 +1006,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void processResponseStream(InputStream inputStream) {
         responseItems = new ArrayList<Item>();
-        XMLStreamReader reader;
+        XMLStreamReader reader = null;
         try {
             inputStream = new FilterInputStream(inputStream) {
                 int totalCount;
@@ -1043,9 +1043,15 @@ public abstract class EWSMethod extends PostMethod {
                     handleCustom(reader);
                 }
             }
-
         } catch (XMLStreamException e) {
             LOGGER.error("Error while parsing soap response: " + e, e);
+            if (reader != null) {
+                try {
+                    LOGGER.error("Current text: " + reader.getText());
+                } catch (IllegalStateException ise) {
+                    LOGGER.error(e+" "+e.getMessage());
+                }
+            }
         }
         if (errorDetail != null) {
             LOGGER.debug(errorDetail);
