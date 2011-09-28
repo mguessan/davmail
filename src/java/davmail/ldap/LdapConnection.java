@@ -27,6 +27,7 @@ import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.dav.DavExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
@@ -59,6 +60,10 @@ public class LdapConnection extends AbstractConnection {
     static final String OD_CONFIG_CONTEXT = "cn=config, o=od";
     static final String COMPUTER_CONTEXT = "cn=computers, o=od";
     static final String OD_GROUP_CONTEXT = "cn=groups, o=od";
+
+    // TODO: adjust Directory Utility settings
+    static final String COMPUTER_CONTEXT_LION = "cn=computers,o=od";
+    static final String OD_USER_CONTEXT_LION = "cn=users, ou=people";
 
     /**
      * Root DSE naming contexts (default and OpenDirectory)
@@ -552,8 +557,7 @@ public class LdapConnection extends AbstractConnection {
                         }
                     };
                     int status;
-                    if (reqBer.bytesLeft() > 0) {
-                        if (saslServer != null) {
+                    if (reqBer.bytesLeft() > 0 && saslServer != null) {
                             byte[] clientResponse = reqBer.parseOctetString(Ber.ASN_OCTET_STR, null);
                             serverResponse = saslServer.evaluateResponse(clientResponse);
                             status = LDAP_SUCCESS;
@@ -567,10 +571,6 @@ public class LdapConnection extends AbstractConnection {
                                 status = LDAP_INVALID_CREDENTIALS;
                                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
                             }
-
-                        } else {
-                            throw new IOException("Invalid authentication sequence");
-                        }
 
                     } else {
                         Map<String, String> properties = new HashMap<String, String>();
@@ -634,7 +634,7 @@ public class LdapConnection extends AbstractConnection {
                 LdapFilter ldapFilter = parseFilter(reqBer);
                 Set<String> returningAttributes = parseReturningAttributes(reqBer);
                 SearchRunnable searchRunnable = new SearchRunnable(currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter, returningAttributes);
-                if (BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) {
+                if (BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT_LION.equalsIgnoreCase(dn)) {
                     // launch search in a separate thread
                     synchronized (searchThreadMap) {
                         searchThreadMap.put(currentMessageId, searchRunnable);
@@ -759,8 +759,8 @@ public class LdapConnection extends AbstractConnection {
         String sValue = value.toString();
 
         if ("uid".equalsIgnoreCase(attributeName) && sValue.equals(userName)) {
-            // replace with actual alias instead of login name search
-            if (sValue.equals(userName)) {
+            // replace with actual alias instead of login name search, only in Dav mode
+            if (sValue.equals(userName) && session instanceof DavExchangeSession) {
                 sValue = session.getAlias();
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REPLACED_UID_FILTER", userName, sValue));
             }
@@ -908,6 +908,8 @@ public class LdapConnection extends AbstractConnection {
         addIf(attributes, returningAttributes, "objectClass", objectClasses);
         addIf(attributes, returningAttributes, "apple-generateduid", COMPUTER_GUID);
         addIf(attributes, returningAttributes, "apple-serviceinfo", getServiceInfo());
+        // TODO: remove ?
+        addIf(attributes, returningAttributes, "apple-xmlplist", getServiceInfo());
         addIf(attributes, returningAttributes, "apple-serviceslocator", "::anyService");
         addIf(attributes, returningAttributes, "cn", getCurrentHostName());
 
@@ -1461,11 +1463,11 @@ public class LdapConnection extends AbstractConnection {
                     } else {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_INVALID_DN", currentMessageId, dn));
                     }
-                } else if (COMPUTER_CONTEXT.equals(dn)) {
+                } else if (COMPUTER_CONTEXT.equals(dn) || COMPUTER_CONTEXT_LION.equals(dn)) {
                     size = 1;
                     // computer context for iCal
                     sendComputerContext(currentMessageId, returningAttributes);
-                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn))) {
+                } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) || OD_USER_CONTEXT_LION.equalsIgnoreCase(dn)) {
                     if (session != null) {
                         Map<String, ExchangeSession.Contact> persons = new HashMap<String, ExchangeSession.Contact>();
                         if (ldapFilter.isFullSearch()) {
