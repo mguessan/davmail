@@ -81,6 +81,11 @@ public final class Field {
         FIELD_MAP.put("cc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "cc"));
         FIELD_MAP.put("from", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "from"));
 
+        FIELD_MAP.put("contentclass", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "content-class"));
+        FIELD_MAP.put("message-id", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "message-id"));
+
+        FIELD_MAP.put("body", new UnindexedFieldURI("item:Body"));
+
         // folder
         FIELD_MAP.put("folderclass", new ExtendedFieldURI(0x3613, ExtendedFieldURI.PropertyType.String));
 

@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.BufferedReader;
@@ -496,7 +497,43 @@ public class EwsExchangeSession extends ExchangeSession {
         executeMethod(getItemMethod);
         byte[] mimeContent = getItemMethod.getMimeContent();
         if (mimeContent == null) {
-            throw new IOException("GetItem returned null MimeContent");
+            LOGGER.warn("GetItem returned null MimeContent, trying to rebuild from properties");
+            try {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+                getItemMethod.addAdditionalProperty(Field.get("contentclass"));
+                getItemMethod.addAdditionalProperty(Field.get("message-id"));
+                getItemMethod.addAdditionalProperty(Field.get("from"));
+                getItemMethod.addAdditionalProperty(Field.get("to"));
+                getItemMethod.addAdditionalProperty(Field.get("cc"));
+                getItemMethod.addAdditionalProperty(Field.get("subject"));
+                getItemMethod.addAdditionalProperty(Field.get("body"));
+                executeMethod(getItemMethod);
+                EWSMethod.Item item = getItemMethod.getResponseItem();
+
+                MimeMessage mimeMessage = new MimeMessage((Session) null);
+                mimeMessage.addHeader("Content-class", item.get(Field.get("contentclass").getResponseName()));
+                mimeMessage.addHeader("From", item.get(Field.get("from").getResponseName()));
+                mimeMessage.addHeader("To", item.get(Field.get("to").getResponseName()));
+                mimeMessage.addHeader("Cc", item.get(Field.get("cc").getResponseName()));
+                mimeMessage.setSubject(item.get(Field.get("subject").getResponseName()));
+                String propertyValue = item.get(Field.get("body").getResponseName());
+                mimeMessage.setContent(propertyValue, "text/html");
+
+                mimeMessage.writeTo(baos);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray()));
+                }
+                mimeContent = baos.toByteArray();
+                
+            } catch (IOException e2) {
+                LOGGER.warn(e2);
+            } catch (MessagingException e2) {
+                LOGGER.warn(e2);
+            }
+            if (mimeContent == null) {
+                throw new IOException("GetItem returned null MimeContent");
+            }
         }
         return mimeContent;
     }
