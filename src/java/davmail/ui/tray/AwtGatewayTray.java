@@ -148,6 +148,8 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             public void run() {
                 aboutFrame.update();
                 aboutFrame.setVisible(true);
+                aboutFrame.toFront();
+                aboutFrame.requestFocus();
             }
         });
     }
@@ -160,6 +162,8 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             public void run() {
                 settingsFrame.reload();
                 settingsFrame.setVisible(true);
+                settingsFrame.toFront();
+                settingsFrame.requestFocus();
             }
         });
     }
@@ -273,6 +277,8 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // display settings frame on first start
         if (Settings.isFirstStart()) {
             settingsFrame.setVisible(true);
+            settingsFrame.toFront();
+            settingsFrame.requestFocus();
         }
     }
 

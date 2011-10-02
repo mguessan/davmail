@@ -234,6 +234,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                                 }
                                                 aboutFrame.update();
                                                 aboutFrame.setVisible(true);
+                                                aboutFrame.toFront();
+                                                aboutFrame.requestFocus();
                                             }
                                         });
                             }
@@ -250,8 +252,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                                 }
                                                 settingsFrame.reload();
                                                 settingsFrame.setVisible(true);
-                                                // workaround for focus on first open
-                                                settingsFrame.setVisible(true);
+                                                settingsFrame.toFront();
+                                                settingsFrame.requestFocus();
                                             }
                                         });
                             }
@@ -271,8 +273,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                                 }
                                                 settingsFrame.reload();
                                                 settingsFrame.setVisible(true);
-                                                // workaround for focus on first open
-                                                settingsFrame.setVisible(true);
+                                                settingsFrame.toFront();
+                                                settingsFrame.requestFocus();
                                             }
                                         });
                             }
@@ -321,6 +323,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 settingsFrame = new SettingsFrame();
                             }
                             settingsFrame.setVisible(true);
+                            settingsFrame.toFront();
+                            settingsFrame.requestFocus();
                         }
 
                         synchronized (mainThread) {
