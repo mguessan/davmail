@@ -96,7 +96,7 @@ public class CaldavConnection extends AbstractConnection {
         while ((line = readClient()) != null && line.length() > 0) {
             int index = line.indexOf(':');
             if (index <= 0) {
-                throw new DavMailException("EXCEPTION_INVALID_HEADER", line);
+                throw new DavMailException("EXCEPTION_INVALID_HEADER");
             }
             headers.put(line.substring(0, index).toLowerCase(), line.substring(index + 1).trim());
         }
