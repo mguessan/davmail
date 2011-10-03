@@ -1052,7 +1052,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected void appendBodyStructure(StringBuilder buffer, MimePart bodyPart) throws IOException, MessagingException {
-        String contentType = bodyPart.getContentType();
+        String contentType = MimeUtility.unfold(bodyPart.getContentType());
         int slashIndex = contentType.indexOf('/');
         if (slashIndex < 0) {
             throw new DavMailException("EXCEPTION_INVALID_CONTENT_TYPE", contentType);
@@ -1102,7 +1102,7 @@ public class ImapConnection extends AbstractConnection {
                     } else {
                         nameEndIndex = contentType.length();
                     }
-                    String name = contentType.substring(nameindex + "name=".length(), nameEndIndex);
+                    String name = contentType.substring(nameindex + "name=".length(), nameEndIndex).trim();
                     if (!name.startsWith("\"")) {
                         buffer.append('"');
                     }
