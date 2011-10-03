@@ -15,13 +15,14 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="3.9.2">
+            <subsection name="3.9.6">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
+                    <li>Improve OSX Lion support, fix iCal attendee completion</li>
                     <li>Implement hide from Dock option on OSX</li>
-                    <li>Fix caldav support in EWS mode, implement recurring event exception</li>
+                    <li>Implement disable UI notifications setting</li>                    
                 </ul>
             </subsection>
             <subsection name="4.0">
@@ -29,10 +30,8 @@
                     <strong>Next major version</strong>
                 </p>
                 <ul>
-                    <li>Implement optional ICS Todo/Task conversion to Outlook tasks</li>
-                    <li>Exchange 2010 support through EWS: Experimental implementation already available but not
-                        complete, set davmail.enableEws=true in davmail.properties to test
-                    </li>
+                    <li>Implement optional ICS Todo/Task conversion to Outlook tasks: Done</li>
+                    <li>Exchange 2010 support through EWS: implementation almost complete in 3.9.5</li>
                 </ul>
             </subsection>
             <subsection name="4.x">
