@@ -36,14 +36,17 @@
                     <strong>EWS endpoint not available</strong>
                 </p>
                 <p>Unfortunately, this probably means your Exchange administrators blocked EWS access.</p>
-                <p>To check this, try to connect to <code>https://<i>mail.company.com</i>/ews/exchange.asmx</code>
+                <p>To check this, try to connect to
+                    <code>https://<i>mail.company.com</i>/ews/exchange.asmx
+                    </code>
                     in your favorite web browser: you should get an authentication popup. On authentication success,
                     you should get the EWS wsdl definition. If you don't, please contact the Exchange administrators
                     to let them fix the broken Exchange server setup.
                 </p>
                 <p>Note: Microsoft Outlook 2011 on OSX and native OSX applications also rely on EWS to connect to
                     Exchange. Mobile devices (Android phones, iPhones, Windows mobile) use ActiveSync on a different
-                    endpoint.</p>
+                    endpoint.
+                </p>
                 <p>
                     <strong>Authentication fails with invalid user or password message</strong>
                 </p>
@@ -132,6 +135,14 @@ davmail server2.properties
                     <source>davmail.enableEws=true</source>
                     <br/>
                 </p>
+                <p>
+                    <strong>Is DavMail based on Outlook protocol ?</strong>
+                </p>
+                <p>Outlook anywhere uses MAPI RPC over HTTPS to access company LAN through the firewall.
+                    DavMail does not use MAPI at all but relies on WebDav (Exchange 2003/2007) or EWS (Exchange
+                    2007/2010) to access Exchange. This means you need direct access over HTTPS to either the OWA WebDav
+                    url (/exchange/mail@company.com) or EWS (/ews/exchange.asmx) to access Exchange with DavMail.
+                </p>
             </subsection>
 
             <subsection name="OSX">
@@ -153,6 +164,7 @@ davmail server2.properties
                     <a href="https://sourceforge.net/tracker/?func=detail&amp;atid=909904&amp;aid=3138023&amp;group_id=184600">
                         On Ubuntu, notify text conflicts with default theme.
                     </a>
+                    http://users.ox.ac.uk/~richardc/guides/LinuxNexus.html
                 </p>
             </subsection>
 
@@ -207,10 +219,14 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>To access public folders in Lightning, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/public/<i>path/to/calendar</i></source>
+                <source>http://localhost:<i>1080</i>/public/
+                    <i>path/to/calendar</i>
+                </source>
                 <p>To access public folders in iCal, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/principals/public/<i>path/to/calendar</i></source>
+                <source>http://localhost:<i>1080</i>/principals/public/
+                    <i>path/to/calendar</i>
+                </source>
                 <p>Note: iCal does not support folder names with spaces or special characters</p>
 
                 <p>
@@ -218,11 +234,13 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>To access a shared calendar in Lightning, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/users/<i>user@company.com</i>
+                <source>http://localhost:<i>1080</i>/users/
+                    <i>user@company.com</i>
                 </source>
                 <p>To access a shared calendar in iCal, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/principals/users/<i>user@company.com</i>
+                <source>http://localhost:<i>1080</i>/principals/users/
+                    <i>user@company.com</i>
                 </source>
 
             </subsection>
@@ -289,9 +307,5 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
             </subsection>
         </section>
-        Outlook anywhere uses MAPI RPC over HTTPS to access company LAN through the firewall.
-
-        DavMail does not use MAPI at all but relies on WebDav (Exchange 2003/2007) or EWS (Exchange 2007/2010) to access Exchange. This means you need direct access over HTTPS to either the OWA WebDav url (/exchange/mail@company.com) or EWS (/ews/exchange.asmx) to access Exchange with DavMail.
-        
     </body>
 </document>
