@@ -1,3 +1,36 @@
+** DavMail 3.9.5 released **
+Bugfix release to avoid Growl plugin crash on OSX, make DavMail work with both
+Snow Leopard and Lion. Also includes DIGEST-MD5 implementation for OSX Lion
+Directory Utility support, however iCal attendee completion is still broken.
+
+OSX:
+- Fix crash in Growl plugin on OSX: do not sent SSL content to Growl
+
+EWS:
+- EWS: rebuild broken message (null MimeContent) from properties
+- EWS: improve error logging on invalid character
+- EWS: fix tasks field order, send Extended Properties first to match EWS schema
+- EWS: replace extension before looking for items in task folder
+- EWS: Fix 3407395, do not set mailbox on FolderIds returned by Exchange
+
+LDAP:
+- LDAP: fix DIGEST-MD5 authentication and adjust dn context for OSX Lion, still experimental
+- LDAP: fix DIGEST-MD5 SASL authentication for OSX Lion
+- LDAP: experimental SASL DIGEST-MD5 implementation for OSX Lion Directory Utility support
+
+Caldav:
+- Caldav: need to send principal-URL on principal path, only for OSX Lion
+- Caldav: allow direct access to task folder
+
+Enhancements:
+- Force toFront and requestFocus to bring windows to front
+- Additional proxy selector logging
+- Fixes from audit
+- Upgrade Log4J to 1.2.16
+
+Documentation
+- Doc: Add saveInSent reference in FAQ
+
 ** DavMail 3.9.4 released **
 First release with full Exchange tasks (VTODO) support, automatically convert VTODOs to tasks
 inside default task folder. Also includes many bugfixes on iCal OSX Snow Leopard support
