@@ -30,6 +30,7 @@
                     <strong>Next major version</strong>
                 </p>
                 <ul>
+                    <li>Implement split authentication</li>
                     <li>Implement optional ICS Todo/Task conversion to Outlook tasks: Done</li>
                     <li>Exchange 2010 support through EWS: implementation almost complete in 3.9.5</li>
                 </ul>
