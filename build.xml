@@ -140,7 +140,7 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-6-jre|sun-java6-jre,libswt-gtk-3.6-java|libswt-gtk-3.5-java|libswt-gtk-3.4-java">
+             depends="openjdk-6-jre|sun-java6-jre,libswt-gtk-3-java|libswt-gtk-3.6-java|libswt-gtk-3.5-java|libswt-gtk-3.4-java">
             <version upstream="${release}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway">
