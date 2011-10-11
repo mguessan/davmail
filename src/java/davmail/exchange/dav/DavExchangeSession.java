@@ -1445,6 +1445,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
                 vEvent.setPropertyValue("UID", uid);
                 vEvent.setPropertyValue("SUMMARY", getPropertyIfExists(davPropertySet, "subject"));
+                vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
                 vEvent.setPropertyValue("PRIORITY", convertPriorityFromExchange(getPropertyIfExists(davPropertySet, "importance")));
                 vEvent.setPropertyValue("CATEGORIES", getPropertyIfExists(davPropertySet, "keywords"));
 
@@ -1520,7 +1521,6 @@ public class DavExchangeSession extends ExchangeSession {
                         }
 
                     }
-                    vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
                     vEvent.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT",
                             "1".equals(getPropertyIfExists(davPropertySet, "alldayevent")) ? "TRUE" : "FALSE");
                     vEvent.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS", getPropertyIfExists(davPropertySet, "busystatus"));
