@@ -38,6 +38,11 @@
                         <td>true</td>
                     </tr>
                     <tr>
+                        <td>Disable balloon notifications</td>
+                        <td>Disable all graphical notifications</td>
+                        <td>false</td>
+                    </tr>
+                    <tr>
                         <td>Disable update check</td>
                         <td>Disable DavMail check for new version</td>
                         <td>false</td>
