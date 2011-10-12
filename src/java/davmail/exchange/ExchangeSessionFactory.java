@@ -242,7 +242,7 @@ public final class ExchangeSessionFactory {
         if (!checkNetwork() || configChecked) {
             ExchangeSession.LOGGER.warn(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
             // log full stack trace for unknown errors
-            if (!(exc instanceof UnknownHostException)) {
+            if (!((exc instanceof UnknownHostException)||(exc instanceof NetworkDownException))) {
                 ExchangeSession.LOGGER.debug(exc, exc);
             }
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");
