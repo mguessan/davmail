@@ -96,6 +96,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox forceActiveSyncUpdateCheckBox;
     JTextField defaultDomainField;
     JCheckBox showStartupBannerCheckBox;
+    JCheckBox disableGuiNotificationsCheckBox;
     JCheckBox imapAutoExpungeCheckBox;
     JCheckBox enableEwsCheckBox;
     JCheckBox smtpSaveInSentCheckBox;
@@ -392,7 +393,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(9, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(10, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         enableEwsCheckBox = new JCheckBox();
@@ -405,6 +406,8 @@ public class SettingsFrame extends JFrame {
         defaultDomainField = new JTextField(Settings.getProperty("davmail.defaultDomain"), 15);
         showStartupBannerCheckBox = new JCheckBox();
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
+        disableGuiNotificationsCheckBox = new JCheckBox();
+        disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         smtpSaveInSentCheckBox = new JCheckBox();
@@ -424,6 +427,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_DEFAULT_DOMAIN_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SHOW_STARTUP_BANNER"), showStartupBannerCheckBox,
                 BundleMessage.format("UI_SHOW_STARTUP_BANNER_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS"), disableGuiNotificationsCheckBox,
+                BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SAVE_IN_SENT"), smtpSaveInSentCheckBox,
@@ -530,6 +535,7 @@ public class SettingsFrame extends JFrame {
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
         defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
+        disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
@@ -672,6 +678,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateCheckBox.isSelected()));
                 Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
+                Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
                 Settings.setProperty("davmail.enableEws", String.valueOf(enableEwsCheckBox.isSelected()));
                 Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));

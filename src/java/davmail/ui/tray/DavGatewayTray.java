@@ -94,7 +94,7 @@ public final class DavGatewayTray {
      */
     private static void displayMessage(BundleMessage message, Level level) {
         LOGGER.log(level, message.formatLog());
-        if (davGatewayTray != null) {
+        if (davGatewayTray != null && !Settings.getBooleanProperty("davmail.disableGuiNotifications")) {
             davGatewayTray.displayMessage(message.format(), level);
         }
     }
@@ -112,7 +112,7 @@ public final class DavGatewayTray {
         } else {
             LOGGER.log(level, BundleMessage.getExceptionLogMessage(message, e), e);
         }
-        if (davGatewayTray != null
+        if (davGatewayTray != null && !Settings.getBooleanProperty("davmail.disableGuiNotifications")
                 && (!(e instanceof NetworkDownException))) {
             davGatewayTray.displayMessage(BundleMessage.getExceptionMessage(message, e), level);
         }
