@@ -670,6 +670,9 @@ public abstract class EWSMethod extends PostMethod {
                 }
             }
         }
+        if (getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+             throw new EWSException(getStatusText());
+        }
     }
 
     @Override
