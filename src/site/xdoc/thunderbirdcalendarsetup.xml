@@ -32,8 +32,9 @@
                     <img src="images/thunderbirdCalendar2.png" alt=""/>
                 </div>
 
-                <p>Choose a name, color and set the associated email address (as set in mail setup)
+                <p>Choose a name, color and set the associated email address (as set in mail setup).
                 </p>
+                <p>Note that Caldav notifications will not work if this email address field is empty.</p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdCalendar3.png" alt=""/>
                 </div>
