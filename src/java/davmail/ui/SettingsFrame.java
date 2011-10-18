@@ -470,11 +470,23 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_PATH"), logFilePathField);
         addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_SIZE"), logFileSizeField);
 
+        JButton defaultButton = new JButton(BundleMessage.format("UI_BUTTON_DEFAULT"));
+        defaultButton.setToolTipText(BundleMessage.format("UI_BUTTON_DEFAULT_HELP"));
+        defaultButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                rootLoggingLevelField.setSelectedItem(Level.WARN);
+                davmailLoggingLevelField.setSelectedItem(Level.DEBUG);
+                httpclientLoggingLevelField.setSelectedItem(Level.WARN);
+                wireLoggingLevelField.setSelectedItem(Level.WARN);
+            }
+        });
+
         JPanel loggingPanel = new JPanel();
         loggingPanel.setLayout(new BoxLayout(loggingPanel, BoxLayout.Y_AXIS));
         loggingPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LOGGING_LEVELS")));
         loggingPanel.add(logFilePathPanel);
         loggingPanel.add(loggingLevelPanel);
+        loggingPanel.add(defaultButton);
 
         updateMaximumSize(loggingPanel);
         return loggingPanel;
