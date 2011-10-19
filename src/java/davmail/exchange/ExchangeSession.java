@@ -2468,19 +2468,7 @@ public abstract class ExchangeSession {
 
     }
 
-    /**
-     * Common item properties
-     */
-    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
-
-    static {
-        ITEM_PROPERTIES.add("etag");
-        ITEM_PROPERTIES.add("displayname");
-        // calendar CdoInstanceType
-        ITEM_PROPERTIES.add("instancetype");
-        ITEM_PROPERTIES.add("urlcompname");
-        ITEM_PROPERTIES.add("subject");
-    }
+    protected abstract Set<String> getItemProperties();
 
     /**
      * Search contacts in provided folder.
@@ -2490,7 +2478,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, ITEM_PROPERTIES, isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
+        return searchContacts(folderPath, getItemProperties(), isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
     }
 
 
@@ -2621,7 +2609,7 @@ public abstract class ExchangeSession {
             privateCondition = isEqualTo("sensitivity", 0);
         }
 
-        return searchEvents(folderPath, ITEM_PROPERTIES,
+        return searchEvents(folderPath, getItemProperties(),
                 and(filter, privateCondition));
     }
 

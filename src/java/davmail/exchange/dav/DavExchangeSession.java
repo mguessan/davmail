@@ -2044,6 +2044,24 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     /**
+     * Common item properties
+     */
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+    static {
+        ITEM_PROPERTIES.add("etag");
+        ITEM_PROPERTIES.add("displayname");
+        // calendar CdoInstanceType
+        ITEM_PROPERTIES.add("instancetype");
+        ITEM_PROPERTIES.add("urlcompname");
+        ITEM_PROPERTIES.add("subject");
+    }
+
+    protected Set<String> getItemProperties() {
+        return ITEM_PROPERTIES;
+    }
+
+
+    /**
      * @inheritDoc
      */
     @Override

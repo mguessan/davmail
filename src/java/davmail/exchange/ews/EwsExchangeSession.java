@@ -1615,7 +1615,18 @@ public class EwsExchangeSession extends ExchangeSession {
         return events;
     }
 
+    /**
+     * Common item properties
+     */
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
     static {
+        ITEM_PROPERTIES.add("etag");
+        ITEM_PROPERTIES.add("displayname");
+        // calendar CdoInstanceType
+        ITEM_PROPERTIES.add("instancetype");
+        ITEM_PROPERTIES.add("urlcompname");
+        ITEM_PROPERTIES.add("subject");
+
         ITEM_PROPERTIES.add("calendaritemtype");
         ITEM_PROPERTIES.add("isrecurring");
     }
@@ -1628,6 +1639,10 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("displayname");
         EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
+    }
+
+    protected Set<String> getItemProperties() {
+        return ITEM_PROPERTIES;
     }
 
     protected EWSMethod.Item getEwsItem(String folderPath, String itemName) throws IOException {
