@@ -139,7 +139,7 @@ public class VProperty {
                 } else if (state == State.VALUE) {
                     if (currentChar == '\\') {
                         state = State.BACKSLASH;
-                    } else if (currentChar == ';') {
+                    } else if (currentChar == ';' || ("RESOURCES".equals(key) && currentChar == ',')) {
                         addValue(line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
@@ -382,6 +382,8 @@ public class VProperty {
             for (String value : values) {
                 if (firstValue) {
                     firstValue = false;
+                } else if ("RESOURCES".equals(key)) {
+                    buffer.append(',');
                 } else {
                     buffer.append(';');
                 }
@@ -423,6 +425,8 @@ public class VProperty {
             char c = value.charAt(i);
             if (c == '\n') {
                 buffer.append("\\n");
+            } else if ("RESOURCES".equals(key) && c==',') {
+                buffer.append('\\').append(',');
             } else {
                 buffer.append(value.charAt(i));
             }
