@@ -63,7 +63,7 @@ public class ImapConnection extends AbstractConnection {
      * @param clientSocket IMAP client socket
      */
     public ImapConnection(Socket clientSocket) {
-        super(ImapConnection.class.getSimpleName(), clientSocket, null);
+        super(ImapConnection.class.getSimpleName(), clientSocket, "UTF-8");
     }
 
     @Override
@@ -878,6 +878,11 @@ public class ImapConnection extends AbstractConnection {
                 condition = session.or();
             } else if (token.startsWith("OR ")) {
                 condition = appendOrSearchParams(token, conditions);
+            } else if ("CHARSET".equals(token)) {
+                String charset = tokens.nextQuotedToken().toUpperCase();
+                if (!("ASCII".equals(charset) || "UTF-8".equals(charset))) {
+                    throw new IOException("Unsupported charset "+charset);
+                }
             } else {
                 if (condition == null) {
                     condition = session.and();
