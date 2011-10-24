@@ -184,6 +184,10 @@ public class VCalendar extends VObject {
             }
         }
 
+        if (!fromServer) {
+            fixTimezone();
+        }
+
         // iterate over vObjects
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
@@ -265,6 +269,30 @@ public class VCalendar extends VObject {
             }
         }
 
+    }
+
+    private void fixTimezone() {
+        if (vTimezone != null && vTimezone.vObjects != null && vTimezone.vObjects.size() > 2) {
+            VObject standard = null;
+            VObject daylight = null;
+            for (VObject vObject:vTimezone.vObjects) {
+                if ("STANDARD".equals(vObject.type)) {
+                    if (standard == null ||
+                            (vObject.getPropertyValue("DTSTART").compareTo(standard.getPropertyValue("DTSTART")) > 0)) {
+                        standard = vObject;
+                    }
+                }
+                if ("DAYLIGHT".equals(vObject.type)) {
+                    if (daylight == null ||
+                            (vObject.getPropertyValue("DTSTART").compareTo(daylight.getPropertyValue("DTSTART")) > 0)) {
+                        daylight = vObject;
+                    }
+                }
+            }
+            vTimezone.vObjects.clear();
+            vTimezone.vObjects.add(standard);
+            vTimezone.vObjects.add(daylight);
+        }
     }
 
     private void fixTzid(VProperty property) {
@@ -549,6 +577,10 @@ public class VCalendar extends VObject {
         firstVevent.addProperty(vProperty);
     }
 
+    /**
+     * Check if this item is a VTODO item
+     * @return true with VTODO items
+     */
     public boolean isTodo() {
         return "VTODO".equals(firstVevent.type);
     }
