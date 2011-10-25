@@ -132,6 +132,7 @@ public final class StringUtil {
     private static final Pattern LT_PATTERN = Pattern.compile("<");
     private static final Pattern GT_PATTERN = Pattern.compile(">");
     private static final Pattern PERCENT_PATTERN = Pattern.compile("%");
+    private static final Pattern HASH_PATTERN = Pattern.compile("#");
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
     private static final Pattern CR_PATTERN = Pattern.compile("\r");
@@ -146,6 +147,7 @@ public final class StringUtil {
     private static final Pattern URLENCODED_QUOTE_PATTERN = Pattern.compile("%22");
     private static final Pattern URLENCODED_X0D0A_PATTERN = Pattern.compile("\n");
     private static final Pattern URLENCODED_PERCENT_PATTERN = Pattern.compile("%25");
+    private static final Pattern URLENCODED_HASH_PATTERN = Pattern.compile("%23");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
@@ -316,6 +318,9 @@ public final class StringUtil {
         if (result.indexOf('"') >= 0) {
             result = QUOTE_PATTERN.matcher(result).replaceAll("%22");
         }
+        if (result.indexOf('#') >= 0) {
+            result = HASH_PATTERN.matcher(result).replaceAll("%23");
+        }
         if (result.indexOf("_x000D__x000A_") >= 0) {
             result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
         }
@@ -355,6 +360,9 @@ public final class StringUtil {
             // CRLF is replaced with LF in response
             if (result.indexOf('\n') >= 0) {
                 result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
+            }
+            if (result.indexOf("%23") >= 0) {
+                result = URLENCODED_HASH_PATTERN.matcher(result).replaceAll("#");
             }
             if (result.indexOf("%25") >= 0) {
                 result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
