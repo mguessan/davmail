@@ -1569,14 +1569,15 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
-        if ("Exchange2010".equals(serverVersion)) {
-            // tasks in calendar not supported over EWS
-            return or(isTrue("isrecurring"),
-                    and(isFalse("isrecurring"), dateCondition));
-        } else {
-            return or(isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        }
+        // tasks in calendar not supported over EWS => do not look for instancetype null
+        return or(
+                // Exchange 2010
+                or(isTrue("isrecurring"),
+                        and(isFalse("isrecurring"), dateCondition)),
+                // Exchange 2007
+                or(isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition))
+        );
     }
 
     @Override
