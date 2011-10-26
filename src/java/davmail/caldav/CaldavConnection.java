@@ -1426,7 +1426,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isIcal5() {
-            return isUserAgent("CoreDAV/");
+            return isUserAgent("CoreDAV/") || isUserAgent("iOS/5");
         }
 
         protected boolean isUserAgent(String key) {
