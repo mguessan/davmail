@@ -40,7 +40,8 @@ public final class DistinguishedFolderId extends FolderId {
     @SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
     public static enum Name {
         calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
-        publicfoldersroot, root, junkemail, searchfolders, voicemail
+        publicfoldersroot, root, junkemail, searchfolders, voicemail,
+        archiveroot
     }
 
     private static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();
