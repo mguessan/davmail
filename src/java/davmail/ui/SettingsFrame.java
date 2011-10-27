@@ -98,7 +98,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox showStartupBannerCheckBox;
     JCheckBox disableGuiNotificationsCheckBox;
     JCheckBox imapAutoExpungeCheckBox;
-    JCheckBox enableEwsCheckBox;
+    JComboBox enableEwsComboBox;
     JCheckBox smtpSaveInSentCheckBox;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
@@ -392,12 +392,26 @@ public class SettingsFrame extends JFrame {
         return networkSettingsPanel;
     }
 
+    protected static final String WEBDAV = "WebDav";
+    protected static final String EWS = "EWS";
+    protected static final String AUTO = "Auto";
+
+    protected void setEwsModeSelectedItem(String ewsMode) {
+        if ("true".equals(ewsMode)) {
+            enableEwsComboBox.setSelectedItem(EWS);
+        } else if ("false".equals(ewsMode)) {
+            enableEwsComboBox.setSelectedItem(WEBDAV);
+        } else {
+            enableEwsComboBox.setSelectedItem(AUTO);
+        }
+    }
+
     protected JPanel getOtherSettingsPanel() {
         JPanel otherSettingsPanel = new JPanel(new GridLayout(10, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
-        enableEwsCheckBox = new JCheckBox();
-        enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
+        enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
+        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         caldavEditNotificationsField = new JCheckBox();
         caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
@@ -415,7 +429,7 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
 
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsCheckBox,
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsComboBox,
                 BundleMessage.format("UI_ENABLE_EWS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS"), caldavEditNotificationsField,
                 BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS_HELP"));
@@ -549,7 +563,7 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
-        enableEwsCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableEws", false));
+        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
@@ -692,7 +706,16 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
                 Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
-                Settings.setProperty("davmail.enableEws", String.valueOf(enableEwsCheckBox.isSelected()));
+                String selectedEwsMode = (String) enableEwsComboBox.getSelectedItem();
+                String enableEws;
+                if (EWS.equals(selectedEwsMode)) {
+                    enableEws = "true";
+                } else if (WEBDAV.equals(selectedEwsMode)) {
+                    enableEws = "false";
+                } else {
+                    enableEws = "auto";
+                }
+                Settings.setProperty("davmail.enableEws", enableEws);
                 Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());

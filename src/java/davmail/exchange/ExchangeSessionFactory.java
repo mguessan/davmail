@@ -26,6 +26,7 @@ import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -138,18 +139,19 @@ public final class ExchangeSessionFactory {
             }
 
             if (session == null) {
-                if (Settings.getBooleanProperty("davmail.enableEws")) {
+                String enableEws = Settings.getProperty("davmail.enableEws", "auto");
+                if ("true".equals(enableEws)) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
                     try {
                         session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                     } catch (WebdavNotAvailableException e) {
-                        ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
-                        session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
-                        // success, enable EWS flag
-                        ExchangeSession.LOGGER.debug("EWS found, changing davmail.enableEws setting");
-                        Settings.setProperty("davmail.enableEws", "true");
-                        Settings.save();
+                        if ("auto".equals(enableEws)) {
+                            ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
+                            session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                        } else {
+                            DavGatewayTray.warn(new BundleMessage("LOG_WEBDAV_NOT_AVAILABLE"));
+                        }
                     }
                 }
                 ExchangeSession.LOGGER.debug("Created new session: " + session);

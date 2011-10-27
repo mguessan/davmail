@@ -144,6 +144,7 @@ public final class Settings {
         SETTINGS.put("davmail.bindAddress", "");
         SETTINGS.put("davmail.useSystemProxies", Boolean.TRUE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
+        SETTINGS.put("davmail.enableEws", "auto");
         SETTINGS.put("davmail.proxyHost", "");
         SETTINGS.put("davmail.proxyPort", "");
         SETTINGS.put("davmail.proxyUser", "");
@@ -317,6 +318,22 @@ public final class Settings {
         }
         return value;
     }
+
+    /**
+     * Get property value or default.
+     *
+     * @param property     property name
+     * @param defaultValue default property value
+     * @return property value
+     */
+    public static synchronized String getProperty(String property, String defaultValue) {
+        String value = SETTINGS.getProperty(property);
+        if (value == null) {
+            value = defaultValue;
+        }
+        return value;
+    }
+
 
     /**
      * Get a property value as char[].
