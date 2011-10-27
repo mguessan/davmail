@@ -93,7 +93,7 @@ public abstract class ExchangeSession {
 
     protected static final String PUBLIC_ROOT = "/public/";
     protected static final String CALENDAR = "calendar";
-    protected static final String TASKS = "tasks";    
+    protected static final String TASKS = "tasks";
     /**
      * Contacts folder logical name
      */
@@ -290,7 +290,7 @@ public abstract class ExchangeSession {
      * @return true if basic authentication detected
      * @throws IOException unable to connect to exchange
      */
-    protected boolean isBasicAuthentication(HttpClient httpClient, String url)  {
+    protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
         return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
@@ -602,7 +602,10 @@ public abstract class ExchangeSession {
             // Exchange 2003 cookies
             if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
                     // Exchange 2007 cookie
-                    || "UserContext".equals(cookie.getName())) {
+                    || "UserContext".equals(cookie.getName())
+                    // Direct EWS access
+                    || "exchangecookie".equals(cookie.getName())
+                    ) {
                 authenticated = true;
                 break;
             }
@@ -1325,8 +1328,8 @@ public abstract class ExchangeSession {
     /**
      * Update Exchange folder properties.
      *
-     * @param folderName  logical folder name
-     * @param properties  folder properties
+     * @param folderName logical folder name
+     * @param properties folder properties
      * @return status
      * @throws IOException on error
      */
@@ -2141,7 +2144,7 @@ public abstract class ExchangeSession {
             fixICS(itemBody.getBytes("UTF-8"), false);
             // fix task item name
             if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
-                this.itemName = itemName.substring(0, itemName.length() - 3)+"EML";
+                this.itemName = itemName.substring(0, itemName.length() - 3) + "EML";
             }
         }
 
@@ -2524,8 +2527,8 @@ public abstract class ExchangeSession {
 
     protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
 
-    protected Condition getPastDelayCondition()  {
-         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
+    protected Condition getPastDelayCondition() {
+        int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
         Condition dateCondition = null;
         if (caldavPastDelay != 0) {
             Calendar cal = Calendar.getInstance();
