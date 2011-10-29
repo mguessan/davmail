@@ -152,7 +152,7 @@
                 contacts to allow recipient address completion in mail compose window and full calendar
                 support with attendees free/busy display.
                 The main goal of DavMail is to provide standard compliant protocols in front of proprietary
-                Exchange. This means LDAP for globale address book, SMTP to send messages, IMAP to browse
+                Exchange. This means LDAP for global address book, SMTP to send messages, IMAP to browse
                 messages on the server in any folder, POP to retrieve inbox messages only, Caldav for
                 calendar support and Carddav for personal contacts sync.
                 Thus any standard compliant client can be used with Microsoft Exchange.
@@ -200,7 +200,7 @@
                 contacts to allow recipient address completion in mail compose window and full calendar
                 support with attendees free/busy display.
                 The main goal of DavMail is to provide standard compliant protocols in front of proprietary
-                Exchange. This means LDAP for globale address book, SMTP to send messages, IMAP to browse
+                Exchange. This means LDAP for global address book, SMTP to send messages, IMAP to browse
                 messages on the server in any folder, POP to retrieve inbox messages only, Caldav for
                 calendar support and Carddav for personal contacts sync.
                 Thus any standard compliant client can be used with Microsoft Exchange.
