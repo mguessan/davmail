@@ -20,6 +20,10 @@
                     install sun-java6-bin and the appropriate swt package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
+                <p>Note to Ubuntu 11.10 Oneiric users: Unity does not support system tray defined by FreeDesktop, you will need
+                to switch to standard Gnome Panel to use DavMail (and any other application using system tray)</p>
+                <p>Note to Ubuntu 11.04 users: all tray icons are hidden by default, use the following command to restore normal mode:</p>
+                <code>gsettings set com.canonical.Unity.Panel systray-whitelist "['all']"</code>
             </subsection>
             <subsection name="Manual setup">
                 <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
