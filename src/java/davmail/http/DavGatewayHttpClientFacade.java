@@ -76,6 +76,8 @@ public final class DavGatewayHttpClientFacade {
         // register custom cookie policy
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
 
+        AuthPolicy.registerAuthScheme(AuthPolicy.BASIC, LenientBasicScheme.class);
+
     }
 
 
