@@ -1,3 +1,56 @@
+** DavMail 3.9.6 released **
+Another bugfix release to improve iPad 2 and Debian based Linux support. 
+Also includes new protocol mode options (EWS, WebDav or Auto), experimental Exchange online archive 
+support, IMAP UTF-8 search parameter and many Caldav fixes
+
+Enhancements:
+- Add a new upload-version ant target to upload version.txt
+- Workaround for broken servers that send invalid Basic authentication challenge
+- Add exchangecookie to the list of authentication cookies for direct EWS access
+- Add a new auto value to davmail.enableEws setting to avoid unwanted switch from WebDav to EWS on temporary Exchange connection issue
+- Encode # in urlcompname
+- Fix bug on ITEM_PROPERTIES value on EWS/WebDav mode switch
+- Add new Default button to reset log levels
+- Implement a new option to let users disable all GUI notifications
+- Additional exception trace exclusion 
+- Revert 1.7 test on SWT, tray implementation is still broken on Linux
+
+Documentation:
+- Doc: reformat urls in FAQ
+- Doc: add a note to help users with broken Unity desktop manager on Ubuntu
+- Doc: Fix typo in project description
+- Doc: additional note on Caldav setup in Thunderbird and new external review
+- Doc: document new disable balloon notifications setting
+- Doc: Update roadmap
+- Doc: New reviews
+- Doc: Update iCal doc to match both Snow Leopard and Lion
+- Doc: Update FAQ
+- Doc: Update DavMail settings screenshot
+
+Linux
+- Allow openjdk-7-jre dependency in deb package 
+- Fix 3418960: Update dependencies for Ubuntu 11.10, add libswt-gtk-3-java
+
+Caldav:
+- Caldav: apply iCal 5 workaround to iOS 5
+- Caldav: new timezone in rename table
+- Caldav: try to merge Exchange 2010 and 2007 filters
+- Caldav: additional unit tests
+- Caldav: fix 3426148 decode and encode comma in RESOURCES field value
+- Caldav: Fix complex timezones sent by clients, leave only latest STANDARD and DAYLIGHT definition
+- Caldav: Fix 3420240, retrieve description from tasks over Dav
+
+EWS:
+- EWS: add new DistinguishedFolderId value for Exchange archive support
+- EWS: throw exception on 400 Bad request answer
+
+IMAP:
+- IMAP: fix 3426383, implement CHARSET in SEARCH command, allow ASCII and UTF-8
+- IMAP: fix 3353862, long file names encoding in BODYSTRUCTURE
+
+SMTP:
+- SMTP: adjust workaround for misconfigured Exchange server that return 406 Not Acceptable on draft message creation, look inside multipart messages
+
 ** DavMail 3.9.5 released **
 Bugfix release to avoid Growl plugin crash on OSX, make DavMail work with both
 Snow Leopard and Lion. Also includes DIGEST-MD5 implementation for OSX Lion
