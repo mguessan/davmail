@@ -377,6 +377,15 @@
         </scp>
     </target>
 
+    <target name="upload-version">
+        <scp todir="${username},davmail@frs.sourceforge.net:/home/frs/project/d/da/davmail/davmail"
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
+            <fileset dir="dist">
+                <include name="version.txt"/>
+            </fileset>
+        </scp>
+    </target>
+
     <target name="release" depends="init">
         <property name="release-name" value="${release}"/>
         <antcall target="dist"/>

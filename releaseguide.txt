@@ -16,4 +16,4 @@ mvn install:install-file -DgroupId=net.freeutils.charset -DartifactId=jcharset -
 - create news message at https://sourceforge.net/news/admin/?group_id=184600
 - send user mailing list message
 - change default download files on frs
-- upload version.txt
+- upload version.txt with ant upload-version
