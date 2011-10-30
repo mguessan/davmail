@@ -15,14 +15,13 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="3.9.6">
+            <subsection name="3.9.7">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
                     <li>Improve OSX Lion support, fix iCal attendee completion</li>
                     <li>Implement hide from Dock option on OSX</li>
-                    <li>Implement disable UI notifications setting</li>                    
                 </ul>
             </subsection>
             <subsection name="4.0">
