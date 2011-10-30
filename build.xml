@@ -378,8 +378,8 @@
     </target>
 
     <target name="upload-version">
-        <scp todir="${username},davmail@frs.sourceforge.net:/home/frs/project/d/da/davmail/davmail"
-             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
+        <scp todir="${username},davmail@web.sourceforge.net:htdocs"
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true">
             <fileset dir="dist">
                 <include name="version.txt"/>
             </fileset>
