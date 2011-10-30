@@ -219,14 +219,10 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>To access public folders in Lightning, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/public/
-                    <i>path/to/calendar</i>
-                </source>
+                <source>http://localhost:<i>1080</i>/public/<i>path/to/calendar</i></source>
                 <p>To access public folders in iCal, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/principals/public/
-                    <i>path/to/calendar</i>
-                </source>
+                <source>http://localhost:<i>1080</i>/principals/public/<i>path/to/calendar</i></source>
                 <p>Note: iCal does not support folder names with spaces or special characters</p>
 
                 <p>
@@ -234,14 +230,10 @@ calendar.debug.log.verbose=true]]></source>
                 </p>
                 <p>To access a shared calendar in Lightning, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/users/
-                    <i>user@company.com</i>
-                </source>
+                <source>http://localhost:<i>1080</i>/users/<i>user@company.com</i></source>
                 <p>To access a shared calendar in iCal, the URL scheme is:
                 </p>
-                <source>http://localhost:<i>1080</i>/principals/users/
-                    <i>user@company.com</i>
-                </source>
+                <source>http://localhost:<i>1080</i>/principals/users/<i>user@company.com</i></source>
 
             </subsection>
 
