@@ -694,7 +694,7 @@ public class ImapConnection extends AbstractConnection {
             StringTokenizer paramTokens = new StringTokenizer(parameters);
             while (paramTokens.hasMoreTokens()) {
                 @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
-                String param = paramTokens.nextToken();
+                String param = paramTokens.nextToken().toUpperCase();
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
