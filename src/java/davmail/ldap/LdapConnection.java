@@ -588,7 +588,9 @@ public class LdapConnection extends AbstractConnection {
                     responseBer.encodeString("", isLdapV3());
                     responseBer.encodeString("", isLdapV3());
                     // challenge or response
-                    responseBer.encodeOctetString(serverResponse, 0x87);
+                    if (serverResponse != null) {
+                        responseBer.encodeOctetString(serverResponse, 0x87);
+                    }
                     responseBer.endSeq();
                     responseBer.endSeq();
                     sendResponse();
