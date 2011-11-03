@@ -1034,7 +1034,12 @@ public abstract class EWSMethod extends PostMethod {
                 if (serverVersion == null && XMLStreamUtil.isStartTag(reader, "ServerVersionInfo")) {
                     String majorVersion = getAttributeValue(reader, "MajorVersion");
                     if ("14".equals(majorVersion)) {
-                        serverVersion = "Exchange2010";
+                        String minorVersion = getAttributeValue(reader, "MinorVersion");
+                        if ("0".equals(minorVersion)) {
+                            serverVersion = "Exchange2010";
+                        } else {
+                            serverVersion = "Exchange2010_SP1";
+                        }
                     } else {
                         serverVersion = "Exchange2007_SP1";
                     }
