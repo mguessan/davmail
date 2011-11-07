@@ -19,6 +19,7 @@
 package davmail.exchange;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -27,6 +28,12 @@ import java.util.List;
 public class VProperty {
     protected static enum State {
         KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
+    }
+
+    protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<String>();
+    static {
+        MULTIVALUED_PROPERTIES.add("RESOURCES");
+        MULTIVALUED_PROPERTIES.add("LOCATION");
     }
 
     protected static class Param {
@@ -139,7 +146,7 @@ public class VProperty {
                 } else if (state == State.VALUE) {
                     if (currentChar == '\\') {
                         state = State.BACKSLASH;
-                    } else if (currentChar == ';' || ("RESOURCES".equals(key) && currentChar == ',')) {
+                    } else if (currentChar == ';' || (MULTIVALUED_PROPERTIES.contains(key) && currentChar == ',')) {
                         addValue(line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
@@ -382,7 +389,7 @@ public class VProperty {
             for (String value : values) {
                 if (firstValue) {
                     firstValue = false;
-                } else if ("RESOURCES".equals(key)) {
+                } else if (MULTIVALUED_PROPERTIES.contains(key)) {
                     buffer.append(',');
                 } else {
                     buffer.append(';');
@@ -425,7 +432,7 @@ public class VProperty {
             char c = value.charAt(i);
             if (c == '\n') {
                 buffer.append("\\n");
-            } else if ("RESOURCES".equals(key) && c==',') {
+            } else if (MULTIVALUED_PROPERTIES.contains(key) && c==',') {
                 buffer.append('\\').append(',');
             } else {
                 buffer.append(value.charAt(i));
