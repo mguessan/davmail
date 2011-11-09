@@ -41,7 +41,7 @@ public final class DistinguishedFolderId extends FolderId {
     public static enum Name {
         calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
         publicfoldersroot, root, junkemail, searchfolders, voicemail,
-        archiveroot
+        archivemsgfolderroot
     }
 
     private static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();

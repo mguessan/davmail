@@ -1952,7 +1952,7 @@ public class EwsExchangeSession extends ExchangeSession {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
         } else if (folderPath.startsWith(ARCHIVE_ROOT)) {
-            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archiveroot);
+            currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archivemsgfolderroot);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
         } else if (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.inbox);
