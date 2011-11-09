@@ -2519,7 +2519,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> getAllEvents(String folderPath) throws IOException {
         boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        List<Event> results = searchEvents(folderPath, getCalendarItemCondition(caldavDisableTasks, getPastDelayCondition()));
+        List<Event> results = searchEvents(folderPath, getCalendarItemCondition(caldavDisableTasks, getPastDelayCondition("dtstart")));
 
         if (isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
@@ -2531,13 +2531,13 @@ public abstract class ExchangeSession {
 
     protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
 
-    protected Condition getPastDelayCondition() {
+    protected Condition getPastDelayCondition(String attribute) {
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
         Condition dateCondition = null;
         if (caldavPastDelay != 0) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_MONTH, -caldavPastDelay);
-            dateCondition = gt("dtstart", formatSearchDate(cal.getTime()));
+            dateCondition = gt(attribute, formatSearchDate(cal.getTime()));
         }
         return dateCondition;
     }
@@ -2597,7 +2597,8 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> searchTasksOnly(String folderPath) throws IOException {
-        return searchEvents(folderPath, not(isEqualTo("outlookmessageclass", "IPM.Appointment")));
+        return searchEvents(folderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"), 
+                or(isNull("datecompleted"), getPastDelayCondition("datecompleted"))));
     }
 
     /**
