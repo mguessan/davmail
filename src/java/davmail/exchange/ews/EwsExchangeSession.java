@@ -34,6 +34,7 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpClientParams;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -233,6 +234,11 @@ public class EwsExchangeSession extends ExchangeSession {
                     throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
                 }
             }
+        }
+
+        // enable preemptive authentication on non NTLM endpoints
+        if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+            httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
         }
 
         try {
