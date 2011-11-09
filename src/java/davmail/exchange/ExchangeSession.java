@@ -288,7 +288,6 @@ public abstract class ExchangeSession {
      * @param url        exchange base URL
      * @param httpClient httpClient instance
      * @return true if basic authentication detected
-     * @throws IOException unable to connect to exchange
      */
     protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
         return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
@@ -1092,7 +1091,11 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        List<Folder> results = getSubFolders(folderName, or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass")),
+        Condition folderCondition = null;
+        if (!Settings.getBooleanProperty("davmail.imapIncludeSpecialFolders", false)) {
+            folderCondition = or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass"));
+        }
+        List<Folder> results = getSubFolders(folderName, folderCondition,
                 recursive);
         // need to include base folder in recursive search, except on root
         if (recursive && folderName.length() > 0) {
@@ -1230,6 +1233,7 @@ public abstract class ExchangeSession {
      *
      * @param mimeMessage MIME message
      * @throws IOException on error
+     * @throws MessagingException on error
      */
     public abstract void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException;
 
@@ -1238,7 +1242,7 @@ public abstract class ExchangeSession {
      * Folder name can be logical names INBOX, Drafts, Trash or calendar,
      * or a path relative to user base folder or absolute path.
      *
-     * @param folderName folder name
+     * @param folderPath folder path
      * @return Folder object
      * @throws IOException on error
      */
