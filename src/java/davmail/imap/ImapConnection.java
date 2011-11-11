@@ -314,13 +314,12 @@ public class ImapConnection extends AbstractConnection {
 
                                         } else if ("search".equalsIgnoreCase(subcommand)) {
                                             List<Long> uidList = handleSearch(tokens);
-                                            if (uidList.isEmpty()) {
-                                                sendClient("* SEARCH");
-                                            } else {
-                                                for (long uid : uidList) {
-                                                    sendClient("* SEARCH " + uid);
-                                                }
+                                            StringBuilder buffer = new StringBuilder("* SEARCH");
+                                            for (long uid : uidList) {
+                                                buffer.append(' ');
+                                                buffer.append(uid);
                                             }
+                                            sendClient(buffer.toString());
                                             sendClient(commandId + " OK SEARCH completed");
 
                                         } else if ("store".equalsIgnoreCase(subcommand)) {

@@ -48,6 +48,11 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 
+    public void testSelectRoot() throws IOException {
+        writeLine(". SELECT \"\"");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+    }
+
     public void testFetchFlags() throws IOException {
         writeLine(". UID FETCH 1:* (FLAGS)");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
@@ -332,4 +337,18 @@ public class TestImap extends AbstractImapTestCase {
         clientSocket.close();
         Thread.sleep(5000);
     }
+
+    public void testSearchCharset() throws IOException {
+        testSelectInbox();
+        writeLine("UID SEARCH CHARSET UTF-8 (HEADER SUBJECT testé)");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testWanderLust() throws IOException {
+        testSelectInbox();
+        writeLine(". uid fetch 1:* (body.peek[header.fields (Subject From To Cc Date Message-Id References In-Reply-To Delivered-To)] rfc822.size flags)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+
 }
