@@ -243,6 +243,15 @@
                         </td>
                         <td>davmail.log</td>
                     </tr>
+                    <tr>
+                        <td>Log file Size</td>
+                        <td>Maximum log file size, use Log4J syntax, see
+                            <a href="http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/RollingFileAppender.html#setMaxFileSize%28java.lang.String%29">
+                                RollingFileAppender
+                            </a>
+                        </td>
+                        <td>1MB</td>
+                    </tr>
                 </table>
             </subsection>
         </section>
