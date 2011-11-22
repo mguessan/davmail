@@ -1193,7 +1193,7 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
 
             // disable contact picture handling on Exchange 2007
-            if ("Exchange2010".equals(serverVersion)) {
+            if (!"Exchange2007_SP1".equals(serverVersion)) {
                 // first delete current picture
                 if (currentFileAttachment != null) {
                     DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);
@@ -1205,9 +1205,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
 
                     FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
-                    if ("Exchange2010".equals(serverVersion)) {
-                        attachment.setIsContactPhoto(true);
-                    }
+                    attachment.setIsContactPhoto(true);
+
                     // update photo attachment
                     CreateAttachmentMethod createAttachmentMethod = new CreateAttachmentMethod(newItemId, attachment);
                     executeMethod(createAttachmentMethod);
@@ -1398,7 +1397,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
                 updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
                 if (vCalendar.isCdoAllDay()) {
-                    if ("Exchange2010".equals(serverVersion)) {
+                    if (!"Exchange2007_SP1".equals(serverVersion)) {
                         updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
                     } else {
                         updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
@@ -1823,7 +1822,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         try {
             String timezoneId = null;
-            if ("Exchange2010".equals(serverVersion)) {
+            if (!"Exchange2007_SP1".equals(serverVersion)) {
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
                 executeMethod(getUserConfigurationMethod);
                 EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
@@ -1846,7 +1845,7 @@ public class EwsExchangeSession extends ExchangeSession {
             createCalendarFolder("davmailtemp", null);
             EWSMethod.Item item = new EWSMethod.Item();
             item.type = "CalendarItem";
-            if ("Exchange2010".equals(serverVersion)) {
+            if (!"Exchange2007_SP1".equals(serverVersion)) {
                 SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
                 dateFormatter.setTimeZone(GMT_TIMEZONE);
                 Calendar cal = Calendar.getInstance();
