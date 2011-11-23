@@ -166,6 +166,11 @@ davmail server2.properties
                     </a>
                     http://users.ox.ac.uk/~richardc/guides/LinuxNexus.html
                 </p>
+                <p>
+                    <strong>DavMail hangs on 64-bit Linux</strong>
+                </p>
+                <p>Disable use system proxies option in DavMail settings
+                </p>
             </subsection>
 
 
