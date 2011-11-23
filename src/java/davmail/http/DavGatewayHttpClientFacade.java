@@ -160,7 +160,7 @@ public final class DavGatewayHttpClientFacade {
         }
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
-        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies");
+        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
         String proxyHost = null;
         int proxyPort = 0;
         String proxyUser = null;

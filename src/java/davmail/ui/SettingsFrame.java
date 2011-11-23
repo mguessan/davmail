@@ -247,7 +247,7 @@ public class SettingsFrame extends JFrame {
         JPanel proxyPanel = new JPanel(new GridLayout(6, 2));
         proxyPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_PROXY")));
 
-        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies");
+        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         useSystemProxiesField = new JCheckBox();
         useSystemProxiesField.setSelected(useSystemProxies);
@@ -537,7 +537,7 @@ public class SettingsFrame extends JFrame {
         sentKeepDelayField.setText(Settings.getProperty("davmail.sentKeepDelay"));
         caldavPastDelayField.setText(Settings.getProperty("davmail.caldavPastDelay"));
         imapIdleDelayField.setText(Settings.getProperty("davmail.imapIdleDelay"));
-        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies");
+        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
         useSystemProxiesField.setSelected(useSystemProxies);
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField.setSelected(enableProxy);

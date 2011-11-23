@@ -142,7 +142,7 @@ public final class Settings {
         SETTINGS.put("davmail.imapIdleDelay", "");
         SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
         SETTINGS.put("davmail.bindAddress", "");
-        SETTINGS.put("davmail.useSystemProxies", Boolean.TRUE.toString());
+        SETTINGS.put("davmail.useSystemProxies", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableEws", "auto");
         SETTINGS.put("davmail.proxyHost", "");
