@@ -2518,8 +2518,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> getAllEvents(String folderPath) throws IOException {
-        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        List<Event> results = searchEvents(folderPath, getCalendarItemCondition(caldavDisableTasks, getPastDelayCondition("dtstart")));
+        List<Event> results = searchEvents(folderPath, getCalendarItemCondition(getPastDelayCondition("dtstart")));
 
         if (isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
@@ -2529,7 +2528,7 @@ public abstract class ExchangeSession {
         return results;
     }
 
-    protected abstract Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition);
+    protected abstract Condition getCalendarItemCondition(Condition dateCondition);
 
     protected Condition getPastDelayCondition(String attribute) {
         int caldavPastDelay = Settings.getIntProperty("davmail.caldavPastDelay");
@@ -2569,8 +2568,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> searchEvents(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
-        boolean caldavDisableTasks = Settings.getBooleanProperty("davmail.caldavDisableTasks");
-        Condition condition = getCalendarItemCondition(caldavDisableTasks, dateCondition);
+        Condition condition = getCalendarItemCondition(dateCondition);
 
         return searchEvents(folderPath, condition);
     }
@@ -2586,7 +2584,7 @@ public abstract class ExchangeSession {
      */
     public List<Event> searchEventsOnly(String folderPath, String timeRangeStart, String timeRangeEnd) throws IOException {
         Condition dateCondition = getRangeCondition(timeRangeStart, timeRangeEnd);
-        return searchEvents(folderPath, getCalendarItemCondition(true, dateCondition));
+        return searchEvents(folderPath, getCalendarItemCondition(dateCondition));
     }
 
     /**

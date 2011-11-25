@@ -2098,16 +2098,11 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
+    protected Condition getCalendarItemCondition(Condition dateCondition) {
         // instancetype 0 single appointment / 1 master recurring appointment
-        if (excludeTasks) {
-            return or(isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        } else {
-            return or(isNull("instancetype"),
-                    isEqualTo("instancetype", 1),
-                    and(isEqualTo("instancetype", 0), dateCondition));
-        }
+        return and(isEqualTo("outlookmessageclass", "IPM.Appointment"),
+                or(isEqualTo("instancetype", 1),
+                        and(isEqualTo("instancetype", 0), dateCondition)));
     }
 
     protected MultiStatusResponse[] searchItems(String folderPath, Set<String> attributes, Condition condition,

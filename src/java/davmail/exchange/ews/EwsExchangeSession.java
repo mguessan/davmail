@@ -1576,7 +1576,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected Condition getCalendarItemCondition(boolean excludeTasks, Condition dateCondition) {
+    protected Condition getCalendarItemCondition(Condition dateCondition) {
         // tasks in calendar not supported over EWS => do not look for instancetype null
         return or(
                 // Exchange 2010
