@@ -917,7 +917,11 @@ public class EwsExchangeSession extends ExchangeSession {
         for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
             Folder folder = buildFolder(item);
             if (parentFolderPath.length() > 0) {
-                folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
+                if (parentFolderPath.endsWith("/")) {
+                    folder.folderPath = parentFolderPath + item.get(Field.get("folderDisplayName").getResponseName());
+                } else {
+                    folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
+                }
             } else if (folderIdMap.get(folder.folderId.value) != null) {
                 folder.folderPath = folderIdMap.get(folder.folderId.value);
             } else {
