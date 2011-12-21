@@ -2099,10 +2099,18 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     protected Condition getCalendarItemCondition(Condition dateCondition) {
-        // instancetype 0 single appointment / 1 master recurring appointment
-        return and(isEqualTo("outlookmessageclass", "IPM.Appointment"),
-                or(isEqualTo("instancetype", 1),
-                        and(isEqualTo("instancetype", 0), dateCondition)));
+        boolean caldavEnableLegacyTasks = Settings.getBooleanProperty("davmail.caldavEnableLegacyTasks", false);
+        if (caldavEnableLegacyTasks) {
+            // return tasks created in calendar folder
+             return or(isNull("instancetype"),
+                    isEqualTo("instancetype", 1),
+                    and(isEqualTo("instancetype", 0), dateCondition));
+        } else {
+            // instancetype 0 single appointment / 1 master recurring appointment
+            return and(isEqualTo("outlookmessageclass", "IPM.Appointment"),
+                    or(isEqualTo("instancetype", 1),
+                            and(isEqualTo("instancetype", 0), dateCondition)));
+        }
     }
 
     protected MultiStatusResponse[] searchItems(String folderPath, Set<String> attributes, Condition condition,
