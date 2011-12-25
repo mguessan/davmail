@@ -96,6 +96,7 @@ public class CaldavConnection extends AbstractConnection {
         while ((line = readClient()) != null && line.length() > 0) {
             int index = line.indexOf(':');
             if (index <= 0) {
+                wireLogger.warn("Invalid header: "+line);
                 throw new DavMailException("EXCEPTION_INVALID_HEADER");
             }
             headers.put(line.substring(0, index).toLowerCase(), line.substring(index + 1).trim());
@@ -971,10 +972,14 @@ public class CaldavConnection extends AbstractConnection {
             response.appendHrefProperty("C:calendar-user-address-set", "mailto:" + actualPrincipal);
         }
 
-        if (request.hasProperty("addressbook-home-set") && "users".equals(prefix)) {
+        if (request.hasProperty("addressbook-home-set")) {
             if (request.isUserAgent("Address%20Book") || request.isUserAgent("Darwin")) {
-                response.appendHrefProperty("E:addressbook-home-set", encodePath(request, "/users/" + actualPrincipal + '/'));
-            } else {
+                if ("users".equals(prefix)) {
+                    response.appendHrefProperty("E:addressbook-home-set", encodePath(request, "/users/" + actualPrincipal + '/'));
+                } else {
+                    response.appendHrefProperty("E:addressbook-home-set", encodePath(request, '/' + prefix + '/' + principal + '/'));
+                }
+            } else if ("users".equals(prefix)) {
                 response.appendHrefProperty("E:addressbook-home-set", encodePath(request, "/users/" + actualPrincipal + "/contacts/"));
             }
         }
@@ -1605,7 +1610,18 @@ public class CaldavConnection extends AbstractConnection {
             if (subFolder != null && subFolder.length() > 0) {
                 calendarPath.append('/').append(subFolder);
             }
-            return calendarPath.toString();
+            if (this.isUserAgent("Address%20Book") || this.isUserAgent("Darwin")) {
+                /* WARNING - This is a kludge -
+                 * If your public folder address book path has spaces, then Address Book app just ignores that account
+                 * This kludge allows you to specify the path in which spaces are encoded as ___
+                 * It'll make Address book to not ignore the account and communicate with DavMail.
+                 * Here we replace the ___ in the path with spaces. Be warned if your actual address book path has ___ 
+                 * it'll fail.
+                 */
+                return calendarPath.toString().replaceAll("___", " ").replaceAll("/addressbook", "");
+            } else {
+                return calendarPath.toString();
+            }
         }
     }
 
