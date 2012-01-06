@@ -128,6 +128,7 @@ public abstract class ExchangeDavMethod extends PostMethod {
     }
 
     protected void handleResponse(XMLStreamReader reader) throws XMLStreamException {
+        MultiStatusResponse multiStatusResponse = null;
         String href = null;
         String responseStatus = "";
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "response")) {
@@ -139,13 +140,16 @@ public abstract class ExchangeDavMethod extends PostMethod {
                 } else if ("status".equals(tagLocalName)) {
                     responseStatus = reader.getElementText();
                 } else if ("propstat".equals(tagLocalName)) {
-                    MultiStatusResponse multiStatusResponse = new MultiStatusResponse(href, responseStatus);
-                    handlePropstat(reader, multiStatusResponse);
-                    responses.add(multiStatusResponse);
+                     if (multiStatusResponse == null) {
+                         multiStatusResponse = new MultiStatusResponse(href, responseStatus);
+                     }
+                     handlePropstat(reader, multiStatusResponse);
                 }
             }
         }
-
+        if (multiStatusResponse != null) {
+            responses.add(multiStatusResponse);
+        }
     }
 
     protected void handlePropstat(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
