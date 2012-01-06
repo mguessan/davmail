@@ -21,15 +21,15 @@ package davmail.http;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.*;
+import davmail.exchange.dav.ExchangeDavMethod;
+import davmail.exchange.dav.ExchangeSearchMethod;
 import davmail.ui.tray.DavGatewayTray;
-import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
@@ -378,23 +378,7 @@ public final class DavGatewayHttpClientFacade {
      */
     public static MultiStatusResponse[] executeSearchMethod(HttpClient httpClient, String path, String searchRequest,
                                                             int maxCount) throws IOException {
-        String searchBody = "<?xml version=\"1.0\"?>\n" +
-                "<d:searchrequest xmlns:d=\"DAV:\">\n" +
-                "        <d:sql>" + StringUtil.xmlEncode(searchRequest) + "</d:sql>\n" +
-                "</d:searchrequest>";
-        DavMethodBase searchMethod = new DavMethodBase(path) {
-
-            @Override
-            public String getName() {
-                return "SEARCH";
-            }
-
-            @Override
-            protected boolean isSuccess(int statusCode) {
-                return statusCode == 207;
-            }
-        };
-        searchMethod.setRequestEntity(new StringRequestEntity(searchBody, "text/xml", "UTF-8"));
+        ExchangeSearchMethod searchMethod = new ExchangeSearchMethod(path, searchRequest);
         if (maxCount > 0) {
             searchMethod.addRequestHeader("Range", "rows=0-" + (maxCount - 1));
         }
@@ -465,6 +449,39 @@ public final class DavGatewayHttpClientFacade {
 
         } catch (DavException e) {
             throw new IOException(e.getMessage());
+        } finally {
+            method.releaseConnection();
+        }
+        return responses;
+    }
+
+    /**
+     * Execute webdav request.
+     *
+     * @param httpClient http client instance
+     * @param method     webdav method
+     * @return Responses enumeration
+     * @throws IOException on error
+     */
+    public static MultiStatusResponse[] executeMethod(HttpClient httpClient, ExchangeDavMethod method) throws IOException {
+        MultiStatusResponse[] responses = null;
+        try {
+            int status = httpClient.executeMethod(method);
+
+            // need to follow redirects (once) on public folders
+            if (isRedirect(status)) {
+                method.releaseConnection();
+                URI targetUri = new URI(method.getResponseHeader("Location").getValue(), true);
+                checkExpiredSession(targetUri.getQuery());
+                method.setURI(targetUri);
+                status = httpClient.executeMethod(method);
+            }
+
+            if (status != HttpStatus.SC_MULTI_STATUS) {
+                throw buildHttpException(method);
+            }
+            responses = method.getResponses();
+
         } finally {
             method.releaseConnection();
         }
