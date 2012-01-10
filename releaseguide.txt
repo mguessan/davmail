@@ -18,3 +18,4 @@ mvn install:install-file -DgroupId=net.freeutils.charset -DartifactId=jcharset -
 - send user mailing list message
 - change default download files on frs
 - upload version.txt with ant upload-version
+- create new version in sourceforge bug tracker

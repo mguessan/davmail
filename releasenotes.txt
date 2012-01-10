@@ -1,3 +1,49 @@
+** DavMail 3.9.7 released **
+Another bugfix release with new stax based webdav search method implementation to reduce memory footprint with large folders,
+exclude non event items from calendar to avoid errors, some EWS fixes on tasks handling and a few documentation updates
+
+WebDav:
+- Dav: fix regression in new Stax implementation
+- Dav: new stax based WebDav requests implementation to reduce memory usage, enabled on Search requests
+- Dav: switch back to mailbox path on Exchange 2003 for CmdBasePath
+
+Caldav:
+- Caldav: Experimental patch to support spaces in calendar or contacts path on OSX, see 3464086
+- Caldav: Create a new davmail.caldavEnableLegacyTasks to allow access to tasks created in calendar folder by previous DavMail versions
+- Caldav: drop davmail.caldavDisableTasks setting, retrieve only events from calendar
+- Caldav: Change field update order for Exchange 2007 over EWS
+- Caldav: apply date filter to tasks
+- Caldav: new timezone for Mexico
+- Caldav: fix 3433584, encode comma in LOCATION field
+
+IMAP:
+- IMAP: fix double slash in folder path
+- IMAP: return all search results uids on a single line for Wanderlust
+- IMAP: new davmail.imapIncludeSpecialFolders setting to access all folders including calendar and tasks over IMAP
+- IMAP: fix wanderlust support, allow lower case fetch params
+
+Documentation:
+- Doc: Added DavMail hangs on 64-bit Linux FAQ entry
+- Doc: add documentation for davmail.logFileSize option
+
+Enhancements:
+- Change default use system proxies value to false
+- Avoid NullPointerException on WebdavNotAvailableException
+- Fix upload-version target site
+
+EWS:
+- EWS: fix Exchange 2010 SP1 support
+- EWS: use archivemsgfolderroot as archive root
+- EWS: enable preemptive authentication on non NTLM endpoints
+- EWS: add Exchange2010_SP1 support for online archive
+
+LDAP:
+- LDAP: avoid NullPointerException during SASL authentication
+
+Carddav:
+- Carddav: encode star in urlcompname
+
+
 ** DavMail 3.9.6 released **
 Another bugfix release to improve iPad 2 and Debian based Linux support. 
 Also includes new protocol mode options (EWS, WebDav or Auto), experimental Exchange online archive 
