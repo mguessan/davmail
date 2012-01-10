@@ -356,7 +356,7 @@
 
     <target name='upload-site' depends="fix-site">
         <scp todir="${username},davmail@web.sourceforge.net:htdocs"
-             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true">
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
             <fileset dir="target/site"/>
         </scp>
     </target>
