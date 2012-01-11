@@ -54,6 +54,8 @@ public class ICSBufferedReader extends BufferedReader {
             nextLine = super.readLine();
             while (nextLine != null && !(nextLine.length() == 0) &&
                     (nextLine.charAt(0) == ' ' || nextLine.charAt(0) == '\t'
+                            // workaround for broken items with \n as first line character
+                            || nextLine.charAt(0) == '\\'
                             // workaround for Exchange 2010 bug
                             || nextLine.charAt(0) == ':')) {
                 // Timezone ends with \n => next line starts with :
