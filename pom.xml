@@ -250,7 +250,7 @@
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
-            <version>4.0.9</version>
+            <version>4.1.2</version>
         </dependency>
         <dependency>
             <groupId>org.samba.jcifs</groupId>
