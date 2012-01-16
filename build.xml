@@ -183,7 +183,7 @@
 
     <target name='dist-rpm'>
         <taskdef name='rpm' classname='org.freecompany.redline.ant.RedlineTask'>
-            <classpath location="lib/redline-1.1.3.jar"/>
+            <classpath location="lib/redline-1.1.9.jar"/>
         </taskdef>
 
         <rpm name='davmail'
