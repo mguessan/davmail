@@ -2213,7 +2213,8 @@ public class DavExchangeSession extends ExchangeSession {
         String urlcompname = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "urlcompname");
         if ("urn:content-classes:person".equals(contentClass)) {
             // retrieve Contact properties
-            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES, isEqualTo("urlcompname", urlcompname), 1);
+            List<ExchangeSession.Contact> contacts = searchContacts(folderPath, CONTACT_ATTRIBUTES,
+                    isEqualTo("urlcompname", StringUtil.decodeUrlcompname(urlcompname)), 1);
             if (contacts.isEmpty()) {
                 LOGGER.warn("Item found, but unable to build contact");
                 throw new HttpNotFoundException(itemPath + " not found");
