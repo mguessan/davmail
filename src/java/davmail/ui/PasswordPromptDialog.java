@@ -52,6 +52,16 @@ public class PasswordPromptDialog extends JDialog {
      * @param prompt password prompt from PKCS11 module
      */
     public PasswordPromptDialog(String prompt) {
+        this(prompt, null);
+    }
+
+    /**
+     * Get smartcard password.
+     *
+     * @param prompt password prompt from PKCS11 module
+     * @param captchaImage ISA filter pinsafe image
+     */
+    public PasswordPromptDialog(String prompt, Image captchaImage) {
         setAlwaysOnTop(true);
 
         setTitle(BundleMessage.format("UI_PASSWORD_PROMPT"));
@@ -78,8 +88,13 @@ public class PasswordPromptDialog extends JDialog {
         });
         JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.Y_AXIS));
+        if (captchaImage != null) {
+            JLabel captchaLabel = new JLabel(new ImageIcon(captchaImage));
+            captchaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            passwordPanel.add(captchaLabel);
+        }
         passwordPanel.add(passwordField);
-        //questionPanel.add(passwordField);
+
         add(questionPanel, BorderLayout.NORTH);
         add(passwordPanel, BorderLayout.CENTER);
         add(getButtonPanel(), BorderLayout.SOUTH);

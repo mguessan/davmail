@@ -38,12 +38,14 @@ import org.htmlcleaner.ContentToken;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
+import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -400,6 +402,24 @@ public abstract class ExchangeSession {
                     } else if (TOKEN_FIELDS.contains(name)) {
                         // one time password, ask user
                         ((PostMethod) logonMethod).addParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
+                    } else if ("otc".equals(name)) {
+                        // captcha image, get image and ask user
+                        String pinsafeUser = getAliasFromLogin();
+                        if (pinsafeUser == null) {
+                            pinsafeUser = userName;
+                        }
+                        GetMethod getMethod = new GetMethod("/PINsafeISAFilter.dll?username="+pinsafeUser);
+                        try {
+                            int status = httpClient.executeMethod(getMethod);
+                            if (status != HttpStatus.SC_OK) {
+                                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
+                            }
+                            BufferedImage captchaImage = ImageIO.read(getMethod.getResponseBodyAsStream());
+                            ((PostMethod) logonMethod).addParameter(name, DavGatewayOTPPrompt.getCaptchaValue(captchaImage));
+
+                        } finally {
+                            getMethod.releaseConnection();
+                        }
                     }
                 }
             } else {
