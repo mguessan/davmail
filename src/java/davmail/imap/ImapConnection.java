@@ -994,7 +994,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected void appendEnvelopeHeaderValue(StringBuilder buffer, String value) throws UnsupportedEncodingException {
-        if (value.indexOf('"') >= 0) {
+        if (value.indexOf('"') >= 0 || value.indexOf("\\") >= 0) {
             buffer.append('{');
             buffer.append(value.length());
             buffer.append("}\r\n");
