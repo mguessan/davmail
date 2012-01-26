@@ -378,6 +378,11 @@ public abstract class ExchangeSession {
             if (logonForm != null) {
                 String logonMethodPath = logonForm.getAttributeByName("action");
 
+                // workaround for broken form with empty action
+                if (logonMethodPath != null && logonMethodPath.length() == 0) {
+                    logonMethodPath = "/owa/auth.owa";
+                }
+
                 logonMethod = new PostMethod(getAbsoluteUri(initmethod, logonMethodPath));
 
                 // retrieve lost inputs attached to body
