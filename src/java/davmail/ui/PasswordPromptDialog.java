@@ -22,6 +22,8 @@ import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -91,6 +93,7 @@ public class PasswordPromptDialog extends JDialog {
         if (captchaImage != null) {
             JLabel captchaLabel = new JLabel(new ImageIcon(captchaImage));
             captchaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            captchaLabel.setBorder(new EmptyBorder(10,10,10,10));
             passwordPanel.add(captchaLabel);
         }
         passwordPanel.add(passwordField);
