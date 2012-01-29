@@ -82,7 +82,7 @@ public class ImapConnection extends AbstractConnection {
         try {
             ExchangeSessionFactory.checkConfig();
             sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail " + DavGateway.getCurrentVersion() + " server ready");
-            for (; ;) {
+            for (; ; ) {
                 line = readClient();
                 // unable to read line, connection closed ?
                 if (line == null) {
@@ -880,7 +880,7 @@ public class ImapConnection extends AbstractConnection {
             } else if ("CHARSET".equals(token)) {
                 String charset = tokens.nextQuotedToken().toUpperCase();
                 if (!("ASCII".equals(charset) || "UTF-8".equals(charset))) {
-                    throw new IOException("Unsupported charset "+charset);
+                    throw new IOException("Unsupported charset " + charset);
                 }
             } else {
                 if (condition == null) {
@@ -959,28 +959,32 @@ public class ImapConnection extends AbstractConnection {
             try {
                 String unfoldedValue = MimeUtility.unfold(value[0]);
                 InternetAddress[] addresses = InternetAddress.parseHeader(unfoldedValue, false);
-                buffer.append('(');
-                for (InternetAddress address : addresses) {
+                if (addresses != null && addresses.length > 1) {
                     buffer.append('(');
-                    String personal = address.getPersonal();
-                    if (personal != null) {
-                        appendEnvelopeHeaderValue(buffer, personal);
-                    } else {
-                        buffer.append("NIL");
-                    }
-                    buffer.append(" NIL ");
-                    String mail = address.getAddress();
-                    int atIndex = mail.indexOf('@');
-                    if (atIndex >= 0) {
-                        buffer.append('"').append(mail.substring(0, atIndex)).append('"');
-                        buffer.append(' ');
-                        buffer.append('"').append(mail.substring(atIndex + 1)).append('"');
-                    } else {
-                        buffer.append("NIL NIL");
+                    for (InternetAddress address : addresses) {
+                        buffer.append('(');
+                        String personal = address.getPersonal();
+                        if (personal != null) {
+                            appendEnvelopeHeaderValue(buffer, personal);
+                        } else {
+                            buffer.append("NIL");
+                        }
+                        buffer.append(" NIL ");
+                        String mail = address.getAddress();
+                        int atIndex = mail.indexOf('@');
+                        if (atIndex >= 0) {
+                            buffer.append('"').append(mail.substring(0, atIndex)).append('"');
+                            buffer.append(' ');
+                            buffer.append('"').append(mail.substring(atIndex + 1)).append('"');
+                        } else {
+                            buffer.append("NIL NIL");
+                        }
+                        buffer.append(')');
                     }
                     buffer.append(')');
+                } else {
+                    buffer.append("NIL");
                 }
-                buffer.append(')');
             } catch (AddressException e) {
                 DavGatewayTray.warn(e);
                 buffer.append("NIL");
