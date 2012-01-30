@@ -16,7 +16,8 @@
 
             <p>Enter your credentials and
                 <code>localhost:1080</code>
-                as server location to sync with the default personal address book.
+                as server location (Snow Leopard) or <code>http://localhost:1080</code> (OSX Lion)
+                to sync with the default personal address book.
             </p>
             <p>
                 <em>Note: uncheck SSL mode if DavMail is in cleartext (default) mode.</em>
