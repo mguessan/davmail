@@ -2879,6 +2879,36 @@ public class DavExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+        try {
+            moveMessage(message.permanentUrl, targetFolder);
+        } catch (HttpNotFoundException e) {
+            LOGGER.debug("404 not found at permanenturl: " + message.permanentUrl + ", retry with messageurl");
+            moveMessage(message.messageUrl, targetFolder);
+        }
+    }
+
+    protected void moveMessage(String sourceUrl, String targetFolder) throws IOException {
+        String targetPath = URIUtil.encodePath(getFolderPath(targetFolder)) + '/' + UUID.randomUUID().toString();
+        MoveMethod method = new MoveMethod(URIUtil.encodePath(sourceUrl), targetPath, false);
+        // allow rename if a message with the same name exists
+        method.addRequestHeader("Allow-Rename", "t");
+        try {
+            int statusCode = httpClient.executeMethod(method);
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+                throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
+            } else if (statusCode != HttpStatus.SC_CREATED) {
+                throw DavGatewayHttpClientFacade.buildHttpException(method);
+            }
+        } finally {
+            method.releaseConnection();
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         try {
             copyMessage(message.permanentUrl, targetFolder);

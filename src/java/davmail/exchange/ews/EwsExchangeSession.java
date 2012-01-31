@@ -1006,6 +1006,15 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    public void moveMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
+        MoveItemMethod moveItemMethod = new MoveItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
+        executeMethod(moveItemMethod);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         CopyItemMethod copyItemMethod = new CopyItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
         executeMethod(copyItemMethod);

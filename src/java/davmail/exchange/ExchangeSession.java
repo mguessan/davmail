@@ -413,7 +413,7 @@ public abstract class ExchangeSession {
                         if (pinsafeUser == null) {
                             pinsafeUser = userName;
                         }
-                        GetMethod getMethod = new GetMethod("/PINsafeISAFilter.dll?username="+pinsafeUser);
+                        GetMethod getMethod = new GetMethod("/PINsafeISAFilter.dll?username=" + pinsafeUser);
                         try {
                             int status = httpClient.executeMethod(getMethod);
                             if (status != HttpStatus.SC_OK) {
@@ -1257,7 +1257,7 @@ public abstract class ExchangeSession {
      * Send Mime message.
      *
      * @param mimeMessage MIME message
-     * @throws IOException on error
+     * @throws IOException        on error
      * @throws MessagingException on error
      */
     public abstract void sendMessage(MimeMessage mimeMessage) throws IOException, MessagingException;
@@ -1380,6 +1380,15 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public abstract void copyMessage(Message message, String targetFolder) throws IOException;
+
+    /**
+     * Move message to target folder
+     *
+     * @param message      Exchange message
+     * @param targetFolder target folder
+     * @throws IOException on error
+     */
+    public abstract void moveMessage(Message message, String targetFolder) throws IOException;
 
     /**
      * Move folder to target name.
@@ -2382,57 +2391,60 @@ public abstract class ExchangeSession {
             // ICS description so that invites contain the description text
             String description = vCalendar.getFirstVeventPropertyValue("DESCRIPTION");
 
+            // handle notifications
             if ("urn:content-classes:calendarmessage".equals(contentClass)) {
                 // need to parse attendees and organizer to build recipients
                 VCalendar.Recipients recipients = vCalendar.getRecipients(true);
+                String to;
+                String cc;
+                String notificationSubject;
                 if (email.equalsIgnoreCase(recipients.organizer)) {
                     // current user is organizer => notify all
-                    writer.writeHeader("To", recipients.attendees);
-                    writer.writeHeader("Cc", recipients.optionalAttendees);
-                    // do not send notification if no recipients found
-                    if (recipients.attendees == null && recipients.optionalAttendees == null) {
-                        return null;
-                    }
+                    to = recipients.attendees;
+                    cc = recipients.optionalAttendees;
+                    notificationSubject = subject;
                 } else {
                     String status = vCalendar.getAttendeeStatus();
                     // notify only organizer
-                    String to = recipients.organizer;
-                    String cc = null;
-                    String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+                    to = recipients.organizer;
+                    cc = null;
+                    notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
                     description = "";
-                    // Allow end user notification edit
-                    if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
-                        // create notification edit dialog
-                        NotificationDialog notificationDialog = new NotificationDialog(recipients.organizer,
-                                null, notificationSubject);
-                        if (!notificationDialog.getSendNotification()) {
-                            LOGGER.debug("Notification canceled by user");
-                            return null;
-                        }
-                        // get description from dialog
-                        to = notificationDialog.getTo();
-                        cc = notificationDialog.getCc();
-                        notificationSubject = notificationDialog.getSubject();
-                        description = notificationDialog.getBody();
-                    }
+                }
 
-                    // do not send notification if no recipients found
-                    if (to == null || to.length() == 0) {
+                // Allow end user notification edit
+                if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                    // create notification edit dialog
+                    NotificationDialog notificationDialog = new NotificationDialog(to,
+                            cc, notificationSubject, description);
+                    if (!notificationDialog.getSendNotification()) {
+                        LOGGER.debug("Notification canceled by user");
                         return null;
                     }
-
-                    writer.writeHeader("To", to);
-                    writer.writeHeader("Cc", cc);
-                    writer.writeHeader("Subject", notificationSubject);
-
+                    // get description from dialog
+                    to = notificationDialog.getTo();
+                    cc = notificationDialog.getCc();
+                    notificationSubject = notificationDialog.getSubject();
+                    description = notificationDialog.getBody();
                 }
+
+                // do not send notification if no recipients found
+                if ((to == null || to.length() == 0) && (cc == null || cc.length() == 0)) {
+                    return null;
+                }
+
+                writer.writeHeader("To", to);
+                writer.writeHeader("Cc", cc);
+                writer.writeHeader("Subject", notificationSubject);
+
+
                 if (LOGGER.isDebugEnabled()) {
                     StringBuilder logBuffer = new StringBuilder("Sending notification ");
-                    if (recipients.attendees != null) {
-                        logBuffer.append("to: ").append(recipients.attendees);
+                    if (to != null) {
+                        logBuffer.append("to: ").append(to);
                     }
-                    if (recipients.optionalAttendees != null) {
-                        logBuffer.append("cc: ").append(recipients.optionalAttendees);
+                    if (cc != null) {
+                        logBuffer.append("cc: ").append(cc);
                     }
                     LOGGER.debug(logBuffer.toString());
                 }
@@ -2620,7 +2632,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<Event> searchTasksOnly(String folderPath) throws IOException {
-        return searchEvents(folderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"), 
+        return searchEvents(folderPath, and(isEqualTo("outlookmessageclass", "IPM.Task"),
                 or(isNull("datecompleted"), getPastDelayCondition("datecompleted"))));
     }
 
