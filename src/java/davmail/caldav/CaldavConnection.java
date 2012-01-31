@@ -651,7 +651,7 @@ public class CaldavConnection extends AbstractConnection {
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
                 appendContactsResponses(response, request, contacts);
-            } else {
+            } else if (folder.isCalendar() || folder.isTask()) {
                 appendEventsResponses(response, request, events);
                 // Send sub folders for multi-calendar support under iCal, except for public folders
                 if (folderList != null) {
