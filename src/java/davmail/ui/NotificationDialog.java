@@ -63,7 +63,7 @@ public class NotificationDialog extends JDialog {
      * @param cc      copy recipients
      * @param subject notification subject
      */
-    public NotificationDialog(String to, String cc, String subject) {
+    public NotificationDialog(String to, String cc, String subject, String description) {
         setModal(true);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_CALDAV_NOTIFICATION"));
@@ -85,7 +85,7 @@ public class NotificationDialog extends JDialog {
 
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.add(getRecipientsPanel());
-        mainPanel.add(getBodyPanel());
+        mainPanel.add(getBodyPanel(description));
 
         JPanel recipientsPanel = getRecipientsPanel();
         if (to != null) {
@@ -98,7 +98,7 @@ public class NotificationDialog extends JDialog {
             subjectField.setText(subject);
         }
         add(BorderLayout.NORTH, recipientsPanel);
-        JPanel bodyPanel = getBodyPanel();
+        JPanel bodyPanel = getBodyPanel(description);
         add(BorderLayout.CENTER, bodyPanel);
         bodyField.setPreferredSize(recipientsPanel.getPreferredSize());
 
@@ -156,11 +156,12 @@ public class NotificationDialog extends JDialog {
         return recipientsPanel;
     }
 
-    protected JPanel getBodyPanel() {
+    protected JPanel getBodyPanel(String description) {
         JPanel bodyPanel = new JPanel();
         bodyPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_NOTIFICATION_BODY")));
 
         bodyField = new JEditorPane();
+        bodyField.setText(description);
         //HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
         //bodyField.setEditorKit(htmlEditorKit);
         //bodyField.setContentType("text/html");
