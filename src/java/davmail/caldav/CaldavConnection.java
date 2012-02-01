@@ -974,13 +974,11 @@ public class CaldavConnection extends AbstractConnection {
 
         if (request.hasProperty("addressbook-home-set")) {
             if (request.isUserAgent("Address%20Book") || request.isUserAgent("Darwin")) {
-                if ("users".equals(prefix)) {
-                    response.appendHrefProperty("E:addressbook-home-set", encodePath(request, "/users/" + actualPrincipal + '/'));
-                } else {
-                    response.appendHrefProperty("E:addressbook-home-set", encodePath(request, '/' + prefix + '/' + principal + '/'));
-                }
+                response.appendHrefProperty("E:addressbook-home-set", encodePath(request, '/' + prefix + '/' + actualPrincipal + '/'));
             } else if ("users".equals(prefix)) {
                 response.appendHrefProperty("E:addressbook-home-set", encodePath(request, "/users/" + actualPrincipal + "/contacts/"));
+            } else {
+                response.appendHrefProperty("E:addressbook-home-set", encodePath(request, '/' + prefix + '/' + actualPrincipal + '/'));
             }
         }
 
@@ -1618,7 +1616,17 @@ public class CaldavConnection extends AbstractConnection {
                  * Here we replace the ___ in the path with spaces. Be warned if your actual address book path has ___ 
                  * it'll fail.
                  */
-                return calendarPath.toString().replaceAll("___", " ").replaceAll("/addressbook", "");
+                String result = calendarPath.toString();
+                // replace unsupported spaces
+                if (result.indexOf(' ') >=0 ) {
+                   result = result.replaceAll("___", " ");
+                }
+                // replace /addressbook suffix on public folders
+                if (result.startsWith("/public")) {
+                   result = result.replaceAll("/addressbook", "");
+                }
+
+                return result;
             } else {
                 return calendarPath.toString();
             }
