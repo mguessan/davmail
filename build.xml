@@ -97,13 +97,13 @@
                     vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
                     workingdirectory="$APP_PACKAGE"
                     stubfile="src/osx/davmail">
+            <jarfileset dir="dist">
+                <include name="*.jar"/>
+            </jarfileset>
             <jarfileset dir="dist/lib">
                 <include name="*.jar"/>
                 <include name="*.jnilib"/>
                 <exclude name="swt*.jar"/>
-            </jarfileset>
-            <jarfileset dir="dist">
-                <include name="*.jar"/>
             </jarfileset>
         </jarbundler>
         <!-- prepare hide from dock option -->
