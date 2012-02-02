@@ -245,9 +245,14 @@ public class Field {
         createField("smtpemail3", DistinguishedPropertySetType.Address, 0x80A4, "smtpemail3"); // Email3OriginalDisplayName
 
         // native email
-        createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1OriginalDisplayName
-        createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2OriginalDisplayName
-        createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3OriginalDisplayName
+        createField("email1", DistinguishedPropertySetType.Address, 0x8083, "email1"); // Email1EmailAddress
+        createField("email2", DistinguishedPropertySetType.Address, 0x8093, "email2"); // Email2EmailAddress
+        createField("email3", DistinguishedPropertySetType.Address, 0x80A3, "email3"); // Email3EmailAddress
+
+        // email type
+        createField("email1type", DistinguishedPropertySetType.Address, 0x8082, "email1type"); // Email1AddressType
+        createField("email2type", DistinguishedPropertySetType.Address, 0x8092, "email2type"); // Email2AddressType
+        createField("email3type", DistinguishedPropertySetType.Address, 0x80A2, "email3type"); // Email3AddressType
 
         createField(URN_SCHEMAS_CONTACTS, "facsimiletelephonenumber"); // PR_BUSINESS_FAX_NUMBER 0x3A24 String
         createField(URN_SCHEMAS_CONTACTS, "givenName"); // PR_GIVEN_NAME 0x3A06 String
