@@ -17,7 +17,7 @@
                 </p>
                 <p>
                     Select Install Package, installer will automatically download and
-                    install sun-java6-bin and the appropriate swt package. After installation,
+                    install Java and the appropriate SWT package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
                 <p>Note to Ubuntu 11.10 Oneiric users: Unity does not support system tray defined by FreeDesktop, you will need
@@ -26,7 +26,7 @@
                 <code>gsettings set com.canonical.Unity.Panel systray-whitelist "['all']"</code>
             </subsection>
             <subsection name="Manual setup">
-                <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
+                <p>Prerequisite : OpenJDK or Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
                     Java 1.5.
                 </p>
 
@@ -34,10 +34,10 @@
                     command line.
                 </p>
                 <p>Under Ubuntu, launch System/Administration/Synaptic Package Manager, quick search
-                    sun-java6-bin, mark for installation and click Apply
+                    default-jre, mark for installation and click Apply
                 </p>
                 <p>Or use the following command:</p>
-                <code>sudo apt-get install sun-java6-bin</code>
+                <code>sudo apt-get install default-jre</code>
 
                 <p>Download the linux x86 DavMail package from Sourceforge and uncompress it with
                     your favorite tool. The standard package will run natively on x86, to use DavMail
