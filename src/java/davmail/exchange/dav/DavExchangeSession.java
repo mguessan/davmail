@@ -1131,6 +1131,9 @@ public class DavExchangeSession extends ExchangeSession {
                 String key = entry.getKey();
                 if (!"photo".equals(key)) {
                     propertyValues.add(Field.createPropertyValue(key, entry.getValue()));
+                    if (key.startsWith("email")) {
+                        propertyValues.add(Field.createPropertyValue(key+"type", "SMTP"));
+                    }
                 }
             }
 
