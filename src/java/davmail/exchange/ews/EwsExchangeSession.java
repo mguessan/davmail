@@ -1742,21 +1742,20 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item item = getItemMethod.getResponseItem();
         if (item != null) {
             FileAttachment attachment = item.getAttachmentByName("ContactPicture.jpg");
-            if (attachment != null) {
-                // get attachment content
-                GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
-                executeMethod(getAttachmentMethod);
-
-                contactPhoto = new ContactPhoto();
-                contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
-                if (attachment.contentType == null) {
-                    contactPhoto.contentType = "image/jpeg";
-                } else {
-                    contactPhoto.contentType = attachment.contentType;
-                }
-
+            if (attachment == null) {
+                throw new IOException("Missing contact picture");
             }
+            // get attachment content
+            GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
+            executeMethod(getAttachmentMethod);
 
+            contactPhoto = new ContactPhoto();
+            contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
+            if (attachment.contentType == null) {
+                contactPhoto.contentType = "image/jpeg";
+            } else {
+                contactPhoto.contentType = attachment.contentType;
+            }
         }
 
         return contactPhoto;
