@@ -217,6 +217,9 @@ public final class ExchangeSessionFactory {
      */
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
+        if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+             throw new DavMailException("LOG_INVALID_URL", url);
+        }
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
         GetMethod testMethod = new GetMethod(url);
         try {
