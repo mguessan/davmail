@@ -29,7 +29,7 @@ import java.io.IOException;
 public class TestNotificationDialog extends TestCase {
     public void testCreateNotificationFrame() throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        NotificationDialog notificationDialog = new NotificationDialog("to", "cc", "subject");
+        NotificationDialog notificationDialog = new NotificationDialog("to", "cc", "subject", "description");
         notificationDialog.setVisible(true);
         System.out.println(notificationDialog.getSendNotification());
     }
