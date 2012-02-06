@@ -502,9 +502,9 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
-        executeMethod(getItemMethod);
         byte[] mimeContent = null;
         try {
+            executeMethod(getItemMethod);
             mimeContent = getItemMethod.getMimeContent();
         } catch (EWSException e) {
             LOGGER.warn("GetItem with MimeContent failed: "+e.getMessage());
