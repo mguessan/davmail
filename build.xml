@@ -111,6 +111,7 @@
         <copy file="dist/DavMail.app/Contents/Info.plist" tofile="dist/DavMail.app/Contents/Info-nodock.plist"/>
         <replaceregexp file="dist/DavMail.app/Contents/Info-nodock.plist" match="&lt;key>CFBundleName&lt;/key>"
                        replace="&lt;key>LSUIElement&lt;/key>&lt;string>1&lt;/string>&lt;key>CFBundleName&lt;/key>"/>
+        <copy file="dist/DavMail.app/Contents/Info-nodock.plist" tofile="dist/DavMail.app/Contents/Info.plist" overwrite="true"/>
         <!-- java 1.6 is mandatory for hide from dock -->
         <replaceregexp file="dist/DavMail.app/Contents/Info-nodock.plist" match="1\.5" replace="1.6"/>
         <zip file="dist/DavMail-MacOSX-${release}.app.zip">
