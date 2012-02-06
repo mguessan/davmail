@@ -503,9 +503,14 @@ public class EwsExchangeSession extends ExchangeSession {
     protected byte[] getContent(ItemId itemId) throws IOException {
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
         executeMethod(getItemMethod);
-        byte[] mimeContent = getItemMethod.getMimeContent();
+        byte[] mimeContent = null;
+        try {
+            mimeContent = getItemMethod.getMimeContent();
+        } catch (EWSException e) {
+            LOGGER.warn("GetItem with MimeContent failed: "+e.getMessage());
+        }
         if (mimeContent == null) {
-            LOGGER.warn("GetItem returned null MimeContent, trying to rebuild from properties");
+            LOGGER.warn("MimeContent not available, trying to rebuild from properties");
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
