@@ -152,7 +152,7 @@ public abstract class AbstractServer extends Thread {
             while (true) {
                 clientSocket = serverSocket.accept();
                 // set default timeout to 5 minutes
-                clientSocket.setSoTimeout(300000);
+                clientSocket.setSoTimeout(Settings.getIntProperty("davmail.clientSoTimeout", 300)*1000);
                 DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
                 // only accept localhost connections for security reasons
                 if (Settings.getBooleanProperty("davmail.allowRemote") ||

@@ -53,6 +53,7 @@ davmail.smtpSaveInSent=true
 davmail.server=true
 davmail.server.certificate.hash=
 davmail.bindAddress=
+davmail.clientSoTimeout=
 davmail.allowRemote=true
 davmail.disableUpdateCheck=false
 log4j.rootLogger=WARN

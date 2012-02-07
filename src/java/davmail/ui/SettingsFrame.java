@@ -70,6 +70,7 @@ public class SettingsFrame extends JFrame {
 
     JCheckBox allowRemoteField;
     JTextField bindAddressField;
+    JTextField clientSoTimeoutField;
     JTextField certHashField;
     JCheckBox disableUpdateCheck;
 
@@ -372,18 +373,21 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getNetworkSettingsPanel() {
-        JPanel networkSettingsPanel = new JPanel(new GridLayout(3, 2));
+        JPanel networkSettingsPanel = new JPanel(new GridLayout(4, 2));
         networkSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_NETWORK")));
 
         allowRemoteField = new JCheckBox();
         allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
 
         bindAddressField = new JTextField(Settings.getProperty("davmail.bindAddress"), 15);
+        clientSoTimeoutField = new JTextField(Settings.getProperty("davmail.clientSoTimeout"), 15);;
 
         certHashField = new JTextField(Settings.getProperty("davmail.server.certificate.hash"), 15);
 
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_BIND_ADDRESS"), bindAddressField,
                 BundleMessage.format("UI_BIND_ADDRESS_HELP"));
+        addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_CLIENT_SO_TIMEOUT"), clientSoTimeoutField,
+                BundleMessage.format("UI_CLIENT_SO_TIMEOUT_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION"), allowRemoteField,
                 BundleMessage.format("UI_ALLOW_REMOTE_CONNECTION_HELP"));
         addSettingComponent(networkSettingsPanel, BundleMessage.format("UI_SERVER_CERTIFICATE_HASH"), certHashField,
@@ -557,6 +561,7 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck.setSelected(Settings.getBooleanProperty(("davmail.disableUpdateCheck")));
 
         caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
+        clientSoTimeoutField.setText(Settings.getProperty("davmail.clientSoTimeout"));
         caldavAlarmSoundField.setText(Settings.getProperty("davmail.caldavAlarmSound"));
         forceActiveSyncUpdateCheckBox.setSelected(Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"));
         defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
@@ -695,6 +700,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
 
                 Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
+                Settings.setProperty("davmail.clientSoTimeout", String.valueOf(clientSoTimeoutField.getText()));
                 Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
                 Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));

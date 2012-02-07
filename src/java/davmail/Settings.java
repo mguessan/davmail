@@ -136,6 +136,7 @@ public final class Settings {
         SETTINGS.put("davmail.smtpPort", "1025");
         SETTINGS.put("davmail.caldavPort", "1080");
         SETTINGS.put("davmail.ldapPort", "1389");
+        SETTINGS.put("davmail.clientSoTimeout", "");
         SETTINGS.put("davmail.keepDelay", "30");
         SETTINGS.put("davmail.sentKeepDelay", "90");
         SETTINGS.put("davmail.caldavPastDelay", "90");

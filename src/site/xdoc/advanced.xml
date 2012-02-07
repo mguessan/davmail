@@ -68,6 +68,11 @@
                         </td>
                         <td>10.0.1.2</td>
                     </tr>
+                    <tr>
+                        <td>Client connection timeout</td>
+                        <td>Client connection timeout in seconds, 0 to disable timeout, empty for 5 minutes</td>
+                        <td>300</td>
+                    </tr>
                 </table>
             </subsection>
             <subsection name="Encryption">
