@@ -70,7 +70,7 @@ public final class Field {
         // always empty on Exchange 2007
         //FIELD_MAP.put("messageSize", new ExtendedFieldURI(0x6746, ExtendedFieldURI.PropertyType.Integer)); // PR_MIME_SIZE
         //FIELD_MAP.put("date", new ExtendedFieldURI(0x65f5, ExtendedFieldURI.PropertyType.SystemTime)); // PR_IMAP_INTERNAL_DATE
-        FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.Integer));
+        FIELD_MAP.put("deleted", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8570, ExtendedFieldURI.PropertyType.Long));
         FIELD_MAP.put("junk", new ExtendedFieldURI(0x1083, ExtendedFieldURI.PropertyType.Long));
 
         FIELD_MAP.put("iconIndex", new ExtendedFieldURI(0x1080, ExtendedFieldURI.PropertyType.Integer));// PR_ICON_INDEX
