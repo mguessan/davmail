@@ -13,8 +13,7 @@
         <section name="IMAP Thunderbird mail setup">
             <p>There are two ways to access Exchange emails through DavMail Gateway: the good old
                 and efficient POP protocol, limited to Inbox access and the IMAP protocol that enables
-                full message folder tree access. IMAP support in DavMail is more recent and less optimised
-                than POP.
+                full message folder tree access. DavMail IMAP listener has a higher memory footprint.
             </p>
 
             <p>This page describes IMAP setup, if you don't need multiple folders access, proceed to
@@ -29,56 +28,34 @@
             </p>
 
             <subsection name="Create a new account">
+                <p>Choose <code>Add Mail Account...</code> under Account settings and enter name, email address
+                    and password:</p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdAccount1.png" alt=""/>
                 </div>
-
-                <p>Edit common name and Exchange mail address:
-                </p>
+                <p>Click <code>Continue</code> and <code>Manual config</code> without waiting for automatic config:</p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdAccount2.png" alt=""/>
                 </div>
 
-                <p>Choose IMAP as server type, located at localhost:
+                <p>Incoming server type is IMAP, server hostname is localhost, default port is 1143, no SSL and normal
+                    password authentication. Outgoing server is localhost, default port is 1025, no SSL and normal
+                    password authentication. Set your username (windows account name or email address) and click
+                    <code>Re-test</code> to validate account settings, then <code>Create Account</code>:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdAccountImap3.png" alt=""/>
                 </div>
 
 
-                <p>Populate in and out login names with Active Directory account name, i.e. domain\account
-                    with Exchange 2003 and earlier. You don't need the domain name prefix with
-                    Exchange 2007.
+                <p>Without SSL you will get the following warning, check box and confirm account creation:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/thunderbirdAccount4.png" alt=""/>
                 </div>
+                <p>Note: as communication between Thunderbird and DavMail is local, cleartext mode is not an issue,
+                    except on shared machines (e.g. Terminal server).</p>
 
-                <p>Edit account name (email address by default):
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount5.png" alt=""/>
-                </div>
-
-                <p>Finish:
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccountImap6.png" alt=""/>
-                </div>
-
-            </subsection>
-            <subsection name="Create a new SMTP configuration">
-                <p>Create a new outgoing mail configuration under account settings:
-                </p>
-                <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdSmtp.png" alt=""/>
-                </div>
-                <p>Server name is localhost, edit port according to DavMail settings.
-                    The connection must use authentication with Active Directory account and encryption is not needed.
-                </p>
-                <p>Proceed to
-                    <a href="thunderbirdcalendarsetup.html">Thunderbird calendar setup</a>
-                </p>
             </subsection>
         </section>
     </body>
