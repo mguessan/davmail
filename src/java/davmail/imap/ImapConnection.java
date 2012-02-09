@@ -1225,6 +1225,13 @@ public class ImapConnection extends AbstractConnection {
             return session.contains("subject", tokens.nextToken());
         } else if ("BODY".equals(token)) {
             return session.contains("body", tokens.nextToken());
+        } else if ("TEXT".equals(token)) {
+            String value = tokens.nextToken();
+            return session.or(session.contains("body", value),
+                    session.contains("subject", value),
+                    session.contains("from", value),
+                    session.contains("to", value),
+                    session.contains("cc", value));
         } else if ("FROM".equals(token)) {
             return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {

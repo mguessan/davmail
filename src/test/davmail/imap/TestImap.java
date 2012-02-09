@@ -350,5 +350,18 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testSearchSince() throws IOException {
+        testSelectInbox();
+        writeLine(". UID SEARCH SINCE 1-Jan-2012 UNDELETED");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testSearchText() throws IOException {
+        testSelectInbox();
+        writeLine(". UID SEARCH TEXT test");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+
 
 }
