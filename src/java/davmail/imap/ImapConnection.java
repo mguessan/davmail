@@ -331,16 +331,20 @@ public class ImapConnection extends AbstractConnection {
                                             try {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
                                                 String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                                while (uidRangeIterator.hasNext()) {
-                                                    DavGatewayTray.switchIcon();
-                                                    ExchangeSession.Message message = uidRangeIterator.next();
-                                                    if ("copy".equalsIgnoreCase(subcommand)) {
-                                                        session.copyMessage(message, targetName);
-                                                    } else {
-                                                        session.moveMessage(message, targetName);
+                                                if (!uidRangeIterator.hasNext()) {
+                                                    sendClient(commandId + " NO " + "No message found");
+                                                } else {
+                                                    while (uidRangeIterator.hasNext()) {
+                                                        DavGatewayTray.switchIcon();
+                                                        ExchangeSession.Message message = uidRangeIterator.next();
+                                                        if ("copy".equalsIgnoreCase(subcommand)) {
+                                                            session.copyMessage(message, targetName);
+                                                        } else {
+                                                            session.moveMessage(message, targetName);
+                                                        }
                                                     }
+                                                    sendClient(commandId + " OK " + subcommand + " completed");
                                                 }
-                                                sendClient(commandId + " OK "+subcommand+" completed");
                                             } catch (HttpException e) {
                                                 sendClient(commandId + " NO " + e.getMessage());
                                             }
@@ -402,16 +406,20 @@ public class ImapConnection extends AbstractConnection {
                                     try {
                                         RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
                                         String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        while (rangeIterator.hasNext()) {
-                                            DavGatewayTray.switchIcon();
-                                            ExchangeSession.Message message = rangeIterator.next();
-                                            if ("copy".equalsIgnoreCase(command)) {
-                                                session.copyMessage(message, targetName);
-                                            } else {
-                                                session.moveMessage(message, targetName);
+                                        if (!rangeIterator.hasNext()) {
+                                            sendClient(commandId + " NO " + "No message found");
+                                        } else {
+                                            while (rangeIterator.hasNext()) {
+                                                DavGatewayTray.switchIcon();
+                                                ExchangeSession.Message message = rangeIterator.next();
+                                                if ("copy".equalsIgnoreCase(command)) {
+                                                    session.copyMessage(message, targetName);
+                                                } else {
+                                                    session.moveMessage(message, targetName);
+                                                }
                                             }
+                                            sendClient(commandId + " OK "+command+" completed");
                                         }
-                                        sendClient(commandId + " OK "+command+" completed");
                                     } catch (HttpException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
