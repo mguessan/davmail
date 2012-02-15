@@ -277,6 +277,7 @@
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/junit-*.jar"/>
             </fileset>
         </zip>
         <copy todir="dist/web">
@@ -334,6 +335,7 @@
                 <include name="davmail*.exe"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/junit-*.jar"/>
             </fileset>
         </zip>
         <antcall target="dist-nsis"/>
