@@ -327,6 +327,15 @@
                 <exclude name="lib/libgrowl-*.jar"/>
             </tarfileset>
         </tar>
+        <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
+            <fileset dir="dist">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="davmail*.exe"/>
+                <exclude name="lib/swt-*-gtk-*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
+            </fileset>
+        </zip>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
         <antcall target="dist-rpm"/>
