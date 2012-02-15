@@ -1850,12 +1850,20 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void moveToTrash() throws IOException {
-            // mark message as read
+            markRead();
+
+            ExchangeSession.this.moveToTrash(this);
+        }
+
+        /**
+         * Mark message as read.
+         *
+         * @throws IOException on error
+         */
+        public void markRead() throws IOException {
             HashMap<String, String> properties = new HashMap<String, String>();
             properties.put("read", "1");
             updateMessage(this, properties);
-
-            ExchangeSession.this.moveToTrash(this);
         }
 
         /**
@@ -2590,7 +2598,7 @@ public abstract class ExchangeSession {
             }
             return andCondition;
         } catch (ParseException e) {
-            throw new IOException(e);
+            throw new IOException(e+" "+e.getMessage());
         }
     }
 

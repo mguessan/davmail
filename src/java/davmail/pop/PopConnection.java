@@ -21,6 +21,7 @@ package davmail.pop;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.DavGateway;
+import davmail.Settings;
 import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
@@ -202,8 +203,12 @@ public class PopConnection extends AbstractConnection {
                                     int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
                                     sendOK("");
                                     DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
-                                    IOUtil.write(messages.get(messageNumber).getRawInputStream(), doubleDotOutputStream);
+                                    ExchangeSession.Message message = messages.get(messageNumber);
+                                    IOUtil.write(message.getRawInputStream(), doubleDotOutputStream);
                                     doubleDotOutputStream.close();
+                                    if (Settings.getBooleanProperty("davmail.popMarkReadOnRetr")) {
+                                        message.markRead();
+                                    }
                                 } catch (SocketException e) {
                                     // can not send error to client after a socket exception
                                     LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));

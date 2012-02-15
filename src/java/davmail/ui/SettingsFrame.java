@@ -99,6 +99,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox showStartupBannerCheckBox;
     JCheckBox disableGuiNotificationsCheckBox;
     JCheckBox imapAutoExpungeCheckBox;
+    JCheckBox popMarkReadOnRetrCheckBox;
     JComboBox enableEwsComboBox;
     JCheckBox smtpSaveInSentCheckBox;
 
@@ -411,7 +412,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(10, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(11, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
@@ -428,6 +429,8 @@ public class SettingsFrame extends JFrame {
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
+        popMarkReadOnRetrCheckBox = new JCheckBox();
+        popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetr", false));
         smtpSaveInSentCheckBox = new JCheckBox();
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         disableUpdateCheck = new JCheckBox();
@@ -449,6 +452,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_POP_MARK_READ"), popMarkReadOnRetrCheckBox,
+                BundleMessage.format("UI_POP_MARK_READ_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SAVE_IN_SENT"), smtpSaveInSentCheckBox,
                 BundleMessage.format("UI_SAVE_IN_SENT_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
@@ -568,6 +573,7 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
+        popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetrCheckBox", false));
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
 
@@ -712,6 +718,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
                 Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
+                Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
                 String selectedEwsMode = (String) enableEwsComboBox.getSelectedItem();
                 String enableEws;
                 if (EWS.equals(selectedEwsMode)) {

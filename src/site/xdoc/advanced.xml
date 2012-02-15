@@ -162,6 +162,11 @@
                         </td>
                         <td>90</td>
                     </tr>
+                    <tr>
+                        <td>POP mark read</td>
+                        <td>Mark messages read on server immediately after retrieval</td>
+                        <td>true</td>
+                    </tr>
                 </table>
             </subsection>
             <subsection name="Caldav (Calendar)">
