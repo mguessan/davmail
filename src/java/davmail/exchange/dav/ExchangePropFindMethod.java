@@ -37,13 +37,13 @@ import java.util.Map;
 public class ExchangePropFindMethod extends ExchangeDavMethod {
     protected static final Logger LOGGER = Logger.getLogger(ExchangePropFindMethod.class);
 
-    protected DavPropertyNameSet propertyNameSet;
+    protected final DavPropertyNameSet propertyNameSet;
 
-    public ExchangePropFindMethod(String uri) throws IOException {
+    public ExchangePropFindMethod(String uri) {
         this(uri, null, DepthHeader.DEPTH_INFINITY);
     }
 
-    public ExchangePropFindMethod(String uri, DavPropertyNameSet propertyNameSet, int depth) throws IOException {
+    public ExchangePropFindMethod(String uri, DavPropertyNameSet propertyNameSet, int depth) {
         super(uri);
         this.propertyNameSet = propertyNameSet;
         DepthHeader dh = new DepthHeader(depth);

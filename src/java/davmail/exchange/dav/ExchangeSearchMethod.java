@@ -38,9 +38,9 @@ import java.util.Map;
 public class ExchangeSearchMethod extends ExchangeDavMethod {
     protected static final Logger LOGGER = Logger.getLogger(ExchangeSearchMethod.class);
 
-    protected String searchRequest;
+    protected final String searchRequest;
 
-    public ExchangeSearchMethod(String uri, String searchRequest) throws IOException {
+    public ExchangeSearchMethod(String uri, String searchRequest) {
         super(uri);
         this.searchRequest = searchRequest;
     }
