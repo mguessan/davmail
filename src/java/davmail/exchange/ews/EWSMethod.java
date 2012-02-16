@@ -43,6 +43,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * EWS SOAP method.
  */
+@SuppressWarnings("Since15")
 public abstract class EWSMethod extends PostMethod {
     protected static final Logger LOGGER = Logger.getLogger(EWSMethod.class);
 
@@ -83,6 +84,7 @@ public abstract class EWSMethod extends PostMethod {
     protected SearchExpression searchExpression;
 
     protected String serverVersion;
+    protected String timezoneContext;
 
     /**
      * Build EWS method
@@ -320,11 +322,18 @@ public abstract class EWSMethod extends PostMethod {
                     "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" " +
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
                     "");
+            writer.write("<soap:Header>");
             if (serverVersion != null) {
-                writer.write("<soap:Header><t:RequestServerVersion Version=\"");
+                writer.write("<t:RequestServerVersion Version=\"");
                 writer.write(serverVersion);
-                writer.write("\"/></soap:Header>");
+                writer.write("\"/>");
             }
+            if (timezoneContext != null) {
+                writer.write("<t:TimeZoneContext><t:TimeZoneDefinition Id=\"");
+                writer.write(timezoneContext);
+                writer.write("\"/></t:TimeZoneContext>");
+            }
+            writer.write("</soap:Header>");
 
             writer.write("<soap:Body>");
             writer.write("<m:");
@@ -424,6 +433,15 @@ public abstract class EWSMethod extends PostMethod {
      */
     public void setServerVersion(String serverVersion) {
         this.serverVersion = serverVersion;
+    }
+
+    /**
+     * Set Exchange timezone context
+     *
+     * @param timezoneContext user timezone context
+     */
+    public void setTimezoneContext(String timezoneContext) {
+        this.timezoneContext = timezoneContext;
     }
 
     /**
