@@ -1297,8 +1297,6 @@ public class ImapConnection extends AbstractConnection {
         Date endDate;
         SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
         parser.setTimeZone(ExchangeSession.GMT_TIMEZONE);
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         String dateToken = tokens.nextToken();
         try {
             startDate = parser.parse(dateToken);
@@ -1317,12 +1315,12 @@ public class ImapConnection extends AbstractConnection {
         }
 
         if (token.endsWith("ON")) {
-            return session.and(session.gt(searchAttribute, dateFormatter.format(startDate)),
-                    session.lt(searchAttribute, dateFormatter.format(endDate)));
+            return session.and(session.gt(searchAttribute, session.formatSearchDate(startDate)),
+                    session.lt(searchAttribute, session.formatSearchDate(endDate)));
         } else if (token.endsWith("BEFORE")) {
-            return session.lt(searchAttribute, dateFormatter.format(startDate));
+            return session.lt(searchAttribute, session.formatSearchDate(startDate));
         } else if (token.endsWith("SINCE")) {
-            return session.gte(searchAttribute, dateFormatter.format(startDate));
+            return session.gte(searchAttribute, session.formatSearchDate(startDate));
         } else {
             throw new DavMailException("EXCEPTION_INVALID_SEARCH_PARAMETERS", dateToken);
         }
