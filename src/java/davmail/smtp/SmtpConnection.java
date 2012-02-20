@@ -244,10 +244,15 @@ public class SmtpConnection extends AbstractConnection {
      */
     protected void decodeCredentials(String encodedCredentials) throws IOException {
         String decodedCredentials = base64Decode(encodedCredentials);
-        int index = decodedCredentials.indexOf((char) 0, 1);
-        if (index > 0) {
-            userName = decodedCredentials.substring(1, index);
-            password = decodedCredentials.substring(index + 1);
+        int startIndex = decodedCredentials.indexOf((char) 0);
+        if (startIndex >=0) {
+            int endIndex = decodedCredentials.indexOf((char) 0, startIndex+1);
+            if (endIndex >=0) {
+                userName = decodedCredentials.substring(startIndex+1, endIndex);
+                password = decodedCredentials.substring(endIndex + 1);
+            } else {
+                throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
+            }
         } else {
             throw new DavMailException("EXCEPTION_INVALID_CREDENTIALS");
         }

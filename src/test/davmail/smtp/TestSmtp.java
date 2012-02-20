@@ -29,10 +29,7 @@ import org.apache.commons.codec.binary.Base64;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 /**
@@ -94,7 +91,8 @@ public class TestSmtp extends AbstractDavMailTestCase {
 
             String banner = readLine();
             assertNotNull(banner);
-            String credentials = (char) 0 + Settings.getProperty("davmail.username") + (char) 0 + Settings.getProperty("davmail.password");
+            //String credentials = (char) 0 + Settings.getProperty("davmail.username") + (char) 0 + Settings.getProperty("davmail.password");
+            String credentials = Settings.getProperty("davmail.username")  + (char) 0 + Settings.getProperty("davmail.username") + (char) 0 + Settings.getProperty("davmail.password");
             writeLine("AUTH PLAIN " + new String(new Base64().encode(credentials.getBytes())));
             assertEquals("235 OK Authenticated", readLine());
         }
@@ -112,8 +110,11 @@ public class TestSmtp extends AbstractDavMailTestCase {
     }
 
     public void sendAndCheckMessage(MimeMessage mimeMessage, String from, String bcc) throws IOException, MessagingException, InterruptedException {
+        // generate message id
+        mimeMessage.saveChanges();
+        // mimeMessage.writeTo(System.out);
+
         // copy Message-id to references header
-        mimeMessage.writeTo(System.out);
         mimeMessage.addHeader("references", mimeMessage.getHeader("message-id")[0]);
         if (from != null) {
             writeLine("MAIL FROM:" + from);
@@ -236,6 +237,18 @@ public class TestSmtp extends AbstractDavMailTestCase {
     public void testQuit() throws IOException {
         writeLine("QUIT");
         assertEquals("221 Closing connection", readLine());
+    }
+
+
+    public void testBrokenMessage() throws MessagingException, IOException, InterruptedException {
+        MimeMessage mimeMessage = new MimeMessage(null, new FileInputStream("test.eml"));
+        sendAndCheckMessage(mimeMessage);
+    }
+
+    public void testBrokenMessage2() throws MessagingException, IOException, InterruptedException {
+        MimeMessage mimeMessage = new MimeMessage(null, new org.apache.commons.codec.binary.Base64InputStream(new FileInputStream("broken64.txt")));
+        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
+        sendAndCheckMessage(mimeMessage);
     }
 
 }
