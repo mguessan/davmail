@@ -174,7 +174,7 @@ no_quest:
   Delete "$INSTDIR\lib\mail-1.4.3.jar"
   Delete "$INSTDIR\lib\slf4j-api-1.3.1.jar"
   Delete "$INSTDIR\lib\slf4j-log4j12-1.3.1.jar"
-  Delete "dist\lib\stax-api-1.0.1.jar"
+  Delete "$INSTDIR\lib\stax-api-1.0.1.jar"
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
   Delete "$INSTDIR\lib\swt-3.7-win32-x86.jar"
   Delete "$INSTDIR\lib\swt-3.7-win32-x86_64.jar"  
