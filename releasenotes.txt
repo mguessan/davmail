@@ -1,3 +1,77 @@
+** DavMail 3.9.8 released **
+Prepare 4.0 release with improved Exchange 2010 support, added IMAP MOVE extension support,
+include a new windows noinstall package and implement captcha authentication support.
+
+Documentation:
+- Doc: update roadmap
+- Doc: add a statement on adding NSIS to system path in build instructions
+- Doc: update Thunderbird IMAP setup instructions for Thunderbird 10
+- Doc: update java package reference
+- Doc: update address book setup instructions for OSX Lion
+- Doc: add Growl reference in OSX setup
+
+Enhancements:
+- Fix nsis script: delete stax api jar on uninstall
+- Fixes from audit
+- New redline ant task definition fix
+- Exclude Junit from binary packages
+- Create Windows noinstall package
+- Implement a new davmail.clientSoTimeout setting to adjust or disable connection timeout
+- Improve message on invalid OWA uri
+- Fix notification dialog test
+- Improve Pinsafe captcha display
+- workaround for broken form with empty action
+- Implement ISA server PINsafeISAFilter support (captcha image)
+- Upgrade Redline RPM
+- Add StreamScanner.java from Woodstox 4.1.2
+- Upgrade to Woodstox 4.1.2
+- Fix 3454332: davmail.sh script missing shebang 
+- add trust=true in upload-site
+
+IMAP:
+- IMAP: fix search date format for Exchange 2010 support (ErrorInvalidValueForProperty)
+- IMAP: implement SEARCH TEXT on from, to, cc, subject and body
+- IMAP: send error on COPY/MOVE when message iterator is empty
+- IMAP: implement MOVE RFC draft http://tools.ietf.org/id/draft-krecicki-imap-move-00.html
+- IMAP: fix 3480516, () instead of NIL on empty envelope header
+- IMAP: Fix 3479993, backslash in header
+
+SMTP:
+- SMTP: fix 3489007, Sparrow AUTH PLAIN authentication support
+
+Caldav:
+- Caldav: force context Timezone on Exchange 2010
+- Caldav: add missing timezones from Exchange 2007 over WebDav
+- Caldav: let users edit outgoing notifications for meeting requests
+- Caldav: fix NullPointerException on addressbook request
+- Caldav: workaround for broken items with \n as first line character
+
+POP:
+- POP: add a new setting to mark messages read after RETR
+
+EWS:
+- EWS: fix ErrorInvalidValueForProperty on search undeleted with Exchange 2010, set type Integer on PidLidImapDeleted and junk 0x1083
+- EWS: new fix to improve failover on error retrieving MimeContent
+- EWS: improve failover on error retrieving MimeContent
+- EWS: Fix 3471671, workaround for Exchange invalid chars
+
+LDAP:
+- LDAP: improve invalid dn message
+
+OSX:
+- OSX: make nodock mode the default
+- OSX: make sure davmail.jar is first in classpath
+
+DAV:
+- Dav: set contact email type to SMTP
+- Dav: add email type MAPI properties
+
+Carddav:
+- Carddav: avoid NullPointerException on broken contact
+- Carddav: fix regression on address book handling on Snow Leopard
+- Carddav: decode urlcompname before search to retrieve contacts with & in url
+
+
 ** DavMail 3.9.7 released **
 Another bugfix release with new stax based webdav search method implementation to reduce memory footprint with large folders,
 exclude non event items from calendar to avoid errors, some EWS fixes on tasks handling and a few documentation updates
