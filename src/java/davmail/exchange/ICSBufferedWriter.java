@@ -112,7 +112,8 @@ public class ICSBufferedWriter {
             char c = value.charAt(i);
             if (c == '\n') {
                 buffer.append("\\n");
-            } else {
+            // skip carriage return
+            } else if (c != '\r') {
                 buffer.append(value.charAt(i));
             }
         }
