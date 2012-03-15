@@ -18,8 +18,6 @@
  */
 package davmail.exchange.ews;
 
-import davmail.exchange.dav.PropertyType;
-
 import java.util.HashMap;
 import java.util.Map;
 

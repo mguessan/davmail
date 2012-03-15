@@ -381,7 +381,7 @@ public class SettingsFrame extends JFrame {
         allowRemoteField.setSelected(Settings.getBooleanProperty("davmail.allowRemote"));
 
         bindAddressField = new JTextField(Settings.getProperty("davmail.bindAddress"), 15);
-        clientSoTimeoutField = new JTextField(Settings.getProperty("davmail.clientSoTimeout"), 15);;
+        clientSoTimeoutField = new JTextField(Settings.getProperty("davmail.clientSoTimeout"), 15);
 
         certHashField = new JTextField(Settings.getProperty("davmail.server.certificate.hash"), 15);
 

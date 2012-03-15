@@ -512,7 +512,7 @@ public class LdapConnection extends AbstractConnection {
         DavGatewayTray.resetIcon();
     }
 
-    protected static final byte[] EMPTY_BYTE_ARRAY= new byte[0];
+    protected static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     protected void handleRequest(byte[] inbuf, int offset) throws IOException {
         //dumpBer(inbuf, offset);
@@ -545,32 +545,32 @@ public class LdapConnection extends AbstractConnection {
                                 }
                             }
                             // handle other callbacks
-                            for (Callback callback:callbacks) {
+                            for (Callback callback : callbacks) {
                                 if (callback instanceof AuthorizeCallback) {
-                                      ((AuthorizeCallback)callback).setAuthorized(true);
+                                    ((AuthorizeCallback) callback).setAuthorized(true);
                                 } else if (callback instanceof PasswordCallback) {
                                     if (password != null) {
-                                        ((PasswordCallback)callback).setPassword(password.toCharArray());
+                                        ((PasswordCallback) callback).setPassword(password.toCharArray());
                                     }
                                 }
-                                }
+                            }
                         }
                     };
                     int status;
                     if (reqBer.bytesLeft() > 0 && saslServer != null) {
-                            byte[] clientResponse = reqBer.parseOctetString(Ber.ASN_OCTET_STR, null);
-                            serverResponse = saslServer.evaluateResponse(clientResponse);
-                            status = LDAP_SUCCESS;
+                        byte[] clientResponse = reqBer.parseOctetString(Ber.ASN_OCTET_STR, null);
+                        serverResponse = saslServer.evaluateResponse(clientResponse);
+                        status = LDAP_SUCCESS;
 
-                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
-                            try {
-                                session = ExchangeSessionFactory.getInstance(userName, password);
-                                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
-                            } catch (IOException e) {
-                                serverResponse = EMPTY_BYTE_ARRAY;
-                                status = LDAP_INVALID_CREDENTIALS;
-                                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
-                            }
+                        DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
+                        try {
+                            session = ExchangeSessionFactory.getInstance(userName, password);
+                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
+                        } catch (IOException e) {
+                            serverResponse = EMPTY_BYTE_ARRAY;
+                            status = LDAP_INVALID_CREDENTIALS;
+                            DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
+                        }
 
                     } else {
                         Map<String, String> properties = new HashMap<String, String>();
@@ -1630,7 +1630,7 @@ public class LdapConnection extends AbstractConnection {
                                 try {
                                     calendar.setTime(parser.parse(value));
                                 } catch (ParseException e) {
-                                    throw new IOException(e);
+                                    throw new IOException(e + " " + e.getMessage());
                                 }
                                 if ("birthday".equals(ldapAttribute)) {
                                     value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));

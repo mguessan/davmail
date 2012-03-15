@@ -19,17 +19,11 @@
 package davmail.exchange.dav;
 
 import davmail.util.StringUtil;
-import org.apache.jackrabbit.webdav.header.DepthHeader;
-import org.apache.jackrabbit.webdav.property.DavPropertyName;
-import org.apache.jackrabbit.webdav.property.DavPropertyNameIterator;
-import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Custom Exchange PROPFIND method.
@@ -40,12 +34,16 @@ public class ExchangeSearchMethod extends ExchangeDavMethod {
 
     protected final String searchRequest;
 
+    /**
+     * Create search method.
+     *
+     * @param uri method uri
+     * @param searchRequest Exchange search request
+     */
     public ExchangeSearchMethod(String uri, String searchRequest) {
         super(uri);
         this.searchRequest = searchRequest;
     }
-
-
 
     protected byte[] generateRequestContent() {
         try {

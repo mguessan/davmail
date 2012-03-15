@@ -23,7 +23,6 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -68,6 +67,7 @@ public class PasswordPromptDialog extends JDialog {
 
         setTitle(BundleMessage.format("UI_PASSWORD_PROMPT"));
         try {
+            //noinspection Since15
             setIconImage(DavGatewayTray.getFrameIcon());
         } catch (NoSuchMethodError error) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
