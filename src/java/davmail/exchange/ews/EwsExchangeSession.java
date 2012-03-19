@@ -531,6 +531,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 mimeMessage.addHeader("Cc", item.get(Field.get("cc").getResponseName()));
                 mimeMessage.setSubject(item.get(Field.get("subject").getResponseName()));
                 String propertyValue = item.get(Field.get("body").getResponseName());
+                if (propertyValue == null) {
+                    propertyValue = "";
+                }
                 mimeMessage.setContent(propertyValue, "text/html");
 
                 mimeMessage.writeTo(baos);
