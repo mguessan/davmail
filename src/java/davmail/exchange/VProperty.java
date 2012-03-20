@@ -291,6 +291,15 @@ public class VProperty {
         return null;
     }
 
+    public String getParamValue(String paramName) {
+        Param param = getParam(paramName);
+        if (param != null) {
+            return param.getValue();
+        } else {
+            return null;
+        }
+    }
+
     protected List<Param> getParams() {
         return params;
     }

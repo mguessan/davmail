@@ -130,7 +130,7 @@ public class VCalendar extends VObject {
         return firstVevent != null && isCdoAllDay(firstVevent);
     }
 
-    protected String getEmailValue(VProperty property) {
+    public String getEmailValue(VProperty property) {
         if (property == null) {
             return null;
         }
@@ -498,7 +498,7 @@ public class VCalendar extends VObject {
     }
 
 
-    protected List<VProperty> getFirstVeventProperties(String name) {
+    public List<VProperty> getFirstVeventProperties(String name) {
         if (firstVevent == null) {
             return null;
         } else {

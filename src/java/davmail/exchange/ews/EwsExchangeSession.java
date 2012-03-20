@@ -1399,16 +1399,41 @@ public class EwsExchangeSession extends ExchangeSession {
                     updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
                 }
 
-                if (vCalendar.isMeeting()) {
-                    VCalendar.Recipients recipients = vCalendar.getRecipients(false);
-                    if (recipients.attendees != null) {
-                        updates.add(Field.createFieldUpdate("to", recipients.attendees));
+                if (vCalendar.isMeeting() && "Exchange2007_SP1".equals(serverVersion)) {
+                    Set<String> requiredAttendees = new HashSet<String>();
+                    Set<String> optionalAttendees = new HashSet<String>();
+                    List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
+                    if (attendeeProperties != null) {
+                        for (VProperty property : attendeeProperties) {
+                            String attendeeEmail = vCalendar.getEmailValue(property);
+                            if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                                EWSMethod.Attendee attendee = new EWSMethod.Attendee();
+                                attendee.email = attendeeEmail;
+                                attendee.name = property.getParamValue("CN");
+                                String attendeeRole = property.getParamValue("ROLE");
+                                if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                    requiredAttendees.add(attendeeEmail);
+                                } else {
+                                    optionalAttendees.add(attendeeEmail);
+                                }
+                                newItem.addAttendee(attendee);
+                            }
+                        }
                     }
-                    if (recipients.optionalAttendees != null) {
-                        updates.add(Field.createFieldUpdate("cc", recipients.optionalAttendees));
+                    List<VProperty> organizerProperties = vCalendar.getFirstVeventProperties("ORGANIZER");
+                    if (organizerProperties != null) {
+                        VProperty property = organizerProperties.get(0);
+                        String organizerEmail = vCalendar.getEmailValue(property);
+                        if (organizerEmail != null && organizerEmail.indexOf('@') >= 0) {
+                            updates.add(Field.createFieldUpdate("from", organizerEmail));
+                        }
                     }
-                    if (recipients.organizer != null && !vCalendar.isMeetingOrganizer()) {
-                        updates.add(Field.createFieldUpdate("from", recipients.optionalAttendees));
+
+                    if (requiredAttendees.size() > 0) {
+                        updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
+                    }
+                    if (optionalAttendees.size() > 0) {
+                        updates.add(Field.createFieldUpdate("cc",  StringUtil.join(optionalAttendees, ", ")));
                     }
                 }
 
@@ -1936,7 +1961,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
 
-    private FolderId getFolderId(String folderPath) throws IOException {
+    public FolderId getFolderId(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId == null) {
             throw new HttpNotFoundException("Folder '" + folderPath + "' not found");
