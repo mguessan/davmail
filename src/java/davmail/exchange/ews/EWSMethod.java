@@ -79,6 +79,7 @@ public abstract class EWSMethod extends PostMethod {
 
     protected List<Item> responseItems;
     protected String errorDetail;
+    protected String errorDescription;
     protected Item item;
 
     protected SearchExpression searchExpression;
@@ -464,9 +465,9 @@ public abstract class EWSMethod extends PostMethod {
          * attendee fullname
          */
         public String name;
-    }
+            }
 
-    /**
+        /**
      * Recurring event occurrence
      */
     public static class Occurrence {
@@ -682,7 +683,7 @@ public abstract class EWSMethod extends PostMethod {
                     && !"ErrorItemNotFound".equals(errorDetail)
                     ) {
                 try {
-                    throw new EWSException(errorDetail + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
+                    throw new EWSException(errorDetail +" "+((errorDescription!=null)?errorDescription:"")+ "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     throw new EWSException(e.getMessage());
                 }
@@ -765,6 +766,11 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void handleErrors(XMLStreamReader reader) throws XMLStreamException {
         String result = handleTag(reader, "ResponseCode");
+        // store error description;
+        String messageText = handleTag(reader, "MessageText");
+        if (messageText != null) {
+            errorDescription = messageText;
+        }
         if (errorDetail == null && result != null
                 && !"NoError".equals(result)
                 && !"ErrorNameResolutionMultipleResults".equals(result)
