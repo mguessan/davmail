@@ -728,7 +728,7 @@ public class ImapConnection extends AbstractConnection {
                     } catch (ParseException e) {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
-                } else if (param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
+                } else if (param.equals("RFC822") || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
                     // get full param
                     if (param.indexOf('[') >= 0) {
                         StringBuilder paramBuffer = new StringBuilder(param);
