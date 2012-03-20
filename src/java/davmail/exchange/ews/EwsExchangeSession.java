@@ -45,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -2046,6 +2047,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 serverVersion = ewsMethod.getServerVersion();
             }
             ewsMethod.checkSuccess();
+        } catch (SocketException e) {
+            LOGGER.error(e+" "+e.getMessage(), e);
+            throw new EWSException(e+" "+e.getMessage());
         } finally {
             ewsMethod.releaseConnection();
         }
