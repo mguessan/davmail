@@ -2748,6 +2748,7 @@ public class DavExchangeSession extends ExchangeSession {
                 messageProperties.add(Field.getPropertyName("to"));
                 messageProperties.add(Field.getPropertyName("cc"));
                 messageProperties.add(Field.getPropertyName("subject"));
+                messageProperties.add(Field.getPropertyName("date"));
                 messageProperties.add(Field.getPropertyName("htmldescription"));
                 messageProperties.add(Field.getPropertyName("body"));
                 PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(message.permanentUrl), messageProperties, 0);
@@ -2760,6 +2761,10 @@ public class DavExchangeSession extends ExchangeSession {
                     String propertyValue = getPropertyIfExists(properties, "contentclass");
                     if (propertyValue != null) {
                         mimeMessage.addHeader("Content-class", propertyValue);
+                    }
+                    propertyValue = getPropertyIfExists(properties, "date");
+                    if (propertyValue != null) {
+                        mimeMessage.setSentDate(parseDateFromExchange(propertyValue));
                     }
                     propertyValue = getPropertyIfExists(properties, "from");
                     if (propertyValue != null) {
@@ -3057,6 +3062,18 @@ public class DavExchangeSession extends ExchangeSession {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
                 dateFormat.setTimeZone(GMT_TIMEZONE);
                 result = dateFormat.format(getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue));
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+        }
+        return result;
+    }
+
+    protected Date parseDateFromExchange(String exchangeDateValue) throws DavMailException {
+        Date result = null;
+        if (exchangeDateValue != null) {
+            try {
+                result = getExchangeZuluDateFormatMillisecond().parse(exchangeDateValue);
             } catch (ParseException e) {
                 throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
             }

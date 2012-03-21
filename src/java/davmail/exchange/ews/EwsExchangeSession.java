@@ -521,12 +521,14 @@ public class EwsExchangeSession extends ExchangeSession {
                 getItemMethod.addAdditionalProperty(Field.get("to"));
                 getItemMethod.addAdditionalProperty(Field.get("cc"));
                 getItemMethod.addAdditionalProperty(Field.get("subject"));
+                getItemMethod.addAdditionalProperty(Field.get("date"));
                 getItemMethod.addAdditionalProperty(Field.get("body"));
                 executeMethod(getItemMethod);
                 EWSMethod.Item item = getItemMethod.getResponseItem();
 
                 MimeMessage mimeMessage = new MimeMessage((Session) null);
                 mimeMessage.addHeader("Content-class", item.get(Field.get("contentclass").getResponseName()));
+                mimeMessage.setSentDate(parseDateFromExchange(item.get(Field.get("date").getResponseName())));
                 mimeMessage.addHeader("From", item.get(Field.get("from").getResponseName()));
                 mimeMessage.addHeader("To", item.get(Field.get("to").getResponseName()));
                 mimeMessage.addHeader("Cc", item.get(Field.get("cc").getResponseName()));
@@ -2184,6 +2186,18 @@ public class EwsExchangeSession extends ExchangeSession {
             }
         }
         return contacts;
+    }
+
+    protected Date parseDateFromExchange(String exchangeDateValue) throws DavMailException {
+        Date dateValue = null;
+        if (exchangeDateValue != null) {
+            try {
+                dateValue = getExchangeZuluDateFormat().parse(exchangeDateValue);
+            } catch (ParseException e) {
+                throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
+            }
+        }
+        return dateValue;
     }
 
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
