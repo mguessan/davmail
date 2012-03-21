@@ -2779,7 +2779,7 @@ public class DavExchangeSession extends ExchangeSession {
                     }
                     propertyValue = getPropertyIfExists(properties, "htmldescription");
                     if (propertyValue != null) {
-                        mimeMessage.setContent(propertyValue, "text/html");
+                        mimeMessage.setContent(propertyValue, "text/html; charset=UTF-8");
                     } else {
                         propertyValue = getPropertyIfExists(properties, "body");
                         if (propertyValue != null) {

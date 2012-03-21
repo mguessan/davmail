@@ -535,7 +535,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (propertyValue == null) {
                     propertyValue = "";
                 }
-                mimeMessage.setContent(propertyValue, "text/html");
+                mimeMessage.setContent(propertyValue, "text/html; charset=UTF-8");
 
                 mimeMessage.writeTo(baos);
                 if (LOGGER.isDebugEnabled()) {
