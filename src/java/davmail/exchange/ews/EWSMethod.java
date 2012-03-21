@@ -24,10 +24,7 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpConnection;
-import org.apache.commons.httpclient.HttpState;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Logger;
@@ -1021,7 +1018,7 @@ public abstract class EWSMethod extends PostMethod {
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
             try {
                 if (DavGatewayHttpClientFacade.isGzipEncoded(this)) {
-                    processResponseStream(new GZIPInputStream(getResponseBodyAsStream()));
+                    processResponseStream(new ChunkedInputStream(new GZIPInputStream(getResponseBodyAsStream())));
                 } else {
                     processResponseStream(getResponseBodyAsStream());
                 }
