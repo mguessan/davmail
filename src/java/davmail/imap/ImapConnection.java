@@ -651,7 +651,7 @@ public class ImapConnection extends AbstractConnection {
             String command = line.substring(spaceIndex + 1);
             if (command.equals(lastCommand)) {
                 lastCommandCount++;
-                if (lastCommandCount > 100 && !"NOOP".equalsIgnoreCase(lastCommand)) {
+                if (lastCommandCount > 100 && !"NOOP".equalsIgnoreCase(lastCommand) && !"IDLE".equalsIgnoreCase(lastCommand)) {
                     // more than a hundred times the same command => this is a client infinite loop, close connection
                     throw new IOException("Infinite loop on command " + command + " detected");
                 }
