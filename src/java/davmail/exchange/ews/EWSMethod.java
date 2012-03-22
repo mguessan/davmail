@@ -19,6 +19,7 @@
 package davmail.exchange.ews;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
@@ -106,7 +107,9 @@ public abstract class EWSMethod extends PostMethod {
         this.itemType = itemType;
         this.methodName = methodName;
         this.responseCollectionName = responseCollectionName;
-        setRequestHeader("Accept-Encoding", "gzip");
+        if (Settings.getBooleanProperty("davmail.acceptEncodingGzip", true)) {
+            setRequestHeader("Accept-Encoding", "gzip");
+        }
         setRequestEntity(new RequestEntity() {
             byte[] content;
 
@@ -1018,7 +1021,7 @@ public abstract class EWSMethod extends PostMethod {
         if (contentTypeHeader != null && "text/xml; charset=utf-8".equals(contentTypeHeader.getValue())) {
             try {
                 if (DavGatewayHttpClientFacade.isGzipEncoded(this)) {
-                    processResponseStream(new ChunkedInputStream(new GZIPInputStream(getResponseBodyAsStream())));
+                    processResponseStream(new GZIPInputStream(getResponseBodyAsStream()));
                 } else {
                     processResponseStream(getResponseBodyAsStream());
                 }
