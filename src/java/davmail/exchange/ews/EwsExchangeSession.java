@@ -38,6 +38,7 @@ import org.apache.commons.httpclient.params.HttpClientParams;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.BufferedReader;
@@ -1292,6 +1293,8 @@ public class EwsExchangeSession extends ExchangeSession {
             // first try to load existing event
             String currentEtag = null;
             ItemId currentItemId = null;
+            String ownerResponseReply = null;
+
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
@@ -1381,8 +1384,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
                 // force urlcompname
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
-                    updates.add(Field.createFieldUpdate("apptstateflags", "1"));
+                if (vCalendar.isMeeting()) {
+                    if (vCalendar.isMeetingOrganizer()) {
+                        updates.add(Field.createFieldUpdate("apptstateflags", "1"));
+                    } else {
+                        updates.add(Field.createFieldUpdate("apptstateflags", "3"));
+                    }
                 } else {
                     updates.add(Field.createFieldUpdate("apptstateflags", "0"));
                 }
@@ -1409,16 +1416,24 @@ public class EwsExchangeSession extends ExchangeSession {
                         for (VProperty property : attendeeProperties) {
                             String attendeeEmail = vCalendar.getEmailValue(property);
                             if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                                EWSMethod.Attendee attendee = new EWSMethod.Attendee();
-                                attendee.email = attendeeEmail;
-                                attendee.name = property.getParamValue("CN");
+                                if (email.equals(attendeeEmail)) {
+                                    String ownerPartStat = property.getParamValue("PARTSTAT");
+                                    if ("ACCEPTED".equals(ownerPartStat)) {
+                                        ownerResponseReply = "AcceptItem";
+                                    // do not send DeclineItem to avoid deleting target event
+                                    //} else if  ("DECLINED".equals(ownerPartStat)) {
+                                    //    ownerResponseReply = "DeclineItem";
+                                    } else if  ("TENTATIVE".equals(ownerPartStat)) {
+                                        ownerResponseReply = "TentativelyAcceptItem";
+                                    }
+                                }
+                                InternetAddress internetAddress = new InternetAddress(attendeeEmail, property.getParamValue("CN"));
                                 String attendeeRole = property.getParamValue("ROLE");
                                 if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                    requiredAttendees.add(attendeeEmail);
+                                    requiredAttendees.add(internetAddress.toString());
                                 } else {
-                                    optionalAttendees.add(attendeeEmail);
+                                    optionalAttendees.add(internetAddress.toString());
                                 }
-                                newItem.addAttendee(attendee);
                             }
                         }
                     }
@@ -1474,6 +1489,25 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
+            // force responsetype on Exchange 2007
+            if (ownerResponseReply != null) {
+                EWSMethod.Item responseTypeItem = new EWSMethod.Item();
+                responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
+                responseTypeItem.type = ownerResponseReply;
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
+                executeMethod(createOrUpdateItemMethod);
+
+                // force urlcompname again
+                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                        ConflictResolution.AlwaysOverwrite, 
+                        SendMeetingInvitationsOrCancellations.SendToNone,
+                        new ItemId(createOrUpdateItemMethod.getResponseItem()),
+                        updates);
+                executeMethod(createOrUpdateItemMethod);
+            }
+
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
             getItemMethod.addAdditionalProperty(Field.get("etag"));
@@ -1510,6 +1544,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
+                    getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
                     getItemMethod.addAdditionalProperty(Field.get("requiredattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("optionalattendees"));
                     getItemMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
@@ -1570,7 +1605,12 @@ public class EwsExchangeSession extends ExchangeSession {
                         for (EWSMethod.Attendee attendee : attendees) {
                             VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                             attendeeProperty.addParam("CN", attendee.name);
-                            attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                            String myResponseType =  getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
+                            if ("Exchange2007_SP1".equals(serverVersion) && email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
+                                attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
+                            } else {
+                                attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                            }
                             //attendeeProperty.addParam("RSVP", "TRUE");
                             attendeeProperty.addParam("ROLE", attendee.role);
                             localVCalendar.addFirstVeventProperty(attendeeProperty);

@@ -491,6 +491,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<Attendee> attendees;
         protected final List<String> fieldNames = new ArrayList<String>();
         protected List<Occurrence> occurrences;
+        protected ItemId referenceItemId;
 
         @Override
         public String toString() {
@@ -523,6 +524,9 @@ public abstract class EWSMethod extends PostMethod {
                 writer.write("<t:MimeContent>");
                 writer.write(new String(mimeContent));
                 writer.write("</t:MimeContent>");
+            }
+            if (referenceItemId != null) {
+                referenceItemId.write(writer);
             }
             // write ordered fields
             for (String key : fieldNames) {
@@ -726,7 +730,7 @@ public abstract class EWSMethod extends PostMethod {
      */
     public Item getResponseItem() throws EWSException {
         checkSuccess();
-        if (responseItems != null && responseItems.size() == 1) {
+        if (responseItems != null && responseItems.size() > 0) {
             return responseItems.get(0);
         } else {
             return null;
@@ -871,6 +875,18 @@ public abstract class EWSMethod extends PostMethod {
             }
         }
     }
+    
+    public static String responseTypeToPartstat(String responseType) {
+        if ("Accept".equals(responseType)) {
+            return "ACCEPTED";
+        } else if ("Tentative".equals(responseType)) {
+            return "TENTATIVE";
+        } else if ("Decline".equals(responseType)) {
+            return "DECLINED";
+        } else {
+            return "NEEDS-ACTION";
+        }
+    }
 
     protected void handleAttendee(XMLStreamReader reader, Item item, String attendeeType) throws XMLStreamException {
         Attendee attendee = new Attendee();
@@ -889,15 +905,7 @@ public abstract class EWSMethod extends PostMethod {
                     attendee.name = XMLStreamUtil.getElementText(reader);
                 } else if ("ResponseType".equals(tagLocalName)) {
                     String responseType = XMLStreamUtil.getElementText(reader);
-                    if ("Accept".equals(responseType)) {
-                        attendee.partstat = "ACCEPTED";
-                    } else if ("Tentative".equals(responseType)) {
-                        attendee.partstat = "TENTATIVE";
-                    } else if ("Decline".equals(responseType)) {
-                        attendee.partstat = "DECLINED";
-                    } else {
-                        attendee.partstat = "NEEDS-ACTION";
-                    }
+                    attendee.partstat = responseTypeToPartstat(responseType);
                 }
             }
         }

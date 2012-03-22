@@ -25,6 +25,7 @@ import java.io.Writer;
  * Item id.
  */
 public class ItemId {
+    protected final String name;
     protected final String id;
     protected final String changeKey;
 
@@ -34,6 +35,25 @@ public class ItemId {
      * @param item response item
      */
     public ItemId(EWSMethod.Item item) {
+        this("ItemId", item);
+    }
+
+    /**
+     * Build Item id object from item id.
+     *
+     * @param itemId item id
+     */
+    public ItemId(String itemId) {
+        this("ItemId", itemId);
+    }
+
+    /**
+     * Build Item id from response item.
+     *
+     * @param item response item
+     */
+    public ItemId(String name, EWSMethod.Item item) {
+        this.name = name;
         this.id = item.get("ItemId");
         this.changeKey = item.get("ChangeKey");
     }
@@ -43,7 +63,8 @@ public class ItemId {
      *
      * @param itemId item id
      */
-    public ItemId(String itemId) {
+    public ItemId(String name, String itemId) {
+        this.name = name;
         this.id = itemId;
         this.changeKey = null;
     }
@@ -55,7 +76,9 @@ public class ItemId {
      * @throws IOException on error
      */
     public void write(Writer writer) throws IOException {
-        writer.write("<t:ItemId Id=\"");
+        writer.write("<t:");
+        writer.write(name);
+        writer.write(" Id=\"");
         writer.write(id);
         if (changeKey != null) {
             writer.write("\" ChangeKey=\"");

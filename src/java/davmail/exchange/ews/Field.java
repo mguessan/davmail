@@ -196,6 +196,7 @@ public final class Field {
         FIELD_MAP.put("ismeeting", new UnindexedFieldURI("item:IsMeeting"));
         FIELD_MAP.put("apptstateflags", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8217, ExtendedFieldURI.PropertyType.Integer)); // PidLidAppointmentStateFlags 1: Meeting, 2: Received, 4: Cancelled
         FIELD_MAP.put("appointmentstate", new UnindexedFieldURI("calendar:AppointmentState"));
+        FIELD_MAP.put("myresponsetype", new UnindexedFieldURI("calendar:MyResponseType"));
         FIELD_MAP.put("calendaruid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:calendar:uid", ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("meetingtimezone", new UnindexedFieldURI("calendar:MeetingTimeZone"));
