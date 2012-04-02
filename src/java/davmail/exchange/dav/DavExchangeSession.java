@@ -2362,7 +2362,7 @@ public class DavExchangeSession extends ExchangeSession {
                 if (timezoneId != null) {
                     propertyList.add(Field.createDavProperty("timezoneid", timezoneId));
                 }
-                String patchMethodUrl = URIUtil.encodePath(folderPath) + '/' + UUID.randomUUID().toString() + ".EML";
+                String patchMethodUrl = folderPath + '/' + UUID.randomUUID().toString() + ".EML";
                 PropPatchMethod patchMethod = new PropPatchMethod(URIUtil.encodePath(patchMethodUrl), propertyList);
                 try {
                     int statusCode = httpClient.executeMethod(patchMethod);
