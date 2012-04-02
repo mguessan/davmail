@@ -30,6 +30,8 @@
                     <code>Log File Path</code>
                     setting.
                 </p>
+                <p>Note: on OSX Lion the Library folder is hidden, a simple way to access it is to launch
+                Console (Finder, Go to Utilities), right click on davmail.log and choose Reveal in Finder.</p>
             </subsection>
             <subsection name="General">
                 <p>
