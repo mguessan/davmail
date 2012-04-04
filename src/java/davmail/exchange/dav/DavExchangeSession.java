@@ -2340,6 +2340,9 @@ public class DavExchangeSession extends ExchangeSession {
                     int statusCode = httpClient.executeMethod(postMethod);
                     if (statusCode == HttpStatus.SC_OK) {
                         fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                        if (fakeEventUrl != null) {
+                            fakeEventUrl = URIUtil.decode(fakeEventUrl);
+                        }
                     }
                 } finally {
                     postMethod.releaseConnection();
