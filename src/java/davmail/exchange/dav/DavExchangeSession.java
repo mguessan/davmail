@@ -1095,7 +1095,7 @@ public class DavExchangeSession extends ExchangeSession {
         public Contact(MultiStatusResponse multiStatusResponse) throws URIException, DavMailException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
-            permanentUrl = getPropertyIfExists(properties, "permanenturl");
+            permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
             for (String attributeName : CONTACT_ATTRIBUTES) {
@@ -1286,7 +1286,7 @@ public class DavExchangeSession extends ExchangeSession {
         public Event(MultiStatusResponse multiStatusResponse) throws URIException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
-            permanentUrl = getPropertyIfExists(properties, "permanenturl");
+            permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
             etag = getPropertyIfExists(properties, "etag");
             displayName = getPropertyIfExists(properties, "displayname");
             subject = getPropertyIfExists(properties, "subject");
@@ -1559,7 +1559,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (Settings.getBooleanProperty("davmail.deleteBroken")) {
                 LOGGER.warn("Deleting broken event at: " + permanentUrl);
                 try {
-                    DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, permanentUrl);
+                    DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, encodeAndFixUrl(permanentUrl));
                 } catch (IOException ioe) {
                     LOGGER.warn("Unable to delete broken event at: " + permanentUrl);
                 }
@@ -1939,6 +1939,14 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
+    protected String getURLPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
+         String result = getPropertyIfExists(properties, alias);
+        if (result != null) {
+            result = URIUtil.decode(result);
+        }
+        return result;
+    }
+
     protected int getIntPropertyIfExists(DavPropertySet properties, String alias) {
         DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
@@ -1985,7 +1993,7 @@ public class DavExchangeSession extends ExchangeSession {
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
 
-        message.permanentUrl = getPropertyIfExists(properties, "permanenturl");
+        message.permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
         message.size = getIntPropertyIfExists(properties, "messageSize");
         message.uid = getPropertyIfExists(properties, "uid");
         message.imapUid = getLongPropertyIfExists(properties, "imapUid");
@@ -2201,7 +2209,7 @@ public class DavExchangeSession extends ExchangeSession {
                 List<ExchangeSession.Event> events = getAllEvents(folderPath);
                 for (ExchangeSession.Event event : events) {
                     if (itemName.equals(event.getName())) {
-                        responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, ((DavExchangeSession.Event) event).getPermanentUrl(), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
+                        responses = DavGatewayHttpClientFacade.executePropFindMethod(httpClient, encodeAndFixUrl(((DavExchangeSession.Event) event).getPermanentUrl()), 0, EVENT_REQUEST_PROPERTIES_NAME_SET);
                         break;
                     }
                 }
@@ -2629,7 +2637,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        PropPatchMethod patchMethod = new PropPatchMethod(message.permanentUrl, buildProperties(properties)) {
+        PropPatchMethod patchMethod = new PropPatchMethod(encodeAndFixUrl(message.permanentUrl), buildProperties(properties)) {
             @Override
             protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
                 // ignore response body, sometimes invalid with exchange mapi properties
@@ -2652,7 +2660,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
         LOGGER.debug("Delete " + message.permanentUrl + " (" + message.messageUrl + ')');
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, message.permanentUrl);
+        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, encodeAndFixUrl(message.permanentUrl));
     }
 
     /**
@@ -2754,7 +2762,7 @@ public class DavExchangeSession extends ExchangeSession {
                 messageProperties.add(Field.getPropertyName("date"));
                 messageProperties.add(Field.getPropertyName("htmldescription"));
                 messageProperties.add(Field.getPropertyName("body"));
-                PropFindMethod propFindMethod = new PropFindMethod(URIUtil.encodePath(message.permanentUrl), messageProperties, 0);
+                PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(message.permanentUrl), messageProperties, 0);
                 DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
                 MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
                 if (responses.getResponses().length > 0) {
@@ -2950,7 +2958,7 @@ public class DavExchangeSession extends ExchangeSession {
     protected void moveToTrash(ExchangeSession.Message message) throws IOException {
         String destination = URIUtil.encodePath(deleteditemsUrl) + '/' + UUID.randomUUID().toString();
         LOGGER.debug("Deleting : " + message.permanentUrl + " to " + destination);
-        MoveMethod method = new MoveMethod(message.permanentUrl, destination, false);
+        MoveMethod method = new MoveMethod(encodeAndFixUrl(message.permanentUrl), destination, false);
         method.addRequestHeader("Allow-rename", "t");
 
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
