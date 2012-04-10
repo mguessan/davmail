@@ -1899,7 +1899,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public boolean isMainCalendar(String folderPath) {
-        return "calendar".equals(folderPath) || (currentMailboxPath + "/calendar").equals(folderPath);
+        return "calendar".equalsIgnoreCase(folderPath) || (currentMailboxPath + "/calendar").equalsIgnoreCase(folderPath);
     }
 
     @Override
