@@ -53,6 +53,8 @@ public class UnindexedFieldURI implements FieldURI {
             itemType = "CalendarItem";
         } else if (fieldURI.startsWith("task") && itemType != null) {
             itemType = "Task";
+        } else if (fieldURI.startsWith("contacts") && itemType != null) {
+            itemType = "Contact";
         }
         if (itemType != null) {
             appendTo(buffer);

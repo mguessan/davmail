@@ -1118,9 +1118,13 @@ public class EwsExchangeSession extends ExchangeSession {
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
                     updates.add(Field.createFieldUpdate("haspicture", "true"));
-                } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")) {
+                } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
+                        && !entry.getKey().equals("fileas")) {
                     updates.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
+            }
+            if (get("fileas") != null) {
+                updates.add(Field.createFieldUpdate("fileas", get("fileas")));
             }
             // handle email addresses
             IndexedFieldUpdate emailFieldUpdate = null;

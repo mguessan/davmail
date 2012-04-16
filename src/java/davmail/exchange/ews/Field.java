@@ -93,7 +93,8 @@ public final class Field {
         FIELD_MAP.put("subject", new ExtendedFieldURI(0x0037, ExtendedFieldURI.PropertyType.String));
 
         FIELD_MAP.put("middlename", new ExtendedFieldURI(0x3A44, ExtendedFieldURI.PropertyType.String));
-        FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
+        //FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
+        FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs"));
 
         FIELD_MAP.put("homepostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801A, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("otherpostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801C, ExtendedFieldURI.PropertyType.String));
