@@ -164,7 +164,7 @@ public final class StringUtil {
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
-    private static final Pattern PIPE_PATTERN = Pattern.compile("|");
+    private static final Pattern PIPE_PATTERN = Pattern.compile("\\|");
 
     // WebDav search parameter encode
     private static final Pattern APOS_PATTERN = Pattern.compile("'");

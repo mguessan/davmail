@@ -102,4 +102,9 @@ public class StringUtilTest extends TestCase {
         assertEquals("test", StringUtil.removeQuotes("test"));
         assertEquals("test", StringUtil.removeQuotes("\"test\""));
     }
+
+    public void testEncodePipe() {
+        assertEquals("test %7C", StringUtil.encodeUrlcompname("test |"));
+        assertEquals("test |", StringUtil.decodeUrlcompname("test %7C"));
+    }
 }
