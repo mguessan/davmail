@@ -150,6 +150,7 @@ public final class StringUtil {
     private static final Pattern URLENCODED_PERCENT_PATTERN = Pattern.compile("%25");
     private static final Pattern URLENCODED_HASH_PATTERN = Pattern.compile("%23");
     private static final Pattern URLENCODED_STAR_PATTERN = Pattern.compile("%2A");
+    private static final Pattern URLENCODED_PIPE_PATTERN = Pattern.compile("%7C");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
@@ -163,6 +164,7 @@ public final class StringUtil {
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
+    private static final Pattern PIPE_PATTERN = Pattern.compile("|");
 
     // WebDav search parameter encode
     private static final Pattern APOS_PATTERN = Pattern.compile("'");
@@ -329,6 +331,9 @@ public final class StringUtil {
         if (result.indexOf("_x000D__x000A_") >= 0) {
             result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
         }
+        if (result.indexOf('|') >= 0) {
+            result = PIPE_PATTERN.matcher(result).replaceAll("%7C");
+        }
         return result;
     }
 
@@ -372,6 +377,10 @@ public final class StringUtil {
             if (result.indexOf("%2A") >= 0) {
                 result = URLENCODED_STAR_PATTERN.matcher(result).replaceAll("*");
             }
+            if (result.indexOf("%7C") >= 0) {
+                result = URLENCODED_PIPE_PATTERN.matcher(result).replaceAll("|");
+            }
+            // last replace %
             if (result.indexOf("%25") >= 0) {
                 result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
             }
