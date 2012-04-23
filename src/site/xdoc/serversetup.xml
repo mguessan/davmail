@@ -78,11 +78,11 @@ davmail.logFilePath=/var/log/davmail.log]]>
         </section>
 
         <section name="Register DavMail windows service">
-            <p>A new experimental davmailservice.exe wrapper is available in the windows
+            <p>A new WinRun4J davmailservice.exe wrapper is available in the windows
                 package.
             </p>
             <p>To register DavMail as a windows service, use:
-                <source>davmailservice install</source>
+                <source>davmailservice --WinRun4J:RegisterService</source>
                 or
                 <source>sc create DavMail binPath= \path\to\davmailservice.exe type= own start= auto</source>
             </p>
