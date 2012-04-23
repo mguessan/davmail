@@ -104,6 +104,8 @@
                 <include name="*.jar"/>
                 <include name="*.jnilib"/>
                 <exclude name="swt*.jar"/>
+                <exclude name="junit-*.jar"/>
+                <exclude name="winrun4j-*.jar"/>
             </jarfileset>
         </jarbundler>
         <!-- prepare hide from dock option -->
@@ -267,7 +269,8 @@
                  classpathref="classpath"/>
         <jsmoothgen project="davmail.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <jsmoothgen project="davmailconsole.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
-        <jsmoothgen project="davmailservice.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
+        <!-- use WinRun4J to generate DavMail service -->
+        <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
         <jsmoothgen project="davmail64.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
         <zip file="dist/davmail-${release-name}.zip">
             <fileset dir="dist">
@@ -279,6 +282,7 @@
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
+                <exclude name="lib/winrun4j-*.jar"/>
             </fileset>
         </zip>
         <copy todir="dist/web">

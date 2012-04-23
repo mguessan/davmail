@@ -104,6 +104,7 @@ Section "MainSection" SEC01
   File "dist\lib\stax2-api-3.1.1.jar"
   File "dist\lib\swt-3.7-win32-x86.jar"
   File "dist\lib\swt-3.7-win32-x86_64.jar"
+  File "dist\lib\winrun4j-0.4.4.jar"
   File "dist\lib\woodstox-core-asl-4.1.2.jar"
   File "dist\lib\xercesImpl-2.8.1.jar"
 
@@ -178,6 +179,7 @@ no_quest:
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
   Delete "$INSTDIR\lib\swt-3.7-win32-x86.jar"
   Delete "$INSTDIR\lib\swt-3.7-win32-x86_64.jar"  
+  Delete "$INSTDIR\lib\winrun4j-0.4.4.jar"
   Delete "$INSTDIR\lib\woodstox-core-asl-4.1.2.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
