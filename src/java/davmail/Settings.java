@@ -189,10 +189,14 @@ public final class Settings {
      */
     public static String getLogFilePath() {
         String logFilePath = Settings.getProperty("davmail.logFilePath");
-        // use default log file path on Mac OS X
+        // set default log file path
         if ((logFilePath == null || logFilePath.length() == 0)) {
             if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+                // store davmail.log in OSX Logs directory
                 logFilePath = System.getProperty("user.home") + "/Library/Logs/DavMail/davmail.log";
+            } else {
+                // store davmail.log in user home folder
+                logFilePath = System.getProperty("user.home") + "/davmail.log";
             }
         } else {
             File logFile = new File(logFilePath);
