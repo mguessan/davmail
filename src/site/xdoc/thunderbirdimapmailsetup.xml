@@ -44,7 +44,7 @@
                     <code>Re-test</code> to validate account settings, then <code>Create Account</code>:
                 </p>
                 <div style="width: 100%;text-align: center">
-                    <img src="images/thunderbirdAccount3.png" alt=""/>
+                    <img src="images/thunderbirdAccountPop3.png" alt=""/>
                 </div>
 
 
@@ -56,6 +56,9 @@
                 <p>Note: as communication between Thunderbird and DavMail is local, cleartext mode is not an issue,
                     except on shared machines (e.g. Terminal server).</p>
 
+                <p>Proceed to
+                    <a href="thunderbirdcalendarsetup.html">Thunderbird calendar setup</a>
+                </p>
             </subsection>
         </section>
     </body>

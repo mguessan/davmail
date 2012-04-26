@@ -246,7 +246,7 @@ calendar.debug.log.verbose=true]]></source>
 
             <subsection name="Mail">
                 <p>
-                    <strong>Timout errors during IMAP sync (broken pipe)</strong>
+                    <strong>Timeout errors during IMAP sync (broken pipe)</strong>
                 </p>
                 <p>If you Exchange server is too slow, you may get timeout errors during
                     message fetch.
