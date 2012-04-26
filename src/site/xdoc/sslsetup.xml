@@ -28,6 +28,8 @@
                     pair
                 </p>
 
+                <p>Another note : do not use blank passwords, both keystore and key passwords must be set</p>
+
                 <p>If you have an official certificate in PEM form, convert it to PKCS12 with the following command:</p>
                 <source>openssl pkcs12 -export -in cert-davmail.pem -inkey privatekey-davmail.key -certfile
                     chain-davmail.pem -out davmail.p12
