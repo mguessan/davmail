@@ -363,5 +363,29 @@ public class TestImap extends AbstractImapTestCase {
     }
 
 
+    public void testDraftMessageMessageId() throws IOException, InterruptedException, MessagingException {
+        testCreateFolder();
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.setText("Test message");
+        mimeMessage.setSubject("Test subject");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        byte[] content = baos.toByteArray();
+        writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
+        assertEquals("+ send literal data", readLine());
+        writeLine(new String(content));
+        assertEquals(". OK APPEND completed", readFullAnswer("."));
 
+        writeLine(". UID SEARCH UNDELETED (HEADER Message-ID "+mimeMessage.getMessageID().substring(1, mimeMessage.getMessageID().length()-1)+")");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        testDeleteFolder();
+    }
+
+    public void testFetchOSX() throws IOException {
+        testSelectInbox();
+        writeLine(". FETCH 1:* (FLAGS UID BODY.PEEK[HEADER.FIELDS (content-class)])");
+        assertEquals(". OK FETCH completed", readFullAnswer("."));
+    }
 }

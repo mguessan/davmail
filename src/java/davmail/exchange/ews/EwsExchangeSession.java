@@ -568,6 +568,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         message.size = response.getInt(Field.get("messageSize").getResponseName());
         message.uid = response.get(Field.get("uid").getResponseName());
+        message.contentClass = response.get(Field.get("contentclass").getResponseName());
         message.imapUid = response.getLong(Field.get("imapUid").getResponseName());
         message.read = response.getBoolean(Field.get("read").getResponseName());
         message.junk = response.getBoolean(Field.get("junk").getResponseName());

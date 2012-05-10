@@ -1996,6 +1996,7 @@ public class DavExchangeSession extends ExchangeSession {
         message.permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
         message.size = getIntPropertyIfExists(properties, "messageSize");
         message.uid = getPropertyIfExists(properties, "uid");
+        message.contentClass = getPropertyIfExists(properties, "contentclass");
         message.imapUid = getLongPropertyIfExists(properties, "imapUid");
         message.read = "1".equals(getPropertyIfExists(properties, "read"));
         message.junk = "1".equals(getPropertyIfExists(properties, "junk"));

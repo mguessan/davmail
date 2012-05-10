@@ -418,7 +418,7 @@ public class ImapConnection extends AbstractConnection {
                                                     session.moveMessage(message, targetName);
                                                 }
                                             }
-                                            sendClient(commandId + " OK "+command+" completed");
+                                            sendClient(commandId + " OK " + command + " completed");
                                         }
                                     } catch (HttpException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
@@ -753,8 +753,6 @@ public class ImapConnection extends AbstractConnection {
                     InputStream partInputStream = null;
                     OutputStream partOutputStream = null;
 
-                    // load message
-                    MimeMessage mimeMessage = message.getMimeMessage();
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
                     if ("".equals(partIndexString) || partIndexString == null) {
@@ -764,16 +762,23 @@ public class ImapConnection extends AbstractConnection {
                     } else if ("TEXT".equals(partIndexString)) {
                         // write message without headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
-                        partInputStream = mimeMessage.getRawInputStream();
+                        partInputStream = message.getMimeMessage().getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // Header requested fetch  headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
                         if (requestedHeaders != null) {
-                            Enumeration headerEnumeration = message.getMimeMessage().getMatchingHeaderLines(requestedHeaders);
-                            while (headerEnumeration.hasMoreElements()) {
-                                baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
+                            // OSX Lion special flags request
+                            if (requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
+                                baos.write(message.contentClass.getBytes("UTF-8"));
                                 baos.write(13);
                                 baos.write(10);
+                            } else {
+                                Enumeration headerEnumeration = message.getMimeMessage().getMatchingHeaderLines(requestedHeaders);
+                                while (headerEnumeration.hasMoreElements()) {
+                                    baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
+                                    baos.write(13);
+                                    baos.write(10);
+                                }
                             }
                         } else {
                             // write headers only
@@ -781,7 +786,7 @@ public class ImapConnection extends AbstractConnection {
                             partInputStream = message.getRawInputStream();
                         }
                     } else {
-                        MimePart bodyPart = mimeMessage;
+                        MimePart bodyPart = message.getMimeMessage();
                         String[] partIndexStrings = partIndexString.split("\\.");
                         for (String subPartIndexString : partIndexStrings) {
                             // ignore MIME subpart index, will return full part

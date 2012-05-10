@@ -729,6 +729,8 @@ public abstract class ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add("deleted");
         IMAP_MESSAGE_ATTRIBUTES.add("date");
         IMAP_MESSAGE_ATTRIBUTES.add("lastmodified");
+        // OSX IMAP requests content-class
+        IMAP_MESSAGE_ATTRIBUTES.add("contentclass");
     }
 
     protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<String>();
@@ -1632,6 +1634,10 @@ public abstract class ExchangeSession {
          * Message uid.
          */
         public String uid;
+        /**
+         * Message content class.
+         */
+        public String contentClass;
         /**
          * Message IMAP uid, unique in folder (x0e230003).
          */
