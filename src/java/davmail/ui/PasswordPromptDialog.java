@@ -109,9 +109,14 @@ public class PasswordPromptDialog extends JDialog {
                 getSize().width / 2,
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
-        setVisible(true);
-        toFront();
-        requestFocus();
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                setVisible(true);
+                toFront();
+                repaint();
+                requestFocus();
+            }
+        });
     }
 
     protected JPanel getButtonPanel() {

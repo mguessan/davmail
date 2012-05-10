@@ -133,9 +133,16 @@ public class NotificationDialog extends JDialog {
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
         bodyField.requestFocus();
-        setVisible(true);
-        toFront();
-        requestFocus();
+
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                setVisible(true);
+                toFront();
+                repaint();
+                requestFocus();
+            }
+        });
+
     }
 
     protected JPanel getRecipientsPanel() {
