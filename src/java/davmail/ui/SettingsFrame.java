@@ -103,6 +103,8 @@ public class SettingsFrame extends JFrame {
     JComboBox enableEwsComboBox;
     JCheckBox smtpSaveInSentCheckBox;
 
+    JCheckBox osxHideFromDockCheckBox;
+
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
         addSettingComponent(panel, label, component, null);
     }
@@ -459,10 +461,22 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
                 BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
 
-        Dimension preferredSize = otherSettingsPanel.getPreferredSize();
-        preferredSize.width = Integer.MAX_VALUE;
         updateMaximumSize(otherSettingsPanel);
         return otherSettingsPanel;
+    }
+
+    protected JPanel getOSXPanel() {
+        JPanel osxSettingsPanel = new JPanel(new GridLayout(1, 2));
+        osxSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OSX")));
+
+        osxHideFromDockCheckBox = new JCheckBox();
+        osxHideFromDockCheckBox.setSelected(OSXInfoPlist.isHideFromDock());
+
+        addSettingComponent(osxSettingsPanel, BundleMessage.format("UI_OSX_HIDE_FROM_DOCK"), osxHideFromDockCheckBox,
+                BundleMessage.format("UI_OSX_HIDE_FROM_DOCK_HELP"));
+
+        updateMaximumSize(osxSettingsPanel);
+        return osxSettingsPanel;
     }
 
     protected JPanel getLoggingSettingsPanel() {
@@ -592,6 +606,10 @@ public class SettingsFrame extends JFrame {
         wireLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("httpclient.wire"));
         logFilePathField.setText(Settings.getProperty("davmail.logFilePath"));
         logFileSizeField.setText(Settings.getProperty("davmail.logFileSize"));
+
+        if (osxHideFromDockCheckBox != null) {
+            osxHideFromDockCheckBox.setSelected(OSXInfoPlist.isHideFromDock());
+        }
     }
 
     protected boolean isSslEnabled() {
@@ -674,6 +692,16 @@ public class SettingsFrame extends JFrame {
 
         tabbedPane.add(BundleMessage.format("UI_TAB_ADVANCED"), advancedPanel);
 
+        if (OSXInfoPlist.isOSX()) {
+            JPanel osxPanel = new JPanel();
+            osxPanel.setLayout(new BoxLayout(osxPanel, BoxLayout.Y_AXIS));
+            osxPanel.add(getOSXPanel());
+            // empty panel
+            osxPanel.add(new JPanel());
+
+            tabbedPane.add(BundleMessage.format("UI_TAB_OSX"), osxPanel);
+        }
+
         add(BorderLayout.CENTER, tabbedPane);
 
         JPanel buttonPanel = new JPanel();
@@ -751,6 +779,11 @@ public class SettingsFrame extends JFrame {
 
                 setVisible(false);
                 Settings.save();
+
+                if (osxHideFromDockCheckBox != null) {
+                    OSXInfoPlist.setOSXHideFromDock(osxHideFromDockCheckBox.isSelected());
+                }
+
                 // restart listeners with new config
                 DavGateway.restart();
             }
