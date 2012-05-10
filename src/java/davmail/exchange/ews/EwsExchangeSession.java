@@ -437,11 +437,16 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void updateMessage(ExchangeSession.Message message, Map<String, String> properties) throws IOException {
-        UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                ConflictResolution.AlwaysOverwrite,
-                SendMeetingInvitationsOrCancellations.SendToNone,
-                ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
-        executeMethod(updateItemMethod);
+        if (properties.containsKey("read") && "urn:content-classes:appointment".equals(message.contentClass)) {
+            properties.remove("read");
+        }
+        if (!properties.isEmpty()) {
+            UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                    ConflictResolution.AlwaysOverwrite,
+                    SendMeetingInvitationsOrCancellations.SendToNone,
+                    ((EwsExchangeSession.Message) message).itemId, buildProperties(properties));
+            executeMethod(updateItemMethod);
+        }
     }
 
     @Override
@@ -509,7 +514,7 @@ public class EwsExchangeSession extends ExchangeSession {
             executeMethod(getItemMethod);
             mimeContent = getItemMethod.getMimeContent();
         } catch (EWSException e) {
-            LOGGER.warn("GetItem with MimeContent failed: "+e.getMessage());
+            LOGGER.warn("GetItem with MimeContent failed: " + e.getMessage());
         }
         if (mimeContent == null) {
             LOGGER.warn("MimeContent not available, trying to rebuild from properties");
@@ -545,7 +550,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray()));
                 }
                 mimeContent = baos.toByteArray();
-                
+
             } catch (IOException e2) {
                 LOGGER.warn(e2);
             } catch (MessagingException e2) {
@@ -992,7 +997,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public int updateFolder(String folderPath, Map<String, String> properties) throws IOException {
         ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-        for (Map.Entry<String,String> entry:properties.entrySet()) {
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
             updates.add(new FieldUpdate(Field.get(entry.getKey()), entry.getValue()));
         }
         UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(internalGetFolder(folderPath).folderId, updates);
@@ -1258,7 +1263,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String type;
         boolean isException;
 
-        protected Event(EWSMethod.Item response)  {
+        protected Event(EWSMethod.Item response) {
             itemId = new ItemId(response);
 
             type = response.type;
@@ -1425,10 +1430,10 @@ public class EwsExchangeSession extends ExchangeSession {
                                     String ownerPartStat = property.getParamValue("PARTSTAT");
                                     if ("ACCEPTED".equals(ownerPartStat)) {
                                         ownerResponseReply = "AcceptItem";
-                                    // do not send DeclineItem to avoid deleting target event
-                                    //} else if  ("DECLINED".equals(ownerPartStat)) {
-                                    //    ownerResponseReply = "DeclineItem";
-                                    } else if  ("TENTATIVE".equals(ownerPartStat)) {
+                                        // do not send DeclineItem to avoid deleting target event
+                                        //} else if  ("DECLINED".equals(ownerPartStat)) {
+                                        //    ownerResponseReply = "DeclineItem";
+                                    } else if ("TENTATIVE".equals(ownerPartStat)) {
                                         ownerResponseReply = "TentativelyAcceptItem";
                                     }
                                 }
@@ -1455,7 +1460,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
                     }
                     if (optionalAttendees.size() > 0) {
-                        updates.add(Field.createFieldUpdate("cc",  StringUtil.join(optionalAttendees, ", ")));
+                        updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
                     }
                 }
 
@@ -1506,7 +1511,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AlwaysOverwrite, 
+                        ConflictResolution.AlwaysOverwrite,
                         SendMeetingInvitationsOrCancellations.SendToNone,
                         new ItemId(createOrUpdateItemMethod.getResponseItem()),
                         updates);
@@ -1610,7 +1615,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         for (EWSMethod.Attendee attendee : attendees) {
                             VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                             attendeeProperty.addParam("CN", attendee.name);
-                            String myResponseType =  getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
+                            String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
                             if ("Exchange2007_SP1".equals(serverVersion) && email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
                                 attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
                             } else {
@@ -1726,6 +1731,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * Common item properties
      */
     protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+
     static {
         ITEM_PROPERTIES.add("etag");
         ITEM_PROPERTIES.add("displayname");
@@ -2120,8 +2126,8 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             ewsMethod.checkSuccess();
         } catch (SocketException e) {
-            LOGGER.error(e+" "+e.getMessage(), e);
-            throw new EWSException(e+" "+e.getMessage());
+            LOGGER.error(e + " " + e.getMessage(), e);
+            throw new EWSException(e + " " + e.getMessage());
         } finally {
             ewsMethod.releaseConnection();
         }
