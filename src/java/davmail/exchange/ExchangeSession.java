@@ -2571,7 +2571,7 @@ public abstract class ExchangeSession {
     public List<Event> getAllEvents(String folderPath) throws IOException {
         List<Event> results = searchEvents(folderPath, getCalendarItemCondition(getPastDelayCondition("dtstart")));
 
-        if (isMainCalendar(folderPath)) {
+        if (!Settings.getBooleanProperty("davmail.caldavDisableTasks", false) && isMainCalendar(folderPath)) {
             // retrieve tasks from main tasks folder
             results.addAll(searchTasksOnly(TASKS));
         }
