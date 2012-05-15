@@ -275,7 +275,7 @@ public class VCalendar extends VObject {
         if (vTimezone != null && vTimezone.vObjects != null && vTimezone.vObjects.size() > 2) {
             VObject standard = null;
             VObject daylight = null;
-            for (VObject vObject:vTimezone.vObjects) {
+            for (VObject vObject : vTimezone.vObjects) {
                 if ("STANDARD".equals(vObject.type)) {
                     if (standard == null ||
                             (vObject.getPropertyValue("DTSTART").compareTo(standard.getPropertyValue("DTSTART")) > 0)) {
@@ -363,26 +363,45 @@ public class VCalendar extends VObject {
 
     protected void fixAlarm(VObject vObject, boolean fromServer) {
         if (vObject.vObjects != null) {
-            for (VObject vAlarm : vObject.vObjects) {
-                if ("VALARM".equals(vAlarm.type)) {
-                    String action = vAlarm.getPropertyValue("ACTION");
-                    if (fromServer && "DISPLAY".equals(action)
-                            // convert DISPLAY to AUDIO only if user defined an alarm sound
-                            && Settings.getProperty("davmail.caldavAlarmSound") != null) {
-                        // Convert alarm to audio for iCal
-                        vAlarm.setPropertyValue("ACTION", "AUDIO");
-
-                        if (vAlarm.getPropertyValue("ATTACH") == null) {
-                            // Add defined sound into the audio alarm
-                            VProperty vProperty = new VProperty("ATTACH", Settings.getProperty("davmail.caldavAlarmSound"));
-                            vProperty.addParam("VALUE", "URI");
-                            vAlarm.addProperty(vProperty);
+            if (Settings.getBooleanProperty("davmail.caldavDisableReminders", false)) {
+                ArrayList<VObject> vAlarms = null;
+                for (VObject vAlarm : vObject.vObjects) {
+                    if ("VALARM".equals(vAlarm.type)) {
+                        if (vAlarms == null) {
+                            vAlarms = new ArrayList<VObject>();
                         }
+                        vAlarms.add(vAlarm);
+                    }
+                }
+                // remove all vAlarms
+                if (vAlarms != null) {
+                    for (VObject vAlarm : vAlarms) {
+                        vObject.vObjects.remove(vAlarm);
+                    }
+                }
 
-                    } else if (!fromServer && "AUDIO".equals(action)) {
-                        // Use the alarm action that exchange (and blackberry) understand
-                        // (exchange and blackberry don't understand audio actions)
-                        vAlarm.setPropertyValue("ACTION", "DISPLAY");
+            } else {
+                for (VObject vAlarm : vObject.vObjects) {
+                    if ("VALARM".equals(vAlarm.type)) {
+                        String action = vAlarm.getPropertyValue("ACTION");
+                        if (fromServer && "DISPLAY".equals(action)
+                                // convert DISPLAY to AUDIO only if user defined an alarm sound
+                                && Settings.getProperty("davmail.caldavAlarmSound") != null) {
+                            // Convert alarm to audio for iCal
+                            vAlarm.setPropertyValue("ACTION", "AUDIO");
+
+                            if (vAlarm.getPropertyValue("ATTACH") == null) {
+                                // Add defined sound into the audio alarm
+                                VProperty vProperty = new VProperty("ATTACH", Settings.getProperty("davmail.caldavAlarmSound"));
+                                vProperty.addParam("VALUE", "URI");
+                                vAlarm.addProperty(vProperty);
+                            }
+
+                        } else if (!fromServer && "AUDIO".equals(action)) {
+                            // Use the alarm action that exchange (and blackberry) understand
+                            // (exchange and blackberry don't understand audio actions)
+                            vAlarm.setPropertyValue("ACTION", "DISPLAY");
+                        }
                     }
                 }
             }
@@ -579,6 +598,7 @@ public class VCalendar extends VObject {
 
     /**
      * Check if this item is a VTODO item
+     *
      * @return true with VTODO items
      */
     public boolean isTodo() {
