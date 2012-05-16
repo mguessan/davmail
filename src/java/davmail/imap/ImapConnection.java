@@ -713,7 +713,14 @@ public class ImapConnection extends AbstractConnection {
                 if ("FLAGS".equals(param)) {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
-                    buffer.append(" RFC822.SIZE ").append(message.getMimeMessageSize());
+                    int size;
+                    if (parameters.indexOf("BODY.PEEK[HEADER.FIELDS (") >= 0) {
+                        // Header request, send approximate size
+                        size = message.size;
+                    } else {
+                        size = message.getMimeMessageSize();
+                    }
+                    buffer.append(" RFC822.SIZE ").append(size);
                 } else if ("ENVELOPE".equals(param)) {
                     appendEnvelope(buffer, message);
                 } else if ("BODYSTRUCTURE".equals(param)) {
@@ -769,11 +776,12 @@ public class ImapConnection extends AbstractConnection {
                         if (requestedHeaders != null) {
                             // OSX Lion special flags request
                             if (requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
+                                baos.write("Content-class: ".getBytes("UTF-8"));
                                 baos.write(message.contentClass.getBytes("UTF-8"));
                                 baos.write(13);
                                 baos.write(10);
                             } else {
-                                Enumeration headerEnumeration = message.getMimeMessage().getMatchingHeaderLines(requestedHeaders);
+                                Enumeration headerEnumeration = message.getMatchingHeaderLines(requestedHeaders);
                                 while (headerEnumeration.hasMoreElements()) {
                                     baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
                                     baos.write(13);

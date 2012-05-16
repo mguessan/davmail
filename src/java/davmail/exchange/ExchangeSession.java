@@ -40,10 +40,7 @@ import org.htmlcleaner.TagNode;
 
 import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
+import javax.mail.internet.*;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -1797,6 +1794,23 @@ public abstract class ExchangeSession {
             loadMimeMessage();
             return mimeMessage;
         }
+
+        public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
+            Enumeration  result = null;
+            if (mimeMessage == null) {
+                // message not loaded, try to get headers only
+                InputStream headers = getMimeHeaders();
+                if (headers != null) {
+                    result = new InternetHeaders(headers).getMatchingHeaderLines(headerNames);
+                }
+            }
+            if (result == null) {
+                result = getMimeMessage().getMatchingHeaderLines(headerNames);
+            }
+            return result;
+        }
+
+        protected abstract InputStream getMimeHeaders();
 
         /**
          * Get message body size.

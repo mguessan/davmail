@@ -143,6 +143,7 @@ public class Field {
         createField(URN_SCHEMAS_HTTPMAIL, "subject"); // DistinguishedPropertySetType.InternetHeaders/Subject/String
         //createField("subject", 0x0037, PropertyType.String);//PR_SUBJECT
         createField("body", 0x1000, PropertyType.String);//PR_BODY
+        createField("messageheaders", 0x007D, PropertyType.String);// PR_TRANSPORT_MESSAGE_HEADERS
         createField(URN_SCHEMAS_HTTPMAIL, "from");
         //createField("from", DistinguishedPropertySetType.PublicStrings, 0x001f);//urn:schemas:httpmail:from
         createField(URN_SCHEMAS_MAILHEADER, "to"); // DistinguishedPropertySetType.InternetHeaders/To/String

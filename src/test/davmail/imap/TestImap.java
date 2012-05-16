@@ -388,4 +388,10 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". FETCH 1:* (FLAGS UID BODY.PEEK[HEADER.FIELDS (content-class)])");
         assertEquals(". OK FETCH completed", readFullAnswer("."));
     }
+
+    public void testFetchHeadersThunderbird() throws IOException {
+        testSelectInbox();
+        writeLine(". FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
+        assertEquals(". OK FETCH completed", readFullAnswer("."));
+    }
 }

@@ -41,10 +41,7 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.text.ParseException;
@@ -367,6 +364,26 @@ public class EwsExchangeSession extends ExchangeSession {
         @Override
         public String getPermanentId() {
             return itemId.id;
+        }
+
+        @Override
+        protected InputStream getMimeHeaders() {
+            InputStream result = null;
+            try {
+                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+                getItemMethod.addAdditionalProperty(Field.get("messageheaders"));
+                executeMethod(getItemMethod);
+                EWSMethod.Item item = getItemMethod.getResponseItem();
+
+                String messageHeaders = item.get(Field.get("messageheaders").getResponseName());
+                if (messageHeaders != null) {
+                    result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
+                }
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
+
+            return result;
         }
     }
 

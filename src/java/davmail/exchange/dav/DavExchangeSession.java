@@ -1078,6 +1078,21 @@ public class DavExchangeSession extends ExchangeSession {
         public String getPermanentId() {
             return permanentUrl;
         }
+
+        @Override
+        protected InputStream getMimeHeaders() {
+            InputStream result = null;
+            try {
+                String messageHeaders = getItemProperty(permanentUrl, "messageheaders");
+                if (messageHeaders != null) {
+                    result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
+                }
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
+
+            return result;
+        }
     }
 
 
@@ -1132,7 +1147,7 @@ public class DavExchangeSession extends ExchangeSession {
                 if (!"photo".equals(key)) {
                     propertyValues.add(Field.createPropertyValue(key, entry.getValue()));
                     if (key.startsWith("email")) {
-                        propertyValues.add(Field.createPropertyValue(key+"type", "SMTP"));
+                        propertyValues.add(Field.createPropertyValue(key + "type", "SMTP"));
                     }
                 }
             }
@@ -1309,31 +1324,10 @@ public class DavExchangeSession extends ExchangeSession {
         protected byte[] getICSFromInternetContentProperty() throws IOException, DavException, MessagingException {
             byte[] result = null;
             // PropFind PR_INTERNET_CONTENT
-            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-            davPropertyNameSet.add(Field.getPropertyName("internetContent"));
-            PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
-            try {
-                try {
-                    DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
-                } catch (UnknownHostException e) {
-                    propFindMethod.releaseConnection();
-                    // failover for misconfigured Exchange server, replace host name in url
-                    restoreHostName = true;
-                    propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
-                    DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
-                }
-
-                MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
-                if (responses.getResponses().length > 0) {
-                    DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
-                    String propertyValue = getPropertyIfExists(properties, "internetContent");
-                    if (propertyValue != null) {
-                        byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes());
-                        result = getICS(new ByteArrayInputStream(byteArray));
-                    }
-                }
-            } finally {
-                propFindMethod.releaseConnection();
+            String propertyValue = getItemProperty(permanentUrl, "internetContent");
+            if (propertyValue != null) {
+                byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes());
+                result = getICS(new ByteArrayInputStream(byteArray));
             }
             return result;
         }
@@ -1940,7 +1934,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected String getURLPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
-         String result = getPropertyIfExists(properties, alias);
+        String result = getPropertyIfExists(properties, alias);
         if (result != null) {
             result = URIUtil.decode(result);
         }
@@ -2059,6 +2053,7 @@ public class DavExchangeSession extends ExchangeSession {
      * Common item properties
      */
     protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+
     static {
         ITEM_PROPERTIES.add("etag");
         ITEM_PROPERTIES.add("displayname");
@@ -2114,7 +2109,7 @@ public class DavExchangeSession extends ExchangeSession {
         boolean caldavEnableLegacyTasks = Settings.getBooleanProperty("davmail.caldavEnableLegacyTasks", false);
         if (caldavEnableLegacyTasks) {
             // return tasks created in calendar folder
-             return or(isNull("instancetype"),
+            return or(isNull("instancetype"),
                     isEqualTo("instancetype", 1),
                     and(isEqualTo("instancetype", 0), dateCondition));
         } else {
@@ -2974,6 +2969,33 @@ public class DavExchangeSession extends ExchangeSession {
         LOGGER.debug("Deleted to :" + destination);
     }
 
+    protected String getItemProperty(String permanentUrl, String propertyName) throws IOException, DavException, MessagingException {
+        String result = null;
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        davPropertyNameSet.add(Field.getPropertyName(propertyName));
+        PropFindMethod propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
+        try {
+            try {
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+            } catch (UnknownHostException e) {
+                propFindMethod.releaseConnection();
+                // failover for misconfigured Exchange server, replace host name in url
+                restoreHostName = true;
+                propFindMethod = new PropFindMethod(encodeAndFixUrl(permanentUrl), davPropertyNameSet, 0);
+                DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propFindMethod);
+            }
+
+            MultiStatus responses = propFindMethod.getResponseBodyAsMultiStatus();
+            if (responses.getResponses().length > 0) {
+                DavPropertySet properties = responses.getResponses()[0].getProperties(HttpStatus.SC_OK);
+                result = getPropertyIfExists(properties, propertyName);
+            }
+        } finally {
+            propFindMethod.releaseConnection();
+        }
+        return result;
+    }
+
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
         String zuluDateValue = null;
         if (exchangeDateValue != null) {
@@ -3002,7 +3024,7 @@ public class DavExchangeSession extends ExchangeSession {
         priorityToImportanceMap.put("9", "low");
     }
 
-    protected String convertPriorityFromExchange(String exchangeImportanceValue)  {
+    protected String convertPriorityFromExchange(String exchangeImportanceValue) {
         String value = null;
         if (exchangeImportanceValue != null) {
             value = importanceToPriorityMap.get(exchangeImportanceValue);
@@ -3010,7 +3032,7 @@ public class DavExchangeSession extends ExchangeSession {
         return value;
     }
 
-    protected String convertPriorityToExchange(String vTodoPriorityValue)  {
+    protected String convertPriorityToExchange(String vTodoPriorityValue) {
         String value = null;
         if (vTodoPriorityValue != null) {
             value = priorityToImportanceMap.get(vTodoPriorityValue);
