@@ -240,6 +240,25 @@ public class VCalendar extends VObject {
                             dtEnd.setParam("TZID", tzid);
                         }
                     }
+                    // remove unsupported attachment reference
+                    if (vObject.getProperty("ATTACH") != null) {
+                        List<String> toRemoveValues = null;
+                        List<String> values = vObject.getProperty("ATTACH").getValues();
+                        for (String value : values) {
+                            if (value.indexOf("CID:") >= 0) {
+                                if (toRemoveValues == null) {
+                                    toRemoveValues = new ArrayList<String>();
+                                }
+                                toRemoveValues.add(value);
+                            }
+                        }
+                        if (toRemoveValues != null) {
+                            values.removeAll(toRemoveValues);
+                            if (values.size() == 0) {
+                                vObject.removeProperty("ATTACH");
+                            }
+                        }
+                    }
                 } else {
                     // add organizer line to all events created in Exchange for active sync
                     String organizer = getEmailValue(vObject.getProperty("ORGANIZER"));
