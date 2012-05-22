@@ -1778,6 +1778,12 @@ public abstract class ExchangeSession {
                     mimeBody = new SharedByteArrayInputStream(getContent(this));
                     mimeMessage = new MimeMessage(null, mimeBody);
                     mimeBody.reset();
+                    // workaround for Exchange 2003 ActiveSync bug
+                    if (mimeMessage.getHeader("MAIL FROM") != null) {
+                        mimeBody = (SharedByteArrayInputStream)mimeMessage.getRawInputStream();
+                        mimeMessage = new MimeMessage(null, mimeBody);
+                        mimeBody.reset();
+                    }
                     LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.available() + " bytes)");
                 }
             }
