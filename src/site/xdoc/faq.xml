@@ -295,6 +295,14 @@ calendar.debug.log.verbose=true]]></source>
                     <code>true</code>
                     to send messages as quoted-printable.
                 </p>
+                <p>
+                    <strong>Access another user mailbox</strong>
+                </p>
+                <p>Either set base IMAP path in client settings or use the following username:
+                    <code>domain\user\otheruser@company.com</code> where otheruser@company.com it target mailbox
+                    name.
+                </p>
+
             </subsection>
 
             <subsection name="Build">
