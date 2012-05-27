@@ -11,9 +11,10 @@
     <body>
 
         <section name="DavMail Setup on Mac OS X">
-            <p>Java 1.5 is available in standard Mac OS X setup. This version does not support Tray icon,
-                and DavMail uses a dedicated frame instead. An upgrade to Java 1.6 will enable tray icon
-                in DavMail.
+            <p>Older OSX releases include Java 5, this version does not support Tray icon,
+                and DavMail uses a dedicated frame instead. An upgrade to Java 1.6 will enable tray icon.
+                Recent OSX versions either include Java 6 or can install it automatically on first Java application
+                launch.
             </p>
 
             <p>Download DavMail Mac OSX package from Sourceforge:

@@ -11,7 +11,7 @@
     <body>
 
         <section name="DavMail Setup as a standalone server">
-            <p>Prerequisite : Sun J2SE 1.5 or 1.6.
+            <p>Prerequisite : Sun JRE 5, 6 or 7 or OpenJDK 6 or 7.
             </p>
 
             <p>Davmail Gateway can run in server mode as a gateway between the mail
@@ -89,7 +89,7 @@ davmail.logFilePath=/var/log/davmail.log]]>
         </section>
 
         <section name="DavMail Setup as a JEE Web Application">
-            <p>Prerequisites : Sun J2SE 1.5 or 1.6 and any JEE compliant web container
+            <p>Prerequisites : Sun JRE 5, 6 or 7 or OpenJDK 6 or 7 and any JEE compliant web container
             </p>
 
             <p>Davmail Gateway can now be deployed in any JEE application server using

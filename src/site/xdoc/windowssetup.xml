@@ -11,8 +11,8 @@
     <body>
 
         <section name="DavMail Setup on windows">
-            <p>Prerequisite : Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
-                Java 1.5. You may use DavMail with an older version, but the gateway will run as a
+            <p>Prerequisite : Sun JRE 5, 6 or 7. Tray icon is now implemented with SWT and compatible with
+                Java 5. You may use DavMail with an older version, but the gateway will run as a
                 command line application.
             </p>
 

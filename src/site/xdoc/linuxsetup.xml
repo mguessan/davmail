@@ -27,9 +27,10 @@
                 <code>gsettings set com.canonical.Unity.Panel systray-whitelist "['all']"</code>
             </subsection>
             <subsection name="Manual setup">
-                <p>Prerequisite : OpenJDK or Sun J2SE 1.5 or 1.6. Tray icon is now implemented with SWT and compatible with
-                    Java 1.5.
+                <p>Prerequisite: OpenJDK 6 or 7 or Sun JRE 6. Tray icon is now implemented with SWT and compatible with
+                    Java 5.
                 </p>
+                <p>Note: some users reported issues with OpenJDK 6, please upgrade to OpenJDK 7 in this case.</p>
 
                 <p>You should first download and install Java, with the graphical package manager or through
                     command line.

@@ -13,7 +13,7 @@
         <section name="Building DavMail from source">
             <p>Building DavMail is quite simple:</p>
             <ul>
-                <li>Make sure you have Java 6 installed and set as current version by checking
+                <li>Make sure you have Java 6 or 7 installed and set as current version by checking
                     JAVA_HOME:
                     <br/>
                     <ul>
