@@ -159,6 +159,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
                 settingsFrame.reload();
                 settingsFrame.setVisible(true);
                 settingsFrame.toFront();
+                settingsFrame.repaint();
                 settingsFrame.requestFocus();
             }
         });
@@ -317,6 +318,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         if (Settings.isFirstStart()) {
             settingsFrame.setVisible(true);
             settingsFrame.toFront();
+            settingsFrame.repaint();
             settingsFrame.requestFocus();
         }
     }

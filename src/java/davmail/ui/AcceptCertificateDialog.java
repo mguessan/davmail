@@ -116,14 +116,8 @@ public class AcceptCertificateDialog extends JDialog {
                 getSize().width / 2,
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                setVisible(true);
-                toFront();
-                repaint();
-                requestFocus();
-            }
-        });
+	setAlwaysOnTop(true);
+        setVisible(true);
     }
 
     protected JPanel getButtonPanel() {
