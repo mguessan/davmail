@@ -218,6 +218,7 @@ public final class Field {
         FIELD_MAP.put("xmozsendinvitations", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations"));
 
         // task
+        FIELD_MAP.put("importance", new UnindexedFieldURI("item:Importance"));
         FIELD_MAP.put("percentcomplete", new UnindexedFieldURI("task:PercentComplete"));
         FIELD_MAP.put("taskstatus", new UnindexedFieldURI("task:Status"));
 

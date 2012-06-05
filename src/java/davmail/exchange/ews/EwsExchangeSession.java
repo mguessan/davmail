@@ -1346,6 +1346,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "Task";
                 List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                updates.add(Field.createFieldUpdate("importance", convertPriorityToExchange(vCalendar.getFirstVeventPropertyValue("PRIORITY"))));
                 updates.add(Field.createFieldUpdate("calendaruid", vCalendar.getFirstVeventPropertyValue("UID")));
                 // force urlcompname
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
@@ -1555,6 +1556,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 GetItemMethod getItemMethod;
                 if ("Task".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
+                    getItemMethod.addAdditionalProperty(Field.get("importance"));
                     getItemMethod.addAdditionalProperty(Field.get("subject"));
                     getItemMethod.addAdditionalProperty(Field.get("created"));
                     getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
@@ -1599,6 +1601,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("UID", calendarUid);
                     vTodo.setPropertyValue("SUMMARY", getItemMethod.getResponseItem().get(Field.get("subject").getResponseName()));
                     vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
+                    vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(getItemMethod.getResponseItem().get(Field.get("importance").getResponseName())));
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
                     vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("taskstatus").getResponseName())));
 
@@ -2365,6 +2368,39 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected static boolean isItemId(String itemName) {
         return itemName.length() >= 152;
+    }
+
+
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<String, String>();
+
+    static {
+        importanceToPriorityMap.put("High", "1");
+        importanceToPriorityMap.put("Normal", "5");
+        importanceToPriorityMap.put("Low", "9");
+    }
+
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<String, String>();
+
+    static {
+        priorityToImportanceMap.put("1", "High");
+        priorityToImportanceMap.put("5", "Normal");
+        priorityToImportanceMap.put("9", "Low");
+    }
+
+    protected String convertPriorityFromExchange(String exchangeImportanceValue) {
+        String value = null;
+        if (exchangeImportanceValue != null) {
+            value = importanceToPriorityMap.get(exchangeImportanceValue);
+        }
+        return value;
+    }
+
+    protected String convertPriorityToExchange(String vTodoPriorityValue) {
+        String value = null;
+        if (vTodoPriorityValue != null) {
+            value = priorityToImportanceMap.get(vTodoPriorityValue);
+        }
+        return value;
     }
 }
 
