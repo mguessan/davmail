@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
@@ -135,11 +136,17 @@ public class TestCaldav extends AbstractDavMailTestCase {
         assertEquals(HttpStatus.SC_OK, method.getStatusCode());
     }
 
-    public void testPropfindCalendar() throws IOException {
-        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        PropFindMethod method = new PropFindMethod("/users/" + session.getAlias() + "/calendar/", null, 1);
+    public void testGetContacts() throws IOException {
+        GetMethod method = new GetMethod("/users/" + session.getEmail() + "/contacts/");
         httpClient.executeMethod(method);
         assertEquals(HttpStatus.SC_OK, method.getStatusCode());
+    }
+
+    public void testPropfindCalendar() throws IOException {
+        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        PropFindMethod method = new PropFindMethod("/users/" + session.getEmail() + "/calendar/", null, 1);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
     }
 
 
@@ -367,6 +374,17 @@ public class TestCaldav extends AbstractDavMailTestCase {
         davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
         davPropertyNameSet.add(DavPropertyName.create("resourcetype", Namespace.getNamespace("DAV:")));
         PropFindMethod method = new PropFindMethod("/", davPropertyNameSet, 0);
+        httpClient.executeMethod(method);
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
+        method.getResponseBodyAsMultiStatus();
+    }
+
+    public void testPropfindAddressBook() throws IOException, DavException {
+        DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+        //davPropertyNameSet.add(DavPropertyName.create("getctag", Namespace.getNamespace("http://calendarserver.org/ns/")));
+        davPropertyNameSet.add(DavPropertyName.create("getetag", Namespace.getNamespace("DAV:")));
+        PropFindMethod method = new PropFindMethod("/users/" + session.getEmail()+"/addressbook/", davPropertyNameSet, 1);
+        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, "Address%20Book/883 CFNetwork/454.12.4 Darwin/10.8.0 (i386) (MacBookPro3%2C1)");
         httpClient.executeMethod(method);
         assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
         method.getResponseBodyAsMultiStatus();

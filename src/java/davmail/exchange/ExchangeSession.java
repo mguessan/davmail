@@ -2556,7 +2556,7 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, getItemProperties(), isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
+        return searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
     }
 
 

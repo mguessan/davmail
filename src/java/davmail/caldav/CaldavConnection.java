@@ -297,7 +297,18 @@ public class CaldavConnection extends AbstractConnection {
                 String folderPath = request.getFolderPath();
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
-                    sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(folder.etag), "text/vcard", (byte[]) null, true);
+                    List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath);
+                    ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/vcard;charset=UTF-8");
+
+                    for (ExchangeSession.Contact contact : contacts) {
+                        String contactBody = contact.getBody();
+                        if (contactBody != null) {
+                            response.append(contactBody);
+                            response.append("\n");
+                        }
+                    }
+                    response.close();
+
                 } else if (folder.isCalendar() || folder.isTask()) {
                     List<ExchangeSession.Event> events = session.getAllEvents(folderPath);
                     ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/calendar;charset=UTF-8");
