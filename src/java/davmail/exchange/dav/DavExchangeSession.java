@@ -1085,6 +1085,11 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 String messageHeaders = getItemProperty(permanentUrl, "messageheaders");
                 if (messageHeaders != null) {
+                    // workaround for messages in Sent folder
+                    if (messageHeaders.indexOf("From:") < 0) {
+                        String from = getItemProperty(permanentUrl, "from");
+                        messageHeaders = "From: "+from+"\n"+messageHeaders;
+                    }
                     result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
                 }
             } catch (Exception e) {
