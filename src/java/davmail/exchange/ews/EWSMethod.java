@@ -28,6 +28,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.codehaus.stax2.typed.TypedXMLStreamReader;
 
@@ -107,7 +108,8 @@ public abstract class EWSMethod extends PostMethod {
         this.itemType = itemType;
         this.methodName = methodName;
         this.responseCollectionName = responseCollectionName;
-        if (Settings.getBooleanProperty("davmail.acceptEncodingGzip", true)) {
+        if (Settings.getBooleanProperty("davmail.acceptEncodingGzip", true) &&
+                !Level.DEBUG.toString().equals(Settings.getBooleanProperty("log4j.logger.httpclient.wire"))) {
             setRequestHeader("Accept-Encoding", "gzip");
         }
         setRequestEntity(new RequestEntity() {
