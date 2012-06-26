@@ -1489,24 +1489,20 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
                 }
 
-                // patch allday date values
-                if (vCalendar.isCdoAllDay()) {
+                // patch allday date values, only on 2007
+                if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
                     updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                     updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
                 }
                 updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
-                if (vCalendar.isCdoAllDay()) {
-                    if (!"Exchange2007_SP1".equals(serverVersion)) {
-                        updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
-                    } else {
-                        updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
-                    }
+                if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
+                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
                 }
 
                 newItem.setFieldUpdates(updates);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
                 // force context Timezone on Exchange 2010
-                if ("Exchange2010_SP1".equals(serverVersion) || "Exchange2010".equals(serverVersion)) {
+                if (serverVersion != null && serverVersion.startsWith("Exchange2010")) {
                     createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                 }
                 //}
