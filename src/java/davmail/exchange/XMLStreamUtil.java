@@ -34,6 +34,7 @@ import java.util.Map;
 /**
  * XmlStreamReader utility methods
  */
+@SuppressWarnings("Since15")
 public final class XMLStreamUtil {
     private static final Logger LOGGER = Logger.getLogger(XMLStreamUtil.class);
 

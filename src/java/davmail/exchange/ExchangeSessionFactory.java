@@ -293,6 +293,7 @@ public final class ExchangeSessionFactory {
             enumeration = NetworkInterface.getNetworkInterfaces();
             while (!up && enumeration.hasMoreElements()) {
                 NetworkInterface networkInterface = enumeration.nextElement();
+                //noinspection Since15
                 up = networkInterface.isUp() && !networkInterface.isLoopback()
                         && networkInterface.getInetAddresses().hasMoreElements();
             }

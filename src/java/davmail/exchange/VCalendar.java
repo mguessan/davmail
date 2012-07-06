@@ -130,6 +130,12 @@ public class VCalendar extends VObject {
         return firstVevent != null && isCdoAllDay(firstVevent);
     }
 
+    /**
+     * Get email from property value.
+     *
+     * @param property property
+     * @return email value
+     */
     public String getEmailValue(VProperty property) {
         if (property == null) {
             return null;
@@ -536,6 +542,12 @@ public class VCalendar extends VObject {
     }
 
 
+    /**
+     * Get properties by name from first VEVENT.
+     *
+     * @param name property name
+     * @return properties
+     */
     public List<VProperty> getFirstVeventProperties(String name) {
         if (firstVevent == null) {
             return null;

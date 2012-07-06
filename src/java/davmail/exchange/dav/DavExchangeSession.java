@@ -2974,7 +2974,7 @@ public class DavExchangeSession extends ExchangeSession {
         LOGGER.debug("Deleted to :" + destination);
     }
 
-    protected String getItemProperty(String permanentUrl, String propertyName) throws IOException, DavException, MessagingException {
+    protected String getItemProperty(String permanentUrl, String propertyName) throws IOException, DavException {
         String result = null;
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(Field.getPropertyName(propertyName));

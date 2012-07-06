@@ -481,7 +481,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
 
-    public void sendMessage(String itemClass, byte[] messageBody) throws IOException {
+    protected void sendMessage(String itemClass, byte[] messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
         item.mimeContent = Base64.encodeBase64(messageBody);
@@ -2037,7 +2037,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
 
-    public FolderId getFolderId(String folderPath) throws IOException {
+    protected FolderId getFolderId(String folderPath) throws IOException {
         FolderId folderId = getFolderIdIfExists(folderPath);
         if (folderId == null) {
             throw new HttpNotFoundException("Folder '" + folderPath + "' not found");

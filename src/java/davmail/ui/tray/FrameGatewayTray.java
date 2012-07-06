@@ -266,7 +266,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
         mainFrame = new JFrame();
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         mainFrame.setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         mainFrame.setIconImage(image);
 
