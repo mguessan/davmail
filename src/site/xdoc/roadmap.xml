@@ -20,8 +20,7 @@
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Switch from registry to link on windows</li>
-                    <li>Test windows install on seven without admin rights</li>
+                    <li>Improve IMAP sync performance</li>
                 </ul>
             </subsection>
             <subsection name="4.0">
@@ -29,9 +28,18 @@
                     <strong>Next major version</strong>
                 </p>
                 <ul>
-                    <li>Implement split authentication</li>
+                    <li>Implement split and kerberos authentication</li>
                     <li>Implement optional ICS Todo/Task conversion to Outlook tasks: Done</li>
-                    <li>Exchange 2010 support through EWS: implementation almost complete in 3.9.5</li>
+                    <li>Exchange 2010 support through EWS: Done</li>
+                </ul>
+            </subsection>
+            <subsection name="4.0.1">
+                <p>
+                    <strong>Next minor version</strong>
+                </p>
+                <ul>
+                    <li>Switch from registry to link on windows</li>
+                    <li>Test windows install on seven without admin rights</li>
                 </ul>
             </subsection>
             <subsection name="4.x">
@@ -41,7 +49,7 @@
                 <ul>
                     <li>Implement Caldav attachments</li>
                     <li>Test the RPM package</li>
-                    <li>Jsmooth Windows 64 bit wrappers</li>
+                    <li>Switch wrappers to WinRun4J</li>
                     <li>Implement ActiveSync backend</li>
                     <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
                     <li>Implement custom authenticator interface to handle specific authentications
