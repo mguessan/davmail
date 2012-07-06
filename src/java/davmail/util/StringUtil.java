@@ -151,6 +151,7 @@ public final class StringUtil {
     private static final Pattern URLENCODED_HASH_PATTERN = Pattern.compile("%23");
     private static final Pattern URLENCODED_STAR_PATTERN = Pattern.compile("%2A");
     private static final Pattern URLENCODED_PIPE_PATTERN = Pattern.compile("%7C");
+    private static final Pattern URLENCODED_QUESTION_PATTERN = Pattern.compile("%3F");
 
     private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
     private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
@@ -165,6 +166,7 @@ public final class StringUtil {
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
     private static final Pattern PIPE_PATTERN = Pattern.compile("\\|");
+    private static final Pattern QUESTION_PATTERN = Pattern.compile("\\?");
 
     // WebDav search parameter encode
     private static final Pattern APOS_PATTERN = Pattern.compile("'");
@@ -334,6 +336,9 @@ public final class StringUtil {
         if (result.indexOf('|') >= 0) {
             result = PIPE_PATTERN.matcher(result).replaceAll("%7C");
         }
+        if (result.indexOf('?') >= 0) {
+            result = QUESTION_PATTERN.matcher(result).replaceAll("%3F");
+        }
         return result;
     }
 
@@ -379,6 +384,9 @@ public final class StringUtil {
             }
             if (result.indexOf("%7C") >= 0) {
                 result = URLENCODED_PIPE_PATTERN.matcher(result).replaceAll("|");
+            }
+            if (result.indexOf("%3F") >= 0) {
+                result = URLENCODED_QUESTION_PATTERN.matcher(result).replaceAll("?");
             }
             // last replace %
             if (result.indexOf("%25") >= 0) {

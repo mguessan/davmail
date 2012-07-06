@@ -19,6 +19,8 @@
 package davmail.util;
 
 import junit.framework.TestCase;
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.util.URIUtil;
 
 /**
  * Test StringUtil.
@@ -106,5 +108,15 @@ public class StringUtilTest extends TestCase {
     public void testEncodePipe() {
         assertEquals("test %7C", StringUtil.encodeUrlcompname("test |"));
         assertEquals("test |", StringUtil.decodeUrlcompname("test %7C"));
+    }
+
+    public void testEncodeQuestion() {
+        try {
+            URIUtil.encodeWithinQuery("test ?");
+        } catch (URIException e) {
+            e.printStackTrace();
+        }
+        assertEquals("test %3F", StringUtil.encodeUrlcompname("test ?"));
+        assertEquals("test ?", StringUtil.decodeUrlcompname("test %3F"));
     }
 }
