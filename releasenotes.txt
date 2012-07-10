@@ -1,3 +1,74 @@
+** DavMail 3.9.9 released **
+Bugfix release with major IMAP changes to improve sync performance,
+many Caldav enhancements and bugfixes and some documentation updates.
+
+Caldav:
+- Caldav: encode ? in urlcompname
+- Caldav: fix 3534615, patch allday dates only on Exchange 2007
+- Caldav: implement full contact folder dump at /users/<email>/contacts/
+- Caldav: implement task priority over EWS
+- Caldav: remove unsupported attachment reference to avoid iPhone/iPad crash
+- Caldav: reintroduce davmail.caldavDisableTasks setting to disable tasks support
+- Caldav: fix encode pipe | to %7C in urlcompname
+- Caldav: encode pipe | to %7C in urlcompname
+- CalDav: Fix 3512857, avoid double path encoding in DavExchangeSession.loadVtimezone()
+- Caldav: improve Exchange 2007 EWS meeting support
+- Caldav: rebuild meeting attendees only for Exchange 2007, Exchange 2010 ics parser is correct
+
+Enhancements:
+- Fixes from audit
+- store davmail.log in user home folder to avoid crash on first start when current directory is not writable by user
+- Add WinRun4J to Maven POM and update windows service documentation
+- Switch to WinRun4J for Windows service wrapper
+- Fix 3494770: Add missing antlr runtime
+- Upgrade svnkit for subversion 1.7 compatibility
+
+IMAP:
+- IMAP: Fix 3534801, workaround for missing From header
+- IMAP: fix 3441891, workaround for Exchange 2003 ActiveSync bug
+- IMAP: experimental implementation of header only FETCH, do not download full message content and send approximate RFC822.SIZE (MAPI size)
+- IMAP: avoid full message download on OSX Lion flags request with content-class header
+- IMAP: exclude IDLE from infinite loop detection
+- IMAP: add date header to rebuilt message
+- IMAP: Force UTF-8 on message rebuild
+- IMAP: implement RFC822 fetch request
+
+GUI:
+- GUI: force alwaysOnTop on dialogs to make sure they are visible
+- GUI: always bring dialog windows to front
+
+Documentation:
+- Doc: add a new FAQ entry on shared mailbox access over IMAP
+- Doc: Update doc to include Java 7
+- Doc: small fix in Linux setup doc
+- Doc: Update Linux instructions for Ubuntu 12 Natty
+- Doc: New review
+- Doc: update Thunderbird POP account setup doc
+- Doc: Update SSL setup documentation on PKCS12 passwords
+- Doc: add a note on hidden folders on OSX Lion
+- Doc: Fix new thunderbird doc
+
+OSX:
+- OSX: new hide from Dock setting available directly in UI (DavMail restart needed)
+
+Carddav:
+- Carddav: Fix 3511472, implement fileas over EWS
+- Carddav: Skip carriage return in ICSBufferedWriter
+
+EWS:
+- EWS: disable gzip encoding if WIRE logging is at DEBUG level
+- EWS: fix 3263905 ErrorInvalidPropertyRequest, do not update message:IsRead on appointments
+- EWS: make isMainCalendar case insensitive
+- EWS: revert chunked inputstream inside gzip and create new setting davmail.acceptEncodingGzip
+- EWS: handle chunked inputstream inside gzip
+- EWS: improve error message handling, log error description
+- EWS: improve error handling on socket exception
+- EWS: avoid NullPointerException in broken message rebuild
+
+WebDav:
+- Dav: decode permanenturl to avoid double urlencoding issue
+- Dav: decode url returned on saveappt cmd in DavExchangeSession.loadVtimezone()
+
 ** DavMail 3.9.8 released **
 Prepare 4.0 release with improved Exchange 2010 support, added IMAP MOVE extension support,
 include a new windows noinstall package and implement captcha authentication support.
