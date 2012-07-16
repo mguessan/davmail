@@ -48,8 +48,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Dav Gateway smtp connection implementation.
- * Still alpha code : need to find a way to handle message ids
+ * Dav Gateway IMAP connection implementation.
  */
 public class ImapConnection extends AbstractConnection {
     private static final Logger LOGGER = Logger.getLogger(ImapConnection.class);
@@ -1068,12 +1067,22 @@ public class ImapConnection extends AbstractConnection {
 
         for (int i = 0; i < multiPart.getCount(); i++) {
             MimeBodyPart bodyPart = (MimeBodyPart) multiPart.getBodyPart(i);
-            Object mimeBody = bodyPart.getContent();
-            if (mimeBody instanceof MimeMultipart) {
-                appendBodyStructure(buffer, (MimeMultipart) mimeBody);
-            } else {
-                // no multipart, single body
-                appendBodyStructure(buffer, bodyPart);
+            try {
+                Object mimeBody = bodyPart.getContent();
+                if (mimeBody instanceof MimeMultipart) {
+                    appendBodyStructure(buffer, (MimeMultipart) mimeBody);
+                } else {
+                    // no multipart, single body
+                    appendBodyStructure(buffer, bodyPart);
+                }
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.warn(e);
+                // failover: send default bodystructure
+                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
+            } catch (MessagingException me) {
+                DavGatewayTray.warn(me);
+                // failover: send default bodystructure
+                buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
             }
         }
         int slashIndex = multiPart.getContentType().indexOf('/');
