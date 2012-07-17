@@ -109,7 +109,7 @@ public abstract class EWSMethod extends PostMethod {
         this.methodName = methodName;
         this.responseCollectionName = responseCollectionName;
         if (Settings.getBooleanProperty("davmail.acceptEncodingGzip", true) &&
-                !Level.DEBUG.toString().equals(Settings.getBooleanProperty("log4j.logger.httpclient.wire"))) {
+                !Level.DEBUG.toString().equals(Settings.getProperty("log4j.logger.httpclient.wire"))) {
             setRequestHeader("Accept-Encoding", "gzip");
         }
         setRequestEntity(new RequestEntity() {
