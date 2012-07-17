@@ -312,7 +312,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         exitItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
                                 DavGateway.stop();
-                                shell.dispose();
                             }
                         });
 
@@ -339,34 +338,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         }
 
-                        if (trayItem != null) {
-                            trayItem.dispose();
-                            trayItem = null;
-                        }
-
-                        if (image != null) {
-                            image.dispose();
-                        }
-                        if (image2 != null) {
-                            image2.dispose();
-                        }
-                        try {
-                            if (!display.isDisposed()) {
-                                display.dispose();
-                            }
-                        } catch (Exception e) {
-                            // already disposed
-                        }
-                        // dispose AWT frames
-                        if (settingsFrame != null) {
-                            settingsFrame.dispose();
-                        }
-                        if (aboutFrame != null) {
-                            aboutFrame.dispose();
-                        }
-                        if (logBrokerMonitor != null) {
-                            logBrokerMonitor.dispose();
-                        }
+                        dispose();
                     }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);
@@ -387,6 +359,38 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             } catch (InterruptedException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
             }
+        }
+    }
+
+    public void dispose() {
+        shell.dispose();
+        if (trayItem != null) {
+            trayItem.dispose();
+            trayItem = null;
+        }
+
+        if (image != null) {
+            image.dispose();
+        }
+        if (image2 != null) {
+            image2.dispose();
+        }
+        try {
+            if (!display.isDisposed()) {
+                display.dispose();
+            }
+        } catch (Exception e) {
+            // already disposed
+        }
+        // dispose AWT frames
+        if (settingsFrame != null) {
+            settingsFrame.dispose();
+        }
+        if (aboutFrame != null) {
+            aboutFrame.dispose();
+        }
+        if (logBrokerMonitor != null) {
+            logBrokerMonitor.dispose();
         }
     }
 

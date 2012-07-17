@@ -196,6 +196,15 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         });
     }
 
+    public void dispose() {
+        // dispose frames
+        settingsFrame.dispose();
+        aboutFrame.dispose();
+        if (logBrokerMonitor != null) {
+            logBrokerMonitor.dispose();
+        }
+    }
+
     protected void buildMenu() {
         // create a popup menu
         JMenu menu = new JMenu(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
@@ -239,12 +248,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
             public void actionPerformed(ActionEvent e) {
                 try {
                     DavGateway.stop();
-                    // dispose frames
-                    settingsFrame.dispose();
-                    aboutFrame.dispose();
-                    if (logBrokerMonitor != null) {
-                        logBrokerMonitor.dispose();
-                    }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);
                 }

@@ -290,4 +290,7 @@ public final class DavGatewayTray {
         return result;
     }
 
+    public static void dispose() {
+        davGatewayTray.dispose();
+    }
 }

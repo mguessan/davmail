@@ -37,6 +37,7 @@ import java.awt.event.ActionListener;
 /**
  * Tray icon handler based on java 1.6
  */
+@SuppressWarnings("Since15")
 public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected static final String TRAY_ACTIVE_PNG = "tray2.png";
     protected static final String TRAY_PNG = "tray.png";
@@ -163,6 +164,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 settingsFrame.reload();
                 settingsFrame.setVisible(true);
                 settingsFrame.toFront();
+                settingsFrame.repaint();
                 settingsFrame.requestFocus();
             }
         });
@@ -177,6 +179,17 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
                 createAndShowGUI();
             }
         });
+    }
+
+    public void dispose() {
+        SystemTray.getSystemTray().remove(trayIcon);
+
+        // dispose frames
+        settingsFrame.dispose();
+        aboutFrame.dispose();
+        if (logBrokerMonitor != null) {
+            logBrokerMonitor.dispose();
+        }
     }
 
     protected void createAndShowGUI() {
@@ -241,14 +254,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
             public void actionPerformed(ActionEvent e) {
                 try {
                     DavGateway.stop();
-                    SystemTray.getSystemTray().remove(trayIcon);
-
-                    // dispose frames
-                    settingsFrame.dispose();
-                    aboutFrame.dispose();
-                    if (logBrokerMonitor != null) {
-                        logBrokerMonitor.dispose();
-                    }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);
                 }
@@ -278,6 +283,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         if (Settings.isFirstStart()) {
             settingsFrame.setVisible(true);
             settingsFrame.toFront();
+            settingsFrame.repaint();
             settingsFrame.requestFocus();
         }
     }

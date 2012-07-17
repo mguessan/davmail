@@ -68,4 +68,8 @@ public interface DavGatewayTrayInterface {
      */
     void init();
 
+    /**
+     * destroy frames
+     */
+    void dispose();
 }

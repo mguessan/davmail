@@ -173,6 +173,7 @@ public final class DavGateway {
         // clear session cache
         ExchangeSessionFactory.reset();
         DavGatewayTray.info(new BundleMessage("LOG_GATEWAY_STOP"));
+        DavGatewayTray.dispose();
     }
 
     /**
