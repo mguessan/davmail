@@ -96,7 +96,7 @@ public class CaldavConnection extends AbstractConnection {
         while ((line = readClient()) != null && line.length() > 0) {
             int index = line.indexOf(':');
             if (index <= 0) {
-                wireLogger.warn("Invalid header: "+line);
+                wireLogger.warn("Invalid header: " + line);
                 throw new DavMailException("EXCEPTION_INVALID_HEADER");
             }
             headers.put(line.substring(0, index).toLowerCase(), line.substring(index + 1).trim());
@@ -969,7 +969,7 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("principal-URL") && request.isIcal5()) {
             response.appendHrefProperty("D:principal-URL", encodePath(request, "/principals/" + prefix + '/' + actualPrincipal));
         }
-        
+
 
         if (request.hasProperty("calendar-home-set")) {
             if ("users".equals(prefix)) {
@@ -1440,7 +1440,9 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected boolean isIcal5() {
-            return isUserAgent("CoreDAV/") || isUserAgent("iOS/5");
+            return isUserAgent("CoreDAV/") || isUserAgent("iOS/5")
+                    // iCal 6
+                    || isUserAgent("Mac OS X/10.8");
         }
 
         protected boolean isUserAgent(String key) {
@@ -1629,12 +1631,12 @@ public class CaldavConnection extends AbstractConnection {
                  */
                 String result = calendarPath.toString();
                 // replace unsupported spaces
-                if (result.indexOf(' ') >=0 ) {
-                   result = result.replaceAll("___", " ");
+                if (result.indexOf(' ') >= 0) {
+                    result = result.replaceAll("___", " ");
                 }
                 // replace /addressbook suffix on public folders
                 if (result.startsWith("/public")) {
-                   result = result.replaceAll("/addressbook", "");
+                    result = result.replaceAll("/addressbook", "");
                 }
 
                 return result;
