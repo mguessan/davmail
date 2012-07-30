@@ -704,6 +704,8 @@ public abstract class EWSMethod extends PostMethod {
     public int getStatusCode() {
         if ("ErrorAccessDenied".equals(errorDetail)) {
             return HttpStatus.SC_FORBIDDEN;
+        } else if ("ErrorItemNotFound".equals(errorDetail)) {
+            return HttpStatus.SC_NOT_FOUND;
         } else {
             return super.getStatusCode();
         }

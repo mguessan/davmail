@@ -540,6 +540,9 @@ public class EwsExchangeSession extends ExchangeSession {
         } catch (EWSException e) {
             LOGGER.warn("GetItem with MimeContent failed: " + e.getMessage());
         }
+        if (getItemMethod.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+             throw new HttpNotFoundException("Item "+itemId+" not found");
+        }
         if (mimeContent == null) {
             LOGGER.warn("MimeContent not available, trying to rebuild from properties");
             try {

@@ -299,6 +299,8 @@ public class ImapConnection extends AbstractConnection {
                                                         ExchangeSession.Message message = uidRangeIterator.next();
                                                         try {
                                                             handleFetch(message, uidRangeIterator.currentIndex, parameters);
+                                                        } catch (HttpNotFoundException e) {
+                                                            LOGGER.warn("Ignore missing message "+uidRangeIterator.currentIndex);
                                                         } catch (SocketException e) {
                                                             // client closed connection
                                                             throw e;
@@ -383,6 +385,8 @@ public class ImapConnection extends AbstractConnection {
                                             ExchangeSession.Message message = rangeIterator.next();
                                             try {
                                                 handleFetch(message, rangeIterator.currentIndex, parameters);
+                                            } catch (HttpNotFoundException e) {
+                                                LOGGER.warn("Ignore missing message "+rangeIterator.currentIndex);
                                             } catch (SocketException e) {
                                                 // client closed connection, rethrow exception
                                                 throw e;
