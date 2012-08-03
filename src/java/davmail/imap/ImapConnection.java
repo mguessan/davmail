@@ -991,7 +991,7 @@ public class ImapConnection extends AbstractConnection {
             try {
                 String unfoldedValue = MimeUtility.unfold(value[0]);
                 InternetAddress[] addresses = InternetAddress.parseHeader(unfoldedValue, false);
-                if (addresses != null && addresses.length > 1) {
+                if (addresses != null && addresses.length > 0) {
                     buffer.append('(');
                     for (InternetAddress address : addresses) {
                         buffer.append('(');
