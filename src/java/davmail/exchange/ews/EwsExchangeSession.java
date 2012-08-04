@@ -796,7 +796,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     }
 
-    protected static class HeaderCondition extends AttributeCondition {
+    protected class HeaderCondition extends AttributeCondition {
 
         protected HeaderCondition(String attributeName, Operator operator, String value) {
             super(attributeName, operator, value);
@@ -804,7 +804,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
         @Override
         protected FieldURI getFieldURI() {
-            return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+            // Exchange 2010 does not support header search
+            if (serverVersion.startsWith("Exchange2010") && "message-id".equals(attributeName)) {
+                return new UnindexedFieldURI("message:InternetMessageId");
+            } else {
+                return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
+            }
         }
 
     }
