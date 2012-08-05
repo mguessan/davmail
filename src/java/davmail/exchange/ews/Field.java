@@ -73,16 +73,16 @@ public final class Field {
 
         FIELD_MAP.put("iconIndex", new ExtendedFieldURI(0x1080, ExtendedFieldURI.PropertyType.Integer));// PR_ICON_INDEX
         FIELD_MAP.put("datereceived", new ExtendedFieldURI(0x0e06, ExtendedFieldURI.PropertyType.SystemTime));// PR_MESSAGE_DELIVERY_TIME
-        FIELD_MAP.put("bcc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "bcc"));
 
-        FIELD_MAP.put("to", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "to"));
-        FIELD_MAP.put("cc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "cc"));
-        FIELD_MAP.put("from", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "from"));
+        FIELD_MAP.put("to", new UnindexedFieldURI("message:ToRecipients"));
+        FIELD_MAP.put("cc", new UnindexedFieldURI("message:CcRecipients"));
+        FIELD_MAP.put("from", new UnindexedFieldURI("message:From"));
+        FIELD_MAP.put("bcc", new UnindexedFieldURI("message:BccRecipients"));
 
         FIELD_MAP.put("messageheaders", new ExtendedFieldURI(0x007D, ExtendedFieldURI.PropertyType.String)); // PR_TRANSPORT_MESSAGE_HEADERS
 
         FIELD_MAP.put("contentclass", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "content-class"));
-        FIELD_MAP.put("message-id", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "message-id"));
+        FIELD_MAP.put("message-id", new UnindexedFieldURI("message:InternetMessageId"));
 
         FIELD_MAP.put("body", new UnindexedFieldURI("item:Body"));
 
@@ -233,9 +233,6 @@ public final class Field {
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
 
-        // headers
-        FIELD_MAP.put("message-id", new UnindexedFieldURI("message:InternetMessageId"));
-        FIELD_MAP.put("messageheaders", new ExtendedFieldURI(0x007D, ExtendedFieldURI.PropertyType.String));
     }
 
     /**

@@ -863,12 +863,15 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
         if (serverVersion.startsWith("Exchange2010")) {
-            if ("message-id".equals(headerName)) {
+            if ("message-id".equals(headerName)
+                    || "from".equals(headerName)
+                    || "to".equals(headerName)
+                    || "cc".equals(headerName)
+                    || "bcc".equals(headerName)) {
                 return new AttributeCondition(headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
             } else {
                 // Exchange 2010 does not support header search, use PR_TRANSPORT_MESSAGE_HEADERS instead
-                return new AttributeCondition("messageheaders", Operator.Contains, headerName+": "+value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
-
+                return new AttributeCondition("messageheaders", Operator.Contains, headerName + ": " + value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
             }
         } else {
             return new HeaderCondition(headerName, value);
