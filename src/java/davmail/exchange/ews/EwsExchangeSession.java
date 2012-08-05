@@ -796,20 +796,17 @@ public class EwsExchangeSession extends ExchangeSession {
 
     }
 
-    protected class HeaderCondition extends AttributeCondition {
+    protected static class HeaderCondition extends AttributeCondition {
 
-        protected HeaderCondition(String attributeName, Operator operator, String value) {
-            super(attributeName, operator, value);
+        protected HeaderCondition(String attributeName, String value) {
+            super(attributeName, Operator.Contains, value);
+            containmentMode = ContainmentMode.Substring;
+            containmentComparison = ContainmentComparison.IgnoreCase;
         }
 
         @Override
         protected FieldURI getFieldURI() {
-            // Exchange 2010 does not support header search
-            if (serverVersion.startsWith("Exchange2010") && "message-id".equals(attributeName)) {
-                return new UnindexedFieldURI("message:InternetMessageId");
-            } else {
-                return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
-            }
+            return new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, attributeName);
         }
 
     }
@@ -865,7 +862,17 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
-        return new HeaderCondition(headerName, Operator.IsEqualTo, value);
+        if (serverVersion.startsWith("Exchange2010")) {
+            if ("message-id".equals(headerName)) {
+                return new AttributeCondition(headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
+            } else {
+                // Exchange 2010 does not support header search, use PR_TRANSPORT_MESSAGE_HEADERS instead
+                return new AttributeCondition("messageheaders", Operator.Contains, headerName+": "+value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
+
+            }
+        } else {
+            return new HeaderCondition(headerName, value);
+        }
     }
 
     @Override

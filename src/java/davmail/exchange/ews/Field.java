@@ -232,6 +232,10 @@ public final class Field {
 
         // attachments
         FIELD_MAP.put("attachments", new UnindexedFieldURI("item:Attachments"));
+
+        // headers
+        FIELD_MAP.put("message-id", new UnindexedFieldURI("message:InternetMessageId"));
+        FIELD_MAP.put("messageheaders", new ExtendedFieldURI(0x007D, ExtendedFieldURI.PropertyType.String));
     }
 
     /**
