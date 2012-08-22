@@ -30,6 +30,8 @@ import org.boris.winrun4j.ServiceException;
  */
 public class DavService extends AbstractService {
 
+    protected boolean stopped;
+
     /**
      * Perform a service request.
      *
@@ -44,6 +46,7 @@ public class DavService extends AbstractService {
             case SERVICE_CONTROL_SHUTDOWN:
                 DavGatewayTray.debug(new BundleMessage("LOG_STOPPING_DAVMAIL"));
                 DavGateway.stop();
+                stopped = true;
         }
         return 0;
     }
@@ -61,11 +64,29 @@ public class DavService extends AbstractService {
         }
 
         Settings.load();
-        DavGatewayTray.init();
+        if (!Settings.getBooleanProperty("davmail.server")) {
+            Settings.setProperty("davmail.server", "true");
+            Settings.updateLoggingConfig();
+        }
 
         DavGateway.start();
         DavGatewayTray.debug(new BundleMessage("LOG_DAVMAIL_STARTED"));
 
+        // launch a non daemon thread
+        Thread shutdownListenerThread = new Thread("ShutDownListener") {
+            public void run() {
+                try {
+                    while (!stopped) {
+                        Thread.sleep(1000);
+                    }
+                } catch (InterruptedException e) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
+                    DavGateway.stop();
+                    DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
+                }
+            }
+        };
+        shutdownListenerThread.start();
         return 0;
     }
 }
