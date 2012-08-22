@@ -58,8 +58,7 @@ a.download {
   color: white;
   font-weight: bold;
   padding: 8px;
-  -moz-border-radius: 8px;
-  -webkit-border-radius: 10px;
+  border-radius: 8px;
   margin: 5px;
 }
 a.donate {
@@ -68,8 +67,7 @@ a.donate {
   color: white;
   font-weight: bold;
   padding: 8px;
-  -moz-border-radius: 8px;
-  -webkit-border-radius: 10px;
+  border-radius: 8px;
   margin: 5px;
 }
 .about p {
