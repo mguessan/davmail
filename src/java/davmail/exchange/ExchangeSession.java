@@ -130,6 +130,10 @@ public abstract class ExchangeSession {
     protected final HttpClient httpClient;
 
     protected String userName;
+    /**
+     * A OTP pre-auth page may require a different username.
+     */
+    private String preAuthUsername;
 
     protected String serverVersion;
 
@@ -147,6 +151,18 @@ public abstract class ExchangeSession {
      * Logon form password field, default is password.
      */
     private String passwordInput = null;
+    /**
+     * Tells if, during the login navigation, an OTP pre-auth page has been found.
+     */
+    private boolean otpPreAuthFound = false;
+    /**
+     * Lets the user try again a couple of times to enter the OTP pre-auth key before giving up.
+     */
+    private int otpPreAuthRetries = 0;
+    /**
+     * Maximum number of times the user can try to input again the OTP pre-auth key before giving up.
+     */
+    private static final int MAX_OTP_RETRIES = 3;
 
     /**
      * Create an exchange session for the given URL.
@@ -164,6 +180,22 @@ public abstract class ExchangeSession {
             // set private connection pool
             DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
             boolean isBasicAuthentication = isBasicAuthentication(httpClient, url);
+
+            // The user may have configured an OTP pre-auth username. It is processed
+            // so early because OTP pre-auth may disappear in the Exchange LAN and this
+            // helps the user to not change is account settings in mail client at each network change.
+            if (preAuthUsername == null) {
+                // Searches for the delimiter in configured username for the pre-auth user. 
+                // The double-quote is not allowed inside email addresses anyway.
+                int doubleQuoteIndex = this.userName.indexOf('"');   
+                if (doubleQuoteIndex > 0) {
+                    preAuthUsername = this.userName.substring(0, doubleQuoteIndex);
+                    this.userName = this.userName.substring(doubleQuoteIndex + 1);
+                } else {
+                    // No doublequote: the pre-auth user is the full username, or it is not used at all.
+                    preAuthUsername = this.userName; 
+                }
+            }
 
             DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
 
@@ -358,6 +390,9 @@ public abstract class ExchangeSession {
         // create an instance of HtmlCleaner
         HtmlCleaner cleaner = new HtmlCleaner();
 
+        // A OTP token authentication form in a previous page could have username fields with different names
+        userNameInputs.clear();
+
         try {
             TagNode node = cleaner.clean(initmethod.getResponseBodyAsStream());
             List forms = node.getElementListByName("form", true);
@@ -477,6 +512,7 @@ public abstract class ExchangeSession {
     }
 
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
+
 		setAuthFormFields(logonMethod, httpClient, password);
 
         // add exchange 2010 PBack cookie in compatibility mode
@@ -491,6 +527,14 @@ public abstract class ExchangeSession {
         if (!isAuthenticated()) {
             // try to get new method from script based redirection
             logonMethod = buildLogonMethod(httpClient, logonMethod);
+
+            if (otpPreAuthFound && otpPreAuthRetries < MAX_OTP_RETRIES) {
+                // A OTP pre-auth page has been found, it is needed to restart the login process.
+                // This applies to both the case the user entered a good OTP code (the usual login process
+                // takes place) and the case the user entered a wrong OTP code (another code will be asked to him).
+                // The user has up to MAX_OTP_RETRIES chances to input a valid OTP key.
+                return postLogonMethod(httpClient, logonMethod, userName, password);
+            }
 
             if (logonMethod != null) {
                 // if logonMethod is not null, try to follow redirection
@@ -540,13 +584,26 @@ public abstract class ExchangeSession {
         }
         // make sure username and password fields are empty
         ((PostMethod) logonMethod).removeParameter(userNameInput);
-        ((PostMethod) logonMethod).removeParameter(passwordInput);
+        if (passwordInput != null) {
+            ((PostMethod) logonMethod).removeParameter(passwordInput);
+        }
         ((PostMethod) logonMethod).removeParameter("trusted");
         ((PostMethod) logonMethod).removeParameter("flags");
-        ((PostMethod) logonMethod).addParameter(userNameInput, userName);
-        ((PostMethod) logonMethod).addParameter(passwordInput, password);
-        ((PostMethod) logonMethod).addParameter("trusted", "4");
-        ((PostMethod) logonMethod).addParameter("flags", "4");
+
+        if (passwordInput == null) {
+            // This is a OTP pre-auth page. A different username may be required.
+            otpPreAuthFound = true;
+            otpPreAuthRetries++;
+            ((PostMethod) logonMethod).addParameter(userNameInput, preAuthUsername);
+        } else {
+            otpPreAuthFound = false;
+            otpPreAuthRetries = 0;
+            // This is a regular Exchange login page
+            ((PostMethod) logonMethod).addParameter(userNameInput, userName);
+            ((PostMethod) logonMethod).addParameter(passwordInput, password);
+            ((PostMethod) logonMethod).addParameter("trusted", "4");
+            ((PostMethod) logonMethod).addParameter("flags", "4");
+        }
     }
 
     protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
