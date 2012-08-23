@@ -51,6 +51,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Create HttpClient instance according to DavGateway Settings
@@ -290,7 +292,33 @@ public final class DavGatewayHttpClientFacade {
         return status;
     }
 
-    protected static String getLocationValue(HttpMethod method) throws URIException {
+    /**
+     * Checks if there is a Javascript redirect inside the page,
+     * and returns it.
+     *
+     * A Javascript redirect is usually found on OTP pre-auth page,
+     * when the pre-auth form is in a distinct page from the regular Exchange login one.
+     *
+     * @param method http method
+     * @return the redirect URL if found, or null if no Javascript redirect has been found
+     */
+    private static String getJavascriptRedirectUrl(HttpMethod method) throws IOException {
+        String responseBody = method.getResponseBodyAsString();
+        String jsRedirectionUrl = null;
+        if (responseBody.indexOf("javascript:go_url()") > 0) {
+            // Create a pattern to match a javascript redirect url
+            Pattern p = Pattern.compile("go_url\\(\\)[^{]+\\{[^l]+location.replace\\(\"(/[^\"]+)\"\\)");
+            Matcher m = p.matcher(responseBody);
+            if (m.find()) {
+                // Javascript redirect found!
+                jsRedirectionUrl = m.group(1);
+            }
+        }
+        return jsRedirectionUrl;
+    }
+
+
+    private static String getLocationValue(HttpMethod method) throws URIException {
         String locationValue = null;
         Header location = method.getResponseHeader("Location");
         if (location != null && isRedirect(method.getStatusCode())) {
@@ -323,6 +351,10 @@ public final class DavGatewayHttpClientFacade {
             checkNTLM(httpClient, currentMethod);
 
             String locationValue = getLocationValue(currentMethod);
+            // check javascript redirect (multiple authentication pages)
+            if (locationValue == null) {
+                locationValue = getJavascriptRedirectUrl(currentMethod);
+            }
 
             int redirectCount = 0;
             while (redirectCount++ < 10
