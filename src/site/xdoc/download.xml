@@ -39,7 +39,9 @@
                         </a>
                         <br/>
                         and follow instructions at
-                        <a href="macosxsetup.html">DavMail Setup on Mac OS X</a>
+                        <a href="macosxsetup.html">DavMail Setup on Mac OS X</a><br/>
+                        Note to OSX Mountain Lion users: you need to disable Gatekeeper (at least temporarily) to avoid
+                        the <code>DavMail is damaged and can’t be opened</code> message.
                     </li>
                     <li>
                         <strong>Debian Linux (Ubuntu):</strong>

@@ -11,6 +11,9 @@
     <body>
 
         <section name="DavMail Setup on Mac OS X">
+            <p>Note to OSX Mountain Lion users: you need to disable Gatekeeper (at least temporarily) to avoid the
+                <code>DavMail is damaged and can’t be opened</code> message.
+            </p>
             <p>Older OSX releases include Java 5, this version does not support Tray icon,
                 and DavMail uses a dedicated frame instead. An upgrade to Java 1.6 will enable tray icon.
                 Recent OSX versions either include Java 6 or can install it automatically on first Java application
