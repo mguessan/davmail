@@ -146,7 +146,7 @@ public abstract class ExchangeSession {
     /**
      * Logon form password field, default is password.
      */
-    private String passwordInput = "password";
+    private String passwordInput = null;
 
     /**
      * Create an exchange session for the given URL.
@@ -402,7 +402,7 @@ public abstract class ExchangeSession {
                         HttpMethod newInitMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
                         logonMethod = buildLogonMethod(httpClient, newInitMethod);
                     } else if (TOKEN_FIELDS.contains(name)) {
-                        // one time password, ask user
+                        // one time password, ask it to the user
                         ((PostMethod) logonMethod).addParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
                     } else if ("otc".equals(name)) {
                         // captcha image, get image and ask user
@@ -477,39 +477,7 @@ public abstract class ExchangeSession {
     }
 
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
-        String userNameInput;
-        if (userNameInputs.size() == 2) {
-            // multiple username fields, split userid|username on |
-            int pipeIndex = userName.indexOf('|');
-            if (pipeIndex < 0) {
-                LOGGER.warn("Multiple user fields detected, please use userid|username as user name in client");
-            } else {
-                String userid = userName.substring(0, pipeIndex);
-                ((PostMethod) logonMethod).removeParameter("userid");
-                ((PostMethod) logonMethod).addParameter("userid", userid);
-                userName = userName.substring(pipeIndex + 1);
-                // adjust credentials
-                this.userName = userName;
-                DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
-            }
-
-            userNameInput = "username";
-        } else if (userNameInputs.size() == 1) {
-            // simple username field
-            userNameInput = userNameInputs.get(0);
-        } else {
-            // should not happen
-            userNameInput = "username";
-        }
-        // make sure username and password fields are empty
-        ((PostMethod) logonMethod).removeParameter(userNameInput);
-        ((PostMethod) logonMethod).removeParameter(passwordInput);
-        ((PostMethod) logonMethod).removeParameter("trusted");
-        ((PostMethod) logonMethod).removeParameter("flags");
-        ((PostMethod) logonMethod).addParameter(userNameInput, userName);
-        ((PostMethod) logonMethod).addParameter(passwordInput, password);
-        ((PostMethod) logonMethod).addParameter("trusted", "4");
-        ((PostMethod) logonMethod).addParameter("flags", "4");
+		setAuthFormFields(logonMethod, httpClient, password);
 
         // add exchange 2010 PBack cookie in compatibility mode
         httpClient.getState().addCookie(new Cookie(httpClient.getHostConfiguration().getHost(), "PBack", "0", "/", null, false));
@@ -544,6 +512,41 @@ public abstract class ExchangeSession {
             logonMethod = submitLanguageSelectionForm(logonMethod);
         }
         return logonMethod;
+    }
+
+    protected void setAuthFormFields(HttpMethod logonMethod, HttpClient httpClient, String password) throws IllegalArgumentException {
+        String userNameInput;
+        if (userNameInputs.size() == 2) {
+            // multiple username fields, split userid|username on |
+            int pipeIndex = userName.indexOf('|');
+            if (pipeIndex < 0) {
+                LOGGER.warn("Multiple user fields detected, please use userid|username as user name in client");
+            } else {
+                String userid = userName.substring(0, pipeIndex);
+                ((PostMethod) logonMethod).removeParameter("userid");
+                ((PostMethod) logonMethod).addParameter("userid", userid);
+                userName = userName.substring(pipeIndex + 1);
+                // adjust credentials
+                DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
+            }
+
+            userNameInput = "username";
+        } else if (userNameInputs.size() == 1) {
+            // simple username field
+            userNameInput = userNameInputs.get(0);
+        } else {
+            // should not happen
+            userNameInput = "username";
+        }
+        // make sure username and password fields are empty
+        ((PostMethod) logonMethod).removeParameter(userNameInput);
+        ((PostMethod) logonMethod).removeParameter(passwordInput);
+        ((PostMethod) logonMethod).removeParameter("trusted");
+        ((PostMethod) logonMethod).removeParameter("flags");
+        ((PostMethod) logonMethod).addParameter(userNameInput, userName);
+        ((PostMethod) logonMethod).addParameter(passwordInput, password);
+        ((PostMethod) logonMethod).addParameter("trusted", "4");
+        ((PostMethod) logonMethod).addParameter("flags", "4");
     }
 
     protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
