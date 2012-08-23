@@ -290,6 +290,23 @@ public final class DavGatewayHttpClientFacade {
         return status;
     }
 
+    protected static String getLocationValue(HttpMethod method) throws URIException {
+        String locationValue = null;
+        Header location = method.getResponseHeader("Location");
+        if (location != null && isRedirect(method.getStatusCode())) {
+            locationValue = location.getValue();
+            // Novell iChain workaround
+            if (locationValue.indexOf('"') >= 0) {
+                locationValue = URIUtil.encodePath(locationValue);
+            }
+            // workaround for invalid relative location
+            if (locationValue.startsWith("./")) {
+                locationValue = locationValue.substring(1);
+            }
+        }
+        return locationValue;
+    }
+
     /**
      * Execute method with httpClient, follow 30x redirects.
      *
@@ -303,31 +320,22 @@ public final class DavGatewayHttpClientFacade {
         try {
             DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS", currentMethod.getURI()));
             httpClient.executeMethod(currentMethod);
-            int status = checkNTLM(httpClient, currentMethod);
+            checkNTLM(httpClient, currentMethod);
 
-            Header location = currentMethod.getResponseHeader("Location");
+            String locationValue = getLocationValue(currentMethod);
+
             int redirectCount = 0;
             while (redirectCount++ < 10
-                    && location != null
-                    && isRedirect(status)) {
-                // Novell iChain workaround
-                String locationValue = location.getValue();
-                if (locationValue.indexOf('"') >= 0) {
-                    locationValue = URIUtil.encodePath(locationValue);
-                }
-                // workaround for invalid relative location
-                if (locationValue.startsWith("./")) {
-                    locationValue = locationValue.substring(1);
-                }
+                    && locationValue != null) {
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(locationValue);
                 currentMethod.setFollowRedirects(false);
                 DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS_COUNT", currentMethod.getURI(), redirectCount));
                 httpClient.executeMethod(currentMethod);
                 checkNTLM(httpClient, currentMethod);
-                location = currentMethod.getResponseHeader("Location");
+                locationValue = getLocationValue(currentMethod);
             }
-            if (location != null && isRedirect(currentMethod.getStatusCode())) {
+            if (locationValue != null) {
                 currentMethod.releaseConnection();
                 throw new HttpException("Maximum redirections reached");
             }
