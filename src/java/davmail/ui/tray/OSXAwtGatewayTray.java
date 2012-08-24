@@ -35,6 +35,7 @@ import java.awt.image.RenderedImage;
 /**
  * Extended Awt tray with OSX extensions.
  */
+@SuppressWarnings("Since15")
 public class OSXAwtGatewayTray extends AwtGatewayTray {
     protected static final String OSX_TRAY_ACTIVE_PNG = "osxtray2.png";
     protected static final String OSX_TRAY_PNG = "osxtray.png";

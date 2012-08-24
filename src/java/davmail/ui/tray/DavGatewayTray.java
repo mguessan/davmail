@@ -225,16 +225,18 @@ public final class DavGatewayTray {
      */
     public static void init() {
         if (!Settings.getBooleanProperty("davmail.server")) {
-            // first try to load SWT before with Java
-            ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-            try {
-                // trigger ClassNotFoundException
-                classloader.loadClass("org.eclipse.swt.SWT");
-                // SWT available, create tray
-                davGatewayTray = new SwtGatewayTray();
-                davGatewayTray.init();
-            } catch (ClassNotFoundException e) {
-                DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+            // first try to load SWT before with Java, except on 1.7
+            if (System.getProperty("java.version").compareTo("1.7") < 0) {
+                ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+                try {
+                    // trigger ClassNotFoundException
+                    classloader.loadClass("org.eclipse.swt.SWT");
+                    // SWT available, create tray
+                    davGatewayTray = new SwtGatewayTray();
+                    davGatewayTray.init();
+                } catch (ClassNotFoundException e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                }
             }
             // try java6 tray support
             if (davGatewayTray == null) {
