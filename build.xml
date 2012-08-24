@@ -259,14 +259,13 @@
         </copy>
         <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
         <copy file="davmail.sh" todir="dist"/>
-        <taskdef name="jsmoothgen"
-                 classname="net.charabia.jsmoothgen.ant.JSmoothGen"
-                 classpathref="classpath"/>
+
+        <!-- use WinRun4J wrappers -->
         <copy file="src/winrun4j/davmail.exe" todir="dist"/>
         <copy file="src/winrun4j/davmailconsole.exe" todir="dist"/>
-        <!-- use WinRun4J to generate DavMail service -->
         <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
-        <jsmoothgen project="davmail64.jsmooth" skeletonroot="src/jsmooth/skeletons"/>
+        <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
+
         <zip file="dist/davmail-${release-name}.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
