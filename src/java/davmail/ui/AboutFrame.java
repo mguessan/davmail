@@ -125,7 +125,8 @@ public class AboutFrame extends JFrame {
         if (currentVersion != null) {
             buffer.append(BundleMessage.format("UI_CURRENT_VERSION", currentVersion));
         }
-        if (currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) < 0) {
+        if ((currentVersion != null && releasedVersion != null && currentVersion.compareTo(releasedVersion) != 0)
+                || (currentVersion == null && releasedVersion != null)) {
             buffer.append(BundleMessage.format("UI_LATEST_VERSION", releasedVersion));
         }
         buffer.append(BundleMessage.format("UI_HELP_INSTRUCTIONS"));
