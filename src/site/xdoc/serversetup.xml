@@ -45,6 +45,7 @@ davmail.proxyHost=
 davmail.proxyPort=
 davmail.proxyUser=
 davmail.proxyPassword=
+davmail.noProxyFor=
 davmail.ssl.keystoreType=JKS
 davmail.ssl.keyPass=
 davmail.ssl.keystoreFile=

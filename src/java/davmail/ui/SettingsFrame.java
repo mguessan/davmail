@@ -67,6 +67,7 @@ public class SettingsFrame extends JFrame {
     JTextField httpProxyPortField;
     JTextField httpProxyUserField;
     JTextField httpProxyPasswordField;
+    JTextField noProxyForField;
 
     JCheckBox allowRemoteField;
     JTextField bindAddressField;
@@ -248,7 +249,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getProxyPanel() {
-        JPanel proxyPanel = new JPanel(new GridLayout(6, 2));
+        JPanel proxyPanel = new JPanel(new GridLayout(7, 2));
         proxyPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_PROXY")));
 
         boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
@@ -261,12 +262,14 @@ public class SettingsFrame extends JFrame {
         httpProxyPortField = new JTextField(Settings.getProperty("davmail.proxyPort"), 4);
         httpProxyUserField = new JTextField(Settings.getProperty("davmail.proxyUser"), 10);
         httpProxyPasswordField = new JPasswordField(Settings.getProperty("davmail.proxyPassword"), 10);
+        noProxyForField = new JTextField(Settings.getProperty("davmail.noProxyFor"), 15);
 
         enableProxyField.setEnabled(!useSystemProxies);
         httpProxyField.setEnabled(enableProxy);
         httpProxyPortField.setEnabled(enableProxy);
         httpProxyUserField.setEnabled(enableProxy || useSystemProxies);
         httpProxyPasswordField.setEnabled(enableProxy || useSystemProxies);
+        noProxyForField.setEnabled(enableProxy || useSystemProxies);
 
         useSystemProxiesField.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
@@ -277,6 +280,7 @@ public class SettingsFrame extends JFrame {
                 httpProxyPortField.setEnabled(!newUseSystemProxies && newEnableProxy);
                 httpProxyUserField.setEnabled(newUseSystemProxies || newEnableProxy);
                 httpProxyPasswordField.setEnabled(newUseSystemProxies || newEnableProxy);
+                noProxyForField.setEnabled(newUseSystemProxies || newEnableProxy);
             }
         });
         enableProxyField.addActionListener(new ActionListener() {
@@ -286,6 +290,7 @@ public class SettingsFrame extends JFrame {
                 httpProxyPortField.setEnabled(newEnableProxy);
                 httpProxyUserField.setEnabled(newEnableProxy);
                 httpProxyPasswordField.setEnabled(newEnableProxy);
+                noProxyForField.setEnabled(newEnableProxy);
             }
         });
 
@@ -295,6 +300,7 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PORT"), httpProxyPortField);
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_USER"), httpProxyUserField);
         addSettingComponent(proxyPanel, BundleMessage.format("UI_PROXY_PASSWORD"), httpProxyPasswordField);
+        addSettingComponent(proxyPanel, BundleMessage.format("UI_NO_PROXY"), noProxyForField);
         updateMaximumSize(proxyPanel);
         return proxyPanel;
     }
@@ -569,10 +575,12 @@ public class SettingsFrame extends JFrame {
         httpProxyPortField.setEnabled(!useSystemProxies && enableProxy);
         httpProxyUserField.setEnabled(useSystemProxies || enableProxy);
         httpProxyPasswordField.setEnabled(useSystemProxies || enableProxy);
+        noProxyForField.setEnabled(useSystemProxies || enableProxy);
         httpProxyField.setText(Settings.getProperty("davmail.proxyHost"));
         httpProxyPortField.setText(Settings.getProperty("davmail.proxyPort"));
         httpProxyUserField.setText(Settings.getProperty("davmail.proxyUser"));
         httpProxyPasswordField.setText(Settings.getProperty("davmail.proxyPassword"));
+        noProxyForField.setText(Settings.getProperty("davmail.noProxyFor"));
 
         bindAddressField.setText(Settings.getProperty("davmail.bindAddress"));
         allowRemoteField.setSelected(Settings.getBooleanProperty(("davmail.allowRemote")));
@@ -732,6 +740,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.proxyPort", httpProxyPortField.getText());
                 Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
                 Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
+                Settings.setProperty("davmail.noProxyFor", noProxyForField.getText());
 
                 Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
                 Settings.setProperty("davmail.clientSoTimeout", String.valueOf(clientSoTimeoutField.getText()));

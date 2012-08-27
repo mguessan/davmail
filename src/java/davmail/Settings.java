@@ -150,6 +150,7 @@ public final class Settings {
         SETTINGS.put("davmail.proxyPort", "");
         SETTINGS.put("davmail.proxyUser", "");
         SETTINGS.put("davmail.proxyPassword", "");
+        SETTINGS.put("davmail.noProxyFor", "");
         SETTINGS.put("davmail.server", Boolean.FALSE.toString());
         SETTINGS.put("davmail.server.certificate.hash", "");
         SETTINGS.put("davmail.caldavAlarmSound", "");

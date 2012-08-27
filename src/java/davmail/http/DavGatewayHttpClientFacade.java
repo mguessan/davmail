@@ -173,11 +173,15 @@ public final class DavGatewayHttpClientFacade {
         String proxyUser = null;
         String proxyPassword = null;
 
-        if (useSystemProxies) {
-            // get proxy for url from system settings
-            System.setProperty("java.net.useSystemProxies", "true");
-            try {
-                List<Proxy> proxyList = getProxyForURI(new java.net.URI(url));
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String noProxyFor = Settings.getProperty("davmail.noProxyFor");
+            if (noProxyFor != null && noProxyFor.contains(uri.getHost())) {
+                LOGGER.debug("no proxy for "+uri.getHost());
+            } else if (useSystemProxies) {
+                // get proxy for url from system settings
+                System.setProperty("java.net.useSystemProxies", "true");
+                List<Proxy> proxyList = getProxyForURI(uri);
                 if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
                     InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
                     proxyHost = inetSocketAddress.getHostName();
@@ -187,14 +191,14 @@ public final class DavGatewayHttpClientFacade {
                     proxyUser = Settings.getProperty("davmail.proxyUser");
                     proxyPassword = Settings.getProperty("davmail.proxyPassword");
                 }
-            } catch (URISyntaxException e) {
-                throw new DavMailException("LOG_INVALID_URL", url);
+            } else if (enableProxy) {
+                    proxyHost = Settings.getProperty("davmail.proxyHost");
+                    proxyPort = Settings.getIntProperty("davmail.proxyPort");
+                    proxyUser = Settings.getProperty("davmail.proxyUser");
+                    proxyPassword = Settings.getProperty("davmail.proxyPassword");
             }
-        } else if (enableProxy) {
-            proxyHost = Settings.getProperty("davmail.proxyHost");
-            proxyPort = Settings.getIntProperty("davmail.proxyPort");
-            proxyUser = Settings.getProperty("davmail.proxyUser");
-            proxyPassword = Settings.getProperty("davmail.proxyPassword");
+        } catch (URISyntaxException e) {
+            throw new DavMailException("LOG_INVALID_URL", url);
         }
 
         // configure proxy

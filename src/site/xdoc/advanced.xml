@@ -57,6 +57,11 @@
                         <th>Sample value</th>
                     </tr>
                     <tr>
+                        <td>No proxy for</td>
+                        <td>comma separated list of hosts accessible without a proxy</td>
+                        <td>davmail.sourceforge.net</td>
+                    </tr>
+                    <tr>
                         <td>Allow remote connections</td>
                         <td>Allow remote connections to the gateway (server mode)</td>
                         <td>false</td>
