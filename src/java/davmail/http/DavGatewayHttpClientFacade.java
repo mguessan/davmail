@@ -143,6 +143,20 @@ public final class DavGatewayHttpClientFacade {
         }
     }
 
+    protected static boolean isNoProxyFor(java.net.URI uri) {
+        final String noProxyFor = Settings.getProperty("davmail.noProxyFor");
+        if (noProxyFor != null) {
+            final String urihost = uri.getHost().toLowerCase();
+            final String[] domains = noProxyFor.toLowerCase().split(",\\s*");
+            for (String domain : domains) {
+                if (urihost.endsWith(domain)) {
+                    return true; //break;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Update http client configuration (proxy)
      *
@@ -175,8 +189,7 @@ public final class DavGatewayHttpClientFacade {
 
         try {
             java.net.URI uri = new java.net.URI(url);
-            String noProxyFor = Settings.getProperty("davmail.noProxyFor");
-            if (noProxyFor != null && noProxyFor.contains(uri.getHost())) {
+            if (isNoProxyFor(uri)) {
                 LOGGER.debug("no proxy for "+uri.getHost());
             } else if (useSystemProxies) {
                 // get proxy for url from system settings
@@ -304,7 +317,7 @@ public final class DavGatewayHttpClientFacade {
     /**
      * Checks if there is a Javascript redirect inside the page,
      * and returns it.
-     *
+     * <p/>
      * A Javascript redirect is usually found on OTP pre-auth page,
      * when the pre-auth form is in a distinct page from the regular Exchange login one.
      *
@@ -454,8 +467,8 @@ public final class DavGatewayHttpClientFacade {
      *
      * @param httpClient Http client instance
      * @param path       Path to be deleted
-     * @throws IOException on error
      * @return http status
+     * @throws IOException on error
      */
     public static int executeDeleteMethod(HttpClient httpClient, String path) throws IOException {
         DeleteMethod deleteMethod = new DeleteMethod(path);
