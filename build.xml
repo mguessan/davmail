@@ -265,6 +265,7 @@
         <copy file="src/winrun4j/davmailconsole.exe" todir="dist"/>
         <copy file="src/winrun4j/davmailservice.exe" todir="dist"/>
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
+        <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
 
         <zip file="dist/davmail-${release-name}.zip">
             <fileset dir="dist">

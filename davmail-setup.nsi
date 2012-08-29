@@ -85,6 +85,7 @@ Section "MainSection" SEC01
   File "dist\davmailconsole.exe"
   File "dist\davmailservice.exe"
   File "dist\davmail64.exe"
+  File "dist\davmailservice64.exe"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
   File "dist\lib\commons-codec-1.3.jar"
@@ -183,6 +184,7 @@ no_quest:
   Delete "$INSTDIR\lib\woodstox-core-asl-4.1.2.jar"
   Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
+  Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
   Delete "$INSTDIR\davmailservice.exe"
   Delete "$INSTDIR\davmailconsole.exe"
