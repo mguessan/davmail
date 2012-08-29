@@ -236,8 +236,34 @@
         <delete dir="dist"/>
         <mkdir dir="dist"/>
         <echo file="dist/version.txt" message="${release}"/>
+        <pathconvert property="manifest-classpath" pathsep=" ">
+            <mapper>
+                <chainedmapper>
+                    <!-- remove absolute path -->
+                    <flattenmapper/>
+                    <globmapper from="*" to="lib/*"/>
+                </chainedmapper>
+            </mapper>
+            <path>
+                <fileset dir="lib">
+                    <include name="*.jar"/>
+                    <exclude name="ant-deb*.jar"/>
+                    <exclude name="jarbundler-*.jar"/>
+                    <exclude name="jsmoothgen-ant-*.jar"/>
+                    <exclude name="junit-*.jar"/>
+                    <exclude name="libgrowl-*.jar"/>
+                    <exclude name="nsisant-*.jar"/>
+                    <exclude name="redline-*.jar"/>
+                    <exclude name="servlet-api-*.jar"/>
+                    <exclude name="swt-*.jar"/>
+                    <exclude name="winrun4j-*.jar"/>
+                </fileset>
+            </path>
+        </pathconvert>
         <jar basedir="target/classes" destfile="dist/davmail.jar">
             <manifest>
+                <attribute name="Main-Class" value="davmail.DavGateway"/>
+                <attribute name="Class-Path" value="${manifest-classpath}"/>
                 <section name="davmail/">
                     <attribute name="Implementation-Title" value="DavMail Gateway"/>
                     <attribute name="Implementation-Version" value="${release-name}"/>
