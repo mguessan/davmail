@@ -721,6 +721,14 @@ public class VCalendar extends VObject {
     }
 
     /**
+     * Get first VEvent
+     * @return first VEvent
+     */
+    public VObject getFirstVevent() {
+        return firstVevent;
+    }
+
+    /**
      * Get recurring VCalendar occurence exceptions.
      *
      * @return event occurences

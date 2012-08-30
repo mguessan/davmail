@@ -1655,22 +1655,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
                         }
                     }
-                    List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
-                    if (attendees != null) {
-                        for (EWSMethod.Attendee attendee : attendees) {
-                            VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
-                            attendeeProperty.addParam("CN", attendee.name);
-                            String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
-                            if ("Exchange2007_SP1".equals(serverVersion) && email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
-                                attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
-                            } else {
-                                attendeeProperty.addParam("PARTSTAT", attendee.partstat);
-                            }
-                            //attendeeProperty.addParam("RSVP", "TRUE");
-                            attendeeProperty.addParam("ROLE", attendee.role);
-                            localVCalendar.addFirstVeventProperty(attendeeProperty);
-                        }
-                    }
+                    fixAttendees(getItemMethod, localVCalendar.getFirstVevent());
                     // fix UID and RECURRENCE-ID, broken at least on Exchange 2007
                     List<EWSMethod.Occurrence> occurences = getItemMethod.getResponseItem().getOccurrences();
                     if (occurences != null) {
@@ -1678,7 +1663,13 @@ public class EwsExchangeSession extends ExchangeSession {
                         for (EWSMethod.Occurrence occurrence : occurences) {
                             if (modifiedOccurrencesIterator.hasNext()) {
                                 VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
-                                // TODO: fix modified occurences attendees
+                                // fix modified occurrences attendees
+                                GetItemMethod getOccurrenceMethod = new GetItemMethod(BaseShape.ID_ONLY, occurrence.itemId, false);
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+                                executeMethod(getOccurrenceMethod);
+                                fixAttendees(getOccurrenceMethod, modifiedOccurrence);
 
                                 if ("Exchange2007_SP1".equals(serverVersion)) {
                                     // fix uid, should be the same as main VEVENT
@@ -1713,6 +1704,25 @@ public class EwsExchangeSession extends ExchangeSession {
                 throw buildHttpException(e);
             }
             return content;
+        }
+
+        protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws EWSException {
+            List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
+            if (attendees != null) {
+                for (EWSMethod.Attendee attendee : attendees) {
+                    VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
+                    attendeeProperty.addParam("CN", attendee.name);
+                    String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
+                    if ("Exchange2007_SP1".equals(serverVersion) && email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
+                        attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
+                    } else {
+                        attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                    }
+                    //attendeeProperty.addParam("RSVP", "TRUE");
+                    attendeeProperty.addParam("ROLE", attendee.role);
+                    vEvent.addProperty(attendeeProperty);
+                }
+            }
         }
     }
 

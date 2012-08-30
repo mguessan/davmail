@@ -70,6 +70,17 @@ public class ItemId {
     }
 
     /**
+     * Build Item id object from item id and change key.
+     *
+     * @param itemId item id
+     */
+    public ItemId(String name, String itemId, String changeKey) {
+        this.name = name;
+        this.id = itemId;
+        this.changeKey = changeKey;
+    }
+
+    /**
      * Write item id as XML.
      *
      * @param writer request writer

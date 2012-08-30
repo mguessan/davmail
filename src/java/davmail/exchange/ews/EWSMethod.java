@@ -477,6 +477,11 @@ public abstract class EWSMethod extends PostMethod {
          * Original occurence start date
          */
         public String originalStart;
+
+        /**
+         * Occurence itemid
+         */
+        public ItemId itemId;
     }
 
     /**
@@ -867,17 +872,20 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void handleOccurrence(XMLStreamReader reader, Item item) throws XMLStreamException {
+        Occurrence occurrence = new Occurrence();
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Occurrence"))) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
+                if ("ItemId".equals(tagLocalName)) {
+                    occurrence.itemId = new ItemId("ItemId", getAttributeValue(reader, "Id"), getAttributeValue(reader, "ChangeKey"));
+                }
                 if ("OriginalStart".equals(tagLocalName)) {
-                    Occurrence occurrence = new Occurrence();
                     occurrence.originalStart = XMLStreamUtil.getElementText(reader);
-                    item.addOccurrence(occurrence);
                 }
             }
         }
+        item.addOccurrence(occurrence);
     }
     
     public static String responseTypeToPartstat(String responseType) {
