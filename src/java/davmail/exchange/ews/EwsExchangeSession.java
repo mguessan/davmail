@@ -1322,7 +1322,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String instancetype = response.get(Field.get("instancetype").getResponseName());
             boolean isrecurring = "true".equals(response.get(Field.get("isrecurring").getResponseName()));
             String calendaritemtype = response.get(Field.get("calendaritemtype").getResponseName());
-            isException = "3".equals(instancetype) || (isrecurring && "Single".equals(calendaritemtype));
+            isException = "3".equals(instancetype);
         }
 
         /**
@@ -1643,13 +1643,17 @@ public class EwsExchangeSession extends ExchangeSession {
                         content = getICS(new SharedByteArrayInputStream(content));
                     }
                     VCalendar localVCalendar = new VCalendar(content, email, getVTimezone());
-                    // remove additional reminder
-                    if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
-                        localVCalendar.removeVAlarm();
-                    }
+
                     String calendaruid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
-                    if (calendaruid != null) {
-                        localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+
+                    if ("Exchange2007_SP1".equals(serverVersion)) {
+                        // remove additional reminder
+                        if (!"true".equals(getItemMethod.getResponseItem().get(Field.get("reminderset").getResponseName()))) {
+                            localVCalendar.removeVAlarm();
+                        }
+                        if (calendaruid != null) {
+                            localVCalendar.setFirstVeventPropertyValue("UID", calendaruid);
+                        }
                     }
                     List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
                     if (attendees != null) {
@@ -1674,14 +1678,19 @@ public class EwsExchangeSession extends ExchangeSession {
                         for (EWSMethod.Occurrence occurrence : occurences) {
                             if (modifiedOccurrencesIterator.hasNext()) {
                                 VObject modifiedOccurrence = modifiedOccurrencesIterator.next();
-                                // fix uid, should be the same as main VEVENT
-                                if (calendaruid != null) {
-                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
-                                }
-                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                                if (recurrenceId != null) {
-                                    recurrenceId.removeParam("TZID");
-                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                                // TODO: fix modified occurences attendees
+
+                                if ("Exchange2007_SP1".equals(serverVersion)) {
+                                    // fix uid, should be the same as main VEVENT
+                                    if (calendaruid != null) {
+                                        modifiedOccurrence.setPropertyValue("UID", calendaruid);
+                                    }
+
+                                    VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                                    if (recurrenceId != null) {
+                                        recurrenceId.removeParam("TZID");
+                                        recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
+                                    }
                                 }
                             }
                         }

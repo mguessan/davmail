@@ -212,6 +212,7 @@ public class VCalendar extends VObject {
                     if (isCdoAllDay(vObject)) {
                         setClientAllday(vObject.getProperty("DTSTART"));
                         setClientAllday(vObject.getProperty("DTEND"));
+                        setClientAllday(vObject.getProperty("RECURRENCE-ID"));
                     }
                     String cdoBusyStatus = vObject.getPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS");
                     if (cdoBusyStatus != null) {
