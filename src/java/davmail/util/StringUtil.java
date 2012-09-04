@@ -143,6 +143,7 @@ public final class StringUtil {
     private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
     private static final Pattern URLENCODED_PLUS_PATTERN = Pattern.compile("%2B");
     private static final Pattern URLENCODED_COLON_PATTERN = Pattern.compile("%3A");
+    private static final Pattern URLENCODED_SEMICOLON_PATTERN = Pattern.compile("%3B");
     private static final Pattern URLENCODED_LT_PATTERN = Pattern.compile("%3C");
     private static final Pattern URLENCODED_GT_PATTERN = Pattern.compile("%3E");
     private static final Pattern URLENCODED_QUOTE_PATTERN = Pattern.compile("%22");
@@ -162,6 +163,7 @@ public final class StringUtil {
 
     private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
+    private static final Pattern SEMICOLON_PATTERN = Pattern.compile(";");
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
@@ -315,6 +317,9 @@ public final class StringUtil {
         if (result.indexOf(':') >= 0) {
             result = COLON_PATTERN.matcher(result).replaceAll("%3A");
         }
+        if (result.indexOf(';') >= 0) {
+            result = SEMICOLON_PATTERN.matcher(result).replaceAll("%3B");
+        }
         if (result.indexOf('<') >= 0) {
             result = LT_PATTERN.matcher(result).replaceAll("%3C");
         }
@@ -362,6 +367,9 @@ public final class StringUtil {
             }
             if (result.indexOf("%3A") >= 0) {
                 result = URLENCODED_COLON_PATTERN.matcher(result).replaceAll(":");
+            }
+            if (result.indexOf("%3B") >= 0) {
+                result = URLENCODED_SEMICOLON_PATTERN.matcher(result).replaceAll(";");
             }
             if (result.indexOf("%3C") >= 0) {
                 result = URLENCODED_LT_PATTERN.matcher(result).replaceAll("<");
