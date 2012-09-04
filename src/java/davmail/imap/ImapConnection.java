@@ -853,6 +853,10 @@ public class ImapConnection extends AbstractConnection {
                     }
                     buffer.append(" {").append(baos.size()).append('}');
                     sendClient(buffer.toString());
+                    // log content if less than 2K
+                    if (LOGGER.isDebugEnabled() && baos.size() < 2048) {
+                        LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
+                    }
                     os.write(baos.toByteArray());
                     os.flush();
                     buffer.setLength(0);

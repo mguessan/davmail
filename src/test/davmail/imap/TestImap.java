@@ -23,6 +23,7 @@ import davmail.Settings;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
+import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
@@ -66,6 +67,7 @@ public class TestImap extends AbstractImapTestCase {
     }
 
     public void testUidSearchdeleted() throws IOException {
+        testSelectInbox();
         writeLine(". UID SEARCH DELETED");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
@@ -366,7 +368,7 @@ public class TestImap extends AbstractImapTestCase {
     public void testDraftMessageMessageId() throws IOException, InterruptedException, MessagingException {
         testCreateFolder();
         MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.addHeader("to", "testto <"+Settings.getProperty("davmail.to")+">");
         mimeMessage.setText("Test message");
         mimeMessage.setSubject("Test subject");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -380,7 +382,13 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". UID SEARCH UNDELETED (HEADER Message-ID "+mimeMessage.getMessageID().substring(1, mimeMessage.getMessageID().length()-1)+")");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
 
-        testDeleteFolder();
+        writeLine(". UID SEARCH (HEADER To "+Settings.getProperty("davmail.to")+")");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        writeLine(". UID SEARCH (HEADER To testto)");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+
+        //testDeleteFolder();
     }
 
     public void testFetchOSX() throws IOException {
@@ -394,4 +402,53 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". FETCH 1:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
         assertEquals(". OK FETCH completed", readFullAnswer("."));
     }
+
+    public void testInvalidMime() throws MessagingException, IOException {
+        testCreateFolder();
+
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", Settings.getProperty("davmail.to"));
+        mimeMessage.addHeader("bcc", Settings.getProperty("davmail.bcc"));
+        mimeMessage.setText("test");
+        mimeMessage.setSubject("subject");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        byte[] content = baos.toByteArray();
+        String invalidMessageContent = "MAIL FROM: " + Settings.getProperty("davmail.bcc") + "\n" +
+                "RCPT TO: " + Settings.getProperty("davmail.to") + "\n\n" + new String(content, "UTF-8");
+
+        mimeMessage = new MimeMessage((Session) null, new SharedByteArrayInputStream(invalidMessageContent.getBytes("UTF-8")));
+        baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+
+        content = baos.toByteArray();
+        writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
+        assertEquals("+ send literal data", readLine());
+        writeLine(new String(content));
+        assertEquals(". OK APPEND completed", readFullAnswer("."));
+        writeLine(". NOOP");
+        assertEquals(". OK NOOP completed", readFullAnswer("."));
+
+        // fetch message uid
+        writeLine(". UID FETCH 1:* (FLAGS BODYSTRUCTURE)");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf("UID ") + 4;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+        assertNotNull(messageUid);
+
+        testDeleteFolder();
+
+    }
+
+    public void testFetchHeadersSentThunderbird() throws IOException {
+        writeLine(". SELECT Sent");
+        //writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID SEARCH (SINCE \"01-Jun-2012\")");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        writeLine(". UID FETCH 6071:* (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
 }
