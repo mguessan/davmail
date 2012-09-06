@@ -377,11 +377,13 @@ public class EwsExchangeSession extends ExchangeSession {
                 EWSMethod.Item item = getItemMethod.getResponseItem();
 
                 String messageHeaders = item.get(Field.get("messageheaders").getResponseName());
-                if (messageHeaders != null) {
+                if (messageHeaders != null
+                        // workaround for broken message headers on Exchange 2010
+                        && messageHeaders.toLowerCase().contains("message-id:")) {
                     // workaround for messages in Sent folder
                     if (messageHeaders.indexOf("From:") < 0) {
                         String from = item.get(Field.get("from").getResponseName());
-                        messageHeaders = "From: "+from+"\n"+messageHeaders;
+                        messageHeaders = "From: " + from + "\n" + messageHeaders;
                     }
 
                     result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
@@ -541,7 +543,7 @@ public class EwsExchangeSession extends ExchangeSession {
             LOGGER.warn("GetItem with MimeContent failed: " + e.getMessage());
         }
         if (getItemMethod.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-             throw new HttpNotFoundException("Item "+itemId+" not found");
+            throw new HttpNotFoundException("Item " + itemId + " not found");
         }
         if (mimeContent == null) {
             LOGGER.warn("MimeContent not available, trying to rebuild from properties");
