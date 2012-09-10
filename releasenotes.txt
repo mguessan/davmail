@@ -1,3 +1,56 @@
+** DavMail 4.0.0 released **
+Includes full Exchange 2007 and 2010 support with EWS implementation, 
+fixed OSX Mountain Lion support, switched Windows wrappers to WinRun4J 
+and additional enhancements and bugfixes.
+
+IMAP:
+- IMAP: workaround for broken message headers on Exchange 2010
+- IMAP: log content if less than 2K
+- IMAP: improve Exchange 2010 header search, use direct header names to implement substring search on some headers
+- IMAP: additional fix for Exchange 2010 header search, use PR_TRANSPORT_MESSAGE_HEADERS
+- IMAP: Exchange 2010 does not support header search, workaround to avoid duplicate items in Drafts folder with Thunderbird
+- IMAP: fix 3553942, unexpected imap NIL response
+- IMAP: detect and ignore missing message to avoid NullPointerException
+- IMAP: improve bodystructure error handling
+
+Documentation:
+- Doc: fix image swap
+- Doc: update roadmap
+- Doc: add Developed with Intellij Idea link
+
+Caldav:
+- Caldav: encode semicolon in urlcompname
+- Caldav: fix attendees in modified occurences
+- Caldav: additional timezone names for Exchange 2010
+- Caldav: additional timezones available in Exchange 2007
+- Caldav: Partial fix for missing items on Exchange 2010
+- Caldav: fix OSX Mountain Lion (iCal 6) support
+
+Enhancement:
+- Merge patch 3488553: Make davmail.jar executable
+- Merge patch from 3562031, advanced noProxyFor handling
+- Display released version in about frame when different from current version
+- Fix 3562031, implement davmail.noProxyFor setting to exclude hosts from proxy settings
+- Merge preauthentication page patch
+- Prepare pre authentication page merge in ExchangeSession
+- Implement javascript redirect in executeFollowRedirects
+- Prepare javascript redirect merge (multiple authentication pages)
+- Try to improve shutdown hook
+
+Windows:
+- Update download url in 64 bit wrappers to http://java.com/en/download/manual.jsp
+- Add davmailservice64.exe WinRun4J service wrapper
+- Replace 64 bits jsmoothgen with WinRun4J wrapper
+- 64 bits Winrun4J wrapper
+- Fix Winrun4J service wrapper implementation, launch a non daemon thread
+- Win: switch to Winrun4J wrappers
+
+OSX:
+- OSX: Add a note on Gatekeeper for OSX Mountain Lion users
+
+EWS:
+- EWS: fix davmail.acceptEncodingGzip setting handling
+
 ** DavMail 3.9.9 released **
 Bugfix release with major IMAP changes to improve sync performance,
 many Caldav enhancements and bugfixes and some documentation updates.
