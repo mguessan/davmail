@@ -434,7 +434,7 @@ public class ImapConnection extends AbstractConnection {
                                     // handle optional flags
                                     String nextToken = tokens.nextQuotedToken();
                                     if (nextToken.startsWith("(")) {
-                                        flags = removeQuotes(nextToken);
+                                        flags = StringUtil.removeQuotes(nextToken);
                                         if (tokens.hasMoreTokens()) {
                                             nextToken = tokens.nextToken();
                                             if (tokens.hasMoreTokens()) {
@@ -443,7 +443,7 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                         }
                                     } else if (tokens.hasMoreTokens()) {
-                                        date = removeQuotes(nextToken);
+                                        date = StringUtil.removeQuotes(nextToken);
                                         nextToken = tokens.nextToken();
                                     }
 
@@ -492,7 +492,7 @@ public class ImapConnection extends AbstractConnection {
 
                                         properties.put("datereceived", dateFormatter.format(dateReceived));
                                     }
-                                    int size = Integer.parseInt(removeQuotes(nextToken));
+                                    int size = Integer.parseInt(StringUtil.removeQuotes(nextToken));
                                     sendClient("+ send literal data");
                                     byte[] buffer = in.readContent(size);
                                     // empty line
@@ -931,6 +931,7 @@ public class ImapConnection extends AbstractConnection {
 
     protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
         List<Long> uidList = new ArrayList<Long>();
+        List<Long> localMessagesUidList = null;
         SearchConditions conditions = new SearchConditions();
         ExchangeSession.Condition condition = buildConditions(conditions, tokens);
         ExchangeSession.MessageList localMessages = currentFolder.searchMessages(condition);
@@ -938,7 +939,13 @@ public class ImapConnection extends AbstractConnection {
         if (conditions.uidRange != null) {
             iterator = new UIDRangeIterator(localMessages, conditions.uidRange);
         } else if (conditions.indexRange != null) {
-            iterator = new RangeIterator(localMessages, conditions.indexRange);
+            // range iterator is on folder messages, not messages returned from search
+            iterator = new RangeIterator(currentFolder.messages, conditions.indexRange);
+            localMessagesUidList = new ArrayList<Long>();
+            // build search result uid list
+            for (ExchangeSession.Message message:localMessages) {
+                localMessagesUidList.add(message.getImapUid());
+            }
         } else {
             iterator = localMessages.iterator();
         }
@@ -946,7 +953,9 @@ public class ImapConnection extends AbstractConnection {
             ExchangeSession.Message message = iterator.next();
             if ((conditions.flagged == null || message.flagged == conditions.flagged)
                     && (conditions.answered == null || message.answered == conditions.answered)
-                    && (conditions.draft == null || message.draft == conditions.draft)) {
+                    && (conditions.draft == null || message.draft == conditions.draft)
+                    // range iterator: include messages available in search result
+                    && (localMessagesUidList == null || localMessagesUidList.contains(message.getImapUid()))) {
                 uidList.add(message.getImapUid());
             }
         }
@@ -1533,17 +1542,6 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected String removeQuotes(String value) {
-        String result = value;
-        if (result.startsWith("\"") || result.startsWith("{") || result.startsWith("(")) {
-            result = result.substring(1);
-        }
-        if (result.endsWith("\"") || result.endsWith("}") || result.endsWith(")")) {
-            result = result.substring(0, result.length() - 1);
-        }
-        return result;
-    }
-
     /**
      * Filter to output only headers, also count full size
      */
@@ -1808,7 +1806,7 @@ public class ImapConnection extends AbstractConnection {
 
         @Override
         public String nextToken() {
-            return removeQuotes(nextQuotedToken());
+            return StringUtil.removeQuotes(nextQuotedToken());
         }
 
         public String nextQuotedToken() {
