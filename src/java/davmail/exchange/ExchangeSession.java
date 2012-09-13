@@ -788,6 +788,7 @@ public abstract class ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add("lastmodified");
         // OSX IMAP requests content-class
         IMAP_MESSAGE_ATTRIBUTES.add("contentclass");
+        IMAP_MESSAGE_ATTRIBUTES.add("keywords");
     }
 
     protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<String>();
@@ -1696,6 +1697,10 @@ public abstract class ExchangeSession {
          */
         public String contentClass;
         /**
+         * Message keywords (categories).
+         */
+        public String keywords;
+        /**
          * Message IMAP uid, unique in folder (x0e230003).
          */
         public long imapUid;
@@ -1816,6 +1821,11 @@ public abstract class ExchangeSession {
             }
             if (forwarded) {
                 buffer.append("$Forwarded ");
+            }
+            if (keywords != null) {
+                for (String keyword:keywords.split(",")) {
+                    buffer.append(keyword).append(" ");
+                }
             }
             return buffer.toString().trim();
         }

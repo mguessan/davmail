@@ -2010,6 +2010,8 @@ public class DavExchangeSession extends ExchangeSession {
         String lastmodified = convertDateFromExchange(getPropertyIfExists(properties, "lastmodified"));
         message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
+        message.keywords = getPropertyIfExists(properties, "keywords");
+
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
             buffer.append("Message");
