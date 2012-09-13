@@ -617,6 +617,8 @@ public class EwsExchangeSession extends ExchangeSession {
         String lastmodified = convertDateFromExchange(response.get(Field.get("lastmodified").getResponseName()));
         message.recent = !message.read && lastmodified != null && lastmodified.equals(message.date);
 
+        message.keywords = response.get(Field.get("keywords").getResponseName());
+
         if (LOGGER.isDebugEnabled()) {
             StringBuilder buffer = new StringBuilder();
             buffer.append("Message");
@@ -865,10 +867,11 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
         if (serverVersion.startsWith("Exchange2010")) {
-            if ("message-id".equals(headerName)
-                    || "from".equals(headerName)
+            if ("from".equals(headerName)
                     || "to".equals(headerName)
-                    || "cc".equals(headerName)
+                    || "cc".equals(headerName)) {
+                return new AttributeCondition("msg"+headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
+            } else if ("message-id".equals(headerName)
                     || "bcc".equals(headerName)) {
                 return new AttributeCondition(headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
             } else {
