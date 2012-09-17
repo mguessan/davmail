@@ -128,7 +128,7 @@ public class ExtendedFieldURI implements FieldURI {
         appendTo(buffer);
         if (propertyType == PropertyType.StringArray) {
             buffer.append("<t:Values>");
-            String[] values = value.split("\n");
+            String[] values = value.split(",");
             for (final String singleValue : values) {
                 buffer.append("<t:Value>");
                 buffer.append(StringUtil.xmlEncode(singleValue));

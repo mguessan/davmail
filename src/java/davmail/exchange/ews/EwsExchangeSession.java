@@ -428,6 +428,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 list.add(Field.createFieldUpdate("deleted", entry.getValue()));
             } else if ("datereceived".equals(entry.getKey())) {
                 list.add(Field.createFieldUpdate("datereceived", entry.getValue()));
+            } else if ("keywords".equals(entry.getKey())) {
+                list.add(Field.createFieldUpdate("keywords", entry.getValue()));
             }
         }
         return list;

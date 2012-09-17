@@ -1929,7 +1929,13 @@ public class DavExchangeSession extends ExchangeSession {
                     if (buffer.length() > 0) {
                         buffer.append(',');
                     }
-                    buffer.append(((Node) node).getTextContent());
+                    if (node instanceof Node) {
+                        // jackrabbit
+                        buffer.append(((Node) node).getTextContent());
+                    } else {
+                        // ExchangeDavMethod
+                        buffer.append(node);
+                    }
                 }
                 return buffer.toString();
             } else {
@@ -2488,6 +2494,8 @@ public class DavExchangeSession extends ExchangeSession {
                     list.add(Field.createDavProperty("deleted", entry.getValue()));
                 } else if ("datereceived".equals(entry.getKey())) {
                     list.add(Field.createDavProperty("datereceived", entry.getValue()));
+                } else if ("keywords".equals(entry.getKey())) {
+                    list.add(Field.createDavProperty("keywords", entry.getValue()));
                 }
             }
         }

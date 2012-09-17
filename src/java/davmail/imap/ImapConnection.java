@@ -228,7 +228,7 @@ public class ImapConnection extends AbstractConnection {
                                                 sendClient("* OK [UIDNEXT " + currentFolder.getUidNext() + ']');
                                             }
                                             sendClient("* FLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)");
-                                            sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk)]");
+                                            sendClient("* OK [PERMANENTFLAGS (\\Answered \\Deleted \\Draft \\Flagged \\Seen $Forwarded Junk \\*)]");
                                             if ("select".equalsIgnoreCase(command)) {
                                                 sendClient(commandId + " OK [READ-WRITE] " + command + " completed");
                                             } else {
@@ -1408,6 +1408,16 @@ public class ImapConnection extends AbstractConnection {
                 } else if ("\\Answered".equalsIgnoreCase(flag) && message.answered) {
                     properties.put("answered", null);
                     message.answered = false;
+                } else if (message.keywords != null) {
+                    String[] keywords = message.keywords.split(",");
+                    HashSet<String> keywordSet = new HashSet<String>();
+                    for (String value : keywords) {
+                        if (!value.equals(flag)) {
+                            keywordSet.add(value);
+                        }
+                    }
+                    message.keywords = StringUtil.join(keywordSet, ",");
+                    properties.put("keywords", message.keywords);
                 }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
@@ -1432,6 +1442,17 @@ public class ImapConnection extends AbstractConnection {
                 } else if ("Junk".equalsIgnoreCase(flag) && !message.junk) {
                     properties.put("junk", "1");
                     message.junk = true;
+                } else {
+                    HashSet<String> keywordSet = new HashSet<String>();
+                    if (message.keywords != null) {
+                        String[] keywords = message.keywords.split(",");
+                        for (String value : keywords) {
+                            keywordSet.add(value);
+                        }
+                    }
+                    keywordSet.add(flag);
+                    message.keywords = StringUtil.join(keywordSet, ",");
+                    properties.put("keywords", message.keywords);
                 }
             }
         } else if ("FLAGS".equalsIgnoreCase(action) || "FLAGS.SILENT".equalsIgnoreCase(action)) {
@@ -1442,6 +1463,7 @@ public class ImapConnection extends AbstractConnection {
             boolean flagged = false;
             boolean answered = false;
             boolean forwarded = false;
+            HashSet<String> keywords = null;
             // set flags from new flag list
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
@@ -1458,7 +1480,16 @@ public class ImapConnection extends AbstractConnection {
                     forwarded = true;
                 } else if ("Junk".equalsIgnoreCase(flag)) {
                     junk = true;
+                } else {
+                    if (keywords == null) {
+                        keywords = new HashSet<String>();
+                    }
+                    keywords.add(flag);
                 }
+            }
+            if (keywords != null) {
+                message.keywords = StringUtil.join(keywords, ",");
+                properties.put("keywords", message.keywords);
             }
             if (read != message.read) {
                 message.read = read;
