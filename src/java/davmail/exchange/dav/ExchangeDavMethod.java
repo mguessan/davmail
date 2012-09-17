@@ -178,12 +178,32 @@ public abstract class ExchangeDavMethod extends PostMethod {
             if (XMLStreamUtil.isStartTag(reader)) {
                 Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
                 String tagLocalName = reader.getLocalName();
-                String tagContent = getTagContent(reader);
-                if (tagContent != null) {
-                    multiStatusResponse.add(new DefaultDavProperty(tagLocalName, tagContent, namespace));
+                if (reader.getAttributeCount() > 0 && "mv.string".equals(reader.getAttributeValue(0))) {
+                     handleMultiValuedProperty(reader, multiStatusResponse);
+                } else {
+                    String tagContent = getTagContent(reader);
+                    if (tagContent != null) {
+                        multiStatusResponse.add(new DefaultDavProperty(tagLocalName, tagContent, namespace));
+                    }
                 }
             }
         }
+    }
+
+    protected void handleMultiValuedProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
+        String tagLocalName = reader.getLocalName();
+        Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
+        ArrayList<String> values = new ArrayList<String>();
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, tagLocalName)) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagContent = getTagContent(reader);
+                if (tagContent != null) {
+                    values.add(tagContent);
+                }
+            }
+        }
+        multiStatusResponse.add(new DefaultDavProperty(tagLocalName, values, namespace));
     }
 
     protected String getTagContent(XMLStreamReader reader) throws XMLStreamException {
