@@ -537,7 +537,7 @@ public class Field {
         } else if (field.isMultivalued) {
             // multivalued field, split values separated by \n
             List<XmlSerializable> valueList = new ArrayList<XmlSerializable>();
-            String[] values = value.split("\n");
+            String[] values = value.split(",");
             for (final String singleValue : values) {
                 valueList.add(new XmlSerializable() {
                     public Element toXml(Document document) {

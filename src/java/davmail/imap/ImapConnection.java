@@ -1271,6 +1271,8 @@ public class ImapConnection extends AbstractConnection {
                     session.contains("from", value),
                     session.contains("to", value),
                     session.contains("cc", value));
+        } else if ("KEYWORD".equals(token)) {
+            return session.contains("keywords", tokens.nextToken());
         } else if ("FROM".equals(token)) {
             return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {
@@ -1412,7 +1414,7 @@ public class ImapConnection extends AbstractConnection {
                     String[] keywords = message.keywords.split(",");
                     HashSet<String> keywordSet = new HashSet<String>();
                     for (String value : keywords) {
-                        if (!value.equals(flag)) {
+                        if (!value.equalsIgnoreCase(flag)) {
                             keywordSet.add(value);
                         }
                     }
@@ -1444,13 +1446,19 @@ public class ImapConnection extends AbstractConnection {
                     message.junk = true;
                 } else {
                     HashSet<String> keywordSet = new HashSet<String>();
+                    boolean hasFlag = false;
                     if (message.keywords != null) {
                         String[] keywords = message.keywords.split(",");
                         for (String value : keywords) {
                             keywordSet.add(value);
+                            if (value.equalsIgnoreCase(flag)) {
+                                hasFlag = true;
+                            }
                         }
                     }
-                    keywordSet.add(flag);
+                    if (!hasFlag) {
+                        keywordSet.add(flag);
+                    }
                     message.keywords = StringUtil.join(keywordSet, ",");
                     properties.put("keywords", message.keywords);
                 }
