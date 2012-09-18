@@ -1824,7 +1824,7 @@ public abstract class ExchangeSession {
             }
             if (keywords != null) {
                 for (String keyword:keywords.split(",")) {
-                    buffer.append(keyword).append(" ");
+                    buffer.append(convertKeywordToFlag(keyword)).append(" ");
                 }
             }
             return buffer.toString().trim();
@@ -1999,6 +1999,78 @@ public abstract class ExchangeSession {
         public int hashCode() {
             return (int) (imapUid ^ (imapUid >>> 32));
         }
+
+        protected String convertKeywordToFlag(String value) {
+            String result = value;
+            // convert flags to Thunderbird flags
+            ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
+            Enumeration<String> flagEnumeration = flagBundle.getKeys();
+            while (flagEnumeration.hasMoreElements()) {
+                String key = flagEnumeration.nextElement();
+                if (value.equalsIgnoreCase(flagBundle.getString(key))) {
+                    result = key;
+    }
+            }
+            return result;
+        }
+
+        protected String convertFlagToKeyword(String value) {
+            String result = value;
+            // convert flags to Thunderbird flags
+            ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
+            try {
+                result = flagBundle.getString(value);
+            } catch (MissingResourceException e) {
+                // ignore
+            }
+
+            return result;
+        }
+
+        public String removeFlag(String flag) {
+            if (keywords != null) {
+                final String exchangeFlag = convertFlagToKeyword(flag);
+                Set<String> keywordSet = new HashSet<String>();
+                String[] keywordArray = keywords.split(",");
+                for (String value : keywordArray) {
+                    if (!value.equalsIgnoreCase(exchangeFlag)) {
+                        keywordSet.add(value);
+                    }
+                }
+                keywords = StringUtil.join(keywordSet, ",");
+            }
+            return keywords;
+        }
+
+        public String addFlag(String flag) {
+            final String exchangeFlag = convertFlagToKeyword(flag);
+            HashSet<String> keywordSet = new HashSet<String>();
+            boolean hasFlag = false;
+            if (keywords != null) {
+                String[] keywordArray = keywords.split(",");
+                for (String value : keywordArray) {
+                    keywordSet.add(value);
+                    if (value.equalsIgnoreCase(exchangeFlag)) {
+                        hasFlag = true;
+                    }
+                }
+            }
+            if (!hasFlag) {
+                keywordSet.add(exchangeFlag);
+            }
+            keywords = StringUtil.join(keywordSet, ",");
+            return keywords;
+        }
+
+        public String setFlags(HashSet<String> flags) {
+            HashSet<String> keywordSet = new HashSet<String>();
+            for (String flag : flags) {
+                keywordSet.add(convertFlagToKeyword(flag));
+            }
+            keywords = StringUtil.join(keywordSet, ",");
+            return keywords;
+        }
+
     }
 
     /**

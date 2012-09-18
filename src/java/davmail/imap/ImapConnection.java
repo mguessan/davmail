@@ -1411,15 +1411,7 @@ public class ImapConnection extends AbstractConnection {
                     properties.put("answered", null);
                     message.answered = false;
                 } else if (message.keywords != null) {
-                    String[] keywords = message.keywords.split(",");
-                    HashSet<String> keywordSet = new HashSet<String>();
-                    for (String value : keywords) {
-                        if (!value.equalsIgnoreCase(flag)) {
-                            keywordSet.add(value);
-                        }
-                    }
-                    message.keywords = StringUtil.join(keywordSet, ",");
-                    properties.put("keywords", message.keywords);
+                    properties.put("keywords", message.removeFlag(flag));
                 }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
@@ -1445,22 +1437,7 @@ public class ImapConnection extends AbstractConnection {
                     properties.put("junk", "1");
                     message.junk = true;
                 } else {
-                    HashSet<String> keywordSet = new HashSet<String>();
-                    boolean hasFlag = false;
-                    if (message.keywords != null) {
-                        String[] keywords = message.keywords.split(",");
-                        for (String value : keywords) {
-                            keywordSet.add(value);
-                            if (value.equalsIgnoreCase(flag)) {
-                                hasFlag = true;
-                            }
-                        }
-                    }
-                    if (!hasFlag) {
-                        keywordSet.add(flag);
-                    }
-                    message.keywords = StringUtil.join(keywordSet, ",");
-                    properties.put("keywords", message.keywords);
+                    properties.put("keywords", message.addFlag(flag));
                 }
             }
         } else if ("FLAGS".equalsIgnoreCase(action) || "FLAGS.SILENT".equalsIgnoreCase(action)) {
@@ -1496,8 +1473,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             }
             if (keywords != null) {
-                message.keywords = StringUtil.join(keywords, ",");
-                properties.put("keywords", message.keywords);
+                properties.put("keywords", message.setFlags(keywords));
             }
             if (read != message.read) {
                 message.read = read;
