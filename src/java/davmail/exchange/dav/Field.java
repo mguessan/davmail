@@ -106,6 +106,7 @@ public class Field {
         createField("folderclass", SCHEMAS_EXCHANGE, "outlookfolderclass");
         createField(DAV, "hassubs");
         createField(DAV, "nosubs");
+        createField("count", DAV, "objectcount");
         createField(URN_SCHEMAS_HTTPMAIL, "unreadcount");
         createField(SCHEMAS_REPL, "contenttag");
 

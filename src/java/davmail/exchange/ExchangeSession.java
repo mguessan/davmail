@@ -1525,6 +1525,10 @@ public abstract class ExchangeSession {
          */
         public String folderClass;
         /**
+         * Folder message count.
+         */
+        public int count;
+        /**
          * Folder unread message count.
          */
         public int unreadCount;

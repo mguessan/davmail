@@ -1715,7 +1715,10 @@ public class DavExchangeSession extends ExchangeSession {
         folder.folderClass = getPropertyIfExists(properties, "folderclass");
         folder.hasChildren = "1".equals(getPropertyIfExists(properties, "hassubs"));
         folder.noInferiors = "1".equals(getPropertyIfExists(properties, "nosubs"));
+        folder.count = getIntPropertyIfExists(properties, "count");
         folder.unreadCount = getIntPropertyIfExists(properties, "unreadcount");
+        // fake recent value
+        folder.recent = folder.unreadCount;
         folder.ctag = getPropertyIfExists(properties, "contenttag");
         folder.etag = getPropertyIfExists(properties, "lastmodified");
 
@@ -1764,6 +1767,7 @@ public class DavExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add("folderclass");
         FOLDER_PROPERTIES.add("hassubs");
         FOLDER_PROPERTIES.add("nosubs");
+        FOLDER_PROPERTIES.add("count");
         FOLDER_PROPERTIES.add("unreadcount");
         FOLDER_PROPERTIES.add("contenttag");
         FOLDER_PROPERTIES.add("lastmodified");

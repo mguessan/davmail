@@ -40,7 +40,9 @@ public final class Field {
 
         // folder
         FIELD_MAP.put("ctag", new ExtendedFieldURI(0x670a, ExtendedFieldURI.PropertyType.SystemTime)); // PR_LOCAL_COMMIT_TIME_MAX
+        FIELD_MAP.put("count", new ExtendedFieldURI(0x3602, ExtendedFieldURI.PropertyType.Integer)); // PR_CONTENT_COUNT
         FIELD_MAP.put("unread", new ExtendedFieldURI(0x3603, ExtendedFieldURI.PropertyType.Integer)); // PR_CONTENT_UNREAD
+
         FIELD_MAP.put("hassubs", new ExtendedFieldURI(0x360a, ExtendedFieldURI.PropertyType.Boolean)); // PR_SUBFOLDERS
         FIELD_MAP.put("folderDisplayName", new UnindexedFieldURI("folder:DisplayName"));
 

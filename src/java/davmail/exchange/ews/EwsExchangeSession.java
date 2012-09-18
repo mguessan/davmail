@@ -938,6 +938,7 @@ public class EwsExchangeSession extends ExchangeSession {
         FOLDER_PROPERTIES.add(Field.get("lastmodified"));
         FOLDER_PROPERTIES.add(Field.get("folderclass"));
         FOLDER_PROPERTIES.add(Field.get("ctag"));
+        FOLDER_PROPERTIES.add(Field.get("count"));
         FOLDER_PROPERTIES.add(Field.get("unread"));
         FOLDER_PROPERTIES.add(Field.get("hassubs"));
         FOLDER_PROPERTIES.add(Field.get("uidNext"));
@@ -951,7 +952,10 @@ public class EwsExchangeSession extends ExchangeSession {
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
         folder.ctag = item.get(Field.get("ctag").getResponseName());
+        folder.count = item.getInt(Field.get("count").getResponseName());
         folder.unreadCount = item.getInt(Field.get("unread").getResponseName());
+        // fake recent value
+        folder.recent = folder.unreadCount;
         folder.hasChildren = item.getBoolean(Field.get("hassubs").getResponseName());
         // noInferiors not implemented
         folder.uidNext = item.getInt(Field.get("uidNext").getResponseName());
