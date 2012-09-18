@@ -934,6 +934,7 @@ public class ImapConnection extends AbstractConnection {
         List<Long> localMessagesUidList = null;
         SearchConditions conditions = new SearchConditions();
         ExchangeSession.Condition condition = buildConditions(conditions, tokens);
+        session.refreshFolder(currentFolder);
         ExchangeSession.MessageList localMessages = currentFolder.searchMessages(condition);
         Iterator<ExchangeSession.Message> iterator;
         if (conditions.uidRange != null) {
@@ -1272,7 +1273,7 @@ public class ImapConnection extends AbstractConnection {
                     session.contains("to", value),
                     session.contains("cc", value));
         } else if ("KEYWORD".equals(token)) {
-            return session.contains("keywords", tokens.nextToken());
+            return session.contains("keywords", session.convertFlagToKeyword(tokens.nextToken()));
         } else if ("FROM".equals(token)) {
             return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {

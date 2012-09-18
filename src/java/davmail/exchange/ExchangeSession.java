@@ -1471,6 +1471,43 @@ public abstract class ExchangeSession {
     protected abstract void moveToTrash(Message message) throws IOException;
 
     /**
+     * Convert keyword value to IMAP flag.
+     * @param value keyword value
+     * @return IMAP flag
+     */
+    public String convertKeywordToFlag(String value) {
+        String result = value;
+        // convert flags to Thunderbird flags
+        ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
+        Enumeration<String> flagEnumeration = flagBundle.getKeys();
+        while (flagEnumeration.hasMoreElements()) {
+            String key = flagEnumeration.nextElement();
+            if (value.equalsIgnoreCase(flagBundle.getString(key))) {
+                result = key;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Convert IMAP flag to keyword value.
+     * @param value IMAP flag
+     * @return keyword value
+     */
+    public String convertFlagToKeyword(String value) {
+        String result = value;
+        // convert flags to Thunderbird flags
+        ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
+        try {
+            result = flagBundle.getString(value);
+        } catch (MissingResourceException e) {
+            // ignore
+        }
+
+        return result;
+    }
+
+    /**
      * Exchange folder with IMAP properties
      */
     public class Folder {
@@ -1998,33 +2035,6 @@ public abstract class ExchangeSession {
         @Override
         public int hashCode() {
             return (int) (imapUid ^ (imapUid >>> 32));
-        }
-
-        protected String convertKeywordToFlag(String value) {
-            String result = value;
-            // convert flags to Thunderbird flags
-            ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
-            Enumeration<String> flagEnumeration = flagBundle.getKeys();
-            while (flagEnumeration.hasMoreElements()) {
-                String key = flagEnumeration.nextElement();
-                if (value.equalsIgnoreCase(flagBundle.getString(key))) {
-                    result = key;
-    }
-            }
-            return result;
-        }
-
-        protected String convertFlagToKeyword(String value) {
-            String result = value;
-            // convert flags to Thunderbird flags
-            ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
-            try {
-                result = flagBundle.getString(value);
-            } catch (MissingResourceException e) {
-                // ignore
-            }
-
-            return result;
         }
 
         public String removeFlag(String flag) {
