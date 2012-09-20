@@ -1480,6 +1480,9 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         protected void parseXmlBody() throws IOException {
+            if (body == null) {
+                throw new DavMailException("EXCEPTION_INVALID_CALDAV_REQUEST", "Missing body");
+            }
             XMLStreamReader streamReader = null;
             try {
                 streamReader = XMLStreamUtil.createXMLStreamReader(body);
