@@ -246,6 +246,10 @@ public class VCalendar extends VObject {
                         if (dtEnd != null && dtStart.getParam("TZID") != null) {
                             dtEnd.setParam("TZID", tzid);
                         }
+                        VProperty reccurrenceId = vObject.getProperty("RECURRENCE-ID");
+                        if (reccurrenceId != null && reccurrenceId.getParam("TZID") != null) {
+                            reccurrenceId.setParam("TZID", tzid);
+                        }
                     }
                     // remove unsupported attachment reference
                     if (vObject.getProperty("ATTACH") != null) {
