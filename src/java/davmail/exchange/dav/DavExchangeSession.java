@@ -1674,7 +1674,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
 
                 // 440 means forbidden on Exchange
-                if (status == 440) {
+                if (status == 440 || status == 401) {
                     status = HttpStatus.SC_FORBIDDEN;
                 }
                 itemResult.status = status;
