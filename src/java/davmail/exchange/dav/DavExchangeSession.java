@@ -1674,8 +1674,11 @@ public class DavExchangeSession extends ExchangeSession {
                 }
 
                 // 440 means forbidden on Exchange
-                if (status == 440 || status == 401) {
+                if (status == 440) {
                     status = HttpStatus.SC_FORBIDDEN;
+                } else if (status == HttpStatus.SC_UNAUTHORIZED && getHref().startsWith("/public")) {
+                    LOGGER.warn("Ignore 401 unauthorized on public event");
+                    status = HttpStatus.SC_OK;
                 }
                 itemResult.status = status;
                 if (putMethod.getResponseHeader("GetETag") != null) {
