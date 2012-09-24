@@ -169,6 +169,8 @@ public final class ExchangeSessionFactory {
             throw exc;
         } catch (IllegalStateException exc) {
             throw exc;
+        } catch (NullPointerException exc) {
+            throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);
         }

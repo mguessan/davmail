@@ -186,7 +186,12 @@ public class EwsExchangeSession extends ExchangeSession {
         // no need to check logon method body
         if (method != null) {
             method.releaseConnection();
-            // need to retrieve email and alias
+        }
+        boolean directEws = method == null || "/ews/services.wsdl".equalsIgnoreCase(method.getPath());
+
+        // options page is not available in direct EWS mode
+        if (!directEws) {
+            // retrieve email and alias from options page
             getEmailAndAliasFromOptions();
         }
 
@@ -238,6 +243,23 @@ public class EwsExchangeSession extends ExchangeSession {
         // enable preemptive authentication on non NTLM endpoints
         if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
+        }
+
+        // direct EWS: get primary smtp email address with ResolveNames
+        if (directEws) {
+            try {
+                ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(alias);
+                executeMethod(resolveNamesMethod);
+                List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
+                for (EWSMethod.Item response : responses) {
+                    if (alias.equalsIgnoreCase(response.get("Name"))) {
+                        email = response.get("EmailAddress");
+                        currentMailboxPath = "/users/" + email.toLowerCase();
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Unable to get primary email address with ResolveNames", e);
+            }
         }
 
         try {
@@ -2097,7 +2119,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected FolderId getFolderIdIfExists(String folderPath) throws IOException {
         String lowerCaseFolderPath = folderPath.toLowerCase();
-        if (currentMailboxPath.equals(lowerCaseFolderPath)) {
+        if (lowerCaseFolderPath.equals(currentMailboxPath)) {
             return getSubFolderIdIfExists(null, "");
         } else if (lowerCaseFolderPath.startsWith(currentMailboxPath + '/')) {
             return getSubFolderIdIfExists(null, folderPath.substring(currentMailboxPath.length() + 1));
