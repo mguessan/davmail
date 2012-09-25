@@ -1664,16 +1664,16 @@ public abstract class ExchangeSession {
         }
 
         /**
-         * Get current folder messages imap uids
+         * Get current folder messages imap uids and flags
          *
          * @return imap uid list
          */
-        public List<Long> getImapUidList() {
-            ArrayList<Long> imapUidList = new ArrayList<Long>();
+        public TreeMap<Long,String> getImapFlagMap() {
+            TreeMap<Long,String> imapFlagMap = new TreeMap<Long,String>();
             for (ExchangeSession.Message message : messages) {
-                imapUidList.add(message.getImapUid());
+                imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
-            return imapUidList;
+            return imapFlagMap;
         }
 
         /**

@@ -517,9 +517,9 @@ public class ImapConnection extends AbstractConnection {
                                             while (in.available() == 0) {
                                                 if (++count >= imapIdleDelay) {
                                                     count = 0;
-                                                    List<Long> previousImapUidList = currentFolder.getImapUidList();
+                                                    TreeMap<Long,String> previousImapFlagMap = currentFolder.getImapFlagMap();
                                                     if (session.refreshFolder(currentFolder)) {
-                                                        handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                                        handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
                                                     }
                                                 }
                                                 // sleep 1 second
@@ -542,9 +542,9 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderPath));
-                                        List<Long> previousImapUidList = currentFolder.getImapUidList();
+                                        TreeMap<Long,String> previousImapFlagMap = currentFolder.getImapFlagMap();
                                         if (session.refreshFolder(currentFolder)) {
-                                            handleRefresh(previousImapUidList, currentFolder.getImapUidList());
+                                            handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
                                         }
                                     }
                                     sendClient(commandId + " OK " + command + " completed");
@@ -691,16 +691,21 @@ public class ImapConnection extends AbstractConnection {
      * @param imapUidList         uid list after refresh
      * @throws IOException on error
      */
-    private void handleRefresh(List<Long> previousImapUidList, List<Long> imapUidList) throws IOException {
-        //
+    private void handleRefresh(TreeMap<Long,String> previousImapFlagMap, TreeMap<Long,String> imapFlagMap) throws IOException {
+        // send deleted message expunge notification
         int index = 1;
-        for (long previousImapUid : previousImapUidList) {
-            if (!imapUidList.contains(previousImapUid)) {
+        for (long previousImapUid : previousImapFlagMap.keySet()) {
+            if (!imapFlagMap.keySet().contains(previousImapUid)) {
                 sendClient("* " + index + " EXPUNGE");
             } else {
+	            // send updated flags
+                if (!previousImapFlagMap.get(previousImapUid).equals(imapFlagMap.get(previousImapUid))) {
+                    sendClient("* " + index + " FETCH (UID "+previousImapUid+" FLAGS ("+imapFlagMap.get(previousImapUid)+"))");
+                }
                 index++;
             }
         }
+
         sendClient("* " + currentFolder.count() + " EXISTS");
         sendClient("* " + currentFolder.recent + " RECENT");
     }
