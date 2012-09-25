@@ -63,7 +63,6 @@
                 <p>Note to Mac users: OSX applications do not like username with backslash, you have to set windows
                     domain name in DavMail advanced settings and use the simple username in client application.
                 </p>
-
                 <p>
                     <strong>Authentication fails with error in parsing the status line</strong>
                 </p>
@@ -73,6 +72,14 @@
                 </p>
                 <p>Your Exchange server expects HTTPS (secured) connections, use https instead of http in
                     OWA url.
+                </p>
+                <p>
+                    <strong>Exchange RSA two factor authentication form</strong>
+                </p>
+                <p>Exchange now supports two factor authentication for RSA tokens. This requires two potentially
+                    different user names in fields userid and username. Use a pipe in client to provide both values:
+                    <code>userid|username</code>. In some cases you will need to also provide domain name:
+                    <code>userid|domain\username</code>
                 </p>
                 <p>
                     <strong>Where can I find DavMail settings file ?</strong>
