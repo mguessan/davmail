@@ -323,6 +323,15 @@ public class VCalendar extends VObject {
             vTimezone.vObjects.add(standard);
             vTimezone.vObjects.add(daylight);
         }
+        // fix 3569922: quick workaround for broken Israeli Timezone issue
+        if (vTimezone != null && vTimezone.vObjects != null) {
+            for (VObject vObject:vTimezone.vObjects) {
+                VProperty rrule = vObject.getProperty("RRULE");
+                if (rrule != null && rrule.getValues().size() == 3 && "BYDAY=-2SU".equals(rrule.getValues().get(1))) {
+                    rrule.getValues().set(1, "BYDAY=4SU");
+                }
+            }
+        }
     }
 
     private void fixTzid(VProperty property) {
