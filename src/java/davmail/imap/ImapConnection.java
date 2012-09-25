@@ -1393,24 +1393,36 @@ public class ImapConnection extends AbstractConnection {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
-                if ("\\Seen".equalsIgnoreCase(flag) && message.read) {
-                    properties.put("read", "0");
-                    message.read = false;
-                } else if ("\\Flagged".equalsIgnoreCase(flag) && message.flagged) {
-                    properties.put("flagged", "0");
-                    message.flagged = false;
-                } else if ("\\Deleted".equalsIgnoreCase(flag) && message.deleted) {
-                    properties.put("deleted", null);
-                    message.deleted = false;
-                } else if ("Junk".equalsIgnoreCase(flag) && message.junk) {
-                    properties.put("junk", "0");
-                    message.junk = false;
-                } else if ("$Forwarded".equalsIgnoreCase(flag) && message.forwarded) {
-                    properties.put("forwarded", null);
-                    message.forwarded = false;
-                } else if ("\\Answered".equalsIgnoreCase(flag) && message.answered) {
-                    properties.put("answered", null);
-                    message.answered = false;
+                if ("\\Seen".equalsIgnoreCase(flag)) {
+                    if (message.read) {
+                        properties.put("read", "0");
+                        message.read = false;
+                    }
+                } else if ("\\Flagged".equalsIgnoreCase(flag)) {
+                    if (message.flagged) {
+                        properties.put("flagged", "0");
+                        message.flagged = false;
+                    }
+                } else if ("\\Deleted".equalsIgnoreCase(flag)) {
+                    if (message.deleted) {
+                        properties.put("deleted", null);
+                        message.deleted = false;
+                    }
+                } else if ("Junk".equalsIgnoreCase(flag)) {
+                    if (message.junk) {
+                        properties.put("junk", "0");
+                        message.junk = false;
+                    }
+                } else if ("$Forwarded".equalsIgnoreCase(flag)) {
+                    if (message.forwarded) {
+                        properties.put("forwarded", null);
+                        message.forwarded = false;
+                    }
+                } else if ("\\Answered".equalsIgnoreCase(flag)) {
+                    if (message.answered) {
+                        properties.put("answered", null);
+                        message.answered = false;
+                    }
                 } else if (message.keywords != null) {
                     properties.put("keywords", message.removeFlag(flag));
                 }
@@ -1419,24 +1431,36 @@ public class ImapConnection extends AbstractConnection {
             StringTokenizer flagtokenizer = new StringTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
-                if ("\\Seen".equalsIgnoreCase(flag) && !message.read) {
-                    properties.put("read", "1");
-                    message.read = true;
-                } else if ("\\Deleted".equalsIgnoreCase(flag) && !message.deleted) {
-                    message.deleted = true;
-                    properties.put("deleted", "1");
-                } else if ("\\Flagged".equalsIgnoreCase(flag) && !message.flagged) {
-                    properties.put("flagged", "2");
-                    message.flagged = true;
-                } else if ("\\Answered".equalsIgnoreCase(flag) && !message.answered) {
-                    properties.put("answered", "102");
-                    message.answered = true;
-                } else if ("$Forwarded".equalsIgnoreCase(flag) && !message.forwarded) {
-                    properties.put("forwarded", "104");
-                    message.forwarded = true;
-                } else if ("Junk".equalsIgnoreCase(flag) && !message.junk) {
-                    properties.put("junk", "1");
-                    message.junk = true;
+                if ("\\Seen".equalsIgnoreCase(flag)) {
+                    if (!message.read) {
+                        properties.put("read", "1");
+                        message.read = true;
+                    }
+                } else if ("\\Deleted".equalsIgnoreCase(flag)) {
+                    if (!message.deleted) {
+                        message.deleted = true;
+                        properties.put("deleted", "1");
+                    }
+                } else if ("\\Flagged".equalsIgnoreCase(flag)) {
+                    if (!message.flagged) {
+                        properties.put("flagged", "2");
+                        message.flagged = true;
+                    }
+                } else if ("\\Answered".equalsIgnoreCase(flag)) {
+                    if (!message.answered) {
+                        properties.put("answered", "102");
+                        message.answered = true;
+                    }
+                } else if ("$Forwarded".equalsIgnoreCase(flag)) {
+                    if (!message.forwarded) {
+                        properties.put("forwarded", "104");
+                        message.forwarded = true;
+                    }
+                } else if ("Junk".equalsIgnoreCase(flag)) {
+                    if (!message.junk) {
+                        properties.put("junk", "1");
+                        message.junk = true;
+                    }
                 } else {
                     properties.put("keywords", message.addFlag(flag));
                 }
