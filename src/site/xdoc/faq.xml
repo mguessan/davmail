@@ -79,7 +79,7 @@
                 <p>Exchange now supports two factor authentication for RSA tokens. This requires two potentially
                     different user names in fields userid and username. Use a pipe in client to provide both values:
                     <code>userid|username</code>. In some cases you will need to also provide domain name:
-                    <code>userid|domain\username</code>
+                    <code>userid|domain\username</code>, do not set default windows domain name.
                 </p>
                 <p>
                     <strong>Where can I find DavMail settings file ?</strong>
