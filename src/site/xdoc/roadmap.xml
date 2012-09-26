@@ -15,17 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.0">
-                <p>
-                    <strong>Next major version</strong>
-                </p>
-                <ul>
-                    <li>Implement optional ICS Todo/Task conversion to Outlook tasks: Done</li>
-                    <li>Exchange 2010 support through EWS: Done</li>
-                    <li>Switch wrappers to WinRun4J</li>
-                </ul>
-            </subsection>
-            <subsection name="4.0.1">
+            <subsection name="4.1.1">
                 <p>
                     <strong>Next patch release</strong>
                 </p>
@@ -33,7 +23,7 @@
                     <li>Test windows install on seven without admin rights</li>
                 </ul>
             </subsection>
-            <subsection name="4.1">
+            <subsection name="4.2">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
