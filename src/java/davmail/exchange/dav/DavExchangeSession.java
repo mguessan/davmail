@@ -1347,27 +1347,30 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result = null;
-            LOGGER.debug("Get event subject: " + subject + " href: " + getHref() + " permanentUrl: " + permanentUrl);
-            // try to get PR_INTERNET_CONTENT
-            try {
-                result = getICSFromInternetContentProperty();
-                if (result == null) {
-                    GetMethod method = new GetMethod(encodeAndFixUrl(permanentUrl));
-                    method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-                    method.setRequestHeader("Translate", "f");
-                    try {
-                        DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                        result = getICS(method.getResponseBodyAsStream());
-                    } finally {
-                        method.releaseConnection();
+            LOGGER.debug("Get event subject: " + subject + " contentclass: "+contentClass+" href: " + getHref() + " permanentUrl: " + permanentUrl);
+            // do not try to load tasks MIME body
+            if (!"urn:content-classes:task".equals(contentClass)) {
+                // try to get PR_INTERNET_CONTENT
+                try {
+                    result = getICSFromInternetContentProperty();
+                    if (result == null) {
+                        GetMethod method = new GetMethod(encodeAndFixUrl(permanentUrl));
+                        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+                        method.setRequestHeader("Translate", "f");
+                        try {
+                            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+                            result = getICS(method.getResponseBodyAsStream());
+                        } finally {
+                            method.releaseConnection();
+                        }
                     }
+                } catch (DavException e) {
+                    LOGGER.warn(e.getMessage());
+                } catch (IOException e) {
+                    LOGGER.warn(e.getMessage());
+                } catch (MessagingException e) {
+                    LOGGER.warn(e.getMessage());
                 }
-            } catch (DavException e) {
-                LOGGER.warn(e.getMessage());
-            } catch (IOException e) {
-                LOGGER.warn(e.getMessage());
-            } catch (MessagingException e) {
-                LOGGER.warn(e.getMessage());
             }
 
             // failover: rebuild event from MAPI properties
@@ -2081,6 +2084,7 @@ public class DavExchangeSession extends ExchangeSession {
         ITEM_PROPERTIES.add("instancetype");
         ITEM_PROPERTIES.add("urlcompname");
         ITEM_PROPERTIES.add("subject");
+        ITEM_PROPERTIES.add("contentclass");
     }
 
     protected Set<String> getItemProperties() {
