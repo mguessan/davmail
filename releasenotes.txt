@@ -1,3 +1,45 @@
+** DavMail 4.1.0 released **
+Bugfix release with improved IMAP support, including IMAP flags mapping to Outlook categories,
+enhanced IMAP noop/idle support, fixed emClient Caldav support and many Caldav and EWS fixes.
+
+Documentation:
+- Doc: update roadmap
+- Doc: new FAQ entry, Exchange RSA two factor authentication form
+
+Caldav:
+- Caldav: do not try to load tasks MIME body
+- Caldav: workaround for 3569922: quick fix for broken Israeli Timezone issue
+- Caldav: remove urlencoding workaround for emClient >= 4
+- Caldav: Ignore 401 unauthorized on public event, return 200
+- Caldav: Rename TZID also in RECURRENCE-ID
+- Caldav: force 403 forbidden instead of 401 on unauthorized update to public folder item
+- Caldav: Fix 3569934 NullPointerException on broken PROPFIND request
+- Caldav: Fix 3567364, regression on from/to/cc handling in calendar related to IMAP search enhancement. Separate mapping for message fields/headers
+
+IMAP:
+- IMAP: send updated flags on folder refresh
+- IMAP: fix keyword handling to avoid sending \Seen as keyword
+- IMAP: retrieve message count on folder
+- IMAP: apply flag to keyword conversion in SEARCH, refresh folder before search
+- IMAP: improve keyword support, map $label1 to 5 from Thunderbird to Outlook categories
+- IMAP: fix keywords implementation, make it case insensitive, implement KEYWORD search
+- IMAP: implement generic FLAGS mapping to Outlook categories
+- IMAP: fix 3566412, range iterator is on folder messages, not messages returned from search
+
+EWS:
+- EWS: Get primary smtp email address with ResolveNames in direct EWS mode
+
+Enhancements
+- Allow Java 7 to build DavMail
+- Prepare message keywords/categories support
+
+WebDav:
+- Dav: implement multivalued property suppord in ExchangeDavMethod
+
+Web:
+- Web: Fix 3566941 Imap protocol is not activated by default in .war
+
+
 ** DavMail 4.0.0 released **
 Includes full Exchange 2007 and 2010 support with EWS implementation, 
 fixed OSX Mountain Lion support, switched Windows wrappers to WinRun4J 
