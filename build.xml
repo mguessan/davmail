@@ -374,7 +374,7 @@
         <antcall target="dist-deb"/>
         <antcall target="dist-rpm"/>
         <antcall target="dist-osx"/>
-        <!-- source package -->
+        <!-- source with binary deps package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${release-name}" dir=".">
                 <include name="**/*"/>
@@ -382,6 +382,20 @@
                 <exclude name="dist/**"/>
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
+            </tarfileset>
+        </tar>
+        <!-- davmail source only package for GNU/Linux distributions -->
+        <tar tarfile="dist/davmail-srconly-${release-name}.tgz" compression="gzip" longfile="gnu">
+            <tarfileset prefix="davmail-${release-name}" dir=".">
+                <include name="**/*"/>
+                <exclude name="build.log"/>
+                <exclude name="dist/**"/>
+                <exclude name="target/**"/>
+                <exclude name="archive/**"/>
+                <exclude name="lib/**"/>
+                <exclude name="libgrowl/**"/>
+                <exclude name="nsis/**"/>
+                <exclude name="svnant/**"/>
             </tarfileset>
         </tar>
     </target>
