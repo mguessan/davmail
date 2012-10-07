@@ -382,6 +382,7 @@
                 <exclude name="dist/**"/>
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
+                <exclude name="user.properties"/>
             </tarfileset>
         </tar>
         <!-- davmail source only package for GNU/Linux distributions -->
@@ -396,6 +397,14 @@
                 <exclude name="libgrowl/**"/>
                 <exclude name="nsis/**"/>
                 <exclude name="svnant/**"/>
+                <exclude name="jsmooth-*/**"/>
+                <exclude name="*.jsmooth"/>
+                <exclude name="user.properties"/>
+                <exclude name="src/winrun4j/**"/>
+                <exclude name="src/osx/**"/>
+                <exclude name="src/osx/**"/>
+                <exclude name="src/contribs/**"/>
+                <exclude name="*.nsi"/>
             </tarfileset>
         </tar>
     </target>
