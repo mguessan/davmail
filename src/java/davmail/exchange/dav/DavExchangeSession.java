@@ -30,7 +30,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.util.URIUtil;
-import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -41,6 +40,7 @@ import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
+import org.apache.jackrabbit.webdav.property.PropEntry;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
@@ -1691,7 +1691,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
                 if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
                         (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
-                    ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                    ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
                     // Set contentclass to make ActiveSync happy
                     propertyList.add(Field.createDavProperty("contentclass", contentClass));
                     // ... but also set PR_INTERNET_CONTENT to preserve custom properties
@@ -2336,7 +2336,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void processItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
         // do not delete calendar messages, mark read and processed
-        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+        ArrayList<PropEntry> list = new ArrayList<PropEntry>();
         list.add(Field.createDavProperty("processed", "true"));
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
@@ -2378,7 +2378,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
             // failover for Exchange 2007, use PROPPATCH with forced timezone
             if (fakeEventUrl == null) {
-                ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
                 propertyList.add(Field.createDavProperty("contentclass", "urn:content-classes:appointment"));
                 propertyList.add(Field.createDavProperty("outlookmessageclass", "IPM.Appointment"));
                 propertyList.add(Field.createDavProperty("instancetype", "0"));
@@ -2479,8 +2479,8 @@ public class DavExchangeSession extends ExchangeSession {
         return new Contact(getFolderPath(folderPath), itemName, properties, etag, noneMatch).createOrUpdate();
     }
 
-    protected List<DavConstants> buildProperties(Map<String, String> properties) {
-        ArrayList<DavConstants> list = new ArrayList<DavConstants>();
+    protected List<PropEntry> buildProperties(Map<String, String> properties) {
+        ArrayList<PropEntry> list = new ArrayList<PropEntry>();
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if ("read".equals(entry.getKey())) {
@@ -2527,7 +2527,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void createMessage(String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage) throws IOException {
         String messageUrl = URIUtil.encodePathQuery(getFolderPath(folderPath) + '/' + messageName);
         PropPatchMethod patchMethod;
-        List<DavConstants> davProperties = buildProperties(properties);
+        List<PropEntry> davProperties = buildProperties(properties);
 
         if (properties != null && properties.containsKey("draft")) {
             // note: draft is readonly after create, create the message first with requested messageFlags
@@ -2570,7 +2570,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (code == HttpStatus.SC_NOT_ACCEPTABLE) {
                 LOGGER.warn("Draft message creation failed, failover to property update. Note: attachments are lost");
 
-                ArrayList<DavConstants> propertyList = new ArrayList<DavConstants>();
+                ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
                 propertyList.add(Field.createDavProperty("to", mimeMessage.getHeader("to", ",")));
                 propertyList.add(Field.createDavProperty("cc", mimeMessage.getHeader("cc", ",")));
                 propertyList.add(Field.createDavProperty("message-id", mimeMessage.getHeader("message-id", ",")));
@@ -2634,7 +2634,7 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             // need to update bcc after put
             if (mimeMessage.getHeader("Bcc") != null) {
-                davProperties = new ArrayList<DavConstants>();
+                davProperties = new ArrayList<PropEntry>();
                 davProperties.add(Field.createDavProperty("bcc", mimeMessage.getHeader("Bcc", ",")));
                 patchMethod = new PropPatchMethod(messageUrl, davProperties);
                 try {

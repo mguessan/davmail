@@ -19,9 +19,9 @@
 package davmail.exchange.dav;
 
 import davmail.util.StringUtil;
-import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
+import org.apache.jackrabbit.webdav.property.PropEntry;
 import org.apache.jackrabbit.webdav.xml.DomUtil;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.apache.jackrabbit.webdav.xml.XmlSerializable;
@@ -530,7 +530,7 @@ public class Field {
      * @param value field value
      * @return DavProperty with value or DavPropertyName for null values
      */
-    public static DavConstants createDavProperty(String alias, String value) {
+    public static PropEntry createDavProperty(String alias, String value) {
         Field field = Field.get(alias);
         if (value == null) {
             // return DavPropertyName to remove property
