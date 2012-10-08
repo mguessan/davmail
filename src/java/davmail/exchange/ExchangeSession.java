@@ -33,8 +33,8 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
-import org.htmlcleaner.CommentToken;
-import org.htmlcleaner.ContentToken;
+import org.htmlcleaner.CommentNode;
+import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
@@ -475,8 +475,8 @@ public abstract class ExchangeSession {
                     for (Object script : scriptList) {
                         List contents = ((TagNode) script).getChildren();
                         for (Object content : contents) {
-                            if (content instanceof CommentToken) {
-                                String scriptValue = ((CommentToken) content).getCommentedContent();
+                            if (content instanceof CommentNode) {
+                                String scriptValue = ((CommentNode) content).getCommentedContent();
                                 String sUrl = StringUtil.getToken(scriptValue, "var a_sUrl = \"", "\"");
                                 String sLgn = StringUtil.getToken(scriptValue, "var a_sLgnQS = \"", "\"");
                                 if (sLgn == null) {
@@ -489,9 +489,9 @@ public abstract class ExchangeSession {
                                     logonMethod = buildLogonMethod(httpClient, newInitMethod);
                                 }
 
-                            } else if (content instanceof ContentToken) {
+                            } else if (content instanceof ContentNode) {
                                 // Microsoft Forefront Unified Access Gateway redirect
-                                String scriptValue = ((ContentToken) content).getContent();
+                                String scriptValue = ((ContentNode) content).getContent().toString();
                                 String location = StringUtil.getToken(scriptValue, "window.location.replace(\"", "\"");
                                 if (location != null) {
                                     LOGGER.debug("Post logon redirect to: " + location);
