@@ -24,7 +24,9 @@ import org.apache.commons.codec.binary.Hex;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -128,78 +130,111 @@ public final class StringUtil {
         }
     }
 
+    static class PatternMap {
+        protected String match;
+        protected String value;
+        protected Pattern pattern;
+
+        protected PatternMap(String match, String value) {
+            this.match = match;
+            this.value = value;
+            pattern = Pattern.compile(match);
+        }
+
+        protected PatternMap(String match, String escapedMatch, String value) {
+            this.match = match;
+            this.value = value;
+            pattern = Pattern.compile(escapedMatch);
+        }
+
+        protected PatternMap(String match, Pattern pattern, String value) {
+            this.match = match;
+            this.value = value;
+            this.pattern = pattern;
+        }
+
+        protected String replaceAll(String string) {
+            if (string != null && string.indexOf(match) >= 0) {
+                return pattern.matcher(string).replaceAll(value);
+            } else {
+                return string;
+            }
+        }
+    }
+
     private static final Pattern AMP_PATTERN = Pattern.compile("&");
-    private static final Pattern LT_PATTERN = Pattern.compile("<");
-    private static final Pattern GT_PATTERN = Pattern.compile(">");
-    private static final Pattern PERCENT_PATTERN = Pattern.compile("%");
-    private static final Pattern HASH_PATTERN = Pattern.compile("#");
-    private static final Pattern STAR_PATTERN = Pattern.compile("\\*");
+    private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("\"");
     private static final Pattern CR_PATTERN = Pattern.compile("\r");
     private static final Pattern LF_PATTERN = Pattern.compile("\n");
 
-    private static final Pattern URLENCODED_F8FF_PATTERN = Pattern.compile(String.valueOf((char) 0xF8FF));
-    private static final Pattern URLENCODED_AMP_PATTERN = Pattern.compile("%26");
-    private static final Pattern URLENCODED_PLUS_PATTERN = Pattern.compile("%2B");
-    private static final Pattern URLENCODED_COLON_PATTERN = Pattern.compile("%3A");
-    private static final Pattern URLENCODED_SEMICOLON_PATTERN = Pattern.compile("%3B");
-    private static final Pattern URLENCODED_LT_PATTERN = Pattern.compile("%3C");
-    private static final Pattern URLENCODED_GT_PATTERN = Pattern.compile("%3E");
-    private static final Pattern URLENCODED_QUOTE_PATTERN = Pattern.compile("%22");
-    private static final Pattern URLENCODED_X0D0A_PATTERN = Pattern.compile("\n");
-    private static final Pattern URLENCODED_PERCENT_PATTERN = Pattern.compile("%25");
-    private static final Pattern URLENCODED_HASH_PATTERN = Pattern.compile("%23");
-    private static final Pattern URLENCODED_STAR_PATTERN = Pattern.compile("%2A");
-    private static final Pattern URLENCODED_PIPE_PATTERN = Pattern.compile("%7C");
-    private static final Pattern URLENCODED_QUESTION_PATTERN = Pattern.compile("%3F");
+    private static final List<PatternMap> URLENCODED_PATTERNS = new ArrayList<PatternMap>();
+    static {
+        URLENCODED_PATTERNS.add(new PatternMap(String.valueOf((char) 0xF8FF), "_xF8FF_"));
+        URLENCODED_PATTERNS.add(new PatternMap("%26", "&"));
+        URLENCODED_PATTERNS.add(new PatternMap("%2B", "+"));
+        URLENCODED_PATTERNS.add(new PatternMap("%3A", ":"));
+        URLENCODED_PATTERNS.add(new PatternMap("%3B", ";"));
+        URLENCODED_PATTERNS.add(new PatternMap("%3C", "<"));
+        URLENCODED_PATTERNS.add(new PatternMap("%3E", ">"));
+        URLENCODED_PATTERNS.add(new PatternMap("%22", "\""));
+        URLENCODED_PATTERNS.add(new PatternMap("%23", "#"));
+        URLENCODED_PATTERNS.add(new PatternMap("%2A", "*"));
+        URLENCODED_PATTERNS.add(new PatternMap("%7C", "|"));
+        URLENCODED_PATTERNS.add(new PatternMap("%3F", "?"));
+        URLENCODED_PATTERNS.add(new PatternMap("%7E", "~"));
 
-    private static final Pattern ENCODED_AMP_PATTERN = Pattern.compile("&amp;");
-    private static final Pattern ENCODED_LT_PATTERN = Pattern.compile("&lt;");
-    private static final Pattern ENCODED_GT_PATTERN = Pattern.compile("&gt;");
+        // CRLF is replaced with LF in response
+        URLENCODED_PATTERNS.add(new PatternMap("\n", "_x000D__x000A_"));
 
-    private static final Pattern F8FF_PATTERN = Pattern.compile("_xF8FF_");
-    private static final Pattern X0D0A_PATTERN = Pattern.compile("_x000D__x000A_");
+        // last replace %
+        URLENCODED_PATTERNS.add(new PatternMap("%25", "%"));
+    }
 
-    private static final Pattern PLUS_PATTERN = Pattern.compile("\\+");
-    private static final Pattern COLON_PATTERN = Pattern.compile(":");
-    private static final Pattern SEMICOLON_PATTERN = Pattern.compile(";");
+    private static final List<PatternMap> URLENCODE_PATTERNS = new ArrayList<PatternMap>();
+    static {
+        // first replace %
+        URLENCODE_PATTERNS.add(new PatternMap("%", "%25"));
+
+        URLENCODE_PATTERNS.add(new PatternMap("_xF8FF_", String.valueOf((char) 0xF8FF)));
+        URLENCODE_PATTERNS.add(new PatternMap("&", AMP_PATTERN, "%26"));
+        URLENCODE_PATTERNS.add(new PatternMap("+", PLUS_PATTERN, "%2B"));
+        URLENCODE_PATTERNS.add(new PatternMap(":", "%3A"));
+        URLENCODE_PATTERNS.add(new PatternMap(";", "%3B"));
+        URLENCODE_PATTERNS.add(new PatternMap("<", "%3C"));
+        URLENCODE_PATTERNS.add(new PatternMap(">", "%3E"));
+        URLENCODE_PATTERNS.add(new PatternMap("\"", "%22"));
+        URLENCODE_PATTERNS.add(new PatternMap("#", "%23"));
+        URLENCODE_PATTERNS.add(new PatternMap("~", "%7E"));
+        URLENCODE_PATTERNS.add(new PatternMap("*", "\\*", "%2A"));
+        URLENCODE_PATTERNS.add(new PatternMap("|", "\\|", "%7C"));
+        URLENCODE_PATTERNS.add(new PatternMap("?", "\\?", "%3F"));
+
+        URLENCODE_PATTERNS.add(new PatternMap("_x000D__x000A_", "\r\n"));
+
+    }
+
+    private static final List<PatternMap> XML_DECODE_PATTERNS = new ArrayList<PatternMap>();
+    static {
+        XML_DECODE_PATTERNS.add(new PatternMap("&amp;", "&"));
+        XML_DECODE_PATTERNS.add(new PatternMap("&lt;", "<"));
+        XML_DECODE_PATTERNS.add(new PatternMap("&gt;", ">"));
+    }
+
+    private static final List<PatternMap> XML_ENCODE_PATTERNS = new ArrayList<PatternMap>();
+    static {
+        XML_ENCODE_PATTERNS.add(new PatternMap("&", AMP_PATTERN, "&amp;"));
+        XML_ENCODE_PATTERNS.add(new PatternMap("<", "&lt;"));
+        XML_ENCODE_PATTERNS.add(new PatternMap(">", "&gt;"));
+    }
+
     private static final Pattern SLASH_PATTERN = Pattern.compile("/");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
-    private static final Pattern PIPE_PATTERN = Pattern.compile("\\|");
-    private static final Pattern QUESTION_PATTERN = Pattern.compile("\\?");
 
     // WebDav search parameter encode
     private static final Pattern APOS_PATTERN = Pattern.compile("'");
-
-    /**
-     * Encode & to %26 for urlcompname.
-     *
-     * @param name decoded name
-     * @return name encoded name
-     */
-    public static String urlEncodeAmpersand(String name) {
-        String result = name;
-        if (name.indexOf('&') >= 0) {
-            result = AMP_PATTERN.matcher(result).replaceAll("%26");
-        }
-        return result;
-    }
-
-    /**
-     * Decode %26 to & for urlcompname.
-     *
-     * @param name decoded name
-     * @return name encoded name
-     */
-    public static String urlDecodeAmpersand(String name) {
-        String result = name;
-        if (name != null && name.indexOf("%26") >= 0) {
-            result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
-        }
-        return result;
-    }
 
     /**
      * Xml encode content.
@@ -209,15 +244,9 @@ public final class StringUtil {
      */
     public static String xmlEncode(String name) {
         String result = name;
-        if (name != null) {
-            if (name.indexOf('&') >= 0) {
-                result = AMP_PATTERN.matcher(result).replaceAll("&amp;");
-            }
-            if (name.indexOf('<') >= 0) {
-                result = LT_PATTERN.matcher(result).replaceAll("&lt;");
-            }
-            if (name.indexOf('>') >= 0) {
-                result = GT_PATTERN.matcher(result).replaceAll("&gt;");
+        if (result != null) {
+            for (PatternMap patternMap : XML_ENCODE_PATTERNS) {
+                result = patternMap.replaceAll(result);
             }
         }
         return result;
@@ -253,14 +282,10 @@ public final class StringUtil {
      */
     public static String xmlDecode(String name) {
         String result = name;
-        if (name.indexOf("&amp;") >= 0) {
-            result = ENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
-        }
-        if (name.indexOf("&lt;") >= 0) {
-            result = ENCODED_LT_PATTERN.matcher(result).replaceAll("<");
-        }
-        if (name.indexOf("&gt;") >= 0) {
-            result = ENCODED_GT_PATTERN.matcher(result).replaceAll(">");
+        if (result != null) {
+            for (PatternMap patternMap : XML_DECODE_PATTERNS) {
+                result = patternMap.replaceAll(result);
+            }
         }
         return result;
     }
@@ -302,47 +327,10 @@ public final class StringUtil {
      */
     public static String encodeUrlcompname(String value) {
         String result = value;
-        if (result.indexOf('%') >= 0) {
-            result = PERCENT_PATTERN.matcher(result).replaceAll("%25");
-        }
-        if (result.indexOf("_xF8FF_") >= 0) {
-            result = F8FF_PATTERN.matcher(result).replaceAll(String.valueOf((char) 0xF8FF));
-        }
-        if (result.indexOf('&') >= 0) {
-            result = AMP_PATTERN.matcher(result).replaceAll("%26");
-        }
-        if (result.indexOf('+') >= 0) {
-            result = PLUS_PATTERN.matcher(result).replaceAll("%2B");
-        }
-        if (result.indexOf(':') >= 0) {
-            result = COLON_PATTERN.matcher(result).replaceAll("%3A");
-        }
-        if (result.indexOf(';') >= 0) {
-            result = SEMICOLON_PATTERN.matcher(result).replaceAll("%3B");
-        }
-        if (result.indexOf('<') >= 0) {
-            result = LT_PATTERN.matcher(result).replaceAll("%3C");
-        }
-        if (result.indexOf('>') >= 0) {
-            result = GT_PATTERN.matcher(result).replaceAll("%3E");
-        }
-        if (result.indexOf('"') >= 0) {
-            result = QUOTE_PATTERN.matcher(result).replaceAll("%22");
-        }
-        if (result.indexOf('#') >= 0) {
-            result = HASH_PATTERN.matcher(result).replaceAll("%23");
-        }
-        if (result.indexOf('*') >= 0) {
-            result = STAR_PATTERN.matcher(result).replaceAll("%2A");
-        }
-        if (result.indexOf("_x000D__x000A_") >= 0) {
-            result = X0D0A_PATTERN.matcher(result).replaceAll("\r\n");
-        }
-        if (result.indexOf('|') >= 0) {
-            result = PIPE_PATTERN.matcher(result).replaceAll("%7C");
-        }
-        if (result.indexOf('?') >= 0) {
-            result = QUESTION_PATTERN.matcher(result).replaceAll("%3F");
+        if (result != null) {
+            for (PatternMap patternMap : URLENCODE_PATTERNS) {
+                result = patternMap.replaceAll(result);
+            }
         }
         return result;
     }
@@ -356,49 +344,8 @@ public final class StringUtil {
     public static String decodeUrlcompname(String urlcompname) {
         String result = urlcompname;
         if (result != null) {
-            if (result.indexOf((char) 0xF8FF) >= 0) {
-                result = URLENCODED_F8FF_PATTERN.matcher(result).replaceAll("_xF8FF_");
-            }
-            if (result.indexOf("%26") >= 0) {
-                result = URLENCODED_AMP_PATTERN.matcher(result).replaceAll("&");
-            }
-            if (result.indexOf("%2B") >= 0) {
-                result = URLENCODED_PLUS_PATTERN.matcher(result).replaceAll("+");
-            }
-            if (result.indexOf("%3A") >= 0) {
-                result = URLENCODED_COLON_PATTERN.matcher(result).replaceAll(":");
-            }
-            if (result.indexOf("%3B") >= 0) {
-                result = URLENCODED_SEMICOLON_PATTERN.matcher(result).replaceAll(";");
-            }
-            if (result.indexOf("%3C") >= 0) {
-                result = URLENCODED_LT_PATTERN.matcher(result).replaceAll("<");
-            }
-            if (result.indexOf("%3E") >= 0) {
-                result = URLENCODED_GT_PATTERN.matcher(result).replaceAll(">");
-            }
-            if (result.indexOf("%22") >= 0) {
-                result = URLENCODED_QUOTE_PATTERN.matcher(result).replaceAll("\"");
-            }
-            // CRLF is replaced with LF in response
-            if (result.indexOf('\n') >= 0) {
-                result = URLENCODED_X0D0A_PATTERN.matcher(result).replaceAll("_x000D__x000A_");
-            }
-            if (result.indexOf("%23") >= 0) {
-                result = URLENCODED_HASH_PATTERN.matcher(result).replaceAll("#");
-            }
-            if (result.indexOf("%2A") >= 0) {
-                result = URLENCODED_STAR_PATTERN.matcher(result).replaceAll("*");
-            }
-            if (result.indexOf("%7C") >= 0) {
-                result = URLENCODED_PIPE_PATTERN.matcher(result).replaceAll("|");
-            }
-            if (result.indexOf("%3F") >= 0) {
-                result = URLENCODED_QUESTION_PATTERN.matcher(result).replaceAll("?");
-            }
-            // last replace %
-            if (result.indexOf("%25") >= 0) {
-                result = URLENCODED_PERCENT_PATTERN.matcher(result).replaceAll("%");
+            for (PatternMap patternMap : URLENCODED_PATTERNS) {
+                result = patternMap.replaceAll(result);
             }
         }
         return result;
