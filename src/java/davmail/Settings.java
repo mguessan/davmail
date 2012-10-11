@@ -22,10 +22,7 @@ import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.*;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Settings facade.
@@ -463,6 +460,32 @@ public final class Settings {
         } else {
             return Logger.getLogger(category).getLevel();
         }
+    }
+
+    /**
+     * Get all properties that are in the specified scope, that is, that start with '&lt;scope&gt;.'.
+     *
+     * @param scope     start of property name
+     * @return properties
+     */
+    public static synchronized Properties getSubProperties(String scope) {
+        final String keyStart;
+        if (scope == null || scope.length() == 0) {
+            keyStart = "";
+        } else if (scope.endsWith(".")) {
+            keyStart = scope;
+        } else {
+            keyStart = scope + '.';
+        }
+        Properties result = new Properties();
+        for (Map.Entry entry : SETTINGS.entrySet()) {
+            String key = (String)entry.getKey();
+            if (key.startsWith(keyStart)) {
+                String value = (String)entry.getValue();
+                result.setProperty(key.substring(keyStart.length()), value);
+            }
+        }
+        return result;
     }
 
     /**

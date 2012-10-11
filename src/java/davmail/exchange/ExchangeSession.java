@@ -187,13 +187,13 @@ public abstract class ExchangeSession {
             if (preAuthUsername == null) {
                 // Searches for the delimiter in configured username for the pre-auth user. 
                 // The double-quote is not allowed inside email addresses anyway.
-                int doubleQuoteIndex = this.userName.indexOf('"');   
+                int doubleQuoteIndex = this.userName.indexOf('"');
                 if (doubleQuoteIndex > 0) {
                     preAuthUsername = this.userName.substring(0, doubleQuoteIndex);
                     this.userName = this.userName.substring(doubleQuoteIndex + 1);
                 } else {
                     // No doublequote: the pre-auth user is the full username, or it is not used at all.
-                    preAuthUsername = this.userName; 
+                    preAuthUsername = this.userName;
                 }
             }
 
@@ -513,7 +513,7 @@ public abstract class ExchangeSession {
 
     protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
 
-		setAuthFormFields(logonMethod, httpClient, password);
+        setAuthFormFields(logonMethod, httpClient, password);
 
         // add exchange 2010 PBack cookie in compatibility mode
         httpClient.getState().addCookie(new Cookie(httpClient.getHostConfiguration().getHost(), "PBack", "0", "/", null, false));
@@ -1472,39 +1472,58 @@ public abstract class ExchangeSession {
 
     /**
      * Convert keyword value to IMAP flag.
+     *
      * @param value keyword value
      * @return IMAP flag
      */
     public String convertKeywordToFlag(String value) {
-        String result = value;
-        // convert flags to Thunderbird flags
-        ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
-        Enumeration<String> flagEnumeration = flagBundle.getKeys();
-        while (flagEnumeration.hasMoreElements()) {
-            String key = flagEnumeration.nextElement();
-            if (value.equalsIgnoreCase(flagBundle.getString(key))) {
-                result = key;
+        // first test for keyword in settings
+        Properties flagSettings = Settings.getSubProperties("davmail.imapFlags");
+        Enumeration flagSettingsEnum = flagSettings.propertyNames();
+        while (flagSettingsEnum.hasMoreElements()) {
+            String key = (String) flagSettingsEnum.nextElement();
+            if (value.equalsIgnoreCase(flagSettings.getProperty(key))) {
+                return key;
             }
         }
-        return result;
+
+        ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
+        Enumeration<String> flagBundleEnum = flagBundle.getKeys();
+        while (flagBundleEnum.hasMoreElements()) {
+            String key = flagBundleEnum.nextElement();
+            if (value.equalsIgnoreCase(flagBundle.getString(key))) {
+                return key;
+            }
+        }
+
+        // fall back to raw value
+        return value;
     }
 
     /**
      * Convert IMAP flag to keyword value.
+     *
      * @param value IMAP flag
      * @return keyword value
      */
     public String convertFlagToKeyword(String value) {
-        String result = value;
-        // convert flags to Thunderbird flags
+        // first test for flag in settings
+        Properties flagSettings = Settings.getSubProperties("davmail.imapFlags");
+        String flagValue = flagSettings.getProperty(value);
+        if (flagValue != null) {
+            return flagValue;
+        }
+
+        // fall back to predefined flags
         ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
         try {
-            result = flagBundle.getString(value);
+            return flagBundle.getString(value);
         } catch (MissingResourceException e) {
             // ignore
         }
 
-        return result;
+        // fall back to raw value
+        return value;
     }
 
     /**
@@ -1668,8 +1687,8 @@ public abstract class ExchangeSession {
          *
          * @return imap uid list
          */
-        public TreeMap<Long,String> getImapFlagMap() {
-            TreeMap<Long,String> imapFlagMap = new TreeMap<Long,String>();
+        public TreeMap<Long, String> getImapFlagMap() {
+            TreeMap<Long, String> imapFlagMap = new TreeMap<Long, String>();
             for (ExchangeSession.Message message : messages) {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
@@ -1864,7 +1883,7 @@ public abstract class ExchangeSession {
                 buffer.append("$Forwarded ");
             }
             if (keywords != null) {
-                for (String keyword:keywords.split(",")) {
+                for (String keyword : keywords.split(",")) {
                     buffer.append(convertKeywordToFlag(keyword)).append(" ");
                 }
             }
@@ -1891,7 +1910,7 @@ public abstract class ExchangeSession {
                     mimeBody.reset();
                     // workaround for Exchange 2003 ActiveSync bug
                     if (mimeMessage.getHeader("MAIL FROM") != null) {
-                        mimeBody = (SharedByteArrayInputStream)mimeMessage.getRawInputStream();
+                        mimeBody = (SharedByteArrayInputStream) mimeMessage.getRawInputStream();
                         mimeMessage = new MimeMessage(null, mimeBody);
                         mimeBody.reset();
                     }
@@ -1913,7 +1932,7 @@ public abstract class ExchangeSession {
         }
 
         public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
-            Enumeration  result = null;
+            Enumeration result = null;
             if (mimeMessage == null) {
                 // message not loaded, try to get headers only
                 InputStream headers = getMimeHeaders();
@@ -2780,7 +2799,7 @@ public abstract class ExchangeSession {
             }
             return andCondition;
         } catch (ParseException e) {
-            throw new IOException(e+" "+e.getMessage());
+            throw new IOException(e + " " + e.getMessage());
         }
     }
 
