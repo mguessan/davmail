@@ -180,6 +180,8 @@ public abstract class ExchangeSession {
             // set private connection pool
             DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
             boolean isBasicAuthentication = isBasicAuthentication(httpClient, url);
+            // clear cookies created by authentication test
+            httpClient.getState().clearCookies();
 
             // The user may have configured an OTP pre-auth username. It is processed
             // so early because OTP pre-auth may disappear in the Exchange LAN and this
