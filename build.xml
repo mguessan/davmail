@@ -144,7 +144,7 @@
         <desktopentry
                 toFile="dist/davmail.desktop"
                 name="DavMail"
-                comment="DavMail POP/SMTP/Caldav/LDAP Exchange Gateway"
+                comment="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway"
                 exec="davmail"
                 icon="/usr/share/davmail/davmail.png"
                 categories="Network;"
