@@ -29,8 +29,16 @@
         </or>
     </condition>
 
+    <condition property="is.utf8">
+        <equals arg1="${file.encoding}" arg2="UTF-8"/>
+    </condition>
+
     <target name="check-java6" unless="is.java6">
         <fail message="Java 6 needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
+    </target>
+
+    <target name="check-encoding" unless="is.utf8">
+        <fail message="Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8"/>
     </target>
 
     <target name="svnrelease" if="is.svn">
@@ -53,7 +61,7 @@
         <property name="release" value="${version}"/>
     </target>
 
-    <target name="init" depends="check-java6, svnrelease, defaultrelease">
+    <target name="init" depends="check-encoding, check-java6, svnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package"/>
         <mkdir dir="target/classes"/>
     </target>
