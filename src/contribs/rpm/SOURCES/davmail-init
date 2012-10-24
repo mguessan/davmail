@@ -35,7 +35,7 @@ test -d $DAVMAIL_HOME || exit 5
 
 LOGFILE=/var/log/davmail.log
 PIDFILE=/var/run/davmail.pid
-LOCKFILE=/var/lock/subsys/davmail
+LOCKFILE=/var/run/davmail.lock
 
 start() {
 	echo -n $"Starting DavMail gateway: "
@@ -47,7 +47,7 @@ start() {
 		RETVAL=1
 		return
 	fi
-	runuser - davmail -s /bin/sh -c "exec nohup $DAVMAIL_HOME/davmail $DAVMAIL_CONF >> $LOGFILE 2>&1 &"
+	su - davmail -s /bin/sh -c "exec nohup $DAVMAIL_HOME/davmail $DAVMAIL_CONF >> $LOGFILE 2>&1 &"
 	RETVAL=$?
 	if [ $RETVAL -eq 0 ]
 	then
