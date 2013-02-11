@@ -167,12 +167,12 @@ public final class DavGatewayHttpClientFacade {
     public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
         setClientHost(httpClient, url);
 
-        /*if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
-            AuthPolicy.registerAuthScheme("Negotiate", NegotiateScheme.class);
+        if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
+            AuthPolicy.registerAuthScheme("Negotiate", SpNegoScheme.class);
             ArrayList<String> authPrefs = new ArrayList<String>();
             authPrefs.add("Negotiate");
             httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
-        } else */if (!needNTLM) {
+        } else if (!needNTLM) {
             ArrayList<String> authPrefs = new ArrayList<String>();
             authPrefs.add(AuthPolicy.DIGEST);
             authPrefs.add(AuthPolicy.BASIC);
