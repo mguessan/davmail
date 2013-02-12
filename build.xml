@@ -308,17 +308,20 @@
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
 
         <zip file="dist/davmail-${release-name}.zip">
-            <fileset dir="dist">
+            <zipfileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="davmail.desktop"/>
-                <include name="davmail.sh"/>
+                <exclude name="davmail.sh"/>
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
-            </fileset>
+            </zipfileset>
+            <zipfileset  dir="dist" filemode="755">
+                <include name="davmail.sh"/>
+            </zipfileset>
         </zip>
         <copy todir="dist/web">
             <fileset dir="src/web"/>
