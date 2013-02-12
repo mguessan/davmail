@@ -305,7 +305,7 @@ public final class DavGatewayHttpClientFacade {
     private static int checkNTLM(HttpClient httpClient, HttpMethod currentMethod) throws IOException {
         int status = currentMethod.getStatusCode();
         if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
-                && acceptsNTLMOnly(currentMethod) && !hasNTLM(httpClient)) {
+                && acceptsNTLMOnly(currentMethod) && !hasNTLMorNegotiate(httpClient)) {
             LOGGER.debug("Received " + status + " unauthorized at " + currentMethod.getURI() + ", retrying with NTLM");
             resetMethod(currentMethod);
             addNTLM(httpClient);
@@ -415,7 +415,7 @@ public final class DavGatewayHttpClientFacade {
             status = httpClient.executeMethod(method);
             // check NTLM
             if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
-                    && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+                    && acceptsNTLMOnly(method) && !hasNTLMorNegotiate(httpClient)) {
                 LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
                 resetMethod(method);
                 addNTLM(httpClient);
@@ -574,9 +574,10 @@ public final class DavGatewayHttpClientFacade {
      * @param httpClient HttpClient instance
      * @return true if NTLM is enabled
      */
-    public static boolean hasNTLM(HttpClient httpClient) {
+    public static boolean hasNTLMorNegotiate(HttpClient httpClient) {
         Object authPrefs = httpClient.getParams().getParameter(AuthPolicy.AUTH_SCHEME_PRIORITY);
-        return authPrefs == null || (authPrefs instanceof List<?> && ((Collection) authPrefs).contains(AuthPolicy.NTLM));
+        return authPrefs == null || (authPrefs instanceof List<?> &&
+                (((Collection) authPrefs).contains(AuthPolicy.NTLM) || ((Collection) authPrefs).contains("Negotiate")));
     }
 
     /**
@@ -659,7 +660,7 @@ public final class DavGatewayHttpClientFacade {
         method.setFollowRedirects(false);
         int status = httpClient.executeMethod(method);
         if (status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED
-                && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+                && acceptsNTLMOnly(method) && !hasNTLMorNegotiate(httpClient)) {
             resetMethod(method);
             LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);
@@ -682,7 +683,7 @@ public final class DavGatewayHttpClientFacade {
         method.setFollowRedirects(followRedirects);
         int status = httpClient.executeMethod(method);
         if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
-                && acceptsNTLMOnly(method) && !hasNTLM(httpClient)) {
+                && acceptsNTLMOnly(method) && !hasNTLMorNegotiate(httpClient)) {
             resetMethod(method);
             LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
             addNTLM(httpClient);

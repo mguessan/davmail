@@ -764,7 +764,7 @@ public class DavExchangeSession extends ExchangeSession {
                 DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
             } catch (IOException e) {
                 // workaround for NTLM authentication only on /public
-                if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+                if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
                     DavGatewayHttpClientFacade.addNTLM(httpClient);
                     DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
                 }

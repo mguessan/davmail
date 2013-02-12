@@ -227,7 +227,7 @@ public abstract class ExchangeSession {
             }
 
             // avoid 401 roundtrips, only if NTLM is disabled and basic authentication enabled
-            if (isBasicAuthentication && !DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+            if (isBasicAuthentication && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 

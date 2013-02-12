@@ -241,7 +241,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         // enable preemptive authentication on non NTLM endpoints
-        if (!DavGatewayHttpClientFacade.hasNTLM(httpClient)) {
+        if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
         }
 
