@@ -18,6 +18,7 @@
  */
 package davmail.http;
 
+import davmail.Settings;
 import org.apache.log4j.Logger;
 import org.ietf.jgss.*;
 
@@ -25,7 +26,10 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.awt.GraphicsEnvironment;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.PrivilegedAction;
 import java.security.Security;
 
@@ -60,13 +64,27 @@ public class KerberosHelper {
             for (int i = 0; i < callbacks.length; i++) {
                 if (callbacks[i] instanceof NameCallback) {
                     if (principal == null) {
-                        throw new UnsupportedCallbackException(callbacks[i]);
+                        // if we get there kerberos token is missing or invalid
+                        if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                            // headless or server mode
+                            System.out.print(((NameCallback) callbacks[i]).getPrompt());
+                            BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+                            principal = inReader.readLine();
+                        } else {
+                            // TODO: get username and password from dialog
+                        }
                     }
                     final NameCallback nameCallback = (NameCallback) callbacks[i];
                     nameCallback.setName(principal);
                 } else if (callbacks[i] instanceof PasswordCallback) {
                     if (password == null) {
-                        throw new UnsupportedCallbackException(callbacks[i]);
+                        // if we get there kerberos token is missing or invalid
+                        if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                            // headless or server mode
+                            System.out.print(((PasswordCallback) callbacks[i]).getPrompt());
+                            BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+                            password = inReader.readLine();
+                        }
                     }
                     final PasswordCallback passCallback = (PasswordCallback) callbacks[i];
                     passCallback.setPassword(password.toCharArray());

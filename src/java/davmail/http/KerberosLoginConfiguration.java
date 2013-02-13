@@ -18,6 +18,8 @@
  */
 package davmail.http;
 
+import org.apache.log4j.Logger;
+
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import java.util.HashMap;
@@ -31,12 +33,20 @@ import java.util.HashMap;
  * <p/>
  */
 public class KerberosLoginConfiguration extends Configuration {
+    protected static final Logger LOGGER = Logger.getLogger(KerberosHelper.class);
     protected static final AppConfigurationEntry[] CLIENT_LOGIN_MODULE;
 
     static {
         HashMap<String, String> loginModuleOptions = new HashMap<String, String>();
+        if (LOGGER.isDebugEnabled()) {
+            loginModuleOptions.put("debug", "true");
+        }
+
         loginModuleOptions.put("useTicketCache", "true");
         //loginModuleOptions.put("doNotPrompt", "true");
+        //loginModuleOptions.put("ticketCache", FileCredentialsCache.getDefaultCacheName());
+        //loginModuleOptions.put("refreshKrb5Config", "true");
+        //loginModuleOptions.put("storeKey", "true");
         CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, loginModuleOptions)};
 
     }
