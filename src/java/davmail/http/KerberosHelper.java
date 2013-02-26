@@ -135,6 +135,12 @@ public class KerberosHelper {
         kerberosCallbackHandler = new KerberosCallbackHandler(principal, password);
     }
 
+    /**
+     * Create client Kerberos context.
+     *
+     * @return Login context
+     * @throws LoginException on error
+     */
     public static LoginContext login() throws LoginException {
         synchronized (LOCK) {
             if (loginContext == null) {
@@ -144,5 +150,85 @@ public class KerberosHelper {
             }
         }
         return loginContext;
+    }
+
+    /**
+     * Create server side Kerberos login context for provided credentials
+     *
+     * @param principal server principal
+     * @param password  server passsword
+     * @return LoginContext
+     * @throws LoginException on error
+     */
+    public static LoginContext serverLogin(final String principal, final String password) throws LoginException {
+        LoginContext serverLoginContext = new LoginContext("spnego-server", new CallbackHandler() {
+
+            public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                for (int i = 0; i < callbacks.length; i++) {
+                    if (callbacks[i] instanceof NameCallback) {
+                        final NameCallback nameCallback = (NameCallback) callbacks[i];
+                        nameCallback.setName(principal);
+                    } else if (callbacks[i] instanceof PasswordCallback) {
+                        final PasswordCallback passCallback = (PasswordCallback) callbacks[i];
+                        passCallback.setPassword(password.toCharArray());
+                    } else {
+                        throw new UnsupportedCallbackException(callbacks[i]);
+                    }
+                }
+
+            }
+        });
+        serverLoginContext.login();
+        return serverLoginContext;
+    }
+
+    public static class SecurityContext {
+        // returned token
+        public byte[] token;
+        public String principal;
+    }
+
+    /**
+     * Handle Kerberos token in server login context
+     *
+     * @param serverLoginContext server login context
+     * @param token              Kerberos client token
+     * @return result with client principal and optional returned Kerberos token
+     * @throws GSSException on error
+     */
+    public static SecurityContext acceptSecurityContext(LoginContext serverLoginContext, final byte[] token) throws GSSException {
+        Object result = Subject.doAs(serverLoginContext.getSubject(), new PrivilegedAction() {
+
+            public Object run() {
+                Object result;
+                SecurityContext securityContext = new SecurityContext();
+                try {
+                    GSSManager manager = GSSManager.getInstance();
+
+                    // get server credentials from context
+                    Oid krb5oid = new Oid("1.2.840.113554.1.2.2");
+                    GSSCredential serverCreds = manager.createCredential(null,
+                            GSSCredential.DEFAULT_LIFETIME,
+                            krb5oid,
+                            GSSCredential.ACCEPT_ONLY);
+
+                    GSSContext context = manager.createContext(serverCreds);
+
+                    securityContext.token = context.acceptSecContext(token, 0, token.length);
+                    if (context.isEstablished()) {
+                        securityContext.principal = context.getSrcName().toString();
+                        LOGGER.debug("Authenticated user: " + securityContext.principal);
+                    }
+                    result = securityContext;
+                } catch (GSSException e) {
+                    result = e;
+                }
+                return result;
+            }
+        });
+        if (result instanceof GSSException) {
+            throw (GSSException) result;
+        }
+        return (SecurityContext) result;
     }
 }
