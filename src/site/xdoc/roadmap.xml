@@ -15,21 +15,14 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.1.1">
-                <p>
-                    <strong>Next patch release</strong>
-                </p>
-                <ul>
-                    <li>Test windows install on seven without admin rights</li>
-                </ul>
-            </subsection>
-            <subsection name="4.2">
+            <subsection name="4.3">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
                     <li>Switch from registry to link on windows</li>
                     <li>Implement split and kerberos authentication</li>
+                    <li>Test windows install on seven without admin rights</li>
                 </ul>
             </subsection>
             <subsection name="4.x">
