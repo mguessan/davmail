@@ -1,3 +1,40 @@
+** DavMail 4.2.0 released **
+Contains some enhancements on iOS 6 support, Debian package encoding issue fix
+and partial Kerberos support (workstation mode) to provide transparent Exchange
+authentication.
+
+Kerberos:
+- Kerberos: implement server side security context and token handling
+- Kerberos: server side login module
+- Improve Kerberos logging and implement command line callback
+- Do not set preemptive authentication in Kerberos mode
+- Enable Kerberos authentication scheme with davmail.enableKerberos setting
+- Kerberos authentication implementation: SpNegoScheme to implement Negotiate authentication scheme, KerberosHelper to handle ticket access and KerberosLoginConfiguration to replace JAAS configuration file
+
+Enhancements:
+- Fix accept certificate message
+- Make davmail.sh executable in platform independent package
+- Update desktop entry comment
+- Update RPM spec file from build.opensuse.org (marcindulak)
+- Add libswt-cairo-gtk-3-jni to debian package dependencies
+- Clear cookies created by authentication test
+- Upgrade jackrabbit-webdav and htmlcleaner in davmailconsole wrapper
+- Upgrade jackrabbit-webdav to 2.4.3
+- Upgrade htmlcleaner to 2.2
+- Exclude Jsmooth, nsi, OSX and contribs (with binary) from source only package
+- Prepare source only package
+
+Bugfix:
+- Check file encoding in build file
+- Refactor StringUtil and encode ~ in urlcompname
+
+IMAP:
+- IMAP: Implement custom IMAP flags to keywords mapping in settings
+
+Caldav:
+- Caldav: add iOS6 user agent
+
+
 ** DavMail 4.1.0 released **
 Bugfix release with improved IMAP support, including IMAP flags mapping to Outlook categories,
 enhanced IMAP noop/idle support, fixed emClient Caldav support and many Caldav and EWS fixes.
@@ -29,7 +66,7 @@ IMAP:
 EWS:
 - EWS: Get primary smtp email address with ResolveNames in direct EWS mode
 
-Enhancements
+Enhancements:
 - Allow Java 7 to build DavMail
 - Prepare message keywords/categories support
 
