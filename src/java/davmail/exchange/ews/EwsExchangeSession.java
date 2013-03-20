@@ -585,6 +585,10 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(getItemMethod);
                 EWSMethod.Item item = getItemMethod.getResponseItem();
 
+                if (item == null) {
+                    throw new HttpNotFoundException("Item " + itemId + " not found");
+                }
+
                 MimeMessage mimeMessage = new MimeMessage((Session) null);
                 mimeMessage.addHeader("Content-class", item.get(Field.get("contentclass").getResponseName()));
                 mimeMessage.setSentDate(parseDateFromExchange(item.get(Field.get("date").getResponseName())));
