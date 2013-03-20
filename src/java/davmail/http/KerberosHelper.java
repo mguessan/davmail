@@ -40,12 +40,14 @@ import java.security.Security;
 public class KerberosHelper {
     protected static final Logger LOGGER = Logger.getLogger(KerberosHelper.class);
     protected static final Object LOCK = new Object();
-    protected static KerberosCallbackHandler kerberosCallbackHandler;
-    protected static LoginContext loginContext;
+    protected static final KerberosCallbackHandler KERBEROS_CALLBACK_HANDLER;
+    protected static LoginContext clientLoginContext;
 
     static {
+        // Load Jaas configuration from class
         Security.setProperty("login.configuration.provider", "davmail.http.KerberosLoginConfiguration");
-        kerberosCallbackHandler = new KerberosCallbackHandler();
+        // Kerberos callback handler singleton
+        KERBEROS_CALLBACK_HANDLER = new KerberosCallbackHandler();
     }
 
     protected static class KerberosCallbackHandler implements CallbackHandler {
@@ -53,11 +55,6 @@ public class KerberosHelper {
         String password;
 
         protected KerberosCallbackHandler() {
-        }
-
-        protected KerberosCallbackHandler(String principal, String password) {
-            this.principal = principal;
-            this.password = password;
         }
 
         public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
@@ -74,8 +71,8 @@ public class KerberosHelper {
                             // TODO: get username and password from dialog
                         }
                     }
-                    final NameCallback nameCallback = (NameCallback) callbacks[i];
-                    nameCallback.setName(principal);
+                    ((NameCallback) callbacks[i]).setName(principal);
+
                 } else if (callbacks[i] instanceof PasswordCallback) {
                     if (password == null) {
                         // if we get there kerberos token is missing or invalid
@@ -86,8 +83,8 @@ public class KerberosHelper {
                             password = inReader.readLine();
                         }
                     }
-                    final PasswordCallback passCallback = (PasswordCallback) callbacks[i];
-                    passCallback.setPassword(password.toCharArray());
+                    ((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
+
                 } else {
                     throw new UnsupportedCallbackException(callbacks[i]);
                 }
@@ -95,12 +92,39 @@ public class KerberosHelper {
         }
     }
 
-    public static byte[] getToken(final String host, final byte[] token) throws GSSException, LoginException {
-        LOGGER.debug("KerberosHelper.getToken " + host + " " + token.length + " bytes token");
+    /**
+     * Get response Kerberos token for host with provided token.
+     *
+     * @param host  target host
+     * @param token input token
+     * @return response token
+     * @throws GSSException   on error
+     * @throws LoginException on error
+     */
+    public static byte[] initSecurityContext(final String host, final byte[] token) throws GSSException, LoginException {
+        return initSecurityContext(host, null, token);
+    }
 
-        LoginContext loginContext = login();
+    /**
+     * Get response Kerberos token for host with provided token, use client provided delegation credentials.
+     * Used to authenticate with target host on a gateway server with client credentials,
+     * gateway must have its own principal authorized for delegation
+     *
+     * @param host                 target host
+     * @param delegatedCredentials client delegated credentials
+     * @param token                input token
+     * @return response token
+     * @throws GSSException   on error
+     * @throws LoginException on error
+     */
+    public static byte[] initSecurityContext(final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
+        LOGGER.debug("KerberosHelper.initSecurityContext " + host + " " + token.length + " bytes token");
 
-        Object result = Subject.doAs(loginContext.getSubject(), new PrivilegedAction() {
+        // TODO: handle ticket expiration ?
+        // create client login context
+        clientLogin();
+
+        Object result = Subject.doAs(clientLoginContext.getSubject(), new PrivilegedAction() {
 
             public Object run() {
                 Object result;
@@ -110,10 +134,11 @@ public class KerberosHelper {
                     // Kerberos v5 OID
                     Oid krb5Oid = new Oid("1.2.840.113554.1.2.2");
 
-                    GSSContext context = manager.createContext(serverName, krb5Oid, null,
+                    GSSContext context = manager.createContext(serverName, krb5Oid, delegatedCredentials,
                             GSSContext.DEFAULT_LIFETIME);
 
                     //context.requestMutualAuth(true);
+                    // TODO: used by IIS to pass token to Exchange ?
                     context.requestCredDeleg(true);
 
                     result = context.initSecContext(token, 0, token.length);
@@ -124,40 +149,37 @@ public class KerberosHelper {
             }
         });
         if (result instanceof GSSException) {
+            // TODO: manage error codes
+            LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " message" + ((GSSException) result).getMessage());
+
             throw (GSSException) result;
         }
 
-        LOGGER.debug("KerberosHelper.getToken return " + ((byte[]) result).length + " bytes token");
+        LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
         return (byte[]) result;
-    }
-
-    public static void setCredentials(String principal, String password) {
-        kerberosCallbackHandler = new KerberosCallbackHandler(principal, password);
     }
 
     /**
      * Create client Kerberos context.
      *
-     * @return Login context
      * @throws LoginException on error
      */
-    public static LoginContext login() throws LoginException {
+    public static void clientLogin() throws LoginException {
         synchronized (LOCK) {
-            if (loginContext == null) {
-                final LoginContext localLoginContext = new LoginContext("spnego-client", kerberosCallbackHandler);
+            if (clientLoginContext == null) {
+                final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
                 localLoginContext.login();
-                loginContext = localLoginContext;
+                clientLoginContext = localLoginContext;
             }
         }
-        return loginContext;
     }
 
     /**
-     * Create server side Kerberos login context for provided credentials
+     * Create server side Kerberos login context for provided credentials.
      *
      * @param principal server principal
      * @param password  server passsword
-     * @return LoginContext
+     * @return LoginContext server login context
      * @throws LoginException on error
      */
     public static LoginContext serverLogin(final String principal, final String password) throws LoginException {
@@ -182,14 +204,26 @@ public class KerberosHelper {
         return serverLoginContext;
     }
 
+    /**
+     * Contains server Kerberos context information in server mode.
+     */
     public static class SecurityContext {
-        // returned token
+        /**
+         * response token
+         */
         public byte[] token;
+        /**
+         * authenticated principal
+         */
         public String principal;
+        /**
+         * client delegated credential
+         */
+        public GSSCredential clientCredential;
     }
 
     /**
-     * Handle Kerberos token in server login context
+     * Check client provided Kerberos token in server login context
      *
      * @param serverLoginContext server login context
      * @param token              Kerberos client token
@@ -207,17 +241,22 @@ public class KerberosHelper {
 
                     // get server credentials from context
                     Oid krb5oid = new Oid("1.2.840.113554.1.2.2");
-                    GSSCredential serverCreds = manager.createCredential(null,
+                    GSSCredential serverCreds = manager.createCredential(null/* use name from login context*/,
                             GSSCredential.DEFAULT_LIFETIME,
                             krb5oid,
-                            GSSCredential.ACCEPT_ONLY);
-
+                            GSSCredential.ACCEPT_ONLY/* server mode */);
                     GSSContext context = manager.createContext(serverCreds);
 
                     securityContext.token = context.acceptSecContext(token, 0, token.length);
                     if (context.isEstablished()) {
                         securityContext.principal = context.getSrcName().toString();
                         LOGGER.debug("Authenticated user: " + securityContext.principal);
+                        if (!context.getCredDelegState()) {
+                            LOGGER.debug("Credentials can not be delegated");
+                        } else {
+                            // Get client delegated credentials from context (gateway mode)
+                            securityContext.clientCredential = context.getDelegCred();
+                        }
                     }
                     result = securityContext;
                 } catch (GSSException e) {
@@ -227,6 +266,8 @@ public class KerberosHelper {
             }
         });
         if (result instanceof GSSException) {
+            // TODO: manage error codes
+            LOGGER.info("KerberosHelper.acceptSecurityContext exception code " + ((GSSException) result).getMajor() + " message" + ((GSSException) result).getMessage());
             throw (GSSException) result;
         }
         return (SecurityContext) result;
