@@ -71,6 +71,9 @@ public class KerberosHelper {
                             // TODO: get username and password from dialog
                         }
                     }
+                    if (principal == null) {
+                        throw new IOException("KerberosCallbackHandler: failed to retrieve principal");
+                    }
                     ((NameCallback) callbacks[i]).setName(principal);
 
                 } else if (callbacks[i] instanceof PasswordCallback) {
@@ -83,6 +86,9 @@ public class KerberosHelper {
                             password = inReader.readLine();
                         }
                     }
+                    if (password == null) {
+                        throw new IOException("KerberosCallbackHandler: failed to retrieve password");
+                    }
                     ((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
 
                 } else {
@@ -92,17 +98,26 @@ public class KerberosHelper {
         }
     }
 
+    public static void setPrincipal(String principal) {
+        KERBEROS_CALLBACK_HANDLER.principal = principal;
+    }
+
+    public static void setPassword(String password) {
+        KERBEROS_CALLBACK_HANDLER.password = password;
+    }
+
     /**
      * Get response Kerberos token for host with provided token.
      *
-     * @param host  target host
-     * @param token input token
+     * @param protocol target protocol
+     * @param host     target host
+     * @param token    input token
      * @return response token
      * @throws GSSException   on error
      * @throws LoginException on error
      */
-    public static byte[] initSecurityContext(final String host, final byte[] token) throws GSSException, LoginException {
-        return initSecurityContext(host, null, token);
+    public static byte[] initSecurityContext(final String protocol, final String host, final byte[] token) throws GSSException, LoginException {
+        return initSecurityContext(protocol, host, null, token);
     }
 
     /**
@@ -110,6 +125,7 @@ public class KerberosHelper {
      * Used to authenticate with target host on a gateway server with client credentials,
      * gateway must have its own principal authorized for delegation
      *
+     * @param protocol             target protocol
      * @param host                 target host
      * @param delegatedCredentials client delegated credentials
      * @param token                input token
@@ -117,20 +133,38 @@ public class KerberosHelper {
      * @throws GSSException   on error
      * @throws LoginException on error
      */
-    public static byte[] initSecurityContext(final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
-        LOGGER.debug("KerberosHelper.initSecurityContext " + host + " " + token.length + " bytes token");
+    public static byte[] initSecurityContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
+        LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + "/" + host + " " + token.length + " bytes token");
 
-        // TODO: handle ticket expiration ?
         // create client login context
         clientLogin();
 
-        Object result = Subject.doAs(clientLoginContext.getSubject(), new PrivilegedAction() {
+        Object result = internalInitSecContext(protocol, host, delegatedCredentials, token);
+        if (result instanceof GSSException) {
+            LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
+
+            // recreate login context
+            clientReLogin();
+            result = internalInitSecContext(protocol, host, delegatedCredentials, token);
+
+            if (result instanceof GSSException) {
+                LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
+                throw (GSSException) result;
+            }
+        }
+
+        LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
+        return (byte[]) result;
+    }
+
+    protected static Object internalInitSecContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) {
+        return Subject.doAs(clientLoginContext.getSubject(), new PrivilegedAction() {
 
             public Object run() {
                 Object result;
                 try {
                     GSSManager manager = GSSManager.getInstance();
-                    GSSName serverName = manager.createName("HTTP/" + host, null);
+                    GSSName serverName = manager.createName(protocol + "/" + host, null);
                     // Kerberos v5 OID
                     Oid krb5Oid = new Oid("1.2.840.113554.1.2.2");
 
@@ -148,15 +182,6 @@ public class KerberosHelper {
                 return result;
             }
         });
-        if (result instanceof GSSException) {
-            // TODO: manage error codes
-            LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " message" + ((GSSException) result).getMessage());
-
-            throw (GSSException) result;
-        }
-
-        LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
-        return (byte[]) result;
     }
 
     /**
@@ -171,6 +196,18 @@ public class KerberosHelper {
                 localLoginContext.login();
                 clientLoginContext = localLoginContext;
             }
+        }
+    }
+
+    /**
+     * Recreate client Kerberos context.
+     *
+     * @throws LoginException on error
+     */
+    public static void clientReLogin() throws LoginException {
+        synchronized (LOCK) {
+            clientLoginContext = null;
+            clientLogin();
         }
     }
 

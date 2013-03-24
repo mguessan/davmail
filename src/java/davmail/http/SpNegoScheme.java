@@ -187,11 +187,11 @@ public class SpNegoScheme implements AuthScheme {
         try {
             if (this.state == INITIATED || this.state == FAILED) {
                 // send initial token to server
-                response = EncodingUtil.getAsciiString(Base64.encodeBase64(KerberosHelper.initSecurityContext(host, new byte[0])));
+                response = EncodingUtil.getAsciiString(Base64.encodeBase64(KerberosHelper.initSecurityContext("HTTP", host, new byte[0])));
                 this.state = TYPE1_MSG_GENERATED;
             } else {
                 // send challenge response
-                response = EncodingUtil.getAsciiString(Base64.encodeBase64(KerberosHelper.initSecurityContext(host, serverToken)));
+                response = EncodingUtil.getAsciiString(Base64.encodeBase64(KerberosHelper.initSecurityContext("HTTP", host, serverToken)));
                 this.state = TYPE3_MSG_GENERATED;
             }
         } catch (GSSException gsse) {
