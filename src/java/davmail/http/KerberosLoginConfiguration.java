@@ -36,7 +36,7 @@ import java.util.HashMap;
  * <p/>
  */
 public class KerberosLoginConfiguration extends Configuration {
-    protected static final Logger LOGGER = Logger.getLogger(KerberosHelper.class);
+    protected static final Logger LOGGER = Logger.getLogger(KerberosLoginConfiguration.class);
     protected static final AppConfigurationEntry[] CLIENT_LOGIN_MODULE;
     protected static final AppConfigurationEntry[] SERVER_LOGIN_MODULE;
 

@@ -22,8 +22,10 @@ import davmail.Settings;
 import org.apache.log4j.Logger;
 import org.ietf.jgss.*;
 
+import javax.security.auth.RefreshFailedException;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.KerberosTicket;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import java.awt.GraphicsEnvironment;
@@ -142,15 +144,7 @@ public class KerberosHelper {
         Object result = internalInitSecContext(protocol, host, delegatedCredentials, token);
         if (result instanceof GSSException) {
             LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
-
-            // recreate login context
-            clientReLogin();
-            result = internalInitSecContext(protocol, host, delegatedCredentials, token);
-
-            if (result instanceof GSSException) {
-                LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
-                throw (GSSException) result;
-            }
+            throw (GSSException) result;
         }
 
         LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
@@ -162,14 +156,14 @@ public class KerberosHelper {
 
             public Object run() {
                 Object result;
+                GSSContext context = null;
                 try {
                     GSSManager manager = GSSManager.getInstance();
                     GSSName serverName = manager.createName(protocol + "/" + host, null);
                     // Kerberos v5 OID
                     Oid krb5Oid = new Oid("1.2.840.113554.1.2.2");
 
-                    GSSContext context = manager.createContext(serverName, krb5Oid, delegatedCredentials,
-                            GSSContext.DEFAULT_LIFETIME);
+                    context = manager.createContext(serverName, krb5Oid, delegatedCredentials, GSSContext.DEFAULT_LIFETIME);
 
                     //context.requestMutualAuth(true);
                     // TODO: used by IIS to pass token to Exchange ?
@@ -178,6 +172,14 @@ public class KerberosHelper {
                     result = context.initSecContext(token, 0, token.length);
                 } catch (GSSException e) {
                     result = e;
+                } finally {
+                    if (context != null) {
+                        try {
+                            context.dispose();
+                        } catch (GSSException e) {
+                            LOGGER.debug("KerberosHelper.internalInitSecContext " + e + " " + e.getMessage());
+                        }
+                    }
                 }
                 return result;
             }
@@ -191,23 +193,37 @@ public class KerberosHelper {
      */
     public static void clientLogin() throws LoginException {
         synchronized (LOCK) {
+            if (clientLoginContext != null) {
+                // check cached TGT
+                for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
+                    KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                    if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
+                        LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
+                        clientLoginContext = null;
+                    }
+                }
+            }
             if (clientLoginContext == null) {
                 final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
                 localLoginContext.login();
                 clientLoginContext = localLoginContext;
             }
-        }
-    }
-
-    /**
-     * Recreate client Kerberos context.
-     *
-     * @throws LoginException on error
-     */
-    public static void clientReLogin() throws LoginException {
-        synchronized (LOCK) {
-            clientLoginContext = null;
-            clientLogin();
+            // try to renew almost expired tickets
+            for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
+                KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
+                if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
+                    if (kerberosTicket.isRenewable()) {
+                        try {
+                            kerberosTicket.refresh();
+                        } catch (RefreshFailedException e) {
+                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
+                        }
+                    } else {
+                        LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
+                    }
+                }
+            }
         }
     }
 
@@ -273,6 +289,7 @@ public class KerberosHelper {
             public Object run() {
                 Object result;
                 SecurityContext securityContext = new SecurityContext();
+                GSSContext context = null;
                 try {
                     GSSManager manager = GSSManager.getInstance();
 
@@ -282,7 +299,7 @@ public class KerberosHelper {
                             GSSCredential.DEFAULT_LIFETIME,
                             krb5oid,
                             GSSCredential.ACCEPT_ONLY/* server mode */);
-                    GSSContext context = manager.createContext(serverCreds);
+                    context = manager.createContext(serverCreds);
 
                     securityContext.token = context.acceptSecContext(token, 0, token.length);
                     if (context.isEstablished()) {
@@ -298,13 +315,20 @@ public class KerberosHelper {
                     result = securityContext;
                 } catch (GSSException e) {
                     result = e;
+                } finally {
+                    if (context != null) {
+                        try {
+                            context.dispose();
+                        } catch (GSSException e) {
+                            LOGGER.debug("KerberosHelper.acceptSecurityContext " + e + " " + e.getMessage());
+                        }
+                    }
                 }
                 return result;
             }
         });
         if (result instanceof GSSException) {
-            // TODO: manage error codes
-            LOGGER.info("KerberosHelper.acceptSecurityContext exception code " + ((GSSException) result).getMajor() + " message" + ((GSSException) result).getMessage());
+            LOGGER.info("KerberosHelper.acceptSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
             throw (GSSException) result;
         }
         return (SecurityContext) result;
