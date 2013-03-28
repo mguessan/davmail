@@ -170,7 +170,12 @@ public class CaldavConnection extends AbstractConnection {
                         session = ExchangeSessionFactory.getInstance(userName, password);
                         handleRequest(command, path, headers, content);
                     } catch (DavMailAuthenticationException e) {
-                        sendUnauthorized();
+                        if (Settings.getBooleanProperty("davmail.enableKerberos")) {
+                            // authentication failed in Kerberos mode => not available
+                            sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, "Kerberos authentication failed");
+                        } else {
+                            sendUnauthorized();
+                        }
                     }
                 }
 
