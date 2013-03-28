@@ -116,10 +116,10 @@ public class ImapConnection extends AbstractConnection {
                             } catch (Exception e) {
                                 DavGatewayTray.error(e);
                                 if (Settings.getBooleanProperty("davmail.enableKerberos")) {
-                                    // Kerberos authentication failed
-                                    throw e;
+                                    sendClient(commandId + " NO LOGIN Kerberos authentication failed");
+                                } else {
+                                    sendClient(commandId + " NO LOGIN failed");
                                 }
-                                sendClient(commandId + " NO LOGIN failed");
                                 state = State.INITIAL;
                             }
                         } else if ("AUTHENTICATE".equalsIgnoreCase(command)) {
