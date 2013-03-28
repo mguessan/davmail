@@ -19,6 +19,7 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.ui.CredentialPromptDialog;
 import org.apache.log4j.Logger;
 import org.ietf.jgss.*;
 
@@ -70,7 +71,9 @@ public class KerberosHelper {
                             BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
                             principal = inReader.readLine();
                         } else {
-                            // TODO: get username and password from dialog
+                            CredentialPromptDialog credentialPromptDialog = new CredentialPromptDialog(((NameCallback) callbacks[i]).getPrompt());
+                            principal = credentialPromptDialog.getPrincipal();
+                            password = String.valueOf(credentialPromptDialog.getPassword());
                         }
                     }
                     if (principal == null) {
