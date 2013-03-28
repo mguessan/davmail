@@ -115,6 +115,10 @@ public class ImapConnection extends AbstractConnection {
                                 state = State.AUTHENTICATED;
                             } catch (Exception e) {
                                 DavGatewayTray.error(e);
+                                if (Settings.getBooleanProperty("davmail.enableKerberos")) {
+                                    // Kerberos authentication failed
+                                    throw e;
+                                }
                                 sendClient(commandId + " NO LOGIN failed");
                                 state = State.INITIAL;
                             }
@@ -162,11 +166,11 @@ public class ImapConnection extends AbstractConnection {
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
-                                                List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
-                                                for (ExchangeSession.Folder folder : folders) {
-                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
-                                                    sendSubFolders(command, folder.folderPath, false);
-                                                }
+                                                    List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
+                                                    for (ExchangeSession.Folder folder : folders) {
+                                                        sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
+                                                        sendSubFolders(command, folder.folderPath, false);
+                                                    }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
                                                 if ("/*".equals(folderQuery) || "/%".equals(folderQuery) || "/%/%".equals(folderQuery)) {
@@ -300,7 +304,7 @@ public class ImapConnection extends AbstractConnection {
                                                         try {
                                                             handleFetch(message, uidRangeIterator.currentIndex, parameters);
                                                         } catch (HttpNotFoundException e) {
-                                                            LOGGER.warn("Ignore missing message "+uidRangeIterator.currentIndex);
+                                                            LOGGER.warn("Ignore missing message " + uidRangeIterator.currentIndex);
                                                         } catch (SocketException e) {
                                                             // client closed connection
                                                             throw e;
@@ -386,7 +390,7 @@ public class ImapConnection extends AbstractConnection {
                                             try {
                                                 handleFetch(message, rangeIterator.currentIndex, parameters);
                                             } catch (HttpNotFoundException e) {
-                                                LOGGER.warn("Ignore missing message "+rangeIterator.currentIndex);
+                                                LOGGER.warn("Ignore missing message " + rangeIterator.currentIndex);
                                             } catch (SocketException e) {
                                                 // client closed connection, rethrow exception
                                                 throw e;
@@ -517,7 +521,7 @@ public class ImapConnection extends AbstractConnection {
                                             while (in.available() == 0) {
                                                 if (++count >= imapIdleDelay) {
                                                     count = 0;
-                                                    TreeMap<Long,String> previousImapFlagMap = currentFolder.getImapFlagMap();
+                                                    TreeMap<Long, String> previousImapFlagMap = currentFolder.getImapFlagMap();
                                                     if (session.refreshFolder(currentFolder)) {
                                                         handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
                                                     }
@@ -542,7 +546,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("noop".equalsIgnoreCase(command) || "check".equalsIgnoreCase(command)) {
                                     if (currentFolder != null) {
                                         DavGatewayTray.debug(new BundleMessage("LOG_IMAP_COMMAND", command, currentFolder.folderPath));
-                                        TreeMap<Long,String> previousImapFlagMap = currentFolder.getImapFlagMap();
+                                        TreeMap<Long, String> previousImapFlagMap = currentFolder.getImapFlagMap();
                                         if (session.refreshFolder(currentFolder)) {
                                             handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
                                         }
@@ -691,16 +695,16 @@ public class ImapConnection extends AbstractConnection {
      * @param imapUidList         uid list after refresh
      * @throws IOException on error
      */
-    private void handleRefresh(TreeMap<Long,String> previousImapFlagMap, TreeMap<Long,String> imapFlagMap) throws IOException {
+    private void handleRefresh(TreeMap<Long, String> previousImapFlagMap, TreeMap<Long, String> imapFlagMap) throws IOException {
         // send deleted message expunge notification
         int index = 1;
         for (long previousImapUid : previousImapFlagMap.keySet()) {
             if (!imapFlagMap.keySet().contains(previousImapUid)) {
                 sendClient("* " + index + " EXPUNGE");
             } else {
-	            // send updated flags
+                // send updated flags
                 if (!previousImapFlagMap.get(previousImapUid).equals(imapFlagMap.get(previousImapUid))) {
-                    sendClient("* " + index + " FETCH (UID "+previousImapUid+" FLAGS ("+imapFlagMap.get(previousImapUid)+"))");
+                    sendClient("* " + index + " FETCH (UID " + previousImapUid + " FLAGS (" + imapFlagMap.get(previousImapUid) + "))");
                 }
                 index++;
             }
@@ -949,7 +953,7 @@ public class ImapConnection extends AbstractConnection {
             iterator = new RangeIterator(currentFolder.messages, conditions.indexRange);
             localMessagesUidList = new ArrayList<Long>();
             // build search result uid list
-            for (ExchangeSession.Message message:localMessages) {
+            for (ExchangeSession.Message message : localMessages) {
                 localMessagesUidList.add(message.getImapUid());
             }
         } else {
