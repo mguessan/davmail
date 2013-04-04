@@ -107,8 +107,13 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             }
             SunPKCS11ProviderHandler.registerProvider(pkcs11Buffer.toString());
         }
-
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(/*KeyManagerFactory.getDefaultAlgorithm()*/"NewSunX509");
+        String algorithm = KeyManagerFactory.getDefaultAlgorithm();
+        if ("SunX509".equals(algorithm)) {
+            algorithm = "NewSunX509";
+        } else if ("IbmX509".equals(algorithm)) {
+            algorithm = "NewIbmX509";
+        }
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
 
         ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<KeyStore.Builder>();
         // PKCS11 (smartcard) keystore with password callback
