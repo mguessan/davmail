@@ -44,6 +44,7 @@
             <item name="Getting Started" href="/gettingstarted.html"/>
             <item name="Advanced Settings" href="/advanced.html"/>
             <item name="SSL Setup" href="/sslsetup.html"/>
+            <item name="Kerberos" href="/kerberos.html"/>
         </menu>
 
         <menu name="Thunderbird Setup">

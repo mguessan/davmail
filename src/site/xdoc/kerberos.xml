@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!--
+  ~ DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway
+  ~ Copyright (C) 2013  Mickael Guessant
+  ~
+  ~ This program is free software; you can redistribute it and/or
+  ~ modify it under the terms of the GNU General Public License
+  ~ as published by the Free Software Foundation; either version 2
+  ~ of the License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program; if not, write to the Free Software
+  ~ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+  -->
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Kerberos</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Kerberos">
+            <p>DavMail now includes Windows authentication support, aka Kerberos.
+                A new option is available in DavMail settings to rely on Kerberos token for Exchange authentication.
+            </p>
+
+            <subsection name="Windows workstation Kerberos setup">
+                <p>On windows, you have a valid Kerberos ticket on any workstation using your
+                    Active Directory logon. However, on recent Windows versions the TGT is not readable from Java.
+                    The workaround is to change the following registry key:
+                </p>
+                <source><![CDATA[
+HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Lsa\Kerberos\
+REG_DWORD name: allowtgtsessionkey
+Value: 1
+]]></source>
+                <p>More details at:
+                    <a href="http://www.javaactivedirectory.com/?page_id=93">allowtgtsessionkey Registry Key</a>
+                </p>
+            </subsection>
+
+            <subsection name="Linux workstation Kerberos setup">
+                <p>Windows kerberos token is not available on a default Linux workstation setup. You will need to
+                    configure /etc/krb5.conf with Active directory domain name. You may also need to provide a kdc
+                    (Active Directory Domain controller):
+                </p>
+                <source><![CDATA[
+[libdefaults]
+    default_realm = CORP.COMPANY.COM
+
+[realms]
+    CORP.COMPANY.COM  = {
+        kdc = 192.168.184.129
+        default_domain = CORP.COMPANY.COM
+    }
+]]></source>
+                <p>Then create Kerberos ticket: <code>kinit <i>username</i></code>.</p>
+                <p>Check ticket with<code>klist</code></p>
+            </subsection>
+            
+            <subsection name="DavMail configuration">
+                <p>In Kerberos mode, password provided by clients (IMAP, SMTP, POP, HTTP, LDAP) is ignored, thus you
+                must make sure external connections to DavMail are disabled.</p>
+                <p>There is no way in current implementation to define a local password to secure client to DavMail
+                authentication.</p>
+            </subsection>
+
+        </section>
+    </body>
+</document>
