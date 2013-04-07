@@ -102,6 +102,7 @@ public class SettingsFrame extends JFrame {
     JCheckBox imapAutoExpungeCheckBox;
     JCheckBox popMarkReadOnRetrCheckBox;
     JComboBox enableEwsComboBox;
+    JCheckBox enableKerberosCheckBox;
     JCheckBox smtpSaveInSentCheckBox;
 
     JCheckBox osxHideFromDockCheckBox;
@@ -145,10 +146,12 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getSettingsPanel() {
-        JPanel settingsPanel = new JPanel(new GridLayout(6, 2));
+        JPanel settingsPanel = new JPanel(new GridLayout(7, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
-        urlField = new JTextField(Settings.getProperty("davmail.url"), 17);
+        enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
+        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
+        urlField = new JTextField(Settings.getProperty("davmail.url"), 20);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
         popNoSSLCheckBox = new JCheckBox(BundleMessage.format("UI_NO_SSL"), Settings.getBooleanProperty("davmail.ssl.nosecurepop"));
@@ -214,6 +217,8 @@ public class SettingsFrame extends JFrame {
             }
         });
 
+        addSettingComponent(settingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsComboBox,
+                BundleMessage.format("UI_ENABLE_EWS_HELP"));
         addSettingComponent(settingsPanel, BundleMessage.format("UI_OWA_URL"), urlField, BundleMessage.format("UI_OWA_URL_HELP"));
         addPortSettingComponent(settingsPanel, BundleMessage.format("UI_POP_PORT"), popPortField, popPortCheckBox,
                 popNoSSLCheckBox, BundleMessage.format("UI_POP_PORT_HELP"));
@@ -423,8 +428,8 @@ public class SettingsFrame extends JFrame {
         JPanel otherSettingsPanel = new JPanel(new GridLayout(11, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
-        enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
-        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
+        enableKerberosCheckBox = new JCheckBox();
+        enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos"));
         caldavEditNotificationsField = new JCheckBox();
         caldavEditNotificationsField.setSelected(Settings.getBooleanProperty("davmail.caldavEditNotifications"));
         caldavAlarmSoundField = new JTextField(Settings.getProperty("davmail.caldavAlarmSound"), 15);
@@ -444,8 +449,8 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
 
-        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsComboBox,
-                BundleMessage.format("UI_ENABLE_EWS_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_KERBEROS"), enableKerberosCheckBox,
+                BundleMessage.format("UI_ENABLE_KERBEROS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS"), caldavEditNotificationsField,
                 BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_ALARM_SOUND"), caldavAlarmSoundField,
@@ -598,6 +603,7 @@ public class SettingsFrame extends JFrame {
         popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetrCheckBox", false));
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
+        enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos", false));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -766,6 +772,7 @@ public class SettingsFrame extends JFrame {
                     enableEws = "auto";
                 }
                 Settings.setProperty("davmail.enableEws", enableEws);
+                Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
                 Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());

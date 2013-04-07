@@ -143,6 +143,7 @@ public final class Settings {
         SETTINGS.put("davmail.useSystemProxies", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableEws", "auto");
+        SETTINGS.put("davmail.enableKerberos", "false");
         SETTINGS.put("davmail.proxyHost", "");
         SETTINGS.put("davmail.proxyPort", "");
         SETTINGS.put("davmail.proxyUser", "");
@@ -270,7 +271,7 @@ public final class Settings {
             if (!Settings.getBooleanProperty("davmail.server")) {
                 ConsoleAppender consoleAppender = (ConsoleAppender) rootLogger.getAppender("ConsoleAppender");
                 if (consoleAppender != null) {
-                    consoleAppender.setThreshold(Level.OFF);
+                    //consoleAppender.setThreshold(Level.OFF);
                 }
             }
 
