@@ -44,7 +44,7 @@ REG_DWORD name: allowtgtsessionkey
 Value: 1
 ]]></source>
                 <p>More details at:
-                    <a href="http://www.javaactivedirectory.com/?page_id=93">allowtgtsessionkey Registry Key</a>
+                    <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html">JGSS Troubleshooting</a>
                 </p>
             </subsection>
 
@@ -71,7 +71,8 @@ Value: 1
                 <p>In Kerberos mode, password provided by clients (IMAP, SMTP, POP, HTTP, LDAP) is ignored, thus you
                 must make sure external connections to DavMail are disabled.</p>
                 <p>There is no way in current implementation to define a local password to secure client to DavMail
-                authentication.</p>
+                communication.</p>
+                <p>DavMail needs direct access to Kerberos ticket, which means Kerberos will not work in server mode.</p>
             </subsection>
 
         </section>
