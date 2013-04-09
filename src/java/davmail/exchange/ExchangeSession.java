@@ -1283,7 +1283,10 @@ public abstract class ExchangeSession {
         convertResentHeader(mimeMessage, "Bcc");
         convertResentHeader(mimeMessage, "Message-Id");
 
-        mimeMessage.removeHeader("From");
+        // do not allow send as another user on Exchange 2003
+        if ("Exchange2003".equals(serverVersion)) {
+            mimeMessage.removeHeader("From");
+        }
 
         // remove visible recipients from list
         Set<String> visibleRecipients = new HashSet<String>();
