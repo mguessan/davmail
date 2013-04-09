@@ -19,6 +19,7 @@
 package davmail.imap;
 
 import davmail.Settings;
+import davmail.exchange.ExchangeSession;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -26,6 +27,9 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -33,6 +37,14 @@ import java.util.Random;
  */
 @SuppressWarnings({"JavaDoc", "UseOfSystemOutOrSystemErr"})
 public class TestImap extends AbstractImapTestCase {
+
+    protected String getLastMonth() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MONTH, -1);
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+        formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        return formatter.format(calendar.getTime());
+    }
 
     public void testListFolders() throws IOException {
         writeLine(". LSUB \"\" \"*\"");
@@ -451,4 +463,29 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testFetchHeadersInboxMutt() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID SEARCH (SINCE \""+getLastMonth()+"\")");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf(" ", "* SEARCH".length()) + 1;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        System.out.println(messageUid);
+        writeLine(". UID FETCH "+messageUid+":* (UID FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT TO CC MESSAGE-ID REFERENCES CONTENT-TYPE CONTENT-DESCRIPTION IN-REPLY-TO REPLY-TO LINES LIST-POST X-LABEL)])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testFetchHeadersInboxOSX() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID SEARCH (SINCE \""+getLastMonth()+"\")");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf(" ", "* SEARCH".length()) + 1;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+        System.out.println(messageUid);
+        writeLine(". UID FETCH "+messageUid+":* (INTERNALDATE UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (date subject from to cc message-id in-reply-to references x-priority x-uniform-type-identifier x-universally-unique-identifier received-spf x-spam-status x-spam-flag)])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
 }

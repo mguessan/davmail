@@ -726,7 +726,9 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
                     int size;
-                    if (parameters.indexOf("BODY.PEEK[HEADER.FIELDS (") >= 0) {
+                    if (parameters.indexOf("BODY.PEEK[HEADER.FIELDS (") >= 0
+                            // exclude mutt header request
+                            && parameters.indexOf("X-LABEL") < 0) {
                         // Header request, send approximate size
                         size = message.size;
                     } else {
