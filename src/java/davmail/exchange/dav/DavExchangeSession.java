@@ -54,6 +54,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
 import java.net.NoRouteToHostException;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -2768,6 +2769,10 @@ public class DavExchangeSession extends ExchangeSession {
 
         } catch (LoginTimeoutException e) {
             // throw error on expired session
+            LOGGER.warn(e.getMessage());
+            throw e;
+        } catch (SocketException e) {
+            // throw error on broken connection
             LOGGER.warn(e.getMessage());
             throw e;
         } catch (IOException e) {
