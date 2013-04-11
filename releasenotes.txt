@@ -1,3 +1,44 @@
+** DavMail 4.2.1 released **
+Improved Kerberos support and a few bug fixes reported on tracker.
+
+Kerberos:
+- Add enable Kerberos checkbox to DavMail GUI
+- Kerberos read KRB5CCNAME environment variable to set ticket cache path
+- Kerberos implement graphical callback on missing token
+- Kerberos: Renew almost expired tickets and detect expired TGT in cache => try to relogin 
+- Kerberos: Handle client context timeout, try to recreate context
+- Improve KerberosHelper implementation, prepare credential delegation support
+
+Enhancements:
+- Try to fix 3606267: New debian dependency with wrong package name
+- Fix 3602588, allow oracle-java7-jre
+- Fix regression: disable console appender in gui mode
+- Use NewIbmX509 on IBM JDK instead of NewSunX509 SSL algorithm implementation
+- Fix 3602351, detect missing item
+
+EWS:
+- EWS: do not catch socket exception in executeMethod
+- EWS: workaround for Nokia N9 Caldav implementation bug
+
+DAV:
+- DAV: throw error on broken connection
+
+SMTP:
+- SMTP: do not allow send as another user on Exchange 2003
+
+IMAP:
+- IMAP: exclude Mutt header request from size optimization
+- IMAP: change kerberos login error message
+- IMAP send error on authentication failed
+
+Documentation:
+- Doc: Additional Kerberos documentation
+- Initial Kerberos documentation
+
+Caldav:
+- Caldav: do not send 401 on authentication error in Kerberos mode
+
+
 ** DavMail 4.2.0 released **
 Contains some enhancements on iOS 6 support, Debian package encoding issue fix
 and partial Kerberos support (workstation mode) to provide transparent Exchange
