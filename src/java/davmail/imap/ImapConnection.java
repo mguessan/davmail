@@ -62,7 +62,7 @@ public class ImapConnection extends AbstractConnection {
         IOException exception;
 
         FolderLoadThread(String threadName, ExchangeSession.Folder folder) {
-            super(threadName+"-Load");
+            super(threadName + "-LoadFolder");
             setDaemon(true);
             this.folder = folder;
         }
@@ -188,11 +188,11 @@ public class ImapConnection extends AbstractConnection {
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
-                                                    List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
-                                                    for (ExchangeSession.Folder folder : folders) {
-                                                        sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
-                                                        sendSubFolders(command, folder.folderPath, false);
-                                                    }
+                                                List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
+                                                for (ExchangeSession.Folder folder : folders) {
+                                                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + BASE64MailboxEncoder.encode(folder.folderPath) + '\"');
+                                                    sendSubFolders(command, folder.folderPath, false);
+                                                }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
                                                 if ("/*".equals(folderQuery) || "/%".equals(folderQuery) || "/%/%".equals(folderQuery)) {
@@ -255,7 +255,7 @@ public class ImapConnection extends AbstractConnection {
                                                 os.write('*');
                                                 while (!folderLoadThread.isComplete) {
                                                     folderLoadThread.join(10000);
-                                                    LOGGER.debug("Still loading "+currentFolder.folderPath);
+                                                    LOGGER.debug("Still loading " + currentFolder.folderPath);
                                                     os.write(' ');
                                                     os.flush();
                                                 }
@@ -755,8 +755,110 @@ public class ImapConnection extends AbstractConnection {
         sendClient("* " + currentFolder.recent + " RECENT");
     }
 
+    class MessageLoadThread extends Thread {
+        boolean isComplete = false;
+        ExchangeSession.Message message;
+        IOException ioException;
+        MessagingException messagingException;
+
+        MessageLoadThread(String threadName, ExchangeSession.Message message) {
+            super(threadName + "-LoadMessage");
+            setDaemon(true);
+            this.message = message;
+        }
+
+        public void run() {
+            try {
+                message.loadMimeMessage();
+            } catch (IOException e) {
+                ioException = e;
+            } catch (MessagingException e) {
+                messagingException = e;
+            } finally {
+                isComplete = true;
+            }
+        }
+    }
+
+    class MessageWrapper {
+        protected OutputStream os;
+        protected StringBuilder buffer;
+        protected ExchangeSession.Message message;
+
+        protected MessageWrapper(OutputStream os, StringBuilder buffer, ExchangeSession.Message message) {
+            this.os = os;
+            this.buffer = buffer;
+            this.message = message;
+        }
+
+        public int getMimeMessageSize() throws IOException, MessagingException {
+            loadMessage();
+            return message.getMimeMessageSize();
+        }
+
+        /**
+         * Monitor full message download
+         *
+         * @param os client socket output stream
+         * @param buffer current output buffer
+         * @param message message
+         */
+        protected void loadMessage() throws IOException, MessagingException {
+            if (!message.isLoaded()) {
+                // flush current buffer
+                os.write(buffer.toString().getBytes());
+                buffer.setLength(0);
+                if (message.size < 1024 * 1024) {
+                    message.loadMimeMessage();
+                } else {
+                    LOGGER.debug("Load large message " +(message.size / 1024)+"KB uid "+ message.imapUid + " in a separate thread");
+                    try {
+                        MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
+                        messageLoadThread.start();
+                        while (!messageLoadThread.isComplete) {
+                            messageLoadThread.join(10000);
+                            LOGGER.debug("Still loading " + message.imapUid);
+                            os.write(' ');
+                            os.flush();
+                        }
+                        if (messageLoadThread.ioException != null) {
+                            throw messageLoadThread.ioException;
+                        }
+                        if (messageLoadThread.messagingException != null) {
+                            throw messageLoadThread.messagingException;
+                        }
+                    } catch (InterruptedException e) {
+                        throw new IOException(e + " " + e.getMessage());
+                    }
+                }
+
+            }
+        }
+
+        public MimeMessage getMimeMessage() throws IOException, MessagingException {
+            loadMessage();
+            return message.getMimeMessage();
+        }
+
+        public InputStream getRawInputStream() throws IOException, MessagingException {
+            loadMessage();
+            return message.getRawInputStream();
+        }
+
+        public Enumeration getMatchingHeaderLines(String[] requestedHeaders) throws IOException, MessagingException {
+            Enumeration result = message.getMatchingHeaderLinesFromHeaders(requestedHeaders);
+            if (result == null) {
+                loadMessage();
+                result = message.getMatchingHeaderLines(requestedHeaders);
+            }
+            return result;
+        }
+    }
+
+
     private void handleFetch(ExchangeSession.Message message, int currentIndex, String parameters) throws IOException, MessagingException {
         StringBuilder buffer = new StringBuilder();
+        MessageWrapper messageWrapper = new MessageWrapper(os, buffer, message);
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         if (parameters != null) {
             StringTokenizer paramTokens = new StringTokenizer(parameters);
@@ -773,13 +875,13 @@ public class ImapConnection extends AbstractConnection {
                         // Header request, send approximate size
                         size = message.size;
                     } else {
-                        size = message.getMimeMessageSize();
+                        size = messageWrapper.getMimeMessageSize();
                     }
                     buffer.append(" RFC822.SIZE ").append(size);
                 } else if ("ENVELOPE".equals(param)) {
-                    appendEnvelope(buffer, message);
+                    appendEnvelope(buffer, messageWrapper);
                 } else if ("BODYSTRUCTURE".equals(param)) {
-                    appendBodyStructure(buffer, message);
+                    appendBodyStructure(buffer, messageWrapper);
                 } else if ("INTERNALDATE".equals(param) && message.date != null && message.date.length() > 0) {
                     try {
                         SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -820,11 +922,11 @@ public class ImapConnection extends AbstractConnection {
                     if ("".equals(partIndexString) || partIndexString == null) {
                         // write message with headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
-                        partInputStream = message.getRawInputStream();
+                        partInputStream = messageWrapper.getRawInputStream();
                     } else if ("TEXT".equals(partIndexString)) {
                         // write message without headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
-                        partInputStream = message.getMimeMessage().getRawInputStream();
+                        partInputStream = messageWrapper.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // Header requested fetch  headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
@@ -836,7 +938,7 @@ public class ImapConnection extends AbstractConnection {
                                 baos.write(13);
                                 baos.write(10);
                             } else {
-                                Enumeration headerEnumeration = message.getMatchingHeaderLines(requestedHeaders);
+                                Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
                                 while (headerEnumeration.hasMoreElements()) {
                                     baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
                                     baos.write(13);
@@ -846,10 +948,10 @@ public class ImapConnection extends AbstractConnection {
                         } else {
                             // write headers only
                             partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
-                            partInputStream = message.getRawInputStream();
+                            partInputStream = messageWrapper.getRawInputStream();
                         }
                     } else {
-                        MimePart bodyPart = message.getMimeMessage();
+                        MimePart bodyPart = messageWrapper.getMimeMessage();
                         String[] partIndexStrings = partIndexString.split("\\.");
                         for (String subPartIndexString : partIndexStrings) {
                             // ignore MIME subpart index, will return full part
@@ -1015,7 +1117,7 @@ public class ImapConnection extends AbstractConnection {
         return uidList;
     }
 
-    protected void appendEnvelope(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
+    protected void appendEnvelope(StringBuilder buffer, MessageWrapper message) throws IOException {
         buffer.append(" ENVELOPE (");
 
         try {
@@ -1109,7 +1211,7 @@ public class ImapConnection extends AbstractConnection {
 
     }
 
-    protected void appendBodyStructure(StringBuilder buffer, ExchangeSession.Message message) throws IOException {
+    protected void appendBodyStructure(StringBuilder buffer, MessageWrapper message) throws IOException {
 
         buffer.append(" BODYSTRUCTURE ");
         try {
