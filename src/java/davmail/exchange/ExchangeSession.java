@@ -1905,7 +1905,7 @@ public abstract class ExchangeSession {
          * @throws IOException        on error
          * @throws MessagingException on error
          */
-        protected void loadMimeMessage() throws IOException, MessagingException {
+        public void loadMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
                 // try to get message content from cache
                 if (this.imapUid == messageList.cachedMessageImapUid) {
@@ -1940,7 +1940,7 @@ public abstract class ExchangeSession {
             return mimeMessage;
         }
 
-        public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
+        public Enumeration getMatchingHeaderLinesFromHeaders(String[] headerNames) throws MessagingException, IOException {
             Enumeration result = null;
             if (mimeMessage == null) {
                 // message not loaded, try to get headers only
@@ -1949,6 +1949,11 @@ public abstract class ExchangeSession {
                     result = new InternetHeaders(headers).getMatchingHeaderLines(headerNames);
                 }
             }
+            return result;
+        }
+
+        public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
+            Enumeration result = getMatchingHeaderLinesFromHeaders(headerNames);
             if (result == null) {
                 result = getMimeMessage().getMatchingHeaderLines(headerNames);
             }
@@ -1998,6 +2003,10 @@ public abstract class ExchangeSession {
             // drop curent message body to save memory
             mimeMessage = null;
             mimeBody = null;
+        }
+
+        public boolean isLoaded() {
+            return mimeMessage != null;
         }
 
         /**
