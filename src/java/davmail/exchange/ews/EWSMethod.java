@@ -82,6 +82,7 @@ public abstract class EWSMethod extends PostMethod {
     protected Item item;
 
     protected SearchExpression searchExpression;
+    protected FieldOrder fieldOrder;
 
     protected String serverVersion;
     protected String timezoneContext;
@@ -161,6 +162,10 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void setSearchExpression(SearchExpression searchExpression) {
         this.searchExpression = searchExpression;
+    }
+
+    protected void setFieldOrder(FieldOrder fieldOrder) {
+        this.fieldOrder = fieldOrder;
     }
 
     protected void writeShape(Writer writer) throws IOException {
@@ -277,6 +282,16 @@ public abstract class EWSMethod extends PostMethod {
         }
     }
 
+    protected void writeSortOrder(Writer writer) throws IOException {
+        if (fieldOrder != null) {
+            writer.write("<m:SortOrder>");
+            StringBuilder buffer = new StringBuilder();
+            fieldOrder.appendTo(buffer);
+            writer.write(buffer.toString());
+            writer.write("</m:SortOrder>");
+        }
+    }
+
     protected void startChanges(Writer writer) throws IOException {
         //noinspection VariableNotUsedInsideIf
         if (updates != null) {
@@ -371,6 +386,7 @@ public abstract class EWSMethod extends PostMethod {
         writeShape(writer);
         writeIndexedPageItemView(writer);
         writeRestriction(writer);
+        writeSortOrder(writer);
         writeParentFolderId(writer);
         writeToFolderId(writer);
         writeItemId(writer);
