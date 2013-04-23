@@ -1665,7 +1665,11 @@ public abstract class ExchangeSession {
          * @return message count
          */
         public int count() {
-            return messages.size();
+            if (messages == null) {
+                return count;
+            } else {
+                return messages.size();
+            }
         }
 
         /**
