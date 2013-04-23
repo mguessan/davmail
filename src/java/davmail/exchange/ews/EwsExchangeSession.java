@@ -695,6 +695,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if (condition != null && !condition.isEmpty()) {
                 findItemMethod.setSearchExpression((SearchExpression) condition);
             }
+            findItemMethod.setFieldOrder(new FieldOrder(Field.get("imapUid"), FieldOrder.Order.Descending));
             executeMethod(findItemMethod);
             results.addAll(findItemMethod.getResponseItems());
             offset = results.size();

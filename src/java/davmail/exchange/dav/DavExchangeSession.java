@@ -2166,6 +2166,7 @@ public class DavExchangeSession extends ExchangeSession {
             searchRequest.append(" WHERE ");
             condition.appendTo(searchRequest);
         }
+        searchRequest.append(" ORDER BY ").append(Field.getRequestPropertyString("imapUid")).append(" DESC");
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
         MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
                 httpClient, encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
