@@ -56,6 +56,28 @@ public class ImapConnection extends AbstractConnection {
     protected String baseMailboxPath;
     ExchangeSession.Folder currentFolder;
 
+    class FolderLoadThread extends Thread {
+        boolean isComplete = false;
+        ExchangeSession.Folder folder;
+        IOException exception;
+
+        FolderLoadThread(String threadName, ExchangeSession.Folder folder) {
+            super(threadName+"-Load");
+            setDaemon(true);
+            this.folder = folder;
+        }
+
+        public void run() {
+            try {
+                folder.loadMessages();
+            } catch (IOException e) {
+                exception = e;
+            } finally {
+                isComplete = true;
+            }
+        }
+    }
+
     /**
      * Initialize the streams and start the thread.
      *
@@ -222,8 +244,27 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                         try {
                                             currentFolder = session.getFolder(folderName);
-                                            currentFolder.loadMessages();
-                                            sendClient("* " + currentFolder.count() + " EXISTS");
+                                            if (currentFolder.count() <= 500) {
+                                                // simple folder load
+                                                currentFolder.loadMessages();
+                                                sendClient("* " + currentFolder.count() + " EXISTS");
+                                            } else {
+                                                // load folder in a separate thread
+                                                FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), currentFolder);
+                                                folderLoadThread.start();
+                                                os.write('*');
+                                                while (!folderLoadThread.isComplete) {
+                                                    folderLoadThread.join(10000);
+                                                    LOGGER.debug("Still loading "+currentFolder.folderPath);
+                                                    os.write(' ');
+                                                    os.flush();
+                                                }
+                                                sendClient(" " + currentFolder.count() + " EXISTS");
+                                                if (folderLoadThread.exception != null) {
+                                                    throw folderLoadThread.exception;
+                                                }
+                                            }
+
                                             sendClient("* " + currentFolder.recent + " RECENT");
                                             sendClient("* OK [UIDVALIDITY 1]");
                                             if (currentFolder.count() == 0) {
