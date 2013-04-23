@@ -172,7 +172,7 @@ public class CaldavConnection extends AbstractConnection {
                     } catch (DavMailAuthenticationException e) {
                         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
                             // authentication failed in Kerberos mode => not available
-                            sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, "Kerberos authentication failed");
+                            sendErr(HttpStatus.SC_FORBIDDEN, "Kerberos authentication failed");
                         } else {
                             sendUnauthorized();
                         }
@@ -1121,7 +1121,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if (e instanceof HttpPreconditionFailedException) {
             sendErr(HttpStatus.SC_PRECONDITION_FAILED, message);
         } else {
-            sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
+            sendErr(HttpStatus.SC_FORBIDDEN, message);
         }
     }
 
