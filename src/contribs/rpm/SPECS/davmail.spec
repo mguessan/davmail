@@ -27,7 +27,7 @@ Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
-Requires: /etc/init.d, logrotate, jre = 1.6.0
+Requires: /etc/init.d, logrotate, jre >= 1.6.0
 
 %define davmaildotproperties davmail.properties
 
@@ -58,6 +58,7 @@ lib=`dirname ${jexec}` # level up
 jre=`dirname ${lib}` # level up
 java_home=`dirname ${jre}` # level up
 export JAVA_HOME=${java_home}
+export ANT_OPTS="-Dfile.encoding=UTF-8"
 # we have java 1.6
 ant -Dant.java.version=1.6
 
