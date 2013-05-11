@@ -28,40 +28,131 @@
             <p>Prepare a davmail.properties file according to your local needs :
             </p>
             <source><![CDATA[
-davmail.url=http://exchangeServer/exchange/
-davmail.enableEws=false
-davmail.popPort=1110
-davmail.imapPort=1143
-davmail.smtpPort=1025
+# DavMail settings, see http://davmail.sourceforge.net/ for documentation
+
+#############################################################
+# Basic settings
+
+# Server or workstation mode
+davmail.server=true
+# connection mode auto, EWS or WebDav
+davmail.enableEws=auto
+# base Exchange OWA or EWS url
+davmail.url=https://owa.example.com/owa/
+
+# Listener ports
 davmail.caldavPort=1080
+davmail.imapPort=1143
 davmail.ldapPort=1389
-davmail.keepDelay=30
-davmail.sentKeepDelay=90
-davmail.caldavPastDelay=90
-davmail.imapIdleDelay=
-davmail.useSystemProxies=false
+davmail.popPort=1110
+davmail.smtpPort=1025
+
+#############################################################
+# Network settings
+
+# Network proxy settings
 davmail.enableProxy=false
+davmail.useSystemProxies=false
 davmail.proxyHost=
 davmail.proxyPort=
 davmail.proxyUser=
 davmail.proxyPassword=
+
+# proxy exclude list
 davmail.noProxyFor=
-davmail.ssl.keystoreType=JKS
-davmail.ssl.keyPass=
+
+# allow remote connection to DavMail
+davmail.allowRemote=false
+# bind server sockets to a specific address
+davmail.bindAddress=
+# client connections SO timeout in seconds
+davmail.clientSoTimeout=
+
+# DavMail listeners SSL configuration
+davmail.ssl.keystoreType=
 davmail.ssl.keystoreFile=
 davmail.ssl.keystorePass=
-davmail.smtpSaveInSent=true
-davmail.server=true
+davmail.ssl.keyPass=
+
+# Accept specified certificate even if invalid according to trust store
 davmail.server.certificate.hash=
-davmail.bindAddress=
-davmail.clientSoTimeout=
-davmail.allowRemote=true
-davmail.disableUpdateCheck=false
-log4j.rootLogger=WARN
-log4j.logger.davmail=DEBUG
-log4j.logger.org.apache.commons.httpclient=WARN
+
+# disable SSL for specified listeners
+davmail.ssl.nosecurecaldav=false
+davmail.ssl.nosecureimap=false
+davmail.ssl.nosecureldap=false
+davmail.ssl.nosecurepop=false
+davmail.ssl.nosecuresmtp=false
+
+# disable update check
+davmail.disableUpdateCheck=true
+
+#############################################################
+# Caldav settings
+
+# override default alarm sound
+davmail.caldavAlarmSound=
+# retrieve calendar events not older than 90 days
+davmail.caldavPastDelay=90
+# WebDav only: force event update to trigger ActiveSync clients update
+davmail.forceActiveSyncUpdate=false
+
+#############################################################
+# IMAP settings
+
+# Delete messages immediately on IMAP STORE \Deleted flag
+davmail.imapAutoExpunge=true
+# Enable IDLE support, set polling delay in minutes
+davmail.imapIdleDelay=
+
+#############################################################
+# POP settings
+
+# Delete messages on server after 30 days
+davmail.keepDelay=30
+# Delete messages in server sent folder after 90 days
+davmail.sentKeepDelay=90
+# Mark retrieved messages read on server
+davmail.popMarkReadOnRetr=false
+
+#############################################################
+# SMTP settings
+
+# let Exchange save a copy of sent messages in Sent folder
+davmail.smtpSaveInSent=true
+
+#############################################################
+# Loggings settings
+
+# log file path, leave empty for default path
+davmail.logFilePath=/var/log/davmail.log
+# maximum log file size, use Log4J syntax, set to 0 to use an external rotation mechanism, e.g. logrotate
+davmail.logFileSize=1MB
+# log levels
+log4j.logger.davmail=WARN
 log4j.logger.httpclient.wire=WARN
-davmail.logFilePath=/var/log/davmail.log]]>
+log4j.logger.org.apache.commons.httpclient=WARN
+log4j.rootLogger=WARN
+
+#############################################################
+# Workstation only settings
+
+# smartcard access settings
+davmail.ssl.pkcs11Config=
+davmail.ssl.pkcs11Library=
+
+# SSL settings for mutual authentication
+davmail.ssl.clientKeystoreType=
+davmail.ssl.clientKeystoreFile=
+davmail.ssl.clientKeystorePass=
+
+# disable all balloon notifications
+davmail.disableGuiNotifications=false
+# disable startup balloon notifications
+davmail.showStartupBanner=true
+
+# enable transparent client Kerberos authentication
+davmail.enableKerberos=false]]>
             </source>
             <p>See
                 <a href="gettingstarted.html">Getting started</a>
