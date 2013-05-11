@@ -20,6 +20,8 @@
                     install Java and the appropriate SWT package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
+                <p>Note to Ubuntu 13 users, you will need to apply the following patch to fix missing whitelist
+                regression: <a href="https://launchpad.net/~timekiller/+archive/unity-systrayfix">Unity Desktop with Systray Whitelisting Support</a></p>
                 <p>Note to Ubuntu 12 Natty users: they eventually fixed Oneiric issue, use gsettings command below</p>
                 <p>Note to Ubuntu 11.10 Oneiric users: Unity does not support system tray defined by FreeDesktop, you will need
                 to switch to standard Gnome Panel to use DavMail (and any other application using system tray)</p>
