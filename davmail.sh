@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 # Ubuntu setup instructions :
 # install java :
-# sudo apt-get install sun-java6-bin
-# launch davmail :
+# sudo apt-get install default-jre
+# launch davmail
 BASE=`dirname $0`
 for i in $BASE/lib/*; do export CLASSPATH=$CLASSPATH:$i; done
-java -cp $BASE/davmail.jar:$CLASSPATH davmail.DavGateway $1
+exec java -Xmx512M -Dsun.net.inetaddr.ttl=60 -cp $BASE/davmail.jar:$CLASSPATH davmail.DavGateway $1
