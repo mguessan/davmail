@@ -263,7 +263,7 @@
                         <td>Maximum log file size, use Log4J syntax, see
                             <a href="http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/RollingFileAppender.html#setMaxFileSize%28java.lang.String%29">
                                 RollingFileAppender
-                            </a>
+                            </a>. Set to 0 to use an external rotation mechanism, e.g. logrotate.
                         </td>
                         <td>1MB</td>
                     </tr>

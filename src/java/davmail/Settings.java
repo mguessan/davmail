@@ -251,16 +251,21 @@ public final class Settings {
                 logFilePath = "davmail.log";
             }
             // Build file appender
-            RollingFileAppender fileAppender = ((RollingFileAppender) rootLogger.getAppender("FileAppender"));
+            FileAppender fileAppender = (FileAppender) rootLogger.getAppender("FileAppender");
             if (fileAppender == null) {
                 String logFileSize = Settings.getProperty("davmail.logFileSize");
                 if (logFileSize == null || logFileSize.length() == 0) {
                     logFileSize = "1MB";
                 }
-                fileAppender = new RollingFileAppender();
+                // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
+                if ("0".equals(logFileSize)) {
+                    fileAppender = new FileAppender();
+                } else {
+                    fileAppender = new RollingFileAppender();
+                    ((RollingFileAppender)fileAppender).setMaxBackupIndex(2);
+                    ((RollingFileAppender)fileAppender).setMaxFileSize(logFileSize);
+                }
                 fileAppender.setName("FileAppender");
-                fileAppender.setMaxBackupIndex(2);
-                fileAppender.setMaxFileSize(logFileSize);
                 fileAppender.setEncoding("UTF-8");
                 fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
             }

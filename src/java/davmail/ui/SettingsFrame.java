@@ -516,7 +516,7 @@ public class SettingsFrame extends JFrame {
 
         JPanel logFilePathPanel = new JPanel(new GridLayout(2, 2));
         addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_PATH"), logFilePathField);
-        addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_SIZE"), logFileSizeField);
+        addSettingComponent(logFilePathPanel, BundleMessage.format("UI_LOG_FILE_SIZE"), logFileSizeField, BundleMessage.format("UI_LOG_FILE_SIZE_HELP"));
 
         JButton defaultButton = new JButton(BundleMessage.format("UI_BUTTON_DEFAULT"));
         defaultButton.setToolTipText(BundleMessage.format("UI_BUTTON_DEFAULT_HELP"));
