@@ -354,6 +354,7 @@
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
                 <exclude name="lib/swt-*-win32-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/winrun4j-*.jar"/>
             </tarfileset>
         </tar>
         <tar tarfile="dist/davmail-linux-x86_64-${release-name}.tgz" compression="gzip">
@@ -369,6 +370,7 @@
                 <exclude name="lib/swt-*-carbon-macosx.jar"/>
                 <exclude name="lib/swt-*-win32-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/winrun4j-*.jar"/>
             </tarfileset>
         </tar>
         <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
