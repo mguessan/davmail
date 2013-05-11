@@ -180,6 +180,7 @@
                 <!-- exclude swt jars from debian package -->
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/winrun4j-*.jar"/>
             </tarfileset>
             <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
                 <include name="davmail"/>
