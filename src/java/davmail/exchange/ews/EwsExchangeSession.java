@@ -33,6 +33,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
@@ -162,7 +163,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected void checkEndPointUrl(String endPointUrl) throws IOException {
-        HttpMethod getMethod = new GetMethod(endPointUrl);
+        HttpMethod getMethod = new HeadMethod(endPointUrl);
         getMethod.setFollowRedirects(false);
         try {
             int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
