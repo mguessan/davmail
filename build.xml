@@ -387,7 +387,7 @@
         </zip>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
-        <antcall target="dist-rpm"/>
+        <!--antcall target="dist-rpm"/-->
         <antcall target="dist-osx"/>
         <!-- source with binary deps package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
