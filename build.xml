@@ -335,7 +335,8 @@
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant*.jar"/>
                 <exclude name="swt*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="libgrowl-*.jar"/>
+                <exclude name="winrun4j-*.jar"/>
             </fileset>
         </copy>
         <jar destfile="dist/davmail-${release-name}.war">
