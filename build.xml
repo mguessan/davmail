@@ -340,6 +340,7 @@
                 <exclude name="winrun4j-*.jar"/>
             </fileset>
         </copy>
+        <copy todir="dist/web/WEB-INF/classes" file="src/etc/davmail.properties"/>
         <jar destfile="dist/davmail-${release-name}.war">
             <fileset dir="dist/web"/>
         </jar>
