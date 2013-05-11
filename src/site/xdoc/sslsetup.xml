@@ -105,6 +105,8 @@ slot = 2
 name=CoolKey
 library=/usr/cac/lib/pkcs11/libcoolkeypk11.so
 ]]></source>
+                <p>Note that spaces in library path may break Sun PKCS11, use <code>C:\Progra~2\ActivIdentity\ActivClient\acpkcs211.dll</code>
+                instead of <code>C:\Program Files (x86)\ActivIdentity\ActivClient\acpkcs211.dll</code></p>
 
                 <p>More details on java PKCS11 setup in
                     <a href="http://java.sun.com/javase/6/docs/technotes/guides/security/p11guide.html">Sun PKCS11 guide</a>
