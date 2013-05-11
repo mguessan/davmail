@@ -144,6 +144,7 @@ public final class Settings {
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableEws", "auto");
         SETTINGS.put("davmail.enableKerberos", "false");
+        SETTINGS.put("davmail.disableUpdateCheck", "false");
         SETTINGS.put("davmail.proxyHost", "");
         SETTINGS.put("davmail.proxyPort", "");
         SETTINGS.put("davmail.proxyUser", "");
