@@ -22,10 +22,7 @@ import davmail.Settings;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.List;
 import java.util.UUID;
 
@@ -485,6 +482,25 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("common name", contact.get("cn"));
     }
 
+    public void testSpecialUrlCharacters3F() throws IOException {
+        testCreateFolder();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
+        vCardWriter.appendProperty("FN", "common name");
+        vCardWriter.endCard();
+
+        itemName = "test ?.vcf";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        assertEquals(201, result.status);
+
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        assertEquals("common name", contact.get("cn"));
+    }
+
     public void testPagingSearchContacts() throws IOException {
         int maxCount = 0;
         List<ExchangeSession.Contact> contacts = session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, maxCount);
@@ -492,5 +508,26 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals(50, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, 50).size());
         assertEquals(folderSize, session.searchContacts(ExchangeSession.CONTACTS, ExchangeSession.CONTACT_ATTRIBUTES, null, folderSize+1).size());
     }
+
+    public void testHashInName() throws IOException {
+        testCreateFolder();
+
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.startCard();
+        vCardWriter.appendProperty("N", "sn", "givenName", "middlename", "personaltitle", "namesuffix");
+        vCardWriter.appendProperty("FN", "common name");
+        vCardWriter.endCard();
+
+        itemName = "Capital 7654#.vcf";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, vCardWriter.toString(), null, null);
+        assertEquals(201, result.status);
+
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        assertEquals("common name", contact.get("cn"));
+    }
+
+
 
 }

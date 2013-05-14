@@ -37,4 +37,12 @@ public class TestVProperty  extends TestCase {
         assertNotNull(vProperty);
         assertEquals(line, vProperty.toString());
     }
+
+    public void testBackslash() {
+        String line = "SUMMARY:Electric Meter change 08:30\\";
+        VProperty vProperty = new VProperty(line);
+        assertNotNull(vProperty);
+        assertEquals(line, vProperty.toString());
+    }
+
 }

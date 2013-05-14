@@ -24,6 +24,7 @@ import davmail.Settings;
 import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.mail.MessagingException;
@@ -152,6 +153,7 @@ public class TestSmtp extends AbstractDavMailTestCase {
     public void testSendSimpleMessage() throws IOException, MessagingException, InterruptedException {
         String body = "Test message";
         MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("From", session.getEmail());
         mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
         mimeMessage.setSubject("Test subject");
         mimeMessage.setText(body);
@@ -242,12 +244,6 @@ public class TestSmtp extends AbstractDavMailTestCase {
 
     public void testBrokenMessage() throws MessagingException, IOException, InterruptedException {
         MimeMessage mimeMessage = new MimeMessage(null, new FileInputStream("test.eml"));
-        sendAndCheckMessage(mimeMessage);
-    }
-
-    public void testBrokenMessage2() throws MessagingException, IOException, InterruptedException {
-        MimeMessage mimeMessage = new MimeMessage(null, new org.apache.commons.codec.binary.Base64InputStream(new FileInputStream("broken64.txt")));
-        mimeMessage.addHeader("To", Settings.getProperty("davmail.to"));
         sendAndCheckMessage(mimeMessage);
     }
 

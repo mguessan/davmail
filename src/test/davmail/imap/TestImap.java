@@ -488,4 +488,17 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". UID FETCH "+messageUid+":* (INTERNALDATE UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (date subject from to cc message-id in-reply-to references x-priority x-uniform-type-identifier x-universally-unique-identifier received-spf x-spam-status x-spam-flag)])");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
+
+    public void testSelectInboxTimeout() throws IOException {
+        writeLine(". SELECT INBOX");
+        // simulate client timeout
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            // ignore
+        }
+        socketWriter.close();
+        System.in.read();
+    }
+
 }

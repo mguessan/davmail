@@ -50,13 +50,14 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         }
         if (ldapContext == null) {
             Hashtable<String, String> env = new Hashtable<String, String>();
+            //env.put("java.naming.security.authentication", "CRAM-MD5");
             env.put("java.naming.security.authentication", "simple");
             env.put("java.naming.security.principal", Settings.getProperty("davmail.username"));
             env.put("java.naming.security.credentials", Settings.getProperty("davmail.password"));
 
             env.put("com.sun.jndi.ldap.connect.pool", "true");
             env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory");
-            env.put("java.naming.provider.url", "ldap://localhost:" + Settings.getIntProperty("davmail.ldapPort"));
+            env.put("java.naming.provider.url", "ldap://127.0.0.1:" + Settings.getIntProperty("davmail.ldapPort"));
             env.put("java.naming.referral", "follow");
 
             try {
@@ -167,5 +168,29 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"mail"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(!(objectclass=test))", searchControls);
+    }
+
+    public void testEmailSearch() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od",
+                "(mail="+"CHARLEPG@intersmtp.com"+")", searchControls);
+    }
+
+    public void testIcalLionInitialSearch() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"gidnumber", "altsecurityidentities", "uid", "mail", "cn", "apple-generateduid", "givenname", "apple-serviceslocator", "objectclass", "uidnumber"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, ou=people",
+                "(&(|(mail=702820784)(uid=702820784)(cn=702820784)(altsecurityidentities=702820784))(&(objectclass=extensibleObject)(objectclass=posixAccount)(objectclass=shadowAccount)(objectclass=inetOrgPerson)(objectclass=apple-user)))", searchControls);
+    }
+
+    public void testTBGalSearch() throws NamingException {
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+        searchControls.setReturningAttributes(new String[]{"mail", "cn"});
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people",
+                "(|(sn=mich*)(mail=mich*)(cn=mich*))", searchControls);
     }
 }

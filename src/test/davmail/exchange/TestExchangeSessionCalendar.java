@@ -64,12 +64,28 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             }
 
         };
-        for (int i = 1; i < 100; i++) {
+        @SuppressWarnings("Since15") Set<String> tzReference = ResourceBundle.getBundle("tzreference").keySet();
+        Set<String> timezoneids = ResourceBundle.getBundle("timezoneids").keySet();
+        Map<String,String> timezoneIndexToIdMap = new HashMap<String,String>();
+        for (String timezoneid:timezoneids) {
+            timezoneIndexToIdMap.put(ResourceBundle.getBundle("timezoneids").getString(timezoneid), timezoneid);
+        }
+        for (int i = 1; i < 120; i++) {
             Settings.setProperty("davmail.timezoneId", String.valueOf(i));
             VObject timezone = session.getVTimezone();
-            if (timezone.getProperty("TZID") != null) {
-                properties.put(timezone.getPropertyValue("TZID").replaceAll("\\\\", ""), String.valueOf(i));
-                System.out.println(timezone.getPropertyValue("TZID") + '=' + i);
+            if (timezone != null && timezone.getProperty("TZID") != null) {
+                String value = timezone.getPropertyValue("TZID").replaceAll("\\\\", "");
+                properties.put(value, String.valueOf(i));
+                if (timezoneIndexToIdMap.get(String.valueOf(i)) != null) {
+                //properties.put(timezoneIndexToIdMap.get(String.valueOf(i)), ResourceBundle.getBundle("timezones").getString(value));
+                    System.out.println(timezoneIndexToIdMap.get(String.valueOf(i)).replaceAll(" ", "\\\\ ") + '=' + ResourceBundle.getBundle("timezones").getString(value));
+                } else {
+                    System.out.println("Missing timezone id: "+i+" "+value);
+                }
+                //noinspection Since15
+                if (!ResourceBundle.getBundle("timezones").keySet().contains(value)) {
+                    System.out.println("Missing timezone: "+value.replaceAll(" ", "\\\\ "));
+                }
             }
             session.vTimezone = null;
         }
@@ -147,36 +163,33 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         String itemBody = "BEGIN:VCALENDAR\n" +
                 "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
                 "VERSION:2.0\n" +
+                "METHOD:PUBLISH\n" +
                 "BEGIN:VTIMEZONE\n" +
-                "TZID:Pacific Time (US & Canada)\\; Tijuana\n" +
+                "TZID:W. Europe Standard Time\n" +
                 "BEGIN:STANDARD\n" +
-                "DTSTART:16010101T020000\n" +
-                "TZOFFSETFROM:-0700\n" +
-                "TZOFFSETTO:-0800\n" +
-                "RRULE:FREQ=YEARLY;WKST=MO;INTERVAL=1;BYMONTH=11;BYDAY=1SU\n" +
+                "DTSTART:16010101T030000\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
                 "END:STANDARD\n" +
                 "BEGIN:DAYLIGHT\n" +
                 "DTSTART:16010101T020000\n" +
-                "TZOFFSETFROM:-0800\n" +
-                "TZOFFSETTO:-0700\n" +
-                "RRULE:FREQ=YEARLY;WKST=MO;INTERVAL=1;BYMONTH=3;BYDAY=2SU\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
                 "END:DAYLIGHT\n" +
                 "END:VTIMEZONE\n" +
                 "BEGIN:VEVENT\n" +
-                "CREATED:20100829T204658Z\n" +
-                "LAST-MODIFIED:20100829T204829Z\n" +
-                "DTSTAMP:20100829T204829Z\n" +
-                "UID:701b9d8f-ab64-4a7c-a75d-251cc8687cd9\n" +
-                "SUMMARY:testzz\n" +
-                "DTSTART;TZID=\"Pacific Time (US & Canada); Tijuana\":20100830T230000\n" +
-                "DTEND;TZID=\"Pacific Time (US & Canada); Tijuana\":20100831T000000\n" +
-                "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
-                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
-                "TRANSP:OPAQUE\n" +
-                "X-MOZ-GENERATION:1\n" +
+                "CREATED:20120611T113748Z\n" +
+                "LAST-MODIFIED:20120611T113823Z\n" +
+                "DTSTAMP:20120611T113823Z\n" +
+                "UID:040000008200E00074C5B7101A82E0080000000020EA852CF458CC0100000000000000001\n" +
+                " 000000011278A1693B8494C8592446E6E249BCF\n" +
+                "DTSTART;TZID=W. Europe Standard Time:20120926T100000\n" +
+                "DTEND;TZID=W. Europe Standard Time:20120926T120000\n" +
                 "END:VEVENT\n" +
-                "END:VCALENDAR";
-        String itemName = UUID.randomUUID().toString() + ".EML";
+                "END:VCALENDAR\n";
+        String itemName = "test ok"/*UUID.randomUUID().toString()*/ + ".EML";
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
     }
 
@@ -213,34 +226,38 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
 
     public void testCreateEventTZ() throws IOException {
         String itemBody = "BEGIN:VCALENDAR\n" +
-                "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
+                "PRODID:-//iCal4OL2.11.20\n" +
                 "VERSION:2.0\n" +
+                "X-WR-TIMEZONE:Europe/Berlin\n" +
+                "CALSCALE:GREGORIAN\n" +
                 "BEGIN:VTIMEZONE\n" +
-                "TZID:America/Bogota\n" +
+                "TZID:Europe/Berlin\n" +
+                "X-LIC-LOCATION:Europe/Berlin\n" +
                 "BEGIN:DAYLIGHT\n" +
-                "TZOFFSETFROM:-0500\n" +
-                "DTSTART:19920503T000000\n" +
-                "TZNAME:COT\n" +
-                "TZOFFSETTO:-0400\n" +
-                "RDATE:19920503T000000\n" +
+                "DTSTART:20100328T010000\n" +
+                "TZOFFSETTO:+0200\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\n" +
                 "END:DAYLIGHT\n" +
                 "BEGIN:STANDARD\n" +
-                "TZOFFSETFROM:-0400\n" +
-                "DTSTART:19930404T000000\n" +
-                "TZNAME:COT\n" +
-                "TZOFFSETTO:-0500\n" +
-                "RDATE:19930404T000000\n" +
+                "DTSTART:20101031T030000\n" +
+                "TZOFFSETTO:+0100\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n" +
                 "END:STANDARD\n" +
                 "END:VTIMEZONE\n" +
                 "BEGIN:VEVENT\n" +
-                "CREATED:20110804T203742Z\n" +
-                "UID:1E17151D-92DA-4D2E-9747-60B489DE56F4\n" +
-                "DTEND;TZID=America/Bogota:20110805T090000\n" +
+                "UID:1BDEA2053DF34221AAD74B15755B6B89\n" +
+                "LAST-MODIFIED:20111205T102048Z\n" +
+                "SUMMARY:Roland Test\n" +
+                "DESCRIPTION:\n" +
+                "CLASS:PUBLIC\n" +
+                "DTSTART;TZID=Europe/Berlin:20120205T113000\n" +
+                "DTEND;TZID=Europe/Berlin:20120205T120000\n" +
+                "DTSTAMP:20111205T102305Z\n" +
                 "TRANSP:OPAQUE\n" +
-                "SUMMARY:New Event 2\n" +
-                "DTSTART;TZID=America/Bogota:20110805T080000\n" +
-                "DTSTAMP:20110804T203742Z\n" +
-                "SEQUENCE:0\n" +
+                "STATUS:CONFIRMED\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
                 "END:VEVENT\n" +
                 "END:VCALENDAR";
         String itemName = UUID.randomUUID().toString() + ".EML";
@@ -249,154 +266,41 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
     
     public void testCreateEventBrokenTZ() throws IOException {
         String itemBody = "BEGIN:VCALENDAR\n" +
-                "PRODID:-//K Desktop Environment//NONSGML libkcal 4.3//EN\n" +
+                "CALSCALE:GREGORIAN\n" +
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n" +
                 "VERSION:2.0\n" +
                 "METHOD:PUBLISH\n" +
                 "BEGIN:VTIMEZONE\n" +
-                "TZID:Europe/Amsterdam\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZNAME:NST\n" +
-                "TZOFFSETFROM:+001932\n" +
-                "TZOFFSETTO:+011932\n" +
-                "DTSTART:19160501T234028\n" +
-                "RDATE;VALUE=DATE-TIME:19160501T234028\n" +
-                "RDATE;VALUE=DATE-TIME:19170417T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19180402T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19190408T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19200406T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19210405T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19220327T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19230602T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19240331T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19250606T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19260516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19270516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19280516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19290516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19300516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19310516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19320523T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19330516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19340516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19350516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19360516T014028\n" +
-                "RDATE;VALUE=DATE-TIME:19370523T014028\n" +
-                "END:DAYLIGHT\n" +
+                "TZID:Asia/Jerusalem\n" +
+                "X-LIC-LOCATION:Asia/Jerusalem\n" +
                 "BEGIN:STANDARD\n" +
-                "TZNAME:AMT\n" +
-                "TZOFFSETFROM:+011932\n" +
-                "TZOFFSETTO:+001932\n" +
-                "DTSTART:19161001T224028\n" +
-                "RDATE;VALUE=DATE-TIME:19161001T224028\n" +
-                "RDATE;VALUE=DATE-TIME:19170918T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19181001T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19190930T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19200928T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19210927T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19221009T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19231008T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19241006T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19251005T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19261004T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19271003T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19281008T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19291007T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19301006T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19311005T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19321003T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19331009T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19341008T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19351007T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19361005T024028\n" +
-                "END:STANDARD\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZNAME:NEST\n" +
-                "TZOFFSETFROM:+011932\n" +
-                "TZOFFSETTO:+0120\n" +
-                "DTSTART:19370701T224028\n" +
-                "RDATE;VALUE=DATE-TIME:19370701T224028\n" +
-                "END:DAYLIGHT\n" +
-                "BEGIN:STANDARD\n" +
-                "TZNAME:NET\n" +
-                "TZOFFSETFROM:+0120\n" +
-                "TZOFFSETTO:+0020\n" +
-                "DTSTART:19371004T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19371004T024028\n" +
-                "RDATE;VALUE=DATE-TIME:19381003T024000\n" +
-                "RDATE;VALUE=DATE-TIME:19391009T024000\n" +
-                "END:STANDARD\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZNAME:NEST\n" +
-                "TZOFFSETFROM:+0020\n" +
-                "TZOFFSETTO:+0120\n" +
-                "DTSTART:19380516T014000\n" +
-                "RDATE;VALUE=DATE-TIME:19380516T014000\n" +
-                "RDATE;VALUE=DATE-TIME:19390516T014000\n" +
-                "END:DAYLIGHT\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZNAME:CEST\n" +
-                "TZOFFSETFROM:+0020\n" +
+                "DTSTART:19700923T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-2SU;BYMONTH=9\n" +
+                "TZOFFSETFROM:+0300\n" +
                 "TZOFFSETTO:+0200\n" +
-                "DTSTART:19400516T234000\n" +
-                "RDATE;VALUE=DATE-TIME:19400516T234000\n" +
-                "END:DAYLIGHT\n" +
-                "BEGIN:STANDARD\n" +
-                "TZNAME:CET\n" +
-                "TZOFFSETFROM:+0200\n" +
-                "TZOFFSETTO:+0100\n" +
-                "DTSTART:19790930T030000\n" +
-                "RRULE:FREQ=YEARLY;COUNT=17;BYDAY=-1SU;BYMONTH=9\n" +
-                "END:STANDARD\n" +
-                "BEGIN:STANDARD\n" +
-                "TZNAME:CET\n" +
-                "TZOFFSETFROM:+0200\n" +
-                "TZOFFSETTO:+0100\n" +
-                "DTSTART:19961027T030000\n" +
-                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
-                "END:STANDARD\n" +
-                "BEGIN:STANDARD\n" +
-                "TZNAME:CET\n" +
-                "TZOFFSETFROM:+0200\n" +
-                "TZOFFSETTO:+0100\n" +
-                "DTSTART:19421103T024000\n" +
-                "RDATE;VALUE=DATE-TIME:19421103T024000\n" +
-                "RDATE;VALUE=DATE-TIME:19431004T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19441002T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19450916T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19770925T030000\n" +
-                "RDATE;VALUE=DATE-TIME:19781001T030000\n" +
                 "END:STANDARD\n" +
                 "BEGIN:DAYLIGHT\n" +
-                "TZNAME:CEST\n" +
-                "TZOFFSETFROM:+0100\n" +
-                "TZOFFSETTO:+0200\n" +
-                "DTSTART:19810329T020000\n" +
-                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
-                "END:DAYLIGHT\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZNAME:CEST\n" +
-                "TZOFFSETFROM:+0100\n" +
-                "TZOFFSETTO:+0200\n" +
-                "DTSTART:19430329T010000\n" +
-                "RDATE;VALUE=DATE-TIME:19430329T010000\n" +
-                "RDATE;VALUE=DATE-TIME:19440403T010000\n" +
-                "RDATE;VALUE=DATE-TIME:19450402T010000\n" +
-                "RDATE;VALUE=DATE-TIME:19770403T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19780402T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19790401T020000\n" +
-                "RDATE;VALUE=DATE-TIME:19800406T020000\n" +
+                "DTSTART:19700330T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1FR;BYMONTH=3\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0300\n" +
                 "END:DAYLIGHT\n" +
                 "END:VTIMEZONE\n" +
                 "BEGIN:VEVENT\n" +
-                "DTSTAMP:20111022T175835Z\n" +
-                "CREATED:20111022T175832Z\n" +
-                "UID:libkcal-797112054.882\n" +
-                "LAST-MODIFIED:20111022T175832Z\n" +
-                "SUMMARY:Test Event 000\n" +
-                "DTSTART;TZID=\"Europe/Amsterdam\":20111027T120000\n" +
-                "DTEND;TZID=\"Europe/Amsterdam\":20111027T174500\n" +
+                "UID:20120920T061713Z-6599-1001-1-2\n" +
+                "DTSTAMP:20120920T061713Z\n" +
+                "DTSTART;TZID=\"Asia/Jerusalem\":2012092\n" +
+                " 0T093000\n" +
+                "DTEND;TZID=\"Asia/Jerusalem\":20120920T\n" +
+                " 103000\n" +
                 "TRANSP:OPAQUE\n" +
-                "X-MICROSOFT-CDO-REPLYTIME:20111022T175835Z\n" +
+                "SEQUENCE:3\n" +
+                "SUMMARY:test\n" +
+                "CLASS:PUBLIC\n" +
+                "DESCRIPTION:tEin Test!\n" +
+                "CREATED:20120920T062017Z\n" +
+                "LAST-MODIFIED:20120920T062017Z\n" +
+                "ORGANIZER:MAILTO:shai.berger@healarium.com\n" +
                 "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
                 "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
                 "END:VEVENT\n" +

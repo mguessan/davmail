@@ -22,10 +22,7 @@ import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.DavGateway;
 import davmail.Settings;
-import davmail.exception.DavMailAuthenticationException;
-import davmail.exception.DavMailException;
-import davmail.exception.HttpNotFoundException;
-import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.*;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
@@ -172,7 +169,7 @@ public class CaldavConnection extends AbstractConnection {
                     } catch (DavMailAuthenticationException e) {
                         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
                             // authentication failed in Kerberos mode => not available
-                            sendErr(HttpStatus.SC_FORBIDDEN, "Kerberos authentication failed");
+                            throw new HttpServerErrorException("Kerberos authentication failed");
                         } else {
                             sendUnauthorized();
                         }
@@ -1121,7 +1118,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if (e instanceof HttpPreconditionFailedException) {
             sendErr(HttpStatus.SC_PRECONDITION_FAILED, message);
         } else {
-            sendErr(HttpStatus.SC_FORBIDDEN, message);
+            sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
         }
     }
 

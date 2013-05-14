@@ -79,4 +79,73 @@ public class TestICSBufferedReader extends TestCase {
         }
         assertEquals("END:VCALENDAR", lastLine);
     }
+
+    public void testBrokenAttendee() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VEVENT\n" +
+                "ATTENDEE;CN=\"Daniel " +
+                "William Doe\";PARTSTAT=ACCEPTED;RSVP=TRUE:MAILTO:email@company.com\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        VObject vcalendar = new VCalendar(new ICSBufferedReader(new StringReader(itemBody)), "email@company.com", null);
+        System.out.println(vcalendar);
+    }
+
+    public void testBrokenTask() throws IOException {
+        String value = "BEGIN:VCALENDAR\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Central Standard Time\n" +
+                "BEGIN:STANDARD\n" +
+                "DTSTART:16010101T020000\n" +
+                "TZOFFSETFROM:-0500\n" +
+                "TZOFFSETTO:-0600\n" +
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=11\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "DTSTART:16010101T020000\n" +
+                "TZOFFSETFROM:-0600\n" +
+                "TZOFFSETTO:-0500\n" +
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=2SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VTODO\n" +
+                "LAST-MODIFIED:20110606T080802Z\n" +
+                "CREATED:20110527T085302Z\n" +
+                "UID:AAMkADQwOGRjMjIyLTQwNDUtNDE5OS05YWExLWZlOTM5Yjc2NTg0YgBGAAAAAAAi3Ph1JgynT\n" +
+                " ILoGH8BTtfjBwAzPlOmuBONTIJTcNQH4CUkAAAAAACEAABeoDOEjEPERLNIwtCsV4KdAAABv75hA\n" +
+                " AA=\n" +
+                "SUMMARY:Get everyone view the videos\n" +
+                "DESCRIPTION:They are on local dev server. Update on-boarding correspondingly\n" +
+                " \\n\n" +
+                "PERCENT-COMPLETE:100\n" +
+                "STATUS:COMPLETED\n" +
+                "DUE;VALUE=DATE:20110527\n" +
+                "DTSTART;VALUE=DATE:20110527\n" +
+                "COMPLETED;VALUE=DATE:20110605\n" +
+                "END:VTODO\n" +
+                "END:VCALENDAR";
+        ICSBufferedReader reader = new ICSBufferedReader(new StringReader(value));
+        String line;
+        String lastLine = null;
+        while ((line =reader.readLine())!= null) {
+            System.out.println(line);
+            lastLine = line;
+        }
+        assertEquals("END:VCALENDAR", lastLine);
+        new VCalendar(value, null, null);
+    }
+
+    public void testVCard() throws IOException {
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "PRODID:-//Inverse inc.//SOGo Connector 1.0//EN\n" +
+                "UID:C54E78FE-98B0-0001-2339-1D761540DA50\n" +
+                "N:bb;aa\n" +
+                "FN:aa bb\n" +
+                "X-MOZILLA-HTML:FALSE\n" +
+                "REV:20120713T130308Z\n" +
+                "END:VCARD\n" +
+                "\n";
+        VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
+    }
 }

@@ -47,6 +47,11 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
         assertNotNull(messageList);
     }
 
+    public void testSearchTrash() throws IOException, MessagingException {
+        ExchangeSession.MessageList messageList = session.searchMessages("Trash");
+        assertNotNull(messageList);
+    }
+
     public void testSearchMessage() throws IOException, MessagingException {
         ExchangeSession.MessageList messageList = session.searchMessages("testfolder");
         assertNotNull(messageList);
@@ -147,4 +152,10 @@ public class TestExchangeSessionMessage extends AbstractExchangeSessionTestCase 
     public void testDeleteFolder() throws IOException {
         session.deleteFolder("testfolder");
     }
+
+    public void testSearchAaa() throws IOException, MessagingException {
+        ExchangeSession.MessageList messageList = session.searchMessages("aabb");
+        assertNotNull(messageList);
+    }
+
 }

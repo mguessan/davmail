@@ -62,6 +62,11 @@ public class AbstractDavMailTestCase extends TestCase {
                 Settings.setProperty("davmail.password", password);
             }
 
+            if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
+                System.setProperty("java.security.krb5.realm", "CORP.COMPANY.COM");
+                System.setProperty("java.security.krb5.kdc", "192.168.184.129");
+            }
+
 
             DavGatewaySSLProtocolSocketFactory.register();
             // force server mode

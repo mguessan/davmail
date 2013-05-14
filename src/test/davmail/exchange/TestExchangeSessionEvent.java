@@ -383,6 +383,228 @@ public class TestExchangeSessionEvent extends TestCase {
                 "END:VCALENDAR";
         String toClient = fixICS(icsBody, true);
         System.out.println(toClient);
+    }
 
+    public void testInvalidTimezone() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//K Desktop Environment//NONSGML libkcal 4.3//EN\n" +
+                "VERSION:2.0\n" +
+                "METHOD:PUBLISH\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Europe/Amsterdam\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:NST\n" +
+                "TZOFFSETFROM:+001932\n" +
+                "TZOFFSETTO:+011932\n" +
+                "DTSTART:19160501T234028\n" +
+                "RDATE;VALUE=DATE-TIME:19160501T234028\n" +
+                "RDATE;VALUE=DATE-TIME:19170417T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19180402T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19190408T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19200406T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19210405T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19220327T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19230602T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19240331T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19250606T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19260516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19270516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19280516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19290516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19300516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19310516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19320523T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19330516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19340516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19350516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19360516T014028\n" +
+                "RDATE;VALUE=DATE-TIME:19370523T014028\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:AMT\n" +
+                "TZOFFSETFROM:+011932\n" +
+                "TZOFFSETTO:+001932\n" +
+                "DTSTART:19161001T224028\n" +
+                "RDATE;VALUE=DATE-TIME:19161001T224028\n" +
+                "RDATE;VALUE=DATE-TIME:19170918T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19181001T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19190930T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19200928T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19210927T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19221009T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19231008T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19241006T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19251005T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19261004T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19271003T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19281008T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19291007T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19301006T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19311005T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19321003T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19331009T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19341008T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19351007T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19361005T024028\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:NEST\n" +
+                "TZOFFSETFROM:+011932\n" +
+                "TZOFFSETTO:+0120\n" +
+                "DTSTART:19370701T224028\n" +
+                "RDATE;VALUE=DATE-TIME:19370701T224028\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:NET\n" +
+                "TZOFFSETFROM:+0120\n" +
+                "TZOFFSETTO:+0020\n" +
+                "DTSTART:19371004T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19371004T024028\n" +
+                "RDATE;VALUE=DATE-TIME:19381003T024000\n" +
+                "RDATE;VALUE=DATE-TIME:19391009T024000\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:NEST\n" +
+                "TZOFFSETFROM:+0020\n" +
+                "TZOFFSETTO:+0120\n" +
+                "DTSTART:19380516T014000\n" +
+                "RDATE;VALUE=DATE-TIME:19380516T014000\n" +
+                "RDATE;VALUE=DATE-TIME:19390516T014000\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0020\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19400516T234000\n" +
+                "RDATE;VALUE=DATE-TIME:19400516T234000\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19790930T030000\n" +
+                "RRULE:FREQ=YEARLY;COUNT=17;BYDAY=-1SU;BYMONTH=9\n" +
+                "END:STANDARD\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19961027T030000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
+                "END:STANDARD\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19421103T024000\n" +
+                "RDATE;VALUE=DATE-TIME:19421103T024000\n" +
+                "RDATE;VALUE=DATE-TIME:19431004T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19441002T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19450916T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19770925T030000\n" +
+                "RDATE;VALUE=DATE-TIME:19781001T030000\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19810329T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19430329T010000\n" +
+                "RDATE;VALUE=DATE-TIME:19430329T010000\n" +
+                "RDATE;VALUE=DATE-TIME:19440403T010000\n" +
+                "RDATE;VALUE=DATE-TIME:19450402T010000\n" +
+                "RDATE;VALUE=DATE-TIME:19770403T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19780402T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19790401T020000\n" +
+                "RDATE;VALUE=DATE-TIME:19800406T020000\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "DTSTAMP:20111022T175835Z\n" +
+                "CREATED:20111022T175832Z\n" +
+                "UID:libkcal-797112054.882\n" +
+                "LAST-MODIFIED:20111022T175832Z\n" +
+                "SUMMARY:Test Event 000\n" +
+                "DTSTART;TZID=\"Europe/Amsterdam\":20111027T120000\n" +
+                "DTEND;TZID=\"Europe/Amsterdam\":20111027T174500\n" +
+                "TRANSP:OPAQUE\n" +
+                "X-MICROSOFT-CDO-REPLYTIME:20111022T175835Z\n" +
+                "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toServer = fixICS(icsBody, false);
+        System.out.println(toServer);
+    }
+
+    public void testResourceComma() throws IOException {
+        String icsBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//Microsoft Corporation//Outlook 14.0 MIMEDIR//EN\n" +
+                "VERSION:2.0\n" +
+                "METHOD:REQUEST\n" +
+                "X-MS-OLK-FORCEINSPECTOROPEN:TRUE\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Eastern Standard Time\n" +
+                "BEGIN:STANDARD\n" +
+                "DTSTART:16011104T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11\n" +
+                "TZOFFSETFROM:-0400\n" +
+                "TZOFFSETTO:-0500\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "DTSTART:16010311T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3\n" +
+                "TZOFFSETFROM:-0500\n" +
+                "TZOFFSETTO:-0400\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "ATTENDEE;CN=Robert.P.Lindman@delphi.com;RSVP=TRUE:mailto:Robert.P.Lindman@d\n" +
+                "\telphi.com\n" +
+                "ATTENDEE;CN=\"CRUSINKOK, CTC4B\";CUTYPE=RESOURCE;ROLE=NON-PARTICIPANT;RSVP=TR\n" +
+                "\tUE:mailto:ctc4b.crusinkok@delphi.com\n" +
+                "CLASS:PUBLIC\n" +
+                "CREATED:20111020T134050Z\n" +
+                "DESCRIPTION:Sample meeting with a conference room added\\n\n" +
+                "DTEND;TZID=\"Eastern Standard Time\":20111021T060000\n" +
+                "DTSTAMP:20111020T134035Z\n" +
+                "DTSTART;TZID=\"Eastern Standard Time\":20111021T053000\n" +
+                "LAST-MODIFIED:20111020T134050Z\n" +
+                "LOCATION:CRUSINKOK\\, CTC4B\n" +
+                "ORGANIZER;CN=\"Lindman, Robert P\":mailto:Robert.P.Lindman@delphi.com\n" +
+                "PRIORITY:5\n" +
+                "RESOURCES:CRUSINKOK\\, CTC4A,CRUSINKOK\\, CTC4C,CRUSINKOK\\, CTC4D,CRUSINKOK\\,\n" +
+                "\t CTC4E,CRUSINKOK\\, CTC3A,CRUSINKOK\\, CTC3B,CRUSINKOK\\, CTC3C,CRUSINKOK\\, C\n" +
+                "\tTC3D,CRUSINKOK\\, CTC2A,CRUSINKOK\\, CTC2B,CRUSINKOK\\, CTC2C,CRUSINKOK\\, CTC\n" +
+                "\t2D,CRUSINKOK\\, CTC1A,CRUSINKOK\\, CTC1B,CRUSINKOK\\, CTC1C,CRUSINKOK\\, CTC1D\n" +
+                "\t,CRUSINKOK\\, CTC1E1\n" +
+                "SEQUENCE:1\n" +
+                "SUMMARY;LANGUAGE=en-us:Sample Meeting\n" +
+                "TRANSP:OPAQUE\n" +
+                "UID:040000008200E00074C5B7101A82E0080000000090B4D422078FCC01000000000000000\n" +
+                "\t0100000000AFB9CCA2DE4D54794C2D688292D570B\n" +
+                "X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//E\n" +
+                "\tN\">\\n<HTML>\\n<HEAD>\\n<META NAME=\"Generator\" CONTENT=\"MS Exchange Server ve\n" +
+                "\trsion 08.01.0240.003\">\\n<TITLE></TITLE>\\n</HEAD>\\n<BODY>\\n<!-- Converted f\n" +
+                "\trom text/rtf format -->\\n\\n<P DIR=LTR><SPAN LANG=\"en-us\"><FONT FACE=\"Calib\n" +
+                "\tri\">Sample meeting with a conference room added</FONT></SPAN><SPAN LANG=\"e\n" +
+                "\tn-us\"></SPAN></P>\\n\\n</BODY>\\n</HTML>\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
+                "X-MICROSOFT-CDO-IMPORTANCE:1\n" +
+                "X-MICROSOFT-DISALLOW-COUNTER:FALSE\n" +
+                "X-MS-OLK-APPTLASTSEQUENCE:1\n" +
+                "X-MS-OLK-APPTSEQTIME:20111020T134035Z\n" +
+                "X-MS-OLK-AUTOFILLLOCATION:TRUE\n" +
+                "X-MS-OLK-CONFTYPE:0\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String toClient = fixICS(icsBody, true);
+        System.out.println(toClient);
     }
 }
