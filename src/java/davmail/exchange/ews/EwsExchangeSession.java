@@ -163,22 +163,18 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected void checkEndPointUrl(String endPointUrl) throws IOException {
-        HttpMethod getMethod = new HeadMethod(endPointUrl);
-        getMethod.setFollowRedirects(false);
+        HttpMethod checkMethod = new HeadMethod(endPointUrl);
+        checkMethod.setPath("/ews/services.wsdl");
+        checkMethod.setFollowRedirects(false);
         try {
-            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, getMethod);
+            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
             if (status == HttpStatus.SC_UNAUTHORIZED) {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-            } else if (status != HttpStatus.SC_MOVED_TEMPORARILY) {
-                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
-            }
-            // check Location
-            Header locationHeader = getMethod.getResponseHeader("Location");
-            if (locationHeader == null || !"/ews/services.wsdl".equalsIgnoreCase(locationHeader.getValue())) {
-                throw new IOException("Ews endpoint not available at " + getMethod.getURI().toString());
+            } else if (status != HttpStatus.SC_OK) {
+                throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString()+" status "+status);
             }
         } finally {
-            getMethod.releaseConnection();
+            checkMethod.releaseConnection();
         }
     }
 
