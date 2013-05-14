@@ -30,6 +30,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -755,31 +756,6 @@ public class ImapConnection extends AbstractConnection {
         sendClient("* " + currentFolder.recent + " RECENT");
     }
 
-    class MessageLoadThread extends Thread {
-        boolean isComplete = false;
-        ExchangeSession.Message message;
-        IOException ioException;
-        MessagingException messagingException;
-
-        MessageLoadThread(String threadName, ExchangeSession.Message message) {
-            super(threadName + "-LoadMessage");
-            setDaemon(true);
-            this.message = message;
-        }
-
-        public void run() {
-            try {
-                message.loadMimeMessage();
-            } catch (IOException e) {
-                ioException = e;
-            } catch (MessagingException e) {
-                messagingException = e;
-            } finally {
-                isComplete = true;
-            }
-        }
-    }
-
     class MessageWrapper {
         protected OutputStream os;
         protected StringBuilder buffer;
@@ -808,30 +784,7 @@ public class ImapConnection extends AbstractConnection {
                 // flush current buffer
                 os.write(buffer.toString().getBytes());
                 buffer.setLength(0);
-                if (message.size < 1024 * 1024) {
-                    message.loadMimeMessage();
-                } else {
-                    LOGGER.debug("Load large message " +(message.size / 1024)+"KB uid "+ message.imapUid + " in a separate thread");
-                    try {
-                        MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
-                        messageLoadThread.start();
-                        while (!messageLoadThread.isComplete) {
-                            messageLoadThread.join(10000);
-                            LOGGER.debug("Still loading " + message.imapUid);
-                            os.write(' ');
-                            os.flush();
-                        }
-                        if (messageLoadThread.ioException != null) {
-                            throw messageLoadThread.ioException;
-                        }
-                        if (messageLoadThread.messagingException != null) {
-                            throw messageLoadThread.messagingException;
-                        }
-                    } catch (InterruptedException e) {
-                        throw new IOException(e + " " + e.getMessage());
-                    }
-                }
-
+                MessageLoadThread.loadMimeMessage(message, os);
             }
         }
 

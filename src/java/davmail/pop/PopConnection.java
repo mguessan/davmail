@@ -25,6 +25,7 @@ import davmail.Settings;
 import davmail.exchange.DoubleDotOutputStream;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import org.apache.log4j.Logger;
@@ -204,6 +205,12 @@ public class PopConnection extends AbstractConnection {
                                     sendOK("");
                                     DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
                                     ExchangeSession.Message message = messages.get(messageNumber);
+
+                                    // load big messages in a separate thread
+                                    os.write("+OK ".getBytes());
+                                    MessageLoadThread.loadMimeMessage(message, os);
+                                    sendClient("");
+
                                     IOUtil.write(message.getRawInputStream(), doubleDotOutputStream);
                                     doubleDotOutputStream.close();
                                     if (Settings.getBooleanProperty("davmail.popMarkReadOnRetr")) {
