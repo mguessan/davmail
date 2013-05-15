@@ -125,13 +125,21 @@
         <!-- Retina display support -->
         <replaceregexp file="dist/DavMail.app/Contents/Info.plist" match="&lt;key>CFBundleName&lt;/key>"
                        replace="&lt;key>NSHighResolutionCapable&lt;/key>&lt;true/>&lt;key>CFBundleName&lt;/key>"/>
-        <zip file="dist/DavMail-MacOSX-${release}.app.zip">
+        <zip file="dist/DavMail.app.zip">
             <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
                 <exclude name="DavMail.app/Contents/MacOS/davmail"/>
             </zipfileset>
             <zipfileset dir="dist" filemode="755">
                 <include name="DavMail.app/Contents/MacOS/davmail"/>
+            </zipfileset>
+        </zip>
+        <zip file="dist/DavMail-MacOSX-${release-name}.app.zip">
+            <zipfileset dir="dist">
+                <include name="DavMail.app.zip"/>
+            </zipfileset>
+            <zipfileset dir="src/osx">
+                <include name="readme.txt"/>
             </zipfileset>
         </zip>
         <!--delete dir="dist/DavMail.app"/-->
