@@ -25,12 +25,22 @@
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdownload.png" alt="OSX Download"/>
             </div>
-            <p>Safari should automatically extract the application archive. If not, just
-                double click on the zip file to trigger decompression. The extracted
-                DavMail.app directory is then recognised as a valid OSX application.
+            <p>Safari should automatically extract the external archive. If not, just
+                double click on the zip file to trigger decompression.
             </p>
-            <p>Just double click on the application icon to launch DavMail. On
-                first start the application displays the Settings (Preferences) frame.
+            <p>On OSX Mountain Lion, open System Preferences and choose
+                Security and Privacy, then unlock panel with lock icon and choose Anywhere:
+            </p>
+            <div style="width: 100%;text-align: center">
+                <img src="images/osxgatekeeper.png" alt="OSX Gatekeeper"/>
+            </div>
+            <p>Uncompress DavMail.app.zip (Double click in Finder), DavMail.app directory is then recognised as a
+                valid OSX application.
+            </p>
+            <p>Launch DavMail application once (double click on the application icon).</p>
+            <p>You can then go back to System Preferences/Security and Privacy and restore original setting.
+            </p>
+            <p>On first start the application displays the Settings (Preferences) frame.
             </p>
             <div style="width: 100%;text-align: center">
                 <img src="images/osxdesktop.jpg" alt="OSX Desktop"/>
