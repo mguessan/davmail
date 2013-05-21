@@ -1,3 +1,52 @@
+** DavMail 4.3.0 released **
+New keep alive mechanism to avoid most IMAP and POP client timeouts: load large messages
+in a separate thread and send a character on client connection every ten seconds. Also
+includes some bug fixes, documentation enhancements and experimental Exchange 2013 support.
+
+OSX:
+- OSX: Add a readme.txt file to OSX package to help users temporarily disable Gatekeeper
+
+Documentation:
+- Doc: improve OSX setup doc for Mountain Lion
+- Update SSL doc, spaces in library path may break Sun PKCS11
+- Update linux setup doc for Ubuntu 13 users
+- Update server setup doc with detailed davmail.properties file
+
+Caldav:
+- Caldav: New workaround for Lightning bug: sleep for 1 second on server unavailable error
+
+IMAP:
+- Interrupt message load thread on client connection exception
+- IMAP: try to avoid timeout on large message FETCH with a KeepAlive space character
+- IMAP: try to avoid timeout on folder SELECT with a KeepAlive space character
+- Improve message list count implementation
+- Always sort by IMAP uid desc
+
+POP:
+- POP: load big messages in a separate thread
+
+EWS:
+- EWS: Fix regression in checkEndPointUrl, get /ews/services.wsdl
+- Fix for Exchange 2013 support
+- EWS: implement SortOrder
+
+Enhancements:
+- Improve DavMail shell scripts
+- Set default file path to /var/log/davmail.log in reference davmail.properties
+- Set a default log file size in reference davmail.properties
+- Use reference davmail.properties in war file
+- Disable broken dist-rpm
+- Reference server davmail.properties file
+- Add disableUpdateCheck to default davmail.properties file
+- Exclude WinRun4J from debian package
+- Exclude libgrowl and winrun4J from war package
+- Exclude winrun4J from linux packages
+- Set davmail.logFileSize to 0 to use an external rotation mechanism, e.g. logrotate
+- Merge latest changes from Marcin Dulak
+- Archive jsmooth wrappers
+- Fix version in spec file
+
+
 ** DavMail 4.2.1 released **
 Improved Kerberos support and a few bug fixes reported on tracker.
 

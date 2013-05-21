@@ -15,7 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.3">
+            <subsection name="4.4">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
@@ -23,6 +23,7 @@
                     <li>Switch from registry to link on windows</li>
                     <li>Implement split and kerberos authentication</li>
                     <li>Test windows install on seven without admin rights</li>
+                    <li>Merge changes for RPM and Debian package maintainers</li>
                 </ul>
             </subsection>
             <subsection name="4.x">
@@ -31,7 +32,6 @@
                 </p>
                 <ul>
                     <li>Implement Caldav attachments</li>
-                    <li>Test the RPM package</li>
                     <li>Implement ActiveSync backend</li>
                     <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
                     <li>Implement custom authenticator interface to handle specific authentications
