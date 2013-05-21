@@ -1118,6 +1118,12 @@ public class CaldavConnection extends AbstractConnection {
         } else if (e instanceof HttpPreconditionFailedException) {
             sendErr(HttpStatus.SC_PRECONDITION_FAILED, message);
         } else {
+            // workaround for Lightning bug: sleep for 1 second
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                // ignore
+            }
             sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
         }
     }
