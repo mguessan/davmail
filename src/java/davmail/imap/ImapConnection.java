@@ -253,14 +253,15 @@ public class ImapConnection extends AbstractConnection {
                                                 // load folder in a separate thread
                                                 FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), currentFolder);
                                                 folderLoadThread.start();
-                                                os.write('*');
+                                                os.write("* LOADING ".getBytes());
                                                 while (!folderLoadThread.isComplete) {
                                                     folderLoadThread.join(10000);
-                                                    LOGGER.debug("Still loading " + currentFolder.folderPath);
+                                                    LOGGER.debug("Still loading " + currentFolder.folderPath+" ("+currentFolder.count()+" messages)");
                                                     os.write(' ');
                                                     os.flush();
                                                 }
-                                                sendClient(" " + currentFolder.count() + " EXISTS");
+                                                sendClient("COMPLETE");
+                                                sendClient("* " + currentFolder.count() + " EXISTS");
                                                 if (folderLoadThread.exception != null) {
                                                     throw folderLoadThread.exception;
                                                 }
