@@ -202,15 +202,15 @@ public class PopConnection extends AbstractConnection {
                             if (tokens.hasMoreTokens()) {
                                 try {
                                     int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
-                                    sendOK("");
-                                    DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
                                     ExchangeSession.Message message = messages.get(messageNumber);
 
                                     // load big messages in a separate thread
                                     os.write("+OK ".getBytes());
+                                    os.flush();
                                     MessageLoadThread.loadMimeMessage(message, os);
                                     sendClient("");
 
+                                    DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
                                     IOUtil.write(message.getRawInputStream(), doubleDotOutputStream);
                                     doubleDotOutputStream.close();
                                     if (Settings.getBooleanProperty("davmail.popMarkReadOnRetr")) {
