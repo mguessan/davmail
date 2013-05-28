@@ -501,4 +501,11 @@ public class TestImap extends AbstractImapTestCase {
         System.in.read();
     }
 
+    public void testAnotherFetch() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 1:* (BODY.PEEK [HEADER.FIELDS (References X-Ref X-Priority X-MSMail-Priority Importance X-MSOESRec Newsgroups)] ENVELOPE RFC822.SIZE UID FLAGS INTERNALDATE)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
 }

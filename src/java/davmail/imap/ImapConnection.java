@@ -1072,10 +1072,10 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected void appendEnvelope(StringBuilder buffer, MessageWrapper message) throws IOException {
-        buffer.append(" ENVELOPE (");
 
         try {
             MimeMessage mimeMessage = message.getMimeMessage();
+            buffer.append(" ENVELOPE (");
             // Envelope for date, subject, from, sender, reply-to, to, cc, bcc,in-reply-to, message-id
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Date"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Subject"));
@@ -1087,13 +1087,13 @@ public class ImapConnection extends AbstractConnection {
             appendMailEnvelopeHeader(buffer, mimeMessage.getHeader("BCC"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("In-Reply-To"));
             appendEnvelopeHeader(buffer, mimeMessage.getHeader("Message-Id"));
+            buffer.append(')');
 
         } catch (MessagingException me) {
             DavGatewayTray.warn(me);
             // send fake envelope
-            buffer.append(" NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL");
+            buffer.append(" ENVELOPE (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)");
         }
-        buffer.append(')');
     }
 
     protected void appendEnvelopeHeader(StringBuilder buffer, String[] value) throws UnsupportedEncodingException {
