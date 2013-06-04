@@ -783,7 +783,9 @@ public class ImapConnection extends AbstractConnection {
         protected void loadMessage() throws IOException, MessagingException {
             if (!message.isLoaded()) {
                 // flush current buffer
-                os.write(buffer.toString().getBytes());
+                String flushString = buffer.toString();
+                LOGGER.debug(flushString);
+                os.write(flushString.getBytes());
                 buffer.setLength(0);
                 MessageLoadThread.loadMimeMessage(message, os);
             }
@@ -873,7 +875,7 @@ public class ImapConnection extends AbstractConnection {
 
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
-                    if ("".equals(partIndexString) || partIndexString == null) {
+                    if (("".equals(partIndexString) || partIndexString == null) && !"RFC822.HEADER".equals(param)) {
                         // write message with headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
@@ -884,25 +886,19 @@ public class ImapConnection extends AbstractConnection {
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // Header requested fetch  headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
-                        if (requestedHeaders != null) {
-                            // OSX Lion special flags request
-                            if (requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
-                                baos.write("Content-class: ".getBytes("UTF-8"));
-                                baos.write(message.contentClass.getBytes("UTF-8"));
+                        // OSX Lion special flags request
+                        if (requestedHeaders != null && requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
+                            baos.write("Content-class: ".getBytes("UTF-8"));
+                            baos.write(message.contentClass.getBytes("UTF-8"));
+                            baos.write(13);
+                            baos.write(10);
+                        } else {
+                            Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
+                            while (headerEnumeration.hasMoreElements()) {
+                                baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
                                 baos.write(13);
                                 baos.write(10);
-                            } else {
-                                Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
-                                while (headerEnumeration.hasMoreElements()) {
-                                    baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
-                                    baos.write(13);
-                                    baos.write(10);
-                                }
                             }
-                        } else {
-                            // write headers only
-                            partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
-                            partInputStream = messageWrapper.getRawInputStream();
                         }
                     } else {
                         MimePart bodyPart = messageWrapper.getMimeMessage();

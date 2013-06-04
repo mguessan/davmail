@@ -1946,7 +1946,11 @@ public abstract class ExchangeSession {
                 // message not loaded, try to get headers only
                 InputStream headers = getMimeHeaders();
                 if (headers != null) {
-                    result = new InternetHeaders(headers).getMatchingHeaderLines(headerNames);
+                    if (headerNames == null) {
+                        result = new InternetHeaders(headers).getAllHeaderLines();
+                    } else {
+                        result = new InternetHeaders(headers).getMatchingHeaderLines(headerNames);
+                    }
                 }
             }
             return result;

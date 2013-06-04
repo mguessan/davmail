@@ -508,4 +508,11 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testDoubleHeaderFetch() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 1:* RFC822.HEADER");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
 }
