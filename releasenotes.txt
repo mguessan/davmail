@@ -1,3 +1,22 @@
+** DavMail 4.3.1 released **
+Bugfix release to fix regressions with some IMAP clients and enhanced FetchMail support.
+
+OSX:
+- OSX: switch back to single archive and add a comment
+
+IMAP:
+- IMAP: fix double header content and optimize header fetch with Fetchmail
+- IMAP: fix regression in append envelope
+- IMAP: fix multithreaded folder load implementation to support more IMAP clients
+
+POP:
+- POP: fix 3613743, remove additional +OK during message RETR
+
+Linux:
+- dos2unix on davmail.spec
+- Update davsvn
+
+
 ** DavMail 4.3.0 released **
 New keep alive mechanism to avoid most IMAP and POP client timeouts: load large messages
 in a separate thread and send a character on client connection every ten seconds. Also
