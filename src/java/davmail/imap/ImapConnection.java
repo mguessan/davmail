@@ -253,15 +253,15 @@ public class ImapConnection extends AbstractConnection {
                                                 // load folder in a separate thread
                                                 FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), currentFolder);
                                                 folderLoadThread.start();
-                                                os.write("* LOADING ".getBytes());
+                                                LOGGER.debug("*");
+                                                os.write('*');
                                                 while (!folderLoadThread.isComplete) {
-                                                    folderLoadThread.join(10000);
+                                                    folderLoadThread.join(20000);
                                                     LOGGER.debug("Still loading " + currentFolder.folderPath+" ("+currentFolder.count()+" messages)");
                                                     os.write(' ');
                                                     os.flush();
                                                 }
-                                                sendClient("COMPLETE");
-                                                sendClient("* " + currentFolder.count() + " EXISTS");
+                                                sendClient(" " + currentFolder.count() + " EXISTS");
                                                 if (folderLoadThread.exception != null) {
                                                     throw folderLoadThread.exception;
                                                 }
@@ -958,7 +958,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" {").append(baos.size()).append('}');
                     sendClient(buffer.toString());
                     // log content if less than 2K
-                    if (LOGGER.isDebugEnabled() && baos.size() < 2048) {
+                    if (LOGGER.isDebugEnabled() /*&& baos.size() < 2048*/) {
                         LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
                     }
                     os.write(baos.toByteArray());
