@@ -1,3 +1,9 @@
+** DavMail 4.3.2 released **
+Another bugfix release.
+
+IMAP: Fix regression on IMAP select folder with thunderbird
+
+
 ** DavMail 4.3.1 released **
 Bugfix release to fix regressions with some IMAP clients and enhanced FetchMail support.
 
