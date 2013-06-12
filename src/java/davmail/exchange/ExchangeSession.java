@@ -1964,7 +1964,12 @@ public abstract class ExchangeSession {
         public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
             Enumeration result = getMatchingHeaderLinesFromHeaders(headerNames);
             if (result == null) {
-                result = getMimeMessage().getMatchingHeaderLines(headerNames);
+                if (headerNames == null) {
+                    result = getMimeMessage().getAllHeaderLines();
+                } else {
+                    result = getMimeMessage().getMatchingHeaderLines(headerNames);
+                }
+
             }
             return result;
         }

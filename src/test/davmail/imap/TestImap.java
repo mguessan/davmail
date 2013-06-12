@@ -515,4 +515,30 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testDoubleHeaderBodyFetch() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 51241 BODY.PEEK[TEXT]");
+        String line = socketReader.readLine();
+        int size = 0;
+        while (!line.startsWith(".")) {
+            line = socketReader.readLine();
+            size += line.length()+2;
+        }
+        System.out.println("actual size "+size);
+    }
+
+    public void testBodyHeaderFetch() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 1:* BODY[HEADER]");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testOutlookHeaderFetch() throws IOException {
+        writeLine(". SELECT INBOX");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 1:* (UID FLAGS RFC822.SIZE BODY.PEEK[HEADER] INTERNALDATE)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
 }
