@@ -696,6 +696,10 @@ public class EwsExchangeSession extends ExchangeSession {
             executeMethod(findItemMethod);
             results.addAll(findItemMethod.getResponseItems());
             offset = results.size();
+            if (Thread.interrupted()) {
+                LOGGER.debug("Search items failed: Interrupted by client");
+                throw new IOException("Search items failed: Interrupted by client");
+            }
         } while (!(findItemMethod.includesLastItemInRange || (maxCount > 0 && offset == maxCount)));
         return results;
     }
