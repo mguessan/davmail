@@ -78,6 +78,11 @@
                         <td>Client connection timeout in seconds, 0 to disable timeout, empty for 5 minutes</td>
                         <td>300</td>
                     </tr>
+                    <tr>
+                        <td>Enable KeepAlive</td>
+                        <td>Send KeepAlive character during large folder and messages download</td>
+                        <td>false</td>
+                    </tr>
                 </table>
             </subsection>
             <subsection name="Encryption">

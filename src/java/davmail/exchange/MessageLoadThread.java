@@ -58,7 +58,7 @@ public class MessageLoadThread extends Thread {
                 while (!messageLoadThread.isComplete) {
                     messageLoadThread.join(10000);
                     LOGGER.debug("Still loading uid " + message.getUid() + " imapUid " + message.getImapUid());
-                    if (Settings.getBooleanProperty("davmail.imapEnableKeepalive", false)) {
+                    if (Settings.getBooleanProperty("davmail.enableKeepAlive", false)) {
                         try {
                             outputStream.write(' ');
                             outputStream.flush();

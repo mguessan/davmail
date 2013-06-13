@@ -87,6 +87,9 @@ davmail.ssl.nosecuresmtp=false
 # disable update check
 davmail.disableUpdateCheck=true
 
+# Send keepalive character during large folder and messages download
+davmail.enableKeepalive=false
+
 #############################################################
 # Caldav settings
 

@@ -61,49 +61,50 @@ public class SettingsFrame extends JFrame {
     protected JTextField caldavPastDelayField;
     protected JTextField imapIdleDelayField;
 
-    JCheckBox useSystemProxiesField;
-    JCheckBox enableProxyField;
-    JTextField httpProxyField;
-    JTextField httpProxyPortField;
-    JTextField httpProxyUserField;
-    JTextField httpProxyPasswordField;
-    JTextField noProxyForField;
+    protected JCheckBox useSystemProxiesField;
+    protected JCheckBox enableProxyField;
+    protected JTextField httpProxyField;
+    protected JTextField httpProxyPortField;
+    protected JTextField httpProxyUserField;
+    protected JTextField httpProxyPasswordField;
+    protected JTextField noProxyForField;
 
-    JCheckBox allowRemoteField;
-    JTextField bindAddressField;
-    JTextField clientSoTimeoutField;
-    JTextField certHashField;
-    JCheckBox disableUpdateCheck;
+    protected JCheckBox allowRemoteField;
+    protected JTextField bindAddressField;
+    protected JTextField clientSoTimeoutField;
+    protected JTextField certHashField;
+    protected JCheckBox disableUpdateCheck;
 
-    JComboBox keystoreTypeCombo;
-    JTextField keystoreFileField;
-    JPasswordField keystorePassField;
-    JPasswordField keyPassField;
+    protected JComboBox keystoreTypeCombo;
+    protected JTextField keystoreFileField;
+    protected JPasswordField keystorePassField;
+    protected JPasswordField keyPassField;
 
-    JComboBox clientKeystoreTypeCombo;
-    JTextField clientKeystoreFileField;
-    JPasswordField clientKeystorePassField;
-    JTextField pkcs11LibraryField;
-    JTextArea pkcs11ConfigField;
+    protected JComboBox clientKeystoreTypeCombo;
+    protected JTextField clientKeystoreFileField;
+    protected JPasswordField clientKeystorePassField;
+    protected JTextField pkcs11LibraryField;
+    protected JTextArea pkcs11ConfigField;
 
-    JComboBox rootLoggingLevelField;
-    JComboBox davmailLoggingLevelField;
-    JComboBox httpclientLoggingLevelField;
-    JComboBox wireLoggingLevelField;
-    JTextField logFilePathField;
-    JTextField logFileSizeField;
+    protected JComboBox rootLoggingLevelField;
+    protected JComboBox davmailLoggingLevelField;
+    protected JComboBox httpclientLoggingLevelField;
+    protected JComboBox wireLoggingLevelField;
+    protected JTextField logFilePathField;
+    protected JTextField logFileSizeField;
 
-    JCheckBox caldavEditNotificationsField;
-    JTextField caldavAlarmSoundField;
-    JCheckBox forceActiveSyncUpdateCheckBox;
-    JTextField defaultDomainField;
-    JCheckBox showStartupBannerCheckBox;
-    JCheckBox disableGuiNotificationsCheckBox;
-    JCheckBox imapAutoExpungeCheckBox;
-    JCheckBox popMarkReadOnRetrCheckBox;
-    JComboBox enableEwsComboBox;
-    JCheckBox enableKerberosCheckBox;
-    JCheckBox smtpSaveInSentCheckBox;
+    protected JCheckBox caldavEditNotificationsField;
+    protected JTextField caldavAlarmSoundField;
+    protected JCheckBox forceActiveSyncUpdateCheckBox;
+    protected JTextField defaultDomainField;
+    protected JCheckBox showStartupBannerCheckBox;
+    protected JCheckBox disableGuiNotificationsCheckBox;
+    protected JCheckBox imapAutoExpungeCheckBox;
+    protected JCheckBox enableKeepAliveCheckBox;
+    protected JCheckBox popMarkReadOnRetrCheckBox;
+    protected JComboBox enableEwsComboBox;
+    protected JCheckBox enableKerberosCheckBox;
+    protected JCheckBox smtpSaveInSentCheckBox;
 
     JCheckBox osxHideFromDockCheckBox;
 
@@ -425,7 +426,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(11, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(12, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         enableKerberosCheckBox = new JCheckBox();
@@ -442,6 +443,8 @@ public class SettingsFrame extends JFrame {
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
+        enableKeepAliveCheckBox = new JCheckBox();
+        enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox = new JCheckBox();
         popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetr", false));
         smtpSaveInSentCheckBox = new JCheckBox();
@@ -465,6 +468,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_KEEPALIVE"), enableKeepAliveCheckBox,
+                BundleMessage.format("UI_ENABLE_KEEPALIVE_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_POP_MARK_READ"), popMarkReadOnRetrCheckBox,
                 BundleMessage.format("UI_POP_MARK_READ_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_SAVE_IN_SENT"), smtpSaveInSentCheckBox,
@@ -600,6 +605,7 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
+        enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetrCheckBox", false));
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
@@ -761,6 +767,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
                 Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
+                Settings.setProperty("davmail.enableKeepAlive", String.valueOf(enableKeepAliveCheckBox.isSelected()));
                 Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
                 String selectedEwsMode = (String) enableEwsComboBox.getSelectedItem();
                 String enableEws;
