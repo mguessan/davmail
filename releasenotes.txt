@@ -1,3 +1,19 @@
+** DavMail 4.3.3 released **
+Make keep alive optional new davmail.enableKeepalive setting and fix regressions in IMAP handler.
+
+Enhancements:
+- Update Maven POM to new Sourceforge project site
+- Rename new setting to davmail.enableKeepalive and include in settings GUI
+
+IMAP:
+- IMAP: make keepalive spaces optional with new davmail.imapEnableKeepalive setting
+- IMAP: interrupt EWS folder load on client timeout
+- IMAP: fix missing headers with Outlook
+- IMAP: Detect invalid content in message header field
+- IMAP: skip Microsoft Mail Internet Headers Version 2.0 in message headers field
+- IMAP: remove additional logging
+
+
 ** DavMail 4.3.2 released **
 Another bugfix release.
 

@@ -5,7 +5,7 @@
     <groupId>davmail</groupId>
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
-    <version>4.3.2</version>
+    <version>4.3.3</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway</name>
     <organization>
         <name>Mickaël Guessant</name>
