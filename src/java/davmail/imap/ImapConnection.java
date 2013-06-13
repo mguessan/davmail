@@ -30,6 +30,7 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
+import davmail.exchange.FolderLoadThread;
 import davmail.exchange.MessageLoadThread;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
@@ -56,28 +57,6 @@ public class ImapConnection extends AbstractConnection {
 
     protected String baseMailboxPath;
     ExchangeSession.Folder currentFolder;
-
-    class FolderLoadThread extends Thread {
-        boolean isComplete = false;
-        ExchangeSession.Folder folder;
-        IOException exception;
-
-        FolderLoadThread(String threadName, ExchangeSession.Folder folder) {
-            super(threadName + "-LoadFolder");
-            setDaemon(true);
-            this.folder = folder;
-        }
-
-        public void run() {
-            try {
-                folder.loadMessages();
-            } catch (IOException e) {
-                exception = e;
-            } finally {
-                isComplete = true;
-            }
-        }
-    }
 
     /**
      * Initialize the streams and start the thread.
@@ -251,25 +230,10 @@ public class ImapConnection extends AbstractConnection {
                                                 sendClient("* " + currentFolder.count() + " EXISTS");
                                             } else {
                                                 // load folder in a separate thread
-                                                FolderLoadThread folderLoadThread = new FolderLoadThread(currentThread().getName(), currentFolder);
-                                                folderLoadThread.start();
                                                 LOGGER.debug("*");
                                                 os.write('*');
-                                                while (!folderLoadThread.isComplete) {
-                                                    folderLoadThread.join(20000);
-                                                    LOGGER.debug("Still loading " + currentFolder.folderPath+" ("+currentFolder.count()+" messages)");
-                                                    try {
-                                                        os.write(' ');
-                                                        os.flush();
-                                                    } catch (SocketException e) {
-                                                        folderLoadThread.interrupt();
-                                                        throw e;
-                                                    }
-                                                }
+                                                FolderLoadThread.loadFolder(currentFolder, os);
                                                 sendClient(" " + currentFolder.count() + " EXISTS");
-                                                if (folderLoadThread.exception != null) {
-                                                    throw folderLoadThread.exception;
-                                                }
                                             }
 
                                             sendClient("* " + currentFolder.recent + " RECENT");

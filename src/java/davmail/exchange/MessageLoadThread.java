@@ -1,5 +1,6 @@
 package davmail.exchange;
 
+import davmail.Settings;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
@@ -57,14 +58,16 @@ public class MessageLoadThread extends Thread {
                 while (!messageLoadThread.isComplete) {
                     messageLoadThread.join(10000);
                     LOGGER.debug("Still loading uid " + message.getUid() + " imapUid " + message.getImapUid());
-                    try {
-                        outputStream.write(' ');
-                        outputStream.flush();
-                    } catch (SocketException e) {
-                        // client closed connection, stop thread
-                        message.dropMimeMessage();
-                        messageLoadThread.interrupt();
-                        throw e;
+                    if (Settings.getBooleanProperty("davmail.imapEnableKeepalive", false)) {
+                        try {
+                            outputStream.write(' ');
+                            outputStream.flush();
+                        } catch (SocketException e) {
+                            // client closed connection, stop thread
+                            message.dropMimeMessage();
+                            messageLoadThread.interrupt();
+                            throw e;
+                        }
                     }
                 }
                 if (messageLoadThread.ioException != null) {
