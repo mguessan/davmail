@@ -850,7 +850,7 @@ public class ImapConnection extends AbstractConnection {
                         partInputStream = messageWrapper.getRawInputStream();
                     } else if ("TEXT".equals(partIndexString)) {
                         // write message without headers
-                        partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
+                        partOutputStream = new PartOutputStream(baos, false, true, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
                     } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
                         // Header requested fetch  headers
@@ -927,7 +927,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" {").append(baos.size()).append('}');
                     sendClient(buffer.toString());
                     // log content if less than 2K
-                    if (LOGGER.isDebugEnabled() && baos.size() < 2048) {
+                    if (LOGGER.isDebugEnabled() /*&& baos.size() < 2048*/) {
                         LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
                     }
                     os.write(baos.toByteArray());
