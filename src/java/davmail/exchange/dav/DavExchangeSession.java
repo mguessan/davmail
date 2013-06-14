@@ -1086,9 +1086,15 @@ public class DavExchangeSession extends ExchangeSession {
             try {
                 String messageHeaders = getItemProperty(permanentUrl, "messageheaders");
                 if (messageHeaders != null) {
-                    final String MS_HEADER = "Microsoft Mail Internet Headers Version 2.0\r\n";
+                    final String MS_HEADER = "Microsoft Mail Internet Headers Version 2.0";
                     if (messageHeaders.startsWith(MS_HEADER)) {
                         messageHeaders = messageHeaders.substring(MS_HEADER.length());
+                        if (messageHeaders.charAt(0) == '\r') {
+                            messageHeaders = messageHeaders.substring(1);
+                        }
+                        if (messageHeaders.charAt(0) == '\n') {
+                            messageHeaders = messageHeaders.substring(1);
+                        }
                     }
                     // workaround for messages in Sent folder
                     if (messageHeaders.indexOf("From:") < 0) {
