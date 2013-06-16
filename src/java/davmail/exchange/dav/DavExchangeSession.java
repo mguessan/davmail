@@ -1089,10 +1089,10 @@ public class DavExchangeSession extends ExchangeSession {
                     final String MS_HEADER = "Microsoft Mail Internet Headers Version 2.0";
                     if (messageHeaders.startsWith(MS_HEADER)) {
                         messageHeaders = messageHeaders.substring(MS_HEADER.length());
-                        if (messageHeaders.charAt(0) == '\r') {
+                        if (!messageHeaders.isEmpty() && messageHeaders.charAt(0) == '\r') {
                             messageHeaders = messageHeaders.substring(1);
                         }
-                        if (messageHeaders.charAt(0) == '\n') {
+                        if (!messageHeaders.isEmpty() && messageHeaders.charAt(0) == '\n') {
                             messageHeaders = messageHeaders.substring(1);
                         }
                     }
