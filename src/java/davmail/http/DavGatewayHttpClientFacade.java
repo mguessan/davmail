@@ -791,6 +791,7 @@ public final class DavGatewayHttpClientFacade {
         MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
         connectionManager.getParams().setDefaultMaxConnectionsPerHost(100);
         connectionManager.getParams().setConnectionTimeout(10000);
+        connectionManager.getParams().setSoTimeout(120000);
         synchronized (LOCK) {
             httpConnectionManagerThread.addConnectionManager(connectionManager);
         }
