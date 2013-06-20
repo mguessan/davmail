@@ -861,6 +861,10 @@ public class ImapConnection extends AbstractConnection {
                             baos.write(message.contentClass.getBytes("UTF-8"));
                             baos.write(13);
                             baos.write(10);
+                        } else if (requestedHeaders == null) {
+                            // load message and write all headers
+                            partOutputStream = new PartOutputStream(baos, true, false, startIndex, maxSize);
+                            partInputStream = messageWrapper.getRawInputStream();
                         } else {
                             Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
                             while (headerEnumeration.hasMoreElements()) {
@@ -927,7 +931,7 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" {").append(baos.size()).append('}');
                     sendClient(buffer.toString());
                     // log content if less than 2K
-                    if (LOGGER.isDebugEnabled() /*&& baos.size() < 2048*/) {
+                    if (LOGGER.isDebugEnabled() && baos.size() < 2048) {
                         LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
                     }
                     os.write(baos.toByteArray());
