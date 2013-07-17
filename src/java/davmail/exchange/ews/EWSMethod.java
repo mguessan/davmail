@@ -716,7 +716,7 @@ public abstract class EWSMethod extends PostMethod {
                 }
             }
         }
-        if (getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+        if (getStatusCode() == HttpStatus.SC_BAD_REQUEST || getStatusCode() == HttpStatus.SC_INSUFFICIENT_STORAGE ) {
              throw new EWSException(getStatusText());
         }
     }
