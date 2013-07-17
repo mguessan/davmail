@@ -530,15 +530,15 @@ public abstract class ExchangeSession {
             // try to get new method from script based redirection
             logonMethod = buildLogonMethod(httpClient, logonMethod);
 
-            if (otpPreAuthFound && otpPreAuthRetries < MAX_OTP_RETRIES) {
-                // A OTP pre-auth page has been found, it is needed to restart the login process.
-                // This applies to both the case the user entered a good OTP code (the usual login process
-                // takes place) and the case the user entered a wrong OTP code (another code will be asked to him).
-                // The user has up to MAX_OTP_RETRIES chances to input a valid OTP key.
-                return postLogonMethod(httpClient, logonMethod, userName, password);
-            }
-
             if (logonMethod != null) {
+                if (otpPreAuthFound && otpPreAuthRetries < MAX_OTP_RETRIES) {
+                    // A OTP pre-auth page has been found, it is needed to restart the login process.
+                    // This applies to both the case the user entered a good OTP code (the usual login process
+                    // takes place) and the case the user entered a wrong OTP code (another code will be asked to him).
+                    // The user has up to MAX_OTP_RETRIES chances to input a valid OTP key.
+                    return postLogonMethod(httpClient, logonMethod, userName, password);
+                }
+
                 // if logonMethod is not null, try to follow redirection
                 logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
                 checkFormLoginQueryString(logonMethod);
