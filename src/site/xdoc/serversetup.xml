@@ -183,6 +183,25 @@ davmail.enableKerberos=false]]>
             </p>
         </section>
 
+        <section name="OSX LaunchDaemon">
+            <p>To launch DavMail on OSX with LaunchDaemon, you may try the following user provided script:</p>
+            <source><![CDATA[[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>davmail</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/libexec/davmail/davmail.sh</string>
+        <string>/usr/libexec/davmail/davmail.properties</string>
+    </array>
+</dict>
+</plist>]]></source>
+        </section>
+
         <section name="DavMail Setup as a JEE Web Application">
             <p>Prerequisites : Sun JRE 5, 6 or 7 or OpenJDK 6 or 7 and any JEE compliant web container
             </p>
