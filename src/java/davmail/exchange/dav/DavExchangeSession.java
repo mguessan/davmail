@@ -1464,6 +1464,14 @@ public class DavExchangeSession extends ExchangeSession {
                 vEvent.setPropertyValue("DESCRIPTION", getPropertyIfExists(davPropertySet, "description"));
                 vEvent.setPropertyValue("PRIORITY", convertPriorityFromExchange(getPropertyIfExists(davPropertySet, "importance")));
                 vEvent.setPropertyValue("CATEGORIES", getPropertyIfExists(davPropertySet, "keywords"));
+                String sensitivity = getPropertyIfExists(davPropertySet, "sensitivity");
+                if ("2".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "PRIVATE");
+                } else if ("3".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "CONFIDENTIAL");
+                } else if ("0".equals(sensitivity)) {
+                    vEvent.setPropertyValue("CLASS", "PUBLIC");
+                }
 
                 if (instancetype == null) {
                     vEvent.type = "VTODO";
@@ -1505,14 +1513,6 @@ public class DavExchangeSession extends ExchangeSession {
                             vEvent.addPropertyValue("EXDATE",
                                     StringUtil.convertZuluDateTimeToAllDay(convertDateFromExchange(exdate)));
                         }
-                    }
-                    String sensitivity = getPropertyIfExists(davPropertySet, "sensitivity");
-                    if ("2".equals(sensitivity)) {
-                        vEvent.setPropertyValue("CLASS", "PRIVATE");
-                    } else if ("3".equals(sensitivity)) {
-                        vEvent.setPropertyValue("CLASS", "CONFIDENTIAL");
-                    } else if ("0".equals(sensitivity)) {
-                        vEvent.setPropertyValue("CLASS", "PUBLIC");
                     }
                     String organizer = getPropertyIfExists(davPropertySet, "organizer");
                     String organizerEmail = null;
