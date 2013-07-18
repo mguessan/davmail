@@ -142,6 +142,10 @@
         <move todir="dist/DavMail.app/Contents/Java">
             <fileset dir="dist/DavMail.app/Contents/Resources/Java"/>
         </move>
+        <!-- move libgrowl to library path -->
+        <move todir="dist/DavMail.app/Contents/MacOS">
+            <fileset file="dist/DavMail.app/Contents/Java/libgrowl.jnilib"/>
+        </move>
         <!-- use Java7 app launcher -->
         <copy file="src/osx-java7/JavaAppLauncher" tofile="dist/DavMail.app/Contents/MacOS/davmail" overwrite="true"/>
         <!-- include Java7 labels -->
