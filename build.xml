@@ -137,6 +137,36 @@
         <!--delete dir="dist/DavMail.app"/-->
     </target>
 
+    <target name="dist-osx-java7" depends="dist-osx">
+        <!-- move jar files to new location -->
+        <move todir="dist/DavMail.app/Contents/Java">
+            <fileset dir="dist/DavMail.app/Contents/Resources/Java"/>
+        </move>
+        <!-- use Java7 app launcher -->
+        <copy file="src/osx-java7/JavaAppLauncher" tofile="dist/DavMail.app/Contents/MacOS/davmail" overwrite="true"/>
+        <!-- include Java7 labels -->
+        <copy todir="dist/DavMail.app/Contents/Resources">
+            <fileset dir="src/osx-java7">
+                <include name="en.lproj/**"/>
+            </fileset>
+        </copy>
+        <!-- template plist -->
+        <copy file="src/osx-java7/Info.plist" todir="dist/DavMail.app/Contents" overwrite="true">
+            <filterchain>
+                <expandproperties/>
+            </filterchain>
+        </copy>
+        <zip file="dist/DavMail-MacOSX-Java7-${release-name}.app.zip" comment="In order to run DavMail on OSX Mountain Lion, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
+            <zipfileset dir="dist">
+                <include name="DavMail.app/**/*"/>
+                <exclude name="DavMail.app/Contents/MacOS/davmail"/>
+            </zipfileset>
+            <zipfileset dir="dist" filemode="755">
+                <include name="DavMail.app/Contents/MacOS/davmail"/>
+            </zipfileset>
+        </zip>
+    </target>
+
     <target name="dist-deb">
         <taskdef resource="ant_deb_task.properties">
             <classpath location="lib/ant-deb-0.0.1.jar"/>
@@ -389,7 +419,7 @@
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
         <!--antcall target="dist-rpm"/-->
-        <antcall target="dist-osx"/>
+        <antcall target="dist-osx-java7"/>
         <!-- source with binary deps package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${release-name}" dir=".">
