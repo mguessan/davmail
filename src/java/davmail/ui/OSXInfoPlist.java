@@ -21,6 +21,7 @@ package davmail.ui;
 import davmail.util.IOUtil;
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class OSXInfoPlist {
     }
 
     protected static String getInfoPlistContent() throws IOException {
-        FileInputStream fileInputStream = new FileInputStream(INFO_PLIST_PATH);
+        FileInputStream fileInputStream = new FileInputStream(getInfoPlistPath());
         return new String(IOUtil.readFully(fileInputStream));
     }
 
@@ -67,7 +68,7 @@ public class OSXInfoPlist {
                 boolean currentHideFromDock = isHideFromDock();
                 if (currentHideFromDock != hideFromDock) {
                     String content = getInfoPlistContent();
-                    FileOutputStream fileOutputStream = new FileOutputStream(INFO_PLIST_PATH);
+                    FileOutputStream fileOutputStream = new FileOutputStream(getInfoPlistPath());
                     try {
                         fileOutputStream.write(content.replaceFirst(
                                 "<key>LSUIElement</key><string>" + (currentHideFromDock ? "1" : "0") + "</string>",
@@ -81,5 +82,21 @@ public class OSXInfoPlist {
         } catch (IOException e) {
             LOGGER.warn("Unable to update Info.plist", e);
         }
+    }
+
+    private static String getInfoPlistPath() throws IOException {
+        File file = new File(INFO_PLIST_PATH);
+        if (file.exists()) {
+            return INFO_PLIST_PATH;
+        }
+        // failover for Java7
+        String libraryPath = System.getProperty("java.library.path");
+        if (libraryPath != null && libraryPath.endsWith("Contents/MacOS")) {
+            file = new File(libraryPath.replace("Contents/MacOS", INFO_PLIST_PATH));
+            if (file.exists()) {
+                return INFO_PLIST_PATH;
+            }
+        }
+        throw new IOException("Info.plist file not found");
     }
 }
