@@ -44,6 +44,7 @@ import javax.mail.internet.*;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -236,6 +237,10 @@ public abstract class ExchangeSession {
         } catch (DavMailAuthenticationException exc) {
             LOGGER.error(exc.getMessage());
             throw exc;
+        } catch (ConnectException exc) {
+            BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
+            ExchangeSession.LOGGER.error(message);
+            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         } catch (UnknownHostException exc) {
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
