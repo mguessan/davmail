@@ -568,18 +568,20 @@ public abstract class ExchangeSession {
     protected void setAuthFormFields(HttpMethod logonMethod, HttpClient httpClient, String password) throws IllegalArgumentException {
         String userNameInput;
         if (userNameInputs.size() == 2) {
+            String userid;
             // multiple username fields, split userid|username on |
             int pipeIndex = userName.indexOf('|');
             if (pipeIndex < 0) {
-                LOGGER.warn("Multiple user fields detected, please use userid|username as user name in client");
+                LOGGER.debug("Multiple user fields detected, please use userid|username as user name in client, except when userid is username");
+                userid = userName;
             } else {
-                String userid = userName.substring(0, pipeIndex);
-                ((PostMethod) logonMethod).removeParameter("userid");
-                ((PostMethod) logonMethod).addParameter("userid", userid);
+                userid = userName.substring(0, pipeIndex);
                 userName = userName.substring(pipeIndex + 1);
                 // adjust credentials
                 DavGatewayHttpClientFacade.setCredentials(httpClient, userName, password);
             }
+            ((PostMethod) logonMethod).removeParameter("userid");
+            ((PostMethod) logonMethod).addParameter("userid", userid);
 
             userNameInput = "username";
         } else if (userNameInputs.size() == 1) {
