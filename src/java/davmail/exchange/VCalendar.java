@@ -280,8 +280,10 @@ public class VCalendar extends VObject {
                     }
                     // set OWA allday flag
                     vObject.setPropertyValue("X-MICROSOFT-CDO-ALLDAYEVENT", isAllDay(vObject) ? "TRUE" : "FALSE");
-                    vObject.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS",
-                            !"TRANSPARENT".equals(vObject.getPropertyValue("TRANSP")) ? "BUSY" : "FREE");
+                    if (vObject.getPropertyValue("TRANSP") != null) {
+                        vObject.setPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS",
+                                !"TRANSPARENT".equals(vObject.getPropertyValue("TRANSP")) ? "BUSY" : "FREE");
+                    }
 
                     if (isAllDay(vObject)) {
                         // convert date values to outlook compatible values
