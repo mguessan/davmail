@@ -305,7 +305,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>
                     <strong>Access another user mailbox</strong>
                 </p>
-                <p>Either set base IMAP path in client settings or use the following username:
+                <p>Either set base IMAP path in client settings to <code>/users/otheruser@company.com</code> or use the following username:
                     <code>domain\user\otheruser@company.com</code> where otheruser@company.com it target mailbox
                     name.
                 </p>
