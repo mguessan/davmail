@@ -905,7 +905,7 @@ public abstract class EWSMethod extends PostMethod {
     }
     
     public static String responseTypeToPartstat(String responseType) {
-        if ("Accept".equals(responseType)) {
+        if ("Accept".equals(responseType) || "Organizer".equals(responseType)) {
             return "ACCEPTED";
         } else if ("Tentative".equals(responseType)) {
             return "TENTATIVE";
