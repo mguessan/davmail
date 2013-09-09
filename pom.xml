@@ -55,6 +55,14 @@
             </roles>
         </contributor>
         <contributor>
+            <name>Alexandre Rossi</name>
+            <email>alexandre.rossi@gmail.com</email>
+            <url>http://anonscm.debian.org/gitweb/?p=pkg-java/davmail.git;a=summary</url>
+            <roles>
+                <role>Debian DavMail package maintainer</role>
+            </roles>
+        </contributor>
+        <contributor>
             <name>John Ahern</name>
             <email>jahern2502@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/jahern2502</url>
