@@ -1,3 +1,46 @@
+** DavMail 4.3.4 released **
+Added a new OSX Java7 package, IMAP header management regression fixes.
+Also fixed a few bugs reported by users and improved documentation.
+
+Documentation:
+- Doc: Reference Alexandre Rossi as Debian package maintainer
+- Doc: Update FAQ shared mailbox path
+- Doc: update svn repository location in build doc
+- Force language on donations link
+- Doc: OSX LaunchDaemon
+
+Enhancements:
+- Add trust="true" to scp command
+- Italian translation from  gil cattaneo https://bugzilla.redhat.com/show_bug.cgi?id=894413
+- Allow identical username/userid in multiple factor authentication form
+- Rethrow DavMailException on connect exception
+- Fix NullPointerException on server unavailable
+- New experimental davmail.popCommonDeleted flag to switch to a different property on old Exchange 2003 servers
+
+Caldav:
+- Caldav: flag ORGANIZER participant status as ACCEPTED instead of NEEDS-ACTION
+- Caldav: do not overwrite X-MICROSOFT-CDO-BUSYSTATUS if TRANSP is not provided
+- Merge patch to set sensitivy on VTODO
+
+OSX:
+- OSX: Get application path from library path with Java7 launcher
+- OSX: move libgrowl to library path
+- OSX: build Java 7 package
+- Customized OSX app launcher messages
+- Java7 OSX app launcher
+
+EWS:
+- EWS: fix 537, detect 507 Insufficient Storage
+
+WebDav:
+- DAV: set SO timeout on connection
+
+IMAP:
+- IMAP: new header fix, do not rely on messageheaders attribute on full headers request, load message
+- IMAP: improve invalid message header test
+- IMAP: fix invalid message header filter
+- IMAP: write message without headers on BODY[TEXT] fetch
+
 ** DavMail 4.3.3 released **
 Make keep alive optional new davmail.enableKeepalive setting and fix regressions in IMAP handler.
 
