@@ -496,7 +496,7 @@
 
     <target name="upload-version">
         <scp todir="${username},davmail@web.sourceforge.net:htdocs"
-             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true">
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
             <fileset dir="dist">
                 <include name="version.txt"/>
             </fileset>
