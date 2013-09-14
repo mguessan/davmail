@@ -2057,7 +2057,8 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow, 0);
+        int maxCount = Settings.getIntProperty("davmail.folderSizeLimit", 0);
+        MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow, maxCount);
 
         for (MultiStatusResponse response : responses) {
             Message message = buildMessage(response);

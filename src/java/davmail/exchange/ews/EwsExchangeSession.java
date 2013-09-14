@@ -663,7 +663,8 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public MessageList searchMessages(String folderPath, Set<String> attributes, Condition condition) throws IOException {
         MessageList messages = new MessageList();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW, 0);
+        int maxCount = Settings.getIntProperty("davmail.folderSizeLimit", 0);
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition, FolderQueryTraversal.SHALLOW, maxCount);
 
         for (EWSMethod.Item response : responses) {
             if (MESSAGE_TYPES.contains(response.type)) {
