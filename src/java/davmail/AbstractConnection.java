@@ -99,7 +99,7 @@ public class AbstractConnection extends Thread {
             int startIndex = 0;
             int count = 0;
             while (count >= 0 && startIndex < byteSize) {
-                count = in.read(buffer, startIndex, byteSize - startIndex);
+                count = read(buffer, startIndex, byteSize - startIndex);
                 startIndex += count;
             }
             if (startIndex < byteSize) {
