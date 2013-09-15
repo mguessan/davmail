@@ -28,10 +28,7 @@ import davmail.exception.DavMailException;
 import davmail.exception.HttpForbiddenException;
 import davmail.exception.HttpNotFoundException;
 import davmail.exception.InsufficientStorageException;
-import davmail.exchange.ExchangeSession;
-import davmail.exchange.ExchangeSessionFactory;
-import davmail.exchange.FolderLoadThread;
-import davmail.exchange.MessageLoadThread;
+import davmail.exchange.*;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -517,7 +514,7 @@ public class ImapConnection extends AbstractConnection {
 
                                     String messageName = UUID.randomUUID().toString() + ".EML";
                                     try {
-                                        session.createMessage(folderName, messageName, properties, mimeMessage);
+                                        MessageCreateThread.createMessage(session, folderName, messageName, properties, mimeMessage, os, capabilities);
                                         sendClient(commandId + " OK APPEND completed");
                                     } catch (InsufficientStorageException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
