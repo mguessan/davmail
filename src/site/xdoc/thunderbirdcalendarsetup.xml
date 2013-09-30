@@ -54,6 +54,10 @@
                     <img src="images/thunderbirdCalendar5.png" alt=""/>
                 </div>
 
+                <p>Lightning mail notifications are broken, activate Caldav notifications to outbox instead.
+                    Make sure calendar.caldav.sched.enabled is true in Thunderbird advanced settings.
+                </p>
+
                 <p>You may want to enable the (experimental) Lightning calendar cache feature to avoid
                     the possibly long calendar load task delay on Thunderbird startup: double click
                     on the calendar in Lightning left pane and activate cache. Restart Thunderbird.
