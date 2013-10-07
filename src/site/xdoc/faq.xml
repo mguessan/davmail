@@ -248,6 +248,7 @@ calendar.debug.log.verbose=true]]></source>
                 <p>To access a shared calendar in iCal, the URL scheme is:
                 </p>
                 <source>http://localhost:<i>1080</i>/principals/users/<i>user@company.com</i></source>
+                <p>Note that you need to have access to parent calendar if the target calendar is a child calendar.</p>
 
             </subsection>
 
