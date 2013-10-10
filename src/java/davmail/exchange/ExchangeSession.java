@@ -1373,6 +1373,9 @@ public abstract class ExchangeSession {
             currentFolder.unreadCount = newFolder.unreadCount;
             currentFolder.ctag = newFolder.ctag;
             currentFolder.etag = newFolder.etag;
+            if (newFolder.uidNext > currentFolder.uidNext) {
+                currentFolder.uidNext = newFolder.uidNext;
+            }
             currentFolder.loadMessages();
             return true;
         } else {
@@ -1582,7 +1585,7 @@ public abstract class ExchangeSession {
         /**
          * Next IMAP uid
          */
-        public int uidNext;
+        public long uidNext;
         /**
          * recent count
          */
@@ -1625,6 +1628,10 @@ public abstract class ExchangeSession {
                 if (message.recent) {
                     recent++;
                 }
+            }
+            long computedUidNext = messages.get(messages.size() - 1).getImapUid() + 1;
+            if (computedUidNext > uidNext) {
+                uidNext = computedUidNext;
             }
         }
 
@@ -1685,7 +1692,7 @@ public abstract class ExchangeSession {
          * @return max(messageuids)+1
          */
         public long getUidNext() {
-            return messages.get(messages.size() - 1).getImapUid() + 1;
+            return uidNext;
         }
 
         /**
