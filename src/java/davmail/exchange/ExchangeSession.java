@@ -1629,7 +1629,10 @@ public abstract class ExchangeSession {
                     recent++;
                 }
             }
-            long computedUidNext = messages.get(messages.size() - 1).getImapUid() + 1;
+            long computedUidNext = 1;
+            if (!messages.isEmpty()) {
+                computedUidNext = messages.get(messages.size() - 1).getImapUid() + 1;
+            }
             if (computedUidNext > uidNext) {
                 uidNext = computedUidNext;
             }
