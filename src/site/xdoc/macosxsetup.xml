@@ -11,13 +11,19 @@
     <body>
 
         <section name="DavMail Setup on Mac OS X">
+            <p>Either setup Java 7 from <a href="http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html">Oracle JRE 7 page</a>
+            and use the new <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-Java7-<em>version</em>.app.zip</a> package
+            or use Apple provided Java 6 with
+            <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
+            </a>
+            </p>
             <p>Note to OSX Mountain Lion users: you need to disable Gatekeeper (at least temporarily) to avoid the
-                <code>DavMail is damaged and can’t be opened</code> message.
+                warning or <code>DavMail is damaged and can’t be opened</code> message.
             </p>
             <p>Older OSX releases include Java 5, this version does not support Tray icon,
                 and DavMail uses a dedicated frame instead. An upgrade to Java 1.6 will enable tray icon.
                 Recent OSX versions either include Java 6 or can install it automatically on first Java application
-                launch.
+                launch. However, Java support is no longer provided by Apple and Java 7 is only available from Oracle.
             </p>
 
             <p>Download DavMail Mac OSX package from Sourceforge:
