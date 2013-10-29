@@ -34,7 +34,7 @@
                     </li>
                     <li>
                         <strong>Mac OS X:</strong>
-                        Either setup Java 7 from <a href="http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html">Oracle JRE 7 page</a>
+                        Either setup Java 7 from <a href="http://www.java.com">Oracle Java page</a>
                         and use the new <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-Java7-<em>version</em>.app.zip</a> package
                         or use Apple provided Java 6 with
                         <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
@@ -42,8 +42,8 @@
                         <br/>
                         and follow instructions at
                         <a href="macosxsetup.html">DavMail Setup on Mac OS X</a><br/>
-                        In both cases you will need to disable Gatekeeper on first downloaded application launch. If you don't you will get
-                        a warning or OSX will pretend the application <code>is damaged and can’t be opened</code>.
+                        In both cases you will need to disable Gatekeeper on first downloaded application launch.
+                        If you don't you will get a warning or OSX will pretend the <code>application is damaged and can’t be opened</code>.
                     </li>
                     <li>
                         <strong>Debian Linux (Ubuntu):</strong>
