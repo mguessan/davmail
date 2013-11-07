@@ -466,7 +466,7 @@ public class ImapConnection extends AbstractConnection {
                                         StringTokenizer flagtokenizer = new StringTokenizer(flags);
                                         while (flagtokenizer.hasMoreTokens()) {
                                             String flag = flagtokenizer.nextToken();
-                                            if ("\\Seen".equals(flag)) {
+                                            if ("\\Seen".equalsIgnoreCase(flag)) {
                                                 if (properties.containsKey("draft")) {
                                                     // draft message, add read flag
                                                     properties.put("draft", "9");
@@ -474,13 +474,13 @@ public class ImapConnection extends AbstractConnection {
                                                     // not (yet) draft, set read flag
                                                     properties.put("draft", "1");
                                                 }
-                                            } else if ("\\Flagged".equals(flag)) {
+                                            } else if ("\\Flagged".equalsIgnoreCase(flag)) {
                                                 properties.put("flagged", "2");
-                                            } else if ("\\Answered".equals(flag)) {
+                                            } else if ("\\Answered".equalsIgnoreCase(flag)) {
                                                 properties.put("answered", "102");
-                                            } else if ("$Forwarded".equals(flag)) {
+                                            } else if ("$Forwarded".equalsIgnoreCase(flag)) {
                                                 properties.put("forwarded", "104");
-                                            } else if ("\\Draft".equals(flag)) {
+                                            } else if ("\\Draft".equalsIgnoreCase(flag)) {
                                                 if (properties.containsKey("draft")) {
                                                     // read message, add draft flag
                                                     properties.put("draft", "9");
@@ -488,7 +488,7 @@ public class ImapConnection extends AbstractConnection {
                                                     // not (yet) read, set draft flag
                                                     properties.put("draft", "8");
                                                 }
-                                            } else if ("Junk".equals(flag)) {
+                                            } else if ("Junk".equalsIgnoreCase(flag)) {
                                                 properties.put("junk", "1");
                                             }
                                         }
