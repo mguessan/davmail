@@ -256,35 +256,36 @@ calendar.debug.log.verbose=true]]></source>
                 <p>
                     <strong>Timeout errors during IMAP sync (broken pipe)</strong>
                 </p>
-                <p>If you Exchange server is too slow, you may get timeout errors during
-                    message fetch.
+                <p>If you Exchange server is too slow or you don't have enough network bandwidth or too many messages in
+                    a single folder, you may get timeout errors during message fetch.
+                </p>
+                <p>A workaround on DavMail side is to limit folder message count retrieval by setting
+                    <code>davmail.folderSizeLimit</code>. Use this for shared servers with mobile clients to get fast
+                    sync and limit bandwidth usage.
                 </p>
                 <p>To fix the problem in OSX Mail, go to your account setup under preferences.
                     On the IMAP account having difficulty, go to the advanced tab. Where it says
                     "keep copies for offline viewing", change it to "only messages I've read" or
                     don't keep copies at all.
                 </p>
-                <p>Under Thunderbird, you can try to change IMAP timeout values
-                    (
-                    <code>mail.server.server<em>index</em>.timeout
-                    </code>
-                    and&#x20;<code>mailnews.tcptimeout</code>) or avoid full
-                    mailbox sync: disable global search and indexer under advanced options and change
+                <p>Under Thunderbird, you can try to change IMAP timeout setting <code>mailnews.tcptimeout</code>)
+                    or avoid full mailbox sync: disable global search and indexer under advanced options and change
                     Synchronization &amp; Storage options under Account Settings.
                 </p>
                 <p>
                     <strong>Message deleted over IMAP still visible through OWA</strong>
                 </p>
-                <p>Message move does not exist in IMAP, thus the move is a copy followed by a delete.
-                    And a delete is not immediate with IMAP: you need to EXPUNGE the folder to actually
+                <p>Delete action is not immediate with IMAP: you need to EXPUNGE the folder to actually
                     delete a message.
+                </p>
+                <p>A workaround is to set <code>davmail.imapAutoExpunge=true</code> in DavMail to force immediate
+                    message expunge. Note that this makes DavMail non compliant to IMAP RFC.
                 </p>
                 <p>A workaround with Thunderbird is to set the property
                     <code>mail.imap.expunge_after_delete=true</code>
                 </p>
-                <p>New: a new setting is available in DavMail to delete messages immediately over IMAP:
-                    <code>davmail.imapAutoExpunge=true</code>
-                </p>
+                <p>Note that you will also encounter this issue with clients missing IMAP MOVE extension support.
+                    As message move does not exist in basic IMAP, a move is a copy followed by a delete.</p>
                 <p>
                     <strong>Duplicate messages in Sent folder</strong>
                 </p>
