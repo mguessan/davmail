@@ -104,6 +104,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox popMarkReadOnRetrCheckBox;
     protected JComboBox enableEwsComboBox;
     protected JCheckBox enableKerberosCheckBox;
+    protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
 
     JCheckBox osxHideFromDockCheckBox;
@@ -426,9 +427,10 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(12, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(13, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
+        folderSizeLimitField = new JTextField(Settings.getProperty("davmail.folderSizeLimit"), 6);
         enableKerberosCheckBox = new JCheckBox();
         enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos"));
         caldavEditNotificationsField = new JCheckBox();
@@ -452,6 +454,8 @@ public class SettingsFrame extends JFrame {
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
 
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_FOLDER_SIZE_LIMIT"), folderSizeLimitField,
+                BundleMessage.format("UI_FOLDER_SIZE_LIMIT_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ENABLE_KERBEROS"), enableKerberosCheckBox,
                 BundleMessage.format("UI_ENABLE_KERBEROS_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_EDIT_NOTIFICATIONS"), caldavEditNotificationsField,
@@ -610,6 +614,7 @@ public class SettingsFrame extends JFrame {
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos", false));
+        folderSizeLimitField.setText(Settings.getProperty("davmail.folderSizeLimit"));
 
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField.setText(Settings.getProperty("davmail.ssl.keystoreFile"));
@@ -780,6 +785,7 @@ public class SettingsFrame extends JFrame {
                 }
                 Settings.setProperty("davmail.enableEws", enableEws);
                 Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
+                Settings.setProperty("davmail.folderSizeLimit", folderSizeLimitField.getText());
                 Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
 
                 Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());

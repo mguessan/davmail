@@ -47,6 +47,11 @@
                         <td>Disable DavMail check for new version</td>
                         <td>false</td>
                     </tr>
+                    <tr>
+                        <td>Folder size limit</td>
+                        <td>Message count limit on folder retrieval</td>
+                        <td>100</td>
+                    </tr>
                 </table>
             </subsection>
             <subsection name="Network">

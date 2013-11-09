@@ -138,6 +138,7 @@ public final class Settings {
         SETTINGS.put("davmail.sentKeepDelay", "90");
         SETTINGS.put("davmail.caldavPastDelay", "90");
         SETTINGS.put("davmail.imapIdleDelay", "");
+        SETTINGS.put("davmail.folderSizeLimit", "");
         SETTINGS.put("davmail.enableKeepAlive", Boolean.FALSE.toString());
         SETTINGS.put("davmail.allowRemote", Boolean.FALSE.toString());
         SETTINGS.put("davmail.bindAddress", "");

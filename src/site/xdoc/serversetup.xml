@@ -89,6 +89,8 @@ davmail.disableUpdateCheck=true
 
 # Send keepalive character during large folder and messages download
 davmail.enableKeepalive=false
+# Message count limit on folder retrieval
+davmail.folderSizeLimit=0
 
 #############################################################
 # Caldav settings
