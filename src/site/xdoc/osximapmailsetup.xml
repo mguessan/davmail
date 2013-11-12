@@ -16,8 +16,39 @@
                 full message folder tree access. IMAP support in DavMail is more recent and less optimised
                 than POP. This page describes OSX IMAP Mail setup.
             </p>
+            <subsection name="Create a new account on OSX Mavericks">
+                <p>Note: see section below to setup an account on older OSX versions</p>
+                <p>Launch Apple Mail and choose <code>Add Other Mail Account</code> in add account dialog</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap1.png" alt=""/>
+                </div>
+                <p>Provide Full Name, Email address and password and click Create</p>
+                <p>Confirm "Account must be manually configured" by clicking Next</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap2.png" alt=""/>
+                </div>
+                <p>Account type is IMAP, mail server is DavMail host (localhost for workstation mode)</p>
+                <p>Enter username (can be email or windows login), click next</p>
+                <p>Confirm "Additional account information required" by clicking Next</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap3.png" alt=""/>
+                </div>
+                <p>Leave path prefix empty (except for shared mailbox access), enter DavMail IMAP port, authentication is password, click next</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap4.png" alt=""/>
+                </div>
+                <p>SMTP server is DavMail host again, click Create</p>
+                <p>Confirm "Additional account information required" by clicking Next</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap5.png" alt=""/>
+                </div>
+                <p>Enter DavMail SMTP port, authentication is password, then click Create</p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osxMavericksMailImap6.png" alt=""/>
+                </div>
+            </subsection>
 
-            <subsection name="Create a new account">
+            <subsection name="Create a new account on previous OSX versions">
                 <p>Launch Apple Mail, open Preferences and click the plus button to create a new
                     account. Enter you full name, email address and password:
                 </p>
