@@ -1291,7 +1291,7 @@ public abstract class ExchangeSession {
         convertResentHeader(mimeMessage, "Message-Id");
 
         // do not allow send as another user on Exchange 2003
-        if ("Exchange2003".equals(serverVersion)) {
+        if ("Exchange2003".equals(serverVersion) || Settings.getBooleanProperty("davmail.smtpStripFrom", false)) {
             mimeMessage.removeHeader("From");
         }
 
