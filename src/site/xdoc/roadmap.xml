@@ -15,15 +15,15 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.4">
+            <subsection name="4.5">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
                     <li>Switch from registry to link on windows</li>
-                    <li>Implement split and kerberos authentication</li>
+                    <li>Implement split authentication</li>
                     <li>Test windows install on seven without admin rights</li>
-                    <li>Merge changes for RPM and Debian package maintainers</li>
+                    <li>Implement IMAP subscribe/unsubscribe</li>
                 </ul>
             </subsection>
             <subsection name="4.x">
