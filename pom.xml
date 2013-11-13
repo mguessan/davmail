@@ -63,6 +63,14 @@
             </roles>
         </contributor>
         <contributor>
+            <name>Marcin Dulak</name>
+            <email>marcin.dulak@gmail.com</email>
+            <url>https://build.opensuse.org/package/show/home:marcindulak/davmail</url>
+            <roles>
+                <role>DavMail RPM package maintainer</role>
+            </roles>
+        </contributor>
+        <contributor>
             <name>John Ahern</name>
             <email>jahern2502@users.sourceforge.net</email>
             <url>http://sourceforge.net/users/jahern2502</url>
