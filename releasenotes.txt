@@ -1,3 +1,40 @@
+** DavMail 4.4.0 released **
+Added folder size limit setting to let users avoid IMAP timeouts and reduce memory footprint.
+Also contains many documentation updates, including updated OSX instructions for Mavericks and
+some more bugfixes on IMAP, Caldav (iOS 7 user agent) and SMTP.
+
+Documentation:
+- Doc: update roadmap
+- Doc: reference Marcin Dulak as contributor (RPM package maintainer)
+- Doc: Document OSX Mavericks IMAP account creation
+- Doc: improve FAQ
+- Doc: Fix OSX download instructions
+- Doc: Update OSX doc
+- Doc: additional FAQ comment on shared calendar hierarchy
+- Doc: update smtp screenshot
+- Doc: update more Thunderbird screenshots
+- Doc: update Lightning screenshots
+- Doc: document calendar.caldav.sched.enabled in main Lightning setup doc
+
+Enhancements:
+- Additional IMAP unit tests
+- Add davmail.folderSizeLimit to UI and documentation
+- Fix AbstractConnection.readContent, see https://sourceforge.net/p/davmail/bugs/538/
+
+SMTP:
+- SMTP: create a new davmail.smtpStripFrom boolean property to force From: header removal 
+
+IMAP:
+- IMAP: Make flags case insensitive on append
+- IMAP: improve uidNext implementation
+- Italian IMAP flag translation thanks to puntogil@libero.it
+- IMAP: fix 538, send capabilities untagged response to avoid timeout on large message APPEND
+- IMAP: Implement davmail.folderSizeLimit
+
+Caldav:
+- Caldav: change user agent test to include all iOS versions
+
+
 ** DavMail 4.3.4 released **
 Added a new OSX Java7 package, IMAP header management regression fixes.
 Also fixed a few bugs reported by users and improved documentation.
@@ -40,6 +77,7 @@ IMAP:
 - IMAP: improve invalid message header test
 - IMAP: fix invalid message header filter
 - IMAP: write message without headers on BODY[TEXT] fetch
+
 
 ** DavMail 4.3.3 released **
 Make keep alive optional new davmail.enableKeepalive setting and fix regressions in IMAP handler.
