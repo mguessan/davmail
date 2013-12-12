@@ -53,10 +53,14 @@ public class VObject {
             throw new IOException("Invalid first line: " + beginProperty);
         }
         type = beginProperty.getValue();
+        String beginLine = "BEGIN:" + type;
         String endLine = "END:" + type;
         String line = reader.readLine();
         while (line != null && !line.startsWith(endLine)) {
-            handleLine(line, reader);
+            // ignore invalid BEGIN line inside object (Sogo Carddav issue)
+            if (!beginLine.equals(line)) {
+                handleLine(line, reader);
+            }
             line = reader.readLine();
         }
         if (line == null) {
