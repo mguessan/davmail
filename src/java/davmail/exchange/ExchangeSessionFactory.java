@@ -54,7 +54,7 @@ public final class ExchangeSessionFactory {
 
         PoolKey(String url, String userName, String password) {
             this.url = url;
-            this.userName = userName;
+            this.userName = convertUserName(userName);
             this.password = password;
         }
 
@@ -100,7 +100,7 @@ public final class ExchangeSessionFactory {
         String result = userName;
         // prepend default windows domain prefix
         String defaultDomain = Settings.getProperty("davmail.defaultDomain");
-        if (userName.indexOf('\\') < 0 && defaultDomain != null) {
+        if (defaultDomain != null && userName.indexOf('\\') < 0 && userName.indexOf('@') < 0) {
             result = defaultDomain + '\\' + userName;
         }
         return result;
@@ -119,7 +119,7 @@ public final class ExchangeSessionFactory {
         ExchangeSession session = null;
         try {
 
-            PoolKey poolKey = new PoolKey(baseUrl, convertUserName(userName), password);
+            PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
             synchronized (LOCK) {
                 session = POOL_MAP.get(poolKey);
