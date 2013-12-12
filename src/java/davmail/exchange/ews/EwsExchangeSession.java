@@ -2443,8 +2443,16 @@ public class EwsExchangeSession extends ExchangeSession {
         return dateFormatter.format(date);
     }
 
+    /**
+     * Check if itemName is long and base64 encoded.
+     * User generated item names are usually short
+     * @param itemName item name
+     * @return true if itemName is an EWS item id
+     */
     protected static boolean isItemId(String itemName) {
-        return itemName.length() >= 152;
+        return itemName.length() >= 152
+                // item name is base64
+                && itemName.matches("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
     }
 
 
