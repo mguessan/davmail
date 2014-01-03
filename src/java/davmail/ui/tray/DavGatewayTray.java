@@ -291,6 +291,8 @@ public final class DavGatewayTray {
     }
 
     public static void dispose() {
-        davGatewayTray.dispose();
+        if (davGatewayTray != null) {
+            davGatewayTray.dispose();
+        }
     }
 }
