@@ -49,7 +49,8 @@
                 </fileset>
             </classpath>
         </typedef>
-        <svn svnkit="true">
+        <svnSetting svnkit="true" javahl="false" id="svn.settings"/>
+        <svn refid="svn.settings">
             <wcversion path="."/>
         </svn>
         <!-- failover value for revision -->
