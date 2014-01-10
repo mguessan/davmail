@@ -169,7 +169,17 @@ public class EwsExchangeSession extends ExchangeSession {
         try {
             int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
             if (status == HttpStatus.SC_UNAUTHORIZED) {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                // retry with /ews/exchange.asmx
+                checkMethod.releaseConnection();
+                checkMethod = new HeadMethod(endPointUrl);
+                checkMethod.setFollowRedirects(true);
+                status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
+                if (status == HttpStatus.SC_UNAUTHORIZED) {
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                } else if (status != HttpStatus.SC_OK) {
+                    throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString()+" status "+status);
+                }
+
             } else if (status != HttpStatus.SC_OK) {
                 throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString()+" status "+status);
             }
