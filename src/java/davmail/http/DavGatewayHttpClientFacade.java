@@ -123,7 +123,15 @@ public final class DavGatewayHttpClientFacade {
     public static void setCredentials(HttpClient httpClient, String userName, String password) {
         // some Exchange servers redirect to a different host for freebusy, use wide auth scope
         AuthScope authScope = new AuthScope(null, -1);
-        httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", ""));
+        int backSlashIndex = userName.indexOf('\\');
+        if (needNTLM && backSlashIndex >= 0) {
+            // separate domain from username in credentials
+            String domain = userName.substring(0, backSlashIndex);
+            userName = userName.substring(backSlashIndex + 1);
+            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", domain));
+        } else {
+            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", ""));
+        }
     }
 
     /**
@@ -190,7 +198,7 @@ public final class DavGatewayHttpClientFacade {
         try {
             java.net.URI uri = new java.net.URI(url);
             if (isNoProxyFor(uri)) {
-                LOGGER.debug("no proxy for "+uri.getHost());
+                LOGGER.debug("no proxy for " + uri.getHost());
             } else if (useSystemProxies) {
                 // get proxy for url from system settings
                 System.setProperty("java.net.useSystemProxies", "true");
@@ -205,10 +213,10 @@ public final class DavGatewayHttpClientFacade {
                     proxyPassword = Settings.getProperty("davmail.proxyPassword");
                 }
             } else if (enableProxy) {
-                    proxyHost = Settings.getProperty("davmail.proxyHost");
-                    proxyPort = Settings.getIntProperty("davmail.proxyPort");
-                    proxyUser = Settings.getProperty("davmail.proxyUser");
-                    proxyPassword = Settings.getProperty("davmail.proxyPassword");
+                proxyHost = Settings.getProperty("davmail.proxyHost");
+                proxyPort = Settings.getIntProperty("davmail.proxyPort");
+                proxyUser = Settings.getProperty("davmail.proxyUser");
+                proxyPassword = Settings.getProperty("davmail.proxyPassword");
             }
         } catch (URISyntaxException e) {
             throw new DavMailException("LOG_INVALID_URL", url);
@@ -598,20 +606,13 @@ public final class DavGatewayHttpClientFacade {
         authPrefs.add(AuthPolicy.BASIC);
         httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
 
+        // make sure NTLM is always active
+        needNTLM = true;
+
         // separate domain from username in credentials
         AuthScope authScope = new AuthScope(null, -1);
         NTCredentials credentials = (NTCredentials) httpClient.getState().getCredentials(authScope);
-        String userName = credentials.getUserName();
-        int backSlashIndex = userName.indexOf('\\');
-        if (backSlashIndex >= 0) {
-            String domain = userName.substring(0, backSlashIndex);
-            userName = userName.substring(backSlashIndex + 1);
-            credentials = new NTCredentials(userName, credentials.getPassword(), "UNKNOWN", domain);
-            httpClient.getState().setCredentials(authScope, credentials);
-        }
-
-        // make sure NTLM is always active
-        needNTLM = true;
+        setCredentials(httpClient, credentials.getUserName(), credentials.getPassword());
     }
 
     /**
