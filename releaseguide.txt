@@ -15,7 +15,7 @@ mvn install:install-file -DgroupId=org.boris.winrun4j -DartifactId=winrun4j -Dve
 - upload site: ant upload-site
 - upload releasenotes.txt to sourceforge
 - create tag in subversion
-- create news message at https://sourceforge.net/news/admin/?group_id=184600
+- create news message at https://sourceforge.net/p/davmail/news/
 - send user mailing list message
 - change default download files on frs
 - upload version.txt with ant upload-version
