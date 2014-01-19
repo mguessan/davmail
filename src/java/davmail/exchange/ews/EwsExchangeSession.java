@@ -211,7 +211,13 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 // userName or domain\\username, rebuild email address
                 alias = getAliasFromLogin();
-                email = getAliasFromLogin() + getEmailSuffixFromHostname();
+
+                // try to get email address with ResolveNames
+                email = resolveEmailAddress(userName);
+                // failover, build from host name
+                if (email == null) {
+                    email = getAliasFromLogin() + getEmailSuffixFromHostname();
+                }
             }
         }
 
@@ -285,6 +291,29 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
         LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
+    }
+
+    public String resolveEmailAddress(String userName) {
+        String email = null;
+        String searchValue = userName;
+        int index = searchValue.indexOf('\\');
+        if (index >= 0) {
+            searchValue = searchValue.substring(index+1);
+        }
+        ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(searchValue);
+        try {
+            // send a fake request to get server version
+            internalGetFolder("");
+            executeMethod(resolveNamesMethod);
+            List<EWSMethod.Item> responses = resolveNamesMethod.getResponseItems();
+            if (responses.size() == 1) {
+                email = responses.get(0).get("EmailAddress");
+            }
+
+        } catch (IOException e) {
+            // ignore
+        }
+        return email;
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
