@@ -332,6 +332,12 @@ public class VCalendar extends VObject {
                 if (rrule != null && rrule.getValues().size() == 3 && "BYDAY=-2SU".equals(rrule.getValues().get(1))) {
                     rrule.getValues().set(1, "BYDAY=4SU");
                 }
+                // Fix 555 another broken Israeli timezone
+                if (rrule != null && rrule.getValues().size() == 4 && "BYDAY=FR".equals(rrule.getValues().get(1))
+                        && "BYMONTHDAY=23,24,25,26,27,28,29".equals(rrule.getValues().get(2))) {
+                    rrule.getValues().set(1, "BYDAY=-1FR");
+                    rrule.getValues().remove(2);
+                }
             }
         }
     }
