@@ -87,7 +87,10 @@
                 <ul>
                     <li>
                         <strong>Standalone:</strong>
-                        Download platform independent package
+                        Download noinstall package for Windows:
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-windows-noinstall.zip
+                        </a>
+                        or platform independent package for other operating systems:
                         <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>.zip
                         </a>
                         <br/>

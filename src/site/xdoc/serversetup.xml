@@ -22,8 +22,9 @@
                 In this mode many users can share the same DavMail instance.
             </p>
 
-            <p>Download the generic DavMail package from Sourceforge and uncompress it with
-                your favorite tool, e.g. on Linux:&#x20;<code>unzip davmail-*.zip</code>.
+            <p>Download the noinstall package for Windows or platform independent DavMail package
+                from Sourceforge and uncompress it with your favorite tool,
+                e.g. on Linux:&#x20;<code>unzip davmail-*.zip</code>.
             </p>
             <p>Prepare a davmail.properties file according to your local needs :
             </p>
