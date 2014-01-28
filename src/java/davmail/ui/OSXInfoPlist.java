@@ -38,8 +38,19 @@ public class OSXInfoPlist {
     }
 
     protected static String getInfoPlistContent() throws IOException {
-        FileInputStream fileInputStream = new FileInputStream(getInfoPlistPath());
-        return new String(IOUtil.readFully(fileInputStream));
+        FileInputStream fileInputStream = null;
+        try {
+            fileInputStream = new FileInputStream(getInfoPlistPath());
+            return new String(IOUtil.readFully(fileInputStream));
+        } finally {
+            if (fileInputStream != null) {
+                try {
+                    fileInputStream.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
     }
 
     /**
