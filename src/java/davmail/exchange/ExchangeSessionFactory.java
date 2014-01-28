@@ -293,11 +293,13 @@ public final class ExchangeSessionFactory {
         Enumeration<NetworkInterface> enumeration;
         try {
             enumeration = NetworkInterface.getNetworkInterfaces();
-            while (!up && enumeration.hasMoreElements()) {
-                NetworkInterface networkInterface = enumeration.nextElement();
-                //noinspection Since15
-                up = networkInterface.isUp() && !networkInterface.isLoopback()
-                        && networkInterface.getInetAddresses().hasMoreElements();
+            if (enumeration != null) {
+                while (!up && enumeration.hasMoreElements()) {
+                    NetworkInterface networkInterface = enumeration.nextElement();
+                    //noinspection Since15
+                    up = networkInterface.isUp() && !networkInterface.isLoopback()
+                            && networkInterface.getInetAddresses().hasMoreElements();
+                }
             }
         } catch (NoSuchMethodError error) {
             ExchangeSession.LOGGER.debug("Unable to test network interfaces (not available under Java 1.5)");
