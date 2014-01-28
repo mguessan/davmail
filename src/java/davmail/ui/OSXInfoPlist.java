@@ -41,7 +41,7 @@ public class OSXInfoPlist {
         FileInputStream fileInputStream = null;
         try {
             fileInputStream = new FileInputStream(getInfoPlistPath());
-            return new String(IOUtil.readFully(fileInputStream));
+            return new String(IOUtil.readFully(fileInputStream), "UTF-8");
         } finally {
             if (fileInputStream != null) {
                 try {
