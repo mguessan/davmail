@@ -141,6 +141,22 @@ public class EwsExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
+    /**
+     * Override authentication mode test: EWS is never form based.
+     *
+     * @param url        exchange base URL
+     * @param httpClient httpClient instance
+     * @return true if basic authentication detected
+     */
+    @Override
+    protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
+        if (url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+            return false;
+        } else {
+            return super.isBasicAuthentication(httpClient, url);
+        }
+    }
+
     @Override
     protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
