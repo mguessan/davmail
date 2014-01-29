@@ -717,30 +717,55 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal, int maxCount) throws IOException {
-        int offset = 0;
+        int resultCount = 0;
         List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>();
         FindItemMethod findItemMethod;
         do {
             int fetchCount = PAGE_SIZE;
+            // adjust fetch count on last page request
             if (maxCount > 0) {
-                fetchCount = Math.min(PAGE_SIZE, maxCount - offset);
+                fetchCount = Math.min(PAGE_SIZE, maxCount - resultCount);
             }
-            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath), offset, fetchCount);
+            // search items in folder, do not retrieve all properties
+            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, getFolderId(folderPath), 0, fetchCount);
             for (String attribute : attributes) {
                 findItemMethod.addAdditionalProperty(Field.get(attribute));
             }
-            if (condition != null && !condition.isEmpty()) {
-                findItemMethod.setSearchExpression((SearchExpression) condition);
+            // make sure imapUid is available
+            if (!attributes.contains("imapUid")) {
+                findItemMethod.addAdditionalProperty(Field.get("imapUid"));
             }
+
+            // always sort items by imapUid descending to retrieve recent messages first
             findItemMethod.setFieldOrder(new FieldOrder(Field.get("imapUid"), FieldOrder.Order.Descending));
+
+            // use requested filter for first page
+            Condition localCondition = condition;
+            if (resultCount > 0) {
+                // adjust condition for next pages: retrieve only items with imapUid lower than current lowest
+                String lowestImapUid = results.get(results.size()-1).get(Field.get("imapUid").getResponseName());
+                if (localCondition == null || localCondition.isEmpty()) {
+                    localCondition = lt("imapUid", lowestImapUid);
+                } else {
+                    localCondition = and(lt("imapUid", lowestImapUid), condition);
+                }
+            }
+            if (localCondition != null && !localCondition.isEmpty()) {
+                findItemMethod.setSearchExpression((SearchExpression) localCondition);
+            }
             executeMethod(findItemMethod);
             results.addAll(findItemMethod.getResponseItems());
-            offset = results.size();
+            resultCount = results.size();
+            if (resultCount > 0 && LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Search items current count: "+resultCount+" fetchCount: "+fetchCount
+                    +" highest uid: "+results.get(0).get(Field.get("imapUid").getResponseName())
+                    +" lowest uid: "+results.get(resultCount-1).get(Field.get("imapUid").getResponseName()));
+            }
             if (Thread.interrupted()) {
                 LOGGER.debug("Search items failed: Interrupted by client");
                 throw new IOException("Search items failed: Interrupted by client");
             }
-        } while (!(findItemMethod.includesLastItemInRange || (maxCount > 0 && offset == maxCount)));
+        } while (!(findItemMethod.includesLastItemInRange || (maxCount > 0 && resultCount == maxCount)));
         return results;
     }
 
