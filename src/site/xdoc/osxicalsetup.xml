@@ -16,7 +16,26 @@
             </p>
 
             <subsection name="Open iCal Preferences">
-                <p>Open iCal Preferences, go to the Accounts tab and click the plus button:
+                <p>On OSX Mavericks: Launch iCal and open Preferences in Calendar menu, then choose Accounts
+                    and click the plus sign to open account creation dialog:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osx-caldav-account-create.png" alt=""/>
+                </div>
+                <p>Choose Add other Account, then Add a Caldav account:
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osx-caldav-account-create-caldav.png" alt=""/>
+                </div>
+                <p>Choose advanced account type, enter username and password, server address is DavMail
+                    machine (localhost in workstation mode), leave / in server path and enter DavMail
+                    Caldav port (default is 1080). Do not enable SSL unless you setup DavMail with a
+                    server certificate.
+                </p>
+                <div style="width: 100%;text-align: center">
+                    <img src="images/osx/osx-caldav-account-create-caldav-settings.png" alt=""/>
+                </div>
+                <p>On previous OSX versions, open iCal Preferences, go to the Accounts tab and click the plus button:
                 </p>
                 <div style="width: 100%;text-align: center">
                     <img src="images/osxIcal1.png" alt=""/>
