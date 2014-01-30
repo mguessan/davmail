@@ -49,11 +49,11 @@
                             </script>
                         </div>
                         <a class="donate" href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US"
-                           title="Donate">
+                           title="Donate dollars">
                             Donate
                         </a>
                         <a class="donate-euro" href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US&amp;currency_code=EUR"
-                           title="Donate">
+                           title="Donate euros">
                             Donate
                         </a>
                         <a class="download" href="download.html">
