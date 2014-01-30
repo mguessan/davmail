@@ -1,3 +1,36 @@
+** DavMail 4.4.1 released **
+Includes mostly EWS support enhancements, Sogo carddav issue workaround, new
+IMAP uid based paging implementation to handle concurrent folder changes
+and a few other bug fixes.
+
+Documentation:
+- Doc: update donation link to let user choose currency
+- Doc: Update iCal Caldav setup for OSX Mavericks
+- Doc: update server setup documentation, use noinstall package on Windows
+- Doc: Update news url in release guide
+
+EWS:
+- EWS: workaround for user reported issue, less strict filter in isItemId
+- EWS: Override authentication mode test: EWS is never form based
+- EWS: new paging implementation based on imap uid sort to avoid issues on concurrent changes on searched folder
+- EWS: in direct EWS mode, try to use ResolveNames to get current user email address
+- EWS: Another try for checkEndPointUrl, head on /ews/exchange.asmx and follow redirects to wsdl
+- EWS: improve ItemId vs user provided item name detection
+
+Enhancements
+- From coverity: avoid null dereference when no network interface is available
+- From coverity: set encoding on byte array to String conversion
+- From coverity: fix resource leak
+- Update svnant libraries
+- Fix reauthentication issue: separate domain from username in credentials
+- Fix NullPointerException in thread "Shutdown" - tray disposal - server mode
+- Fix authentication failure after session expiration
+
+Caldav:
+- Caldav: Fix 555 another broken Israeli timezone
+- Caldav: ignore invalid BEGIN line inside object (Sogo Carddav issue)
+
+
 ** DavMail 4.4.0 released **
 Added folder size limit setting to let users avoid IMAP timeouts and reduce memory footprint.
 Also contains many documentation updates, including updated OSX instructions for Mavericks and
