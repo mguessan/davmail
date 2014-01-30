@@ -52,8 +52,12 @@
                            title="Donate">
                             Donate
                         </a>
+                        <a class="donate-euro" href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US&amp;currency_code=EUR"
+                           title="Donate">
+                            Donate
+                        </a>
                         <a class="download" href="download.html">
-                            Download DavMail Gateway
+                            Download<br/>DavMail<br/>Gateway
                         </a>
                         <div style='padding: 20px;'>
                         <a href="http://www.jetbrains.com/idea/"

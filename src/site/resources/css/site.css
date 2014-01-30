@@ -70,6 +70,15 @@ a.donate {
   border-radius: 8px;
   margin: 5px;
 }
+a.donate-euro {
+    display: block;
+    background: #5ACE1D url(../images/donate-euro.png) 95% center no-repeat;
+    color: white;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 5px;
+}
 .about p {
   padding: 0;
   margin-top: 0;
