@@ -207,7 +207,7 @@ public abstract class ExchangeSession {
             // manually follow redirect
             HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, url);
 
-            if (!this.isAuthenticated()) {
+            if (!this.isAuthenticated(method)) {
                 if (isBasicAuthentication) {
                     int status = method.getStatusCode();
 
@@ -531,7 +531,7 @@ public abstract class ExchangeSession {
         checkFormLoginQueryString(logonMethod);
 
         // workaround for post logon script redirect
-        if (!isAuthenticated()) {
+        if (!isAuthenticated(logonMethod)) {
             // try to get new method from script based redirection
             logonMethod = buildLogonMethod(httpClient, logonMethod);
 
@@ -548,7 +548,7 @@ public abstract class ExchangeSession {
                 logonMethod = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, logonMethod);
                 checkFormLoginQueryString(logonMethod);
                 // also check cookies
-                if (!isAuthenticated()) {
+                if (!isAuthenticated(logonMethod)) {
                     throwAuthenticationFailed();
                 }
             } else {
@@ -686,18 +686,25 @@ public abstract class ExchangeSession {
      *
      * @return true if session cookies are available
      */
-    protected boolean isAuthenticated() {
+    protected boolean isAuthenticated(HttpMethod method) {
         boolean authenticated = false;
-        for (Cookie cookie : httpClient.getState().getCookies()) {
-            // Exchange 2003 cookies
-            if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
-                    // Exchange 2007 cookie
-                    || "UserContext".equals(cookie.getName())
-                    // Direct EWS access
-                    || "exchangecookie".equals(cookie.getName())
-                    ) {
-                authenticated = true;
-                break;
+        if (method.getStatusCode() == HttpStatus.SC_OK
+                && "/ews/services.wsdl".equalsIgnoreCase(method.getPath())) {
+            // direct EWS access returned wsdl
+            authenticated = true;
+        } else {
+            // check cookies
+            for (Cookie cookie : httpClient.getState().getCookies()) {
+                // Exchange 2003 cookies
+                if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
+                        // Exchange 2007 cookie
+                        || "UserContext".equals(cookie.getName())
+                        // Direct EWS access
+                        || "exchangecookie".equals(cookie.getName())
+                        ) {
+                    authenticated = true;
+                    break;
+                }
             }
         }
         return authenticated;
