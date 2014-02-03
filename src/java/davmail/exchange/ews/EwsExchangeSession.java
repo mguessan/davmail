@@ -553,7 +553,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteMessage(ExchangeSession.Message message) throws IOException {
-        LOGGER.debug("Delete " + message.permanentUrl);
+        LOGGER.debug("Delete " + message.imapUid);
         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(((EwsExchangeSession.Message) message).itemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
         executeMethod(deleteItemMethod);
     }
