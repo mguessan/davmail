@@ -129,7 +129,7 @@ public final class ExchangeSessionFactory {
             }
 
             if (session != null && session.isExpired()) {
-                ExchangeSession.LOGGER.debug("Session " + session + " expired");
+                ExchangeSession.LOGGER.debug("Session " + session +" for user " + session.userName+ " expired");
                 session = null;
                 // expired session, remove from cache
                 synchronized (LOCK) {
@@ -153,7 +153,7 @@ public final class ExchangeSessionFactory {
                         }
                     }
                 }
-                ExchangeSession.LOGGER.debug("Created new session: " + session);
+                ExchangeSession.LOGGER.debug("Created new session " + session+" for user "+poolKey.userName);
             }
             // successful login, put session in cache
             synchronized (LOCK) {
