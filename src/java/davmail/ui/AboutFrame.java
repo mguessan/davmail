@@ -72,7 +72,8 @@ public class AboutFrame extends JFrame {
         jEditorPane = new JEditorPane();
         HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
         StyleSheet stylesheet = htmlEditorKit.getStyleSheet();
-        stylesheet.addRule("body { font-size:small;font-family: " + jEditorPane.getFont().getFamily() + '}');
+        Font font = jEditorPane.getFont();
+        stylesheet.addRule("body { font-size:small;font-family: " + ((font==null)?"Arial":font.getFamily()) + '}');
         jEditorPane.setEditorKit(htmlEditorKit);
         jEditorPane.setContentType("text/html");
         jEditorPane.setText(getContent(null));
