@@ -58,8 +58,10 @@ public class AboutFrame extends JFrame {
             ClassLoader classloader = this.getClass().getClassLoader();
             URL imageUrl = classloader.getResource("tray32.png");
             Image iconImage = ImageIO.read(imageUrl);
-            ImageIcon icon = new ImageIcon(iconImage);
-            imageLabel.setIcon(icon);
+            if (iconImage != null) {
+                ImageIcon icon = new ImageIcon(iconImage);
+                imageLabel.setIcon(icon);
+            }
             JPanel imagePanel = new JPanel();
             imagePanel.add(imageLabel);
             add(BorderLayout.WEST, imagePanel);
