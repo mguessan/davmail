@@ -47,7 +47,7 @@ public class VProperty {
             values.addAll(paramValues);
         }
 
-        public String getValue() {
+        protected String getValue() {
             if (values != null && !values.isEmpty()) {
                 return values.get(0);
             } else {

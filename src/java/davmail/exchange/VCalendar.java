@@ -479,8 +479,7 @@ public class VCalendar extends VObject {
                         // than PARTSTAT=NEEDS-ACTION since the RSVP confuses iCal4 into
                         // thinking the attendee has not replied
                         if (isCurrentUser(property) && property.hasParam("RSVP", "TRUE")) {
-                            VProperty.Param partstat = property.getParam("PARTSTAT");
-                            if (partstat == null || !"NEEDS-ACTION".equals(partstat.getValue())) {
+                            if (!"NEEDS-ACTION".equals(property.getParamValue("PARTSTAT"))) {
                                 property.removeParam("RSVP");
                             }
                         }
@@ -733,7 +732,7 @@ public class VCalendar extends VObject {
                 String attendeeEmail = getEmailValue(property);
                 if (email.equalsIgnoreCase(attendeeEmail) && property.hasParam("PARTSTAT")) {
                     // found current user attendee line
-                    status = property.getParam("PARTSTAT").getValue();
+                    status = property.getParamValue("PARTSTAT");
                     break;
                 }
             }
