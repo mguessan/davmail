@@ -268,11 +268,11 @@ public class AbstractConnection extends Thread {
         }
     }
 
-    protected String base64Encode(String value) {
-        return new String(new Base64().encode(value.getBytes()));
+    protected String base64Encode(String value) throws UnsupportedEncodingException {
+        return new String(Base64.encodeBase64(value.getBytes("UTF-8")), "UTF-8");
     }
 
-    protected String base64Decode(String value) {
-        return new String(new Base64().decode(value.getBytes()));
+    protected String base64Decode(String value) throws UnsupportedEncodingException {
+        return new String(Base64.decodeBase64(value.getBytes("UTF-8")), "UTF-8");
     }
 }
