@@ -22,6 +22,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -296,10 +297,10 @@ public final class StringUtil {
      * @param value base64 value
      * @return hex value
      */
-    public static String base64ToHex(String value) {
+    public static String base64ToHex(String value) throws UnsupportedEncodingException {
         String hexValue = null;
         if (value != null) {
-            hexValue = new String(Hex.encodeHex(Base64.decodeBase64(value.getBytes())));
+            hexValue = new String(Hex.encodeHex(Base64.decodeBase64(value.getBytes("UTF-8"))));
         }
         return hexValue;
     }
@@ -311,10 +312,10 @@ public final class StringUtil {
      * @return base64 value
      * @throws DecoderException on error
      */
-    public static String hexToBase64(String value) throws DecoderException {
+    public static String hexToBase64(String value) throws DecoderException, UnsupportedEncodingException {
         String base64Value = null;
         if (value != null) {
-            base64Value = new String(Base64.encodeBase64(Hex.decodeHex(value.toCharArray())));
+            base64Value = new String(Base64.encodeBase64(Hex.decodeHex(value.toCharArray())), "UTF-8");
         }
         return base64Value;
     }
