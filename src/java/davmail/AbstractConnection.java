@@ -172,12 +172,12 @@ public class AbstractConnection extends Thread {
      */
     public void sendClient(String prefix, String message) throws IOException {
         if (prefix != null) {
-            os.write(prefix.getBytes());
+            os.write(prefix.getBytes("UTF-8"));
             DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_PREFIX_MESSAGE", prefix, message));
         } else {
             DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_MESSAGE", message));
         }
-        os.write(message.getBytes());
+        os.write(message.getBytes("UTF-8"));
         os.write((char) 13);
         os.write((char) 10);
         os.flush();
