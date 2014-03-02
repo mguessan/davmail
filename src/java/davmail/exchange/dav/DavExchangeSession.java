@@ -1238,7 +1238,7 @@ public class DavExchangeSession extends ExchangeSession {
                 String photo = get("photo");
                 if (photo != null) {
                     // need to update photo
-                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
+                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes("ASCII")), 90);
 
                     final PutMethod putmethod = new PutMethod(contactPictureUrl);
                     putmethod.setRequestHeader("Overwrite", "t");
@@ -1342,7 +1342,7 @@ public class DavExchangeSession extends ExchangeSession {
             // PropFind PR_INTERNET_CONTENT
             String propertyValue = getItemProperty(permanentUrl, "internetContent");
             if (propertyValue != null) {
-                byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes());
+                byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes("ASCII"));
                 result = getICS(new ByteArrayInputStream(byteArray));
             }
             return result;
