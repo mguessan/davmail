@@ -2279,41 +2279,39 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto = null;
-        if ("true".equals(contact.get("haspicture"))) {
-            final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
-            method.setRequestHeader("Translate", "f");
-            method.setRequestHeader("Accept-Encoding", "gzip");
+        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
+        method.setRequestHeader("Translate", "f");
+        method.setRequestHeader("Accept-Encoding", "gzip");
 
-            InputStream inputStream = null;
-            try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
-                    inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
-                } else {
-                    inputStream = method.getResponseBodyAsStream();
-                }
-
-                contactPhoto = new ContactPhoto();
-                contactPhoto.contentType = "image/jpeg";
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                InputStream partInputStream = inputStream;
-                byte[] bytes = new byte[8192];
-                int length;
-                while ((length = partInputStream.read(bytes)) > 0) {
-                    baos.write(bytes, 0, length);
-                }
-                contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
-            } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream.close();
-                    } catch (IOException e) {
-                        LOGGER.debug(e);
-                    }
-                }
-                method.releaseConnection();
+        InputStream inputStream = null;
+        try {
+            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
+            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
+                inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
+            } else {
+                inputStream = method.getResponseBodyAsStream();
             }
+
+            contactPhoto = new ContactPhoto();
+            contactPhoto.contentType = "image/jpeg";
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            InputStream partInputStream = inputStream;
+            byte[] bytes = new byte[8192];
+            int length;
+            while ((length = partInputStream.read(bytes)) > 0) {
+                baos.write(bytes, 0, length);
+            }
+            contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LOGGER.debug(e);
+                }
+            }
+            method.releaseConnection();
         }
         return contactPhoto;
     }

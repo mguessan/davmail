@@ -2011,22 +2011,23 @@ public class EwsExchangeSession extends ExchangeSession {
         getItemMethod.addAdditionalProperty(Field.get("attachments"));
         executeMethod(getItemMethod);
         EWSMethod.Item item = getItemMethod.getResponseItem();
-        if (item != null) {
-            FileAttachment attachment = item.getAttachmentByName("ContactPicture.jpg");
-            if (attachment == null) {
-                throw new IOException("Missing contact picture");
-            }
-            // get attachment content
-            GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
-            executeMethod(getAttachmentMethod);
+        if (item == null) {
+            throw new IOException("Missing contact picture");
+        }
+        FileAttachment attachment = item.getAttachmentByName("ContactPicture.jpg");
+        if (attachment == null) {
+            throw new IOException("Missing contact picture");
+        }
+        // get attachment content
+        GetAttachmentMethod getAttachmentMethod = new GetAttachmentMethod(attachment.attachmentId);
+        executeMethod(getAttachmentMethod);
 
-            contactPhoto = new ContactPhoto();
-            contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
-            if (attachment.contentType == null) {
-                contactPhoto.contentType = "image/jpeg";
-            } else {
-                contactPhoto.contentType = attachment.contentType;
-            }
+        contactPhoto = new ContactPhoto();
+        contactPhoto.content = getAttachmentMethod.getResponseItem().get("Content");
+        if (attachment.contentType == null) {
+            contactPhoto.contentType = "image/jpeg";
+        } else {
+            contactPhoto.contentType = attachment.contentType;
         }
 
         return contactPhoto;
