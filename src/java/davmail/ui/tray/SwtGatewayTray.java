@@ -160,6 +160,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         try {
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
+            if (imageUrl == null) {
+                throw new IOException(fileName);
+            }
             result = new Image(display, imageUrl.openStream());
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
@@ -180,7 +183,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
-            if (systemLookAndFeelClassName.indexOf("gtk") >= 0) {
+            if (systemLookAndFeelClassName.contains("gtk")) {
                 System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
             } else {
                 System.setProperty("swing.defaultlaf", systemLookAndFeelClassName);
