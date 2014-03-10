@@ -31,6 +31,7 @@ public class VProperty {
     }
 
     protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<String>();
+
     static {
         MULTIVALUED_PROPERTIES.add("RESOURCES");
         MULTIVALUED_PROPERTIES.add("LOCATION");
@@ -244,13 +245,13 @@ public class VProperty {
     /**
      * Set param value on property.
      *
-     * @param paramName param name
+     * @param paramName  param name
      * @param paramValue param value
      */
     public void setParam(String paramName, String paramValue) {
         Param currentParam = getParam(paramName);
         if (currentParam != null) {
-            getParams().remove(currentParam);
+            params.remove(currentParam);
         }
         addParam(paramName, paramValue);
     }
@@ -258,7 +259,7 @@ public class VProperty {
     /**
      * Add param value on property.
      *
-     * @param paramName param name
+     * @param paramName  param name
      * @param paramValue param value
      */
     public void addParam(String paramName, String paramValue) {
@@ -291,6 +292,11 @@ public class VProperty {
         return null;
     }
 
+    /**
+     * Return param value.
+     * @param paramName param name
+     * @return value
+     */
     public String getParamValue(String paramName) {
         Param param = getParam(paramName);
         if (param != null) {
@@ -386,10 +392,7 @@ public class VProperty {
         if (params != null) {
             for (Param param : params) {
                 buffer.append(';').append(param.name);
-                if (param.values != null) {
-                    buffer.append('=');
-                    appendParamValues(buffer, param);
-                }
+                appendParamValues(buffer, param);
             }
         }
         buffer.append(':');
@@ -410,22 +413,25 @@ public class VProperty {
     }
 
     protected void appendParamValues(StringBuilder buffer, Param param) {
-        boolean first = true;
-        for (String value : param.values) {
-            if (first) {
-                first = false;
-            } else {
-                buffer.append(',');
-            }
-            // always quote CN param
-            if ("CN".equalsIgnoreCase(param.name)
-                    // quote param values with special characters
-                    || value.indexOf(';') >= 0 || value.indexOf(',') >= 0
-                    || value.indexOf('(') >= 0 || value.indexOf('/') >= 0
-                    || value.indexOf(':') >= 0) {
-                buffer.append('"').append(value).append('"');
-            } else {
-                buffer.append(value);
+        if (param.values != null) {
+            buffer.append('=');
+            boolean first = true;
+            for (String value : param.values) {
+                if (first) {
+                    first = false;
+                } else {
+                    buffer.append(',');
+                }
+                // always quote CN param
+                if ("CN".equalsIgnoreCase(param.name)
+                        // quote param values with special characters
+                        || value.indexOf(';') >= 0 || value.indexOf(',') >= 0
+                        || value.indexOf('(') >= 0 || value.indexOf('/') >= 0
+                        || value.indexOf(':') >= 0) {
+                    buffer.append('"').append(value).append('"');
+                } else {
+                    buffer.append(value);
+                }
             }
         }
     }
@@ -441,7 +447,7 @@ public class VProperty {
             char c = value.charAt(i);
             if (c == '\n') {
                 buffer.append("\\n");
-            } else if (MULTIVALUED_PROPERTIES.contains(key) && c==',') {
+            } else if (MULTIVALUED_PROPERTIES.contains(key) && c == ',') {
                 buffer.append('\\').append(',');
             } else {
                 buffer.append(value.charAt(i));
