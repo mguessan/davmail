@@ -205,7 +205,7 @@ public class PopConnection extends AbstractConnection {
                                     ExchangeSession.Message message = messages.get(messageNumber);
 
                                     // load big messages in a separate thread
-                                    os.write("+OK ".getBytes());
+                                    os.write("+OK ".getBytes("ASCII"));
                                     os.flush();
                                     MessageLoadThread.loadMimeMessage(message, os);
                                     sendClient("");
@@ -309,14 +309,12 @@ public class PopConnection extends AbstractConnection {
      * Filter to limit output lines to max body lines after header
      */
     private static final class TopOutputStream extends FilterOutputStream {
-        private static final int START = 0;
-        private static final int CR = 1;
-        private static final int CRLF = 2;
-        private static final int CRLFCR = 3;
-        private static final int BODY = 4;
+        protected static enum State {
+            START, CR, CRLF, CRLFCR, BODY
+        }
 
         private int maxLines;
-        private int state = START;
+        private State state = State.START;
 
         private TopOutputStream(OutputStream os, int maxLines) {
             super(os);
@@ -325,34 +323,34 @@ public class PopConnection extends AbstractConnection {
 
         @Override
         public void write(int b) throws IOException {
-            if (state != BODY || maxLines > 0) {
+            if (state != State.BODY || maxLines > 0) {
                 super.write(b);
             }
-            if (state == BODY) {
+            if (state == State.BODY) {
                 if (b == '\n') {
                     maxLines--;
                 }
-            } else if (state == START) {
+            } else if (state == State.START) {
                 if (b == '\r') {
-                    state = CR;
+                    state = State.CR;
                 }
-            } else if (state == CR) {
+            } else if (state == State.CR) {
                 if (b == '\n') {
-                    state = CRLF;
+                    state = State.CRLF;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
-            } else if (state == CRLF) {
+            } else if (state == State.CRLF) {
                 if (b == '\r') {
-                    state = CRLFCR;
+                    state = State.CRLFCR;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
-            } else if (state == CRLFCR) {
+            } else if (state == State.CRLFCR) {
                 if (b == '\n') {
-                    state = BODY;
+                    state = State.BODY;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
             }
         }
