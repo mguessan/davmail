@@ -276,6 +276,12 @@ public abstract class StreamScanner
      */
     protected boolean mNormalizeLFs;
 
+    /**
+     * Flag that indicates whether all escaped chars are accepted in XML 1.0.
+     */
+    protected boolean mXml10AllowAllEscapedChars = true;
+
+
     /*
     ///////////////////////////////////////////////////////////
     // Buffer(s) for local name(s) and text content
@@ -2383,11 +2389,13 @@ public abstract class StreamScanner
             if (value == 0) {
                 throwParseError("Invalid character reference: null character not allowed in XML content.");
             }
-            // XML 1.1 allows most other chars; 1.0 does not: However Exchange sends such chars with XML 1.0
-            //if (!mXml11 &&
-            //    (value != 0x9 && value != 0xA && value != 0xD)) {
-            //    reportIllegalChar(value);
-            //}
+            // XML 1.1 allows most other chars; 1.0 does not:
+            if (!mXml10AllowAllEscapedChars) {
+                if (!mXml11 &&
+                    (value != 0x9 && value != 0xA && value != 0xD)) {
+                    reportIllegalChar(value);
+                }
+            }
         }
     }
 
