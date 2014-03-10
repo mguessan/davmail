@@ -243,7 +243,7 @@ public class VCalendar extends VObject {
                             dtStart.setParam("TZID", tzid);
                         }
                         VProperty dtEnd = vObject.getProperty("DTEND");
-                        if (dtEnd != null && dtStart.getParam("TZID") != null) {
+                        if (dtEnd != null && dtEnd.getParam("TZID") != null) {
                             dtEnd.setParam("TZID", tzid);
                         }
                         VProperty reccurrenceId = vObject.getProperty("RECURRENCE-ID");
@@ -256,7 +256,7 @@ public class VCalendar extends VObject {
                         List<String> toRemoveValues = null;
                         List<String> values = vObject.getProperty("ATTACH").getValues();
                         for (String value : values) {
-                            if (value.indexOf("CID:") >= 0) {
+                            if (value.contains("CID:")) {
                                 if (toRemoveValues == null) {
                                     toRemoveValues = new ArrayList<String>();
                                 }
