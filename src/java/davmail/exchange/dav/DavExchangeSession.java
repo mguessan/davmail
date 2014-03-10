@@ -26,7 +26,6 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.util.URIUtil;
@@ -524,7 +523,7 @@ public class DavExchangeSession extends ExchangeSession {
             mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
             //noinspection StatementWithEmptyBody
             String line;
-            while ((line = mainPageReader.readLine()) != null && line.toLowerCase().indexOf(BASE_HREF) == -1) {
+            while ((line = mainPageReader.readLine()) != null && !line.toLowerCase().contains(BASE_HREF)) {
             }
             if (line != null) {
                 // Exchange 2003
@@ -912,6 +911,7 @@ public class DavExchangeSession extends ExchangeSession {
             } else if (field.isIntValue()) {
                 // check value
                 try {
+                    //noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     buffer.append(value);
                 } catch (NumberFormatException e) {
@@ -1097,9 +1097,9 @@ public class DavExchangeSession extends ExchangeSession {
                         }
                     }
                     // workaround for messages in Sent folder
-                    if (messageHeaders.indexOf("From:") < 0) {
+                    if (!messageHeaders.contains("From:")) {
                         String from = getItemProperty(permanentUrl, "from");
-                        messageHeaders = "From: "+from+"\n"+messageHeaders;
+                        messageHeaders = "From: "+from+ '\n' +messageHeaders;
                     }
                     result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
                 }
@@ -2098,6 +2098,7 @@ public class DavExchangeSession extends ExchangeSession {
         ITEM_PROPERTIES.add("contentclass");
     }
 
+    @Override
     protected Set<String> getItemProperties() {
         return ITEM_PROPERTIES;
     }
@@ -2871,7 +2872,7 @@ public class DavExchangeSession extends ExchangeSession {
         return uri.getEscapedURI();
     }
 
-    public String encodeAndFixUrl(String url) throws URIException {
+    protected String encodeAndFixUrl(String url) throws URIException {
         String originalUrl = URIUtil.encodePath(url);
         if (restoreHostName && originalUrl.startsWith("http")) {
             String targetPath = new URI(originalUrl, true).getEscapedPath();

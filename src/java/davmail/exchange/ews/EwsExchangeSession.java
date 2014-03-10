@@ -29,7 +29,6 @@ import davmail.exchange.VProperty;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -149,11 +148,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
-        if (url.toLowerCase().endsWith("/ews/exchange.asmx")) {
-            return false;
-        } else {
-            return super.isBasicAuthentication(httpClient, url);
-        }
+        return !url.toLowerCase().endsWith("/ews/exchange.asmx") && super.isBasicAuthentication(httpClient, url);
     }
 
     @Override
@@ -228,7 +223,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 alias = getAliasFromLogin();
 
                 // try to get email address with ResolveNames
-                email = resolveEmailAddress(userName);
+                resolveEmailAddress(userName);
                 // failover, build from host name
                 if (email == null) {
                     email = getAliasFromLogin() + getEmailSuffixFromHostname();
@@ -308,8 +303,7 @@ public class EwsExchangeSession extends ExchangeSession {
         LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
     }
 
-    public String resolveEmailAddress(String userName) {
-        String email = null;
+    protected void resolveEmailAddress(String userName) {
         String searchValue = userName;
         int index = searchValue.indexOf('\\');
         if (index >= 0) {
@@ -328,7 +322,6 @@ public class EwsExchangeSession extends ExchangeSession {
         } catch (IOException e) {
             // ignore
         }
-        return email;
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
@@ -367,8 +360,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     String line;
                     // find ews url
                     while ((line = autodiscoverReader.readLine()) != null
-                            && (line.indexOf("<EwsUrl>") == -1)
-                            && (line.indexOf("</EwsUrl>") == -1)) {
+                            && (!line.contains("<EwsUrl>"))
+                            && (!line.contains("</EwsUrl>"))) {
                     }
                     if (line != null) {
                         ewsUrl = line.substring(line.indexOf("<EwsUrl>") + 8, line.indexOf("</EwsUrl>"));
@@ -1287,7 +1280,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 if ("photo".equals(entry.getKey())) {
                     updates.add(Field.createFieldUpdate("haspicture", "true"));
                 } else if (!entry.getKey().startsWith("email") && !entry.getKey().startsWith("smtpemail")
-                        && !entry.getKey().equals("fileas")) {
+                        && !"fileas".equals(entry.getKey())) {
                     updates.add(Field.createFieldUpdate(entry.getKey(), entry.getValue()));
                 }
             }
@@ -1727,11 +1720,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 executeMethod(getItemMethod);
                 if ("Task".equals(type)) {
-                    VObject vTimezone = getVTimezone();
                     VCalendar localVCalendar = new VCalendar();
                     VObject vTodo = new VObject();
                     vTodo.type = "VTODO";
-                    localVCalendar.setTimezone(vTimezone);
+                    localVCalendar.setTimezone(getVTimezone());
                     vTodo.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
                     vTodo.setPropertyValue("CREATED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("created").getResponseName())));
                     String calendarUid = getItemMethod.getResponseItem().get(Field.get("calendaruid").getResponseName());
@@ -1934,6 +1926,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
     }
 
+    @Override
     protected Set<String> getItemProperties() {
         return ITEM_PROPERTIES;
     }
@@ -2005,7 +1998,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
-        ContactPhoto contactPhoto = null;
+        ContactPhoto contactPhoto;
 
         GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, ((EwsExchangeSession.Contact) contact).itemId, false);
         getItemMethod.addAdditionalProperty(Field.get("attachments"));
@@ -2164,11 +2157,11 @@ public class EwsExchangeSession extends ExchangeSession {
             // find email
             //noinspection StatementWithEmptyBody
             while ((line = optionsPageReader.readLine()) != null
-                    && (line.indexOf("tblTmZn") == -1)
-                    && (line.indexOf("selTmZn") == -1)) {
+                    && (!line.contains("tblTmZn"))
+                    && (!line.contains("selTmZn"))) {
             }
             if (line != null) {
-                if (line.indexOf("tblTmZn") >= 0) {
+                if (line.contains("tblTmZn")) {
                     int start = line.indexOf("oV=\"") + 4;
                     int end = line.indexOf('\"', start);
                     result = line.substring(start, end);
