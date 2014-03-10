@@ -290,6 +290,9 @@ public final class DavGatewayTray {
         return result;
     }
 
+    /**
+     * Dispose application tray icon
+     */
     public static void dispose() {
         if (davGatewayTray != null) {
             davGatewayTray.dispose();

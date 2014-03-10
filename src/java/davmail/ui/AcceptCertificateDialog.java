@@ -55,11 +55,7 @@ public class AcceptCertificateDialog extends JDialog {
      */
     protected void addFieldValue(JPanel panel, String label, String value) {
         JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("<html><b>");
-        buffer.append(label);
-        buffer.append(":</b></html>");
-        fieldPanel.add(new JLabel(buffer.toString()));
+        fieldPanel.add(new JLabel("<html><b>" + label + ":</b></html>"));
         fieldPanel.add(new JLabel(value));
         panel.add(fieldPanel);
     }

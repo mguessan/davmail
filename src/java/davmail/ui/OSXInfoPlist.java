@@ -33,6 +33,9 @@ public class OSXInfoPlist {
     protected static final Logger LOGGER = Logger.getLogger(OSXInfoPlist.class);
     protected static final String INFO_PLIST_PATH = "Contents/Info.plist";
 
+    private OSXInfoPlist() {
+    }
+
     protected static boolean isOSX() {
         return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
     }
@@ -61,7 +64,7 @@ public class OSXInfoPlist {
     public static boolean isHideFromDock() {
         boolean result = false;
         try {
-            result = isOSX() && getInfoPlistContent().indexOf("<key>LSUIElement</key><string>1</string>") >= 0;
+            result = isOSX() && getInfoPlistContent().contains("<key>LSUIElement</key><string>1</string>");
         } catch (IOException e) {
             LOGGER.warn("Unable to update Info.plist", e);
         }

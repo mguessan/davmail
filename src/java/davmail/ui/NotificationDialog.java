@@ -62,6 +62,7 @@ public class NotificationDialog extends JDialog {
      * @param to      main recipients
      * @param cc      copy recipients
      * @param subject notification subject
+     * @param description notification description
      */
     public NotificationDialog(String to, String cc, String subject, String description) {
         setModal(true);

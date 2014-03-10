@@ -30,7 +30,7 @@ import java.awt.event.ActionListener;
  * Let user select a client certificate
  */
 public class SelectCertificateDialog extends JDialog {
-    protected final JList aliasListBox;
+    protected final JList<String> aliasListBox;
     protected String selectedAlias;
 
     /**
@@ -64,7 +64,7 @@ public class SelectCertificateDialog extends JDialog {
         imageLabel.setText(BundleMessage.format("UI_CERTIFICATE_ALIAS_PROMPT"));
         questionPanel.add(imageLabel);
 
-        aliasListBox = new JList(aliases);
+        aliasListBox = new JList<String>(aliases);
         aliasListBox.setMaximumSize(aliasListBox.getPreferredSize());
 
         JPanel aliasPanel = new JPanel();
@@ -92,7 +92,7 @@ public class SelectCertificateDialog extends JDialog {
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         okButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                selectedAlias = aliasListBox.getSelectedValue().toString();
+                selectedAlias = aliasListBox.getSelectedValue();
                 setVisible(false);
             }
         });

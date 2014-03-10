@@ -30,6 +30,11 @@ public class CredentialPromptDialog extends JDialog {
         }
     }
 
+    /**
+     * Get user principal.
+     *
+     * @return user principal
+     */
     public String getPrincipal() {
         return principal;
     }
@@ -68,7 +73,7 @@ public class CredentialPromptDialog extends JDialog {
         });
         JPanel credentialPanel = new JPanel(new GridLayout(2, 2));
 
-        JLabel promptLabel = new JLabel(" "+prompt.trim());
+        JLabel promptLabel = new JLabel(' ' +prompt.trim());
         promptLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         promptLabel.setVerticalAlignment(SwingConstants.CENTER);
 
