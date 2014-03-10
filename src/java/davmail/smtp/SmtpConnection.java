@@ -25,6 +25,7 @@ import davmail.exception.DavMailException;
 import davmail.exchange.DoubleDotInputStream;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -76,12 +77,12 @@ public class SmtpConnection extends AbstractConnection {
 
                     if (state == State.LOGIN) {
                         // AUTH LOGIN, read userName
-                        userName = base64Decode(line);
-                        sendClient("334 " + base64Encode("Password:"));
+                        userName = IOUtil.decodeBase64AsString(line);
+                        sendClient("334 " + IOUtil.encodeBase64AsString("Password:"));
                         state = State.PASSWORD;
                     } else if (state == State.PASSWORD) {
                         // AUTH LOGIN, read password
-                        password = base64Decode(line);
+                        password = IOUtil.decodeBase64AsString(line);
                         authenticate();
                     } else if ("QUIT".equalsIgnoreCase(command)) {
                         sendClient("221 Closing connection");
@@ -106,11 +107,11 @@ public class SmtpConnection extends AbstractConnection {
                             } else if ("LOGIN".equalsIgnoreCase(authType)) {
                                 if (tokens.hasMoreTokens()) {
                                     // user name sent on auth line
-                                    userName = base64Decode(tokens.nextToken());
-                                    sendClient("334 " + base64Encode("Password:"));
+                                    userName = IOUtil.decodeBase64AsString(tokens.nextToken());
+                                    sendClient("334 " + IOUtil.encodeBase64AsString("Password:"));
                                     state = State.PASSWORD;
                                 } else {
-                                    sendClient("334 " + base64Encode("Username:"));
+                                    sendClient("334 " + IOUtil.encodeBase64AsString("Username:"));
                                     state = State.LOGIN;
                                 }
                             } else {
@@ -243,7 +244,7 @@ public class SmtpConnection extends AbstractConnection {
      * @throws IOException if invalid credentials
      */
     protected void decodeCredentials(String encodedCredentials) throws IOException {
-        String decodedCredentials = base64Decode(encodedCredentials);
+        String decodedCredentials = IOUtil.decodeBase64AsString(encodedCredentials);
         int startIndex = decodedCredentials.indexOf((char) 0);
         if (startIndex >=0) {
             int endIndex = decodedCredentials.indexOf((char) 0, startIndex+1);

@@ -77,10 +77,42 @@ public final class IOUtil {
      * @return base64  value
      * @throws IOException on error
      */
-    public static String encodeBase64(String value) throws IOException {
+    public static String encodeBase64AsString(String value) throws IOException {
         return new String(Base64.encodeBase64(value.getBytes("UTF-8")), "ASCII");
     }
 
+    /**
+     * Base64 encode value.
+     *
+     * @param value input value
+     * @return base64  value
+     * @throws IOException on error
+     */
+    public static String encodeBase64AsString(byte[] value) throws IOException {
+        return new String(Base64.encodeBase64(value), "ASCII");
+    }
+
+    /**
+     * Base64 encode value.
+     *
+     * @param value input value
+     * @return base64  value
+     * @throws IOException on error
+     */
+    public static byte[] encodeBase64(String value) throws IOException {
+        return Base64.encodeBase64(value.getBytes("UTF-8"));
+    }
+
+    /**
+     * Base64 encode value.
+     *
+     * @param value input value
+     * @return base64  value
+     * @throws IOException on error
+     */
+    public static byte[] encodeBase64(byte[] value) throws IOException {
+        return Base64.encodeBase64(value);
+    }
 
     /**
      * Resize image bytes to a max width or height image size.

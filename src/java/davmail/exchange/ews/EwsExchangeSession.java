@@ -44,7 +44,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.SocketException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -520,7 +519,7 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new IOException(e.getMessage());
         }
         baos.close();
-        item.mimeContent = Base64.encodeBase64(baos.toByteArray());
+        item.mimeContent = IOUtil.encodeBase64(baos.toByteArray());
 
         List<FieldUpdate> fieldUpdates = buildProperties(properties);
         if (!properties.containsKey("draft")) {
@@ -562,7 +561,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void sendMessage(String itemClass, byte[] messageBody) throws IOException {
         EWSMethod.Item item = new EWSMethod.Item();
         item.type = "Message";
-        item.mimeContent = Base64.encodeBase64(messageBody);
+        item.mimeContent = IOUtil.encodeBase64(messageBody);
         if (itemClass != null) {
             item.put("ItemClass", itemClass);
         }
@@ -774,8 +773,8 @@ public class EwsExchangeSession extends ExchangeSession {
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Search items current count: "+resultCount+" fetchCount: "+fetchCount
-                    +" highest uid: "+results.get(0).get(Field.get("imapUid").getResponseName())
-                    +" lowest uid: "+results.get(resultCount-1).get(Field.get("imapUid").getResponseName()));
+                        +" highest uid: "+results.get(0).get(Field.get("imapUid").getResponseName())
+                        +" lowest uid: "+results.get(resultCount-1).get(Field.get("imapUid").getResponseName()));
             }
             if (Thread.interrupted()) {
                 LOGGER.debug("Search items failed: Interrupted by client");
@@ -876,6 +875,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     && ((ExtendedFieldURI) fieldURI).propertyType == ExtendedFieldURI.PropertyType.Integer) {
                 // check value
                 try {
+                    //noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     buffer.append(value);
                 } catch (NumberFormatException e) {
@@ -1399,9 +1399,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 if (photo != null) {
                     // convert image to jpeg
-                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes()), 90);
+                    byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
 
-                    FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", new String(Base64.encodeBase64(resizedImageBytes)));
+                    FileAttachment attachment = new FileAttachment("ContactPicture.jpg", "image/jpeg", IOUtil.encodeBase64AsString(resizedImageBytes));
                     attachment.setIsContactPhoto(true);
 
                     // update photo attachment
@@ -1536,7 +1536,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (currentItemId != null) {
                     /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
                     // TODO: update properties instead of brute force delete/add
-                    updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64(itemContent))));
+                    updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64AsString(itemContent))));
                     // update
                     createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                            ConflictResolution.AutoResolve,
@@ -1549,7 +1549,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "CalendarItem";
-                newItem.mimeContent = Base64.encodeBase64(vCalendar.toString().getBytes("UTF-8"));
+                newItem.mimeContent = IOUtil.encodeBase64(vCalendar.toString());
                 ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
                 if (!vCalendar.hasVAlarm()) {
                     updates.add(Field.createFieldUpdate("reminderset", "false"));

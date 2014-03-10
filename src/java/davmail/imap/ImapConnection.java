@@ -126,12 +126,12 @@ public class ImapConnection extends AbstractConnection {
                                 String authenticationMethod = tokens.nextToken();
                                 if ("LOGIN".equalsIgnoreCase(authenticationMethod)) {
                                     try {
-                                        sendClient("+ " + IOUtil.encodeBase64("Username:"));
+                                        sendClient("+ " + IOUtil.encodeBase64AsString("Username:"));
                                         state = State.LOGIN;
                                         userName = IOUtil.decodeBase64AsString(readClient());
                                         // detect shared mailbox access
                                         splitUserName();
-                                        sendClient("+ " + IOUtil.encodeBase64("Password:"));
+                                        sendClient("+ " + IOUtil.encodeBase64AsString("Password:"));
                                         state = State.PASSWORD;
                                         password = IOUtil.decodeBase64AsString(readClient());
                                         session = ExchangeSessionFactory.getInstance(userName, password);

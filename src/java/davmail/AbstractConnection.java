@@ -21,7 +21,6 @@ package davmail;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.commons.codec.binary.Base64;
 
 import java.io.*;
 import java.net.Socket;
@@ -266,13 +265,5 @@ public class AbstractConnection extends Thread {
         } catch (IOException e2) {
             DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e2);
         }
-    }
-
-    protected String base64Encode(String value) throws UnsupportedEncodingException {
-        return new String(Base64.encodeBase64(value.getBytes("UTF-8")), "UTF-8");
-    }
-
-    protected String base64Decode(String value) throws UnsupportedEncodingException {
-        return new String(Base64.decodeBase64(value.getBytes("UTF-8")), "UTF-8");
     }
 }

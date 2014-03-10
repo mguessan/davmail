@@ -1238,7 +1238,7 @@ public class DavExchangeSession extends ExchangeSession {
                 String photo = get("photo");
                 if (photo != null) {
                     // need to update photo
-                    byte[] resizedImageBytes = IOUtil.resizeImage(Base64.decodeBase64(photo.getBytes("ASCII")), 90);
+                    byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
 
                     final PutMethod putmethod = new PutMethod(contactPictureUrl);
                     putmethod.setRequestHeader("Overwrite", "t");
@@ -1342,8 +1342,7 @@ public class DavExchangeSession extends ExchangeSession {
             // PropFind PR_INTERNET_CONTENT
             String propertyValue = getItemProperty(permanentUrl, "internetContent");
             if (propertyValue != null) {
-                byte[] byteArray = Base64.decodeBase64(propertyValue.getBytes("ASCII"));
-                result = getICS(new ByteArrayInputStream(byteArray));
+                result = getICS(new ByteArrayInputStream(IOUtil.decodeBase64(propertyValue)));
             }
             return result;
         }
@@ -1706,7 +1705,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // Set contentclass to make ActiveSync happy
                     propertyList.add(Field.createDavProperty("contentclass", contentClass));
                     // ... but also set PR_INTERNET_CONTENT to preserve custom properties
-                    propertyList.add(Field.createDavProperty("internetContent", new String(Base64.encodeBase64(mimeContent))));
+                    propertyList.add(Field.createDavProperty("internetContent",IOUtil.encodeBase64AsString(mimeContent)));
                     PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
                     int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                     if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
@@ -2005,8 +2004,8 @@ public class DavExchangeSession extends ExchangeSession {
         String base64Property = getPropertyIfExists(properties, alias);
         if (base64Property != null) {
             try {
-                property = Base64.decodeBase64(base64Property.getBytes("ASCII"));
-            } catch (UnsupportedEncodingException e) {
+                property = IOUtil.decodeBase64(base64Property);
+            } catch (IOException e) {
                 LOGGER.warn(e);
             }
         }
@@ -2302,7 +2301,7 @@ public class DavExchangeSession extends ExchangeSession {
             while ((length = partInputStream.read(bytes)) > 0) {
                 baos.write(bytes, 0, length);
             }
-            contactPhoto.content = new String(Base64.encodeBase64(baos.toByteArray()));
+            contactPhoto.content = IOUtil.encodeBase64AsString(baos.toByteArray());
         } finally {
             if (inputStream != null) {
                 try {

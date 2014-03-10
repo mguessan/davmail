@@ -472,7 +472,7 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("getctag")) {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    IOUtil.encodeBase64(folder.ctag));
+                    IOUtil.encodeBase64AsString(folder.ctag));
         }
         if (request.hasProperty("displayname")) {
             if (subFolder == null || subFolder.length() == 0) {
@@ -521,8 +521,8 @@ public class CaldavConnection extends AbstractConnection {
         if (!session.isSharedFolder(folderPath)) {
             try {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
-                ctag = IOUtil.encodeBase64(folder.ctag);
-                etag = IOUtil.encodeBase64(folder.etag);
+                ctag = IOUtil.encodeBase64AsString(folder.ctag);
+                etag = IOUtil.encodeBase64AsString(folder.etag);
             } catch (HttpException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
@@ -834,7 +834,7 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getctag")) {
             ExchangeSession.Folder rootFolder = session.getFolder("");
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    IOUtil.encodeBase64(rootFolder.ctag));
+                    IOUtil.encodeBase64AsString(rootFolder.ctag));
         }
         response.endPropStatOK();
         if (request.getDepth() == 1) {
