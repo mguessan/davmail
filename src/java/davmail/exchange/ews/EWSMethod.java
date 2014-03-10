@@ -979,8 +979,11 @@ public abstract class EWSMethod extends PostMethod {
             responseItem.mimeContent = ((TypedXMLStreamReader) reader).getElementAsBinary();
         } else {
             // failover: slow and memory consuming conversion
-            byte[] base64MimeContent = reader.getElementText().getBytes();
-            responseItem.mimeContent = Base64.decodeBase64(base64MimeContent);
+            try {
+                responseItem.mimeContent = Base64.decodeBase64(reader.getElementText().getBytes("ASCII"));
+            } catch (UnsupportedEncodingException e) {
+                throw new XMLStreamException(e);
+            }
         }
     }
 
