@@ -28,6 +28,7 @@ import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
 import davmail.exchange.XMLStreamUtil;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
@@ -471,7 +472,7 @@ public class CaldavConnection extends AbstractConnection {
         }
         if (request.hasProperty("getctag")) {
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    base64Encode(folder.ctag));
+                    IOUtil.encodeBase64(folder.ctag));
         }
         if (request.hasProperty("displayname")) {
             if (subFolder == null || subFolder.length() == 0) {
@@ -520,8 +521,8 @@ public class CaldavConnection extends AbstractConnection {
         if (!session.isSharedFolder(folderPath)) {
             try {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
-                ctag = base64Encode(folder.ctag);
-                etag = base64Encode(folder.etag);
+                ctag = IOUtil.encodeBase64(folder.ctag);
+                etag = IOUtil.encodeBase64(folder.etag);
             } catch (HttpException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
@@ -833,7 +834,7 @@ public class CaldavConnection extends AbstractConnection {
         if (request.hasProperty("getctag")) {
             ExchangeSession.Folder rootFolder = session.getFolder("");
             response.appendProperty("CS:getctag", "CS=\"http://calendarserver.org/ns/\"",
-                    base64Encode(rootFolder.ctag));
+                    IOUtil.encodeBase64(rootFolder.ctag));
         }
         response.endPropStatOK();
         if (request.getDepth() == 1) {
@@ -1285,7 +1286,7 @@ public class CaldavConnection extends AbstractConnection {
                 throw new DavMailException("EXCEPTION_UNSUPPORTED_AUTHORIZATION_MODE", mode);
             }
             String encodedCredentials = authorization.substring(index + 1);
-            String decodedCredentials = base64Decode(encodedCredentials);
+            String decodedCredentials = IOUtil.decodeBase64AsString(encodedCredentials);
             index = decodedCredentials.indexOf(':');
             if (index > 0) {
                 userName = decodedCredentials.substring(0, index);
