@@ -61,7 +61,7 @@ public class MessageCreateThread extends Thread {
                     LOGGER.debug("Still loading message, send capabilities untagged response to avoid timeout");
                     try {
                         LOGGER.debug("* "+capabilities);
-                        outputStream.write(("* "+capabilities).getBytes());
+                        outputStream.write(("* "+capabilities).getBytes("ASCII"));
                         outputStream.write((char) 13);
                         outputStream.write((char) 10);
                         outputStream.flush();
