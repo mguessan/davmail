@@ -29,6 +29,8 @@ import org.apache.log4j.lf5.LF5Appender;
 import org.apache.log4j.lf5.LogLevel;
 import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
@@ -211,6 +213,19 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
                         trayItem.setImage(image);
+                        trayItem.addDisposeListener(new DisposeListener() {
+                            public void widgetDisposed(DisposeEvent e) {
+                                if (image != null && !image.isDisposed()) {
+                                    image.dispose();
+                                }
+                                if (image2 != null && !image2.isDisposed()) {
+                                    image2.dispose();
+                                }
+                                if (inactiveImage != null && !inactiveImage.isDisposed()) {
+                                    inactiveImage.dispose();
+                                }
+                            }
+                        });
 
                         // create a popup menu
                         final Menu popup = new Menu(shell, SWT.POP_UP);
@@ -340,8 +355,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 display.sleep();
                             }
                         }
-
-                        dispose();
+                    }
+                    // dispose AWT frames
+                    if (settingsFrame != null) {
+                        settingsFrame.dispose();
+                    }
+                    if (aboutFrame != null) {
+                        aboutFrame.dispose();
+                    }
+                    if (logBrokerMonitor != null) {
+                        logBrokerMonitor.dispose();
                     }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);
@@ -367,34 +390,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
     public void dispose() {
         shell.dispose();
-        if (trayItem != null) {
-            trayItem.dispose();
-            trayItem = null;
-        }
-
-        if (image != null) {
-            image.dispose();
-        }
-        if (image2 != null) {
-            image2.dispose();
-        }
-        try {
-            if (!display.isDisposed()) {
-                display.dispose();
-            }
-        } catch (Exception e) {
-            // already disposed
-        }
-        // dispose AWT frames
-        if (settingsFrame != null) {
-            settingsFrame.dispose();
-        }
-        if (aboutFrame != null) {
-            aboutFrame.dispose();
-        }
-        if (logBrokerMonitor != null) {
-            logBrokerMonitor.dispose();
-        }
     }
 
 }
