@@ -18,6 +18,8 @@
  */
 package davmail.util;
 
+import org.apache.commons.codec.binary.Base64;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -43,6 +45,40 @@ public final class IOUtil {
         while ((length = inputStream.read(bytes)) > 0) {
             outputStream.write(bytes, 0, length);
         }
+    }
+
+
+    /**
+     * Decode base64 input string, return byte array.
+     *
+     * @param encoded Base64 encoded string
+     * @return decoded content as byte arrey
+     * @throws IOException on error
+     */
+    public static byte[] decodeBase64(String encoded) throws IOException {
+        return Base64.decodeBase64(encoded.getBytes("ASCII"));
+    }
+
+    /**
+     * Decode base64 input string, return content as UTF-8 String.
+     *
+     * @param encoded Base64 encoded string
+     * @return decoded content as byte arrey
+     * @throws IOException on error
+     */
+    public static String decodeBase64AsString(String encoded) throws IOException {
+        return new String(decodeBase64(encoded), "UTF-8");
+    }
+
+    /**
+     * Base64 encode value.
+     *
+     * @param value input value
+     * @return base64  value
+     * @throws IOException on error
+     */
+    public static String encodeBase64(String value) throws IOException {
+        return new String(Base64.encodeBase64(value.getBytes("UTF-8")), "ASCII");
     }
 
 
@@ -89,6 +125,13 @@ public final class IOUtil {
         return targetImage;
     }
 
+    /**
+     * Read all inputStream content to a byte array.
+     *
+     * @param inputStream input stream
+     * @return content as byte array
+     * @throws IOException on error
+     */
     public static byte[] readFully(InputStream inputStream) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] bytes = new byte[8192];
@@ -98,4 +141,5 @@ public final class IOUtil {
         }
         return baos.toByteArray();
     }
+
 }
