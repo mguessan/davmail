@@ -126,14 +126,14 @@ public class ImapConnection extends AbstractConnection {
                                 String authenticationMethod = tokens.nextToken();
                                 if ("LOGIN".equalsIgnoreCase(authenticationMethod)) {
                                     try {
-                                        sendClient("+ " + base64Encode("Username:"));
+                                        sendClient("+ " + IOUtil.encodeBase64("Username:"));
                                         state = State.LOGIN;
-                                        userName = base64Decode(readClient());
+                                        userName = IOUtil.decodeBase64AsString(readClient());
                                         // detect shared mailbox access
                                         splitUserName();
-                                        sendClient("+ " + base64Encode("Password:"));
+                                        sendClient("+ " + IOUtil.encodeBase64("Password:"));
                                         state = State.PASSWORD;
-                                        password = base64Decode(readClient());
+                                        password = IOUtil.decodeBase64AsString(readClient());
                                         session = ExchangeSessionFactory.getInstance(userName, password);
                                         sendClient(commandId + " OK Authenticated");
                                         state = State.AUTHENTICATED;
@@ -700,8 +700,8 @@ public class ImapConnection extends AbstractConnection {
     /**
      * Send expunge untagged response for removed IMAP message uids.
      *
-     * @param previousImapUidList uid list before refresh
-     * @param imapUidList         uid list after refresh
+     * @param previousImapFlagMap uid map before refresh
+     * @param imapFlagMap         uid map after refresh
      * @throws IOException on error
      */
     private void handleRefresh(TreeMap<Long, String> previousImapFlagMap, TreeMap<Long, String> imapFlagMap) throws IOException {
@@ -741,17 +741,13 @@ public class ImapConnection extends AbstractConnection {
 
         /**
          * Monitor full message download
-         *
-         * @param os client socket output stream
-         * @param buffer current output buffer
-         * @param message message
          */
         protected void loadMessage() throws IOException, MessagingException {
             if (!message.isLoaded()) {
                 // flush current buffer
                 String flushString = buffer.toString();
                 LOGGER.debug(flushString);
-                os.write(flushString.getBytes());
+                os.write(flushString.getBytes("UTF-8"));
                 buffer.setLength(0);
                 MessageLoadThread.loadMimeMessage(message, os);
             }
@@ -791,9 +787,9 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
                     int size;
-                    if (parameters.indexOf("BODY.PEEK[HEADER.FIELDS (") >= 0
+                    if (parameters.contains("BODY.PEEK[HEADER.FIELDS (")
                             // exclude mutt header request
-                            && parameters.indexOf("X-LABEL") < 0) {
+                            && !parameters.contains("X-LABEL")) {
                         // Header request, send approximate size
                         size = message.size;
                     } else {
@@ -814,7 +810,7 @@ public class ImapConnection extends AbstractConnection {
                     } catch (ParseException e) {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
-                } else if (param.equals("RFC822") || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
+                } else if ("RFC822".equals(param) || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
                     // get full param
                     if (param.indexOf('[') >= 0) {
                         StringBuilder paramBuffer = new StringBuilder(param);
@@ -841,7 +837,7 @@ public class ImapConnection extends AbstractConnection {
 
                     // try to parse message part index
                     String partIndexString = StringUtil.getToken(param, "[", "]");
-                    if (("".equals(partIndexString) || partIndexString == null) && !"RFC822.HEADER".equals(param)) {
+                    if ((partIndexString == null || partIndexString.length() == 0) && !"RFC822.HEADER".equals(param)) {
                         // write message with headers
                         partOutputStream = new PartialOutputStream(baos, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
@@ -849,7 +845,7 @@ public class ImapConnection extends AbstractConnection {
                         // write message without headers
                         partOutputStream = new PartOutputStream(baos, false, true, startIndex, maxSize);
                         partInputStream = messageWrapper.getRawInputStream();
-                    } else if ("RFC822.HEADER".equals(param) || partIndexString.startsWith("HEADER")) {
+                    } else if ("RFC822.HEADER".equals(param) || (partIndexString != null && partIndexString.startsWith("HEADER"))) {
                         // Header requested fetch  headers
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
                         // OSX Lion special flags request
@@ -870,7 +866,7 @@ public class ImapConnection extends AbstractConnection {
                                 baos.write(10);
                             }
                         }
-                    } else {
+                    } else if (partIndexString != null) {
                         MimePart bodyPart = messageWrapper.getMimeMessage();
                         String[] partIndexStrings = partIndexString.split("\\.");
                         for (String subPartIndexString : partIndexStrings) {
@@ -1660,13 +1656,11 @@ public class ImapConnection extends AbstractConnection {
      * Filter to output only headers, also count full size
      */
     private static final class PartOutputStream extends FilterOutputStream {
-        private static final int START = 0;
-        private static final int CR = 1;
-        private static final int CRLF = 2;
-        private static final int CRLFCR = 3;
-        private static final int BODY = 4;
+        protected static enum State {
+            START, CR, CRLF, CRLFCR, BODY
+        }
 
-        private int state = START;
+        private State state = State.START;
         private int size;
         private int bufferSize;
         private final boolean writeHeaders;
@@ -1686,33 +1680,33 @@ public class ImapConnection extends AbstractConnection {
         @Override
         public void write(int b) throws IOException {
             size++;
-            if (((state != BODY && writeHeaders) || (state == BODY && writeBody)) &&
+            if (((state != State.BODY && writeHeaders) || (state == State.BODY && writeBody)) &&
                     (size > startIndex) && (bufferSize < maxSize)
                     ) {
                 super.write(b);
                 bufferSize++;
             }
-            if (state == START) {
+            if (state == State.START) {
                 if (b == '\r') {
-                    state = CR;
+                    state = State.CR;
                 }
-            } else if (state == CR) {
+            } else if (state == State.CR) {
                 if (b == '\n') {
-                    state = CRLF;
+                    state = State.CRLF;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
-            } else if (state == CRLF) {
+            } else if (state == State.CRLF) {
                 if (b == '\r') {
-                    state = CRLFCR;
+                    state = State.CRLFCR;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
-            } else if (state == CRLFCR) {
+            } else if (state == State.CRLFCR) {
                 if (b == '\n') {
-                    state = BODY;
+                    state = State.BODY;
                 } else {
-                    state = START;
+                    state = State.START;
                 }
             }
         }
@@ -1913,7 +1907,7 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    class IMAPTokenizer extends StringTokenizer {
+    static class IMAPTokenizer extends StringTokenizer {
         IMAPTokenizer(String value) {
             super(value);
         }
