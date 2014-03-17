@@ -78,7 +78,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         display.syncExec(new Runnable() {
             public void run() {
-                if (trayItem.getImage().equals(image)) {
+                Image currentImage = trayItem.getImage();
+                if (currentImage != null && currentImage.equals(image)) {
                     trayItem.setImage(image2);
                 } else {
                     trayItem.setImage(image);
