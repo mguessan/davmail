@@ -30,10 +30,7 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import javax.mail.MessagingException;
@@ -111,6 +108,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected Map<String, String> folderIdMap;
+    protected boolean directEws;
 
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
@@ -204,7 +202,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (method != null) {
             method.releaseConnection();
         }
-        boolean directEws = method == null || "/ews/services.wsdl".equalsIgnoreCase(method.getPath());
+        directEws = method == null || "/ews/services.wsdl".equalsIgnoreCase(method.getPath());
 
         // options page is not available in direct EWS mode
         if (!directEws) {
@@ -325,24 +323,24 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected static class AutoDiscoverMethod extends PostMethod {
-        AutoDiscoverMethod(String autodiscoverHost, String userEmail) {
+        AutoDiscoverMethod(String autodiscoverHost, String userEmail) throws IOException {
             super("https://" + autodiscoverHost + "/autodiscover/autodiscover.xml");
             setAutoDiscoverRequestEntity(userEmail);
         }
 
-        AutoDiscoverMethod(String userEmail) {
+        AutoDiscoverMethod(String userEmail)  throws IOException {
             super("/autodiscover/autodiscover.xml");
             setAutoDiscoverRequestEntity(userEmail);
         }
 
-        void setAutoDiscoverRequestEntity(String userEmail) {
+        void setAutoDiscoverRequestEntity(String userEmail) throws IOException {
             String body = "<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006\">" +
                     "<Request>" +
                     "<EMailAddress>" + userEmail + "</EMailAddress>" +
                     "<AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>" +
                     "</Request>" +
                     "</Autodiscover>";
-            setRequestEntity(new ByteArrayRequestEntity(body.getBytes(), "text/xml"));
+            setRequestEntity(new StringRequestEntity(body, "text/xml", "UTF-8"));
         }
 
         String ewsUrl;
@@ -359,6 +357,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream()));
                     String line;
                     // find ews url
+                    //noinspection StatementWithEmptyBody
                     while ((line = autodiscoverReader.readLine()) != null
                             && (!line.contains("<EwsUrl>"))
                             && (!line.contains("</EwsUrl>"))) {
@@ -447,9 +446,9 @@ public class EwsExchangeSession extends ExchangeSession {
                         // workaround for broken message headers on Exchange 2010
                         && messageHeaders.toLowerCase().contains("message-id:")) {
                     // workaround for messages in Sent folder
-                    if (messageHeaders.indexOf("From:") < 0) {
+                    if (!messageHeaders.contains("From:")) {
                         String from = item.get(Field.get("from").getResponseName());
-                        messageHeaders = "From: " + from + "\n" + messageHeaders;
+                        messageHeaders = "From: " + from + '\n' + messageHeaders;
                     }
 
                     result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
@@ -1335,6 +1334,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             if ("*".equals(noneMatch)) {
                 // create requested
+                //noinspection VariableNotUsedInsideIf
                 if (currentItemId != null) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
@@ -1433,8 +1433,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
             }
             String instancetype = response.get(Field.get("instancetype").getResponseName());
-            boolean isrecurring = "true".equals(response.get(Field.get("isrecurring").getResponseName()));
-            String calendaritemtype = response.get(Field.get("calendaritemtype").getResponseName());
             isException = "3".equals(instancetype);
         }
 
@@ -1468,6 +1466,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             if ("*".equals(noneMatch)) {
                 // create requested
+                //noinspection VariableNotUsedInsideIf
                 if (currentItemId != null) {
                     itemResult.status = HttpStatus.SC_PRECONDITION_FAILED;
                     return itemResult;
@@ -1911,9 +1910,6 @@ public class EwsExchangeSession extends ExchangeSession {
         ITEM_PROPERTIES.add("instancetype");
         ITEM_PROPERTIES.add("urlcompname");
         ITEM_PROPERTIES.add("subject");
-
-        ITEM_PROPERTIES.add("calendaritemtype");
-        ITEM_PROPERTIES.add("isrecurring");
     }
 
     protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
@@ -2100,13 +2096,14 @@ public class EwsExchangeSession extends ExchangeSession {
         try {
             String timezoneId = null;
             if (!"Exchange2007_SP1".equals(serverVersion)) {
+                // On Exchange 2010, get user timezone from server
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
                 executeMethod(getUserConfigurationMethod);
                 EWSMethod.Item item = getUserConfigurationMethod.getResponseItem();
                 if (item != null) {
                     timezoneId = item.get("timezone");
                 }
-            } else {
+            } else if (!directEws) {
                 timezoneId = getTimezoneidFromOptions();
             }
             // failover: use timezone id from settings file
@@ -2147,14 +2144,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
     protected String getTimezoneidFromOptions() {
         String result = null;
-        // get user mail URL from html body
+        // get time zone setting from html body
         BufferedReader optionsPageReader = null;
         GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=Regional");
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
             optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
             String line;
-            // find email
+            // find timezone
             //noinspection StatementWithEmptyBody
             while ((line = optionsPageReader.readLine()) != null
                     && (!line.contains("tblTmZn"))
