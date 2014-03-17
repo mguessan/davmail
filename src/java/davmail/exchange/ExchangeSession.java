@@ -3294,43 +3294,46 @@ public abstract class ExchangeSession {
     static final String MAILBOX_BASE = "/cn=";
 
     protected void getEmailAndAliasFromOptions() {
-        Cookie[] currentCookies = httpClient.getState().getCookies();
-        // get user mail URL from html body
-        BufferedReader optionsPageReader = null;
-        GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
-            String line;
+        synchronized (httpClient.getState()) {
+            Cookie[] currentCookies = httpClient.getState().getCookies();
+            // get user mail URL from html body
+            BufferedReader optionsPageReader = null;
+            GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
+            try {
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
+                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+                String line;
 
-            // find email and alias
-            while ((line = optionsPageReader.readLine()) != null
-                    && (line.indexOf('[') == -1
-                    || line.indexOf('@') == -1
-                    || line.indexOf(']') == -1)
-                    && line.toLowerCase().indexOf(MAILBOX_BASE) == -1) {
-            }
-            if (line != null) {
-                int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
-                int end = line.indexOf('<', start);
-                alias = line.substring(start, end);
-                end = line.lastIndexOf(']');
-                start = line.lastIndexOf('[', end) + 1;
-                email = line.substring(start, end);
-            }
-        } catch (IOException e) {
-            // restore cookies on error
-            httpClient.getState().addCookies(currentCookies);
-            LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-        } finally {
-            if (optionsPageReader != null) {
-                try {
-                    optionsPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                // find email and alias
+                //noinspection StatementWithEmptyBody
+                while ((line = optionsPageReader.readLine()) != null
+                        && (line.indexOf('[') == -1
+                        || line.indexOf('@') == -1
+                        || line.indexOf(']') == -1)
+                        && !line.toLowerCase().contains(MAILBOX_BASE)) {
                 }
+                if (line != null) {
+                    int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                    int end = line.indexOf('<', start);
+                    alias = line.substring(start, end);
+                    end = line.lastIndexOf(']');
+                    start = line.lastIndexOf('[', end) + 1;
+                    email = line.substring(start, end);
+                }
+            } catch (IOException e) {
+                // restore cookies on error
+                httpClient.getState().addCookies(currentCookies);
+                LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+            } finally {
+                if (optionsPageReader != null) {
+                    try {
+                        optionsPageReader.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                    }
+                }
+                optionsMethod.releaseConnection();
             }
-            optionsMethod.releaseConnection();
         }
     }
 

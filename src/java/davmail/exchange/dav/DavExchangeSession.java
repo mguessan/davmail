@@ -752,31 +752,32 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected void checkPublicFolder() {
-
-        Cookie[] currentCookies = httpClient.getState().getCookies();
-        // check public folder access
-        try {
-            publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
-            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-            davPropertyNameSet.add(Field.getPropertyName("displayname"));
-            PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
+        synchronized (httpClient.getState()) {
+            Cookie[] currentCookies = httpClient.getState().getCookies();
+            // check public folder access
             try {
-                DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-            } catch (IOException e) {
-                // workaround for NTLM authentication only on /public
-                if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
-                    DavGatewayHttpClientFacade.addNTLM(httpClient);
+                publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
+                DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+                davPropertyNameSet.add(Field.getPropertyName("displayname"));
+                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
+                try {
                     DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                } catch (IOException e) {
+                    // workaround for NTLM authentication only on /public
+                    if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
+                        DavGatewayHttpClientFacade.addNTLM(httpClient);
+                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
+                    }
                 }
+                // update public folder URI
+                publicFolderUrl = propFindMethod.getURI().getURI();
+            } catch (IOException e) {
+                // restore cookies on error
+                httpClient.getState().addCookies(currentCookies);
+                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
+                // default public folder path
+                publicFolderUrl = PUBLIC_ROOT;
             }
-            // update public folder URI
-            publicFolderUrl = propFindMethod.getURI().getURI();
-        } catch (IOException e) {
-            // restore cookies on error
-            httpClient.getState().addCookies(currentCookies);
-            LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-            // default public folder path
-            publicFolderUrl = PUBLIC_ROOT;
         }
     }
 
@@ -1099,7 +1100,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // workaround for messages in Sent folder
                     if (!messageHeaders.contains("From:")) {
                         String from = getItemProperty(permanentUrl, "from");
-                        messageHeaders = "From: "+from+ '\n' +messageHeaders;
+                        messageHeaders = "From: " + from + '\n' + messageHeaders;
                     }
                     result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
                 }
@@ -1358,7 +1359,7 @@ public class DavExchangeSession extends ExchangeSession {
         @Override
         public byte[] getEventContent() throws IOException {
             byte[] result = null;
-            LOGGER.debug("Get event subject: " + subject + " contentclass: "+contentClass+" href: " + getHref() + " permanentUrl: " + permanentUrl);
+            LOGGER.debug("Get event subject: " + subject + " contentclass: " + contentClass + " href: " + getHref() + " permanentUrl: " + permanentUrl);
             // do not try to load tasks MIME body
             if (!"urn:content-classes:task".equals(contentClass)) {
                 // try to get PR_INTERNET_CONTENT
@@ -1706,7 +1707,7 @@ public class DavExchangeSession extends ExchangeSession {
                     // Set contentclass to make ActiveSync happy
                     propertyList.add(Field.createDavProperty("contentclass", contentClass));
                     // ... but also set PR_INTERNET_CONTENT to preserve custom properties
-                    propertyList.add(Field.createDavProperty("internetContent",IOUtil.encodeBase64AsString(mimeContent)));
+                    propertyList.add(Field.createDavProperty("internetContent", IOUtil.encodeBase64AsString(mimeContent)));
                     PropPatchMethod propPatchMethod = new PropPatchMethod(encodedHref, propertyList);
                     int patchStatus = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, propPatchMethod);
                     if (patchStatus != HttpStatus.SC_MULTI_STATUS) {
