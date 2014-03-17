@@ -812,7 +812,8 @@ public class LdapConnection extends AbstractConnection {
 
     protected String getCurrentHostName() throws UnknownHostException {
         if (currentHostName == null) {
-            if (client.getInetAddress().isLoopbackAddress()) {
+            InetAddress clientInetAddress = client.getInetAddress();
+            if (clientInetAddress != null && clientInetAddress.isLoopbackAddress()) {
                 // local address, probably using localhost in iCal URL
                 currentHostName = "localhost";
             } else {
