@@ -238,7 +238,6 @@ public final class Settings {
     public static void updateLoggingConfig() {
         String logFilePath = getLogFilePath();
 
-        Logger rootLogger = Logger.getRootLogger();
         try {
             if (logFilePath != null && logFilePath.length() > 0) {
                 File logFile = new File(logFilePath);
@@ -253,31 +252,33 @@ public final class Settings {
             } else {
                 logFilePath = "davmail.log";
             }
-            // Build file appender
-            FileAppender fileAppender = (FileAppender) rootLogger.getAppender("FileAppender");
-            if (fileAppender == null) {
-                String logFileSize = Settings.getProperty("davmail.logFileSize");
-                if (logFileSize == null || logFileSize.length() == 0) {
-                    logFileSize = "1MB";
+            synchronized (Logger.getRootLogger()) {
+                // Build file appender
+                FileAppender fileAppender = (FileAppender) Logger.getRootLogger().getAppender("FileAppender");
+                if (fileAppender == null) {
+                    String logFileSize = Settings.getProperty("davmail.logFileSize");
+                    if (logFileSize == null || logFileSize.length() == 0) {
+                        logFileSize = "1MB";
+                    }
+                    // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
+                    if ("0".equals(logFileSize)) {
+                        fileAppender = new FileAppender();
+                    } else {
+                        fileAppender = new RollingFileAppender();
+                        ((RollingFileAppender) fileAppender).setMaxBackupIndex(2);
+                        ((RollingFileAppender) fileAppender).setMaxFileSize(logFileSize);
+                    }
+                    fileAppender.setName("FileAppender");
+                    fileAppender.setEncoding("UTF-8");
+                    fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
                 }
-                // set log file size to 0 to use an external rotation mechanism, e.g. logrotate
-                if ("0".equals(logFileSize)) {
-                    fileAppender = new FileAppender();
-                } else {
-                    fileAppender = new RollingFileAppender();
-                    ((RollingFileAppender)fileAppender).setMaxBackupIndex(2);
-                    ((RollingFileAppender)fileAppender).setMaxFileSize(logFileSize);
-                }
-                fileAppender.setName("FileAppender");
-                fileAppender.setEncoding("UTF-8");
-                fileAppender.setLayout(new PatternLayout("%d{ISO8601} %-5p [%t] %c %x - %m%n"));
+                fileAppender.setFile(logFilePath, true, false, 8192);
+                Logger.getRootLogger().addAppender(fileAppender);
             }
-            fileAppender.setFile(logFilePath, true, false, 8192);
-            rootLogger.addAppender(fileAppender);
 
             // disable ConsoleAppender in gui mode
             if (!Settings.getBooleanProperty("davmail.server")) {
-                ConsoleAppender consoleAppender = (ConsoleAppender) rootLogger.getAppender("ConsoleAppender");
+                ConsoleAppender consoleAppender = (ConsoleAppender) Logger.getRootLogger().getAppender("ConsoleAppender");
                 if (consoleAppender != null) {
                     consoleAppender.setThreshold(Level.OFF);
                 }
@@ -474,7 +475,7 @@ public final class Settings {
     /**
      * Get all properties that are in the specified scope, that is, that start with '&lt;scope&gt;.'.
      *
-     * @param scope     start of property name
+     * @param scope start of property name
      * @return properties
      */
     public static synchronized Properties getSubProperties(String scope) {
@@ -488,9 +489,9 @@ public final class Settings {
         }
         Properties result = new Properties();
         for (Map.Entry entry : SETTINGS.entrySet()) {
-            String key = (String)entry.getKey();
+            String key = (String) entry.getKey();
             if (key.startsWith(keyStart)) {
-                String value = (String)entry.getValue();
+                String value = (String) entry.getValue();
                 result.setProperty(key.substring(keyStart.length()), value);
             }
         }
