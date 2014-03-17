@@ -124,6 +124,9 @@ public final class IOUtil {
      */
     public static byte[] resizeImage(byte[] inputBytes, int max) throws IOException {
         BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(inputBytes));
+        if (inputImage == null) {
+            throw new IOException("Unable to decode image data");
+        }
         BufferedImage outputImage = resizeImage(inputImage, max);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(outputImage, "jpg", baos);

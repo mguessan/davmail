@@ -1237,14 +1237,15 @@ public class DavExchangeSession extends ExchangeSession {
                 String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
                 String photo = get("photo");
                 if (photo != null) {
-                    // need to update photo
-                    byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
-
                     final PutMethod putmethod = new PutMethod(contactPictureUrl);
-                    putmethod.setRequestHeader("Overwrite", "t");
-                    putmethod.setRequestHeader("Content-Type", "image/jpeg");
-                    putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
                     try {
+                        // need to update photo
+                        byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
+
+                        putmethod.setRequestHeader("Overwrite", "t");
+                        putmethod.setRequestHeader("Content-Type", "image/jpeg");
+                        putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
+
                         status = httpClient.executeMethod(putmethod);
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
                             throw new IOException("Unable to update contact picture: " + status + ' ' + putmethod.getStatusLine());
