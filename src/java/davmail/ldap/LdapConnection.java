@@ -576,6 +576,9 @@ public class LdapConnection extends AbstractConnection {
                         Map<String, String> properties = new HashMap<String, String>();
                         properties.put("javax.security.sasl.qop", "auth,auth-int");
                         saslServer = Sasl.createSaslServer(mechanism, "ldap", client.getLocalAddress().getHostAddress(), properties, callbackHandler);
+                        if (saslServer == null) {
+                            throw new IOException("Unable to create SASL server for mechanism "+mechanism);
+                        }
                         serverResponse = saslServer.evaluateResponse(EMPTY_BYTE_ARRAY);
                         status = LDAP_SASL_BIND_IN_PROGRESS;
                     }
@@ -827,8 +830,7 @@ public class LdapConnection extends AbstractConnection {
 
     protected String getServiceInfo() throws UnknownHostException {
         if (serviceInfo == null) {
-            StringBuilder buffer = new StringBuilder();
-            buffer.append("<?xml version='1.0' encoding='UTF-8'?>" +
+            serviceInfo = ("<?xml version='1.0' encoding='UTF-8'?>" +
                     "<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>" +
                     "<plist version='1.0'>" +
                     "<dict>" +
@@ -847,9 +849,7 @@ public class LdapConnection extends AbstractConnection {
                     "<key>enabled</key>" +
                     "<true/>" +
                     "<key>port</key>" +
-                    "<integer>");
-            buffer.append(Settings.getProperty("davmail.caldavPort"));
-            buffer.append("</integer>" +
+                    "<integer>") + Settings.getProperty("davmail.caldavPort") + "</integer>" +
                     "</dict>" +
                     "<key>https</key>" +
                     "<dict>" +
@@ -860,9 +860,7 @@ public class LdapConnection extends AbstractConnection {
                     "</dict>" +
                     "</dict>" +
                     "<key>hostname</key>" +
-                    "<string>");
-            buffer.append(getCurrentHostName());
-            buffer.append("</string>" +
+                    "<string>" + getCurrentHostName() + "</string>" +
                     "<key>serviceInfo</key>" +
                     "<dict>" +
                     "<key>calendar</key>" +
@@ -889,8 +887,7 @@ public class LdapConnection extends AbstractConnection {
                     "</dict>" +
                     "</dict>" +
                     "</dict>" +
-                    "</plist>");
-            serviceInfo = buffer.toString();
+                    "</plist>";
         }
         return serviceInfo;
     }
@@ -954,7 +951,7 @@ public class LdapConnection extends AbstractConnection {
                 if (values instanceof String) {
                     responseBer.encodeString((String) values, isLdapV3());
                 } else if (values instanceof List) {
-                    for (Object value : (List) values) {
+                    for (Object value : (Iterable) values) {
                         responseBer.encodeString((String) value, isLdapV3());
                     }
                 } else {
@@ -1286,7 +1283,7 @@ public class LdapConnection extends AbstractConnection {
             } else if ((operator == LDAP_FILTER_EQUALITY) && personAttributeValue.equalsIgnoreCase(value)) {
                 // Found an exact match
                 return true;
-            } else if ((operator == LDAP_FILTER_SUBSTRINGS) && (personAttributeValue.toLowerCase().indexOf(value.toLowerCase()) >= 0)) {
+            } else if ((operator == LDAP_FILTER_SUBSTRINGS) && (personAttributeValue.toLowerCase().contains(value.toLowerCase()))) {
                 // Found a substring match
                 return true;
             }
@@ -1421,14 +1418,14 @@ public class LdapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH", currentMessageId, dn, scope, sizeLimit, timelimit, ldapFilter.toString(), returningAttributes));
 
                 if (scope == SCOPE_BASE_OBJECT) {
-                    if ("".equals(dn)) {
+                    if (dn != null && dn.length() == 0) {
                         size = 1;
                         sendRootDSE(currentMessageId);
                     } else if (BASE_CONTEXT.equals(dn)) {
                         size = 1;
                         // root
                         sendBaseContext(currentMessageId);
-                    } else if (dn.startsWith("uid=") && dn.indexOf(',') > 0) {
+                    } else if (dn != null && dn.startsWith("uid=") && dn.indexOf(',') > 0) {
                         if (session != null) {
                             // single user request
                             String uid = dn.substring("uid=".length(), dn.indexOf(','));
@@ -1437,6 +1434,7 @@ public class LdapConnection extends AbstractConnection {
                             // first search in contact
                             try {
                                 // check if this is a contact uid
+                                //noinspection ResultOfMethodCallIgnored
                                 Integer.parseInt(uid);
                                 persons = contactFind(session.isEqualTo("imapUid", uid), returningAttributes, sizeLimit);
                             } catch (NumberFormatException e) {
