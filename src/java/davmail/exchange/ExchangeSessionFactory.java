@@ -139,7 +139,7 @@ public final class ExchangeSessionFactory {
 
             if (session == null) {
                 String enableEws = Settings.getProperty("davmail.enableEws", "auto");
-                if ("true".equals(enableEws)) {
+                if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
                     try {
