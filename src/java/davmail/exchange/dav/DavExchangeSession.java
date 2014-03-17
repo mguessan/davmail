@@ -1766,6 +1766,9 @@ public class DavExchangeSession extends ExchangeSession {
                 try {
                     URI folderURI = new URI(href, false);
                     folder.folderPath = folderURI.getPath();
+                    if (folder.folderPath == null) {
+                        throw new URIException();
+                    }
                 } catch (URIException e) {
                     throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                 }
