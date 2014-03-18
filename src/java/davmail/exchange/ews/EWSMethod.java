@@ -545,7 +545,9 @@ public abstract class EWSMethod extends PostMethod {
             writer.write(">");
             if (mimeContent != null) {
                 writer.write("<t:MimeContent>");
-                writer.write(new String(mimeContent));
+                for (byte c : mimeContent) {
+                    writer.write(c);
+                }
                 writer.write("</t:MimeContent>");
             }
             if (referenceItemId != null) {
