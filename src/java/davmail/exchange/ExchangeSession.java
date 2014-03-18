@@ -2608,16 +2608,16 @@ public abstract class ExchangeSession {
                         .append((after ^ fromServer) ? "-server" : "-client")
                         .append(".ics");
                 if ((icsBody != null) && (icsBody.length() > 0)) {
-                    FileWriter fileWriter = null;
+                    OutputStreamWriter writer = null;
                     try {
-                        fileWriter = new FileWriter(filePath.toString());
-                        fileWriter.write(icsBody);
+                        writer = new OutputStreamWriter(new FileOutputStream(filePath.toString()), "UTF-8");
+                        writer.write(icsBody);
                     } catch (IOException e) {
                         LOGGER.error(e);
                     } finally {
-                        if (fileWriter != null) {
+                        if (writer != null) {
                             try {
-                                fileWriter.close();
+                                writer.close();
                             } catch (IOException e) {
                                 LOGGER.error(e);
                             }
@@ -3301,7 +3301,7 @@ public abstract class ExchangeSession {
             GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
             try {
                 DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), "UTF-8"));
                 String line;
 
                 // find email and alias

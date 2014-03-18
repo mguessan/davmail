@@ -225,7 +225,7 @@ public final class DavGateway {
                 HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
                 int status = httpClient.executeMethod(getMethod);
                 if (status == HttpStatus.SC_OK) {
-                    versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream()));
+                    versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream(), "UTF-8"));
                     version = versionReader.readLine();
                     LOGGER.debug("DavMail released version: " + version);
                 }
