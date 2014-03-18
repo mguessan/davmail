@@ -19,12 +19,13 @@
 package davmail.exchange.ews;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
 
 /**
  * Item id.
  */
-public class ItemId {
+public class ItemId implements Serializable {
     protected final String name;
     protected final String id;
     protected final String changeKey;
@@ -50,6 +51,7 @@ public class ItemId {
     /**
      * Build Item id from response item.
      *
+     * @param name item name
      * @param item response item
      */
     public ItemId(String name, EWSMethod.Item item) {
@@ -61,6 +63,7 @@ public class ItemId {
     /**
      * Build Item id object from item id.
      *
+     * @param name item name
      * @param itemId item id
      */
     public ItemId(String name, String itemId) {
@@ -72,7 +75,9 @@ public class ItemId {
     /**
      * Build Item id object from item id and change key.
      *
+     * @param name item name
      * @param itemId item id
+     * @param changeKey change key
      */
     public ItemId(String name, String itemId, String changeKey) {
         this.name = name;
