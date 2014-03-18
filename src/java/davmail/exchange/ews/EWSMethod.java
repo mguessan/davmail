@@ -647,9 +647,9 @@ public abstract class EWSMethod extends PostMethod {
         public FileAttachment getAttachmentByName(String attachmentName) {
             FileAttachment result = null;
             if (attachments != null) {
-                for (FileAttachment attachment : attachments) {
-                    if (attachmentName.equals(attachment.name)) {
-                        result = attachment;
+                for (FileAttachment fileAttachment : attachments) {
+                    if (attachmentName.equals(fileAttachment.name)) {
+                        result = fileAttachment;
                         break;
                     }
                 }
@@ -712,7 +712,7 @@ public abstract class EWSMethod extends PostMethod {
                     && !"ErrorItemNotFound".equals(errorDetail)
                     ) {
                 try {
-                    throw new EWSException(errorDetail +" "+((errorDescription!=null)?errorDescription:"")+ "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
+                    throw new EWSException(errorDetail + ' ' +((errorDescription!=null)?errorDescription:"")+ "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     throw new EWSException(e.getMessage());
                 }
@@ -905,7 +905,12 @@ public abstract class EWSMethod extends PostMethod {
         }
         item.addOccurrence(occurrence);
     }
-    
+
+    /**
+     * Convert response type to partstat value
+     * @param responseType response type
+     * @return partstat value
+     */
     public static String responseTypeToPartstat(String responseType) {
         if ("Accept".equals(responseType) || "Organizer".equals(responseType)) {
             return "ACCEPTED";
