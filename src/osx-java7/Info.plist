@@ -67,7 +67,7 @@
     <string>davmail.DavGateway</string>
     <key>JVMOptions</key>
     <array>
-    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
+    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m -Duser.dir=$APP_ROOT</string>
     </array>
   </dict>
 </plist>
