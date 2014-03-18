@@ -75,21 +75,21 @@ public class SettingsFrame extends JFrame {
     protected JTextField certHashField;
     protected JCheckBox disableUpdateCheck;
 
-    protected JComboBox<String> keystoreTypeCombo;
+    protected JComboBox keystoreTypeCombo;
     protected JTextField keystoreFileField;
     protected JPasswordField keystorePassField;
     protected JPasswordField keyPassField;
 
-    protected JComboBox<String> clientKeystoreTypeCombo;
+    protected JComboBox clientKeystoreTypeCombo;
     protected JTextField clientKeystoreFileField;
     protected JPasswordField clientKeystorePassField;
     protected JTextField pkcs11LibraryField;
     protected JTextArea pkcs11ConfigField;
 
-    protected JComboBox<Level> rootLoggingLevelField;
-    protected JComboBox<Level> davmailLoggingLevelField;
-    protected JComboBox<Level> httpclientLoggingLevelField;
-    protected JComboBox<Level> wireLoggingLevelField;
+    protected JComboBox rootLoggingLevelField;
+    protected JComboBox davmailLoggingLevelField;
+    protected JComboBox httpclientLoggingLevelField;
+    protected JComboBox wireLoggingLevelField;
     protected JTextField logFilePathField;
     protected JTextField logFileSizeField;
 
@@ -102,7 +102,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox imapAutoExpungeCheckBox;
     protected JCheckBox enableKeepAliveCheckBox;
     protected JCheckBox popMarkReadOnRetrCheckBox;
-    protected JComboBox<String> enableEwsComboBox;
+    protected JComboBox enableEwsComboBox;
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
@@ -151,7 +151,7 @@ public class SettingsFrame extends JFrame {
         JPanel settingsPanel = new JPanel(new GridLayout(7, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
-        enableEwsComboBox = new JComboBox<String>(new String[]{WEBDAV, EWS, AUTO});
+        enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         urlField = new JTextField(Settings.getProperty("davmail.url"), 20);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
@@ -316,7 +316,7 @@ public class SettingsFrame extends JFrame {
         JPanel keyStorePanel = new JPanel(new GridLayout(4, 2));
         keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DAVMAIL_SERVER_CERTIFICATE")));
 
-        keystoreTypeCombo = new JComboBox<String>(new String[]{"JKS", "PKCS12"});
+        keystoreTypeCombo = new JComboBox(new String[]{"JKS", "PKCS12"});
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 17);
         keystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.keystorePass"), 15);
@@ -339,7 +339,7 @@ public class SettingsFrame extends JFrame {
         clientKeystorePanel.setLayout(new BoxLayout(clientKeystorePanel, BoxLayout.Y_AXIS));
         clientKeystorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
 
-        clientKeystoreTypeCombo = new JComboBox<String>(new String[]{"PKCS11", "JKS", "PKCS12"});
+        clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
         clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
         clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 17);
         clientKeystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.clientKeystorePass"), 15);
@@ -506,10 +506,10 @@ public class SettingsFrame extends JFrame {
         loggingLevelPanel.add(leftLoggingPanel);
         loggingLevelPanel.add(rightLoggingPanel);
 
-        rootLoggingLevelField = new JComboBox<Level>(LOG_LEVELS);
-        davmailLoggingLevelField = new JComboBox<Level>(LOG_LEVELS);
-        httpclientLoggingLevelField = new JComboBox<Level>(LOG_LEVELS);
-        wireLoggingLevelField = new JComboBox<Level>(LOG_LEVELS);
+        rootLoggingLevelField = new JComboBox(LOG_LEVELS);
+        davmailLoggingLevelField = new JComboBox(LOG_LEVELS);
+        httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
+        wireLoggingLevelField = new JComboBox(LOG_LEVELS);
         logFilePathField = new JTextField(Settings.getProperty("davmail.logFilePath"), 15);
         logFileSizeField = new JTextField(Settings.getProperty("davmail.logFileSize"), 15);
 
