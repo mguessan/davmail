@@ -340,6 +340,7 @@ public class DavExchangeSession extends ExchangeSession {
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
         Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
+        //noinspection StatementWithEmptyBody
         if (disableGalFind) {
             // do nothing
         } else if (condition instanceof MultiCondition) {
@@ -520,9 +521,9 @@ public class DavExchangeSession extends ExchangeSession {
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         try {
-            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-            //noinspection StatementWithEmptyBody
+            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
             String line;
+            //noinspection StatementWithEmptyBody
             while ((line = mainPageReader.readLine()) != null && !line.toLowerCase().contains(BASE_HREF)) {
             }
             if (line != null) {
@@ -2847,7 +2848,7 @@ public class DavExchangeSession extends ExchangeSession {
                     mimeMessage.writeTo(baos);
                 }
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray()));
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), "UTF-8"));
                 }
             } catch (IOException e2) {
                 LOGGER.warn(e2);
