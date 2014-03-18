@@ -354,7 +354,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     )) {
                 BufferedReader autodiscoverReader = null;
                 try {
-                    autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream()));
+                    autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream(), "UTF-8"));
                     String line;
                     // find ews url
                     //noinspection StatementWithEmptyBody
@@ -647,7 +647,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 mimeMessage.writeTo(baos);
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray()));
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), "UTF-8"));
                 }
                 mimeContent = baos.toByteArray();
 
@@ -2149,7 +2149,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=Regional");
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream()));
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), "UTF-8"));
             String line;
             // find timezone
             //noinspection StatementWithEmptyBody
