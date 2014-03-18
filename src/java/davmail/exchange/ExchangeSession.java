@@ -2552,7 +2552,7 @@ public abstract class ExchangeSession {
         protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
                 dumpIndex++;
-                String icsBody = new String(icsContent);
+                String icsBody = new String(icsContent, "UTF-8");
                 dumpICS(icsBody, fromServer, false);
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
