@@ -40,7 +40,6 @@ public class ExtendedFieldURI implements FieldURI {
 
     protected String propertyTag;
     protected DistinguishedPropertySetType distinguishedPropertySetId;
-    protected String propertySetId;
     protected String propertyName;
     protected int propertyId;
     protected final PropertyType propertyType;
@@ -101,9 +100,6 @@ public class ExtendedFieldURI implements FieldURI {
         }
         if (distinguishedPropertySetId != null) {
             buffer.append(" DistinguishedPropertySetId=\"").append(distinguishedPropertySetId).append('"');
-        }
-        if (propertySetId != null) {
-            buffer.append(" PropertySetId=\"").append(propertySetId).append('"');
         }
         if (propertyName != null) {
             buffer.append(" PropertyName=\"").append(propertyName).append('"');
