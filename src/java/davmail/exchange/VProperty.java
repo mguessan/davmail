@@ -120,28 +120,28 @@ public class VProperty {
                         startIndex = i + 1;
                     } else if (currentChar == ':') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues = addParamValue(paramValues, line.substring(startIndex, i));
                         }
                         addParam(paramName, paramValues);
                         state = State.VALUE;
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues = addParamValue(paramValues, line.substring(startIndex, i));
                         }
                         addParam(paramName, paramValues);
                         state = State.PARAM_NAME;
                         startIndex = i + 1;
                     } else if (currentChar == ',') {
                         if (startIndex < i) {
-                            paramValues.add(line.substring(startIndex, i));
+                            paramValues = addParamValue(paramValues, line.substring(startIndex, i));
                         }
                         startIndex = i + 1;
                     }
                 } else if (state == State.QUOTED_PARAM_VALUE) {
                     if (currentChar == '"') {
                         state = State.PARAM_VALUE;
-                        paramValues.add(line.substring(startIndex, i));
+                        paramValues = addParamValue(paramValues, line.substring(startIndex, i));
                         startIndex = i + 1;
                     }
                 } else if (state == State.VALUE) {
@@ -238,6 +238,22 @@ public class VProperty {
         return false;
     }
 
+    /**
+     * Add value to paramValues and return list, create list if null.
+     *
+     * @param paramValues value list
+     * @param value new value
+     * @return updated value list
+     */
+    protected List<String> addParamValue(List<String> paramValues, String value) {
+        List<String> result = paramValues;
+        if (result == null) {
+            result = new ArrayList<String>();
+        }
+        result.add(value);
+        return result;
+    }
+
     protected void addParam(String paramName) {
         addParam(paramName, (String) null);
     }
@@ -282,7 +298,7 @@ public class VProperty {
     }
 
     protected Param getParam(String paramName) {
-        if (params != null) {
+        if (params != null && paramName != null) {
             for (Param param : params) {
                 if (paramName.equals(param.name)) {
                     return param;
@@ -456,3 +472,4 @@ public class VProperty {
     }
 
 }
+
