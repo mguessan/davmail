@@ -202,7 +202,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
             if (principal.length() == 0) {
                 exchangeFolderPath = rootPath;
-            } else if (alias.equalsIgnoreCase(principal) || email.equalsIgnoreCase(principal)) {
+            } else if (alias.equalsIgnoreCase(principal) || (email != null && email.equalsIgnoreCase(principal))) {
                 exchangeFolderPath = mailPath + localPath;
             } else {
                 LOGGER.debug("Detected shared path for principal " + principal + ", user principal is " + email);
