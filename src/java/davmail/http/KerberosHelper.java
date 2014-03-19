@@ -29,7 +29,7 @@ import javax.security.auth.callback.*;
 import javax.security.auth.kerberos.KerberosTicket;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -44,7 +44,7 @@ public class KerberosHelper {
     protected static final Logger LOGGER = Logger.getLogger(KerberosHelper.class);
     protected static final Object LOCK = new Object();
     protected static final KerberosCallbackHandler KERBEROS_CALLBACK_HANDLER;
-    protected static LoginContext clientLoginContext;
+    private static LoginContext clientLoginContext;
 
     static {
         // Load Jaas configuration from class
@@ -53,25 +53,26 @@ public class KerberosHelper {
         KERBEROS_CALLBACK_HANDLER = new KerberosCallbackHandler();
     }
 
+    private KerberosHelper() {
+    }
+
+    @SuppressWarnings("UseOfSystemOutOrSystemErr")
     protected static class KerberosCallbackHandler implements CallbackHandler {
         String principal;
         String password;
 
-        protected KerberosCallbackHandler() {
-        }
-
         public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-            for (int i = 0; i < callbacks.length; i++) {
-                if (callbacks[i] instanceof NameCallback) {
+            for (Callback callback : callbacks) {
+                if (callback instanceof NameCallback) {
                     if (principal == null) {
                         // if we get there kerberos token is missing or invalid
                         if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
                             // headless or server mode
-                            System.out.print(((NameCallback) callbacks[i]).getPrompt());
+                            System.out.print(((NameCallback) callback).getPrompt());
                             BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
                             principal = inReader.readLine();
                         } else {
-                            CredentialPromptDialog credentialPromptDialog = new CredentialPromptDialog(((NameCallback) callbacks[i]).getPrompt());
+                            CredentialPromptDialog credentialPromptDialog = new CredentialPromptDialog(((NameCallback) callback).getPrompt());
                             principal = credentialPromptDialog.getPrincipal();
                             password = String.valueOf(credentialPromptDialog.getPassword());
                         }
@@ -79,14 +80,14 @@ public class KerberosHelper {
                     if (principal == null) {
                         throw new IOException("KerberosCallbackHandler: failed to retrieve principal");
                     }
-                    ((NameCallback) callbacks[i]).setName(principal);
+                    ((NameCallback) callback).setName(principal);
 
-                } else if (callbacks[i] instanceof PasswordCallback) {
+                } else if (callback instanceof PasswordCallback) {
                     if (password == null) {
                         // if we get there kerberos token is missing or invalid
                         if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
                             // headless or server mode
-                            System.out.print(((PasswordCallback) callbacks[i]).getPrompt());
+                            System.out.print(((PasswordCallback) callback).getPrompt());
                             BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
                             password = inReader.readLine();
                         }
@@ -94,20 +95,30 @@ public class KerberosHelper {
                     if (password == null) {
                         throw new IOException("KerberosCallbackHandler: failed to retrieve password");
                     }
-                    ((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
+                    ((PasswordCallback) callback).setPassword(password.toCharArray());
 
                 } else {
-                    throw new UnsupportedCallbackException(callbacks[i]);
+                    throw new UnsupportedCallbackException(callback);
                 }
             }
         }
     }
 
-    public static void setPrincipal(String principal) {
+    /**
+     * Force client principal in callback handler
+     *
+     * @param principal client principal
+     */
+    public static void setClientPrincipal(String principal) {
         KERBEROS_CALLBACK_HANDLER.principal = principal;
     }
 
-    public static void setPassword(String password) {
+    /**
+     * Force client password in callback handler
+     *
+     * @param password client password
+     */
+    public static void setClientPassword(String password) {
         KERBEROS_CALLBACK_HANDLER.password = password;
     }
 
@@ -141,17 +152,19 @@ public class KerberosHelper {
     public static byte[] initSecurityContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
         LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + "/" + host + " " + token.length + " bytes token");
 
-        // create client login context
-        clientLogin();
+        synchronized (LOCK) {
+            // create client login context
+            clientLogin();
 
-        Object result = internalInitSecContext(protocol, host, delegatedCredentials, token);
-        if (result instanceof GSSException) {
-            LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
-            throw (GSSException) result;
+            Object result = internalInitSecContext(protocol, host, delegatedCredentials, token);
+            if (result instanceof GSSException) {
+                LOGGER.info("KerberosHelper.initSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((Throwable) result).getMessage());
+                throw (GSSException) result;
+            }
+
+            LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
+            return (byte[]) result;
         }
-
-        LOGGER.debug("KerberosHelper.initSecurityContext return " + ((byte[]) result).length + " bytes token");
-        return (byte[]) result;
     }
 
     protected static Object internalInitSecContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) {
@@ -180,7 +193,7 @@ public class KerberosHelper {
                         try {
                             context.dispose();
                         } catch (GSSException e) {
-                            LOGGER.debug("KerberosHelper.internalInitSecContext " + e + " " + e.getMessage());
+                            LOGGER.debug("KerberosHelper.internalInitSecContext " + e + ' ' + e.getMessage());
                         }
                     }
                 }
@@ -194,37 +207,35 @@ public class KerberosHelper {
      *
      * @throws LoginException on error
      */
-    public static void clientLogin() throws LoginException {
-        synchronized (LOCK) {
-            if (clientLoginContext != null) {
-                // check cached TGT
-                for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                    KerberosTicket kerberosTicket = (KerberosTicket) ticket;
-                    if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
-                        LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
-                        clientLoginContext = null;
-                    }
-                }
-            }
-            if (clientLoginContext == null) {
-                final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
-                localLoginContext.login();
-                clientLoginContext = localLoginContext;
-            }
-            // try to renew almost expired tickets
+    protected static void clientLogin() throws LoginException {
+        if (clientLoginContext != null) {
+            // check cached TGT
             for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
                 KerberosTicket kerberosTicket = (KerberosTicket) ticket;
-                LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
-                if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
-                    if (kerberosTicket.isRenewable()) {
-                        try {
-                            kerberosTicket.refresh();
-                        } catch (RefreshFailedException e) {
-                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
-                        }
-                    } else {
-                        LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
+                if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
+                    LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
+                    clientLoginContext = null;
+                }
+            }
+        }
+        if (clientLoginContext == null) {
+            final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
+            localLoginContext.login();
+            clientLoginContext = localLoginContext;
+        }
+        // try to renew almost expired tickets
+        for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
+            KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+            LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
+            if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
+                if (kerberosTicket.isRenewable()) {
+                    try {
+                        kerberosTicket.refresh();
+                    } catch (RefreshFailedException e) {
+                        LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
                     }
+                } else {
+                    LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
                 }
             }
         }
@@ -233,24 +244,24 @@ public class KerberosHelper {
     /**
      * Create server side Kerberos login context for provided credentials.
      *
-     * @param principal server principal
-     * @param password  server passsword
+     * @param serverPrincipal server principal
+     * @param serverPassword  server passsword
      * @return LoginContext server login context
      * @throws LoginException on error
      */
-    public static LoginContext serverLogin(final String principal, final String password) throws LoginException {
+    public static LoginContext serverLogin(final String serverPrincipal, final String serverPassword) throws LoginException {
         LoginContext serverLoginContext = new LoginContext("spnego-server", new CallbackHandler() {
 
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                for (int i = 0; i < callbacks.length; i++) {
-                    if (callbacks[i] instanceof NameCallback) {
-                        final NameCallback nameCallback = (NameCallback) callbacks[i];
-                        nameCallback.setName(principal);
-                    } else if (callbacks[i] instanceof PasswordCallback) {
-                        final PasswordCallback passCallback = (PasswordCallback) callbacks[i];
-                        passCallback.setPassword(password.toCharArray());
+                for (Callback callback : callbacks) {
+                    if (callback instanceof NameCallback) {
+                        final NameCallback nameCallback = (NameCallback) callback;
+                        nameCallback.setName(serverPrincipal);
+                    } else if (callback instanceof PasswordCallback) {
+                        final PasswordCallback passCallback = (PasswordCallback) callback;
+                        passCallback.setPassword(serverPassword.toCharArray());
                     } else {
-                        throw new UnsupportedCallbackException(callbacks[i]);
+                        throw new UnsupportedCallbackException(callback);
                     }
                 }
 
@@ -290,7 +301,7 @@ public class KerberosHelper {
         Object result = Subject.doAs(serverLoginContext.getSubject(), new PrivilegedAction() {
 
             public Object run() {
-                Object result;
+                Object innerResult;
                 SecurityContext securityContext = new SecurityContext();
                 GSSContext context = null;
                 try {
@@ -315,23 +326,23 @@ public class KerberosHelper {
                             securityContext.clientCredential = context.getDelegCred();
                         }
                     }
-                    result = securityContext;
+                    innerResult = securityContext;
                 } catch (GSSException e) {
-                    result = e;
+                    innerResult = e;
                 } finally {
                     if (context != null) {
                         try {
                             context.dispose();
                         } catch (GSSException e) {
-                            LOGGER.debug("KerberosHelper.acceptSecurityContext " + e + " " + e.getMessage());
+                            LOGGER.debug("KerberosHelper.acceptSecurityContext " + e + ' ' + e.getMessage());
                         }
                     }
                 }
-                return result;
+                return innerResult;
             }
         });
         if (result instanceof GSSException) {
-            LOGGER.info("KerberosHelper.acceptSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((GSSException) result).getMessage());
+            LOGGER.info("KerberosHelper.acceptSecurityContext exception code " + ((GSSException) result).getMajor() + " minor code " + ((GSSException) result).getMinor() + " message " + ((Throwable) result).getMessage());
             throw (GSSException) result;
         }
         return (SecurityContext) result;

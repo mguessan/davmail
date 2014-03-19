@@ -56,7 +56,10 @@ public class KerberosLoginConfiguration extends Configuration {
         //clientLoginModuleOptions.put("ticketCache", FileCredentialsCache.getDefaultCacheName());
         //clientLoginModuleOptions.put("refreshKrb5Config", "true");
         //clientLoginModuleOptions.put("storeKey", "true");
-        CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, clientLoginModuleOptions)};
+        CLIENT_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry(
+                "com.sun.security.auth.module.Krb5LoginModule",
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                clientLoginModuleOptions)};
 
         HashMap<String, String> serverLoginModuleOptions = new HashMap<String, String>();
         if (LOGGER.isDebugEnabled()) {
@@ -66,7 +69,10 @@ public class KerberosLoginConfiguration extends Configuration {
         serverLoginModuleOptions.put("isInitiator", "false"); // acceptor (server) mode
         serverLoginModuleOptions.put("useKeyTab", "false"); // do not use credentials stored in keytab file
         serverLoginModuleOptions.put("storeKey", "true"); // store credentials in subject
-        SERVER_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, serverLoginModuleOptions)};
+        SERVER_LOGIN_MODULE = new AppConfigurationEntry[]{new AppConfigurationEntry(
+                "com.sun.security.auth.module.Krb5LoginModule",
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                serverLoginModuleOptions)};
     }
 
     @Override
@@ -80,6 +86,7 @@ public class KerberosLoginConfiguration extends Configuration {
         }
     }
 
+    @Override
     public void refresh() {
         // nothing to do
     }
