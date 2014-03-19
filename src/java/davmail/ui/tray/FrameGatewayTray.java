@@ -69,7 +69,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         isActive = true;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                if (mainFrame.getIconImage().equals(image)) {
+                Image currentImage = mainFrame.getIconImage();
+                if (currentImage != null && currentImage.equals(image)) {
                     mainFrame.setIconImage(image2);
                 } else {
                     mainFrame.setIconImage(image);
