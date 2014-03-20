@@ -150,11 +150,41 @@ public class KerberosHelper {
      * @throws LoginException on error
      */
     public static byte[] initSecurityContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
-        LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + "/" + host + " " + token.length + " bytes token");
+        LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + '/' + host + ' ' + token.length + " bytes token");
 
         synchronized (LOCK) {
+            // check cached TGT
+            if (clientLoginContext != null) {
+                for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
+                    KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                    if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
+                        LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
+                        clientLoginContext = null;
+                    }
+                }
+            }
             // create client login context
-            clientLogin();
+            if (clientLoginContext == null) {
+                final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
+                localLoginContext.login();
+                clientLoginContext = localLoginContext;
+            }
+            // try to renew almost expired tickets
+            for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
+                KerberosTicket kerberosTicket = (KerberosTicket) ticket;
+                LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
+                if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
+                    if (kerberosTicket.isRenewable()) {
+                        try {
+                            kerberosTicket.refresh();
+                        } catch (RefreshFailedException e) {
+                            LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
+                        }
+                    } else {
+                        LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
+                    }
+                }
+            }
 
             Object result = internalInitSecContext(protocol, host, delegatedCredentials, token);
             if (result instanceof GSSException) {
@@ -175,7 +205,7 @@ public class KerberosHelper {
                 GSSContext context = null;
                 try {
                     GSSManager manager = GSSManager.getInstance();
-                    GSSName serverName = manager.createName(protocol + "/" + host, null);
+                    GSSName serverName = manager.createName(protocol + '/' + host, null);
                     // Kerberos v5 OID
                     Oid krb5Oid = new Oid("1.2.840.113554.1.2.2");
 
@@ -200,45 +230,6 @@ public class KerberosHelper {
                 return result;
             }
         });
-    }
-
-    /**
-     * Create client Kerberos context.
-     *
-     * @throws LoginException on error
-     */
-    protected static void clientLogin() throws LoginException {
-        if (clientLoginContext != null) {
-            // check cached TGT
-            for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-                KerberosTicket kerberosTicket = (KerberosTicket) ticket;
-                if (kerberosTicket.getServer().getName().startsWith("krbtgt") && !kerberosTicket.isCurrent()) {
-                    LOGGER.debug("KerberosHelper.clientLogin cached TGT expired, try to relogin");
-                    clientLoginContext = null;
-                }
-            }
-        }
-        if (clientLoginContext == null) {
-            final LoginContext localLoginContext = new LoginContext("spnego-client", KERBEROS_CALLBACK_HANDLER);
-            localLoginContext.login();
-            clientLoginContext = localLoginContext;
-        }
-        // try to renew almost expired tickets
-        for (Object ticket : clientLoginContext.getSubject().getPrivateCredentials(KerberosTicket.class)) {
-            KerberosTicket kerberosTicket = (KerberosTicket) ticket;
-            LOGGER.debug("KerberosHelper.clientLogin ticket for " + kerberosTicket.getServer().getName() + " expires at " + kerberosTicket.getEndTime());
-            if (kerberosTicket.getEndTime().getTime() < System.currentTimeMillis() + 10000) {
-                if (kerberosTicket.isRenewable()) {
-                    try {
-                        kerberosTicket.refresh();
-                    } catch (RefreshFailedException e) {
-                        LOGGER.debug("KerberosHelper.clientLogin failed to renew ticket " + kerberosTicket.toString());
-                    }
-                } else {
-                    LOGGER.debug("KerberosHelper.clientLogin ticket is not renewable");
-                }
-            }
-        }
     }
 
     /**
