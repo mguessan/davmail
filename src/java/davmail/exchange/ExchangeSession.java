@@ -2591,9 +2591,11 @@ public abstract class ExchangeSession {
                                 return false;
                             }
                         });
-                        for (File file : oldestFiles) {
-                            if (!file.delete()) {
-                                LOGGER.warn("Unable to delete " + file.getAbsolutePath());
+                        if (oldestFiles != null) {
+                            for (File file : oldestFiles) {
+                                if (!file.delete()) {
+                                    LOGGER.warn("Unable to delete " + file.getAbsolutePath());
+                                }
                             }
                         }
                     } catch (Exception ex) {
