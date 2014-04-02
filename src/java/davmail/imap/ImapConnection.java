@@ -1343,7 +1343,7 @@ public class ImapConnection extends AbstractConnection {
                     session.contains("to", value),
                     session.contains("cc", value));
         } else if ("KEYWORD".equals(token)) {
-            return session.contains("keywords", session.convertFlagToKeyword(tokens.nextToken()));
+            return session.isEqualTo("keywords", session.convertFlagToKeyword(tokens.nextToken()));
         } else if ("FROM".equals(token)) {
             return session.contains("from", tokens.nextToken());
         } else if ("TO".equals(token)) {
