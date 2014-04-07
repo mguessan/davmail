@@ -569,7 +569,18 @@ public class ImapConnection extends AbstractConnection {
                                         String folderName = BASE64MailboxDecoder.decode(encodedFolderName);
                                         ExchangeSession.Folder folder = session.getFolder(folderName);
                                         // must retrieve messages
-                                        folder.loadMessages();
+
+                                        // use folder.loadMessages() for small folders only
+                                        LOGGER.debug("*");
+                                        os.write('*');
+                                        if (folder.count() <= 500) {
+                                            // simple folder load
+                                            folder.loadMessages();
+                                        } else {
+                                            // load folder in a separate thread
+                                            FolderLoadThread.loadFolder(folder, os);
+                                        }
+
                                         String parameters = tokens.nextToken();
                                         StringBuilder answer = new StringBuilder();
                                         StringTokenizer parametersTokens = new StringTokenizer(parameters);
@@ -600,7 +611,7 @@ public class ImapConnection extends AbstractConnection {
                                                 answer.append("UNSEEN ").append(folder.unreadCount).append(' ');
                                             }
                                         }
-                                        sendClient("* STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
+                                        sendClient(" STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
                                     } catch (HttpException e) {
                                         sendClient(commandId + " NO folder not found");
