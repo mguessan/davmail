@@ -969,7 +969,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition headerIsEqualTo(String headerName, String value) {
-        if (serverVersion.startsWith("Exchange2010")) {
+        if (serverVersion.startsWith("Exchange201")) {
             if ("from".equals(headerName)
                     || "to".equals(headerName)
                     || "cc".equals(headerName)) {
@@ -1631,8 +1631,8 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 newItem.setFieldUpdates(updates);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
-                // force context Timezone on Exchange 2010
-                if (serverVersion != null && serverVersion.startsWith("Exchange2010")) {
+                // force context Timezone on Exchange 2010 and 2013
+                if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                     createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                 }
                 //}
