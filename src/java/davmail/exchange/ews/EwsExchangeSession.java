@@ -70,9 +70,10 @@ public class EwsExchangeSession extends ExchangeSession {
         MESSAGE_TYPES.add("MeetingResponse");
         MESSAGE_TYPES.add("MeetingCancellation");
 
+        MESSAGE_TYPES.add("Item");
+        MESSAGE_TYPES.add("PostItem");
+
         // exclude types from IMAP
-        //MESSAGE_TYPES.add("Item");
-        //MESSAGE_TYPES.add("PostItem");
         //MESSAGE_TYPES.add("Contact");
         //MESSAGE_TYPES.add("DistributionList");
         //MESSAGE_TYPES.add("Task");
@@ -764,12 +765,12 @@ public class EwsExchangeSession extends ExchangeSession {
             results.addAll(findItemMethod.getResponseItems());
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Search items current count: "+resultCount+" fetchCount: "+fetchCount
+                LOGGER.debug("Folder " + folderPath + " - Search items current count: "+resultCount+" fetchCount: "+fetchCount
                         +" highest uid: "+results.get(0).get(Field.get("imapUid").getResponseName())
                         +" lowest uid: "+results.get(resultCount-1).get(Field.get("imapUid").getResponseName()));
             }
             if (Thread.interrupted()) {
-                LOGGER.debug("Search items failed: Interrupted by client");
+                LOGGER.debug("Folder " + folderPath + " - Search items failed: Interrupted by client");
                 throw new IOException("Search items failed: Interrupted by client");
             }
         } while (!(findItemMethod.includesLastItemInRange || (maxCount > 0 && resultCount == maxCount)));
