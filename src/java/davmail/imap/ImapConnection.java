@@ -156,12 +156,7 @@ public class ImapConnection extends AbstractConnection {
                                 session = ExchangeSessionFactory.getInstance(session, userName, password);
                                 if ("lsub".equalsIgnoreCase(command) || "list".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderContext;
-                                        if (baseMailboxPath == null) {
-                                            folderContext = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        } else {
-                                            folderContext = baseMailboxPath + BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        }
+                                        String folderContext = buildFolderContext(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
@@ -344,7 +339,7 @@ public class ImapConnection extends AbstractConnection {
                                         } else if ("copy".equalsIgnoreCase(subcommand) || "move".equalsIgnoreCase(subcommand)) {
                                             try {
                                                 UIDRangeIterator uidRangeIterator = new UIDRangeIterator(currentFolder.messages, tokens.nextToken());
-                                                String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                                String targetName = buildFolderContext(tokens.nextToken());
                                                 if (!uidRangeIterator.hasNext()) {
                                                     sendClient(commandId + " NO " + "No message found");
                                                 } else {
@@ -705,6 +700,14 @@ public class ImapConnection extends AbstractConnection {
         if (tokens != null && tokens.length == 3) {
             userName = tokens[0] + '\\' + tokens[1];
             baseMailboxPath = "/users/" + tokens[2] + '/';
+        }
+    }
+
+    protected String buildFolderContext(String folderToken) {
+        if (baseMailboxPath == null) {
+            return BASE64MailboxDecoder.decode(folderToken);
+        } else {
+            return baseMailboxPath + BASE64MailboxDecoder.decode(folderToken);
         }
     }
 
