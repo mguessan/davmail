@@ -15,10 +15,10 @@
             </p>
 
             <p>Davmail Gateway can run in server mode as a gateway between the mail
-                client and the Outlook Web Access (Exchange) server.
+                client and Exchange server through Outlook Web Access and/or EWS.
                 In server mode Davmail can run on any Java supported platform.
-                This mode was tested successfully with the Iphone and should work with
-                any phone with POP/IMAP/SMTP/LDAP/Caldav/Carddav client.
+                This mode was tested successfully with Iphone and Android phones and should work with
+                any equipment with POP/IMAP/SMTP/LDAP/Caldav/Carddav client.
                 In this mode many users can share the same DavMail instance.
             </p>
 
@@ -26,7 +26,8 @@
                 from Sourceforge and uncompress it with your favorite tool,
                 e.g. on Linux:&#x20;<code>unzip davmail-*.zip</code>.
             </p>
-            <p>Prepare a davmail.properties file according to your local needs :
+            <p>
+            Prepare a davmail.properties file according to your local needs :
             </p>
             <source><![CDATA[
 # DavMail settings, see http://davmail.sourceforge.net/ for documentation
@@ -63,7 +64,7 @@ davmail.proxyPassword=
 davmail.noProxyFor=
 
 # allow remote connection to DavMail
-davmail.allowRemote=false
+davmail.allowRemote=true
 # bind server sockets to a specific address
 davmail.bindAddress=
 # client connections SO timeout in seconds
@@ -92,6 +93,8 @@ davmail.disableUpdateCheck=true
 davmail.enableKeepalive=false
 # Message count limit on folder retrieval
 davmail.folderSizeLimit=0
+# Default windows domain for NTLM and basic authentication
+davmail.defaultDomain=
 
 #############################################################
 # Caldav settings
