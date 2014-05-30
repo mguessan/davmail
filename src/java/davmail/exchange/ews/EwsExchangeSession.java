@@ -730,7 +730,7 @@ public class EwsExchangeSession extends ExchangeSession {
             return searchItems(folderPath, attributes, condition, folderQueryTraversal);
         }
         // limited search, do not use paged search, limit with maxCount, sort by imapUid descending to get latest items
-        int resultCount = 0;
+        int resultCount;
         List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>();
         FindItemMethod findItemMethod;
 
@@ -1633,10 +1633,9 @@ public class EwsExchangeSession extends ExchangeSession {
                                     String ownerPartStat = property.getParamValue("PARTSTAT");
                                     if ("ACCEPTED".equals(ownerPartStat)) {
                                         ownerResponseReply = "AcceptItem";
-                                        // do not send DeclineItem to avoid deleting target event
-                                        //} else if  ("DECLINED".equals(ownerPartStat)) {
-                                        //    ownerResponseReply = "DeclineItem";
-                                    } else if ("TENTATIVE".equals(ownerPartStat)) {
+                                    // do not send DeclineItem to avoid deleting target event
+                                    } else if ("DECLINED".equals(ownerPartStat) ||
+                                            "TENTATIVE".equals(ownerPartStat)) {
                                         ownerResponseReply = "TentativelyAcceptItem";
                                     }
                                 }
