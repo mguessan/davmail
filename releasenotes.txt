@@ -1,3 +1,87 @@
+** DavMail 4.5.0 released **
+Includes EWS performance enhancements, improved Exchange 2013 support and many fixes detected by Coverity audit tool
+
+EWS:
+- EWS: adjust declined item handling
+- EWS: used paged search with static search condition, send a single request when folderSizeLimit is enabled
+- EWS: Allow Item and PostItem elements in message folders
+- EWS: Improve Exchange 2013 support
+- EWS: avoid mime content String conversion
+- EWS: Improve javadoc and make ItemId serializable
+- EWS: expect UTF-8 in options responses
+- EWS: remove unused field
+- EWS: Force encoding in mimeContent decode
+- EWS: Avoid /owa form request in direct EWS mode
+
+Documentation:
+- Add davmail.defaultDomain to template properties file
+- Doc: Change default port in Thunderbird directory config screenshot
+- Update settings image
+
+IMAP:
+- IMAP: fix 564, Moving / copying messages in public mailbox 
+- IMAP: implement separate thread folder load on STATUS request to avoid client timeouts
+- IMAP: fix 209, use isEqualTo instead of contains to search keywords on Exchange 2010
+- IMAP : various enhancements from audit, switch to enum and avoid NullPointerException
+
+OSX:
+- OSX: force working directory to application root
+
+Enhancements:
+- Upgrade svnkit to 1.8
+- Update WinRun4J wrappers
+- Upgrade WinRun4J to 0.4.5
+- Kerberos: make sure access to client login context is synchronized
+- Kerberos: synchronize access to clientLoginContext
+- Make MessageWrapper static
+- Revert Java 7 only changes
+- Do not try WebDav mode if owa url ends with /ews/exchange.asmx
+- Additional code fixes from audit, do not try to get time zone from options page in direct EWS mode
+- Force encoding in message create thread
+- Prepare WoodStox Xml10AllowAllEscapedChars setting implementation
+- Apply Base64 refactoring to all classes
+- Apply new base64 methods to CaldavConnection
+- Refactor base64 encode/decode methods
+- Improve contact picture error handling
+- Improve session factory log statements
+- Avoid null in log statement
+- New experimental davmail.exchange.maxConnections setting to limit concurrent connections to Exchange server
+
+Caldav:
+- Caldav: fix bug in VCalendar dtend check
+
+POP:
+- Refactor PopConnection, use enumeration instead of int
+
+Coverity:
+- From coverity: listFiles may return null
+- From coverity: avoid null dereference in VProperty
+- From coverity: avoid null dereference in getFolderPath
+- From coverity: check null image in FrameGatewayTray
+- From coverity: more encoding fixes
+- From coverity: synchronize HttpClient cookies access
+- From coverity: synchronize FileAppender creation
+- From coverity: URI.getPath may return null
+- From coverity: ImageIO.read may return null
+- From coverity: trayItem.getImage may return null
+- From coverity: client.getInetAddress() may return null
+- From coverity: createSaslServer may return null
+- From coverity: use UTF-8 encoding in Hex conversion methods
+- From coverity: force encoding to UTF-8 on socket output stream
+- From coverity: set encoding on String to bytes conversion
+- From coverity: use getParamValue instead of getParam().getValue() to avoid null dereference
+- From coverity: editor pane font can be null
+- From coverity: check null after ImageIO.read
+
+UI:
+- UI: small fixes on ui code from audit
+- Refactor SWT tray dispose management on exit
+- Handle missing resource in loadSwtImage
+
+DAV:
+- DAV: decode base64 content as ASCII
+
+
 ** DavMail 4.4.1 released **
 Includes mostly EWS support enhancements, Sogo carddav issue workaround, new
 IMAP uid based paging implementation to handle concurrent folder changes
