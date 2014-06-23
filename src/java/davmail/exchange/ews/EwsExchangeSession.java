@@ -1871,7 +1871,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
                     attendeeProperty.addParam("CN", attendee.name);
                     String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
-                    if ("Exchange2007_SP1".equals(serverVersion) && email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
+                    if (email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
                         attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
                     } else {
                         attendeeProperty.addParam("PARTSTAT", attendee.partstat);
