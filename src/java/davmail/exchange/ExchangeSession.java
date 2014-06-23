@@ -3311,8 +3311,8 @@ public abstract class ExchangeSession {
                 while ((line = optionsPageReader.readLine()) != null
                         && (line.indexOf('[') == -1
                         || line.indexOf('@') == -1
-                        || line.indexOf(']') == -1)
-                        && !line.toLowerCase().contains(MAILBOX_BASE)) {
+                        || line.indexOf(']') == -1
+                        || !line.toLowerCase().contains(MAILBOX_BASE))) {
                 }
                 if (line != null) {
                     int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
