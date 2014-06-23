@@ -37,7 +37,7 @@
                 <p>
                     <strong>EWS endpoint not available</strong>
                 </p>
-                <p>Unfortunately, this probably means your Exchange administrators blocked EWS access.</p>
+                <p>Unfortunately, this may mean your Exchange administrators blocked EWS access.</p>
                 <p>To check this, try to connect to
                     <code>https://<i>mail.company.com</i>/ews/exchange.asmx
                     </code>
@@ -45,6 +45,11 @@
                     you should get the EWS wsdl definition. If you don't, please contact the Exchange administrators
                     to let them fix the broken Exchange server setup.
                 </p>
+                <p>Another way to get EWS endpoint is to use Microsoft provided test page at:</p>
+                <code>https://testconnectivity.microsoft.com</code>
+                <p>Choose Outlook discover section, on test success expand details until you find
+                    POST response with EwsUrl value (internal and external).</p>
+                <p>Once you have this url, set it as OWA address in DavMail and force EWS mode</p>
                 <p>Note: Microsoft Outlook 2011 on OSX and native OSX applications also rely on EWS to connect to
                     Exchange. Mobile devices (Android phones, iPhones, Windows mobile) use ActiveSync on a different
                     endpoint.
