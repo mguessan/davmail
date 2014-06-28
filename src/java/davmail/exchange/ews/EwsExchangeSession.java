@@ -1466,7 +1466,8 @@ public class EwsExchangeSession extends ExchangeSession {
         String type;
         boolean isException;
 
-        protected Event(EWSMethod.Item response) {
+        protected Event(String folderPath, EWSMethod.Item response) {
+            this.folderPath = folderPath;
             itemId = new ItemId(response);
 
             type = response.type;
@@ -1925,7 +1926,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 condition,
                 FolderQueryTraversal.SHALLOW, 0);
         for (EWSMethod.Item response : responses) {
-            Event event = new Event(response);
+            Event event = new Event(folderPath, response);
             if ("Message".equals(event.type)) {
                 // TODO: just exclude
                 // need to check body
@@ -2034,7 +2035,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "Task".equals(itemType)
                 // VTODOs appear as Messages
                 || "Message".equals(itemType)) {
-            return new Event(item);
+            return new Event(folderPath, item);
         } else {
             throw new HttpNotFoundException(itemName + " not found in " + folderPath);
         }
