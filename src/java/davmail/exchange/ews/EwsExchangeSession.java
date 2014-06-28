@@ -1749,7 +1749,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("datecompleted"));
                     getItemMethod.addAdditionalProperty(Field.get("keywords"));
 
-                } else if (!"Message".equals(type)) {
+                } else if (!"Message".equals(type)
+                        && !"MeetingCancellation".equals(type)
+                        && !"MeetingResponse".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
