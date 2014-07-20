@@ -1,3 +1,26 @@
+** DavMail 4.5.1 released **
+Bugfix release to fix Exchange 2013 regressions and wrong Europe/London timezone mapping.
+
+DAV:
+- DAV: Another email address failover
+
+Caldav:
+- Caldav: Fix GMT Standard Time mapping to Europe/London
+- More timezones
+- Caldav: do not request additional properties for MeetingCancellation and MeetingResponse
+- Caldav: merge 33, apply myresponsetype partstat on all Exchange versions
+- Caldav: fix 569 and patch 32, avoid NullPointerException with Exchange 2013
+
+EWS:
+- EWS: Avoid null in log message
+
+Enhancements:
+- Merge patch 34: Fix false positive when searching for user alias and email 
+
+Doc:
+- Update FAQ on EWS endpoint not available error
+
+
 ** DavMail 4.5.0 released **
 Includes EWS performance enhancements, improved Exchange 2013 support and many fixes detected by Coverity audit tool
 
