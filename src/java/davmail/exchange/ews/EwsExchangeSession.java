@@ -1868,20 +1868,22 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected void fixAttendees(GetItemMethod getItemMethod, VObject vEvent) throws EWSException {
-            List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
-            if (attendees != null) {
-                for (EWSMethod.Attendee attendee : attendees) {
-                    VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
-                    attendeeProperty.addParam("CN", attendee.name);
-                    String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
-                    if (email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
-                        attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
-                    } else {
-                        attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+            if (getItemMethod.getResponseItem() != null) {
+                List<EWSMethod.Attendee> attendees = getItemMethod.getResponseItem().getAttendees();
+                if (attendees != null) {
+                    for (EWSMethod.Attendee attendee : attendees) {
+                        VProperty attendeeProperty = new VProperty("ATTENDEE", "mailto:" + attendee.email);
+                        attendeeProperty.addParam("CN", attendee.name);
+                        String myResponseType = getItemMethod.getResponseItem().get(Field.get("myresponsetype").getResponseName());
+                        if (email.equalsIgnoreCase(attendee.email) && myResponseType != null) {
+                            attendeeProperty.addParam("PARTSTAT", EWSMethod.responseTypeToPartstat(myResponseType));
+                        } else {
+                            attendeeProperty.addParam("PARTSTAT", attendee.partstat);
+                        }
+                        //attendeeProperty.addParam("RSVP", "TRUE");
+                        attendeeProperty.addParam("ROLE", attendee.role);
+                        vEvent.addProperty(attendeeProperty);
                     }
-                    //attendeeProperty.addParam("RSVP", "TRUE");
-                    attendeeProperty.addParam("ROLE", attendee.role);
-                    vEvent.addProperty(attendeeProperty);
                 }
             }
         }
