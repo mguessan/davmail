@@ -205,7 +205,7 @@ public class KerberosHelper {
                 GSSContext context = null;
                 try {
                     GSSManager manager = GSSManager.getInstance();
-                    GSSName serverName = manager.createName(protocol + '/' + host, null);
+                    GSSName serverName = manager.createName(protocol + '@' + host, GSSName.NT_HOSTBASED_SERVICE);
                     // Kerberos v5 OID
                     Oid krb5Oid = new Oid("1.2.840.113554.1.2.2");
 
