@@ -186,11 +186,11 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (status == HttpStatus.SC_UNAUTHORIZED) {
                     throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                 } else if (status != HttpStatus.SC_OK) {
-                    throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString()+" status "+status);
+                    throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString() + " status " + status);
                 }
 
             } else if (status != HttpStatus.SC_OK) {
-                throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString()+" status "+status);
+                throw new IOException("Ews endpoint not available at " + checkMethod.getURI().toString() + " status " + status);
             }
         } finally {
             checkMethod.releaseConnection();
@@ -306,7 +306,7 @@ public class EwsExchangeSession extends ExchangeSession {
         String searchValue = userName;
         int index = searchValue.indexOf('\\');
         if (index >= 0) {
-            searchValue = searchValue.substring(index+1);
+            searchValue = searchValue.substring(index + 1);
         }
         ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(searchValue);
         try {
@@ -329,7 +329,7 @@ public class EwsExchangeSession extends ExchangeSession {
             setAutoDiscoverRequestEntity(userEmail);
         }
 
-        AutoDiscoverMethod(String userEmail)  throws IOException {
+        AutoDiscoverMethod(String userEmail) throws IOException {
             super("/autodiscover/autodiscover.xml");
             setAutoDiscoverRequestEntity(userEmail);
         }
@@ -766,9 +766,9 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Paged search, retrieve all items.
      *
-     * @param folderPath folder path
-     * @param attributes attributes
-     * @param condition search condition
+     * @param folderPath           folder path
+     * @param attributes           attributes
+     * @param condition            search condition
      * @param folderQueryTraversal search mode
      * @return items
      * @throws IOException on error
@@ -801,10 +801,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
             long highestUid = 0;
             if (resultCount > 0) {
-                highestUid = Long.parseLong(results.get(resultCount-1).get(Field.get("imapUid").getResponseName()));
+                highestUid = Long.parseLong(results.get(resultCount - 1).get(Field.get("imapUid").getResponseName()));
             }
             // Only add new result if not already available (concurrent folder changes issue)
-            for (EWSMethod.Item item:findItemMethod.getResponseItems()) {
+            for (EWSMethod.Item item : findItemMethod.getResponseItems()) {
                 long imapUid = Long.parseLong(item.get(Field.get("imapUid").getResponseName()));
                 if (imapUid > highestUid) {
                     results.add(item);
@@ -812,9 +812,9 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Folder " + folderPath + " - Search items current count: "+resultCount+" fetchCount: "+fetchCount
-                        +" highest uid: "+results.get(resultCount-1).get(Field.get("imapUid").getResponseName())
-                        +" lowest uid: "+results.get(0).get(Field.get("imapUid").getResponseName()));
+                LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + fetchCount
+                        + " highest uid: " + results.get(resultCount - 1).get(Field.get("imapUid").getResponseName())
+                        + " lowest uid: " + results.get(0).get(Field.get("imapUid").getResponseName()));
             }
             if (Thread.interrupted()) {
                 LOGGER.debug("Folder " + folderPath + " - Search items failed: Interrupted by client");
@@ -1021,7 +1021,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if ("from".equals(headerName)
                     || "to".equals(headerName)
                     || "cc".equals(headerName)) {
-                return new AttributeCondition("msg"+headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
+                return new AttributeCondition("msg" + headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
             } else if ("message-id".equals(headerName)
                     || "bcc".equals(headerName)) {
                 return new AttributeCondition(headerName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
@@ -1634,7 +1634,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                     String ownerPartStat = property.getParamValue("PARTSTAT");
                                     if ("ACCEPTED".equals(ownerPartStat)) {
                                         ownerResponseReply = "AcceptItem";
-                                    // do not send DeclineItem to avoid deleting target event
+                                        // do not send DeclineItem to avoid deleting target event
                                     } else if ("DECLINED".equals(ownerPartStat) ||
                                             "TENTATIVE".equals(ownerPartStat)) {
                                         ownerResponseReply = "TentativelyAcceptItem";
@@ -1832,17 +1832,15 @@ public class EwsExchangeSession extends ExchangeSession {
                                 executeMethod(getOccurrenceMethod);
                                 fixAttendees(getOccurrenceMethod, modifiedOccurrence);
 
-                                if ("Exchange2007_SP1".equals(serverVersion)) {
-                                    // fix uid, should be the same as main VEVENT
-                                    if (calendaruid != null) {
-                                        modifiedOccurrence.setPropertyValue("UID", calendaruid);
-                                    }
+                                // fix uid, should be the same as main VEVENT
+                                if (calendaruid != null) {
+                                    modifiedOccurrence.setPropertyValue("UID", calendaruid);
+                                }
 
-                                    VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                                    if (recurrenceId != null) {
-                                        recurrenceId.removeParam("TZID");
-                                        recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
-                                    }
+                                VProperty recurrenceId = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                                if (recurrenceId != null) {
+                                    recurrenceId.removeParam("TZID");
+                                    recurrenceId.getValues().set(0, convertDateFromExchange(occurrence.originalStart));
                                 }
                             }
                         }
@@ -2569,6 +2567,7 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Check if itemName is long and base64 encoded.
      * User generated item names are usually short
+     *
      * @param itemName item name
      * @return true if itemName is an EWS item id
      */
