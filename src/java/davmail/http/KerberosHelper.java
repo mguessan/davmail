@@ -150,7 +150,7 @@ public class KerberosHelper {
      * @throws LoginException on error
      */
     public static byte[] initSecurityContext(final String protocol, final String host, final GSSCredential delegatedCredentials, final byte[] token) throws GSSException, LoginException {
-        LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + '/' + host + ' ' + token.length + " bytes token");
+        LOGGER.debug("KerberosHelper.initSecurityContext " + protocol + '@' + host + ' ' + token.length + " bytes token");
 
         synchronized (LOCK) {
             // check cached TGT
