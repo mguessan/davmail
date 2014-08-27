@@ -1131,27 +1131,30 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
-        FindFolderMethod findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
-                BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
-        executeMethod(findFolderMethod);
-        for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
-            Folder folder = buildFolder(item);
-            if (parentFolderPath.length() > 0) {
-                if (parentFolderPath.endsWith("/")) {
-                    folder.folderPath = parentFolderPath + item.get(Field.get("folderDisplayName").getResponseName());
+        FindFolderMethod findFolderMethod;
+        do {
+            findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
+                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
+            executeMethod(findFolderMethod);
+            for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
+                Folder folder = buildFolder(item);
+                if (parentFolderPath.length() > 0) {
+                    if (parentFolderPath.endsWith("/")) {
+                        folder.folderPath = parentFolderPath + item.get(Field.get("folderDisplayName").getResponseName());
+                    } else {
+                        folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
+                    }
+                } else if (folderIdMap.get(folder.folderId.value) != null) {
+                    folder.folderPath = folderIdMap.get(folder.folderId.value);
                 } else {
-                    folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
+                    folder.folderPath = item.get(Field.get("folderDisplayName").getResponseName());
                 }
-            } else if (folderIdMap.get(folder.folderId.value) != null) {
-                folder.folderPath = folderIdMap.get(folder.folderId.value);
-            } else {
-                folder.folderPath = item.get(Field.get("folderDisplayName").getResponseName());
+                folders.add(folder);
+                if (recursive && folder.hasChildren) {
+                    appendSubFolders(folders, folder.folderPath, folder.folderId, condition, recursive);
+                }
             }
-            folders.add(folder);
-            if (recursive && folder.hasChildren) {
-                appendSubFolders(folders, folder.folderPath, folder.folderId, condition, recursive);
-            }
-        }
+        } while (!(findFolderMethod.includesLastItemInRange));
     }
 
     /**
