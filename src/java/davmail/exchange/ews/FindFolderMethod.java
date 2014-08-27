@@ -39,6 +39,8 @@ public class FindFolderMethod extends EWSMethod {
         this.baseShape = baseShape;
         this.parentFolderId = parentFolderId;
         this.additionalProperties = additionalProperties;
+        // force paging mode
+        this.maxCount = 10000;
     }
 
     /**
