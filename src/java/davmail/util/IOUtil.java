@@ -108,9 +108,8 @@ public final class IOUtil {
      *
      * @param value input value
      * @return base64  value
-     * @throws IOException on error
      */
-    public static byte[] encodeBase64(byte[] value) throws IOException {
+    public static byte[] encodeBase64(byte[] value) {
         return Base64.encodeBase64(value);
     }
 
