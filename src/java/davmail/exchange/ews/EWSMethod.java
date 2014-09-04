@@ -54,6 +54,7 @@ public abstract class EWSMethod extends PostMethod {
     protected FolderId toFolderId;
     protected FolderId parentFolderId;
     protected ItemId itemId;
+    protected List<ItemId> itemIds;
     protected ItemId parentItemId;
     protected Set<FieldURI> additionalProperties;
     protected Disposal deleteType;
@@ -197,7 +198,14 @@ public abstract class EWSMethod extends PostMethod {
             if (updates == null) {
                 writer.write("<m:ItemIds>");
             }
-            itemId.write(writer);
+            if (itemId != null) {
+                itemId.write(writer);
+            }
+            if (itemIds != null) {
+                for (ItemId localItemId:itemIds) {
+                    localItemId.write(writer);
+                }
+            }
             if (updates == null) {
                 writer.write("</m:ItemIds>");
             }

@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import java.util.List;
+
 /**
  * Move Item method.
  */
@@ -31,6 +33,18 @@ public class MoveItemMethod extends EWSMethod {
     public MoveItemMethod(ItemId itemId, FolderId toFolderId) {
         super("Item", "MoveItem");
         this.itemId = itemId;
+        this.toFolderId = toFolderId;
+    }
+
+    /**
+     * Move items to target folder.
+     *
+     * @param itemIds    item id list
+     * @param toFolderId target folder id
+     */
+    public MoveItemMethod(List<ItemId> itemIds, FolderId toFolderId) {
+        super("Item", "MoveItem");
+        this.itemIds = itemIds;
         this.toFolderId = toFolderId;
     }
 }
