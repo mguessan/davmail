@@ -175,6 +175,11 @@ public final class DavGatewayHttpClientFacade {
     public static void configureClient(HttpClient httpClient, String url) throws DavMailException {
         setClientHost(httpClient, url);
 
+        // force NTLM in direct EWS mode
+        if (!needNTLM && url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+            needNTLM = true;
+        }
+
         if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
             AuthPolicy.registerAuthScheme("Negotiate", SpNegoScheme.class);
             ArrayList<String> authPrefs = new ArrayList<String>();
