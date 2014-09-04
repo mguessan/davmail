@@ -172,7 +172,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected void checkEndPointUrl(String endPointUrl) throws IOException {
-        HttpMethod checkMethod = new HeadMethod(endPointUrl);
+        HttpMethod checkMethod = new GetMethod(endPointUrl);
         checkMethod.setPath("/ews/services.wsdl");
         checkMethod.setFollowRedirects(false);
         try {
@@ -180,7 +180,7 @@ public class EwsExchangeSession extends ExchangeSession {
             if (status == HttpStatus.SC_UNAUTHORIZED) {
                 // retry with /ews/exchange.asmx
                 checkMethod.releaseConnection();
-                checkMethod = new HeadMethod(endPointUrl);
+                checkMethod = new GetMethod(endPointUrl);
                 checkMethod.setFollowRedirects(true);
                 status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
                 if (status == HttpStatus.SC_UNAUTHORIZED) {
