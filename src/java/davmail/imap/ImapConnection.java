@@ -343,14 +343,14 @@ public class ImapConnection extends AbstractConnection {
                                                 if (!uidRangeIterator.hasNext()) {
                                                     sendClient(commandId + " NO " + "No message found");
                                                 } else {
+                                                    ArrayList<ExchangeSession.Message> messages = new ArrayList<ExchangeSession.Message>();
                                                     while (uidRangeIterator.hasNext()) {
-                                                        DavGatewayTray.switchIcon();
-                                                        ExchangeSession.Message message = uidRangeIterator.next();
-                                                        if ("copy".equalsIgnoreCase(subcommand)) {
-                                                            session.copyMessage(message, targetName);
-                                                        } else {
-                                                            session.moveMessage(message, targetName);
-                                                        }
+                                                        messages.add(uidRangeIterator.next());
+                                                    }
+                                                    if ("copy".equalsIgnoreCase(subcommand)) {
+                                                        session.copyMessages(messages, targetName);
+                                                    } else {
+                                                        session.moveMessages(messages, targetName);
                                                     }
                                                     sendClient(commandId + " OK " + subcommand + " completed");
                                                 }

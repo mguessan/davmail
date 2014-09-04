@@ -1463,6 +1463,13 @@ public abstract class ExchangeSession {
      */
     public abstract void copyMessage(Message message, String targetFolder) throws IOException;
 
+    public void copyMessages(List<Message> messages, String targetFolder) throws IOException {
+        for (Message message: messages) {
+            copyMessage(message, targetFolder);
+        }
+    }
+
+
     /**
      * Move message to target folder
      *
@@ -1471,6 +1478,12 @@ public abstract class ExchangeSession {
      * @throws IOException on error
      */
     public abstract void moveMessage(Message message, String targetFolder) throws IOException;
+
+    public void moveMessages(List<Message> messages, String targetFolder) throws IOException {
+        for (Message message: messages) {
+            moveMessage(message, targetFolder);
+        }
+    }
 
     /**
      * Move folder to target name.
