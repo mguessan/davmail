@@ -1555,6 +1555,7 @@ public class LdapConnection extends AbstractConnection {
                 }
             }
 
+            DavGatewayTray.resetIcon();
         }
 
         /**
