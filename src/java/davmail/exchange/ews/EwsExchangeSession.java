@@ -779,10 +779,8 @@ public class EwsExchangeSession extends ExchangeSession {
         FolderId folderId = getFolderId(folderPath);
         FindItemMethod findItemMethod;
         do {
-            int fetchCount = PAGE_SIZE;
-
             // search items in folder, do not retrieve all properties
-            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, folderId, resultCount, fetchCount);
+            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, folderId, resultCount, PAGE_SIZE);
             for (String attribute : attributes) {
                 findItemMethod.addAdditionalProperty(Field.get(attribute));
             }
@@ -812,7 +810,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + fetchCount
+                LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + PAGE_SIZE
                         + " highest uid: " + results.get(resultCount - 1).get(Field.get("imapUid").getResponseName())
                         + " lowest uid: " + results.get(0).get(Field.get("imapUid").getResponseName()));
             }
@@ -1131,12 +1129,14 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void appendSubFolders(List<ExchangeSession.Folder> folders,
                                     String parentFolderPath, FolderId parentFolderId,
                                     Condition condition, boolean recursive) throws IOException {
+        int resultCount = 0;
         FindFolderMethod findFolderMethod;
         do {
             findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
-                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition);
+                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition, resultCount, PAGE_SIZE);
             executeMethod(findFolderMethod);
             for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
+                resultCount++;
                 Folder folder = buildFolder(item);
                 if (parentFolderPath.length() > 0) {
                     if (parentFolderPath.endsWith("/")) {
@@ -1151,7 +1151,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
                 folders.add(folder);
                 if (recursive && folder.hasChildren) {
-                    appendSubFolders(folders, folder.folderPath, folder.folderId, condition, recursive);
+                    appendSubFolders(folders, folder.folderPath, folder.folderId, condition, true);
                 }
             }
         } while (!(findFolderMethod.includesLastItemInRange));
@@ -2331,7 +2331,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 parentFolderId,
                 FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
-                        Field.get("folderDisplayName"), folderName)
+                        Field.get("folderDisplayName"), folderName),
+                0, 1
         );
         executeMethod(findFolderMethod);
         EWSMethod.Item item = findFolderMethod.getResponseItem();
