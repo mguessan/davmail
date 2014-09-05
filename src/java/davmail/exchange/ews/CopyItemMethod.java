@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import java.util.List;
+
 /**
  * Copy item to another folder.
  */
@@ -33,4 +35,17 @@ public class CopyItemMethod extends EWSMethod {
         this.itemId = itemId;
         this.toFolderId = toFolderId;
     }
+
+    /**
+     * Copy items to target folder.
+     *
+     * @param itemIds    item id list
+     * @param toFolderId target folder id
+     */
+    public CopyItemMethod(List<ItemId> itemIds, FolderId toFolderId) {
+        super("Item", "CopyItem");
+        this.itemIds = itemIds;
+        this.toFolderId = toFolderId;
+    }
+
 }

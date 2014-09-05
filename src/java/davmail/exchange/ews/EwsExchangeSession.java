@@ -1238,8 +1238,36 @@ public class EwsExchangeSession extends ExchangeSession {
      * @inheritDoc
      */
     @Override
+    public void moveMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
+        ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
+        for (ExchangeSession.Message message: messages) {
+            itemIds.add(((EwsExchangeSession.Message) message).itemId);
+        }
+
+        MoveItemMethod moveItemMethod = new MoveItemMethod(itemIds, getFolderId(targetFolder));
+        executeMethod(moveItemMethod);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public void copyMessage(ExchangeSession.Message message, String targetFolder) throws IOException {
         CopyItemMethod copyItemMethod = new CopyItemMethod(((EwsExchangeSession.Message) message).itemId, getFolderId(targetFolder));
+        executeMethod(copyItemMethod);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public void copyMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
+        ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
+        for (ExchangeSession.Message message: messages) {
+            itemIds.add(((EwsExchangeSession.Message) message).itemId);
+        }
+
+        CopyItemMethod copyItemMethod = new CopyItemMethod(itemIds, getFolderId(targetFolder));
         executeMethod(copyItemMethod);
     }
 
