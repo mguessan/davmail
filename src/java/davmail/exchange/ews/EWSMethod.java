@@ -392,7 +392,7 @@ public abstract class EWSMethod extends PostMethod {
     protected void writeSoapBody(Writer writer) throws IOException {
         startChanges(writer);
         writeShape(writer);
-        writeIndexedPageItemView(writer);
+        writeIndexedPageView(writer);
         writeRestriction(writer);
         writeSortOrder(writer);
         writeParentFolderId(writer);
@@ -410,9 +410,9 @@ public abstract class EWSMethod extends PostMethod {
     }
 
 
-    protected void writeIndexedPageItemView(Writer writer) throws IOException {
+    protected void writeIndexedPageView(Writer writer) throws IOException {
         if (maxCount > 0) {
-            writer.write("<m:IndexedPageItemView MaxEntriesReturned=\"");
+            writer.write("<m:IndexedPage"+itemType+"View MaxEntriesReturned=\"");
             writer.write(String.valueOf(maxCount));
             writer.write("\" Offset=\"");
             writer.write(String.valueOf(offset));
