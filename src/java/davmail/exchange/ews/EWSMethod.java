@@ -194,7 +194,7 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void writeItemId(Writer writer) throws IOException {
-        if (itemId != null) {
+        if (itemId != null || itemIds != null) {
             if (updates == null) {
                 writer.write("<m:ItemIds>");
             }
