@@ -24,6 +24,7 @@ import davmail.ui.tray.DavGatewayTray;
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -31,6 +32,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.HashSet;
 
 /**
  * Generic abstract server common to SMTP and POP3 implementations
@@ -103,7 +105,7 @@ public abstract class AbstractServer extends Thread {
 
                 // SSLContext is environment for implementing JSSE...
                 // create ServerSocketFactory
-                SSLContext sslContext = SSLContext.getInstance("SSLv3");
+                SSLContext sslContext = SSLContext.getInstance("TLS");
 
                 // initialize sslContext to work with key managers
                 sslContext.init(kmf.getKeyManagers(), null, null);
@@ -131,6 +133,17 @@ public abstract class AbstractServer extends Thread {
             } else {
                 serverSocket = serverSocketFactory.createServerSocket(port, 0, Inet4Address.getByName(bindAddress));
             }
+            if (serverSocket instanceof  SSLServerSocket) {
+                // CVE-2014-3566 disable SSLv3
+                HashSet<String> protocols = new HashSet<String>();
+                for (String protocol : ((SSLServerSocket) serverSocket).getEnabledProtocols()) {
+                    if (!protocol.startsWith("SSL")) {
+                        protocols.add(protocol);
+                    }
+                }
+                ((SSLServerSocket) serverSocket).setEnabledProtocols(protocols.toArray(new String[protocols.size()]));
+            }
+
         } catch (IOException e) {
             throw new DavMailException("LOG_SOCKET_BIND_FAILED", getProtocolName(), port);
         }
