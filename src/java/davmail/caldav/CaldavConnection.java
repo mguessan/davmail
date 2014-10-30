@@ -771,15 +771,20 @@ public class CaldavConnection extends AbstractConnection {
             events = session.getEventMessages(request.getFolderPath());
             appendEventsResponses(response, request, events);
         } else {
-            // TODO: handle contacts ?
-            if (request.vTodoOnly) {
-                events = session.searchTasksOnly(request.getFolderPath());
-            } else if (request.vEventOnly) {
-                events = session.searchEventsOnly(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+            ExchangeSession.Folder folder = session.getFolder(folderPath);
+            if (folder.isContact()) {
+                List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath);
+                appendContactsResponses(response, request, contacts);
             } else {
-                events = session.searchEvents(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+                if (request.vTodoOnly) {
+                    events = session.searchTasksOnly(request.getFolderPath());
+                } else if (request.vEventOnly) {
+                    events = session.searchEventsOnly(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+                } else {
+                    events = session.searchEvents(request.getFolderPath(), request.timeRangeStart, request.timeRangeEnd);
+                }
+                appendEventsResponses(response, request, events);
             }
-            appendEventsResponses(response, request, events);
         }
 
         // send not found events errors
