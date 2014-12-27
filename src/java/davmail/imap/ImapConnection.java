@@ -314,7 +314,7 @@ public class ImapConnection extends AbstractConnection {
                                                             throw e;
                                                         } catch (IOException e) {
                                                             DavGatewayTray.log(e);
-                                                            sendClient(commandId + " NO Unable to retrieve message: " + e.getMessage());
+                                                            LOGGER.warn("Ignore broken message " + uidRangeIterator.currentIndex + ' ' + e.getMessage());
                                                         }
                                                     }
                                                     sendClient(commandId + " OK UID FETCH completed");
@@ -400,7 +400,7 @@ public class ImapConnection extends AbstractConnection {
                                                 throw e;
                                             } catch (IOException e) {
                                                 DavGatewayTray.log(e);
-                                                sendClient(commandId + " NO Unable to retrieve message: " + e.getMessage());
+                                                LOGGER.warn("Ignore broken message " + rangeIterator.currentIndex+ ' ' +e.getMessage());
                                             }
 
                                         }
