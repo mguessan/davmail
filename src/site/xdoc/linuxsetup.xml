@@ -12,6 +12,9 @@
 
         <section name="DavMail Setup on linux">
             <subsection name="Debian package">
+                <p>This page describes DavMail setup as a graphical application, if you don't want or need a user interface you can run
+                    <a href="serversetup.html">DavMail in server mode</a>
+                </p>
                 <p>Download current debian package from Sourceforge, double click on it
                     to launch package installer.
                 </p>
@@ -20,6 +23,8 @@
                     install Java and the appropriate SWT package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
+                <p>Note to Ubuntu 14 users, you can restore systray by following instructions at:
+                <a href="http://www.webupd8.org/2013/05/how-to-get-systray-whitelist-back-in.html">How to whitelist all systray apps in Ubuntu 14.04 or 14.10 (with Unity)</a></p>
                 <p>Note to Ubuntu 13 users, you will need to apply the following patch to fix missing whitelist
                 regression: <a href="https://launchpad.net/~timekiller/+archive/unity-systrayfix">Unity Desktop with Systray Whitelisting Support</a></p>
                 <p>Note to Ubuntu 12 Natty users: they eventually fixed Oneiric issue, use gsettings command below</p>
