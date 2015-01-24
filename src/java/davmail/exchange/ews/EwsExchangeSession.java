@@ -1715,7 +1715,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                 }
                 //}
-            }
+                }
             executeMethod(createOrUpdateItemMethod);
 
             itemResult.status = createOrUpdateItemMethod.getStatusCode();
@@ -2160,8 +2160,10 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public boolean isMainCalendar(String folderPath) {
-        return "calendar".equalsIgnoreCase(folderPath) || (currentMailboxPath + "/calendar").equalsIgnoreCase(folderPath);
+    public boolean isMainCalendar(String folderPath) throws IOException {
+        FolderId currentFolderId = getFolderId(folderPath);
+        FolderId calendarFolderId = getFolderId("calendar");
+        return calendarFolderId.name.equals(currentFolderId.name) && calendarFolderId.value.equals(currentFolderId.value);
     }
 
     @Override

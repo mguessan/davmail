@@ -3304,7 +3304,7 @@ public abstract class ExchangeSession {
      * @param folderPath absolute folder path
      * @return true if folderPath is a public or shared folder
      */
-    public abstract boolean isMainCalendar(String folderPath);
+    public abstract boolean isMainCalendar(String folderPath) throws IOException;
 
     static final String MAILBOX_BASE = "/cn=";
 
