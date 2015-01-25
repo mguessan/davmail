@@ -183,7 +183,7 @@ else
 	# set Working Directory and Java and Resources folder
 	JavaFolder="${OracleJavaFolder}"
 	ResourcesFolder="${OracleResourcesFolder}"
-	WorkingDirectory="${OracleJavaFolder}"
+	WorkingDirectory="${AppPackageFolder}"
 
 	APP_ROOT="${AppPackageFolder}"
 
@@ -222,67 +222,41 @@ elif [ -x /usr/libexec/java_home ] && [ -d "`/usr/libexec/java_home 2> /dev/null
 	JAVACMD="`/usr/libexec/java_home 2> /dev/null`/bin/java"
 
 # otherwise check Java standard symlink (old Apple Java)
-elif [ -h /Library/Java/Home ]; then
+elif [ -x /Library/Java/Home/bin/java ]; then
 	JAVACMD="/Library/Java/Home/bin/java"
 
 # fallback: public JRE plugin (Oracle Java)
-else
+elif [ -x "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java" ]; then
 	JAVACMD="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java"
-fi
-
+else
 # fallback fallback: /usr/bin/java
-# but this would prompt to install deprecated Apple Java 6
-
-
-
+	JAVACMD="/usr/bin/java"
+fi
 
 #
-# execute JAVA commandline and do some pre-checks
+# execute JAVA commandline
 ####################################################
 
-# display error message if MainClassName is empty
-if [ -z ${JVMMainClass} ]; then
-	# display error message with applescript
-	osascript -e "tell application \"System Events\" to display dialog \"ERROR launching '${CFBundleName}'!\n\n'MainClass' isn't specified!\nJava application cannot be started!\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1 with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
-	# exit with error
-	exit 1
 
+# enable drag&drop to the dock icon
+export CFProcessPath="$0"
 
-# check whether $JAVACMD is a file and executable
-elif [ -f "$JAVACMD" ] && [ -x "$JAVACMD" ] ; then
+# change to Working Directory based upon Apple/Oracle Plist info
+cd "${WorkingDirectory}"
 
-	# enable drag&drop to the dock icon
-	export CFProcessPath="$0"
-
-	# change to Working Directory based upon Apple/Oracle Plist info
-	cd "${WorkingDirectory}"
-
-	# execute Java and set
-	#	- classpath
-	#	- dock icon
-	#	- application name
-	#	- JVM options
-	#	- JVM default options
-	#	- main class
-	#	- JVM arguments
-	exec "$JAVACMD" \
-			-cp "${JVMClassPath}" \
-			-Xdock:icon="${ResourcesFolder}/${CFBundleIconFile}" \
-			-Xdock:name="${CFBundleName}" \
-			${JVMOptions:+$JVMOptions }\
-			${JVMDefaultOptions:+$JVMDefaultOptions }\
-			${JVMMainClass}\
-			${JVMArguments:+ $JVMArguments}
-
-
-else
-
-	# display error message with applescript
-	osascript -e "tell application \"System Events\" to display dialog \"ERROR launching '${CFBundleName}'!\n\nYou need to have JAVA installed on your Mac!\nVisit http://java.com for more information...\" with title \"${CFBundleName}\" buttons {\" OK \"} default button 1 with icon path to resource \"${CFBundleIconFile}\" in bundle (path to me)"
-
-	# and open java.com
-	open http://java.com
-
-	# exit with error
-	exit 1
-fi
+# execute Java and set
+#	- classpath
+#	- dock icon
+#	- application name
+#	- JVM options
+#	- JVM default options
+#	- main class
+#	- JVM arguments
+exec "$JAVACMD" \
+		-cp "${JVMClassPath}" \
+		-Xdock:icon="${ResourcesFolder}/${CFBundleIconFile}" \
+		-Xdock:name="${CFBundleName}" \
+		${JVMOptions:+$JVMOptions }\
+		${JVMDefaultOptions:+$JVMDefaultOptions }\
+		${JVMMainClass}\
+		${JVMArguments:+ $JVMArguments}

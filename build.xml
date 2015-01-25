@@ -93,75 +93,33 @@
     </target>
 
     <target name="dist-osx">
-        <taskdef name="jarbundler"
-                 classname="net.sourceforge.jarbundler.JarBundler">
-            <classpath location="lib/jarbundler-2.1.0.jar"/>
-        </taskdef>
-        <jarbundler dir="dist"
-                    shortname="DavMail"
-                    name="DavMail"
-                    mainclass="davmail.DavGateway"
-                    build="${release}"
-                    icon="src/osx/tray.icns"
-                    infostring="DavMail Gateway ${release}"
-                    jvmversion="1.5+"
-                    version="${release}"
-                    vmoptions="-Dsun.net.inetaddr.ttl=60 -Xmx512m"
-                    workingdirectory="$APP_PACKAGE"
-                    stubfile="src/osx/davmail">
-            <jarfileset dir="dist">
+        <!-- move jar files to new location -->
+        <copy todir="dist/DavMail.app/Contents/Java">
+            <fileset dir="dist">
                 <include name="*.jar"/>
-            </jarfileset>
-            <jarfileset dir="dist/lib">
+            </fileset>
+            <fileset dir="dist/lib">
                 <include name="*.jar"/>
                 <include name="*.jnilib"/>
                 <exclude name="swt*.jar"/>
                 <exclude name="junit-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
-            </jarfileset>
-        </jarbundler>
-        <!-- prepare hide from dock option -->
-        <replaceregexp file="dist/DavMail.app/Contents/Info.plist" match="&lt;key>CFBundleName&lt;/key>"
-                       replace="&lt;key>LSUIElement&lt;/key>&lt;string>0&lt;/string>&lt;key>CFBundleName&lt;/key>"/>
-        <!-- Retina display support -->
-        <replaceregexp file="dist/DavMail.app/Contents/Info.plist" match="&lt;key>CFBundleName&lt;/key>"
-                       replace="&lt;key>NSHighResolutionCapable&lt;/key>&lt;true/>&lt;key>CFBundleName&lt;/key>"/>
-        <zip file="dist/DavMail-MacOSX-${release-name}.app.zip" comment="In order to run DavMail on OSX Mountain Lion, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
-            <zipfileset dir="dist">
-                <include name="DavMail.app/**/*"/>
-                <exclude name="DavMail.app/Contents/MacOS/davmail"/>
-            </zipfileset>
-            <zipfileset dir="dist" filemode="755">
-                <include name="DavMail.app/Contents/MacOS/davmail"/>
-            </zipfileset>
-        </zip>
-        <!--delete dir="dist/DavMail.app"/-->
-    </target>
-
-    <target name="dist-osx-java7" depends="dist-osx">
-        <!-- move jar files to new location -->
-        <move todir="dist/DavMail.app/Contents/Java">
-            <fileset dir="dist/DavMail.app/Contents/Resources/Java"/>
-        </move>
-        <!-- move libgrowl to library path -->
-        <move todir="dist/DavMail.app/Contents/MacOS">
-            <fileset file="dist/DavMail.app/Contents/Java/libgrowl.jnilib"/>
-        </move>
-        <!-- use Java7 app launcher -->
-        <copy file="src/osx-java7/JavaAppLauncher" tofile="dist/DavMail.app/Contents/MacOS/davmail" overwrite="true"/>
-        <!-- include Java7 labels -->
-        <copy todir="dist/DavMail.app/Contents/Resources">
-            <fileset dir="src/osx-java7">
-                <include name="en.lproj/**"/>
             </fileset>
         </copy>
+        <!-- move libgrowl to library path -->
+        <copy todir="dist/DavMail.app/Contents/MacOS">
+            <fileset file="lib/libgrowl.jnilib"/>
+        </copy>
+        <copy file="src/osx/tray.icns" todir="dist/DavMail.app/Contents/Resources" overwrite="true"/>
+        <!-- use generic app launcher -->
+        <copy file="src/osx/davmail" todir="dist/DavMail.app/Contents/MacOS" overwrite="true"/>
         <!-- template plist -->
-        <copy file="src/osx-java7/Info.plist" todir="dist/DavMail.app/Contents" overwrite="true">
+        <copy file="src/osx/Info.plist" todir="dist/DavMail.app/Contents" overwrite="true">
             <filterchain>
                 <expandproperties/>
             </filterchain>
         </copy>
-        <zip file="dist/DavMail-MacOSX-Java7-${release-name}.app.zip" comment="In order to run DavMail on OSX Mountain Lion, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
+        <zip file="dist/DavMail-MacOSX-${release-name}.app.zip" comment="In order to run DavMail on OSX Mountain Lion or later, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
             <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
                 <exclude name="DavMail.app/Contents/MacOS/davmail"/>
@@ -424,7 +382,7 @@
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
         <!--antcall target="dist-rpm"/-->
-        <antcall target="dist-osx-java7"/>
+        <antcall target="dist-osx"/>
         <!-- source with binary deps package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${release-name}" dir=".">

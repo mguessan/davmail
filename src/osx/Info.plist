@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<plist version="1.0">
+  <dict>
+    <key>LSUIElement</key><string>0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>CFBundleName</key>
+    <string>DavMail</string>
+    <key>CFBundleShortVersionString</key>
+    <string>${release}</string>
+    <key>CFBundleGetInfoString</key>
+    <string>DavMail Gateway ${release-name}</string>
+    <key>CFBundleAllowMixedLocalizations</key>
+    <string>false</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleExecutable</key>
+    <string>davmail</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>${release}</string>
+    <key>CFBundleIconFile</key>
+    <string>tray.icns</string>
+    <key>JVMMainClassName</key>
+    <string>davmail.DavGateway</string>
+    <key>JVMOptions</key>
+    <array>
+    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
+    </array>
+  </dict>
+</plist>

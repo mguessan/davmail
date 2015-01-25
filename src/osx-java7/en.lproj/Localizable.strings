@@ -1,3 +1,0 @@
-"JRELoadError" = "Java 7 not available, please download and install from http://www.java.com";
-"MainClassNameRequired" = "Main class name is required.";
-"JavaDirectoryNotFound" = "Unable to enumerate Java directory contents.";
