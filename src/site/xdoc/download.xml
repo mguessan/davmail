@@ -34,9 +34,8 @@
                     </li>
                     <li>
                         <strong>Mac OS X:</strong>
-                        Either setup Java 7 from <a href="http://www.java.com">Oracle Java page</a>
-                        and use the new <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-Java7-<em>version</em>.app.zip</a> package
-                        or use Apple provided Java 6 with
+                        Either setup Java 7/8 from <a href="http://www.java.com">Oracle Java page</a> or use Apple provided Java 6 at
+                        <a href="http://support.apple.com/kb/DL1572">Java for OS X 2014-001</a>, then download
                         <a href="http://sourceforge.net/projects/davmail/files/">DavMail-MacOSX-<em>version</em>.app.zip
                         </a>
                         <br/>
