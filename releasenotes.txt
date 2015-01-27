@@ -1,3 +1,50 @@
+** DavMail 4.6.0 released **
+Bugfix release with many IMAP enhancements over EWS, implement batch move items,
+also includes a brand new generic OSX package to handle new OSX java behaviour.
+
+OSX:
+- OSX: refactor OSX package based on universalJavaApplicationStub
+- Replace Java application stub with https://github.com/tofi86/universalJavaApplicationStub/blob/master/src/universalJavaApplicationStub
+
+Doc:
+- Doc: update OSX setup documentation
+- Doc: additional Linux instructions for Ubuntu 14
+- Fix #31 A typo in davmail.properties example
+
+EWS:
+- EWS: improve main calendar folder test
+- EWS: fix batch move
+- EWS: Adjust paged search for folders
+- EWS: implement batch move items
+- EWS: improve folder paged search
+- Prepare batch move implementation
+- EWS: force NTLM in direct EWS mode
+- EWS: implement batch move method
+- EWS: switch to GetMethod to check endpoint
+- EWS: take paging into account in appendSubFolders
+- EWS: fix ErrorExceededFindCountLimit on FindFolder requests
+- EWS: avoid NullPointerException in fixAttendees
+
+Linux:
+- Allow Java 8 and default jre in debian package
+
+IMAP:
+- IMAP: fix 587 log and skip broken messages
+
+Caldav
+- Caldav: fix #98 Support of Contacts in CardDav REPORT 
+- Fix #35 duplicates in updated reoccurring events 
+
+Enhancements
+- Fix potential CVE-2014-3566 vulnerability
+- From audit: remove throws statement
+- Adjust KerberosHelper logging message
+- Fix for #534 Kerberos Authentication doesn't seem to be work cross domain
+
+LDAP:
+- LDAP: reset icon after search
+
+
 ** DavMail 4.5.1 released **
 Bugfix release to fix Exchange 2013 regressions and wrong Europe/London timezone mapping.
 

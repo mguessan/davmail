@@ -15,7 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.5">
+            <subsection name="4.7">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
@@ -31,6 +31,7 @@
                     <strong>Future version</strong>
                 </p>
                 <ul>
+                    <li>Improve EWS Caldav implementation</li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement ActiveSync backend</li>
                     <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
