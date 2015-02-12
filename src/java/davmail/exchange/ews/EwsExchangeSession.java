@@ -172,16 +172,13 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected void checkEndPointUrl(String endPointUrl) throws IOException {
-        HttpMethod checkMethod = new GetMethod(endPointUrl);
-        checkMethod.setPath("/ews/services.wsdl");
-        checkMethod.setFollowRedirects(false);
+        GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
         try {
             int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
             if (status == HttpStatus.SC_UNAUTHORIZED) {
                 // retry with /ews/exchange.asmx
                 checkMethod.releaseConnection();
-                checkMethod = new GetMethod(endPointUrl);
-                checkMethod.setFollowRedirects(true);
+                checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
                 status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, checkMethod);
                 if (status == HttpStatus.SC_UNAUTHORIZED) {
                     throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -203,7 +200,9 @@ public class EwsExchangeSession extends ExchangeSession {
         if (method != null) {
             method.releaseConnection();
         }
-        directEws = method == null || "/ews/services.wsdl".equalsIgnoreCase(method.getPath());
+        directEws = method == null
+                || "/ews/services.wsdl".equalsIgnoreCase(method.getPath())
+                || "/ews/exchange.asmx".equalsIgnoreCase(method.getPath());
 
         // options page is not available in direct EWS mode
         if (!directEws) {
