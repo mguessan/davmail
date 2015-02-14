@@ -520,8 +520,10 @@ public class ImapConnection extends AbstractConnection {
                                         // clear cache before going to idle mode
                                         currentFolder.clearCache();
                                         DavGatewayTray.resetIcon();
+                                        int originalTimeout = client.getSoTimeout();
                                         try {
                                             int count = 0;
+                                            client.setSoTimeout(1000);
                                             while (in.available() == 0) {
                                                 if (++count >= imapIdleDelay) {
                                                     count = 0;
@@ -530,8 +532,15 @@ public class ImapConnection extends AbstractConnection {
                                                         handleRefresh(previousImapFlagMap, currentFolder.getImapFlagMap());
                                                     }
                                                 }
-                                                // sleep 1 second
-                                                Thread.sleep(1000);
+                                                // wait for input 1 second
+                                                try {
+                                                    byte[] byteBuffer = new byte[1];
+                                                    if (in.read(byteBuffer) > 0) {
+                                                        in.unread(byteBuffer);
+                                                    }
+                                                } catch (SocketTimeoutException e) {
+                                                    // ignore, read timed out
+                                                }
                                             }
                                             // read DONE line
                                             line = readClient();
@@ -543,6 +552,8 @@ public class ImapConnection extends AbstractConnection {
                                         } catch (IOException e) {
                                             // client connection closed
                                             throw new SocketException(e.getMessage());
+                                        } finally {
+                                            client.setSoTimeout(originalTimeout);
                                         }
                                     } else {
                                         sendClient(commandId + " NO no folder selected");
