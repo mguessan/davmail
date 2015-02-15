@@ -56,11 +56,9 @@ window and full calendar support with attendees free/busy display.
 
 %build
 # JAVA_HOME points to the JDK root directory: ${JAVA_HOME}/{bin,lib}
-jre=`rpm -q --whatprovides jre`
-jexec=`rpm -ql ${jre} | grep "jexec"`
-lib=`dirname ${jexec}` # level up
-jre=`dirname ${lib}` # level up
-java_home=`dirname ${jre}` # level up
+jcompiler=`readlink -f $(which javac)`
+bin=`dirname ${jcompiler}` # level up
+java_home=`dirname ${bin}` # level up
 export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
@@ -168,6 +166,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Sun Feb 15 2015 Mickael Guessant <mguessan@free.fr>
+- Fix JAVA HOME detection for openSUSE_13.2
+
 * Sun Feb 01 2015 Achim Herwig <achim.herwig@wodca.de>
 - Adapted spec for davmail-src-4.6.0-2331.tgz
 
