@@ -224,8 +224,17 @@ public final class DavGatewayTray {
      * Create tray icon and register frame listeners.
      */
     public static void init() {
+        String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
+        String javaVersion = System.getProperty("java.version");
+        String arch = System.getProperty("sun.arch.data.model");
+        LOGGER.debug("OS Name: "+System.getProperty("os.name")+
+                "Java version: "+javaVersion+((arch!=null)? ' ' +arch:"")+
+                "System tray "+(SystemTray.isSupported()?"":"not ")+"supported"+
+                        ((currentDesktop==null)?"":"Current Desktop: " + currentDesktop)
+        );
+
         if (!Settings.getBooleanProperty("davmail.server")) {
-            // first try to load SWT before with Java
+            // first try to load SWT before with Java AWT
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             try {
                 // trigger ClassNotFoundException
@@ -283,6 +292,9 @@ public final class DavGatewayTray {
         try {
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
+           if (imageUrl == null) {
+               throw new IOException("Missing resource: "+fileName);
+           }
             result = ImageIO.read(imageUrl);
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
