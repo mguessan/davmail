@@ -20,6 +20,10 @@ License: GPL
 Group: Applications/Internet
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, ant-nodeps >= 1.7.1, ant-antlr, desktop-file-utils
+%if 0%{?fedora} == 18
+# missing ant dep on original Fedora 18
+BuildRequires:	xml-commons-apis
+%endif
 BuildRequires: java-devel >= 1.6.0
 Requires: coreutils
 Requires: filesystem
@@ -58,6 +62,7 @@ lib=`dirname ${jexec}` # level up
 jre=`dirname ${lib}` # level up
 java_home=`dirname ${jre}` # level up
 export JAVA_HOME=${java_home}
+# /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 # we have java 1.6
 ant -Dant.java.version=1.6
@@ -163,6 +168,12 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Sun Feb 01 2015 Achim Herwig <achim.herwig@wodca.de>
+- Adapted spec for davmail-src-4.6.0-2331.tgz
+
+* Tue Oct 28 2014 Dmitri Bachtin <d.bachtin@gmail.com>
+- Adapted spec for davmail-src-4.5.1-2303.tgz
+
 * Fri Dec 09 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
 - use /var/run/davmail.lock instead of /var/lock/subsys/davmail
   http://en.opensuse.org/openSUSE:Packaging_checks#subsys-unsupported
