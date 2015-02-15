@@ -23,6 +23,7 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
+import davmail.util.IOUtil;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.lf5.LF5Appender;
@@ -36,6 +37,7 @@ import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
 
 import javax.swing.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 
@@ -59,6 +61,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
     private boolean isReady;
+    private boolean firstMessage = true;
 
     private final Thread mainThread = Thread.currentThread();
 
@@ -144,6 +147,15 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         toolTip.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
                         toolTip.setMessage(message);
                         trayItem.setToolTip(toolTip);
+                        // Wait for tray init 1 second on first message
+                        if (firstMessage) {
+                            firstMessage = false;
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                // ignore
+                            }
+                        }
                         toolTip.setVisible(true);
                     }
                     trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
@@ -166,7 +178,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             if (imageUrl == null) {
                 throw new IOException(fileName);
             }
-            result = new Image(display, imageUrl.openStream());
+            byte[] imageContent = IOUtil.readFully(imageUrl.openStream());
+            result = new Image(display, new ByteArrayInputStream(imageContent));
+
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
