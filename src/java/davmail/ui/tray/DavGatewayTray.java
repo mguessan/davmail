@@ -228,12 +228,17 @@ public final class DavGatewayTray {
         String javaVersion = System.getProperty("java.version");
         String arch = System.getProperty("sun.arch.data.model");
         LOGGER.debug("OS Name: "+System.getProperty("os.name")+
-                "Java version: "+javaVersion+((arch!=null)? ' ' +arch:"")+
-                "System tray "+(SystemTray.isSupported()?"":"not ")+"supported"+
+                " Java version: "+javaVersion+((arch!=null)? ' ' +arch:"")+
+                " System tray "+(SystemTray.isSupported()?"":"not ")+"supported "+
                         ((currentDesktop==null)?"":"Current Desktop: " + currentDesktop)
         );
 
         if (!Settings.getBooleanProperty("davmail.server")) {
+            if ("Unity".equals(currentDesktop)) {
+                LOGGER.info("Detected Unity desktop, please follow instructions at " +
+                        "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
+                        "or run DavMail in server mode");
+            }
             // first try to load SWT before with Java AWT
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             try {
