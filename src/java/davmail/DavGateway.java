@@ -134,8 +134,6 @@ public final class DavGateway {
                 messages.add(new BundleMessage("LOG_PROTOCOL_PORT", server.getProtocolName(), server.getPort()));
             } catch (DavMailException e) {
                 errorMessages.add(e.getBundleMessage());
-            } catch (IOException e) {
-                errorMessages.add(new BundleMessage("LOG_SOCKET_BIND_FAILED", server.getProtocolName(), server.getPort()));
             }
         }
 
