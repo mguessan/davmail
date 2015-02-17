@@ -90,6 +90,7 @@ install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/davmail.
 rm -f dist/lib/*win32*.jar
 install -m 0664 dist/lib/*-%{davarch}.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/
 rm -f dist/lib/*x86*.jar
+rm -f dist/lib/*growl*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/
 
