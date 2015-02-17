@@ -1,3 +1,28 @@
+** DavMail 4.6.1 released **
+Bugfix release to fix recent regression with Office 365,
+also includes a few Linux and IMAP enhancements.
+
+Linux:
+- RPM: exclude Growl library from RPM package
+- Add genericname to desktop entry
+- RPM: Fix warning the init script refers to runlevel 4 which is admin defined. No distribution script must use it
+- Detect and log message for Unity users
+- RPM: Fix JAVA HOME detection for openSUSE_13.2
+- RPM: update spec file from OpenSuse build by Dmitri Bachtin and  Achim Herwig
+
+SWT:
+- SWT: improve tray init, preload image and add a delay on first message
+
+Enhancements:
+- Add a few more logging statements
+
+IMAP:
+- Fix #36 Endless loop when using IMAP IDLE feature with SSL sockets, replaced thread sleep with a short timeout on socket read
+
+EWS:
+- EWS: update checkEndPointUrl, send get root folder request instead of static wsdl request no longer available on Office365
+
+
 ** DavMail 4.6.0 released **
 Bugfix release with many IMAP enhancements over EWS, implement batch move items,
 also includes a brand new generic OSX package to handle new OSX java behaviour.
