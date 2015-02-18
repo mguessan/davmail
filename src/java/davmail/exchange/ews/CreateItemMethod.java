@@ -34,6 +34,7 @@ public class CreateItemMethod extends EWSMethod {
         this.savedItemFolderId = savedItemFolderId;
         this.item = item;
         addMethodOption(messageDisposition);
+        setContentChunked(true);
     }
 
     /**
