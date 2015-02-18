@@ -19,7 +19,7 @@ Release: 1%{?dist}
 License: GPL
 Group: Applications/Internet
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: ant >= 1.7.1, ant-nodeps >= 1.7.1, ant-antlr, desktop-file-utils
+BuildRequires: ant >= 1.7.1, ant-antlr, desktop-file-utils
 %if 0%{?fedora} == 18
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
@@ -167,6 +167,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Tue Feb 17 2015 Mickael Guessant <mguessan@free.fr>
+- Adapted spec for davmail 4.6.1
+
 * Sun Feb 15 2015 Mickael Guessant <mguessan@free.fr>
 - Fix JAVA HOME detection for openSUSE_13.2
 
