@@ -68,19 +68,21 @@ ant -Dant.java.version=1.6
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{_bindir}
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/init.d
-mkdir -p $RPM_BUILD_ROOT/%{_datadir}/applications
-mkdir -p $RPM_BUILD_ROOT/%{_datadir}/pixmaps
-mkdir -p $RPM_BUILD_ROOT/%{_datadir}/davmail/lib
-mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib/davmail
-mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/log
+mkdir -p $RPM_BUILD_ROOT%{_bindir}
+mkdir -p $RPM_BUILD_ROOT%{_sbindir}
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/pixmaps
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/davmail/lib
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
 install -m 0775 %{SOURCE1} $RPM_BUILD_ROOT/%{_bindir}/davmail
 install -m 0644 %{SOURCE2} $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/davmail
 install -m 0775 %{SOURCE3} $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/davmail
+ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
 install -m 0644 %{SOURCE4} $RPM_BUILD_ROOT/%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT/%{_datadir}/applications/ %{SOURCE5} --vendor=""
@@ -159,8 +161,9 @@ fi
 %files
 %defattr (-,root,root,-)
 %{_bindir}/*
+%{_sbindir}/rcdavmail
 %{_sysconfdir}/init.d/davmail
-%{_sysconfdir}/logrotate.d/davmail
+%config(noreplace) %{_sysconfdir}/logrotate.d/davmail
 %config(noreplace) %{_sysconfdir}/%{davmaildotproperties}
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
@@ -168,6 +171,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
+- Add rcdavmail link, mark logrotate config file
+
 * Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
 - Fix License and URL
 
