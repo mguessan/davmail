@@ -14,9 +14,10 @@
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
+URL: http://davmail.sourceforge.net
 Version: %{davrel}
 Release: 1%{?dist}
-License: GPL
+License: GPL-2.0+
 Group: Applications/Internet
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, ant-antlr, desktop-file-utils
@@ -167,6 +168,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
+- Fix License and URL
+
 * Tue Feb 17 2015 Mickael Guessant <mguessan@free.fr>
 - Adapted spec for davmail 4.6.1
 
