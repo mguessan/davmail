@@ -20,6 +20,7 @@ package davmail.imap;
 
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
+import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -50,6 +51,12 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". LSUB \"\" \"*\"");
         assertEquals(". OK LSUB completed", readFullAnswer("."));
     }
+
+    public void testListAllSubFolders() throws IOException {
+        writeLine(". LIST \"\" \"%/%\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+    }
+
 
     public void testListSubFolders() throws IOException {
         writeLine(". LIST \"\" \"INBOX*\"");
@@ -376,11 +383,19 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
+    public void testSearchKeywords() throws IOException {
+        testSelectInbox();
+        writeLine(". UID FETCH 1:* (FLAGS KEYWORD)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        writeLine(". UID SEARCH KEYWORD $label1");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
 
     public void testDraftMessageMessageId() throws IOException, InterruptedException, MessagingException {
         testCreateFolder();
         MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("to", "testto <"+Settings.getProperty("davmail.to")+">");
+        mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
         mimeMessage.setText("Test message");
         mimeMessage.setSubject("Test subject");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -391,10 +406,10 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(new String(content));
         assertEquals(". OK APPEND completed", readFullAnswer("."));
 
-        writeLine(". UID SEARCH UNDELETED (HEADER Message-ID "+mimeMessage.getMessageID().substring(1, mimeMessage.getMessageID().length()-1)+")");
+        writeLine(". UID SEARCH UNDELETED (HEADER Message-ID " + mimeMessage.getMessageID().substring(1, mimeMessage.getMessageID().length() - 1) + ")");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
 
-        writeLine(". UID SEARCH (HEADER To "+Settings.getProperty("davmail.to")+")");
+        writeLine(". UID SEARCH (HEADER To " + Settings.getProperty("davmail.to") + ")");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
 
         writeLine(". UID SEARCH (HEADER To testto)");
@@ -466,26 +481,26 @@ public class TestImap extends AbstractImapTestCase {
     public void testFetchHeadersInboxMutt() throws IOException {
         writeLine(". SELECT INBOX");
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
-        writeLine(". UID SEARCH (SINCE \""+getLastMonth()+"\")");
+        writeLine(". UID SEARCH (SINCE \"" + getLastMonth() + "\")");
         String messageLine = readLine();
         int uidIndex = messageLine.indexOf(" ", "* SEARCH".length()) + 1;
         messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
         System.out.println(messageUid);
-        writeLine(". UID FETCH "+messageUid+":* (UID FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT TO CC MESSAGE-ID REFERENCES CONTENT-TYPE CONTENT-DESCRIPTION IN-REPLY-TO REPLY-TO LINES LIST-POST X-LABEL)])");
+        writeLine(". UID FETCH " + messageUid + ":* (UID FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT TO CC MESSAGE-ID REFERENCES CONTENT-TYPE CONTENT-DESCRIPTION IN-REPLY-TO REPLY-TO LINES LIST-POST X-LABEL)])");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
     public void testFetchHeadersInboxOSX() throws IOException {
         writeLine(". SELECT INBOX");
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
-        writeLine(". UID SEARCH (SINCE \""+getLastMonth()+"\")");
+        writeLine(". UID SEARCH (SINCE \"" + getLastMonth() + "\")");
         String messageLine = readLine();
         int uidIndex = messageLine.indexOf(" ", "* SEARCH".length()) + 1;
         messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
         System.out.println(messageUid);
-        writeLine(". UID FETCH "+messageUid+":* (INTERNALDATE UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (date subject from to cc message-id in-reply-to references x-priority x-uniform-type-identifier x-universally-unique-identifier received-spf x-spam-status x-spam-flag)])");
+        writeLine(". UID FETCH " + messageUid + ":* (INTERNALDATE UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (date subject from to cc message-id in-reply-to references x-priority x-uniform-type-identifier x-universally-unique-identifier received-spf x-spam-status x-spam-flag)])");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
@@ -523,9 +538,9 @@ public class TestImap extends AbstractImapTestCase {
         int size = 0;
         while (!line.startsWith(".")) {
             line = socketReader.readLine();
-            size += line.length()+2;
+            size += line.length() + 2;
         }
-        System.out.println("actual size "+size);
+        System.out.println("actual size " + size);
     }
 
     public void testBodyHeaderFetch() throws IOException {
@@ -562,4 +577,32 @@ public class TestImap extends AbstractImapTestCase {
         writeLine(". UID FETCH 1:* RFC822.HEADER");
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
+
+    public void testEwsPaging() throws IOException, InterruptedException, MessagingException {
+        Settings.setLoggingLevel("httpclient.wire", Level.WARN);
+
+        testCreateFolder();
+        for (int i = 0; i < 100; i++) {
+            MimeMessage mimeMessage = new MimeMessage((Session) null);
+            mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
+            mimeMessage.setText("Test message " + i);
+            mimeMessage.setSubject("Test subject " + i);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
+            byte[] content = baos.toByteArray();
+            writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
+            assertEquals("+ send literal data", readLine());
+            writeLine(new String(content));
+            assertEquals(". OK APPEND completed", readFullAnswer("."));
+        }
+
+        writeLine(". SELECT testfolder");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+        writeLine(". UID FETCH 1:* (BODY[HEADER.FIELDS (DATE SUBJECT MESSAGE-ID )])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        testDeleteFolder();
+    }
+
+
 }
