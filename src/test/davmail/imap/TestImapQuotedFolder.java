@@ -34,4 +34,14 @@ public class TestImapQuotedFolder extends AbstractImapTestCase {
         assertEquals(". OK folder created", readFullAnswer("."));
     }
 
+    public void testListQuotedFolder() throws IOException {
+        writeLine(". LIST \"test \\\"quoted\\\" folder\" \"\"");
+        assertEquals("* LIST (\\HasNoChildren) \"/\" \"test \\\"quoted\\\" folder\"", readLine());
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+    }
+
+    public void testDeleteQuotedFolder() throws IOException {
+        writeLine(". DELETE \"test \\\"quoted\\\" folder\"");
+        assertEquals(". OK folder deleted", readFullAnswer("."));
+    }
 }

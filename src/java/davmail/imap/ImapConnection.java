@@ -76,7 +76,7 @@ public class ImapConnection extends AbstractConnection {
 
         String line;
         String commandId = null;
-        IMAPTokenizer tokens;
+        ImapTokenizer tokens;
         try {
             ExchangeSessionFactory.checkConfig();
             sendClient("* OK [" + capabilities + "] IMAP4rev1 DavMail " + DavGateway.getCurrentVersion() + " server ready");
@@ -87,7 +87,7 @@ public class ImapConnection extends AbstractConnection {
                     break;
                 }
 
-                tokens = new IMAPTokenizer(line);
+                tokens = new ImapTokenizer(line);
                 if (tokens.hasMoreTokens()) {
                     commandId = tokens.nextToken();
 
@@ -458,7 +458,7 @@ public class ImapConnection extends AbstractConnection {
                                     if (flags != null) {
                                         // parse flags, on create read and draft flags are on the
                                         // same messageFlags property, 8 means draft and 1 means read
-                                        StringTokenizer flagtokenizer = new StringTokenizer(flags);
+                                        ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
                                         while (flagtokenizer.hasMoreTokens()) {
                                             String flag = flagtokenizer.nextToken();
                                             if ("\\Seen".equalsIgnoreCase(flag)) {
@@ -589,7 +589,7 @@ public class ImapConnection extends AbstractConnection {
 
                                         String parameters = tokens.nextToken();
                                         StringBuilder answer = new StringBuilder();
-                                        StringTokenizer parametersTokens = new StringTokenizer(parameters);
+                                        ImapTokenizer parametersTokens = new ImapTokenizer(parameters);
                                         while (parametersTokens.hasMoreTokens()) {
                                             String token = parametersTokens.nextToken();
                                             if ("MESSAGES".equalsIgnoreCase(token)) {
@@ -715,7 +715,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected String encodeFolderPath(String folderPath) {
-        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"","\\\\\"");
+        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"","\\\"");
     }
 
     protected String buildFolderContext(String folderToken) {
@@ -808,7 +808,7 @@ public class ImapConnection extends AbstractConnection {
         MessageWrapper messageWrapper = new MessageWrapper(os, buffer, message);
         buffer.append("* ").append(currentIndex).append(" FETCH (UID ").append(message.getImapUid());
         if (parameters != null) {
-            StringTokenizer paramTokens = new StringTokenizer(parameters);
+            ImapTokenizer paramTokens = new ImapTokenizer(parameters);
             while (paramTokens.hasMoreTokens()) {
                 @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
                 String param = paramTokens.nextToken().toUpperCase();
@@ -998,7 +998,7 @@ public class ImapConnection extends AbstractConnection {
         sendClient(commandId + " OK STORE completed");
     }
 
-    protected ExchangeSession.Condition buildConditions(SearchConditions conditions, IMAPTokenizer tokens) throws IOException {
+    protected ExchangeSession.Condition buildConditions(SearchConditions conditions, ImapTokenizer tokens) throws IOException {
         ExchangeSession.MultiCondition condition = null;
         while (tokens.hasMoreTokens()) {
             String token = tokens.nextQuotedToken().toUpperCase();
@@ -1007,7 +1007,7 @@ public class ImapConnection extends AbstractConnection {
                 if (condition == null) {
                     condition = session.and();
                 }
-                condition.add(buildConditions(conditions, new IMAPTokenizer(token.substring(1, token.length() - 1))));
+                condition.add(buildConditions(conditions, new ImapTokenizer(token.substring(1, token.length() - 1))));
             } else if ("OR".equals(token)) {
                 condition = session.or();
             } else if (token.startsWith("OR ")) {
@@ -1028,7 +1028,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
 
-    protected List<Long> handleSearch(IMAPTokenizer tokens) throws IOException {
+    protected List<Long> handleSearch(ImapTokenizer tokens) throws IOException {
         List<Long> uidList = new ArrayList<Long>();
         List<Long> localMessagesUidList = null;
         SearchConditions conditions = new SearchConditions();
@@ -1340,7 +1340,7 @@ public class ImapConnection extends AbstractConnection {
 
     protected ExchangeSession.MultiCondition appendOrSearchParams(String token, SearchConditions conditions) throws IOException {
         ExchangeSession.MultiCondition orCondition = session.or();
-        IMAPTokenizer innerTokens = new IMAPTokenizer(token);
+        ImapTokenizer innerTokens = new ImapTokenizer(token);
         innerTokens.nextToken();
         while (innerTokens.hasMoreTokens()) {
             String innerToken = innerTokens.nextToken();
@@ -1349,7 +1349,7 @@ public class ImapConnection extends AbstractConnection {
         return orCondition;
     }
 
-    protected ExchangeSession.Condition appendSearchParam(StringTokenizer tokens, String token, SearchConditions conditions) throws IOException {
+    protected ExchangeSession.Condition appendSearchParam(ImapTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
             String nextToken = tokens.nextToken();
             if ("DELETED".equals(nextToken)) {
@@ -1433,7 +1433,7 @@ public class ImapConnection extends AbstractConnection {
         return null;
     }
 
-    protected ExchangeSession.Condition appendDateSearchParam(StringTokenizer tokens, String token) throws IOException {
+    protected ExchangeSession.Condition appendDateSearchParam(ImapTokenizer tokens, String token) throws IOException {
         Date startDate;
         Date endDate;
         SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
@@ -1489,7 +1489,7 @@ public class ImapConnection extends AbstractConnection {
     protected void updateFlags(ExchangeSession.Message message, String action, String flags) throws IOException {
         HashMap<String, String> properties = new HashMap<String, String>();
         if ("-Flags".equalsIgnoreCase(action) || "-FLAGS.SILENT".equalsIgnoreCase(action)) {
-            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
                 if ("\\Seen".equalsIgnoreCase(flag)) {
@@ -1527,7 +1527,7 @@ public class ImapConnection extends AbstractConnection {
                 }
             }
         } else if ("+Flags".equalsIgnoreCase(action) || "+FLAGS.SILENT".equalsIgnoreCase(action)) {
-            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
                 if ("\\Seen".equalsIgnoreCase(flag)) {
@@ -1574,7 +1574,7 @@ public class ImapConnection extends AbstractConnection {
             boolean forwarded = false;
             HashSet<String> keywords = null;
             // set flags from new flag list
-            StringTokenizer flagtokenizer = new StringTokenizer(flags);
+            ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
                 String flag = flagtokenizer.nextToken();
                 if ("\\Seen".equalsIgnoreCase(flag)) {
@@ -1663,7 +1663,7 @@ public class ImapConnection extends AbstractConnection {
      * @param tokens tokens
      * @throws IOException on error
      */
-    protected void parseCredentials(StringTokenizer tokens) throws IOException {
+    protected void parseCredentials(ImapTokenizer tokens) throws IOException {
         if (tokens.hasMoreTokens()) {
             userName = tokens.nextToken();
         } else {
@@ -1936,32 +1936,60 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    static class IMAPTokenizer extends StringTokenizer {
-        IMAPTokenizer(String value) {
-            super(value);
+    static class ImapTokenizer {
+        char[] value;
+        int startIndex;
+        Stack<Character> quotes = new Stack<Character>();
+
+        ImapTokenizer(String value) {
+            this.value = value.toCharArray();
         }
 
-        @Override
         public String nextToken() {
             return StringUtil.removeQuotes(nextQuotedToken());
         }
 
+        protected boolean isQuote(char character) {
+            return character == '"' || character == '(' || character == ')' ||
+                    character == '[' || character == ']' || character == '\\';
+        }
+
+        public boolean hasMoreTokens() {
+            return startIndex < value.length;
+        }
+
         public String nextQuotedToken() {
-            StringBuilder nextToken = new StringBuilder();
-            nextToken.append(super.nextToken());
-            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '"'
-                    && (nextToken.charAt(nextToken.length() - 1) != '"' || nextToken.length() == 1)) {
-                nextToken.append(' ').append(super.nextToken());
+            int currentIndex = startIndex;
+            while (currentIndex < value.length) {
+                char currentChar = value[currentIndex];
+                if (currentChar == ' ' && quotes.isEmpty()) {
+                    break;
+                } else if (isQuote(currentChar)) {
+                    if (quotes.isEmpty()) {
+                        quotes.push(currentChar);
+                    } else {
+                        char currentQuote = quotes.peek();
+                        if (currentQuote == '\\') {
+                            // just skip
+                            quotes.pop();
+                        } else if (currentChar == '\\') {
+                            quotes.push(currentChar);
+                        } else if (currentQuote == '"' && currentChar == '"' ||
+                                currentQuote == '(' && currentChar == ')' ||
+                                currentQuote == '[' && currentChar == ']'
+                                ) {
+                            // end quote
+                            quotes.pop();
+                        } else {
+                            quotes.push(currentChar);
+                        }
+                    }
+                }
+                currentIndex++;
             }
-            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.charAt(0) == '('
-                    && nextToken.charAt(nextToken.length() - 1) != ')') {
-                nextToken.append(' ').append(super.nextToken());
-            }
-            while (hasMoreTokens() && nextToken.length() > 0 && nextToken.indexOf("[") != -1
-                    && nextToken.charAt(nextToken.length() - 1) != ']') {
-                nextToken.append(' ').append(super.nextToken());
-            }
-            return nextToken.toString();
+            String result = new String(value, startIndex, currentIndex - startIndex);
+            startIndex = currentIndex+1;
+            return result;
         }
     }
 
