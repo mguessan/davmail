@@ -74,4 +74,18 @@ public class TestImapTokenizer extends TestCase {
 
         assertEquals(false, imapTokenizer.hasMoreTokens());
     }
+
+    public void testAppend() {
+        ImapConnection.ImapTokenizer imapTokenizer = new ImapConnection.ImapTokenizer("2 append \"INBOX\" (\\Seen) \"01-Mar-2015 20:43:04 +0100\" {4608}");
+        assertEquals("2", imapTokenizer.nextQuotedToken());
+        assertEquals("append", imapTokenizer.nextQuotedToken());
+        assertEquals("\"INBOX\"", imapTokenizer.nextQuotedToken());
+        assertEquals("(\\Seen)", imapTokenizer.nextQuotedToken());
+        assertEquals("\"01-Mar-2015 20:43:04 +0100\"", imapTokenizer.nextQuotedToken());
+        assertEquals("{4608}", imapTokenizer.nextQuotedToken());
+
+        assertEquals(false, imapTokenizer.hasMoreTokens());
+    }
+
+
 }

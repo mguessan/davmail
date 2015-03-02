@@ -1964,15 +1964,15 @@ public class ImapConnection extends AbstractConnection {
                 char currentChar = value[currentIndex];
                 if (currentChar == ' ' && quotes.isEmpty()) {
                     break;
+                } else if (!quotes.isEmpty() && quotes.peek() == '\\') {
+                    // just skip
+                    quotes.pop();
                 } else if (isQuote(currentChar)) {
                     if (quotes.isEmpty()) {
                         quotes.push(currentChar);
                     } else {
                         char currentQuote = quotes.peek();
-                        if (currentQuote == '\\') {
-                            // just skip
-                            quotes.pop();
-                        } else if (currentChar == '\\') {
+                        if (currentChar == '\\') {
                             quotes.push(currentChar);
                         } else if (currentQuote == '"' && currentChar == '"' ||
                                 currentQuote == '(' && currentChar == ')' ||
