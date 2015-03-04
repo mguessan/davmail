@@ -239,12 +239,10 @@
 
     </target>
 
-
-    <target name="dist" depends="compile">
-        <property name="release-name" value="${release}-trunk"/>
+    <target name="jar" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <echo file="dist/version.txt" message="${release}"/>
+        <property name="release-name" value="${release}-trunk"/>
         <pathconvert property="manifest-classpath" pathsep=" ">
             <mapper>
                 <chainedmapper>
@@ -280,6 +278,10 @@
                 </section>
             </manifest>
         </jar>
+    </target>
+
+    <target name="dist" depends="jar">
+        <echo file="dist/version.txt" message="${release}"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
                 <include name="*.jar"/>
