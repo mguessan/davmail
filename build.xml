@@ -280,7 +280,7 @@
         </jar>
     </target>
 
-    <target name="dist" depends="jar">
+    <target name="prepare-dist" depends="jar">
         <echo file="dist/version.txt" message="${release}"/>
         <copy todir="dist/lib">
             <fileset dir="lib">
@@ -304,22 +304,6 @@
         <copy file="src/winrun4j/davmail64.exe" todir="dist"/>
         <copy file="src/winrun4j/davmailservice64.exe" todir="dist"/>
 
-        <zip file="dist/davmail-${release-name}.zip">
-            <zipfileset dir="dist">
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <include name="davmail.desktop"/>
-                <exclude name="davmail.sh"/>
-                <!-- exclude swt jars from platform independent package -->
-                <exclude name="lib/swt*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
-                <exclude name="lib/junit-*.jar"/>
-                <exclude name="lib/winrun4j-*.jar"/>
-            </zipfileset>
-            <zipfileset  dir="dist" filemode="755">
-                <include name="davmail.sh"/>
-            </zipfileset>
-        </zip>
         <copy todir="dist/web">
             <fileset dir="src/web"/>
         </copy>
@@ -337,6 +321,26 @@
             </fileset>
         </copy>
         <copy todir="dist/web/WEB-INF/classes" file="src/etc/davmail.properties"/>
+    </target>
+
+    <target name="dist" depends="prepare-dist">
+
+        <zip file="dist/davmail-${release-name}.zip">
+            <zipfileset dir="dist">
+                <include name="lib/*.jar"/>
+                <include name="*.jar"/>
+                <include name="davmail.desktop"/>
+                <exclude name="davmail.sh"/>
+                <!-- exclude swt jars from platform independent package -->
+                <exclude name="lib/swt*.jar"/>
+                <exclude name="lib/libgrowl-*.jar"/>
+                <exclude name="lib/junit-*.jar"/>
+                <exclude name="lib/winrun4j-*.jar"/>
+            </zipfileset>
+            <zipfileset  dir="dist" filemode="755">
+                <include name="davmail.sh"/>
+            </zipfileset>
+        </zip>
         <jar destfile="dist/davmail-${release-name}.war">
             <fileset dir="dist/web"/>
         </jar>
