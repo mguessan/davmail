@@ -26,6 +26,7 @@ BuildRequires: ant >= 1.7.1, ant-antlr, desktop-file-utils
 BuildRequires:	xml-commons-apis
 %endif
 BuildRequires: java-devel >= 1.6.0
+BuildRequires: eclipse-swt
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
@@ -33,6 +34,7 @@ Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 Requires: /etc/init.d, logrotate, jre >= 1.6.0
+Requires: eclipse-swt
 
 %define davmaildotproperties davmail.properties
 
@@ -63,6 +65,9 @@ java_home=`dirname ${bin}` # level up
 export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
+# externalize SWT
+rm lib/swt*
+[ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar lib/swt.jar || ln -s /usr/lib/java/swt.jar lib/swt.jar
 # we have java 1.6
 ant -Dant.java.version=1.6
 
@@ -91,7 +96,7 @@ install -m 0775 %{SOURCE6} $RPM_BUILD_ROOT/%{_localstatedir}/lib/davmail/davmail
 # Actual DavMail files
 install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/davmail.png
 rm -f dist/lib/*win32*.jar
-install -m 0664 dist/lib/*-%{davarch}.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/
+[ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/swt.jar || ln -s /usr/lib/java/swt.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/swt.jar
 rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/
