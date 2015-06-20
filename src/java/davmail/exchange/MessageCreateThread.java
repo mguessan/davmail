@@ -46,10 +46,15 @@ public class MessageCreateThread extends Thread {
     /**
      * Create message in a separate thread.
      *
-     * @param folder       current folder
-     * @param outputStream client connection
+     * @param session Exchange session
+     * @param folderPath folder path
+     * @param messageName message name
+     * @param properties message properties
+     * @param mimeMessage message content
+     * @param outputStream output stream
+     * @param capabilities IMAP capabilities
      * @throws InterruptedException on error
-     * @throws IOException          on error
+     * @throws IOException on error
      */
     public static void createMessage(ExchangeSession session, String folderPath, String messageName, HashMap<String, String> properties, MimeMessage mimeMessage, OutputStream outputStream, String capabilities) throws InterruptedException, IOException {
         MessageCreateThread messageCreateThread = new MessageCreateThread(currentThread().getName(), session, folderPath, messageName, properties, mimeMessage);
