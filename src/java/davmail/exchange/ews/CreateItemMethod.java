@@ -18,6 +18,8 @@
  */
 package davmail.exchange.ews;
 
+import davmail.Settings;
+
 /**
  * Create Item method.
  */
@@ -34,7 +36,7 @@ public class CreateItemMethod extends EWSMethod {
         this.savedItemFolderId = savedItemFolderId;
         this.item = item;
         addMethodOption(messageDisposition);
-        setContentChunked(true);
+        setContentChunked(Settings.getBooleanProperty("davmail.enableChunkedRequest", true));
     }
 
     /**
