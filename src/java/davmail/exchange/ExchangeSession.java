@@ -71,6 +71,7 @@ public abstract class ExchangeSession {
         USER_NAME_FIELDS.add("userid");
         USER_NAME_FIELDS.add("SafeWordUser");
         USER_NAME_FIELDS.add("user_name");
+        USER_NAME_FIELDS.add("login");
     }
 
     protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
@@ -80,6 +81,7 @@ public abstract class ExchangeSession {
         PASSWORD_FIELDS.add("txtUserPass");
         PASSWORD_FIELDS.add("pw");
         PASSWORD_FIELDS.add("basicPassword");
+        PASSWORD_FIELDS.add("passwd");
     }
 
     protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
