@@ -36,7 +36,7 @@ public class CreateItemMethod extends EWSMethod {
         this.savedItemFolderId = savedItemFolderId;
         this.item = item;
         addMethodOption(messageDisposition);
-        setContentChunked(Settings.getBooleanProperty("davmail.enableChunkedRequest", true));
+        setContentChunked(Settings.getBooleanProperty("davmail.enableChunkedRequest", false));
     }
 
     /**
