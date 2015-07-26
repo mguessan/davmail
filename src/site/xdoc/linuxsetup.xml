@@ -23,6 +23,10 @@
                     install Java and the appropriate SWT package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
+                <p>Update for Ubuntu Unity users, you can install Indicator SystemtrayUnity:
+                <a href="http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html">
+                    http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html
+                </a></p>
                 <p>Note to Ubuntu 14 users, you can restore systray by following instructions at:
                 <a href="http://www.webupd8.org/2013/05/how-to-get-systray-whitelist-back-in.html">How to whitelist all systray apps in Ubuntu 14.04 or 14.10 (with Unity)</a></p>
                 <p>Note to Ubuntu 13 users, you will need to apply the following patch to fix missing whitelist
