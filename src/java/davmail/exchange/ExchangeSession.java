@@ -1372,10 +1372,15 @@ public abstract class ExchangeSession {
      */
     public boolean refreshFolder(Folder currentFolder) throws IOException {
         Folder newFolder = getFolder(currentFolder.folderPath);
-        if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)) {
+        if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)
+                // ctag stamp is limited to second, check message count
+                || !(currentFolder.count == newFolder.count)
+                ) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Contenttag changed on " + currentFolder.folderPath + ' '
-                        + currentFolder.ctag + " => " + newFolder.ctag + ", reloading messages");
+                LOGGER.debug("Contenttag or count changed on " + currentFolder.folderPath +
+                        " ctag: " + currentFolder.ctag + " => " + newFolder.ctag +
+                        " count: " + currentFolder.count + " => " + newFolder.count
+                        + ", reloading messages");
             }
             currentFolder.hasChildren = newFolder.hasChildren;
             currentFolder.noInferiors = newFolder.noInferiors;
