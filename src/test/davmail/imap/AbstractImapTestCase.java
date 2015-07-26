@@ -22,6 +22,9 @@ import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
 
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.net.Socket;
 
@@ -79,4 +82,57 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
         }
     }
 
+    public void resetTestFolder() throws IOException {
+        writeLine(". DELETE testfolder");
+        readFullAnswer(".");
+        writeLine(". CREATE testfolder");
+        assertEquals(". OK folder created", readFullAnswer("."));
+        writeLine(". SELECT testfolder");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+    }
+
+    public void appendMessage() throws IOException {
+        try {
+            MimeMessage mimeMessage = new MimeMessage((Session) null);
+            mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
+            mimeMessage.setText("Test message ");
+            mimeMessage.setSubject("Test subject ");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
+            byte[] content = baos.toByteArray();
+            writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
+            assertEquals("+ send literal data", readLine());
+            writeLine(new String(content));
+            assertEquals(". OK APPEND completed", readFullAnswer("."));
+
+            writeLine(". NOOP");
+            assertEquals(". OK NOOP completed", readFullAnswer("."));
+
+            // fetch message uid
+            writeLine(". UID FETCH 1:* (FLAGS)");
+            String messageLine = readLine();
+            int uidIndex = messageLine.indexOf("UID ") + 4;
+            messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+            assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+            assertNotNull(messageUid);
+        } catch (MessagingException e) {
+            throw new IOException(e);
+        }
+    }
+
+    public void appendHundredMessages() throws IOException, MessagingException {
+        for (int i = 0; i < 100; i++) {
+            MimeMessage mimeMessage = new MimeMessage((Session) null);
+            mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
+            mimeMessage.setText("Test message " + i);
+            mimeMessage.setSubject("Test subject " + i);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
+            byte[] content = baos.toByteArray();
+            writeLine(". APPEND testfolder (\\Seen \\Draft) {" + content.length + '}');
+            assertEquals("+ send literal data", readLine());
+            writeLine(new String(content));
+            assertEquals(". OK APPEND completed", readFullAnswer("."));
+        }
+    }
 }
