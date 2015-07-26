@@ -1522,6 +1522,8 @@ public class ImapConnection extends AbstractConnection {
                         properties.put("answered", null);
                         message.answered = false;
                     }
+                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                    // ignore, draft is readonly after create
                 } else if (message.keywords != null) {
                     properties.put("keywords", message.removeFlag(flag));
                 }
@@ -1560,6 +1562,8 @@ public class ImapConnection extends AbstractConnection {
                         properties.put("junk", "1");
                         message.junk = true;
                     }
+                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                    // ignore, draft is readonly after create
                 } else {
                     properties.put("keywords", message.addFlag(flag));
                 }
@@ -1589,6 +1593,8 @@ public class ImapConnection extends AbstractConnection {
                     forwarded = true;
                 } else if ("Junk".equalsIgnoreCase(flag)) {
                     junk = true;
+                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                    // ignore, draft is readonly after create
                 } else {
                     if (keywords == null) {
                         keywords = new HashSet<String>();
