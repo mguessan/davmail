@@ -145,7 +145,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             }
         }
 
-        SSLContext context = SSLContext.getInstance("SSL");
+        SSLContext context = SSLContext.getInstance("TLS");
         context.init(keyManagers, new TrustManager[]{new DavGatewayX509TrustManager()}, null);
         return context;
     }
