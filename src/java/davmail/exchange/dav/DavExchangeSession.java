@@ -637,6 +637,9 @@ public class DavExchangeSession extends ExchangeSession {
                 } else {
                     alias = getAliasFromLogin();
                 }
+                if (alias == null) {
+                    alias = "unknown";
+                }
                 buffer.append(alias);
                 if (alias.indexOf('@') < 0) {
                     buffer.append('@');
