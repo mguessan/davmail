@@ -364,7 +364,7 @@
                 <configuration>
                     <threshold>Normal</threshold>
                     <effort>Default</effort>
-                    <onlyAnalyze>davmail.*</onlyAnalyze>
+                    <onlyAnalyze>davmail.-</onlyAnalyze>
                 </configuration>
             </plugin>
             <plugin>
