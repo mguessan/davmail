@@ -447,13 +447,6 @@
     </target>
 
     <target name="upload-release" depends="release">
-        <mkdir dir="dist/${version}"/>
-        <move todir="dist/${version}">
-            <fileset dir="dist">
-                <include name="*${version}-*"/>
-            </fileset>
-        </move>
-
         <scp todir="${username},davmail@frs.sourceforge.net:/home/frs/project/d/da/davmail/davmail"
              keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
             <fileset dir="dist">
@@ -474,5 +467,22 @@
     <target name="release" depends="init">
         <property name="release-name" value="${release}"/>
         <antcall target="dist"/>
+        <checksum todir="dist" format="MD5SUM">
+            <fileset dir="dist">
+                <include name="*${version}-*"/>
+            </fileset>
+        </checksum>
+        <mkdir dir="dist/${version}"/>
+        <move todir="dist/${version}">
+            <fileset dir="dist">
+                <include name="*${version}-*"/>
+                <exclude name="*.MD5"/>
+            </fileset>
+        </move>
+        <concat destfile="dist/${version}/checksums.md5">
+            <fileset dir="dist">
+                <include name="*.MD5"/>
+            </fileset>
+        </concat>
     </target>
 </project>
