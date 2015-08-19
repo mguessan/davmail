@@ -1,3 +1,55 @@
+** DavMail 4.6.2 released **
+Another bug fix release with some efforts on packaging.
+
+Packaging:
+- Compute distribution packages checksums
+- Maven: set mimimum Maven version and fix FindBugs filter
+- Maven: add Gtk lib in repo to avoid ClassNotFound
+- Maven: exclude non DavMail classes from FindBugs report
+- Maven: Update POM to Maven 3
+- Separate prepare-dist ant task
+- Separate jar ant task
+- RPM: Change log for 4.6.1 and remove ant-nodeps dependency for Fedora >=19 compatibility
+- RPM: first step to a noarch package, externalize SWT dependency
+- RPM: Add rcdavmail link, mark logrotate config file
+- RPM: Fix License and URL
+
+Enhancements:
+- Fix davmailconsole.exe
+- Switch to TLS in DavGatewaySSLProtocolSocketFactory
+- Improve refresh folder logic, ctag stamp is limited to second, check message count
+- Try to support Citrix NetScaler authentication form
+- Improve Java version check
+- Update compile level to 1.6
+- Remove unneeded catch section
+
+WebDav:
+- DAV: avoid NullPointerException trying to access Exchange 2013 in Dav mode
+
+IMAP:
+- IMAP: refactor IMAP test cases
+- IMAP: ignore Draft flag on update, Draft is readonly after create
+- IMAP: fix new IMAP tokenizer
+- IMAP: rewrite tokenizer to manage quoted folder names and complex search
+- IMAP: Fix #591 Properly escape quotes in folder names
+- IMAP: additional IMAP test cases
+
+EWS:
+- EWS: davmail.enableChunkedRequest default value is now false, as IIS does not support chunked requests
+- EWS: Make chunked content optional in CreateItemMethod with new davmail.enableChunkedRequest property
+- Use EWS path in davmail.properties template file
+
+Doc:
+- Doc: add Indicator SystemtrayUnity to linux doc
+- Fix Javadoc
+
+OSX:
+- OSX: merge patch 38, allow commandline options to run multiple instances.
+
+SMTP:
+- SMTP: use content chunk to send large messages
+
+
 ** DavMail 4.6.1 released **
 Bugfix release to fix recent regression with Office 365,
 also includes a few Linux and IMAP enhancements.
