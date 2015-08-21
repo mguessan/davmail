@@ -133,7 +133,8 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         // Enable native Windows SmartCard access through MSCAPI (no PKCS11 config required)
         if ((System.getProperty("os.name").toLowerCase().startsWith("windows"))) {
             try {
-                KeyStore keyStore = KeyStore.getInstance("Windows-MY", "sun.security.mscapi.SunMSCAPI");
+                Provider provider = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").newInstance();
+                KeyStore keyStore = KeyStore.getInstance("Windows-MY", provider);
                 keyStore.load(null, null);
                 keyStoreBuilders.add(KeyStore.Builder.newInstance(keyStore, new KeyStore.PasswordProtection(null)));
             } catch (Exception e) {
