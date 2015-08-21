@@ -28,6 +28,7 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Special X509 Key Manager that handles cases where more than one private key
@@ -72,7 +73,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
         // Build a list of all aliases
         ArrayList<String> aliases = new ArrayList<String>();
         for (String keyTypeValue : keyType) {
-            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, issuers);
+            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, null);
 
             if (keyAliases != null) {
                 aliases.addAll(Arrays.asList(keyAliases));
@@ -96,7 +97,36 @@ public class DavMailX509KeyManager implements X509KeyManager {
             }
 
             String[] aliasesArray = aliases.toArray(new String[aliases.size()]);
-            SelectCertificateDialog selectCertificateDialog = new SelectCertificateDialog(aliasesArray);
+            String[] descriptionsArray = new String[aliasesArray.length];
+            int i = 0;
+            for (String alias : aliasesArray) {
+                X509Certificate certificate = getCertificateChain(alias)[0];
+                String subject = certificate.getSubjectDN().getName();
+                if (subject.contains("=")) {
+                    subject = subject.substring(subject.indexOf("=")+1);
+                }
+                if (subject.contains(",")) {
+                    subject = subject.substring(0, subject.indexOf(","));
+                }
+                try {
+                    for (List<?> subjectAltName:certificate.getSubjectAlternativeNames()) {
+                        if (subjectAltName.get(1) instanceof String) {
+                            subject = " " + subjectAltName.get(1);
+                        }
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
+                String issuer = certificate.getIssuerDN().getName();
+                if (issuer.contains("=")) {
+                    issuer = issuer.substring(issuer.indexOf("=")+1);
+                }
+                if (issuer.contains(",")) {
+                    issuer = issuer.substring(0, issuer.indexOf(","));
+                }
+                descriptionsArray[i++] = subject + " [" + issuer + "]";
+            }
+            SelectCertificateDialog selectCertificateDialog = new SelectCertificateDialog(aliasesArray, descriptionsArray);
 
             LOGGER.debug("User selected Key Alias: " + selectCertificateDialog.getSelectedAlias());
 
@@ -154,7 +184,11 @@ public class DavMailX509KeyManager implements X509KeyManager {
      * Passthrough to wrapped keymanager
      */
     public X509Certificate[] getCertificateChain(String string) {
-        return keyManager.getCertificateChain(string);
+        X509Certificate[] certificates = keyManager.getCertificateChain(string);
+        for (X509Certificate certificate: certificates) {
+            LOGGER.debug("Certificate chain: " + certificate.getSubjectDN());
+        }
+        return certificates;
     }
 
     /**

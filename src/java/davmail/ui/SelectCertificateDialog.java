@@ -31,6 +31,7 @@ import java.awt.event.ActionListener;
  */
 public class SelectCertificateDialog extends JDialog {
     protected final JList aliasListBox;
+    protected final String[] aliases;
     protected String selectedAlias;
 
     /**
@@ -47,8 +48,9 @@ public class SelectCertificateDialog extends JDialog {
      *
      * @param aliases An array of certificate aliases for the user to pick from
      */
-    public SelectCertificateDialog(String[] aliases) {
+    public SelectCertificateDialog(String[] aliases, String[] descriptions) {
         setAlwaysOnTop(true);
+        this.aliases = aliases;
 
         setTitle(BundleMessage.format("UI_CERTIFICATE_ALIAS_PROMPT"));
         try {
@@ -64,7 +66,7 @@ public class SelectCertificateDialog extends JDialog {
         imageLabel.setText(BundleMessage.format("UI_CERTIFICATE_ALIAS_PROMPT"));
         questionPanel.add(imageLabel);
 
-        aliasListBox = new JList(aliases);
+        aliasListBox = new JList(descriptions);
         aliasListBox.setMaximumSize(aliasListBox.getPreferredSize());
 
         JPanel aliasPanel = new JPanel();
@@ -92,7 +94,7 @@ public class SelectCertificateDialog extends JDialog {
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         okButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                selectedAlias = (String) aliasListBox.getSelectedValue();
+                selectedAlias = aliases[aliasListBox.getSelectedIndex()];
                 setVisible(false);
             }
         });
