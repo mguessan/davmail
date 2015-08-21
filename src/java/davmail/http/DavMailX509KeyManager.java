@@ -68,10 +68,11 @@ public class DavMailX509KeyManager implements X509KeyManager {
      * This method allows the user to select the right client certificate
      */
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
+        LOGGER.debug("Find client certificates issued by: " + Arrays.asList(issuers));
         // Build a list of all aliases
         ArrayList<String> aliases = new ArrayList<String>();
         for (String keyTypeValue : keyType) {
-            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, null);
+            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, issuers);
 
             if (keyAliases != null) {
                 aliases.addAll(Arrays.asList(keyAliases));
