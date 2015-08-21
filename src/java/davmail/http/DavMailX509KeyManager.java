@@ -73,7 +73,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
         // Build a list of all aliases
         ArrayList<String> aliases = new ArrayList<String>();
         for (String keyTypeValue : keyType) {
-            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, null);
+            String[] keyAliases = keyManager.getClientAliases(keyTypeValue, issuers);
 
             if (keyAliases != null) {
                 aliases.addAll(Arrays.asList(keyAliases));

@@ -40,6 +40,7 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 
 /**
@@ -128,6 +129,16 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             KeyStore.Builder fsBuilder = KeyStore.Builder.newInstance(clientKeystoreType, null,
                     new File(clientKeystoreFile), getProtectionParameter(clientKeystorePass));
             keyStoreBuilders.add(fsBuilder);
+        }
+        // Enable native Windows SmartCard access through MSCAPI (no PKCS11 config required)
+        if ((System.getProperty("os.name").toLowerCase().startsWith("windows"))) {
+            try {
+                KeyStore keyStore = KeyStore.getInstance("Windows-MY", "sun.security.mscapi.SunMSCAPI");
+                keyStore.load(null, null);
+                keyStoreBuilders.add(KeyStore.Builder.newInstance(keyStore, new KeyStore.PasswordProtection(null)));
+            } catch (Exception e) {
+                // ignore
+            }
         }
 
         ManagerFactoryParameters keyStoreBuilderParameters = new KeyStoreBuilderParameters(keyStoreBuilders);
