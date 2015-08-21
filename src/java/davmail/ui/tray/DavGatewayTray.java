@@ -249,6 +249,9 @@ public final class DavGatewayTray {
                 davGatewayTray.init();
             } catch (ClassNotFoundException e) {
                 DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+            } catch (Throwable e) {
+                DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                davGatewayTray = null;
             }
             // try java6 tray support
             if (davGatewayTray == null) {

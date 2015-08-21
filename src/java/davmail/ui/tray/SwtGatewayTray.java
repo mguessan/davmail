@@ -33,7 +33,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
 
 import javax.swing.*;
@@ -61,6 +60,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
     private boolean isReady;
+    private Error error;
     private boolean firstMessage = true;
 
     private final Thread mainThread = Thread.currentThread();
@@ -383,6 +383,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);
+                } catch (Error exc) {
+                    error = exc;
+                    throw exc;
                 }
                 // make sure we do exit
                 System.exit(0);
@@ -392,6 +395,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             // wait for SWT init
             try {
                 synchronized (mainThread) {
+                    if (error != null) {
+                        throw error;
+                    }
                     if (isReady) {
                         break;
                     }
