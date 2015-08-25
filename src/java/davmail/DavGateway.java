@@ -59,7 +59,7 @@ public final class DavGateway {
      */
     public static void main(String[] args) {
 
-        if (args.length >= 1) {
+        if (args.length >= 1 && !args[0].startsWith("-")) {
             Settings.setConfigFilePath(args[0]);
         }
 
