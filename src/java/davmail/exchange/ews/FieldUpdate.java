@@ -53,7 +53,7 @@ public class FieldUpdate {
     public void write(String itemType, Writer writer) throws IOException {
         String action;
         //noinspection VariableNotUsedInsideIf
-        if (value == null) {
+        if (value == null || value.length() == 0) {
             action = "Delete";
         } else {
             action = "Set";

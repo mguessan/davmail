@@ -57,9 +57,11 @@ public class IndexedFieldURI implements FieldURI {
             buffer.append("<t:").append(fieldItemType).append('>');
             buffer.append("<t:").append(collectionName).append('>');
         }
-        buffer.append("<t:Entry Key=\"").append(fieldIndex).append("\">");
-        buffer.append(StringUtil.xmlEncodeAttribute(value));
-        buffer.append("</t:Entry>");
+        if (value != null && value.length() > 0) {
+            buffer.append("<t:Entry Key=\"").append(fieldIndex).append("\">");
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
+            buffer.append("</t:Entry>");
+        }
         if (itemType != null) {
             buffer.append("</t:").append(collectionName).append('>');
             buffer.append("</t:").append(fieldItemType).append('>');
