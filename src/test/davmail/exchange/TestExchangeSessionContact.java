@@ -529,5 +529,30 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
     }
 
 
+    public void testEmptyEmail() throws IOException {
+        testCreateFolder();
 
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "UID:8b75b1a40f2c4e3a8cbdc86f26d4a497\n" +
+                "N:name;common;;;\n" +
+                "FN:common name\n" +
+                "EMAIL;TYPE=WORK:\n" +
+                "EMAIL;TYPE=HOME:email@company.com\n" +
+                "END:VCARD";
+        itemName = UUID.randomUUID().toString() + ".vcf";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        assertEquals(201, result.status);
+
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        assertNull(contact.get("smtpemail1"));
+
+        result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        assertEquals(201, result.status);
+
+        contact = getCurrentContact();
+        assertNull(contact.get("smtpemail1"));
+    }
 }
