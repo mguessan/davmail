@@ -63,9 +63,7 @@ public class VObject {
             }
             line = reader.readLine();
         }
-        if (line == null) {
-            throw new IOException("Unexpected end of stream");
-        }
+        // ignore missing END:VCALENDAR line on modified occurences
     }
 
     /**
