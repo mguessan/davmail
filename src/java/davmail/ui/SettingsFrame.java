@@ -339,7 +339,11 @@ public class SettingsFrame extends JFrame {
         clientKeystorePanel.setLayout(new BoxLayout(clientKeystorePanel, BoxLayout.Y_AXIS));
         clientKeystorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
 
-        clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
+        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+            clientKeystoreTypeCombo = new JComboBox(new String[]{"MSCAPI", "PKCS11", "JKS", "PKCS12"});
+        } else {
+            clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
+        }
         clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
         clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 17);
         clientKeystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.clientKeystorePass"), 15);

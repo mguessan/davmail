@@ -130,7 +130,8 @@
                         <td>Client key store type</td>
                         <td>When the Exchange server requires mutual authentication,
                             choose client certificate key store type, PKCS11 for smartcard,
-                            PKCS12 or JKS for certificate file
+                            PKCS12 or JKS for certificate file.
+                            MSCAPI is also available on windows for native smartcard access.
                         </td>
                         <td>PKCS11</td>
                     </tr>
