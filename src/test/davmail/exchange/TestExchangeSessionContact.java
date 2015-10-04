@@ -555,4 +555,14 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         contact = getCurrentContact();
         assertNull(contact.get("smtpemail1"));
     }
+
+    public void testProtectedComma() throws IOException {
+        String itemBody = "BEGIN:VCARD\n" +
+                "ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia\n" +
+                "END:VCARD";
+        VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
+        System.out.println(vcard.toString());
+        VProperty property = new VProperty("ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia");
+        assertEquals("via 25 aprile, 25", property.getValues().get(2));
+    }
 }

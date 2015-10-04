@@ -63,7 +63,7 @@ public class VObject {
             }
             line = reader.readLine();
         }
-        // ignore missing END:VCALENDAR line on modified occurences
+        // ignore missing END:VCALENDAR line on modified occurrences
     }
 
     /**
