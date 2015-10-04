@@ -377,7 +377,6 @@ public class VProperty {
                 if (c == ',' &&
                         // multivalued properties
                         ("N".equals(key) ||
-                                "ADR".equals(key) ||
                                 "CATEGORIES".equals(key) ||
                                 "NICKNAME".equals(key)
                         )) {
