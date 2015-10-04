@@ -19,6 +19,7 @@ Version: %{davrel}
 Release: 1%{?dist}
 License: GPL-2.0+
 Group: Applications/Internet
+BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, ant-antlr, desktop-file-utils
 %if 0%{?fedora} == 18
@@ -69,7 +70,7 @@ export ANT_OPTS="-Dfile.encoding=UTF-8"
 rm lib/swt*
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar lib/swt.jar || ln -s /usr/lib/java/swt.jar lib/swt.jar
 # we have java 1.6
-ant -Dant.java.version=1.6
+ant -Dant.java.version=1.6 prepare-dist
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -84,23 +85,23 @@ mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
-install -m 0775 %{SOURCE1} $RPM_BUILD_ROOT/%{_bindir}/davmail
-install -m 0644 %{SOURCE2} $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/davmail
-install -m 0775 %{SOURCE3} $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/davmail
+install -m 0775 %{SOURCE1} $RPM_BUILD_ROOT%{_bindir}/davmail
+install -m 0644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
+install -m 0775 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
 ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
-install -m 0644 %{SOURCE4} $RPM_BUILD_ROOT/%{_sysconfdir}
+install -m 0644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
-desktop-file-install --dir $RPM_BUILD_ROOT/%{_datadir}/applications/ %{SOURCE5} --vendor=""
-install -m 0775 %{SOURCE6} $RPM_BUILD_ROOT/%{_localstatedir}/lib/davmail/davmail
+desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ %{SOURCE5} --vendor=""
+install -m 0775 %{SOURCE6} $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
 
 # Actual DavMail files
-install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/davmail.png
+install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT%{_datadir}/pixmaps/davmail.png
 rm -f dist/lib/*win32*.jar
-[ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/swt.jar || ln -s /usr/lib/java/swt.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/swt.jar
+[ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar || ln -s /usr/lib/java/swt.jar $RPM_BUILD_ROOT%{_datadir}/davmail/lib/swt.jar
 rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
-install -m 0664 dist/lib/* $RPM_BUILD_ROOT/%{_datadir}/davmail/lib/
-install -m 0664 dist/*.jar $RPM_BUILD_ROOT/%{_datadir}/davmail/
+install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
+install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -176,6 +177,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Sun Oct 04 2015 Mickael Guessant <mguessan@free.fr>
+- a few path fixes and switch to noarch mode
+
 * Sun Feb 22 2015 Mickael Guessant <mguessan@free.fr>
 - Add rcdavmail link, mark logrotate config file
 
