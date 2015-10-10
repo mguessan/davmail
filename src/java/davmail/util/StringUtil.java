@@ -457,6 +457,8 @@ public final class StringUtil {
                 result = result.substring(0, result.length() - 1);
             }
         }
+        // unescape quotes inside value
+        result = result.replaceAll("\\\\","");
         return result;
     }
 

@@ -263,8 +263,7 @@ public class ImapConnection extends AbstractConnection {
                                     sendClient(commandId + " OK " + command + " completed");
                                 } else if ("create".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
-                                        String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                        session.createMessageFolder(folderName);
+                                        session.createMessageFolder(decodeFolderPath(tokens.nextToken()));
                                         sendClient(commandId + " OK folder created");
                                     } else {
                                         sendClient(commandId + " BAD missing create argument");
@@ -715,7 +714,11 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected String encodeFolderPath(String folderPath) {
-        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"","\\\"");
+        return BASE64MailboxEncoder.encode(folderPath).replaceAll("\"","\\\\\"");
+    }
+
+    protected String decodeFolderPath(String folderPath) {
+        return BASE64MailboxDecoder.decode(folderPath);
     }
 
     protected String buildFolderContext(String folderToken) {
