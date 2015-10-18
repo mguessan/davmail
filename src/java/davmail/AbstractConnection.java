@@ -250,20 +250,20 @@ public class AbstractConnection extends Thread {
             try {
                 in.close();
             } catch (IOException e2) {
-                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_INPUT_STREAM"), e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_INPUT_STREAM"), e2);
             }
         }
         if (os != null) {
             try {
                 os.close();
             } catch (IOException e2) {
-                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_OUTPUT_STREAM"), e2);
+                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_OUTPUT_STREAM"), e2);
             }
         }
         try {
             client.close();
         } catch (IOException e2) {
-            DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e2);
+            DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e2);
         }
     }
 }
