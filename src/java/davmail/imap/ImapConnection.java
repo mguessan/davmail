@@ -158,7 +158,7 @@ public class ImapConnection extends AbstractConnection {
                                     if (tokens.hasMoreTokens()) {
                                         String folderContext = buildFolderContext(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
-                                            String folderQuery = folderContext + BASE64MailboxDecoder.decode(tokens.nextToken());
+                                            String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false);
                                                 for (ExchangeSession.Folder folder : folders) {
@@ -210,7 +210,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("select".equalsIgnoreCase(command) || "examine".equalsIgnoreCase(command)) {
                                     if (tokens.hasMoreTokens()) {
                                         @SuppressWarnings({"NonConstantStringShouldBeStringBuffer"})
-                                        String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        String folderName = decodeFolderPath(tokens.nextToken());
                                         if (baseMailboxPath != null && !folderName.startsWith("/")) {
                                             folderName = baseMailboxPath + folderName;
                                         }
@@ -269,8 +269,8 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " BAD missing create argument");
                                     }
                                 } else if ("rename".equalsIgnoreCase(command)) {
-                                    String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
-                                    String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                    String folderName = decodeFolderPath(tokens.nextToken());
+                                    String targetName = decodeFolderPath(tokens.nextToken());
                                     try {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
@@ -278,7 +278,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
-                                    String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                    String folderName = decodeFolderPath(tokens.nextToken());
                                     try {
                                         session.deleteFolder(folderName);
                                         sendClient(commandId + " OK folder deleted");
@@ -415,7 +415,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("copy".equalsIgnoreCase(command) || "move".equalsIgnoreCase(command)) {
                                     try {
                                         RangeIterator rangeIterator = new RangeIterator(currentFolder.messages, tokens.nextToken());
-                                        String targetName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                        String targetName = decodeFolderPath(tokens.nextToken());
                                         if (!rangeIterator.hasNext()) {
                                             sendClient(commandId + " NO " + "No message found");
                                         } else {
@@ -434,7 +434,7 @@ public class ImapConnection extends AbstractConnection {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
-                                    String folderName = BASE64MailboxDecoder.decode(tokens.nextToken());
+                                    String folderName = decodeFolderPath(tokens.nextToken());
                                     HashMap<String, String> properties = new HashMap<String, String>();
                                     String flags = null;
                                     String date = null;
@@ -571,7 +571,7 @@ public class ImapConnection extends AbstractConnection {
                                 } else if ("status".equalsIgnoreCase(command)) {
                                     try {
                                         String encodedFolderName = tokens.nextToken();
-                                        String folderName = BASE64MailboxDecoder.decode(encodedFolderName);
+                                        String folderName = decodeFolderPath(encodedFolderName);
                                         ExchangeSession.Folder folder = session.getFolder(folderName);
                                         // must retrieve messages
 
@@ -718,14 +718,16 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected String decodeFolderPath(String folderPath) {
-        return BASE64MailboxDecoder.decode(folderPath);
+        return BASE64MailboxDecoder.decode(folderPath)
+                //unescape quotes inside value
+                .replaceAll("\\\\", "");
     }
 
     protected String buildFolderContext(String folderToken) {
         if (baseMailboxPath == null) {
-            return BASE64MailboxDecoder.decode(folderToken);
+            return decodeFolderPath(folderToken);
         } else {
-            return baseMailboxPath + BASE64MailboxDecoder.decode(folderToken);
+            return baseMailboxPath + decodeFolderPath(folderToken);
         }
     }
 
