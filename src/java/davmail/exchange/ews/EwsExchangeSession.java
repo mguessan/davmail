@@ -1784,6 +1784,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         && !"MeetingCancellation".equals(type)
                         && !"MeetingResponse".equals(type)) {
                     getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, true);
+                    getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
                     getItemMethod.addAdditionalProperty(Field.get("reminderset"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("myresponsetype"));
@@ -1859,8 +1860,11 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("requiredattendees"));
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("optionalattendees"));
                                 getOccurrenceMethod.addAdditionalProperty(Field.get("modifiedoccurrences"));
+                                getOccurrenceMethod.addAdditionalProperty(Field.get("lastmodified"));
                                 executeMethod(getOccurrenceMethod);
                                 fixAttendees(getOccurrenceMethod, modifiedOccurrence);
+                                // LAST-MODIFIED is missing in event content
+                                modifiedOccurrence.setPropertyValue("LAST-MODIFIED", convertDateFromExchange(getOccurrenceMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
 
                                 // fix uid, should be the same as main VEVENT
                                 if (calendaruid != null) {
@@ -1875,6 +1879,9 @@ public class EwsExchangeSession extends ExchangeSession {
                             }
                         }
                     }
+                    // LAST-MODIFIED is missing in event content
+                    localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+
                     // restore mozilla invitations option
                     localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
                             getItemMethod.getResponseItem().get(Field.get("xmozsendinvitations").getResponseName()));
