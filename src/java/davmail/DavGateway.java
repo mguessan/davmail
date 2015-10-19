@@ -58,13 +58,19 @@ public final class DavGateway {
      * @param args command line parameter config file path
      */
     public static void main(String[] args) {
-
-        if (args.length >= 1 && !args[0].startsWith("-")) {
-            Settings.setConfigFilePath(args[0]);
+        boolean notray = false;
+        for (String arg:args) {
+            if (arg.startsWith("-")) {
+                if ("-notray".equals(arg)) {
+                    notray = true;
+                }
+            } else {
+                Settings.setConfigFilePath(arg);
+            }
         }
 
         Settings.load();
-        DavGatewayTray.init();
+        DavGatewayTray.init(notray);
 
         start();
 

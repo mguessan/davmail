@@ -223,51 +223,54 @@ public final class DavGatewayTray {
     /**
      * Create tray icon and register frame listeners.
      */
-    public static void init() {
+    public static void init(boolean notray) {
         String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
         String javaVersion = System.getProperty("java.version");
         String arch = System.getProperty("sun.arch.data.model");
-        LOGGER.debug("OS Name: "+System.getProperty("os.name")+
-                " Java version: "+javaVersion+((arch!=null)? ' ' +arch:"")+
-                " System tray "+(SystemTray.isSupported()?"":"not ")+"supported "+
-                        ((currentDesktop==null)?"":"Current Desktop: " + currentDesktop)
+        LOGGER.debug("OS Name: " + System.getProperty("os.name") +
+                        " Java version: " + javaVersion + ((arch != null) ? ' ' + arch : "") +
+                        " System tray " + (SystemTray.isSupported() ? "" : "not ") + "supported " +
+                        ((currentDesktop == null) ? "" : "Current Desktop: " + currentDesktop)
         );
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if ("Unity".equals(currentDesktop)) {
-                LOGGER.info("Detected Unity desktop, please follow instructions at " +
-                        "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
-                        "or run DavMail in server mode");
-            }
-            // first try to load SWT before with Java AWT
-            ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-            try {
-                // trigger ClassNotFoundException
-                classloader.loadClass("org.eclipse.swt.SWT");
-                // SWT available, create tray
-                davGatewayTray = new SwtGatewayTray();
-                davGatewayTray.init();
-            } catch (ClassNotFoundException e) {
-                DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-            } catch (Throwable e) {
-                DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                davGatewayTray = null;
-            }
-            // try java6 tray support
-            if (davGatewayTray == null) {
+            if (!notray) {
+                if ("Unity".equals(currentDesktop)) {
+                    LOGGER.info("Detected Unity desktop, please follow instructions at " +
+                            "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
+                            "or run DavMail in server mode");
+                }
+                // first try to load SWT before with Java AWT
+                ClassLoader classloader = DavGatewayTray.class.getClassLoader();
                 try {
-                    if (SystemTray.isSupported()) {
-                        if (isOSX()) {
-                            davGatewayTray = new OSXAwtGatewayTray();
-                        } else {
-                            davGatewayTray = new AwtGatewayTray();
+                    // trigger ClassNotFoundException
+                    classloader.loadClass("org.eclipse.swt.SWT");
+                    // SWT available, create tray
+                    davGatewayTray = new SwtGatewayTray();
+                    davGatewayTray.init();
+                } catch (ClassNotFoundException e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                } catch (Throwable e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                    davGatewayTray = null;
+                }
+                // try java6 tray support
+                if (davGatewayTray == null) {
+                    try {
+                        if (SystemTray.isSupported()) {
+                            if (isOSX()) {
+                                davGatewayTray = new OSXAwtGatewayTray();
+                            } else {
+                                davGatewayTray = new AwtGatewayTray();
+                            }
+                            davGatewayTray.init();
                         }
-                        davGatewayTray.init();
+                    } catch (NoClassDefFoundError e) {
+                        DavGatewayTray.info(new BundleMessage("LOG_SYSTEM_TRAY_NOT_AVAILABLE"));
                     }
-                } catch (NoClassDefFoundError e) {
-                    DavGatewayTray.info(new BundleMessage("LOG_SYSTEM_TRAY_NOT_AVAILABLE"));
                 }
             }
+
             if (davGatewayTray == null) {
                 if (isOSX()) {
                     // MacOS
@@ -300,9 +303,9 @@ public final class DavGatewayTray {
         try {
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
-           if (imageUrl == null) {
-               throw new IOException("Missing resource: "+fileName);
-           }
+            if (imageUrl == null) {
+                throw new IOException("Missing resource: " + fileName);
+            }
             result = ImageIO.read(imageUrl);
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
