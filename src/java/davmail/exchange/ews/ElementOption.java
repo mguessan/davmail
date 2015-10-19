@@ -27,6 +27,7 @@ import java.io.Writer;
  * Generic element option.
  */
 public class ElementOption extends Option {
+    ElementOption option;
     /**
      * Create element option.
      *
@@ -37,6 +38,11 @@ public class ElementOption extends Option {
         super(name, value);
     }
 
+    protected ElementOption(String name, ElementOption option) {
+        super(name, null);
+        this.option = option;
+    }
+
     /**
      * @inheritDoc
      */
@@ -45,7 +51,11 @@ public class ElementOption extends Option {
         writer.write('<');
         writer.write(name);
         writer.write('>');
-        writer.write(StringUtil.xmlEncode(value));
+        if (option != null) {
+            option.write(writer);
+        } else {
+            writer.write(StringUtil.xmlEncode(value));
+        }
         writer.write("</");
         writer.write(name);
         writer.write('>');
