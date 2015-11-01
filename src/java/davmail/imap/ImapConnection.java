@@ -821,11 +821,13 @@ public class ImapConnection extends AbstractConnection {
                     buffer.append(" FLAGS (").append(message.getImapFlags()).append(')');
                 } else if ("RFC822.SIZE".equals(param)) {
                     int size;
-                    if (parameters.contains("BODY.PEEK[HEADER.FIELDS (")
+                    if ( (  parameters.contains("BODY.PEEK[HEADER.FIELDS (")
                             // exclude mutt header request
-                            && !parameters.contains("X-LABEL")) {
-                        // Header request, send approximate size
+                            && !parameters.contains("X-LABEL") )
+							|| Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize") )
+					{   // Send approximate size
                         size = message.size;
+						LOGGER.debug(String.format("Message %s sent approximate size %d bytes", message.getImapUid(), size));
                     } else {
                         size = messageWrapper.getMimeMessageSize();
                     }

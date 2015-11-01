@@ -159,6 +159,7 @@ public final class Settings {
         SETTINGS.put("davmail.showStartupBanner", Boolean.TRUE.toString());
         SETTINGS.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());
         SETTINGS.put("davmail.imapAutoExpunge", Boolean.TRUE.toString());
+        SETTINGS.put("davmail.imapAlwaysApproxMsgSize", Boolean.FALSE.toString());
         SETTINGS.put("davmail.popMarkReadOnRetr", Boolean.FALSE.toString());
         SETTINGS.put("davmail.smtpSaveInSent", Boolean.TRUE.toString());
         SETTINGS.put("davmail.ssl.keystoreType", "");
