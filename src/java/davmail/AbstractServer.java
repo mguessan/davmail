@@ -22,17 +22,14 @@ import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.HashSet;
 
 /**
@@ -90,26 +87,14 @@ public abstract class AbstractServer extends Thread {
         if (keystoreFile == null || keystoreFile.length() == 0 || nosslFlag) {
             serverSocketFactory = ServerSocketFactory.getDefault();
         } else {
-            FileInputStream keyStoreInputStream = null;
             try {
-                keyStoreInputStream = new FileInputStream(keystoreFile);
-                // keystore for keys and certificates
-                // keystore and private keys should be password protected...
-                KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
-                keystore.load(keyStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.keystorePass"));
-
-                // KeyManagerFactory to create key managers
-                KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-
-                // initialize KMF to work with keystore
-                kmf.init(keystore, Settings.getCharArrayProperty("davmail.ssl.keyPass"));
 
                 // SSLContext is environment for implementing JSSE...
                 // create ServerSocketFactory
                 SSLContext sslContext = SSLContext.getInstance("TLS");
 
                 // initialize sslContext to work with key managers
-                sslContext.init(kmf.getKeyManagers(), null, null);
+                sslContext.init(getKeyManagers(), getTrustManagers(), null);
 
                 // create ServerSocketFactory from sslContext
                 serverSocketFactory = sslContext.getServerSocketFactory();
@@ -117,14 +102,6 @@ public abstract class AbstractServer extends Thread {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
             } catch (GeneralSecurityException ex) {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
-            } finally {
-                if (keyStoreInputStream != null) {
-                    try {
-                        keyStoreInputStream.close();
-                    } catch (IOException exc) {
-                        DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
-                    }
-                }
             }
         }
         try {
@@ -134,7 +111,7 @@ public abstract class AbstractServer extends Thread {
             } else {
                 serverSocket = serverSocketFactory.createServerSocket(port, 0, Inet4Address.getByName(bindAddress));
             }
-            if (serverSocket instanceof  SSLServerSocket) {
+            if (serverSocket instanceof SSLServerSocket) {
                 // CVE-2014-3566 disable SSLv3
                 HashSet<String> protocols = new HashSet<String>();
                 for (String protocol : ((SSLServerSocket) serverSocket).getEnabledProtocols()) {
@@ -143,6 +120,7 @@ public abstract class AbstractServer extends Thread {
                     }
                 }
                 ((SSLServerSocket) serverSocket).setEnabledProtocols(protocols.toArray(new String[protocols.size()]));
+                ((SSLServerSocket) serverSocket).setNeedClientAuth(Settings.getBooleanProperty("davmail.ssl.needClientAuth", false));
             }
 
         } catch (IOException e) {
@@ -150,6 +128,73 @@ public abstract class AbstractServer extends Thread {
         }
     }
 
+    /**
+     * Build trust managers from truststore file.
+     *
+     * @return trust managers
+     * @throws CertificateException     on error
+     * @throws NoSuchAlgorithmException on error
+     * @throws IOException              on error
+     * @throws KeyStoreException        on error
+     */
+    protected TrustManager[] getTrustManagers() throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
+        String truststoreFile = Settings.getProperty("davmail.ssl.truststoreFile");
+        if (truststoreFile == null || truststoreFile.length() == 0) {
+            return null;
+        }
+        FileInputStream trustStoreInputStream = null;
+        try {
+            trustStoreInputStream = new FileInputStream(truststoreFile);
+            KeyStore trustStore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.truststoreType"));
+            trustStore.load(trustStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.truststorePass"));
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
+            return tmf.getTrustManagers();
+        } finally {
+            if (trustStoreInputStream != null) {
+                try {
+                    trustStoreInputStream.close();
+                } catch (IOException exc) {
+                    DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
+                }
+            }
+        }
+    }
+
+    /**
+     * Build key managers from keystore file.
+     *
+     * @return key managers
+     * @throws CertificateException     on error
+     * @throws NoSuchAlgorithmException on error
+     * @throws IOException              on error
+     * @throws KeyStoreException        on error
+     */
+    protected KeyManager[] getKeyManagers() throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableKeyException {
+        String keystoreFile = Settings.getProperty("davmail.ssl.keystoreFile");
+        if (keystoreFile == null || keystoreFile.length() == 0) {
+            return null;
+        }
+        FileInputStream keyStoreInputStream = null;
+        try {
+            keyStoreInputStream = new FileInputStream(keystoreFile);
+            KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
+            keystore.load(keyStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.keystorePass"));
+
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(keystore, Settings.getCharArrayProperty("davmail.ssl.keyPass"));
+            return kmf.getKeyManagers();
+        } finally {
+            if (keyStoreInputStream != null) {
+                try {
+                    keyStoreInputStream.close();
+                } catch (IOException exc) {
+                    DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
+                }
+            }
+        }
+    }
 
     /**
      * The body of the server thread.  Loop forever, listening for and
