@@ -26,6 +26,7 @@ import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
@@ -217,7 +218,7 @@ public abstract class AbstractServer extends Thread {
                 if (Settings.getBooleanProperty("davmail.allowRemote") ||
                         clientSocket.getInetAddress().isLoopbackAddress() ||
                         // OSX link local address on loopback interface
-                        clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[] {(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 })
+                        clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[]{(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
                         )) {
                     connection = createConnectionHandler(clientSocket);
                     connection.start();
