@@ -2631,7 +2631,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
     static {
         priorityToImportanceMap.put("1", "High");
+        priorityToImportanceMap.put("2", "High");
+        priorityToImportanceMap.put("3", "High");
+        priorityToImportanceMap.put("4", "Normal");
         priorityToImportanceMap.put("5", "Normal");
+        priorityToImportanceMap.put("6", "Normal");
+        priorityToImportanceMap.put("7", "Low");
+        priorityToImportanceMap.put("8", "Low");
         priorityToImportanceMap.put("9", "Low");
     }
 
