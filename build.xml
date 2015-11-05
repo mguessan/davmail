@@ -1,6 +1,6 @@
 <project name="DavMail" default="dist" basedir=".">
     <property file="user.properties"/>
-    <property name="version" value="4.6.2"/>
+    <property name="version" value="4.7.0"/>
 
     <path id="classpath">
         <pathelement location="classes"/>
@@ -484,5 +484,10 @@
                 <include name="*.MD5"/>
             </fileset>
         </concat>
+    </target>
+    <target name="debupload" depends="jar">
+        <scp todir="testuser@192.168.11.164:/home/testuser" password="Passw0rd" verbose="true" trust="true">
+            <fileset file="dist/davmail.jar"/>
+        </scp>
     </target>
 </project>

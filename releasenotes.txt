@@ -1,3 +1,55 @@
+** DavMail 4.7.0 released **
+This new release contains a lot of fixes from user feedback, a new -notray command line
+option to force window mode and avoid tricky tray icon issues on Linux and native
+smartcard support on Windows.
+
+Caldav:
+- Caldav: Map additional priority levels
+- Caldav: fix missing LAST-MODIFIED in events
+
+Enhancements:
+- Improved tray icon with alpha blend
+- Fix imports
+- Prepare mutual SSL authentication between client and DavMail implementation
+- Implement -notray command line option as a workaround for broken SWT and Unity issues
+- Change warning messages to debug in close method
+- Improve client certificate dialog, build description from certificate
+- Exclude client certificates not issued by server provided issuers list
+
+IMAP:
+- IMAP: Additional translations and doc for new IMAP setting
+- IMAP: Merge patch by Mauro Cicognini, add a new setting to always send approximate message in RFC822.SIZE to avoid downloading full message body
+- IMAP: fix regression with quotes inside folder names
+- IMAP: handle quotes inside folder names correctly
+
+OSX:
+- OSX link local address on loopback interface
+- Exclude arguments starting with dash to avoid patch 38 regression on OSX
+
+Documentation:
+- Doc: Document -notray option
+- Switch to OpenHub instead of Ohloh
+
+EWS:
+- EWS: prepare distribution list implementation
+- Fix #254 davmail.exchange.ews.EWSException: ErrorIncorrectUpdatePropertyCount
+
+Linux:
+- Refresh davmail.spec, make RPM noarch
+- Handle missing or broken SWT library
+
+Windows:
+- Windows: Make MSCAPI keystore type available in Settings for Windows native smartcard support
+- Instantiate MSCAPI explicitly to access Windows Smartcards
+- Enable native Windows SmartCard access through MSCAPI (no PKCS11 config required)
+
+Carddav:
+- Carddav: Test case for comma in ADR field
+- Carddav: Do not replace comma on ADR field, see support request 255
+- Caldav: Ignore missing END:VCALENDAR line on modified occurrences
+- CardDav: Add empty property test case
+
+
 ** DavMail 4.6.2 released **
 Another bug fix release with some efforts on packaging.
 
