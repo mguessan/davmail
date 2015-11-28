@@ -168,6 +168,18 @@ public abstract class ExchangeSession {
     private static final int MAX_OTP_RETRIES = 3;
 
     /**
+     * Build an ExchangeSession from an already authenticated HttpClient.
+     *
+     * @param httpClient httpClient instance with session cookies
+     * @param userName User name
+     */
+    public ExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
+        this.httpClient = httpClient;
+        this.userName = userName;
+        buildSessionInfo(null);
+    }
+
+    /**
      * Create an exchange session for the given URL.
      * The session is established for given userName and password
      *
