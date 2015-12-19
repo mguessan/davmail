@@ -25,6 +25,7 @@ import davmail.exchange.dav.ExchangeDavMethod;
 import davmail.exchange.dav.ExchangeSearchMethod;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.cookie.CookiePolicy;
@@ -44,10 +45,7 @@ import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -67,6 +65,8 @@ public final class DavGatewayHttpClientFacade {
 
     static final long ONE_MINUTE = 60000;
 
+    static String WORKSTATION_NAME = "UNKNOWN";
+
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
     static {
@@ -79,7 +79,11 @@ public final class DavGatewayHttpClientFacade {
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
 
         AuthPolicy.registerAuthScheme(AuthPolicy.BASIC, LenientBasicScheme.class);
-
+        try {
+            WORKSTATION_NAME = InetAddress.getLocalHost().getHostName();
+        } catch (Throwable t) {
+            // ignore
+        }
     }
 
 
@@ -128,9 +132,9 @@ public final class DavGatewayHttpClientFacade {
             // separate domain from username in credentials
             String domain = userName.substring(0, backSlashIndex);
             userName = userName.substring(backSlashIndex + 1);
-            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", domain));
+            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, WORKSTATION_NAME, domain));
         } else {
-            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, "UNKNOWN", ""));
+            httpClient.getState().setCredentials(authScope, new NTCredentials(userName, password, WORKSTATION_NAME, ""));
         }
     }
 
@@ -239,11 +243,11 @@ public final class DavGatewayHttpClientFacade {
                 if (backslashindex > 0) {
                     httpClient.getState().setProxyCredentials(authScope,
                             new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                    proxyPassword, "UNKNOWN",
+                                    proxyPassword, WORKSTATION_NAME,
                                     proxyUser.substring(0, backslashindex)));
                 } else {
                     httpClient.getState().setProxyCredentials(authScope,
-                            new NTCredentials(proxyUser, proxyPassword, "UNKNOWN", ""));
+                            new NTCredentials(proxyUser, proxyPassword, WORKSTATION_NAME, ""));
                 }
             }
         }
