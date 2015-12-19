@@ -149,7 +149,7 @@ public class NotificationDialog extends JDialog {
         addRecipientComponent(recipientsPanel, BundleMessage.format("UI_TO"), toField,
                 BundleMessage.format("UI_TO_HELP"));
         addRecipientComponent(recipientsPanel, BundleMessage.format("UI_CC"), ccField,
-                BundleMessage.format("UI_CC"));
+                BundleMessage.format("UI_CC_HELP"));
         addRecipientComponent(recipientsPanel, BundleMessage.format("UI_SUBJECT"), subjectField,
                 BundleMessage.format("UI_SUBJECT_HELP"));
         return recipientsPanel;
