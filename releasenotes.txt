@@ -1,3 +1,16 @@
+** DavMail 4.7.1 released **
+Bugfix release, mainly for Carddav regression over EWS, also includes an NTLM support enhancement.
+
+Enhancement:
+- Improve NTLM support try to send hostname as workstation name instead of UNKNOWN
+- Fix notification dialog message
+- Prepare ExchangeSessionFactory refactoring
+- Fix typo in french translation
+- Fix broken Sourceforge link in About dialog
+
+Carddav:
+- Carddav: fix regression on contact update with empty field triggering DeleteItemField
+
 ** DavMail 4.7.0 released **
 This new release contains a lot of fixes from user feedback, a new -notray command line
 option to force window mode and avoid tricky tray icon issues on Linux and native
