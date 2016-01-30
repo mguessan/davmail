@@ -180,7 +180,7 @@ public final class DavGatewayHttpClientFacade {
         setClientHost(httpClient, url);
 
         // force NTLM in direct EWS mode
-        if (!needNTLM && url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+        if (!needNTLM && url.toLowerCase().endsWith("/ews/exchange.asmx") && !Settings.getBooleanProperty("davmail.disableNTLM", false)) {
             needNTLM = true;
         }
 
