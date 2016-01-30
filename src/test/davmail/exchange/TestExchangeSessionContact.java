@@ -556,6 +556,30 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("smtpemail1"));
     }
 
+    public void testRemoveEmail() throws IOException {
+        testCreateContact();
+
+        ExchangeSession.Contact contact = getCurrentContact();
+
+        assertNotNull(contact.get("smtpemail1"));
+        assertNotNull(contact.get("smtpemail2"));
+
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "UID:8b75b1a40f2c4e3a8cbdc86f26d4a497\n" +
+                "N:name;common;;;\n" +
+                "FN:common name\n" +
+                "END:VCARD";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        assertEquals(201, result.status);
+
+        contact = getCurrentContact();
+
+        assertNull(contact.get("smtpemail1"));
+        assertNull(contact.get("smtpemail2"));
+    }
+
     public void testProtectedComma() throws IOException {
         String itemBody = "BEGIN:VCARD\n" +
                 "ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia\n" +
