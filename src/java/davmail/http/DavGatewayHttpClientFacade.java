@@ -98,7 +98,7 @@ public final class DavGatewayHttpClientFacade {
     private static HttpClient getBaseInstance() {
         HttpClient httpClient = new HttpClient();
         httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
-        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, MAX_REDIRECTS);
+        httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS));
         httpClient.getParams().setCookiePolicy("DavMailCookieSpec");
         return httpClient;
     }
@@ -396,7 +396,7 @@ public final class DavGatewayHttpClientFacade {
             }
 
             int redirectCount = 0;
-            while (redirectCount++ < 10
+            while (redirectCount++ < Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS)
                     && locationValue != null) {
                 currentMethod.releaseConnection();
                 currentMethod = new GetMethod(locationValue);
