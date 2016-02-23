@@ -66,7 +66,7 @@ public class FieldUpdate {
         }
 
         // do not try to set empty value on create
-        if (itemType != null || value != null) {
+        if (itemType != null || (value != null && value.length() > 0)) {
             StringBuilder buffer = new StringBuilder();
             if (value == null || value.length() == 0) {
                 fieldURI.appendTo(buffer);
