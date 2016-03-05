@@ -256,7 +256,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         throw (DavMailAuthenticationException) e;
                     }
                     LOGGER.error(e2.getMessage());
-                    throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
+                    throw new DavMailException("EXCEPTION_EWS_NOT_AVAILABLE");
                 }
             }
         }
