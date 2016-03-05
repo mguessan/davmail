@@ -28,6 +28,7 @@ import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.GetMethod;
 
 import java.io.IOException;
@@ -129,10 +130,11 @@ public final class ExchangeSessionFactory {
             }
 
             if (session != null && session.isExpired()) {
-                ExchangeSession.LOGGER.debug("Session " + session +" for user " + session.userName+ " expired");
-                session = null;
-                // expired session, remove from cache
                 synchronized (LOCK) {
+                    session.close();
+                    ExchangeSession.LOGGER.debug("Session " + session + " for user " + session.userName + " expired");
+                    session = null;
+                    // expired session, remove from cache
                     POOL_MAP.remove(poolKey);
                 }
             }
@@ -153,7 +155,7 @@ public final class ExchangeSessionFactory {
                         }
                     }
                 }
-                ExchangeSession.LOGGER.debug("Created new session " + session+" for user "+poolKey.userName);
+                ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
             }
             // successful login, put session in cache
             synchronized (LOCK) {
@@ -220,7 +222,7 @@ public final class ExchangeSessionFactory {
     public static void checkConfig() throws IOException {
         String url = Settings.getProperty("davmail.url");
         if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
-             throw new DavMailException("LOG_INVALID_URL", url);
+            throw new DavMailException("LOG_INVALID_URL", url);
         }
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
         GetMethod testMethod = new GetMethod(url);
@@ -248,7 +250,7 @@ public final class ExchangeSessionFactory {
         if (!checkNetwork() || configChecked) {
             ExchangeSession.LOGGER.warn(BundleMessage.formatLog("EXCEPTION_NETWORK_DOWN"));
             // log full stack trace for unknown errors
-            if (!((exc instanceof UnknownHostException)||(exc instanceof NetworkDownException))) {
+            if (!((exc instanceof UnknownHostException) || (exc instanceof NetworkDownException))) {
                 ExchangeSession.LOGGER.debug(exc, exc);
             }
             throw new NetworkDownException("EXCEPTION_NETWORK_DOWN");

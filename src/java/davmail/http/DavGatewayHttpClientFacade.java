@@ -255,6 +255,17 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
+     * Make sure we close all connections immediately after a session creation failure.
+     *
+     * @param httpClient http client to close
+     */
+    public static void close(HttpClient httpClient) {
+        if (httpClient != null) {
+            ((MultiThreadedHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
+        }
+    }
+
+    /**
      * Retrieve Proxy Selector
      *
      * @param uri target uri

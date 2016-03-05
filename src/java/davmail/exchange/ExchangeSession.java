@@ -130,7 +130,7 @@ public abstract class ExchangeSession {
      * /users/<i>email</i>
      */
     protected String currentMailboxPath;
-    protected final HttpClient httpClient;
+    protected HttpClient httpClient = null;
 
     protected String userName;
     /**
@@ -249,23 +249,36 @@ public abstract class ExchangeSession {
             buildSessionInfo(method);
 
         } catch (DavMailAuthenticationException exc) {
+            close();
             LOGGER.error(exc.getMessage());
             throw exc;
         } catch (ConnectException exc) {
+            close();
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         } catch (UnknownHostException exc) {
+            close();
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             ExchangeSession.LOGGER.error(message);
             throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
         } catch (WebdavNotAvailableException exc) {
+            close();
             throw exc;
         } catch (IOException exc) {
+            close();
             LOGGER.error(BundleMessage.formatLog("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc));
             throw new DavMailException("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc);
         }
         LOGGER.debug("Session " + this + " created");
+    }
+
+    /**
+     * Close session.
+     * Shutdown http client connection manager
+     */
+    public void close() {
+        DavGatewayHttpClientFacade.close(httpClient);
     }
 
     /**
