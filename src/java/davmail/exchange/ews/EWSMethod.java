@@ -84,6 +84,7 @@ public abstract class EWSMethod extends PostMethod {
     protected List<Item> responseItems;
     protected String errorDetail;
     protected String errorDescription;
+    protected String errorValue;
     protected Item item;
 
     protected SearchExpression searchExpression;
@@ -736,6 +737,9 @@ public abstract class EWSMethod extends PostMethod {
      * @throws EWSException on error
      */
     public void checkSuccess() throws EWSException {
+        if ("The server cannot service this request right now. Try again later.".equals(errorDetail)) {
+            throw new EWSThrottlingException(errorDetail);
+        }
         if (errorDetail != null) {
             if (!"ErrorAccessDenied".equals(errorDetail)
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)
@@ -831,6 +835,11 @@ public abstract class EWSMethod extends PostMethod {
         String messageText = handleTag(reader, "MessageText");
         if (messageText != null) {
             errorDescription = messageText;
+        }
+        String messageXml = handleTag(reader, "MessageXml");
+        if (messageXml != null) {
+            // contains BackOffMilliseconds on ErrorServerBusy
+            errorValue = messageXml;
         }
         if (errorDetail == null && result != null
                 && !"NoError".equals(result)
