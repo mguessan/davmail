@@ -1,3 +1,20 @@
+** DavMail 4.7.2 released **
+Bugfix release, detect Exchange throttling to temporarily block requests and a few Carddav fixes.
+
+EWS:
+- EWS: handle Exchange throttling, suspend all requests according to server provided delay
+- EWS: send DavMailException instead of authentication exception on EWS not available error
+
+Enhancements:
+- 128x128 DavMail icon
+- Add a new davmail.httpMaxRedirects setting
+- DAV: add a hidden davmail.disableNTLM setting
+
+Carddav:
+- Carddav: fix another regression on contact create with empty field
+- Carddav: remove email over EWS unit test
+- Carddav: fix email address removal over EWS
+
 ** DavMail 4.7.1 released **
 Bugfix release, mainly for Carddav regression over EWS, also includes an NTLM support enhancement.
 

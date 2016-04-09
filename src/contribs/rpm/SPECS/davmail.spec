@@ -2,8 +2,8 @@
 %{?!davmail_uid:   %define davmail_uid   213}
 %{?!davmail_gid:   %define davmail_gid   213}
 
-%{?!davrel:   %define davrel   4.7.1}
-%{?!davsvn:   %define davsvn   2417}
+%{?!davrel:   %define davrel   4.7.2}
+%{?!davsvn:   %define davsvn   2427}
 %define davver %{davrel}-%{davsvn}
 %ifarch i386 i586 i686
 %define davarch x86
