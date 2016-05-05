@@ -43,9 +43,13 @@ public class DavMailCookieSpec extends RFC2109Spec {
         } else {
             cookiePath = null;
         }
-        String hostWithoutDomain = host.substring(0, host.length()
-                - cookie.getDomain().length());
-        int dotIndex = hostWithoutDomain.indexOf('.');
+        // workaround for invalid cookie domain
+        int dotIndex = -1;
+        if (host.endsWith(cookie.getDomain())) {
+            String hostWithoutDomain = host.substring(0, host.length()
+                    - cookie.getDomain().length());
+            dotIndex = hostWithoutDomain.indexOf('.');
+        }
         if (dotIndex != -1) {
             // discard additional host name part
             super.validate(host.substring(dotIndex + 1), port, path, secure, cookie);
