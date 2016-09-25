@@ -231,7 +231,7 @@ public class SmtpConnection extends AbstractConnection {
                 message = e.toString();
             }
             message = message.replaceAll("\\n", " ");
-            sendClient("554 Authenticated failed " + message);
+            sendClient("535 Authentication failed " + message);
             state = State.INITIAL;
         }
 
