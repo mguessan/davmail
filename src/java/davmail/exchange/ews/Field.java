@@ -82,7 +82,9 @@ public final class Field {
 
         FIELD_MAP.put("from", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "from"));
         FIELD_MAP.put("to", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "to"));
+        FIELD_MAP.put("displayto", new UnindexedFieldURI("item:DisplayTo"));
         FIELD_MAP.put("cc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "cc"));
+        FIELD_MAP.put("displaycc", new UnindexedFieldURI("item:DisplayCc"));
         FIELD_MAP.put("bcc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "bcc"));
 
         FIELD_MAP.put("message-id", new UnindexedFieldURI("message:InternetMessageId"));

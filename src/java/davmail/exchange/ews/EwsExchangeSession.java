@@ -1040,6 +1040,12 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition contains(String attributeName, String value) {
+        // workaround for to: header not searchable over EWS
+        if ("to".equals(attributeName)) {
+            attributeName = "displayto";
+        } else if ("cc".equals(attributeName)) {
+            attributeName = "displaycc";
+        }
         return new AttributeCondition(attributeName, Operator.Contains, value, ContainmentMode.Substring, ContainmentComparison.IgnoreCase);
     }
 

@@ -326,6 +326,26 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
+    public void testSearchTo() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH TO testto");
+
+        assertEquals("* SEARCH 1",  readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testSearchCc() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH CC testcc");
+
+        assertEquals("* SEARCH 1",  readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
     public void testSearchKeywords() throws IOException {
         resetTestFolder();
         appendMessage();

@@ -95,6 +95,7 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
         try {
             MimeMessage mimeMessage = new MimeMessage((Session) null);
             mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
+            mimeMessage.addHeader("cc", "testcc <" + Settings.getProperty("davmail.to") + ">");
             mimeMessage.setText("Test message ");
             mimeMessage.setSubject("Test subject ");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
