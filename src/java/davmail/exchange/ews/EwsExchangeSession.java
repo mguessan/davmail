@@ -1040,8 +1040,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Condition contains(String attributeName, String value) {
-        // workaround for to: header not searchable over EWS
-        if ("to".equals(attributeName)) {
+        // workaround for from: and to: headers not searchable over EWS
+        if ("from".equals(attributeName)) {
+            attributeName = "msgfrom";
+        } else if ("to".equals(attributeName)) {
             attributeName = "displayto";
         } else if ("cc".equals(attributeName)) {
             attributeName = "displaycc";
