@@ -2162,7 +2162,7 @@ public class DavExchangeSession extends ExchangeSession {
                     and(isEqualTo("instancetype", 0), dateCondition));
         } else {
             // instancetype 0 single appointment / 1 master recurring appointment
-            return and(isEqualTo("outlookmessageclass", "IPM.Appointment"),
+            return and(or(isEqualTo("outlookmessageclass", "IPM.Appointment"), isEqualTo("outlookmessageclass", "IPM.Appointment.MeetingEvent")),
                     or(isEqualTo("instancetype", 1),
                             and(isEqualTo("instancetype", 0), dateCondition)));
         }
