@@ -22,3 +22,6 @@ mvn install:install-file -DgroupId=info.growl -DartifactId=growl -Dversion=0.2 -
 - change default download files on frs
 - upload version.txt with ant upload-version
 - create new version in sourceforge bug tracker
+- connect to https://build.opensuse.org/
+- upload src package
+- update spec file
