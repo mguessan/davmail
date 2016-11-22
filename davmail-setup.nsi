@@ -3,14 +3,14 @@
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "DavMail"
 !define PRODUCT_VERSION "${VERSION}"
-!define PRODUCT_PUBLISHER "MickaÃ«l Guessant"
+!define PRODUCT_PUBLISHER "Mickaël Guessant"
 !define PRODUCT_WEB_SITE "http://sourceforge.net/projects/davmail"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\davmail.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
 ; MUI 1.67 compatible ------
-!include "MUI.nsh"
+!include "MUI2.nsh"
 
 ; MUI Settings
 !define MUI_ABORTWARNING
@@ -28,10 +28,15 @@
 !insertmacro MUI_PAGE_LICENSE "src\license.txt"
 ; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
+
 ; Instfiles page
 !insertmacro MUI_PAGE_INSTFILES
 ; Finish page
 !define MUI_FINISHPAGE_RUN "$INSTDIR\davmail.exe"
+!define MUI_FINISHPAGE_SHOWREADME "" #Used as auto start option
+  !define MUI_FINISHPAGE_SHOWREADME_TEXT "Always launch DavMail at log on"
+  !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+  !define MUI_FINISHPAGE_SHOWREADME_FUNCTION AddRunKey
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller pages
@@ -50,9 +55,17 @@ InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
 
+LangString PAGE_TITLE ${LANG_ENGLISH} "Title"
+LangString PAGE_SUBTITLE ${LANG_ENGLISH} "Subtitle"
+
+Function AddRunKey
+  WriteRegStr HKEY_CURRENT_USER "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail" "$INSTDIR\davmail.exe"
+FunctionEnd
+
 Function .onInit
   !insertmacro MUI_LANGDLL_DISPLAY
 FunctionEnd
+
 
 Section
 Push $5
@@ -108,8 +121,6 @@ Section "MainSection" SEC01
   File "dist\lib\winrun4j-0.4.5.jar"
   File "dist\lib\woodstox-core-asl-4.1.2.jar"
   File "dist\lib\xercesImpl-2.8.1.jar"
-
-  WriteRegStr HKEY_CURRENT_USER "Software\Microsoft\Windows\CurrentVersion\Run" "DavMail" "$INSTDIR\davmail.exe"
 SectionEnd
 
 Section -AdditionalIcons
