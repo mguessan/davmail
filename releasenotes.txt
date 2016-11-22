@@ -1,3 +1,27 @@
+** DavMail 4.7.3 released **
+Another bugfix release, mostly from user feedback. Also improve Windows installer to let users
+choose whether they want to run DavMail automatically at logon.
+
+Enhancement:
+- Improve windows installer, make auto start at logon optional
+- Update release guide with opensuse build env
+- update icon cache
+- Update winrun4j wrappers icon to 128x128
+
+EWS:
+- EWS: workaround for invalid cookie domain on Office365
+
+DAV:
+- DAV: merge patch from #232 Outlook-created appt does not go through. OWA-created one does
+
+IMAP:
+- IMAP: additional fix for #626, workaround for from: header not searchable over EWS
+- IMAP: fix for #626, workaround for to: header not searchable over EWS
+
+SMTP:
+- SMTP: Merge patch 627 by Peter Chubb, server returns incorrect code on authentication failure 
+
+
 ** DavMail 4.7.2 released **
 Bugfix release, detect Exchange throttling to temporarily block requests and a few Carddav fixes.
 
