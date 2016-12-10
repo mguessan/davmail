@@ -204,7 +204,8 @@ public class SmtpConnection extends AbstractConnection {
         } catch (Exception e) {
             DavGatewayTray.log(e);
             try {
-                sendClient("500 " + ((e.getMessage() == null) ? e : e.getMessage()));
+                // append a line feed to avoid thunderbird message drop
+                sendClient("421 " + ((e.getMessage() == null) ? e : e.getMessage())+"\n");
             } catch (IOException e2) {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
