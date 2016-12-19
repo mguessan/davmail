@@ -1887,7 +1887,7 @@ public abstract class ExchangeSession {
         /**
          * Unparsed message content.
          */
-        protected SharedByteArrayInputStream mimeBody;
+        protected byte[] mimeBody;
 
         /**
          * Message content parsed in a MIME message.
@@ -1983,16 +1983,20 @@ public abstract class ExchangeSession {
                     LOGGER.debug("Got message content for " + imapUid + " from cache");
                 } else {
                     // load and parse message
-                    mimeBody = new SharedByteArrayInputStream(getContent(this));
-                    mimeMessage = new MimeMessage(null, mimeBody);
-                    mimeBody.reset();
+                    byte[] mimeBody = getContent(this);
+                    mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
                     // workaround for Exchange 2003 ActiveSync bug
                     if (mimeMessage.getHeader("MAIL FROM") != null) {
-                        mimeBody = (SharedByteArrayInputStream) mimeMessage.getRawInputStream();
-                        mimeMessage = new MimeMessage(null, mimeBody);
-                        mimeBody.reset();
+                        // find start of actual message
+                        byte[] mimeBodyCopy = new byte[((SharedByteArrayInputStream) mimeMessage.getRawInputStream()).available()];
+                        int offset = mimeBody.length - mimeBodyCopy.length;
+                        // remove unwanted header
+                        System.arraycopy(mimeBody, offset, mimeBodyCopy, 0, mimeBodyCopy.length);
+                        mimeBody = mimeBodyCopy;
+                        mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
+                        System.out.println(new String(mimeBody));
                     }
-                    LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.available() + " bytes)");
+                    LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.length + " bytes)");
                 }
             }
         }
@@ -2054,8 +2058,7 @@ public abstract class ExchangeSession {
          */
         public int getMimeMessageSize() throws IOException, MessagingException {
             loadMimeMessage();
-            mimeBody.reset();
-            return mimeBody.available();
+            return mimeBody.length;
         }
 
         /**
@@ -2067,8 +2070,7 @@ public abstract class ExchangeSession {
          */
         public InputStream getRawInputStream() throws IOException, MessagingException {
             loadMimeMessage();
-            mimeBody.reset();
-            return mimeBody;
+            return new SharedByteArrayInputStream(mimeBody);
         }
 
 
@@ -2222,7 +2224,7 @@ public abstract class ExchangeSession {
         /**
          * Cached unparsed message
          */
-        protected transient SharedByteArrayInputStream cachedMimeBody;
+        protected transient byte[] cachedMimeBody;
 
     }
 
