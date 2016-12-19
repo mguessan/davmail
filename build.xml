@@ -140,11 +140,15 @@
                 toFile="dist/davmail.desktop"
                 name="DavMail"
                 comment="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway"
-                exec="davmail"
-                icon="/usr/share/davmail/davmail.png"
-                categories="Network;"
+                exec="/usr/bin/davmail"
+                icon="/usr/share/icons/davmail.png"
+                categories="GTK;GNOME;Network;"
                 genericname="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway"
                 />
+        <replaceregexp match="GenericName="
+                       replace="Keywords=pop;imap;smtp;exchange;owa;outlook&#10;GenericName=">
+            <fileset file="dist/davmail.desktop"/>
+        </replaceregexp>
         <deb todir="dist"
              package="davmail"
              section="mail"
@@ -181,7 +185,7 @@
             <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
                 <include name="davmail"/>
             </tarfileset>
-            <tarfileset dir="dist" prefix="usr/share/davmail">
+            <tarfileset dir="dist" prefix="usr/share/icons">
                 <include name="davmail.png"/>
             </tarfileset>
             <tarfileset dir="dist" prefix="usr/share/applications">
