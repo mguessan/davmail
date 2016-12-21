@@ -1594,6 +1594,20 @@ public abstract class ExchangeSession {
     }
 
     /**
+     * Convert IMAP flags to keyword value.
+     *
+     * @param flags IMAP flags
+     * @return keyword value
+     */
+    public String convertFlagsToKeywords(HashSet<String> flags) {
+        HashSet<String> keywordSet = new HashSet<String>();
+        for (String flag : flags) {
+            keywordSet.add(convertFlagToKeyword(flag));
+        }
+        return StringUtil.join(keywordSet, ",");
+    }
+
+    /**
      * Exchange folder with IMAP properties
      */
     public class Folder {
@@ -2199,11 +2213,7 @@ public abstract class ExchangeSession {
         }
 
         public String setFlags(HashSet<String> flags) {
-            HashSet<String> keywordSet = new HashSet<String>();
-            for (String flag : flags) {
-                keywordSet.add(convertFlagToKeyword(flag));
-            }
-            keywords = StringUtil.join(keywordSet, ",");
+            keywords = convertFlagsToKeywords(flags);
             return keywords;
         }
 

@@ -455,6 +455,7 @@ public class ImapConnection extends AbstractConnection {
                                     }
 
                                     if (flags != null) {
+                                        HashSet<String> keywords = null;
                                         // parse flags, on create read and draft flags are on the
                                         // same messageFlags property, 8 means draft and 1 means read
                                         ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
@@ -484,7 +485,15 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                             } else if ("Junk".equalsIgnoreCase(flag)) {
                                                 properties.put("junk", "1");
+                                            } else {
+                                                if (keywords == null) {
+                                                    keywords = new HashSet<String>();
+                                                }
+                                                keywords.add(flag);
                                             }
+                                        }
+                                        if (keywords != null) {
+                                            properties.put("keywords", session.convertFlagsToKeywords(keywords));
                                         }
                                     } else {
                                         // no flags, force not draft and unread
