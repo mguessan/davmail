@@ -1804,7 +1804,7 @@ public abstract class ExchangeSession {
          * drop cached message
          */
         public void clearCache() {
-            messages.cachedMimeBody = null;
+            messages.cachedMimeContent = null;
             messages.cachedMimeMessage = null;
             messages.cachedMessageImapUid = 0;
         }
@@ -1887,7 +1887,7 @@ public abstract class ExchangeSession {
         /**
          * Unparsed message content.
          */
-        protected byte[] mimeBody;
+        protected byte[] mimeContent;
 
         /**
          * Message content parsed in a MIME message.
@@ -1978,25 +1978,25 @@ public abstract class ExchangeSession {
             if (mimeMessage == null) {
                 // try to get message content from cache
                 if (this.imapUid == messageList.cachedMessageImapUid) {
-                    mimeBody = messageList.cachedMimeBody;
+                    mimeContent = messageList.cachedMimeContent;
                     mimeMessage = messageList.cachedMimeMessage;
                     LOGGER.debug("Got message content for " + imapUid + " from cache");
                 } else {
                     // load and parse message
-                    byte[] mimeBody = getContent(this);
-                    mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
+                    mimeContent = getContent(this);
+                    mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeContent));
                     // workaround for Exchange 2003 ActiveSync bug
                     if (mimeMessage.getHeader("MAIL FROM") != null) {
                         // find start of actual message
-                        byte[] mimeBodyCopy = new byte[((SharedByteArrayInputStream) mimeMessage.getRawInputStream()).available()];
-                        int offset = mimeBody.length - mimeBodyCopy.length;
+                        byte[] mimeContentCopy = new byte[((SharedByteArrayInputStream) mimeMessage.getRawInputStream()).available()];
+                        int offset = mimeContent.length - mimeContentCopy.length;
                         // remove unwanted header
-                        System.arraycopy(mimeBody, offset, mimeBodyCopy, 0, mimeBodyCopy.length);
-                        mimeBody = mimeBodyCopy;
-                        mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeBody));
-                        System.out.println(new String(mimeBody));
+                        System.arraycopy(mimeContent, offset, mimeContentCopy, 0, mimeContentCopy.length);
+                        mimeContent = mimeContentCopy;
+                        mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeContent));
+                        System.out.println(new String(mimeContent));
                     }
-                    LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeBody.length + " bytes)");
+                    LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeContent.length + " bytes)");
                 }
             }
         }
@@ -2058,7 +2058,7 @@ public abstract class ExchangeSession {
          */
         public int getMimeMessageSize() throws IOException, MessagingException {
             loadMimeMessage();
-            return mimeBody.length;
+            return mimeContent.length;
         }
 
         /**
@@ -2070,7 +2070,7 @@ public abstract class ExchangeSession {
          */
         public InputStream getRawInputStream() throws IOException, MessagingException {
             loadMimeMessage();
-            return new SharedByteArrayInputStream(mimeBody);
+            return new SharedByteArrayInputStream(mimeContent);
         }
 
 
@@ -2082,12 +2082,12 @@ public abstract class ExchangeSession {
             // update single message cache
             if (mimeMessage != null) {
                 messageList.cachedMessageImapUid = imapUid;
-                messageList.cachedMimeBody = mimeBody;
+                messageList.cachedMimeContent = mimeContent;
                 messageList.cachedMimeMessage = mimeMessage;
             }
             // drop curent message body to save memory
             mimeMessage = null;
-            mimeBody = null;
+            mimeContent = null;
         }
 
         public boolean isLoaded() {
@@ -2224,7 +2224,7 @@ public abstract class ExchangeSession {
         /**
          * Cached unparsed message
          */
-        protected transient byte[] cachedMimeBody;
+        protected transient byte[] cachedMimeContent;
 
     }
 
