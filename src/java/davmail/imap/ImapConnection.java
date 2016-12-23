@@ -856,6 +856,13 @@ public class ImapConnection extends AbstractConnection {
                         throw new DavMailException("EXCEPTION_INVALID_DATE", message.date);
                     }
                 } else if ("RFC822".equals(param) || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
+
+                    if (param.startsWith("BODY[")) {
+                        // According to IMAP RFC: The \Seen flag is implicitly set
+                        updateFlags(message, "FLAGS", "\\Seen");
+                        message.read = true;
+                    }
+
                     // get full param
                     if (param.indexOf('[') >= 0) {
                         StringBuilder paramBuffer = new StringBuilder(param);
