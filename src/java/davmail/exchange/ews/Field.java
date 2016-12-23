@@ -221,8 +221,15 @@ public final class Field {
         FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
         FIELD_MAP.put("modifiedoccurrences", new UnindexedFieldURI("calendar:ModifiedOccurrences"));
 
-        FIELD_MAP.put("isrecurring", new UnindexedFieldURI("calendar:IsRecurring"));
+        // does not work with Office 365, see https://msdn.microsoft.com/en-us/library/office/bb204271(v=exchg.150).aspx
+        //FIELD_MAP.put("isrecurring", new UnindexedFieldURI("calendar:IsRecurring"));
+        FIELD_MAP.put("isrecurring", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8223, ExtendedFieldURI.PropertyType.Boolean)); // PidLidRecurring
+
         FIELD_MAP.put("calendaritemtype", new UnindexedFieldURI("calendar:CalendarItemType"));
+        // https://msdn.microsoft.com/en-us/library/cc842017.aspx
+        FIELD_MAP.put("recurringappointment", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8216, ExtendedFieldURI.PropertyType.Binary));
+        FIELD_MAP.put("recurrencestart", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8235, ExtendedFieldURI.PropertyType.SystemTime));
+        FIELD_MAP.put("recurrencetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8231, ExtendedFieldURI.PropertyType.Integer));
 
         FIELD_MAP.put("xmozlastack", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozlastack"));
         FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
