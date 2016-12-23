@@ -206,8 +206,15 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
     }
 
     public void testSearchEventCount() throws IOException {
+        Set<String> properties = session.getItemProperties();
+        properties.add("recurringappointment");
+        properties.add("isrecurring");
+        properties.add("recurrencestart");
+        properties.add("recurrencetype");
         Settings.setLoggingLevel("davmail", Level.WARN);
-        System.out.println("Item count: " + session.searchEvents("calendar", null).size());
+        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        System.out.println("Item count: " + session.searchEvents("calendar", properties, null).size());
+        Settings.setLoggingLevel("httpclient.wire", Level.INFO);
         System.out.println("InstanceType null: " + session.searchEvents("calendar", session.isNull("instancetype")).size());
         System.out.println("InstanceType not null: " + session.searchEvents("calendar", session.not(session.isNull("instancetype"))).size());
         System.out.println("InstanceType 0: " + session.searchEvents("calendar", session.isEqualTo("instancetype", 0)).size());
@@ -219,6 +226,17 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
             System.out.println("Recurring: " + session.searchEvents("calendar", session.isTrue("isrecurring")).size());
             System.out.println("Non recurring: " + session.searchEvents("calendar", session.isFalse("isrecurring")).size());
             System.out.println("Null recurring: " + session.searchEvents("calendar", session.isNull("isrecurring")).size());
+
+            System.out.println("recurringappointment master: " + session.searchEvents("calendar", session.exists("recurringappointment")).size());
+            System.out.println("recurrencestart master: " + session.searchEvents("calendar", session.exists("recurrencestart")).size());
+
+            //System.out.println("recurring master: " + session.searchEvents("calendar", session.isTrue("recurring")).size());
+            System.out.println("recurrencetype 2: " + session.searchEvents("calendar", session.isEqualTo("recurrencetype", 2)).size());
+            System.out.println("recurrencetype 0: " + session.searchEvents("calendar", session.isEqualTo("recurrencetype", 0)).size());
+
+
+
+
         }
 
     }
