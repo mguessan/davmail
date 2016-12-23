@@ -33,6 +33,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.internal.gtk.GdkRectangle;
 import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
 
@@ -222,6 +223,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         trayItem = new TrayItem(tray, SWT.NONE);
                         trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
+
+                        // check if tray is indeed available
+                        if (systemLookAndFeelClassName.contains("gtk")) {
+                            GdkRectangle area = new GdkRectangle();
+                            OS.gtk_status_icon_get_geometry(trayItem.handle, 0, area, 0);
+                            if (area.x == 0 && area.y == 0) {
+                                throw new Error("System tray not available");
+                            }
+                        }
+
 
                         awtImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
                         image = loadSwtImage(AwtGatewayTray.TRAY_PNG);

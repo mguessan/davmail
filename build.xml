@@ -6,6 +6,9 @@
         <pathelement location="classes"/>
         <fileset dir="lib">
             <include name="*.jar"/>
+            <!-- make sure we compile with swt gtk 64 -->
+            <exclude name="swt-*-x86.jar"/>
+            <exclude name="swt-*-win32-*.jar"/>
         </fileset>
     </path>
 
