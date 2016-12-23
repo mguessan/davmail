@@ -1194,6 +1194,14 @@ public abstract class ExchangeSession {
     public abstract Condition isNull(String attributeName);
 
     /**
+     * Exists condition.
+     *
+     * @param attributeName logical Exchange attribute name
+     * @return condition
+     */
+    public abstract Condition exists(String attributeName);
+
+    /**
      * Is true condition.
      *
      * @param attributeName logical Exchange attribute name
