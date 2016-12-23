@@ -974,6 +974,30 @@ public class EwsExchangeSession extends ExchangeSession {
 
     }
 
+    protected static class ExistsCondition implements ExchangeSession.Condition, SearchExpression {
+        protected final String attributeName;
+
+        protected ExistsCondition(String attributeName) {
+            this.attributeName = attributeName;
+        }
+
+        public void appendTo(StringBuilder buffer) {
+            buffer.append("<t:Exists>");
+            Field.get(attributeName).appendTo(buffer);
+            buffer.append("</t:Exists>");
+        }
+
+        public boolean isEmpty() {
+            return false;
+        }
+
+        public boolean isMatch(ExchangeSession.Contact contact) {
+            String actualValue = contact.get(attributeName);
+            return actualValue == null;
+        }
+
+    }
+
     @Override
     public ExchangeSession.MultiCondition and(Condition... condition) {
         return new MultiCondition(Operator.And, condition);
@@ -1059,6 +1083,11 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public Condition isNull(String attributeName) {
         return new IsNullCondition(attributeName);
+    }
+
+    @Override
+    public Condition exists(String attributeName) {
+        return new ExistsCondition(attributeName);
     }
 
     @Override

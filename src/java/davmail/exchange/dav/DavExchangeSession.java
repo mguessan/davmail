@@ -1061,6 +1061,11 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
+    public Condition exists(String attributeName) {
+        return not(new MonoCondition(attributeName, Operator.IsNull));
+    }
+
+    @Override
     public Condition isTrue(String attributeName) {
         if ("Exchange2003".equals(this.serverVersion) && "deleted".equals(attributeName)) {
             return isEqualTo(attributeName, "1");
