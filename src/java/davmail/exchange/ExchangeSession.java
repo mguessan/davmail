@@ -2340,6 +2340,10 @@ public abstract class ExchangeSession {
         public String getHref() {
             return folderPath + '/' + itemName;
         }
+
+        public void setItemName(String itemName) {
+            this.itemName = itemName;
+        }
     }
 
     /**

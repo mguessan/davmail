@@ -2068,9 +2068,10 @@ public class EwsExchangeSession extends ExchangeSession {
         if (item == null && isMainCalendar(folderPath)) {
             // look for item in task folder, replace extension first
             if (itemName.endsWith(".ics")) {
-                itemName = itemName.substring(0, itemName.length() - 3) + "EML";
+                item = getEwsItem(TASKS, itemName.substring(0, itemName.length() - 3) + "EML");
+            } else {
+                item = getEwsItem(TASKS, itemName);
             }
-            item = getEwsItem(TASKS, itemName);
         }
 
         if (item == null) {
@@ -2096,7 +2097,10 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "Task".equals(itemType)
                 // VTODOs appear as Messages
                 || "Message".equals(itemType)) {
-            return new Event(folderPath, item);
+            Event event = new Event(folderPath, item);
+            // force item name to client provided name (for tasks)
+            event.setItemName(itemName);
+            return event;
         } else {
             throw new HttpNotFoundException(itemName + " not found in " + folderPath);
         }
