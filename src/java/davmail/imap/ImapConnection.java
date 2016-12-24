@@ -857,7 +857,7 @@ public class ImapConnection extends AbstractConnection {
                     }
                 } else if ("RFC822".equals(param) || param.startsWith("BODY[") || param.startsWith("BODY.PEEK[") || "RFC822.HEADER".equals(param)) {
 
-                    if (param.startsWith("BODY[")) {
+                    if (param.startsWith("BODY[") && !message.read) {
                         // According to IMAP RFC: The \Seen flag is implicitly set
                         updateFlags(message, "FLAGS", "\\Seen");
                         message.read = true;
