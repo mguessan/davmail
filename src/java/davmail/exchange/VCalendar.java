@@ -158,6 +158,10 @@ public class VCalendar extends VObject {
             setPropertyValue("X-CALENDARSERVER-ACCESS", getCalendarServerAccess());
         }
 
+        if (fromServer && "PUBLISH".equals(getPropertyValue("METHOD"))) {
+            removeProperty("METHOD");
+        }
+
         // iCal 4 global X-CALENDARSERVER-ACCESS
         String calendarServerAccess = getPropertyValue("X-CALENDARSERVER-ACCESS");
         String now = ExchangeSession.getZuluDateFormat().format(new Date());
