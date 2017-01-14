@@ -70,9 +70,6 @@ public final class DavGatewayHttpClientFacade {
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
     static {
-        // workaround for TLS Renegotiation issue see http://java.sun.com/javase/javaseforbusiness/docs/TLSReadme.html    
-        System.setProperty("sun.security.ssl.allowUnsafeRenegotiation", "true");
-
         DavGatewayHttpClientFacade.start();
 
         // register custom cookie policy
