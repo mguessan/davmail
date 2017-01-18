@@ -1797,6 +1797,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("description"));
+                    getItemMethod.addAdditionalProperty(Field.get("textbody"));
                     getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
                     getItemMethod.addAdditionalProperty(Field.get("taskstatus"));
                     getItemMethod.addAdditionalProperty(Field.get("startdate"));
@@ -1837,7 +1838,12 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
                     vTodo.setPropertyValue("UID", calendarUid);
                     vTodo.setPropertyValue("SUMMARY", getItemMethod.getResponseItem().get(Field.get("subject").getResponseName()));
-                    vTodo.setPropertyValue("DESCRIPTION", getItemMethod.getResponseItem().get(Field.get("description").getResponseName()));
+                    String description = getItemMethod.getResponseItem().get(Field.get("description").getResponseName());
+                    if (description == null) {
+                        // Exchange 2013: try to get description from body
+                        description = getItemMethod.getResponseItem().get(Field.get("textbody").getResponseName());
+                    }
+                    vTodo.setPropertyValue("DESCRIPTION", description);
                     vTodo.setPropertyValue("PRIORITY", convertPriorityFromExchange(getItemMethod.getResponseItem().get(Field.get("importance").getResponseName())));
                     vTodo.setPropertyValue("PERCENT-COMPLETE", getItemMethod.getResponseItem().get(Field.get("percentcomplete").getResponseName()));
                     vTodo.setPropertyValue("STATUS", taskTovTodoStatusMap.get(getItemMethod.getResponseItem().get(Field.get("taskstatus").getResponseName())));

@@ -96,6 +96,7 @@ public final class Field {
 
 
         FIELD_MAP.put("body", new UnindexedFieldURI("item:Body"));
+        FIELD_MAP.put("textbody", new UnindexedFieldURI("item:TextBody"));
 
         // folder
         FIELD_MAP.put("folderclass", new ExtendedFieldURI(0x3613, ExtendedFieldURI.PropertyType.String));
