@@ -70,6 +70,11 @@ public final class DavGatewayHttpClientFacade {
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
     static {
+        // disable Client-initiated TLS renegotiation
+        System.setProperty("jdk.tls.rejectClientInitiatedRenegotiation", "true");
+            // force strong ephemeral Diffie-Hellman parameter
+        System.setProperty("jdk.tls.ephemeralDHKeySize", "2048");
+
         DavGatewayHttpClientFacade.start();
 
         // register custom cookie policy
