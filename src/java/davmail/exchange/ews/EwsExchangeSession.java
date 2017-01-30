@@ -2099,7 +2099,10 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             return new Contact(item);
         } else if ("CalendarItem".equals(itemType)
+                || "MeetingMessage".equals(itemType)
                 || "MeetingRequest".equals(itemType)
+                || "MeetingResponse".equals(itemType)
+                || "MeetingCancellation".equals(itemType)
                 || "Task".equals(itemType)
                 // VTODOs appear as Messages
                 || "Message".equals(itemType)) {
