@@ -50,6 +50,17 @@ davmail.ssl.keystorePass=password]]></source>
                     You will also need to enable SSL in client applications and manually accept the certificate as it's
                     not signed by a trusted Certification Authority.
                 </p>
+                <p><b>Improving DavMail TLS listener security level</b></p>
+                <p>In order to improve TLS security, DavMail internally forces the following parameters:
+                </p>
+                <source>jdk.tls.rejectClientInitiatedRenegotiation=true
+jdk.tls.ephemeralDHKeySize=2048</source>
+                <p>As DavMail is a java application, you can further improve security level means by java security properties.
+                    Edit jre/lib/security/java.security and adjust the following line to your requirements:
+                </p>
+                <source>jdk.tls.disabledAlgorithms=SSLv3, RC4, MD5withRSA, DH keySize &lt; 768, EC keySize &lt; 224</source>
+                <p>Alternative: create a custom java.security file with the above line and tell DavMail to use it:</p>
+                <source>-Djava.security.properties=<i>/path/to/java.security</i></source>
             </subsection>
 
             <subsection name="DavMail to Exchange">
