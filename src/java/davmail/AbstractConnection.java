@@ -21,6 +21,7 @@ package davmail;
 import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.Socket;
@@ -143,6 +144,7 @@ public class AbstractConnection extends Thread {
     public AbstractConnection(String name, Socket clientSocket, String encoding) {
         super(name + '-' + clientSocket.getPort());
         this.client = clientSocket;
+        logConnection("CONNECT", "");
         try {
             in = new LineReaderInputStream(client.getInputStream(), encoding);
             os = new BufferedOutputStream(client.getOutputStream());
@@ -150,6 +152,10 @@ public class AbstractConnection extends Thread {
             close();
             DavGatewayTray.error(new BundleMessage("LOG_EXCEPTION_GETTING_SOCKET_STREAMS"), e);
         }
+    }
+
+    public void logConnection(String action, String userName) {
+        Logger.getLogger("davmail.connection").info(action+" - "+client.getInetAddress().getHostAddress()+":"+client.getPort()+" " + userName);
     }
 
     /**

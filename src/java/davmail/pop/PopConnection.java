@@ -138,9 +138,11 @@ public class PopConnection extends AbstractConnection {
                             password = line.substring("PASS".length() + 1);
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
+                                logConnection("LOGON", userName);
                                 sendOK("PASS");
                                 state = State.AUTHENTICATED;
                             } catch (SocketException e) {
+                                logConnection("FAILED", userName);
                                 // can not send error to client after a socket exception
                                 LOGGER.warn(BundleMessage.formatLog("LOG_CLIENT_CLOSED_CONNECTION"));
                             } catch (Exception e) {

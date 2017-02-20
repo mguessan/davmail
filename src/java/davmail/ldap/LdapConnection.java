@@ -565,8 +565,10 @@ public class LdapConnection extends AbstractConnection {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
+                            logConnection("LOGON", userName);
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
                         } catch (IOException e) {
+                            logConnection("FAILED", userName);
                             serverResponse = EMPTY_BYTE_ARRAY;
                             status = LDAP_INVALID_CREDENTIALS;
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
@@ -605,9 +607,11 @@ public class LdapConnection extends AbstractConnection {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                         try {
                             session = ExchangeSessionFactory.getInstance(userName, password);
+                            logConnection("LOGON", userName);
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
                             sendClient(currentMessageId, LDAP_REP_BIND, LDAP_SUCCESS, "");
                         } catch (IOException e) {
+                            logConnection("FAILED", userName);
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_INVALID_CREDENTIALS"));
                             sendClient(currentMessageId, LDAP_REP_BIND, LDAP_INVALID_CREDENTIALS, "");
                         }

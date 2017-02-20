@@ -223,9 +223,11 @@ public class SmtpConnection extends AbstractConnection {
     protected void authenticate() throws IOException {
         try {
             session = ExchangeSessionFactory.getInstance(userName, password);
+            logConnection("LOGON", userName);
             sendClient("235 OK Authenticated");
             state = State.AUTHENTICATED;
         } catch (Exception e) {
+            logConnection("FAILED", userName);
             DavGatewayTray.error(e);
             String message = e.getMessage();
             if (message == null) {

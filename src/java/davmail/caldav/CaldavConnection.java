@@ -166,8 +166,10 @@ public class CaldavConnection extends AbstractConnection {
                     // need to check session on each request, credentials may have changed or session expired
                     try {
                         session = ExchangeSessionFactory.getInstance(userName, password);
+                        logConnection("LOGON", userName);
                         handleRequest(command, path, headers, content);
                     } catch (DavMailAuthenticationException e) {
+                        logConnection("FAILED", userName);
                         if (Settings.getBooleanProperty("davmail.enableKerberos")) {
                             // authentication failed in Kerberos mode => not available
                             throw new HttpServerErrorException("Kerberos authentication failed");
@@ -755,6 +757,9 @@ public class CaldavConnection extends AbstractConnection {
                                 throw e;
                             }
 
+                        }
+                        if (!eventName.equals(item.getName())) {
+                            DavGatewayTray.warn(new BundleMessage("LOG_MESSAGE", "wrong item name requested "+eventName+" received "+item.getName()));
                         }
                         appendItemResponse(response, request, item);
                     }

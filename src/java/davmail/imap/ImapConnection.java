@@ -110,9 +110,11 @@ public class ImapConnection extends AbstractConnection {
                             splitUserName();
                             try {
                                 session = ExchangeSessionFactory.getInstance(userName, password);
+                                logConnection("LOGON", userName);
                                 sendClient(commandId + " OK Authenticated");
                                 state = State.AUTHENTICATED;
                             } catch (Exception e) {
+                                logConnection("FAILED", userName);
                                 DavGatewayTray.error(e);
                                 if (Settings.getBooleanProperty("davmail.enableKerberos")) {
                                     sendClient(commandId + " NO LOGIN Kerberos authentication failed");
@@ -135,9 +137,11 @@ public class ImapConnection extends AbstractConnection {
                                         state = State.PASSWORD;
                                         password = IOUtil.decodeBase64AsString(readClient());
                                         session = ExchangeSessionFactory.getInstance(userName, password);
+                                        logConnection("LOGON", userName);
                                         sendClient(commandId + " OK Authenticated");
                                         state = State.AUTHENTICATED;
                                     } catch (Exception e) {
+                                        logConnection("FAILED", userName);
                                         DavGatewayTray.error(e);
                                         sendClient(commandId + " NO LOGIN failed");
                                         state = State.INITIAL;
