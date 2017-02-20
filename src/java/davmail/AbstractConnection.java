@@ -252,6 +252,7 @@ public class AbstractConnection extends Thread {
      * Close client connection, streams and Exchange session .
      */
     public void close() {
+        logConnection("DISCONNECT", "");
         if (in != null) {
             try {
                 in.close();
