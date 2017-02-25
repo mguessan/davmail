@@ -127,7 +127,7 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
-        SETTINGS.put("davmail.url", "https://exchangeServer/exchange/");
+        SETTINGS.put("davmail.url", "https://outlook.office365.com/EWS/Exchange.asmx");
         SETTINGS.put("davmail.popPort", "1110");
         SETTINGS.put("davmail.imapPort", "1143");
         SETTINGS.put("davmail.smtpPort", "1025");
@@ -144,7 +144,7 @@ public final class Settings {
         SETTINGS.put("davmail.bindAddress", "");
         SETTINGS.put("davmail.useSystemProxies", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.enableEws", "auto");
+        SETTINGS.put("davmail.enableEws", "true");
         SETTINGS.put("davmail.enableKerberos", "false");
         SETTINGS.put("davmail.disableUpdateCheck", "false");
         SETTINGS.put("davmail.proxyHost", "");
