@@ -1226,10 +1226,14 @@ public abstract class ExchangeSession {
      * @return list of folders
      * @throws IOException on error
      */
-    public List<Folder> getSubFolders(String folderName, boolean recursive) throws IOException {
-        Condition folderCondition = null;
+    public List<Folder> getSubFolders(String folderName, boolean recursive, boolean wildcard) throws IOException {
+        MultiCondition folderCondition = and();
         if (!Settings.getBooleanProperty("davmail.imapIncludeSpecialFolders", false)) {
-            folderCondition = or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass"));
+            folderCondition.add(or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass")));
+        }
+        if (wildcard) {
+            folderCondition.add(startsWith("displayname", folderName));
+            folderName = "";
         }
         List<Folder> results = getSubFolders(folderName, folderCondition,
                 recursive);

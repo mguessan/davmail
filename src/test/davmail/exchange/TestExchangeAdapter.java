@@ -87,16 +87,16 @@ public class TestExchangeAdapter extends TestCase {
     }
 
     public void testFindFolder() throws IOException {
-        List<ExchangeSession.Folder> davFolders = davSession.getSubFolders("", false);
+        List<ExchangeSession.Folder> davFolders = davSession.getSubFolders("", false, false);
         Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        List<ExchangeSession.Folder> ewsFolders = ewsSession.getSubFolders("", false);
+        List<ExchangeSession.Folder> ewsFolders = ewsSession.getSubFolders("", false, false);
         assertEquals(davFolders.size(), ewsFolders.size());
     }
 
     public void testFindPublicFolder() throws IOException {
-        List<ExchangeSession.Folder> davFolders = davSession.getSubFolders("/public", false);
+        List<ExchangeSession.Folder> davFolders = davSession.getSubFolders("/public", false, false);
         Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        List<ExchangeSession.Folder> ewsFolders = ewsSession.getSubFolders("/public", false);
+        List<ExchangeSession.Folder> ewsFolders = ewsSession.getSubFolders("/public", false, false);
         assertEquals(davFolders.size(), ewsFolders.size());
     }
 

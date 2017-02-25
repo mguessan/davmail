@@ -65,4 +65,10 @@ public class TestImapFolders extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testListWildcard() throws IOException {
+        writeLine(". LIST \"\" \"testfo%\"");
+        assertEquals("* LIST (\\HasNoChildren) \"/\" \"testfolder\"", readLine());
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+    }
+
 }
