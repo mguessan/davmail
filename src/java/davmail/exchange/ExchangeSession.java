@@ -2117,6 +2117,11 @@ public abstract class ExchangeSession {
         }
 
         public boolean isLoaded() {
+            // check and retrieve cached content
+            if (imapUid == messageList.cachedMessageImapUid) {
+                mimeContent = messageList.cachedMimeContent;
+                mimeMessage = messageList.cachedMimeMessage;
+            }
             return mimeMessage != null;
         }
 
