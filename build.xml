@@ -88,6 +88,37 @@
         </copy>
     </target>
 
+    <target name="test-compile" depends="compile">
+        <mkdir dir="target/test-classes"/>
+        <javac srcdir="src/test" destdir="target/test-classes" source="1.6" target="1.6" debug="on" encoding="UTF-8"
+               includeantruntime="false">
+            <classpath>
+                <path refid="classpath"/>
+                <pathelement location="target/classes"/>
+            </classpath>
+        </javac>
+        <copy todir="target/test-classes">
+            <fileset dir="src/test">
+                <include name="**/*"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="test" depends="test-compile">
+        <junit printsummary="on" haltonfailure="no" fork="true">
+            <classpath>
+                <path refid="classpath"/>
+                <pathelement location="target/classes"/>
+                <pathelement location="target/test-classes"/>
+            </classpath>
+            <formatter type="brief" usefile="false" />
+            <batchtest>
+                <fileset dir="src/test" includes="**/Test*.java" />
+            </batchtest>
+        </junit>
+    </target>
+
     <target name="dist-nsis" if="is.windows">
         <taskdef name="nsis" classname="net.sf.nsisant.Task">
             <classpath location="lib/nsisant-1.2.jar"/>
