@@ -133,7 +133,7 @@ public class ClientCertificateTest extends TestCase {
         }
     }
 
-    public void testClientSocket() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException {
+    public void testClientSocket() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InstantiationException, ClassNotFoundException, IllegalAccessException {
 
 
 
@@ -151,7 +151,7 @@ public class ClientCertificateTest extends TestCase {
         }
 
 
-        Provider sunMSCAPI = new sun.security.mscapi.SunMSCAPI();
+        Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").newInstance();
         //Security.insertProviderAt(sunMSCAPI, 1);
         KeyStore keyStore = KeyStore.getInstance("Windows-MY",sunMSCAPI);
         keyStore.load(null, null);
@@ -182,7 +182,7 @@ public class ClientCertificateTest extends TestCase {
     }
 
 
-    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, UnrecoverableKeyException {
+    private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException, IOException, CertificateException, UnrecoverableKeyException, InstantiationException, ClassNotFoundException, IllegalAccessException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
 
@@ -226,7 +226,8 @@ public class ClientCertificateTest extends TestCase {
         }
         System.setProperty("javax.net.debug", "ssl,handshake");
         //try {
-            Provider sunMSCAPI = new sun.security.mscapi.SunMSCAPI();
+            //Provider sunMSCAPI = new sun.security.mscapi.SunMSCAPI();
+            Provider sunMSCAPI = (Provider) Class.forName("sun.security.mscapi.SunMSCAPI").newInstance();
             //Security.insertProviderAt(sunMSCAPI, 1);
             KeyStore keyStore = KeyStore.getInstance("Windows-MY", sunMSCAPI);
 
@@ -282,7 +283,7 @@ public class ClientCertificateTest extends TestCase {
         }
     }
 
-    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InvalidAlgorithmParameterException {
+    public void testClientSocketFactory() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException, InvalidAlgorithmParameterException, InstantiationException, ClassNotFoundException, IllegalAccessException {
 
 
 
