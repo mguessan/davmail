@@ -23,7 +23,9 @@ import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -588,5 +590,46 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         System.out.println(vcard.toString());
         VProperty property = new VProperty("ADR;TYPE=WORK:;;via 25 aprile\\, 25;Lallio;BG;24048;Italia");
         assertEquals("via 25 aprile, 25", property.getValues().get(2));
+    }
+
+    /* Huge contact folder creation
+    public void testJohnDoes() throws IOException {
+        testCreateFolder();
+
+        for (int i = 0;i<10000;i++) {
+            String itemBody = "BEGIN:VCARD\n" +
+                    "VERSION:4.0\n" +
+                    "EMAIL:john.doe"+i+"@acme.com\n" +
+                    "FN:John Doe"+i+"\n" +
+                    "N:Doe"+i+";John;;;\n" +
+                    "TEL;TYPE=HOME:+1-234-56789\n" +
+                    "UID:5516ecf5-6ee0-4d60-b5e8-a654c7447f0a\n" +
+                    "END:VCARD";
+            itemName = UUID.randomUUID().toString() + ".vcf";
+
+            ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+            assertEquals(201, result.status);
+        }
+        //result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        //assertEquals(201, result.status);
+    }*/
+
+    /**
+     */
+    public void testEmptyEmail2() throws IOException {
+        testCreateFolder();
+
+        String itemBody = "BEGIN:VCARD\n" +
+                "VERSION:3.0\n" +
+                "UID:sd9327nnob97w02a36zoo9adf9vt692pr1hq\n" +
+                "FN:First Last\n" +
+                "N:Last;First;;;\n" +
+                "REV:20161222T092209Z\n" +
+                "TEL;TYPE=cell:+47 00000000\n" +
+                "END:VCARD";
+        itemName = UUID.randomUUID().toString() + ".vcf";
+
+        ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
+        assertEquals(201, result.status);
     }
 }

@@ -58,20 +58,27 @@ public class IndexedFieldUpdate extends FieldUpdate {
     @Override
     public void write(String itemType, Writer writer) throws IOException {
         if (itemType == null) {
-            // use collection name on create
-            writer.write("<t:");
-            writer.write(collectionName);
-            writer.write(">");
-
-            StringBuilder buffer = new StringBuilder();
+            // check if at least one non null value
+            boolean hasValue = false;
             for (FieldUpdate fieldUpdate : updates) {
-                fieldUpdate.fieldURI.appendValue(buffer, null, fieldUpdate.value);
+                if (fieldUpdate.value != null) {hasValue = true; }
             }
-            writer.write(buffer.toString());
+            if (hasValue) {
+                // use collection name on create
+                writer.write("<t:");
+                writer.write(collectionName);
+                writer.write(">");
 
-            writer.write("</t:");
-            writer.write(collectionName);
-            writer.write(">");
+                StringBuilder buffer = new StringBuilder();
+                for (FieldUpdate fieldUpdate : updates) {
+                    fieldUpdate.fieldURI.appendValue(buffer, null, fieldUpdate.value);
+                }
+                writer.write(buffer.toString());
+
+                writer.write("</t:");
+                writer.write(collectionName);
+                writer.write(">");
+            }
         } else {
             // on update, write each fieldupdate
             for (FieldUpdate fieldUpdate : updates) {
