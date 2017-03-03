@@ -1588,9 +1588,11 @@ public abstract class ExchangeSession {
     public String convertFlagToKeyword(String value) {
         // first test for flag in settings
         Properties flagSettings = Settings.getSubProperties("davmail.imapFlags");
-        String flagValue = flagSettings.getProperty(value);
-        if (flagValue != null) {
-            return flagValue;
+        // case insensitive lookup
+        for (String key : flagSettings.stringPropertyNames()) {
+            if (key.equalsIgnoreCase(value)) {
+                return flagSettings.getProperty(key);
+            }
         }
 
         // fall back to predefined flags
