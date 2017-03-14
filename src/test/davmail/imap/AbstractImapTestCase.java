@@ -65,6 +65,10 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
     public void setUp() throws IOException {
         boolean needStart = !loaded;
         super.setUp();
+
+        // set custom flag to check flag to category conversion
+        Settings.setProperty("davmail.imapFlags.some_tag", "Some Category");
+
         if (needStart) {
             // start gateway
             DavGateway.start();

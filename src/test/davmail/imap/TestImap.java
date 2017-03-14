@@ -20,6 +20,7 @@ package davmail.imap;
 
 import davmail.Settings;
 import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -186,18 +187,113 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
 
-        // add Junk flag
+        // add Seen flag
         writeLine(". UID STORE " + messageUid + " +FLAGS (\\Seen)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
         assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft))", readLine());
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
-        // remove Junk flag
+        // remove Seen flag
         writeLine(". UID STORE " + messageUid + " -FLAGS (\\Seen)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
         assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testUidStoreStandardKeywordFlag() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        // add predefined and custom keyword flags
+        writeLine(". UID STORE " + messageUid + " +FLAGS ($label4)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft $label4))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        // remove keyword flags
+        writeLine(". UID STORE " + messageUid + " -FLAGS ($label4)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testUidStoreCustomKeywordFlags() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        // add predefined and custom keyword flags
+        writeLine(". UID STORE " + messageUid + " +FLAGS (some_tag)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft some_tag))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        // check server side categories
+        ExchangeSession session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),Settings.getProperty("davmail.password"));
+        ExchangeSession.Folder folder = session.getFolder("testfolder");
+        folder.loadMessages();
+        assertEquals("Some Category", folder.get(0).keywords);
+
+        // remove keyword flags
+        writeLine(". UID STORE " + messageUid + " -FLAGS (some_tag)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testUidStoreCaseInsensitiveKeywordFlags() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        // add predefined and custom keyword flags
+        writeLine(". UID STORE " + messageUid + " +FLAGS ($LaBeL4 SoMe_TaG)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft $label4 some_tag))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        // remove keyword flags
+        writeLine(". UID STORE " + messageUid + " -FLAGS (sOmE_tAg $lAbEl4)");
+        assertEquals(". OK STORE completed", readFullAnswer("."));
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft))", readLine());
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testAppendWithKeywordFlags() throws IOException, MessagingException {
+        resetTestFolder();
+
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        mimeMessage.addHeader("to", "testto <" + Settings.getProperty("davmail.to") + ">");
+        mimeMessage.addHeader("cc", "testcc <" + Settings.getProperty("davmail.to") + ">");
+        mimeMessage.setText("Test message ");
+        mimeMessage.setSubject("Test subject ");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mimeMessage.writeTo(baos);
+        byte[] content = baos.toByteArray();
+        writeLine(". APPEND testfolder (\\Seen some_tag \\Draft $Label4) {" + content.length + '}');
+        assertEquals("+ send literal data", readLine());
+        writeLine(new String(content));
+        assertEquals(". OK APPEND completed", readFullAnswer("."));
+
+        writeLine(". NOOP");
+        assertEquals(". OK NOOP completed", readFullAnswer("."));
+
+        // fetch message uid
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf("UID ") + 4;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+        assertNotNull(messageUid);
+
+        writeLine(". UID FETCH " + messageUid + " (FLAGS)");
+        assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft $label4 some_tag))", readLine());
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 

@@ -1597,10 +1597,10 @@ public abstract class ExchangeSession {
 
         // fall back to predefined flags
         ResourceBundle flagBundle = ResourceBundle.getBundle("imapflags");
-        try {
-            return flagBundle.getString(value);
-        } catch (MissingResourceException e) {
-            // ignore
+        for (String key : flagBundle.keySet()) {
+            if (key.equalsIgnoreCase(value)) {
+                return flagBundle.getString(key);
+            }
         }
 
         // fall back to raw value
