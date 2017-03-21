@@ -2706,6 +2706,9 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final Map<String, String> priorityToImportanceMap = new HashMap<String, String>();
 
     static {
+        // 0 means undefined, map it to normal
+        priorityToImportanceMap.put("0", "Normal");
+
         priorityToImportanceMap.put("1", "High");
         priorityToImportanceMap.put("2", "High");
         priorityToImportanceMap.put("3", "High");
