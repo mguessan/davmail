@@ -61,5 +61,51 @@
                 </p>
             </subsection>
         </section>
+
+        <section name="Optional additional step">
+            <subsection name="Thunderbird mail message tags">
+                <p>In Thunderbird email messages can be organized with message tags. Outlook provides
+                    similar functionality with categories. DavMail's IMAP gateway can transparently
+                    translate tags to categories (and vice versa). For custom defined tags it may be
+                    necessary to tell DavMail how to convert tags to categories.
+                </p>
+
+                <p>Thunderbird stores tags on the server using IMAP keywords. But internally
+                    Thunderbird uses a mapping between the user visible tag names and the
+                    actually used keywords. For instance, the <strong>To Do</strong> tag is represented by
+                    the <strong>$label4</strong> keyword. Assuming you want the Outlook categories to have the
+                    same names as the Thunderbird tags, DavMail must know which keywords
+                    Thunderbird uses for each tag.
+                </p>
+
+                <p>The keywords used by Thunderbird can be found through Preferences -&gt;
+                    Advanced -%gt; Config Editor, and searching for <code>mailnews.tags.*.tag</code>,
+                    which will show them as <code>mailnews.tags.<i>keyword</i>.tag</code> settings
+                    with their corresponding <i>tag</i> user visible value.
+                </p>
+
+                <p>Some default tags are defined in Thunderbird, for which DavMail uses a
+                    default mapping to categories:
+                </p>
+                <source><![CDATA[
+$label1=Important
+$label2=Work
+$label3=Personal
+$label4=To Do
+$label5=Later]]>
+                </source>
+
+                <p>These mappings can be overridden and extended by manually adding properties to the
+                    DavMail settings file (<code>.davmail.properties</code>) as
+                    <code>davmail.imapFlags.<i>keyword</i>=<i>category</i></code>, like this:
+                </p>
+                <source><![CDATA[
+davmail.imapFlags.$label2=Hobby
+davmail.imapFlags.some_test_tag=Some test Category]]>
+                </source>
+
+            </subsection>
+        </section>
+
     </body>
 </document>

@@ -206,14 +206,20 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
 
-        // add predefined and custom keyword flags
+        // add predefined keyword flag
         writeLine(". UID STORE " + messageUid + " +FLAGS ($label4)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
         assertEquals("* 1 FETCH (UID " + messageUid + " FLAGS (\\Seen \\Draft $label4))", readLine());
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
-        // remove keyword flags
+        // check server side categories
+        ExchangeSession session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),Settings.getProperty("davmail.password"));
+        ExchangeSession.Folder folder = session.getFolder("testfolder");
+        folder.loadMessages();
+        assertEquals("To Do", folder.get(0).keywords);
+
+        // remove keyword flag
         writeLine(". UID STORE " + messageUid + " -FLAGS ($label4)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
@@ -225,7 +231,7 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
         appendMessage();
 
-        // add predefined and custom keyword flags
+        // add custom keyword flag
         writeLine(". UID STORE " + messageUid + " +FLAGS (some_tag)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
@@ -238,7 +244,7 @@ public class TestImap extends AbstractImapTestCase {
         folder.loadMessages();
         assertEquals("Some Category", folder.get(0).keywords);
 
-        // remove keyword flags
+        // remove keyword flag
         writeLine(". UID STORE " + messageUid + " -FLAGS (some_tag)");
         assertEquals(". OK STORE completed", readFullAnswer("."));
         writeLine(". UID FETCH " + messageUid + " (FLAGS)");
