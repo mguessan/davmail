@@ -1,3 +1,70 @@
+** DavMail 4.8.0 released **
+This new release includes a lot of fixes and enhancements from user feedback, including
+improved Exchange categories handling, up to date TLS settings to match current requirements,
+various Caldav enhancements, and a fix for a major bug on IMAP large message handling.
+An experimental connection logging feature is also available.
+
+Debian:
+- Improve generated debian package to match official package, add keywords, move icon and adjust categories in desktop file
+
+RPM:
+- update RPM default config file
+- Remove ant-antlr from spec file
+
+Enhancement:
+- Use Office365 url as default davmail.url value
+- Remove Sun (Oracle) JDK dependency in unit test
+- Experimental: compile Junit tests
+- Change default url to https://outlook.office365.com/EWS/Exchange.asmx
+- Log all connections disconnect
+- Log all connections and logon success / failure
+- Improve TLS settings: disable Client-initiated TLS renegotiation with jdk.tls.rejectClientInitiatedRenegotiation and force strong ephemeral Diffie-Hellman parameter with jdk.tls.ephemeralDHKeySize
+- Remove sun.security.ssl.allowUnsafeRenegotiation=true system property as it's hopefully no longer required by iCal
+- Fix broken davmailservice64.exe
+
+Documentation:
+- Doc: document IMAP tags to Exchange categories custom mappings
+- Doc: Add TLS settings documentation from support request #289
+- Doc: fix maven generated site dash encoding
+
+Caldav:
+- Caldav: Fix #643 VTODO PRIORITY 0 fails, map it to Normal importance
+- Caldav: accept all meeting item types in calendar (MeetingMessage, MeetingRequest, MeetingResponse, MeetingCancellation)
+- Caldav: fix #639, task description is not visible in Thunderbird, try to get description from text body
+- Caldav: fix #628, remove METHOD: PUBLISH from events retrieved from Exchange
+- Caldav: make sure retrieved item name is always the same as requested item name (e.g. for tasks stored value ends with .EML when requested value ends with .ics)
+- Caldav: Additional recurrence search test
+
+IMAP:
+- IMAP: flags to category conversion unit tests and make standard flags case insensitive
+- IMAP: make IMAP flag to category lookup case insensitive
+- IMAP: fix huge cache issue, chunk IMAP fetch triggers multiple full message download
+- IMAP: fix regression after #41 IMAP wildcard LIST supportwith unit test
+- IMAP: apply patch #41 IMAP wildcard LIST supportwith unit test
+- IMAP: mark message seen only if unseen
+- IMAP: fix #629 Read email doesn't stay read. According to IMAP RFC: The \Seen flag is implicitly set
+- IMAP: merge patch from #634, copy mail doesn't preserve tag/category 
+- IMAP: fix regression in mime message handling and rename mimeBody to mimeContent
+- IMAP: Fix #633 Compatibility with javamail 1.5.6, store byte array instead of SharedByteArrayInputStream
+
+Carddav:
+- Carddav: do not send empty EmailAddresses collection tag
+
+EWS:
+- EWS: Change isrecurring property to PidLidRecurring (0x8223)
+- EWS/Webdav: implement exists filter condition
+
+SWT:
+- SWT: Try to detect if system tray is indeed available
+
+OSX:
+- OSX: Update universalJavaApplicationStub to version 2.0.1
+- OSX: Upgrade jarbundler to 3.3.0
+
+SMTP:
+- SMTP: append a line feed to avoid thunderbird message drop
+
+
 ** DavMail 4.7.3 released **
 Another bugfix release, mostly from user feedback. Also improve Windows installer to let users
 choose whether they want to run DavMail automatically at logon.
