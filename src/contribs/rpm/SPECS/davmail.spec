@@ -21,7 +21,7 @@ License: GPL-2.0+
 Group: Applications/Internet
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: ant >= 1.7.1, ant-antlr, desktop-file-utils
+BuildRequires: ant >= 1.7.1, desktop-file-utils
 %if 0%{?fedora} == 18
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
