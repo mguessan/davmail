@@ -14,7 +14,7 @@
 # @author    Tobias Fischer                                                      #
 # @url       https://github.com/tofi86/universalJavaApplicationStub              #
 # @date      2016-11-27                                                          #
-# @version   2.0.1                                                               #
+# @version   2.0.1 + patch, do not expand folder classpath                       #
 #                                                                                #
 #                                                                                #
 ##################################################################################
@@ -218,14 +218,18 @@ else
 	JVMClassPath_RAW=`/usr/libexec/PlistBuddy -c "print JVMClassPath" "${InfoPlistFile}" 2> /dev/null`
 	if [[ $JVMClassPath_RAW == *Array* ]] ; then
 		JVMClassPath=.`/usr/libexec/PlistBuddy -c "print JVMClassPath" "${InfoPlistFile}" 2> /dev/null | grep "    " | sed 's/^ */:/g' | tr -d '\n' | xargs`
+
+        # expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+        JVMClassPath=`eval "echo ${JVMClassPath}"`
 	elif [[ ! -z ${JVMClassPath_RAW} ]] ; then
 		JVMClassPath=${JVMClassPath_RAW}
+
+        # expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
+        JVMClassPath=`eval "echo ${JVMClassPath}"`
 	else
 		#default: fallback to OracleJavaFolder
 		JVMClassPath="${JavaFolder}/*"
 	fi
-	# expand variables $APP_PACKAGE, $JAVAROOT, $USER_HOME
-	JVMClassPath=`eval "echo ${JVMClassPath}"`
 
 	# read the JVM Default Options
 	JVMDefaultOptions=`/usr/libexec/PlistBuddy -c "print :JVMDefaultOptions" "${InfoPlistFile}" 2> /dev/null | grep -o " \-.*" | tr -d '\n' | xargs`
