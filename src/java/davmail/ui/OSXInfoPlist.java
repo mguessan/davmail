@@ -31,7 +31,7 @@ import java.io.IOException;
  */
 public class OSXInfoPlist {
     protected static final Logger LOGGER = Logger.getLogger(OSXInfoPlist.class);
-    protected static final String INFO_PLIST_PATH = "Contents/Info.plist";
+    protected static final String INFO_PLIST_PATH = "../Info.plist";
 
     private OSXInfoPlist() {
     }
@@ -102,14 +102,6 @@ public class OSXInfoPlist {
         File file = new File(INFO_PLIST_PATH);
         if (file.exists()) {
             return INFO_PLIST_PATH;
-        }
-        // failover for Java7
-        String libraryPath = System.getProperty("java.library.path");
-        if (libraryPath != null && libraryPath.endsWith("Contents/MacOS")) {
-            file = new File(libraryPath.replace("Contents/MacOS", INFO_PLIST_PATH));
-            if (file.exists()) {
-                return INFO_PLIST_PATH;
-            }
         }
         throw new IOException("Info.plist file not found");
     }
