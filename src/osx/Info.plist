@@ -26,11 +26,12 @@
     <string>${release}</string>
     <key>CFBundleIconFile</key>
     <string>tray.icns</string>
-    <key>JVMMainClassName</key>
-    <string>davmail.DavGateway</string>
-    <key>JVMOptions</key>
-    <array>
-    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
-    </array>
+    <key>JavaX</key>
+    <dict>
+      <key>MainClass</key>
+      <string>davmail.DavGateway</string>
+      <key>VMOptions</key>
+      <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
+    </dict>
   </dict>
 </plist>
