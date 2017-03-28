@@ -2005,7 +2005,10 @@ public abstract class ExchangeSession {
         public void loadMimeMessage() throws IOException, MessagingException {
             if (mimeMessage == null) {
                 // try to get message content from cache
-                if (this.imapUid == messageList.cachedMessageImapUid) {
+                if (this.imapUid == messageList.cachedMessageImapUid
+                        // make sure we never return null even with broken 0 uid message
+                        && messageList.cachedMimeContent != null
+                        && messageList.cachedMimeMessage != null) {
                     mimeContent = messageList.cachedMimeContent;
                     mimeMessage = messageList.cachedMimeMessage;
                     LOGGER.debug("Got message content for " + imapUid + " from cache");
