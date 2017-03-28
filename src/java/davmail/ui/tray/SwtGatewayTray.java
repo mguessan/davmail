@@ -224,14 +224,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         trayItem = new TrayItem(tray, SWT.NONE);
                         trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
-                        // check if tray is indeed available
-                        if (systemLookAndFeelClassName.contains("gtk")) {
+                        // Under Unity, check if tray is indeed available
+                        if (systemLookAndFeelClassName.contains("gtk") &&
+                                "Unity".equals(System.getenv("XDG_CURRENT_DESKTOP"))) {
                             GdkRectangle area = new GdkRectangle();
-                            // wait and try again
-                            if (area.x == 0 && area.y == 0) {
-                                Thread.sleep(10000);
-                                OS.gtk_status_icon_get_geometry(trayItem.handle, 0, area, 0);
-                            }
+                            OS.gtk_status_icon_get_geometry(trayItem.handle, 0, area, 0);
 
                             if (area.x == 0 && area.y == 0) {
                                 throw new Error("System tray not available");
