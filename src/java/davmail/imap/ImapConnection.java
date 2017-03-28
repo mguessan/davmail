@@ -838,6 +838,7 @@ public class ImapConnection extends AbstractConnection {
                     if ( (  parameters.contains("BODY.PEEK[HEADER.FIELDS (")
                             // exclude mutt header request
                             && !parameters.contains("X-LABEL") )
+                            || parameters.equals("RFC822.SIZE RFC822.HEADER FLAGS") // icedove
 							|| Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize") )
 					{   // Send approximate size
                         size = message.size;
