@@ -2025,7 +2025,6 @@ public abstract class ExchangeSession {
                         System.arraycopy(mimeContent, offset, mimeContentCopy, 0, mimeContentCopy.length);
                         mimeContent = mimeContentCopy;
                         mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(mimeContent));
-                        System.out.println(new String(mimeContent));
                     }
                     LOGGER.debug("Downloaded full message content for IMAP UID " + imapUid + " (" + mimeContent.length + " bytes)");
                 }
