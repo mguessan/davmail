@@ -13,8 +13,13 @@
         <section name="POP Thunderbird mail setup">
             <p>There are two ways to access Exchange emails through DavMail Gateway: the good old
                 and efficient POP protocol, limited to Inbox access and the IMAP protocol that enables
-                full message folder tree access. IMAP support in DavMail is more recent and less optimised
-                than POP.
+                full message folder tree access.
+            </p>
+
+            <p>Note that POP is designed to retrieve messages from server and let the client manage storage/folder
+                organization locally. All POP delete orders will move messages to server trash folder.
+                In order to avoid quota issues on server, DavMail can automatically purge oldest messages from trash
+                and sent folders.
             </p>
 
             <p>This page describes POP3 setup, if you need multiple folders access, proceed to

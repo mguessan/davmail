@@ -135,8 +135,8 @@ public final class Settings {
         SETTINGS.put("davmail.ldapPort", "1389");
         SETTINGS.put("davmail.clientSoTimeout", "");
         SETTINGS.put("davmail.keepDelay", "30");
-        SETTINGS.put("davmail.sentKeepDelay", "90");
-        SETTINGS.put("davmail.caldavPastDelay", "90");
+        SETTINGS.put("davmail.sentKeepDelay", "0");
+        SETTINGS.put("davmail.caldavPastDelay", "0");
         SETTINGS.put("davmail.imapIdleDelay", "");
         SETTINGS.put("davmail.folderSizeLimit", "");
         SETTINGS.put("davmail.enableKeepAlive", Boolean.FALSE.toString());
