@@ -26,12 +26,9 @@
     </condition>
 
     <condition property="is.java6">
-        <or>
-            <equals arg1="${ant.java.version}" arg2="1.6"/>
-            <equals arg1="${ant.java.version}" arg2="1.7"/>
-            <equals arg1="${ant.java.version}" arg2="1.8"/>
-            <equals arg1="${ant.java.version}" arg2="1.9"/>
-        </or>
+        <not>
+            <matches string="${ant.java.version}" pattern="1\.[012345]"/>
+        </not>
     </condition>
 
     <condition property="is.utf8">
@@ -39,7 +36,7 @@
     </condition>
 
     <target name="check-java6" unless="is.java6">
-        <fail message="Java 6 needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
+        <fail message="Java 6 or later needed to build DavMail, current version is ${ant.java.version}, check JAVA_HOME"/>
     </target>
 
     <target name="check-encoding" unless="is.utf8">
