@@ -368,6 +368,15 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testIcedoveHeaderFetch() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH 1:* (RFC822.SIZE RFC822.HEADER FLAGS)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+
     public void testSearchHeader() throws IOException {
         resetTestFolder();
         appendMessage();
@@ -417,6 +426,14 @@ public class TestImap extends AbstractImapTestCase {
         appendMessage();
 
         writeLine(". UID SEARCH SINCE 1-Jan-2012 UNDELETED");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testSearchSinceOn() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH OR SINCE 1-Jan-2012 ON 1-Jan-2012 ALL");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 

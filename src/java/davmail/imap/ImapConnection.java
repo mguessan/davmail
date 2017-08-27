@@ -1412,7 +1412,7 @@ public class ImapConnection extends AbstractConnection {
             return session.gte("messageSize", tokens.nextToken());
         } else if ("SMALLER".equals(token)) {
             return session.lt("messageSize", tokens.nextToken());
-        } else if (token.startsWith("SENT") || "SINCE".equals(token) || "BEFORE".equals(token)) {
+        } else if (token.startsWith("SENT") || "SINCE".equals(token) || "BEFORE".equals(token) || "ON".equals(token)) {
             return appendDateSearchParam(tokens, token);
         } else if ("SEEN".equals(token)) {
             return session.isTrue("read");
