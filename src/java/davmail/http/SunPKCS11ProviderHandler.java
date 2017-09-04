@@ -18,8 +18,6 @@
  */
 package davmail.http;
 
-import sun.security.pkcs11.SunPKCS11;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,13 +43,21 @@ public final class SunPKCS11ProviderHandler {
     public static void registerProvider(String pkcs11Config) {
         Provider p = null;
 
-        Class<SunPKCS11> sunPkcs11Class = sun.security.pkcs11.SunPKCS11.class;
         try {
-            Constructor<SunPKCS11> sunPkcs11Constructor = sunPkcs11Class.getDeclaredConstructor(InputStream.class);
-            p = sunPkcs11Constructor.newInstance(new ByteArrayInputStream(pkcs11Config.getBytes("UTF-8")));
-        } catch (Exception e) {
+            Class sunPkcs11Class = Class.forName("sun.security.pkcs11.SunPKCS11");
+            Constructor sunPkcs11Constructor = sunPkcs11Class.getDeclaredConstructor(InputStream.class);
+            p = (Provider) sunPkcs11Constructor.newInstance(new ByteArrayInputStream(pkcs11Config.getBytes("UTF-8")));
+        } catch (NoSuchMethodException e) {
             // try java 9 configuration
             p = configurePkcs11Provider(pkcs11Config);
+        } catch (Exception e) {
+            StringBuilder errorMessage = new StringBuilder("Unable to configure SunPKCS11 provider");
+            Throwable cause = e.getCause();
+            while (cause != null) {
+                errorMessage.append(" ").append(cause.getMessage());
+                cause = cause.getCause();
+            }
+            throw new RuntimeException(errorMessage.toString());
         }
 
         Security.addProvider(p);
@@ -59,21 +65,19 @@ public final class SunPKCS11ProviderHandler {
 
     private static Provider configurePkcs11Provider(String pkcs11Config) {
         Provider p;
-        File file = null;
         try {
-            file = File.createTempFile("pkcs11", "config");
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(pkcs11Config.getBytes("UTF-8"));
-            fos.close();
             p = Security.getProvider("SunPKCS11");
+            //p.configure("--"+pkcs11Config);
             Method configureMethod = Provider.class.getDeclaredMethod("configure", String.class);
-            configureMethod.invoke(p, file.getAbsolutePath());
+            configureMethod.invoke(p, "--"+pkcs11Config);
         } catch (Exception e) {
-            throw new RuntimeException("Unable to configure SunPKCS11 provider");
-        } finally {
-            if (file != null) {
-                file.delete();
+            StringBuilder errorMessage = new StringBuilder("Unable to configure SunPKCS11 provider");
+            Throwable cause = e.getCause();
+            while (cause != null) {
+                errorMessage.append(" ").append(cause.getMessage());
+                cause = cause.getCause();
             }
+            throw new RuntimeException(errorMessage.toString());
         }
         return p;
     }
