@@ -1567,7 +1567,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
-            if ("*".equals(noneMatch)) {
+            if ("*".equals(noneMatch) && !Settings.getBooleanProperty("davmail.ignoreNoneMatchStar", true)) {
                 // create requested
                 //noinspection VariableNotUsedInsideIf
                 if (currentItemId != null) {
