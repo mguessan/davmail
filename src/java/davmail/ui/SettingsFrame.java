@@ -746,7 +746,7 @@ public class SettingsFrame extends JFrame {
         ActionListener save = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 // save options
-                Settings.setProperty("davmail.url", urlField.getText());
+                Settings.setProperty("davmail.url", urlField.getText().trim());
                 Settings.setProperty("davmail.popPort", popPortCheckBox.isSelected() ? popPortField.getText() : "");
                 Settings.setProperty("davmail.ssl.nosecurepop", String.valueOf(popNoSSLCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapPort", imapPortCheckBox.isSelected() ? imapPortField.getText() : "");
