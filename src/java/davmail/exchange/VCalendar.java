@@ -220,6 +220,11 @@ public class VCalendar extends VObject {
                     }
                     String cdoBusyStatus = vObject.getPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS");
                     if (cdoBusyStatus != null) {
+                        // we set status only if it's tentative
+                        if ("TENTATIVE".equals(cdoBusyStatus)) {
+                            vObject.setPropertyValue("STATUS", "TENTATIVE");
+                        }
+                        // in all cases, we set the transparency (also called "show time as" in UI)
                         vObject.setPropertyValue("TRANSP",
                                 !"FREE".equals(cdoBusyStatus) ? "OPAQUE" : "TRANSPARENT");
                     }

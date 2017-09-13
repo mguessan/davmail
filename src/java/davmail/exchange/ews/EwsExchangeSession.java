@@ -1726,7 +1726,16 @@ public class EwsExchangeSession extends ExchangeSession {
                     updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
                     updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
                 }
-                updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
+
+                String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+                if (status != null && "TENTATIVE".equals(status)) {
+                    // this is a tentative event
+                    updates.add(Field.createFieldUpdate("busystatus", "Tentative"));
+                } else {
+                    // otherwise, we simply use the same value as before, as received from the server
+                    updates.add(Field.createFieldUpdate("busystatus", vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")));
+                }
+
                 if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
                     updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
                 }
