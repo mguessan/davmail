@@ -1732,8 +1732,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     // this is a tentative event
                     updates.add(Field.createFieldUpdate("busystatus", "Tentative"));
                 } else {
-                    // otherwise, we simply use the same value as before, as received from the server
-                    updates.add(Field.createFieldUpdate("busystatus", vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")));
+                    // otherwise, we use the same value as before, as received from the server
+                    // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
+                    updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))?"Busy" : "Free"));
                 }
 
                 if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
