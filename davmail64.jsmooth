@@ -20,8 +20,8 @@
 <classPath>dist\lib\jdom-1.0.jar</classPath>
 <classPath>dist\lib\log4j-1.2.16.jar</classPath>
 <classPath>dist\lib\mail-1.4.3.jar</classPath>
-<classPath>dist\lib\slf4j-api-1.3.1.jar</classPath>
-<classPath>dist\lib\slf4j-log4j12-1.3.1.jar</classPath>
+<classPath>dist\lib\slf4j-api-1.7.25.jar</classPath>
+<classPath>dist\lib\slf4j-log4j12-1.7.25.jar</classPath>
 <classPath>dist\lib\stax-api-1.0.1.jar</classPath>
 <classPath>dist\lib\stax2-api-3.1.1.jar</classPath>
 <classPath>dist\lib\swt-3.7-win32-x86_64.jar</classPath>
