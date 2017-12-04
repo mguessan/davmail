@@ -1263,7 +1263,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void moveMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
         ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
-        for (ExchangeSession.Message message: messages) {
+        for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
         }
 
@@ -1286,7 +1286,7 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public void copyMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
         ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
-        for (ExchangeSession.Message message: messages) {
+        for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
         }
 
@@ -1633,153 +1633,153 @@ public class EwsExchangeSession extends ExchangeSession {
                     // TODO: update properties instead of brute force delete/add
                     updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64AsString(itemContent))));
                     // update
-                    createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                           ConflictResolution.AutoResolve,
+                        createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                                ConflictResolution.AutoResolve,
                            SendMeetingInvitationsOrCancellations.SendToNone,
                            currentItemId, updates);*/
                     // hard method: delete/create on update
                     DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
                     executeMethod(deleteItemMethod);
                 } //else {
-                // create
-                EWSMethod.Item newItem = new EWSMethod.Item();
-                newItem.type = "CalendarItem";
-                newItem.mimeContent = IOUtil.encodeBase64(vCalendar.toString());
-                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-                if (!vCalendar.hasVAlarm()) {
-                    updates.add(Field.createFieldUpdate("reminderset", "false"));
-                }
-                //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
-                // force urlcompname
-                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                if (vCalendar.isMeeting()) {
-                    if (vCalendar.isMeetingOrganizer()) {
-                        updates.add(Field.createFieldUpdate("apptstateflags", "1"));
-                    } else {
-                        updates.add(Field.createFieldUpdate("apptstateflags", "3"));
+                    // create
+                    EWSMethod.Item newItem = new EWSMethod.Item();
+                    newItem.type = "CalendarItem";
+                    newItem.mimeContent = IOUtil.encodeBase64(vCalendar.toString());
+                    ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                    if (!vCalendar.hasVAlarm()) {
+                        updates.add(Field.createFieldUpdate("reminderset", "false"));
                     }
-                } else {
-                    updates.add(Field.createFieldUpdate("apptstateflags", "0"));
-                }
-                // store mozilla invitations option
-                String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
-                if (xMozSendInvitations != null) {
-                    updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
-                }
-                // handle mozilla alarm
-                String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
-                if (xMozLastack != null) {
-                    updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
-                }
-                String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
-                if (xMozSnoozeTime != null) {
-                    updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
-                }
+                    //updates.add(Field.createFieldUpdate("outlookmessageclass", "IPM.Appointment"));
+                    // force urlcompname
+                    updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                    if (vCalendar.isMeeting()) {
+                        if (vCalendar.isMeetingOrganizer()) {
+                            updates.add(Field.createFieldUpdate("apptstateflags", "1"));
+                        } else {
+                            updates.add(Field.createFieldUpdate("apptstateflags", "3"));
+                        }
+                    } else {
+                        updates.add(Field.createFieldUpdate("apptstateflags", "0"));
+                    }
+                    // store mozilla invitations option
+                    String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+                    if (xMozSendInvitations != null) {
+                        updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
+                    }
+                    // handle mozilla alarm
+                    String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                    if (xMozLastack != null) {
+                        updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+                    }
+                    String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                    if (xMozSnoozeTime != null) {
+                        updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
+                    }
 
-                if (vCalendar.isMeeting() && "Exchange2007_SP1".equals(serverVersion)) {
-                    Set<String> requiredAttendees = new HashSet<String>();
-                    Set<String> optionalAttendees = new HashSet<String>();
-                    List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
-                    if (attendeeProperties != null) {
-                        for (VProperty property : attendeeProperties) {
-                            String attendeeEmail = vCalendar.getEmailValue(property);
-                            if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                                if (email.equals(attendeeEmail)) {
-                                    String ownerPartStat = property.getParamValue("PARTSTAT");
-                                    if ("ACCEPTED".equals(ownerPartStat)) {
-                                        ownerResponseReply = "AcceptItem";
-                                        // do not send DeclineItem to avoid deleting target event
-                                    } else if ("DECLINED".equals(ownerPartStat) ||
-                                            "TENTATIVE".equals(ownerPartStat)) {
-                                        ownerResponseReply = "TentativelyAcceptItem";
+                    if (vCalendar.isMeeting() && "Exchange2007_SP1".equals(serverVersion)) {
+                        Set<String> requiredAttendees = new HashSet<String>();
+                        Set<String> optionalAttendees = new HashSet<String>();
+                        List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
+                        if (attendeeProperties != null) {
+                            for (VProperty property : attendeeProperties) {
+                                String attendeeEmail = vCalendar.getEmailValue(property);
+                                if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                                    if (email.equals(attendeeEmail)) {
+                                        String ownerPartStat = property.getParamValue("PARTSTAT");
+                                        if ("ACCEPTED".equals(ownerPartStat)) {
+                                            ownerResponseReply = "AcceptItem";
+                                            // do not send DeclineItem to avoid deleting target event
+                                        } else if ("DECLINED".equals(ownerPartStat) ||
+                                                "TENTATIVE".equals(ownerPartStat)) {
+                                            ownerResponseReply = "TentativelyAcceptItem";
+                                        }
                                     }
-                                }
-                                InternetAddress internetAddress = new InternetAddress(attendeeEmail, property.getParamValue("CN"));
-                                String attendeeRole = property.getParamValue("ROLE");
-                                if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                    requiredAttendees.add(internetAddress.toString());
-                                } else {
-                                    optionalAttendees.add(internetAddress.toString());
+                                    InternetAddress internetAddress = new InternetAddress(attendeeEmail, property.getParamValue("CN"));
+                                    String attendeeRole = property.getParamValue("ROLE");
+                                    if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                        requiredAttendees.add(internetAddress.toString());
+                                    } else {
+                                        optionalAttendees.add(internetAddress.toString());
+                                    }
                                 }
                             }
                         }
-                    }
-                    List<VProperty> organizerProperties = vCalendar.getFirstVeventProperties("ORGANIZER");
-                    if (organizerProperties != null) {
-                        VProperty property = organizerProperties.get(0);
-                        String organizerEmail = vCalendar.getEmailValue(property);
-                        if (organizerEmail != null && organizerEmail.indexOf('@') >= 0) {
-                            updates.add(Field.createFieldUpdate("from", organizerEmail));
+                        List<VProperty> organizerProperties = vCalendar.getFirstVeventProperties("ORGANIZER");
+                        if (organizerProperties != null) {
+                            VProperty property = organizerProperties.get(0);
+                            String organizerEmail = vCalendar.getEmailValue(property);
+                            if (organizerEmail != null && organizerEmail.indexOf('@') >= 0) {
+                                updates.add(Field.createFieldUpdate("from", organizerEmail));
+                            }
+                        }
+
+                        if (requiredAttendees.size() > 0) {
+                            updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
+                        }
+                        if (optionalAttendees.size() > 0) {
+                            updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
                         }
                     }
 
-                    if (requiredAttendees.size() > 0) {
-                        updates.add(Field.createFieldUpdate("to", StringUtil.join(requiredAttendees, ", ")));
+                    // patch allday date values, only on 2007
+                    if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
+                        updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                        updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
                     }
-                    if (optionalAttendees.size() > 0) {
-                        updates.add(Field.createFieldUpdate("cc", StringUtil.join(optionalAttendees, ", ")));
+
+                    String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+                    if (status != null && "TENTATIVE".equals(status)) {
+                        // this is a tentative event
+                        updates.add(Field.createFieldUpdate("busystatus", "Tentative"));
+                    } else {
+                        // otherwise, we use the same value as before, as received from the server
+                        // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
+                        updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS")) ? "Busy" : "Free"));
                     }
-                }
 
-                // patch allday date values, only on 2007
-                if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
-                    updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-                    updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
-                }
+                    if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
+                        updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                    }
 
-                String status = vCalendar.getFirstVeventPropertyValue("STATUS");
-                if (status != null && "TENTATIVE".equals(status)) {
-                    // this is a tentative event
-                    updates.add(Field.createFieldUpdate("busystatus", "Tentative"));
-                } else {
-                    // otherwise, we use the same value as before, as received from the server
-                    // however, the case matters, so we still have to transform it "BUSY" -> "Busy"
-                    updates.add(Field.createFieldUpdate("busystatus", "BUSY".equals(vCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))?"Busy" : "Free"));
-                }
-
-                if ("Exchange2007_SP1".equals(serverVersion) && vCalendar.isCdoAllDay()) {
-                    updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
-                }
-
-                newItem.setFieldUpdates(updates);
-                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
-                // force context Timezone on Exchange 2010 and 2013
-                if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
-                    createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
-                }
+                    newItem.setFieldUpdates(updates);
+                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
+                    // force context Timezone on Exchange 2010 and 2013
+                    if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
+                        createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                    }
                 //}
                 }
-            executeMethod(createOrUpdateItemMethod);
+                executeMethod(createOrUpdateItemMethod);
 
-            itemResult.status = createOrUpdateItemMethod.getStatusCode();
-            if (itemResult.status == HttpURLConnection.HTTP_OK) {
-                //noinspection VariableNotUsedInsideIf
-                if (currentItemId == null) {
-                    itemResult.status = HttpStatus.SC_CREATED;
-                    LOGGER.debug("Created event " + getHref());
-                } else {
-                    LOGGER.warn("Overwritten event " + getHref());
+                itemResult.status = createOrUpdateItemMethod.getStatusCode();
+                if (itemResult.status == HttpURLConnection.HTTP_OK) {
+                    //noinspection VariableNotUsedInsideIf
+                    if (currentItemId == null) {
+                        itemResult.status = HttpStatus.SC_CREATED;
+                        LOGGER.debug("Created event " + getHref());
+                    } else {
+                        LOGGER.warn("Overwritten event " + getHref());
+                    }
                 }
-            }
 
-            // force responsetype on Exchange 2007
-            if (ownerResponseReply != null) {
-                EWSMethod.Item responseTypeItem = new EWSMethod.Item();
-                responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
-                responseTypeItem.type = ownerResponseReply;
-                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
-                executeMethod(createOrUpdateItemMethod);
+                // force responsetype on Exchange 2007
+                if (ownerResponseReply != null) {
+                    EWSMethod.Item responseTypeItem = new EWSMethod.Item();
+                    responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
+                    responseTypeItem.type = ownerResponseReply;
+                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
+                    executeMethod(createOrUpdateItemMethod);
 
-                // force urlcompname again
-                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                        ConflictResolution.AlwaysOverwrite,
-                        SendMeetingInvitationsOrCancellations.SendToNone,
-                        new ItemId(createOrUpdateItemMethod.getResponseItem()),
-                        updates);
-                executeMethod(createOrUpdateItemMethod);
-            }
+                    // force urlcompname again
+                    ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                    updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                    createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                            ConflictResolution.AlwaysOverwrite,
+                            SendMeetingInvitationsOrCancellations.SendToNone,
+                            new ItemId(createOrUpdateItemMethod.getResponseItem()),
+                            updates);
+                    executeMethod(createOrUpdateItemMethod);
+                }
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
@@ -2151,6 +2151,30 @@ public class EwsExchangeSession extends ExchangeSession {
             contactPhoto.contentType = "image/jpeg";
         } else {
             contactPhoto.contentType = attachment.contentType;
+        }
+
+        return contactPhoto;
+    }
+
+    @Override
+    public ContactPhoto getADPhoto(String email) {
+        ContactPhoto contactPhoto = null;
+
+        if (email != null) {
+            try {
+                GetUserPhotoMethod userPhotoMethod = new GetUserPhotoMethod(email, GetUserPhotoMethod.SizeRequested.HR240x240);
+                executeMethod(userPhotoMethod);
+                if (userPhotoMethod.getPictureData() != null) {
+                    contactPhoto = new ContactPhoto();
+                    contactPhoto.content = userPhotoMethod.getPictureData();
+                    contactPhoto.contentType = userPhotoMethod.getContentType();
+                    if (contactPhoto.contentType == null) {
+                        contactPhoto.contentType = "image/jpeg";
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.debug("Error loading contact image from AD " + e + " " + e.getMessage());
+            }
         }
 
         return contactPhoto;

@@ -2496,14 +2496,23 @@ public abstract class ExchangeSession {
 
             writer.appendProperty("REV", get("lastmodified"));
 
+            ContactPhoto contactPhoto = null;
+
             if ("true".equals(get("haspicture"))) {
                 try {
-                    ContactPhoto contactPhoto = getContactPhoto(this);
-                    writer.writeLine("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\":");
-                    writer.writeLine(contactPhoto.content, true);
+                    contactPhoto = getContactPhoto(this);
                 } catch (IOException e) {
                     LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
                 }
+            }
+
+            if (contactPhoto == null) {
+                contactPhoto = getADPhoto(get("smtpemail1"));
+            }
+
+            if (contactPhoto != null) {
+                writer.writeLine("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\":");
+                writer.writeLine(contactPhoto.content, true);
             }
 
             writer.endCard();
@@ -3063,6 +3072,15 @@ public abstract class ExchangeSession {
      */
     public abstract ContactPhoto getContactPhoto(Contact contact) throws IOException;
 
+    /**
+     * Retrieve contact photo from AD
+     *
+     * @param contact address book contact
+     * @return contact photo
+     */
+    public ContactPhoto getADPhoto(String email) {
+        return null;
+    }
 
     /**
      * Delete event named itemName in folder
