@@ -733,7 +733,7 @@ public class VCalendar extends VObject {
         return recipients;
     }
 
-    protected String getAttendeeStatus() {
+    public String getAttendeeStatus() {
         String status = null;
         List<VProperty> attendeeProperties = getFirstVeventProperties("ATTENDEE");
         if (attendeeProperties != null) {

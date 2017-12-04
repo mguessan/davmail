@@ -232,6 +232,8 @@ public final class Field {
         FIELD_MAP.put("recurrencestart", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8235, ExtendedFieldURI.PropertyType.SystemTime));
         FIELD_MAP.put("recurrencetype", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8231, ExtendedFieldURI.PropertyType.Integer));
 
+        FIELD_MAP.put("location", new UnindexedFieldURI("calendar:Location"));
+
         FIELD_MAP.put("xmozlastack", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozlastack"));
         FIELD_MAP.put("xmozsnoozetime", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsnoozetime"));
         FIELD_MAP.put("xmozsendinvitations", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "xmozsendinvitations"));

@@ -93,6 +93,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
     static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
+    static final Map<String, String> partstatToResponseMap = new HashMap<String, String>();
 
     static {
         //taskTovTodoStatusMap.put("NotStarted", null);
@@ -106,6 +107,10 @@ public class EwsExchangeSession extends ExchangeSession {
         vTodoToTaskStatusMap.put("COMPLETED", "Completed");
         vTodoToTaskStatusMap.put("NEEDS-ACTION", "WaitingOnOthers");
         vTodoToTaskStatusMap.put("CANCELLED", "Deferred");
+
+        partstatToResponseMap.put("ACCEPTED", "AcceptItem");
+        partstatToResponseMap.put("TENTATIVE", "TentativelyAcceptItem");
+        partstatToResponseMap.put("DECLINED", "DeclineItem");
     }
 
     protected Map<String, String> folderIdMap;
@@ -1629,18 +1634,31 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
 
                 if (currentItemId != null) {
-                    /*Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
-                    // TODO: update properties instead of brute force delete/add
-                    updates.add(new FieldUpdate(Field.get("mimeContent"), new String(Base64.encodeBase64AsString(itemContent))));
-                    // update
+                    if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                        // This is a meeting response
+                        EWSMethod.Item item = new EWSMethod.Item();
+
+                        item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
+                        item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
+                        createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendOnly,
+                                SendMeetingInvitations.SendToAllAndSaveCopy,
+                                getFolderId(SENT),
+                                item
+                                );
+                    } else {
+                        List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                        // TODO: update all event fields and handle other occurrences
+                        updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+                        updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+                        updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+                        updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
+
                         createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
-                           SendMeetingInvitationsOrCancellations.SendToNone,
-                           currentItemId, updates);*/
-                    // hard method: delete/create on update
-                    DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-                    executeMethod(deleteItemMethod);
-                } //else {
+                                SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                currentItemId, updates);
+                    }
+                } else {
                     // create
                     EWSMethod.Item newItem = new EWSMethod.Item();
                     newItem.type = "CalendarItem";
@@ -1747,8 +1765,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                         createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                     }
-                //}
                 }
+
                 executeMethod(createOrUpdateItemMethod);
 
                 itemResult.status = createOrUpdateItemMethod.getStatusCode();
@@ -1780,6 +1798,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             updates);
                     executeMethod(createOrUpdateItemMethod);
                 }
+            }
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
