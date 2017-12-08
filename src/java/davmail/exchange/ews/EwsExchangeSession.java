@@ -1653,6 +1653,29 @@ public class EwsExchangeSession extends ExchangeSession {
                         updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
                         updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
 
+                        AttendeeFieldUpdate requiredAttendees = new AttendeeFieldUpdate(Field.get("requiredattendees"));
+                        AttendeeFieldUpdate optionalAttendees = new AttendeeFieldUpdate(Field.get("optionalattendees"));
+
+                        updates.add(requiredAttendees);
+                        updates.add(optionalAttendees);
+
+                        List<VProperty> attendees = vCalendar.getFirstVevent().getProperties("ATTENDEE");
+                        if (attendees != null) {
+                            for (VProperty property:attendees) {
+                                String attendeeEmail = vCalendar.getEmailValue(property);
+                                if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                                    if (!email.equals(attendeeEmail)) {
+                                        String attendeeRole = property.getParamValue("ROLE");
+                                        if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                            requiredAttendees.addValue(attendeeEmail);
+                                        } else {
+                                            optionalAttendees.addValue(attendeeEmail);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,

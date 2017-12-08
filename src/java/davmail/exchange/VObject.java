@@ -281,4 +281,8 @@ public class VObject {
             properties.remove(property);
         }
     }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 }

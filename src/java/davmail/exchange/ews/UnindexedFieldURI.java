@@ -20,6 +20,8 @@ package davmail.exchange.ews;
 
 import davmail.util.StringUtil;
 
+import java.util.List;
+
 /**
  * Unindexed Field URI
  */
@@ -79,6 +81,46 @@ public class UnindexedFieldURI implements FieldURI {
             buffer.append(fieldName);
             buffer.append('>');
         }
+        if (itemType != null) {
+            buffer.append("</t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
+    }
+
+    public void appendValues(StringBuilder buffer, String itemType, List<String> values) {
+        if (fieldURI.startsWith("message") && itemType != null) {
+            itemType = "Message";
+        } else if (fieldURI.startsWith("calendar") && itemType != null) {
+            itemType = "CalendarItem";
+        } else if (fieldURI.startsWith("task") && itemType != null) {
+            itemType = "Task";
+        } else if (fieldURI.startsWith("contacts") && itemType != null) {
+            itemType = "Contact";
+        }
+        if (itemType != null) {
+            appendTo(buffer);
+            buffer.append("<t:");
+            buffer.append(itemType);
+            buffer.append('>');
+        }
+        buffer.append("<t:");
+        buffer.append(fieldName);
+        buffer.append('>');
+        for (String value : values) {
+            if ("RequiredAttendees".equals(fieldName) || "OptionalAttendees".equals(fieldName)) {
+                buffer.append("<t:Attendee><t:Mailbox><t:EmailAddress>");
+                buffer.append(StringUtil.xmlEncodeAttribute(value));
+                buffer.append("</t:EmailAddress></t:Mailbox></t:Attendee>");
+            } else {
+                buffer.append(StringUtil.xmlEncodeAttribute(value));
+            }
+        }
+
+        buffer.append("</t:");
+        buffer.append(fieldName);
+        buffer.append('>');
+
         if (itemType != null) {
             buffer.append("</t:");
             buffer.append(itemType);
