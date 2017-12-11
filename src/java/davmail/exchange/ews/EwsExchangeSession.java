@@ -30,7 +30,9 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.*;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import javax.mail.MessagingException;
@@ -111,6 +113,7 @@ public class EwsExchangeSession extends ExchangeSession {
         partstatToResponseMap.put("ACCEPTED", "AcceptItem");
         partstatToResponseMap.put("TENTATIVE", "TentativelyAcceptItem");
         partstatToResponseMap.put("DECLINED", "DeclineItem");
+        partstatToResponseMap.put("NEEDS-ACTION", "ReplyToItem");
     }
 
     protected Map<String, String> folderIdMap;
@@ -1551,6 +1554,58 @@ public class EwsExchangeSession extends ExchangeSession {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
+        protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar) throws DavMailException {
+            List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+            // TODO: update all event fields and handle other occurrences
+            updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
+            updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+            updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+            updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
+
+            VProperty rrule = vCalendar.getFirstVevent().getProperty("RRULE");
+            if (rrule != null) {
+                RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
+                String rruleValue = rrule.getValue();
+                if (rruleValue.contains("FREQ=DAILY")) {
+                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.DailyRecurrence);
+                } else if (rruleValue.contains("FREQ=WEEKLY")) {
+                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.WeeklyRecurrence);
+                } else if (rruleValue.contains("FREQ=MONTHLY")) {
+                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteMonthly);
+                } else if (rruleValue.contains("FREQ=YEARLY")) {
+                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteYearly);
+                }
+                recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))+"Z"));
+                updates.add(recurrenceFieldUpdate);
+            }
+
+
+            AttendeeFieldUpdate requiredAttendees = new AttendeeFieldUpdate(Field.get("requiredattendees"));
+            AttendeeFieldUpdate optionalAttendees = new AttendeeFieldUpdate(Field.get("optionalattendees"));
+
+            updates.add(requiredAttendees);
+            updates.add(optionalAttendees);
+
+            List<VProperty> attendees = vCalendar.getFirstVevent().getProperties("ATTENDEE");
+            if (attendees != null) {
+                for (VProperty property:attendees) {
+                    String attendeeEmail = vCalendar.getEmailValue(property);
+                    if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                        if (!email.equals(attendeeEmail)) {
+                            String attendeeRole = property.getParamValue("ROLE");
+                            if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                requiredAttendees.addValue(attendeeEmail);
+                            } else {
+                                optionalAttendees.addValue(attendeeEmail);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return updates;
+        }
+
         @Override
         public ItemResult createOrUpdate() throws IOException {
             if (vCalendar.isTodo() && isMainCalendar(folderPath)) {
@@ -1572,7 +1627,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
-            if ("*".equals(noneMatch) && !Settings.getBooleanProperty("davmail.ignoreNoneMatchStar", true)) {
+            if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                LOGGER.debug("Ignore etag check, meeting response");
+            } else if ("*".equals(noneMatch) && !Settings.getBooleanProperty("davmail.ignoreNoneMatchStar", true)) {
                 // create requested
                 //noinspection VariableNotUsedInsideIf
                 if (currentItemId != null) {
@@ -1633,6 +1690,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             } else {
 
+                // update existing item
                 if (currentItemId != null) {
                     if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
                         // This is a meeting response
@@ -1646,40 +1704,10 @@ public class EwsExchangeSession extends ExchangeSession {
                                 item
                                 );
                     } else {
-                        List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-                        // TODO: update all event fields and handle other occurrences
-                        updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-                        updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
-                        updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
-                        updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
-
-                        AttendeeFieldUpdate requiredAttendees = new AttendeeFieldUpdate(Field.get("requiredattendees"));
-                        AttendeeFieldUpdate optionalAttendees = new AttendeeFieldUpdate(Field.get("optionalattendees"));
-
-                        updates.add(requiredAttendees);
-                        updates.add(optionalAttendees);
-
-                        List<VProperty> attendees = vCalendar.getFirstVevent().getProperties("ATTENDEE");
-                        if (attendees != null) {
-                            for (VProperty property:attendees) {
-                                String attendeeEmail = vCalendar.getEmailValue(property);
-                                if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                                    if (!email.equals(attendeeEmail)) {
-                                        String attendeeRole = property.getParamValue("ROLE");
-                                        if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                            requiredAttendees.addValue(attendeeEmail);
-                                        } else {
-                                            optionalAttendees.addValue(attendeeEmail);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
-                                currentItemId, updates);
+                                currentItemId, buildFieldUpdates(vCalendar));
                     }
                 } else {
                     // create
