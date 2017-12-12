@@ -1,3 +1,55 @@
+** DavMail 4.8.1 released **
+Last release before major EWS caldav refactoring, includes only the first behaviour change:
+do not delete existing meeting on Accept/Decline, just send answer to organizer. Also includes
+central directory photo handling in Carddav service, improved Java 9 support and many other
+bug fixes.
+
+
+Caldav:
+- Caldav: temporarily disable EWS refactoring
+- Caldav: EWS refactoring, implement multiple day recurrence and end date
+- Caldav: EWS refactoring, first recurrence implementation step, improve ignore etag handling
+- Caldav: EWS refactoring, manage attendees
+- Caldav: prepare calendar refactoring, do not delete/add received meeting items, just send an Accept/Decline message
+- Caldav: fix regression, busy status is case sensitive in EWS
+- Caldav: fix #657 Tentative events shows as accepted in Thunderbird with user provided patch
+- Caldav: experimental davmail.ignoreNoneMatchStar to let DavMail overwrite existing event automatically processed by Exchange.
+
+Carddav:
+- Carddav: implement get photo from Active Directory
+
+Enhancements:
+- update winrun4j wrappers
+- Upgrade slf4j to 1.7.25 (patch #45)
+- Fix 654: trim OWA/EWS url
+- Ant: improve java version check
+- Remove useless debug statement
+
+Smartcard:
+- Smartcard: improve Java 9 error handling, no longer need a temporary file
+- Smartcard: try to implement code compatible with all java versions including Java 9
+
+IMAP:
+- IMAP: implement ON search filter
+- IMAP: detect icedove header fetch to improve performance
+- IMAP: make sure we never return null even with broken 0 uid message
+
+POP:
+- POP3: Improve documentation on trash/sent folders purge, change default value from 90 to 0 (disable)
+
+Linux:
+- Linux: check system tray with gtk_status_icon_get_geometry only with Unity to avoid regression with other window managers
+
+SWT:
+- SWT: wait 10s for tray icon to be created
+
+OSX:
+- OSX: fix Info.plist path
+- OSX: fix JavaApplicationStub, do not expand folder classpath
+- OSX: revert change to JavaX new key, does not work
+- OSX: Update Info.plist to match new universalJavaApplicationStub
+
+
 ** DavMail 4.8.0 released **
 This new release includes a lot of fixes and enhancements from user feedback, including
 improved Exchange categories handling, up to date TLS settings to match current requirements,
