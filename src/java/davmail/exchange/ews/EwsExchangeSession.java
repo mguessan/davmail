@@ -1565,15 +1565,20 @@ public class EwsExchangeSession extends ExchangeSession {
             VProperty rrule = vCalendar.getFirstVevent().getProperty("RRULE");
             if (rrule != null) {
                 RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
-                String rruleValue = rrule.getValue();
-                if (rruleValue.contains("FREQ=DAILY")) {
-                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.DailyRecurrence);
-                } else if (rruleValue.contains("FREQ=WEEKLY")) {
-                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.WeeklyRecurrence);
-                } else if (rruleValue.contains("FREQ=MONTHLY")) {
-                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteMonthly);
-                } else if (rruleValue.contains("FREQ=YEARLY")) {
-                    recurrenceFieldUpdate.setRecurrencePattern(RecurrenceFieldUpdate.RecurrencePattern.AbsoluteYearly);
+                List<String> rruleValues = rrule.getValues();
+                for (String rruleValue: rruleValues) {
+                    int index = rruleValue.indexOf("=");
+                    if (index >=0) {
+                        String key = rruleValue.substring(0, index);
+                        String value = rruleValue.substring(index+1);
+                        if ("FREQ".equals(key)) {
+                            recurrenceFieldUpdate.setRecurrencePattern(value);
+                        } else if ("UNTIL".equals(key)) {
+                            recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)));
+                        } else if ("BYDAY".equals(key)) {
+                            recurrenceFieldUpdate.setByDay(value.split(","));
+                        }
+                    }
                 }
                 recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))+"Z"));
                 updates.add(recurrenceFieldUpdate);
