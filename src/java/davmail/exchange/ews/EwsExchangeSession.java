@@ -1696,8 +1696,8 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
 
                 // update existing item
-                if (currentItemId != null) {
-                    if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                if (currentItemId != null && /*) {
+                    if (*/vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
                         // This is a meeting response
                         EWSMethod.Item item = new EWSMethod.Item();
 
@@ -1708,12 +1708,12 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getFolderId(SENT),
                                 item
                                 );
-                    } else {
+                    /*} else {
                         createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
                                 currentItemId, buildFieldUpdates(vCalendar));
-                    }
+                    }*/
                 } else {
                     // create
                     EWSMethod.Item newItem = new EWSMethod.Item();
