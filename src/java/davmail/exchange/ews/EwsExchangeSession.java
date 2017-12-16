@@ -1559,8 +1559,31 @@ public class EwsExchangeSession extends ExchangeSession {
             // TODO: update all event fields and handle other occurrences
             updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
             updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+
+            updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
+
+            String eventClass = vCalendar.getFirstVeventPropertyValue("CLASS");
+            if ("PRIVATE".equals(eventClass)) {
+                eventClass = "Private";
+            } else if ("CONFIDENTIAL".equals(eventClass)) {
+                eventClass = "Confidential";
+            } else {
+                // PUBLIC
+                eventClass = "Normal";
+            }
+            updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
+
             updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
             updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
+            // Collect categories on multiple lines
+            List<VProperty> categories = vCalendar.getFirstVevent().getProperties("CATEGORIES");
+            if (categories != null) {
+                HashSet<String> categoryValues = new HashSet<String>();
+                for (VProperty category: categories) {
+                    categoryValues.add(category.getValue());
+                }
+                updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
+            }
 
             VProperty rrule = vCalendar.getFirstVevent().getProperty("RRULE");
             if (rrule != null) {
@@ -1696,8 +1719,8 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
 
                 // update existing item
-                if (currentItemId != null && /*) {
-                    if (*/vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                if (currentItemId != null) {
+                    if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
                         // This is a meeting response
                         EWSMethod.Item item = new EWSMethod.Item();
 
@@ -1708,12 +1731,12 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getFolderId(SENT),
                                 item
                                 );
-                    /*} else {
+                    } else {
                         createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
                                 currentItemId, buildFieldUpdates(vCalendar));
-                    }*/
+                    }
                 } else {
                     // create
                     EWSMethod.Item newItem = new EWSMethod.Item();

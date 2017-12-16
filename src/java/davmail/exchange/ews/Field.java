@@ -200,6 +200,9 @@ public final class Field {
         FIELD_MAP.put("private", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Common, 0x8506, ExtendedFieldURI.PropertyType.Boolean));
         FIELD_MAP.put("sensitivity", new ExtendedFieldURI(0x0036, ExtendedFieldURI.PropertyType.Integer));
 
+        // TODO: merge with sensitivity ?
+        FIELD_MAP.put("itemsensitivity", new UnindexedFieldURI("item:Sensitivity"));
+
         FIELD_MAP.put("haspicture", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8015, ExtendedFieldURI.PropertyType.Boolean));
 
         FIELD_MAP.put("fburl", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x80D8, ExtendedFieldURI.PropertyType.String));
@@ -221,6 +224,10 @@ public final class Field {
         FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
         FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
         FIELD_MAP.put("modifiedoccurrences", new UnindexedFieldURI("calendar:ModifiedOccurrences"));
+
+        FIELD_MAP.put("recurrence", new UnindexedFieldURI("calendar:Recurrence"));
+
+        FIELD_MAP.put("isalldayevent", new UnindexedFieldURI("calendar:IsAllDayEvent"));
 
         // does not work with Office 365, see https://msdn.microsoft.com/en-us/library/office/bb204271(v=exchg.150).aspx
         //FIELD_MAP.put("isrecurring", new UnindexedFieldURI("calendar:IsRecurring"));

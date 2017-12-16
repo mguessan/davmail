@@ -377,7 +377,7 @@ public class VProperty {
                 if (c == ',' &&
                         // multivalued properties
                         ("N".equals(key) ||
-                                "CATEGORIES".equals(key) ||
+                                //"CATEGORIES".equals(key) ||
                                 "NICKNAME".equals(key)
                         )) {
                     // convert multiple values to multiline values (e.g. street)
