@@ -351,7 +351,7 @@ public class VCalendar extends VObject {
         }
         // convert TZID to Exchange time zone id
         ResourceBundle tzBundle = ResourceBundle.getBundle("exchtimezones");
-        ResourceBundle tzidsBundle = ResourceBundle.getBundle("timezoneids");
+        ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
         for (VObject vObject:vObjects) {
             if (vObject.isVTimezone()) {
                 String tzid = vObject.getPropertyValue("TZID");
