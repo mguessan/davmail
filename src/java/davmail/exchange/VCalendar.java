@@ -195,7 +195,7 @@ public class VCalendar extends VObject {
         }
 
         if (!fromServer) {
-            fixTimezone();
+            fixTimezoneToServer();
         }
 
         // iterate over vObjects
@@ -312,7 +312,7 @@ public class VCalendar extends VObject {
 
     }
 
-    private void fixTimezone() {
+    private void fixTimezoneToServer() {
         if (vTimezone != null && vTimezone.vObjects != null && vTimezone.vObjects.size() > 2) {
             VObject standard = null;
             VObject daylight = null;
@@ -346,6 +346,47 @@ public class VCalendar extends VObject {
                         && "BYMONTHDAY=23,24,25,26,27,28,29".equals(rrule.getValues().get(2))) {
                     rrule.getValues().set(1, "BYDAY=-1FR");
                     rrule.getValues().remove(2);
+                }
+            }
+        }
+        // convert TZID to Exchange time zone id
+        ResourceBundle tzBundle = ResourceBundle.getBundle("exchtimezones");
+        ResourceBundle tzidsBundle = ResourceBundle.getBundle("timezoneids");
+        for (VObject vObject:vObjects) {
+            if (vObject.isVTimezone()) {
+                String tzid = vObject.getPropertyValue("TZID");
+                // check if tzid is avalid Exchange timezone id
+                if (!tzidsBundle.containsKey(tzid)) {
+                    String exchangeTzid = null;
+                    // try to convert standard timezone id to Exchange timezone id
+                    if (tzBundle.containsKey(tzid)) {
+                        exchangeTzid = tzBundle.getString(tzid);
+                    } else {
+                        // failover, map to a close timezone
+                        for (VObject tzDefinition:vObject.vObjects) {
+                            if ("STANDARD".equals(tzDefinition.type)) {
+                                String tzOffset = tzDefinition.getPropertyValue("TZOFFSETTO");
+                                exchangeTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
+                            }
+                        }
+                    }
+                    if (exchangeTzid != null) {
+                        vObject.setPropertyValue("TZID", exchangeTzid);
+                        // also replace TZID in properties
+                        updateTzid(tzid, exchangeTzid);
+                    }
+                }
+            }
+        }
+    }
+
+    protected void updateTzid(String tzid, String newTzid) {
+        for (VObject vObject:vObjects) {
+            if (vObject.isVEvent()) {
+                for (VProperty vProperty : vObject.properties) {
+                    if (tzid.equalsIgnoreCase(vProperty.getParamValue("TZID"))) {
+                        vProperty.setParam("TZID", newTzid);
+                    }
                 }
             }
         }

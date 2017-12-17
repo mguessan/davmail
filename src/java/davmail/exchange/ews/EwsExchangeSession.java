@@ -1559,6 +1559,12 @@ public class EwsExchangeSession extends ExchangeSession {
             // TODO: update all event fields and handle other occurrences
             updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
             updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+            if ("Exchange2007_SP1".equals(serverVersion)) {
+                updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+            } else {
+                updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getFirstVevent().getProperty("DTSTART").getParamValue("TZID")));
+                updates.add(Field.createFieldUpdate("endtimezone", vCalendar.getFirstVevent().getProperty("DTEND").getParamValue("TZID")));
+            }
 
             updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
 
@@ -1736,6 +1742,10 @@ public class EwsExchangeSession extends ExchangeSession {
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
                                 currentItemId, buildFieldUpdates(vCalendar));
+                        // force context Timezone on Exchange 2010 and 2013
+                        if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
+                            createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                        }
                     }
                 } else {
                     // create

@@ -92,6 +92,13 @@ public class VObject {
     public VObject() {
     }
 
+    public boolean isVTimezone() {
+        return "VTIMEZONE".equals(type);
+    }
+
+    public boolean isVEvent() {
+        return "VEVENT".equals(type);
+    }
 
     protected void handleLine(String line, BufferedReader reader) throws IOException {
         // skip empty lines

@@ -72,6 +72,10 @@ public class UnindexedFieldURI implements FieldURI {
             buffer.append("<t:StartTimeZone Id=\"");
             buffer.append(StringUtil.xmlEncodeAttribute(value));
             buffer.append("\"></t:StartTimeZone>");
+        } else if ("EndTimeZone".equals(fieldName)) {
+            buffer.append("<t:EndTimeZone Id=\"");
+            buffer.append(StringUtil.xmlEncodeAttribute(value));
+            buffer.append("\"></t:EndTimeZone>");
         } else {
             buffer.append("<t:");
             buffer.append(fieldName);

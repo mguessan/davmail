@@ -219,6 +219,7 @@ public final class Field {
 
         FIELD_MAP.put("meetingtimezone", new UnindexedFieldURI("calendar:MeetingTimeZone"));
         FIELD_MAP.put("starttimezone", new UnindexedFieldURI("calendar:StartTimeZone"));
+        FIELD_MAP.put("endtimezone", new UnindexedFieldURI("calendar:EndTimeZone"));
         FIELD_MAP.put("busystatus", new UnindexedFieldURI("calendar:LegacyFreeBusyStatus"));
 
         FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
