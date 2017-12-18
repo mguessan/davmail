@@ -1579,6 +1579,19 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
 
+            // Convert busy status
+            String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+            if ("TENTATIVE".equals(status)) {
+                status = "Tentative";
+            } else if ("CANCELLED".equals(status)){
+                status = "Free";
+            } else {
+                // CONFIRMED
+                status = "Busy";
+            }
+
+            updates.add(Field.createFieldUpdate("busystatus", status));
+
             updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
             updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
             // Collect categories on multiple lines
@@ -2029,6 +2042,10 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
                     // LAST-MODIFIED is missing in event content
                     localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
+
+                    if ("FREE".equals(localVCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))) {
+                        localVCalendar.setFirstVeventPropertyValue("STATUS", "CANCELLED");
+                    }
 
                     // restore mozilla invitations option
                     localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
