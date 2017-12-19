@@ -652,14 +652,45 @@ public class VCalendar extends VObject {
         if (vObjects != null) {
             for (VObject vObject : vObjects) {
                 if ("VEVENT".equals(vObject.type)) {
-                    if (vObject.vObjects != null) {
-                        return true;
+                    if (vObject.vObjects != null && !vObject.vObjects.isEmpty()) {
+                        return vObject.vObjects.get(0).isVAlarm();
                     }
                 }
             }
         }
         return false;
     }
+
+    public String getReminderMinutesBeforeStart() {
+        String result = "0";
+        if (vObjects != null) {
+            for (VObject vObject : vObjects) {
+                if (vObject.vObjects != null && !vObject.vObjects.isEmpty() &&
+                        vObject.vObjects.get(0).isVAlarm()) {
+                    String trigger = vObject.vObjects.get(0).getPropertyValue("TRIGGER");
+                    if (trigger != null) {
+                        if (trigger.startsWith("-PT") && trigger.endsWith("M")) {
+                            result = trigger.substring(3, trigger.length() - 1);
+                        } else if (trigger.startsWith("-PT") && trigger.endsWith("H")) {
+                            result = trigger.substring(3, trigger.length() - 1);
+                            // convert to minutes
+                            result = String.valueOf(Integer.parseInt(result) * 60);
+                        } else if (trigger.startsWith("-P") && trigger.endsWith("D")) {
+                            result = trigger.substring(2, trigger.length() - 1);
+                            // convert to minutes
+                            result = String.valueOf(Integer.parseInt(result) * 60 * 24);
+                        } else if (trigger.startsWith("-P") && trigger.endsWith("W")) {
+                            result = trigger.substring(2, trigger.length() - 1);
+                            // convert to minutes
+                            result = String.valueOf(Integer.parseInt(result) * 60 * 24 * 7);
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 
     /**
      * Check if this VCalendar is a meeting.

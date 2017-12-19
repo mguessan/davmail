@@ -100,6 +100,11 @@ public class VObject {
         return "VEVENT".equals(type);
     }
 
+    public boolean isVAlarm() {
+        return "VALARM".equals(type);
+    }
+
+
     protected void handleLine(String line, BufferedReader reader) throws IOException {
         // skip empty lines
         if (line.length() > 0) {
@@ -292,4 +297,5 @@ public class VObject {
     public void setType(String type) {
         this.type = type;
     }
+
 }

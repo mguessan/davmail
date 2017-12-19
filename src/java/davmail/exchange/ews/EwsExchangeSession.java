@@ -1604,6 +1604,13 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
             }
 
+
+            updates.add(Field.createFieldUpdate("reminderset", String.valueOf(vCalendar.hasVAlarm())));
+            if (vCalendar.hasVAlarm()) {
+                updates.add(Field.createFieldUpdate("reminderminutesbeforestart", vCalendar.getReminderMinutesBeforeStart()));
+            }
+
+
             VProperty rrule = vCalendar.getFirstVevent().getProperty("RRULE");
             if (rrule != null) {
                 RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
@@ -1738,8 +1745,8 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
 
                 // update existing item
-                if (currentItemId != null && /*) {
-                    if (*/vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                if (currentItemId != null) {
+                    if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
                         // This is a meeting response
                         EWSMethod.Item item = new EWSMethod.Item();
 
@@ -1750,8 +1757,8 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getFolderId(SENT),
                                 item
                                 );
-                    /*} else {
-                        /*createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                    } else {
+                        createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                 ConflictResolution.AutoResolve,
                                 SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
                                 currentItemId, buildFieldUpdates(vCalendar));
@@ -1759,13 +1766,13 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                         }
-                    }*/
+                    }
                 } else {
                     // old hard/delete approach on update
-                    if (currentItemId != null) {
+                    /*if (currentItemId != null) {
                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
                         executeMethod(deleteItemMethod);
-                    }
+                    }*/
                     // create
                     EWSMethod.Item newItem = new EWSMethod.Item();
                     newItem.type = "CalendarItem";
