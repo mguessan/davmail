@@ -1776,19 +1776,20 @@ public class EwsExchangeSession extends ExchangeSession {
                                 item
                                 );
                     } else {
-                        createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                                ConflictResolution.AutoResolve,
-                                SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
-                                currentItemId, buildFieldUpdates(vCalendar));
-                        // force context Timezone on Exchange 2010 and 2013
-                        if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
-                            createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                        if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
+                            createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                                    ConflictResolution.AutoResolve,
+                                    SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                    currentItemId, buildFieldUpdates(vCalendar));
+                            // force context Timezone on Exchange 2010 and 2013
+                            if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
+                                createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                            }
+                        } else {
+                            // old hard/delete approach on update
+                            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
+                            executeMethod(deleteItemMethod);
                         }
-                        // old hard/delete approach on update
-                        /*if (currentItemId != null) {
-                        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-                        executeMethod(deleteItemMethod);
-                        }*/
                     }
                 }
 
