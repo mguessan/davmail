@@ -96,6 +96,7 @@ public class EwsExchangeSession extends ExchangeSession {
     static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
     static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
     static final Map<String, String> partstatToResponseMap = new HashMap<String, String>();
+    static final Map<String, String> responseTypeToPartstatMap = new HashMap<String, String>();
 
     static {
         //taskTovTodoStatusMap.put("NotStarted", null);
@@ -114,6 +115,12 @@ public class EwsExchangeSession extends ExchangeSession {
         partstatToResponseMap.put("TENTATIVE", "TentativelyAcceptItem");
         partstatToResponseMap.put("DECLINED", "DeclineItem");
         partstatToResponseMap.put("NEEDS-ACTION", "ReplyToItem");
+
+        responseTypeToPartstatMap.put("Accept", "ACCEPTED");
+        responseTypeToPartstatMap.put("Tentative", "TENTATIVE");
+        responseTypeToPartstatMap.put("Decline", "DECLINED");
+        responseTypeToPartstatMap.put("NoResponseReceived", "NEEDS-ACTION");
+        responseTypeToPartstatMap.put("Unknown", "NEEDS-ACTION");
     }
 
     protected Map<String, String> folderIdMap;
@@ -1555,6 +1562,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar) throws DavMailException {
+
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
             // TODO: update all event fields and handle other occurrences
             updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
@@ -1668,20 +1676,30 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             ItemResult itemResult = new ItemResult();
-            EWSMethod createOrUpdateItemMethod;
+            EWSMethod createOrUpdateItemMethod = null;
 
             // first try to load existing event
             String currentEtag = null;
             ItemId currentItemId = null;
             String ownerResponseReply = null;
+            boolean isMeetingResponse = false;
 
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
+                String currentAttendeeStatus = responseTypeToPartstatMap.get(currentItem.get(Field.get("myresponsetype").getResponseName()));
+                String newAttendeeStatus = vCalendar.getAttendeeStatus();
+
+                isMeetingResponse = vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()
+                        && currentAttendeeStatus != null && newAttendeeStatus != null
+                        && !currentAttendeeStatus.equals(newAttendeeStatus)
+                        // avoid nullpointerexception on unknown status
+                        && partstatToResponseMap.get(newAttendeeStatus) != null;
+
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
-            if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+            if (isMeetingResponse) {
                 LOGGER.debug("Ignore etag check, meeting response");
             } else if ("*".equals(noneMatch) && !Settings.getBooleanProperty("davmail.ignoreNoneMatchStar", true)) {
                 // create requested
@@ -1746,7 +1764,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 // update existing item
                 if (currentItemId != null) {
-                    if (vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()) {
+                    if (isMeetingResponse) {
                         // This is a meeting response
                         EWSMethod.Item item = new EWSMethod.Item();
 
@@ -1766,13 +1784,15 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                         }
-                    }
-                } else {
-                    // old hard/delete approach on update
-                    /*if (currentItemId != null) {
+                        // old hard/delete approach on update
+                        /*if (currentItemId != null) {
                         DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
                         executeMethod(deleteItemMethod);
-                    }*/
+                        }*/
+                    }
+                }
+
+                if (createOrUpdateItemMethod == null) {
                     // create
                     EWSMethod.Item newItem = new EWSMethod.Item();
                     newItem.type = "CalendarItem";
@@ -2184,6 +2204,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("displayname");
         EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
+        EVENT_REQUEST_PROPERTIES.add("myresponsetype");
     }
 
     @Override

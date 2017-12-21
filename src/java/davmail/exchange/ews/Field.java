@@ -231,6 +231,7 @@ public final class Field {
         FIELD_MAP.put("recurrence", new UnindexedFieldURI("calendar:Recurrence"));
 
         FIELD_MAP.put("isalldayevent", new UnindexedFieldURI("calendar:IsAllDayEvent"));
+        FIELD_MAP.put("myresponsetype", new UnindexedFieldURI("calendar:MyResponseType"));
 
         // does not work with Office 365, see https://msdn.microsoft.com/en-us/library/office/bb204271(v=exchg.150).aspx
         //FIELD_MAP.put("isrecurring", new UnindexedFieldURI("calendar:IsRecurring"));
