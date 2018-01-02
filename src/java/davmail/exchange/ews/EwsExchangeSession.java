@@ -1565,16 +1565,16 @@ public class EwsExchangeSession extends ExchangeSession {
          * Handle excluded dates (deleted occurrences).
          *
          * @param currentItemId current item id to iterate over occurrences
-         * @param vCalendar vCalendar object
+         * @param vCalendar     vCalendar object
          * @throws DavMailException on error
          */
         protected void handleExcludedDates(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
             List<VProperty> excludedDates = vCalendar.getFirstVeventProperties("EXDATE");
             if (excludedDates != null) {
-                for (VProperty property:excludedDates) {
+                for (VProperty property : excludedDates) {
                     List<String> values = property.getValues();
-                    for (String value: values) {
-                        String convertedValue = convertCalendarDateToExchange(value)+"Z";
+                    for (String value : values) {
+                        String convertedValue = convertCalendarDateToExchange(value) + "Z";
                         LOGGER.debug("Looking for occurrence " + convertedValue);
 
                         int instanceIndex = 0;
@@ -1602,7 +1602,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                     }
                                 }
                             } catch (IOException e) {
-                                LOGGER.warn("Error looking for occurrence " + convertedValue+": "+e.getMessage());
+                                LOGGER.warn("Error looking for occurrence " + convertedValue + ": " + e.getMessage());
                                 // after end of recurrence
                                 break;
                             }
@@ -1614,22 +1614,74 @@ public class EwsExchangeSession extends ExchangeSession {
 
         }
 
-        protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar) throws DavMailException {
+        /**
+         * Handle modified occurrences.
+         *
+         * @param currentItemId current item id to iterate over occurrences
+         * @param vCalendar     vCalendar object
+         * @throws DavMailException on error
+         */
+        protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
+            for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
+                VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
+                String convertedValue = vCalendar.convertCalendarDateToExchangeZulu(originalDateProperty.getValue(), originalDateProperty.getParamValue("TZID"));
+                LOGGER.debug("Looking for occurrence " + convertedValue);
+                int instanceIndex = 0;
+
+                // let's try to find occurence
+                while (true) {
+                    instanceIndex++;
+                    try {
+                        GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY,
+                                new OccurrenceItemId(currentItemId.id, instanceIndex)
+                                , false);
+                        getItemMethod.addAdditionalProperty(Field.get("originalstart"));
+                        executeMethod(getItemMethod);
+                        if (getItemMethod.getResponseItem() != null) {
+                            String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
+                            if (convertedValue.equals(itemOriginalStart)) {
+                                // found item, update it
+                                UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                                        ConflictResolution.AutoResolve,
+                                        SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                        new ItemId(getItemMethod.getResponseItem()), buildFieldUpdates(vCalendar, modifiedOccurrence));
+                                // force context Timezone on Exchange 2010 and 2013
+                                if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
+                                    updateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                                }
+                                executeMethod(updateItemMethod);
+
+                                break;
+                            } else if (convertedValue.compareTo(itemOriginalStart) < 0) {
+                                // current item is after searched item => probably already deleted
+                                break;
+                            }
+                        }
+                    } catch (IOException e) {
+                        LOGGER.warn("Error looking for occurrence " + convertedValue + ": " + e.getMessage());
+                        // after end of recurrence
+                        break;
+                    }
+                }
+            }
+        }
+
+        protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent) throws DavMailException {
 
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
             // TODO: update all event fields and handle other occurrences
-            updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))));
-            updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTEND"))));
+            updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))));
+            updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vEvent.getPropertyValue("DTEND"))));
             if ("Exchange2007_SP1".equals(serverVersion)) {
-                updates.add(Field.createFieldUpdate("meetingtimezone", vCalendar.getVTimezone().getPropertyValue("TZID")));
+                updates.add(Field.createFieldUpdate("meetingtimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
             } else {
-                updates.add(Field.createFieldUpdate("starttimezone", vCalendar.getFirstVevent().getProperty("DTSTART").getParamValue("TZID")));
-                updates.add(Field.createFieldUpdate("endtimezone", vCalendar.getFirstVevent().getProperty("DTEND").getParamValue("TZID")));
+                updates.add(Field.createFieldUpdate("starttimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
+                updates.add(Field.createFieldUpdate("endtimezone", vEvent.getProperty("DTEND").getParamValue("TZID")));
             }
 
             updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
 
-            String eventClass = vCalendar.getFirstVeventPropertyValue("CLASS");
+            String eventClass = vEvent.getPropertyValue("CLASS");
             if ("PRIVATE".equals(eventClass)) {
                 eventClass = "Private";
             } else if ("CONFIDENTIAL".equals(eventClass)) {
@@ -1641,7 +1693,7 @@ public class EwsExchangeSession extends ExchangeSession {
             updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
 
             // Convert busy status
-            String status = vCalendar.getFirstVeventPropertyValue("STATUS");
+            String status = vEvent.getPropertyValue("STATUS");
             if ("TENTATIVE".equals(status)) {
                 status = "Tentative";
             } else if ("CANCELLED".equals(status)){
@@ -1653,11 +1705,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
             updates.add(Field.createFieldUpdate("busystatus", status));
 
-            updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
-            updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
-            updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
+            updates.add(Field.createFieldUpdate("description", vEvent.getPropertyValue("DESCRIPTION")));
+            updates.add(Field.createFieldUpdate("subject", vEvent.getPropertyValue("SUMMARY")));
+            updates.add(Field.createFieldUpdate("location", vEvent.getPropertyValue("LOCATION")));
             // Collect categories on multiple lines
-            List<VProperty> categories = vCalendar.getFirstVevent().getProperties("CATEGORIES");
+            List<VProperty> categories = vEvent.getProperties("CATEGORIES");
             if (categories != null) {
                 HashSet<String> categoryValues = new HashSet<String>();
                 for (VProperty category: categories) {
@@ -1667,13 +1719,14 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
 
+            // TODO: check with recurrence
             updates.add(Field.createFieldUpdate("reminderset", String.valueOf(vCalendar.hasVAlarm())));
             if (vCalendar.hasVAlarm()) {
                 updates.add(Field.createFieldUpdate("reminderminutesbeforestart", vCalendar.getReminderMinutesBeforeStart()));
             }
 
 
-            VProperty rrule = vCalendar.getFirstVevent().getProperty("RRULE");
+            VProperty rrule = vEvent.getProperty("RRULE");
             if (rrule != null) {
                 RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
                 List<String> rruleValues = rrule.getValues();
@@ -1691,7 +1744,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         }
                     }
                 }
-                recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vCalendar.getFirstVeventPropertyValue("DTSTART"))+"Z"));
+                recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))+"Z"));
                 updates.add(recurrenceFieldUpdate);
             }
 
@@ -1702,7 +1755,7 @@ public class EwsExchangeSession extends ExchangeSession {
             updates.add(requiredAttendees);
             updates.add(optionalAttendees);
 
-            List<VProperty> attendees = vCalendar.getFirstVeventProperties("ATTENDEE");
+            List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
             if (attendees != null) {
                 for (VProperty property:attendees) {
                     String attendeeEmail = vCalendar.getEmailValue(property);
@@ -1834,7 +1887,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                     ConflictResolution.AutoResolve,
                                     SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
-                                    currentItemId, buildFieldUpdates(vCalendar));
+                                    currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
                             // force context Timezone on Exchange 2010 and 2013
                             if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                                 createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -1992,6 +2045,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (currentItemId != null && !isMeetingResponse &&
                         Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
                     handleExcludedDates(currentItemId, vCalendar);
+                    handleModifiedOccurrences(currentItemId, vCalendar);
                 }
             }
 

@@ -336,7 +336,7 @@ public class VCalendar extends VObject {
         }
         // fix 3569922: quick workaround for broken Israeli Timezone issue
         if (vTimezone != null && vTimezone.vObjects != null) {
-            for (VObject vObject:vTimezone.vObjects) {
+            for (VObject vObject : vTimezone.vObjects) {
                 VProperty rrule = vObject.getProperty("RRULE");
                 if (rrule != null && rrule.getValues().size() == 3 && "BYDAY=-2SU".equals(rrule.getValues().get(1))) {
                     rrule.getValues().set(1, "BYDAY=4SU");
@@ -352,7 +352,7 @@ public class VCalendar extends VObject {
         // convert TZID to Exchange time zone id
         ResourceBundle tzBundle = ResourceBundle.getBundle("exchtimezones");
         ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
-        for (VObject vObject:vObjects) {
+        for (VObject vObject : vObjects) {
             if (vObject.isVTimezone()) {
                 String tzid = vObject.getPropertyValue("TZID");
                 // check if tzid is avalid Exchange timezone id
@@ -363,7 +363,7 @@ public class VCalendar extends VObject {
                         exchangeTzid = tzBundle.getString(tzid);
                     } else {
                         // failover, map to a close timezone
-                        for (VObject tzDefinition:vObject.vObjects) {
+                        for (VObject tzDefinition : vObject.vObjects) {
                             if ("STANDARD".equals(tzDefinition.type)) {
                                 String tzOffset = tzDefinition.getPropertyValue("TZOFFSETTO");
                                 exchangeTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
@@ -381,7 +381,7 @@ public class VCalendar extends VObject {
     }
 
     protected void updateTzid(String tzid, String newTzid) {
-        for (VObject vObject:vObjects) {
+        for (VObject vObject : vObjects) {
             if (vObject.isVEvent()) {
                 for (VProperty vProperty : vObject.properties) {
                     if (tzid.equalsIgnoreCase(vProperty.getParamValue("TZID"))) {
@@ -823,6 +823,7 @@ public class VCalendar extends VObject {
 
     /**
      * Get first VEvent
+     *
      * @return first VEvent
      */
     public VObject getFirstVevent() {
@@ -847,5 +848,52 @@ public class VCalendar extends VObject {
             }
         }
         return results;
+    }
+
+    public TimeZone getStandardTimezoneId(String tzid) {
+        String convertedTzid = null;
+        // convert Exchange TZID to standard timezone
+        try {
+            convertedTzid = ResourceBundle.getBundle("timezones").getString(tzid);
+        } catch (MissingResourceException e) {
+            // failover: detect timezone from offset
+            VObject vTimezone = getVTimezone();
+            for (VObject tzDefinition : vTimezone.vObjects) {
+                if ("STANDARD".equals(tzDefinition.type)) {
+                    String tzOffset = tzDefinition.getPropertyValue("TZOFFSETTO");
+                    convertedTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
+                }
+            }
+            convertedTzid = ResourceBundle.getBundle("timezones").getString(tzid);
+        }
+        return TimeZone.getTimeZone(convertedTzid);
+
+    }
+
+    public String convertCalendarDateToExchangeZulu(String vcalendarDateValue, String tzid) throws IOException {
+        String zuluDateValue = null;
+        TimeZone timeZone = null;
+        if (tzid == null) {
+            timeZone = ExchangeSession.GMT_TIMEZONE;
+        } else {
+            timeZone = getStandardTimezoneId(tzid);
+        }
+        if (vcalendarDateValue != null) {
+            try {
+                SimpleDateFormat dateParser;
+                if (vcalendarDateValue.length() == 8) {
+                    dateParser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+                } else {
+                    dateParser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+                }
+                dateParser.setTimeZone(timeZone);
+                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+                dateFormatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+                zuluDateValue = dateFormatter.format(dateParser.parse(vcalendarDateValue));
+            } catch (ParseException e) {
+                throw new IOException("Invalid date " + vcalendarDateValue + " with tzid " + tzid);
+            }
+        }
+        return zuluDateValue;
     }
 }
