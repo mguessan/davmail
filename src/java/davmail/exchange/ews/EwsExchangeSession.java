@@ -1624,7 +1624,12 @@ public class EwsExchangeSession extends ExchangeSession {
         protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
             for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
                 VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                String convertedValue = vCalendar.convertCalendarDateToExchangeZulu(originalDateProperty.getValue(), originalDateProperty.getParamValue("TZID"));
+                String convertedValue = null;
+                try {
+                    convertedValue = vCalendar.convertCalendarDateToExchangeZulu(originalDateProperty.getValue(), originalDateProperty.getParamValue("TZID"));
+                } catch (IOException e) {
+                    throw new DavMailException("EXCEPTION_INVALID_DATE", originalDateProperty.getValue());
+                }
                 LOGGER.debug("Looking for occurrence " + convertedValue);
                 int instanceIndex = 0;
 
@@ -1770,6 +1775,21 @@ public class EwsExchangeSession extends ExchangeSession {
                         }
                     }
                 }
+            }
+
+            // store mozilla invitations option
+            String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+            if (xMozSendInvitations != null) {
+                updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
+            }
+            // handle mozilla alarm
+            String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+            if (xMozLastack != null) {
+                updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+            }
+            String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+            if (xMozSnoozeTime != null) {
+                updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
             }
 
             return updates;
