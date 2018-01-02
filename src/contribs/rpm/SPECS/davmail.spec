@@ -2,8 +2,8 @@
 %{?!davmail_uid:   %define davmail_uid   213}
 %{?!davmail_gid:   %define davmail_gid   213}
 
-%{?!davrel:   %define davrel   4.8.1}
-%{?!davsvn:   %define davsvn   2507}
+%{?!davrel:   %define davrel   4.8.2}
+%{?!davsvn:   %define davsvn   2524}
 %define davver %{davrel}-%{davsvn}
 %ifarch i386 i586 i686
 %define davarch x86
@@ -22,6 +22,7 @@ Group: Applications/Internet
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, desktop-file-utils
+%{?el6:BuildRequires: ant-apache-regexp}
 %if 0%{?fedora} == 18
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
@@ -177,6 +178,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Tue Dec 13 2017 Mickael Guessant <mguessan@free.fr>
+- update to 4.8.1 and fix RHEL 6 ant buildrequires
+
 * Sun Oct 04 2015 Mickael Guessant <mguessan@free.fr>
 - a few path fixes and switch to noarch mode
 

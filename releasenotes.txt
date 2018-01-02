@@ -1,9 +1,21 @@
+** DavMail 4.8.2 released **
+EWS Caldav refactoring in progress, enabled through new davmail.caldavRealUpdate setting
+to avoid regressions as seen in 4.8.1.
+
+Caldav:
+- Caldav: EWS refactoring, handle mozilla alarm fields
+- Caldav: EWS refactoring, implement modified occurrences
+- Caldav: EWS refactoring, implement excluded dates (deleted occurrences)
+- Caldav: optionally enable new EWS caldav implementation with davmail.caldavRealUpdate
+- Caldav: Improve meeting response detection to avoid NullPointerException
+- Caldav: EWS refactoring, implement reminder update
+
+
 ** DavMail 4.8.1 released **
 Last release before major EWS caldav refactoring, includes only the first behaviour change:
 do not delete existing meeting on Accept/Decline, just send answer to organizer. Also includes
 central directory photo handling in Carddav service, improved Java 9 support and many other
 bug fixes.
-
 
 Caldav:
 - Caldav: temporarily disable EWS refactoring
