@@ -26,7 +26,7 @@ import java.util.ArrayList;
 /**
  * Specific field update class to handle multiple attendee values
  */
-public class AttendeeFieldUpdate extends FieldUpdate {
+public class MultiValuedFieldUpdate extends FieldUpdate {
     ArrayList<String> values = new ArrayList<String>();
 
     /**
@@ -34,7 +34,7 @@ public class AttendeeFieldUpdate extends FieldUpdate {
      *
      * @param fieldURI target field
      */
-    public AttendeeFieldUpdate(FieldURI fieldURI) {
+    public MultiValuedFieldUpdate(FieldURI fieldURI) {
         this.fieldURI = fieldURI;
     }
 

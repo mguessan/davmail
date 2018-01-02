@@ -744,6 +744,7 @@ public abstract class EWSMethod extends PostMethod {
             if (!"ErrorAccessDenied".equals(errorDetail)
                     && !"ErrorMailRecipientNotFound".equals(errorDetail)
                     && !"ErrorItemNotFound".equals(errorDetail)
+                    && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
                     ) {
                 try {
                     throw new EWSException(errorDetail + ' ' + ((errorDescription != null) ? errorDescription : "") + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));

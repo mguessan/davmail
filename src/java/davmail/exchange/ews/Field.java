@@ -56,6 +56,8 @@ public final class Field {
         FIELD_MAP.put("dtstart", new UnindexedFieldURI("calendar:Start"));
         FIELD_MAP.put("dtend", new UnindexedFieldURI("calendar:End"));
 
+        FIELD_MAP.put("originalstart", new UnindexedFieldURI("calendar:OriginalStart"));
+
         FIELD_MAP.put("mimeContent", new UnindexedFieldURI("item:MimeContent"));
 
         // use PR_RECORD_KEY as unique key
@@ -227,6 +229,7 @@ public final class Field {
         FIELD_MAP.put("requiredattendees", new UnindexedFieldURI("calendar:RequiredAttendees"));
         FIELD_MAP.put("optionalattendees", new UnindexedFieldURI("calendar:OptionalAttendees"));
         FIELD_MAP.put("modifiedoccurrences", new UnindexedFieldURI("calendar:ModifiedOccurrences"));
+        FIELD_MAP.put("deletedoccurrences", new UnindexedFieldURI("calendar:DeletedOccurrences"));
 
         FIELD_MAP.put("recurrence", new UnindexedFieldURI("calendar:Recurrence"));
 

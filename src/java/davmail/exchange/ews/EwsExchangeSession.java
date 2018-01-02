@@ -1561,6 +1561,59 @@ public class EwsExchangeSession extends ExchangeSession {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }
 
+        /**
+         * Handle excluded dates (deleted occurrences).
+         *
+         * @param currentItemId current item id to iterate over occurrences
+         * @param vCalendar vCalendar object
+         * @throws DavMailException on error
+         */
+        protected void handleExcludedDates(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
+            List<VProperty> excludedDates = vCalendar.getFirstVeventProperties("EXDATE");
+            if (excludedDates != null) {
+                for (VProperty property:excludedDates) {
+                    List<String> values = property.getValues();
+                    for (String value: values) {
+                        String convertedValue = convertCalendarDateToExchange(value)+"Z";
+                        LOGGER.debug("Looking for occurrence " + convertedValue);
+
+                        int instanceIndex = 0;
+
+                        // let's try to find occurence
+                        while (true) {
+                            instanceIndex++;
+                            try {
+                                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY,
+                                        new OccurrenceItemId(currentItemId.id, instanceIndex)
+                                        , false);
+                                getItemMethod.addAdditionalProperty(Field.get("originalstart"));
+                                executeMethod(getItemMethod);
+                                if (getItemMethod.getResponseItem() != null) {
+                                    String itemOriginalStart = getItemMethod.getResponseItem().get(Field.get("originalstart").getResponseName());
+                                    if (convertedValue.equals(itemOriginalStart)) {
+                                        // found item, delete it
+                                        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(getItemMethod.getResponseItem()),
+                                                DeleteType.HardDelete, SendMeetingCancellations.SendToAllAndSaveCopy);
+                                        executeMethod(deleteItemMethod);
+                                        break;
+                                    } else if (convertedValue.compareTo(itemOriginalStart) < 0) {
+                                        // current item is after searched item => probably already deleted
+                                        break;
+                                    }
+                                }
+                            } catch (IOException e) {
+                                LOGGER.warn("Error looking for occurrence " + convertedValue+": "+e.getMessage());
+                                // after end of recurrence
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+
+        }
+
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar) throws DavMailException {
 
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
@@ -1601,6 +1654,7 @@ public class EwsExchangeSession extends ExchangeSession {
             updates.add(Field.createFieldUpdate("busystatus", status));
 
             updates.add(Field.createFieldUpdate("description", vCalendar.getFirstVeventPropertyValue("DESCRIPTION")));
+            updates.add(Field.createFieldUpdate("subject", vCalendar.getFirstVeventPropertyValue("SUMMARY")));
             updates.add(Field.createFieldUpdate("location", vCalendar.getFirstVeventPropertyValue("LOCATION")));
             // Collect categories on multiple lines
             List<VProperty> categories = vCalendar.getFirstVevent().getProperties("CATEGORIES");
@@ -1642,13 +1696,13 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
 
-            AttendeeFieldUpdate requiredAttendees = new AttendeeFieldUpdate(Field.get("requiredattendees"));
-            AttendeeFieldUpdate optionalAttendees = new AttendeeFieldUpdate(Field.get("optionalattendees"));
+            MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
+            MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
 
             updates.add(requiredAttendees);
             updates.add(optionalAttendees);
 
-            List<VProperty> attendees = vCalendar.getFirstVevent().getProperties("ATTENDEE");
+            List<VProperty> attendees = vCalendar.getFirstVeventProperties("ATTENDEE");
             if (attendees != null) {
                 for (VProperty property:attendees) {
                     String attendeeEmail = vCalendar.getEmailValue(property);
@@ -1774,7 +1828,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 SendMeetingInvitations.SendToAllAndSaveCopy,
                                 getFolderId(SENT),
                                 item
-                                );
+                        );
                     } else {
                         if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
                             createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -1932,6 +1986,12 @@ public class EwsExchangeSession extends ExchangeSession {
                             new ItemId(createOrUpdateItemMethod.getResponseItem()),
                             updates);
                     executeMethod(createOrUpdateItemMethod);
+                }
+
+                // handle deleted occurrences
+                if (currentItemId != null && !isMeetingResponse &&
+                        Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
+                    handleExcludedDates(currentItemId, vCalendar);
                 }
             }
 
