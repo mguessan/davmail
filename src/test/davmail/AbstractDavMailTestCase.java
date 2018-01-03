@@ -27,6 +27,7 @@ import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 /**
@@ -47,13 +48,20 @@ public class AbstractDavMailTestCase extends TestCase {
             loaded = true;
 
             if (url == null) {
-                // try to load settings from current folder davmail.properties
-                File file = new File("davmail.properties");
-                if (file.exists()) {
-                      Settings.setConfigFilePath("davmail.properties");
+                // load test settings from a separate file
+                File testFile = new File("test.properties");
+                if (!testFile.exists()) {
+                    throw new IOException("Please create a test.properties file with davmail.username and davmail.password");
                 }
-                // Load current settings
-                Settings.load();
+                Settings.setDefaultSettings();
+                Settings.load(new FileInputStream(testFile));
+                if (Settings.getProperty("davmail.username") != null) {
+                    username = Settings.getProperty("davmail.username");
+                }
+                if (Settings.getProperty("davmail.password") != null) {
+                    password = Settings.getProperty("davmail.password");
+                }
+
             } else {
                 Settings.setDefaultSettings();
                 Settings.setProperty("davmail.url", url);
@@ -81,8 +89,12 @@ public class AbstractDavMailTestCase extends TestCase {
     }
 
     protected MimeMessage createMimeMessage() throws MessagingException {
+        return createMimeMessage("test@test.local");
+    }
+
+    protected MimeMessage createMimeMessage(String recipient) throws MessagingException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
-        mimeMessage.addHeader("To", "test@test.local");
+        mimeMessage.addHeader("To", recipient);
         mimeMessage.setText("Test message\n");
         mimeMessage.setSubject("Test subject");
         return mimeMessage;

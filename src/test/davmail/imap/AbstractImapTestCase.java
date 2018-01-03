@@ -81,7 +81,7 @@ public class AbstractImapTestCase extends AbstractDavMailTestCase {
             String banner = socketReader.readLine();
             assertNotNull(banner);
 
-            writeLine(". LOGIN " + Settings.getProperty("davmail.username").replaceAll("\\\\", "\\\\\\\\") + ' ' + Settings.getProperty("davmail.password"));
+            writeLine(". LOGIN " + username.replaceAll("\\\\", "\\\\\\\\") + ' ' + password);
             assertEquals(". OK Authenticated", socketReader.readLine());
         }
     }

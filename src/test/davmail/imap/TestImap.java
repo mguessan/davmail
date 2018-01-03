@@ -91,6 +91,9 @@ public class TestImap extends AbstractImapTestCase {
     }
 
     public void testUidStoreDeletedFlag() throws IOException {
+        // restore standard IMAP behaviour
+        Settings.setProperty("davmail.imapAutoExpunge", "false");
+
         resetTestFolder();
         appendMessage();
 
@@ -214,7 +217,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
         // check server side categories
-        ExchangeSession session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),Settings.getProperty("davmail.password"));
+        ExchangeSession session = ExchangeSessionFactory.getInstance(username,password);
         ExchangeSession.Folder folder = session.getFolder("testfolder");
         folder.loadMessages();
         assertEquals("To Do", folder.get(0).keywords);
@@ -239,7 +242,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
 
         // check server side categories
-        ExchangeSession session = ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),Settings.getProperty("davmail.password"));
+        ExchangeSession session = ExchangeSessionFactory.getInstance(username, password);
         ExchangeSession.Folder folder = session.getFolder("testfolder");
         folder.loadMessages();
         assertEquals("Some Category", folder.get(0).keywords);
