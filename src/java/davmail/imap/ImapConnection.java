@@ -1378,6 +1378,15 @@ public class ImapConnection extends AbstractConnection {
         return orCondition;
     }
 
+    protected ExchangeSession.Condition appendNotSearchParams(String token, SearchConditions conditions) throws IOException {
+        ImapTokenizer innerTokens = new ImapTokenizer(token);
+        ExchangeSession.Condition cond = buildConditions(conditions, innerTokens);
+        if (cond==null || cond.isEmpty()) {
+          return null;
+        }
+        return session.not(cond);
+    }
+
     protected ExchangeSession.Condition appendSearchParam(ImapTokenizer tokens, String token, SearchConditions conditions) throws IOException {
         if ("NOT".equals(token)) {
             String nextToken = tokens.nextToken();
@@ -1385,7 +1394,7 @@ public class ImapConnection extends AbstractConnection {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
             } else {
-                return session.not(appendSearchParam(tokens, nextToken, conditions));
+                return appendNotSearchParams(nextToken, conditions);
             }
         } else if (token.startsWith("OR ")) {
             return appendOrSearchParams(token, conditions);

@@ -408,6 +408,14 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
+    public void testMultipleConditionSearch() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH NOT (ANSWERED) NOT (DELETED) NOT (SEEN) NOT (KEYWORD spring-integration-mail-adapter) ALL");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
     public void testSearchCharset() throws IOException {
         resetTestFolder();
         appendMessage();
