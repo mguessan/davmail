@@ -85,7 +85,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
         String certificateHash = getFormattedHash(x509Certificates[0]);
         // if user already accepted a certificate,
         if (acceptedCertificateHash != null && acceptedCertificateHash.length() > 0
-                && acceptedCertificateHash.equals(certificateHash)) {
+                && acceptedCertificateHash.equalsIgnoreCase(certificateHash)) {
             DavGatewayTray.debug(new BundleMessage("LOG_FOUND_ACCEPTED_CERTIFICATE", acceptedCertificateHash));
         } else {
             boolean isCertificateTrusted;
@@ -135,7 +135,7 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
                 answer = answer.toLowerCase();
             }
         } catch (IOException e) {
-            System.err.println(e);
+            System.err.println(e+" "+e.getMessage());
         }
         return yes.equals(answer);
     }
@@ -207,7 +207,8 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             if (i > 0) {
                 builder.append(':');
             }
-            builder.append(Integer.toHexString(buffer[i] & 0xFF));
+            builder.append(String.format("%02x", buffer[i] & 0xFF));
+
         }
         return builder.toString().toUpperCase();
     }
