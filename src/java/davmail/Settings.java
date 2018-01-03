@@ -155,6 +155,7 @@ public final class Settings {
         SETTINGS.put("davmail.server", Boolean.FALSE.toString());
         SETTINGS.put("davmail.server.certificate.hash", "");
         SETTINGS.put("davmail.caldavAlarmSound", "");
+        SETTINGS.put("davmail.carddavReadPhoto", Boolean.TRUE.toString());
         SETTINGS.put("davmail.forceActiveSyncUpdate", Boolean.FALSE.toString());
         SETTINGS.put("davmail.showStartupBanner", Boolean.TRUE.toString());
         SETTINGS.put("davmail.disableGuiNotifications", Boolean.FALSE.toString());

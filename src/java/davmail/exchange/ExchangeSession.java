@@ -2498,16 +2498,18 @@ public abstract class ExchangeSession {
 
             ContactPhoto contactPhoto = null;
 
-            if ("true".equals(get("haspicture"))) {
-                try {
-                    contactPhoto = getContactPhoto(this);
-                } catch (IOException e) {
-                    LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
-                }
-            }
+            if (Settings.getBooleanProperty("davmail.carddavReadPhoto", true)) {
+                if (("true".equals(get("haspicture")))) {
+                    try {
+                        contactPhoto = getContactPhoto(this);
+                    } catch (IOException e) {
+                        LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
+                    }
 
-            if (contactPhoto == null) {
-                contactPhoto = getADPhoto(get("smtpemail1"));
+                    if (contactPhoto == null) {
+                        contactPhoto = getADPhoto(get("smtpemail1"));
+                    }
+                }
             }
 
             if (contactPhoto != null) {
