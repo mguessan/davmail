@@ -2028,46 +2028,47 @@ public class EwsExchangeSession extends ExchangeSession {
                         createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
                     }
                 }
+            }
 
-                executeMethod(createOrUpdateItemMethod);
+            executeMethod(createOrUpdateItemMethod);
 
-                itemResult.status = createOrUpdateItemMethod.getStatusCode();
-                if (itemResult.status == HttpURLConnection.HTTP_OK) {
-                    //noinspection VariableNotUsedInsideIf
-                    if (currentItemId == null) {
-                        itemResult.status = HttpStatus.SC_CREATED;
-                        LOGGER.debug("Created event " + getHref());
-                    } else {
-                        LOGGER.warn("Overwritten event " + getHref());
-                    }
-                }
-
-                // force responsetype on Exchange 2007
-                if (ownerResponseReply != null) {
-                    EWSMethod.Item responseTypeItem = new EWSMethod.Item();
-                    responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
-                    responseTypeItem.type = ownerResponseReply;
-                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
-                    executeMethod(createOrUpdateItemMethod);
-
-                    // force urlcompname again
-                    ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-                    updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                    createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
-                            ConflictResolution.AlwaysOverwrite,
-                            SendMeetingInvitationsOrCancellations.SendToNone,
-                            new ItemId(createOrUpdateItemMethod.getResponseItem()),
-                            updates);
-                    executeMethod(createOrUpdateItemMethod);
-                }
-
-                // handle deleted occurrences
-                if (currentItemId != null && !isMeetingResponse &&
-                        Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
-                    handleExcludedDates(currentItemId, vCalendar);
-                    handleModifiedOccurrences(currentItemId, vCalendar);
+            itemResult.status = createOrUpdateItemMethod.getStatusCode();
+            if (itemResult.status == HttpURLConnection.HTTP_OK) {
+                //noinspection VariableNotUsedInsideIf
+                if (currentItemId == null) {
+                    itemResult.status = HttpStatus.SC_CREATED;
+                    LOGGER.debug("Created event " + getHref());
+                } else {
+                    LOGGER.warn("Overwritten event " + getHref());
                 }
             }
+
+            // force responsetype on Exchange 2007
+            if (ownerResponseReply != null) {
+                EWSMethod.Item responseTypeItem = new EWSMethod.Item();
+                responseTypeItem.referenceItemId = new ItemId("ReferenceItemId", createOrUpdateItemMethod.getResponseItem());
+                responseTypeItem.type = ownerResponseReply;
+                createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, null, responseTypeItem);
+                executeMethod(createOrUpdateItemMethod);
+
+                // force urlcompname again
+                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
+                createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                        ConflictResolution.AlwaysOverwrite,
+                        SendMeetingInvitationsOrCancellations.SendToNone,
+                        new ItemId(createOrUpdateItemMethod.getResponseItem()),
+                        updates);
+                executeMethod(createOrUpdateItemMethod);
+            }
+
+            // handle deleted occurrences
+            if (!vCalendar.isTodo() && currentItemId != null && !isMeetingResponse &&
+                    Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
+                handleExcludedDates(currentItemId, vCalendar);
+                handleModifiedOccurrences(currentItemId, vCalendar);
+            }
+
 
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
