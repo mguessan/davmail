@@ -581,9 +581,6 @@ public abstract class EWSMethod extends PostMethod {
                 }
                 writer.write("</t:MimeContent>");
             }
-            if (referenceItemId != null) {
-                referenceItemId.write(writer);
-            }
             // write ordered fields
             for (String key : fieldNames) {
                 if ("MeetingTimeZone".equals(key)) {
@@ -594,6 +591,10 @@ public abstract class EWSMethod extends PostMethod {
                     writer.write("<t:StartTimeZone Id=\"");
                     writer.write(StringUtil.xmlEncodeAttribute(get(key)));
                     writer.write("\"></t:StartTimeZone>");
+                } else if ("Body".equals(key)) {
+                    writer.write("<t:Body BodyType=\"Text\">");
+                    writer.write(StringUtil.xmlEncode(get(key)));
+                    writer.write("\"></t:Body>");
                 } else {
                     writer.write("<t:");
                     writer.write(key);
@@ -608,6 +609,9 @@ public abstract class EWSMethod extends PostMethod {
                 for (FieldUpdate fieldUpdate : fieldUpdates) {
                     fieldUpdate.write(null, writer);
                 }
+            }
+            if (referenceItemId != null) {
+                referenceItemId.write(writer);
             }
             writer.write("</t:");
             writer.write(type);

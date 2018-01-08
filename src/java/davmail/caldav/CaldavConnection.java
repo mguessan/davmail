@@ -1248,7 +1248,7 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         if (status != HttpStatus.SC_UNAUTHORIZED) {
             sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
-            sendClient("DAV: 1, calendar-access, calendar-schedule, calendarserver-private-events, addressbook");
+            sendClient("DAV: 1, calendar-access, calendar-auto-schedule, calendarserver-private-events, addressbook");
             SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
             // force GMT timezone
             formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);

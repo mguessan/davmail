@@ -18,6 +18,7 @@
  */
 package davmail.exchange.ews;
 
+import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
@@ -27,6 +28,7 @@ import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
@@ -1892,13 +1894,35 @@ public class EwsExchangeSession extends ExchangeSession {
                 // update existing item
                 if (currentItemId != null) {
                     if (isMeetingResponse) {
-                        // This is a meeting response
+                        SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
+                        String body = null;
+                        // This is a meeting response, let user edit notification message
+                        if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                            String vEventSubject = vCalendar.getFirstVeventPropertyValue("SUMMARY");
+                            if (vEventSubject == null) {
+                                vEventSubject = BundleMessage.format("MEETING_REQUEST");
+                            }
+
+                            String status = vCalendar.getAttendeeStatus();
+                            String notificationSubject = (status != null) ? (BundleMessage.format(status) + vEventSubject) : subject;
+
+                            NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
+                            if (!notificationDialog.getSendNotification()) {
+                                LOGGER.debug("Notification canceled by user");
+                                sendMeetingInvitations = SendMeetingInvitations.SendToNone;
+                            }
+                            // get description from dialog
+                            body = notificationDialog.getBody();
+                        }
                         EWSMethod.Item item = new EWSMethod.Item();
 
                         item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
                         item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
+                        if (body != null) {
+                            item.put("Body", body);
+                        }
                         createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendOnly,
-                                SendMeetingInvitations.SendToAllAndSaveCopy,
+                                sendMeetingInvitations,
                                 getFolderId(SENT),
                                 item
                         );
