@@ -1918,10 +1918,10 @@ public class EwsExchangeSession extends ExchangeSession {
 
                         item.type = partstatToResponseMap.get(vCalendar.getAttendeeStatus());
                         item.referenceItemId = new ItemId("ReferenceItemId", currentItemId.id, currentItemId.changeKey);
-                        if (body != null) {
+                        if (body != null && body.length() > 0) {
                             item.put("Body", body);
                         }
-                        createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendOnly,
+                        createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy,
                                 sendMeetingInvitations,
                                 getFolderId(SENT),
                                 item

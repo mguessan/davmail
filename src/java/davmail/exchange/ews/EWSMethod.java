@@ -594,7 +594,7 @@ public abstract class EWSMethod extends PostMethod {
                 } else if ("Body".equals(key)) {
                     writer.write("<t:Body BodyType=\"Text\">");
                     writer.write(StringUtil.xmlEncode(get(key)));
-                    writer.write("\"></t:Body>");
+                    writer.write("</t:Body>");
                 } else {
                     writer.write("<t:");
                     writer.write(key);
