@@ -123,6 +123,9 @@
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
             <define name="VERSION" value="${release}"/>
         </nsis>
+        <nsis script="davmail-setup64.nsi" verbosity="4" out="build64.log" noconfig="yes">
+            <define name="VERSION" value="${release}"/>
+        </nsis>
     </target>
 
     <target name="dist-osx">
