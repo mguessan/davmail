@@ -1676,55 +1676,109 @@ public class EwsExchangeSession extends ExchangeSession {
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent) throws DavMailException {
 
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
-            // TODO: update all event fields and handle other occurrences
-            updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))));
-            updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vEvent.getPropertyValue("DTEND"))));
-            if ("Exchange2007_SP1".equals(serverVersion)) {
-                updates.add(Field.createFieldUpdate("meetingtimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
-            } else {
-                updates.add(Field.createFieldUpdate("starttimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
-                updates.add(Field.createFieldUpdate("endtimezone", vEvent.getProperty("DTEND").getParamValue("TZID")));
-            }
-
-            updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
-
-            String eventClass = vEvent.getPropertyValue("CLASS");
-            if ("PRIVATE".equals(eventClass)) {
-                eventClass = "Private";
-            } else if ("CONFIDENTIAL".equals(eventClass)) {
-                eventClass = "Confidential";
-            } else {
-                // PUBLIC
-                eventClass = "Normal";
-            }
-            updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
-
-            // Convert busy status
-            String status = vEvent.getPropertyValue("STATUS");
-            if ("TENTATIVE".equals(status)) {
-                status = "Tentative";
-            } else if ("CANCELLED".equals(status)){
-                status = "Free";
-            } else {
-                // CONFIRMED
-                status = "Busy";
-            }
-
-            updates.add(Field.createFieldUpdate("busystatus", status));
-
-            updates.add(Field.createFieldUpdate("description", vEvent.getPropertyValue("DESCRIPTION")));
-            updates.add(Field.createFieldUpdate("subject", vEvent.getPropertyValue("SUMMARY")));
-            updates.add(Field.createFieldUpdate("location", vEvent.getPropertyValue("LOCATION")));
-            // Collect categories on multiple lines
-            List<VProperty> categories = vEvent.getProperties("CATEGORIES");
-            if (categories != null) {
-                HashSet<String> categoryValues = new HashSet<String>();
-                for (VProperty category: categories) {
-                    categoryValues.add(category.getValue());
+            // if we are not organizer, update only reminder info
+            if (!vCalendar.isMeeting() || vCalendar.isMeetingOrganizer()) {
+                // TODO: update all event fields and handle other occurrences
+                updates.add(Field.createFieldUpdate("dtstart", convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))));
+                updates.add(Field.createFieldUpdate("dtend", convertCalendarDateToExchange(vEvent.getPropertyValue("DTEND"))));
+                if ("Exchange2007_SP1".equals(serverVersion)) {
+                    updates.add(Field.createFieldUpdate("meetingtimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
+                } else {
+                    updates.add(Field.createFieldUpdate("starttimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
+                    updates.add(Field.createFieldUpdate("endtimezone", vEvent.getProperty("DTEND").getParamValue("TZID")));
                 }
-                updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
-            }
 
+                updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
+
+                String eventClass = vEvent.getPropertyValue("CLASS");
+                if ("PRIVATE".equals(eventClass)) {
+                    eventClass = "Private";
+                } else if ("CONFIDENTIAL".equals(eventClass)) {
+                    eventClass = "Confidential";
+                } else {
+                    // PUBLIC
+                    eventClass = "Normal";
+                }
+                updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
+
+                // Convert busy status
+                String status = vEvent.getPropertyValue("STATUS");
+                if ("TENTATIVE".equals(status)) {
+                    status = "Tentative";
+                } else if ("CANCELLED".equals(status)) {
+                    status = "Free";
+                } else {
+                    // CONFIRMED
+                    status = "Busy";
+                }
+
+                updates.add(Field.createFieldUpdate("busystatus", status));
+
+                updates.add(Field.createFieldUpdate("description", vEvent.getPropertyValue("DESCRIPTION")));
+                updates.add(Field.createFieldUpdate("subject", vEvent.getPropertyValue("SUMMARY")));
+                updates.add(Field.createFieldUpdate("location", vEvent.getPropertyValue("LOCATION")));
+                // Collect categories on multiple lines
+                List<VProperty> categories = vEvent.getProperties("CATEGORIES");
+                if (categories != null) {
+                    HashSet<String> categoryValues = new HashSet<String>();
+                    for (VProperty category : categories) {
+                        categoryValues.add(category.getValue());
+                    }
+                    updates.add(Field.createFieldUpdate("keywords", StringUtil.join(categoryValues, ",")));
+                }
+
+                VProperty rrule = vEvent.getProperty("RRULE");
+                if (rrule != null) {
+                    RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
+                    List<String> rruleValues = rrule.getValues();
+                    for (String rruleValue : rruleValues) {
+                        int index = rruleValue.indexOf("=");
+                        if (index >= 0) {
+                            String key = rruleValue.substring(0, index);
+                            String value = rruleValue.substring(index + 1);
+                            if ("FREQ".equals(key)) {
+                                recurrenceFieldUpdate.setRecurrencePattern(value);
+                            } else if ("UNTIL".equals(key)) {
+                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)));
+                            } else if ("BYDAY".equals(key)) {
+                                recurrenceFieldUpdate.setByDay(value.split(","));
+                            }
+                        }
+                    }
+                    recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART")) + "Z"));
+                    updates.add(recurrenceFieldUpdate);
+                }
+
+
+                MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
+                MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
+
+                updates.add(requiredAttendees);
+                updates.add(optionalAttendees);
+
+                List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
+                if (attendees != null) {
+                    for (VProperty property : attendees) {
+                        String attendeeEmail = vCalendar.getEmailValue(property);
+                        if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
+                            if (!email.equals(attendeeEmail)) {
+                                String attendeeRole = property.getParamValue("ROLE");
+                                if ("REQ-PARTICIPANT".equals(attendeeRole)) {
+                                    requiredAttendees.addValue(attendeeEmail);
+                                } else {
+                                    optionalAttendees.addValue(attendeeEmail);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // store mozilla invitations option
+                String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
+                if (xMozSendInvitations != null) {
+                    updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
+                }
+            }
 
             // TODO: check with recurrence
             updates.add(Field.createFieldUpdate("reminderset", String.valueOf(vCalendar.hasVAlarm())));
@@ -1732,58 +1786,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 updates.add(Field.createFieldUpdate("reminderminutesbeforestart", vCalendar.getReminderMinutesBeforeStart()));
             }
 
-
-            VProperty rrule = vEvent.getProperty("RRULE");
-            if (rrule != null) {
-                RecurrenceFieldUpdate recurrenceFieldUpdate = new RecurrenceFieldUpdate();
-                List<String> rruleValues = rrule.getValues();
-                for (String rruleValue: rruleValues) {
-                    int index = rruleValue.indexOf("=");
-                    if (index >=0) {
-                        String key = rruleValue.substring(0, index);
-                        String value = rruleValue.substring(index+1);
-                        if ("FREQ".equals(key)) {
-                            recurrenceFieldUpdate.setRecurrencePattern(value);
-                        } else if ("UNTIL".equals(key)) {
-                            recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)));
-                        } else if ("BYDAY".equals(key)) {
-                            recurrenceFieldUpdate.setByDay(value.split(","));
-                        }
-                    }
-                }
-                recurrenceFieldUpdate.setStartDate(parseDateFromExchange(convertCalendarDateToExchange(vEvent.getPropertyValue("DTSTART"))+"Z"));
-                updates.add(recurrenceFieldUpdate);
-            }
-
-
-            MultiValuedFieldUpdate requiredAttendees = new MultiValuedFieldUpdate(Field.get("requiredattendees"));
-            MultiValuedFieldUpdate optionalAttendees = new MultiValuedFieldUpdate(Field.get("optionalattendees"));
-
-            updates.add(requiredAttendees);
-            updates.add(optionalAttendees);
-
-            List<VProperty> attendees = vEvent.getProperties("ATTENDEE");
-            if (attendees != null) {
-                for (VProperty property:attendees) {
-                    String attendeeEmail = vCalendar.getEmailValue(property);
-                    if (attendeeEmail != null && attendeeEmail.indexOf('@') >= 0) {
-                        if (!email.equals(attendeeEmail)) {
-                            String attendeeRole = property.getParamValue("ROLE");
-                            if ("REQ-PARTICIPANT".equals(attendeeRole)) {
-                                requiredAttendees.addValue(attendeeEmail);
-                            } else {
-                                optionalAttendees.addValue(attendeeEmail);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // store mozilla invitations option
-            String xMozSendInvitations = vCalendar.getFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS");
-            if (xMozSendInvitations != null) {
-                updates.add(Field.createFieldUpdate("xmozsendinvitations", xMozSendInvitations));
-            }
             // handle mozilla alarm
             String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
             if (xMozLastack != null) {
