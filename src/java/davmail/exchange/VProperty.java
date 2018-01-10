@@ -466,7 +466,8 @@ public class VProperty {
                 buffer.append("\\n");
             } else if (MULTIVALUED_PROPERTIES.contains(key) && c == ',') {
                 buffer.append('\\').append(',');
-            } else {
+            // skip carriage return
+            } else if (c != '\r') {
                 buffer.append(value.charAt(i));
             }
         }
