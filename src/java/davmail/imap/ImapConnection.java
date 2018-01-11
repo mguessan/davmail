@@ -1043,7 +1043,7 @@ public class ImapConnection extends AbstractConnection {
                 condition = appendOrSearchParams(token, conditions);
             } else if ("CHARSET".equals(token)) {
                 String charset = tokens.nextQuotedToken().toUpperCase();
-                if (!("ASCII".equals(charset) || "UTF-8".equals(charset))) {
+                if (!("ASCII".equals(charset) || "UTF-8".equals(charset)) || "US-ASCII".equals(charset)) {
                     throw new IOException("Unsupported charset " + charset);
                 }
             } else {
