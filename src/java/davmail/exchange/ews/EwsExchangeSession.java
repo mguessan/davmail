@@ -2048,7 +2048,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
 
                     newItem.setFieldUpdates(updates);
-                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId(folderPath), newItem);
+                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendOnlyToAll, getFolderId(folderPath), newItem);
                     // force context Timezone on Exchange 2010 and 2013
                     if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                         createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
