@@ -54,7 +54,9 @@ public class AbstractDavMailTestCase extends TestCase {
                     throw new IOException("Please create a test.properties file with davmail.username and davmail.password");
                 }
                 Settings.setDefaultSettings();
+                Settings.setProperty("davmail.server", "true");
                 Settings.load(new FileInputStream(testFile));
+                Settings.updateLoggingConfig();
                 if (Settings.getProperty("davmail.username") != null) {
                     username = Settings.getProperty("davmail.username");
                 }
