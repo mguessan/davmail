@@ -2596,6 +2596,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 timezoneId = "GMT Standard Time";
             }
 
+            // delete existing temp folder first to avoid errors
+            deleteFolder("davmailtemp");
             createCalendarFolder("davmailtemp", null);
             EWSMethod.Item item = new EWSMethod.Item();
             item.type = "CalendarItem";
