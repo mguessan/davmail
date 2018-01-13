@@ -148,4 +148,11 @@ public class TestICSBufferedReader extends TestCase {
                 "\n";
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
     }
+
+    public void testMultiline() {
+        VProperty vProperty = new VProperty("DESCRIPTION", "1\r\n2\r\n3\r\n4\r\n5\r\n");
+        ICSBufferedWriter icsBufferedWriter = new ICSBufferedWriter();
+        icsBufferedWriter.writeLine(vProperty.toString());
+        System.out.println(icsBufferedWriter.buffer);
+    }
 }
