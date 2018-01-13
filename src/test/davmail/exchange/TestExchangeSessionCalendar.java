@@ -327,5 +327,23 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
     }
 
+    public void testSearchTasks() throws IOException {
+        List<ExchangeSession.Event> events = null;
+        try {
+            events = session.searchTasksOnly("/users/" + session.getEmail() + "/tasks");
+            for (ExchangeSession.Event event : events) {
+                System.out.println(event.getBody());
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
+    public void testGetVTimezone() throws IOException {
+        // first create an invalid temp folder
+        session.createMessageFolder("davmailtemp");
+        assertNotNull(session.getVTimezone());
+    }
 }
 
