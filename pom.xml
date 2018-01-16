@@ -302,6 +302,11 @@
         </pluginRepository>
     </pluginRepositories>
     <build>
+        <resources>
+            <resource>
+                <directory>src/java</directory>
+            </resource>
+        </resources>
         <sourceDirectory>src/java</sourceDirectory>
         <plugins>
             <plugin>
