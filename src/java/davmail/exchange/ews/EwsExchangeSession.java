@@ -1917,7 +1917,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         );
                     } else {
                         if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
-                            createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
+                            createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SendAndSaveCopy,
                                     ConflictResolution.AutoResolve,
                                     SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
                                     currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
