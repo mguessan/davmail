@@ -1884,6 +1884,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 if (currentItemId != null) {
                     if (isMeetingResponse) {
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
+                        MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
                         String body = null;
                         // This is a meeting response, let user edit notification message
                         if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
@@ -1899,6 +1900,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             if (!notificationDialog.getSendNotification()) {
                                 LOGGER.debug("Notification canceled by user");
                                 sendMeetingInvitations = SendMeetingInvitations.SendToNone;
+                                messageDisposition = MessageDisposition.SaveOnly;
                             }
                             // get description from dialog
                             body = notificationDialog.getBody();
@@ -1910,7 +1912,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (body != null && body.length() > 0) {
                             item.put("Body", body);
                         }
-                        createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy,
+                        createOrUpdateItemMethod = new CreateItemMethod(messageDisposition,
                                 sendMeetingInvitations,
                                 getFolderId(SENT),
                                 item
