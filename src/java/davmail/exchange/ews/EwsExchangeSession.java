@@ -1701,19 +1701,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
                 updates.add(Field.createFieldUpdate("itemsensitivity", eventClass));
 
-                // Convert busy status
-                String status = vEvent.getPropertyValue("STATUS");
-                if ("TENTATIVE".equals(status)) {
-                    status = "Tentative";
-                } else if ("CANCELLED".equals(status)) {
-                    status = "Free";
-                } else {
-                    // CONFIRMED
-                    status = "Busy";
-                }
-
-                updates.add(Field.createFieldUpdate("busystatus", status));
-
                 updates.add(Field.createFieldUpdate("description", vEvent.getPropertyValue("DESCRIPTION")));
                 updates.add(Field.createFieldUpdate("subject", vEvent.getPropertyValue("SUMMARY")));
                 updates.add(Field.createFieldUpdate("location", vEvent.getPropertyValue("LOCATION")));
@@ -2048,7 +2035,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
 
                     newItem.setFieldUpdates(updates);
-                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendOnlyToAll, getFolderId(folderPath), newItem);
+                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, SendMeetingInvitations.SendToAllAndSaveCopy, getFolderId(folderPath), newItem);
                     // force context Timezone on Exchange 2010 and 2013
                     if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                         createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -2236,10 +2223,6 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
                     // LAST-MODIFIED is missing in event content
                     localVCalendar.setFirstVeventPropertyValue("LAST-MODIFIED", convertDateFromExchange(getItemMethod.getResponseItem().get(Field.get("lastmodified").getResponseName())));
-
-                    if ("FREE".equals(localVCalendar.getFirstVeventPropertyValue("X-MICROSOFT-CDO-BUSYSTATUS"))) {
-                        localVCalendar.setFirstVeventPropertyValue("STATUS", "CANCELLED");
-                    }
 
                     // restore mozilla invitations option
                     localVCalendar.setFirstVeventPropertyValue("X-MOZ-SEND-INVITATIONS",
