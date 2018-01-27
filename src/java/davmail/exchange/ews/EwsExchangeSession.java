@@ -1810,8 +1810,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 String newAttendeeStatus = vCalendar.getAttendeeStatus();
 
                 isMeetingResponse = vCalendar.isMeeting() && !vCalendar.isMeetingOrganizer()
-                        && currentAttendeeStatus != null && newAttendeeStatus != null
-                        && !currentAttendeeStatus.equals(newAttendeeStatus)
+                        && newAttendeeStatus != null
+                        && !newAttendeeStatus.equals(currentAttendeeStatus)
                         // avoid nullpointerexception on unknown status
                         && partstatToResponseMap.get(newAttendeeStatus) != null;
 
@@ -2346,6 +2346,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
 
     static {
+        EVENT_REQUEST_PROPERTIES.add("ismeeting");
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
         EVENT_REQUEST_PROPERTIES.add("etag");
         EVENT_REQUEST_PROPERTIES.add("displayname");
@@ -2493,8 +2494,49 @@ public class EwsExchangeSession extends ExchangeSession {
             item = getEwsItem(TASKS, itemName);
         }
         if (item != null) {
-            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-            executeMethod(deleteItemMethod);
+            boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
+            String myResponseType = item.get(Field.get("myresponsetype").getResponseName());
+
+            if (isMeeting && "Organizer".equals(myResponseType)) {
+                // cancel meeting
+                SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
+                MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
+                String body = null;
+                // This is a meeting cancel, let user edit notification message
+                if (Settings.getBooleanProperty("davmail.caldavEditNotifications")) {
+                    String vEventSubject = item.get(Field.get("subject").getResponseName());
+                    if (vEventSubject == null) {
+                        vEventSubject = "";
+                    }
+                    String notificationSubject = (BundleMessage.format("CANCELLED") + vEventSubject);
+
+                    NotificationDialog notificationDialog = new NotificationDialog(notificationSubject, "");
+                    if (!notificationDialog.getSendNotification()) {
+                        LOGGER.debug("Notification canceled by user");
+                        sendMeetingInvitations = SendMeetingInvitations.SendToNone;
+                        messageDisposition = MessageDisposition.SaveOnly;
+                    }
+                    // get description from dialog
+                    body = notificationDialog.getBody();
+                }
+                EWSMethod.Item cancelItem = new EWSMethod.Item();
+                cancelItem.type = "CancelCalendarItem";
+                cancelItem.referenceItemId = new ItemId("ReferenceItemId", item);
+                if (body != null && body.length() > 0) {
+                    item.put("Body", body);
+                }
+                CreateItemMethod cancelItemMethod = new CreateItemMethod(messageDisposition,
+                        sendMeetingInvitations,
+                        getFolderId(SENT),
+                        cancelItem
+                );
+                executeMethod(cancelItemMethod);
+
+            } else {
+                // delete item
+                DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.MoveToDeletedItems, SendMeetingCancellations.SendToAllAndSaveCopy);
+                executeMethod(deleteItemMethod);
+            }
         }
     }
 

@@ -215,7 +215,7 @@ public final class Field {
         FIELD_MAP.put("reminderset", new UnindexedFieldURI("item:ReminderIsSet"));
         FIELD_MAP.put("reminderminutesbeforestart", new UnindexedFieldURI("item:ReminderMinutesBeforeStart"));
 
-        FIELD_MAP.put("ismeeting", new UnindexedFieldURI("item:IsMeeting"));
+        FIELD_MAP.put("ismeeting", new UnindexedFieldURI("calendar:IsMeeting"));
         FIELD_MAP.put("apptstateflags", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Appointment, 0x8217, ExtendedFieldURI.PropertyType.Integer)); // PidLidAppointmentStateFlags 1: Meeting, 2: Received, 4: Cancelled
         FIELD_MAP.put("appointmentstate", new UnindexedFieldURI("calendar:AppointmentState"));
         FIELD_MAP.put("myresponsetype", new UnindexedFieldURI("calendar:MyResponseType"));
