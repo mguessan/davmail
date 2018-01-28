@@ -813,8 +813,8 @@ public final class DavGatewayHttpClientFacade {
     public static void createMultiThreadedHttpConnectionManager(HttpClient httpClient) {
         MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
         connectionManager.getParams().setDefaultMaxConnectionsPerHost(Settings.getIntProperty("davmail.exchange.maxConnections",100));
-        connectionManager.getParams().setConnectionTimeout(10000);
-        connectionManager.getParams().setSoTimeout(120000);
+        connectionManager.getParams().setConnectionTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout",10) * 1000);
+        connectionManager.getParams().setSoTimeout(Settings.getIntProperty("davmail.exchange.soTimeout",120) * 1000);
         synchronized (LOCK) {
             httpConnectionManagerThread.addConnectionManager(connectionManager);
         }
