@@ -99,6 +99,7 @@ public class EwsExchangeSession extends ExchangeSession {
     static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
     static final Map<String, String> partstatToResponseMap = new HashMap<String, String>();
     static final Map<String, String> responseTypeToPartstatMap = new HashMap<String, String>();
+    static final Map<String, String> statusToBusyStatusMap = new HashMap<String, String>();
 
     static {
         //taskTovTodoStatusMap.put("NotStarted", null);
@@ -123,6 +124,10 @@ public class EwsExchangeSession extends ExchangeSession {
         responseTypeToPartstatMap.put("Decline", "DECLINED");
         responseTypeToPartstatMap.put("NoResponseReceived", "NEEDS-ACTION");
         responseTypeToPartstatMap.put("Unknown", "NEEDS-ACTION");
+
+        statusToBusyStatusMap.put("TENTATIVE", "Tentative");
+        statusToBusyStatusMap.put("CONFIRMED", "Busy");
+        // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
     protected Map<String, String> folderIdMap;
@@ -1686,6 +1691,11 @@ public class EwsExchangeSession extends ExchangeSession {
                 } else {
                     updates.add(Field.createFieldUpdate("starttimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
                     updates.add(Field.createFieldUpdate("endtimezone", vEvent.getProperty("DTEND").getParamValue("TZID")));
+                }
+
+                String status = statusToBusyStatusMap.get(vEvent.getPropertyValue("STATUS"));
+                if (status != null) {
+                    updates.add(Field.createFieldUpdate("busystatus", status));
                 }
 
                 updates.add(Field.createFieldUpdate("isalldayevent", Boolean.toString(vCalendar.isCdoAllDay())));
