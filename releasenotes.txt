@@ -1,3 +1,51 @@
+** DavMail 4.8.3 released **
+More EWS Caldav refactoring, fix regressions noticed in 4.8.2 and merge a lot of user provided patches.
+New calendar event handling is not yet enabled by default, please use davmail.caldavRealUpdate=true to 
+check this new experimental implementation.
+
+Caldav:
+- Caldav: add cancelled translation
+- Caldav: EWS refactoring, map status field, except CANCELLED not supported by Exchange
+- Caldav: implement editable notifications on meeting cancel
+- Caldav: do not send notifications if user canceled in edit dialog
+- Caldav: Make sure we set all notification options on event update
+- Caldav: Revert status conversion that triggers regressions and enable notifications on create
+- Caldav: test multiline value handling in VCalendar
+- Caldav: test case for loadVtimezone and searchTasksOnly
+- Caldav: in loadVtimezone, delete existing temp folder first to avoid errors
+- Caldav: EWS refactoring, make sure we send meeting notifications
+- Caldav: fix #666 trailing "nn" added to tasks description synced from exchange
+- Caldav: EWS refactoring, only update reminder info on meetings when not organizer
+- Caldav: Fix meeting response body, send and save copy
+- Caldav: EWS refactoring, implement edit notifications comment
+- Caldav: fix task update regression
+
+Enhancement:
+- Merge #47, support soTimeout and connectionTimeout on exchange
+- Merge patch #46: Maven patch to add resources in the target/davmail.jar
+- Test: fix initial server and logging settings
+- Copy release notes to dist on release
+- Change test cases to load credentials from a separate test.properties file
+- Remove old jsmooth config file
+- Apply patch to fix #601 invalid davmail.server.certificate.hash format
+
+Documentation:
+- Doc: fix #320 Wrong link in documentation 
+
+IMAP:
+- IMAP: Accept US-ASCII as charset in search condition
+- IMAP: fix #40 KEYWORD support for spring-integrations
+
+OSX:
+- OSX: Update universalJavaApplicationStub to 2.1.0
+
+Windows:
+- Windows: Create a 64 bits installer for windows
+
+Carddav:
+- Carddav: merge patch #44 Allow disabling reading photo from contact data 
+
+
 ** DavMail 4.8.2 released **
 EWS Caldav refactoring in progress, enabled through new davmail.caldavRealUpdate setting
 to avoid regressions as seen in 4.8.1.
