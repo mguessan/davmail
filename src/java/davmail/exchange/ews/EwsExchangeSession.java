@@ -2363,6 +2363,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
         EVENT_REQUEST_PROPERTIES.add("myresponsetype");
+        EVENT_REQUEST_PROPERTIES.add("isorganizer");
     }
 
     @Override
@@ -2505,9 +2506,9 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         if (item != null) {
             boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
-            String myResponseType = item.get(Field.get("myresponsetype").getResponseName());
+            boolean isOrganizer = "true".equals(item.get(Field.get("isorganizer").getResponseName()));
 
-            if (isMeeting && "Organizer".equals(myResponseType)) {
+            if (isMeeting && isOrganizer) {
                 // cancel meeting
                 SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                 MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
