@@ -1393,6 +1393,8 @@ public class ImapConnection extends AbstractConnection {
             if ("DELETED".equals(nextToken)) {
                 // conditions.deleted = Boolean.FALSE;
                 return session.isNull("deleted");
+            } else if ("KEYWORD".equals(nextToken)) {
+                return appendNotSearchParams(nextToken+" "+tokens.nextToken(), conditions);
             } else {
                 return appendNotSearchParams(nextToken, conditions);
             }

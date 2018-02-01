@@ -424,6 +424,14 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
+    public void testSearchCharsetAscii() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH CHARSET us-ascii (HEADER SUBJECT test)");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
     public void testWanderLust() throws IOException {
         resetTestFolder();
         appendMessage();
@@ -453,6 +461,14 @@ public class TestImap extends AbstractImapTestCase {
         appendMessage();
 
         writeLine(". UID SEARCH TEXT test");
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
+
+    public void testSearchKeyword() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH (KEYWORD to-encrypt) (NOT KEYWORD reencrypted) (NOT KEYWORD encrypted) (NOT KEYWORD reencrypt-skip) (NOT KEYWORD no-reencrypt) (NOT DELETED)");
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
