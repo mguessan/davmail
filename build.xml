@@ -15,7 +15,11 @@
     <target name="clean">
         <delete dir="target"/>
         <delete dir="dist"/>
-        <delete file="build.log"/>
+        <delete>
+            <fileset dir=".">
+                <include name="*.log*"/>
+            </fileset>
+        </delete>
     </target>
 
     <condition property="is.windows">
@@ -434,7 +438,7 @@
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-src-${release-name}" dir=".">
                 <include name="**/*"/>
-                <exclude name="build.log"/>
+                <exclude name="build*.log"/>
                 <exclude name="dist/**"/>
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
@@ -445,7 +449,7 @@
         <tar tarfile="dist/davmail-srconly-${release-name}.tgz" compression="gzip" longfile="gnu">
             <tarfileset prefix="davmail-${release-name}" dir=".">
                 <include name="**/*"/>
-                <exclude name="build.log"/>
+                <exclude name="build*.log"/>
                 <exclude name="dist/**"/>
                 <exclude name="target/**"/>
                 <exclude name="archive/**"/>
