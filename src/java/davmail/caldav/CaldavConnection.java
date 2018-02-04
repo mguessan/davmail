@@ -27,6 +27,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
 import davmail.exchange.XMLStreamUtil;
+import davmail.exchange.dav.DavExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -1250,7 +1251,11 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         if (status != HttpStatus.SC_UNAUTHORIZED) {
             sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
-            sendClient("DAV: 1, calendar-access, calendar-auto-schedule, calendarserver-private-events, addressbook");
+            String scheduleMode = "calendar-auto-schedule";
+            if (session instanceof DavExchangeSession) {
+                scheduleMode = "calendar-schedule";
+            }
+            sendClient("DAV: 1, calendar-access, "+scheduleMode+", calendarserver-private-events, addressbook");
             SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
             // force GMT timezone
             formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
