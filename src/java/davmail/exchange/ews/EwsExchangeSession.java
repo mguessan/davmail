@@ -1369,11 +1369,8 @@ public class EwsExchangeSession extends ExchangeSession {
             permanentUrl = response.get(Field.get("permanenturl").getResponseName());
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
-            itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
-            // workaround for missing urlcompname in Exchange 2010
-            if (itemName == null) {
-                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
-            }
+            // ignore urlcompname and use item id
+            itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
             for (String attributeName : CONTACT_ATTRIBUTES) {
                 String value = response.get(Field.get(attributeName).getResponseName());
                 if (value != null && value.length() > 0) {
@@ -1552,11 +1549,8 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             subject = response.get(Field.get("subject").getResponseName());
-            itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
-            // workaround for missing urlcompname in Exchange 2010
-            if (itemName == null) {
-                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
-            }
+            // ignore urlcompname and use item id
+            itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
             String instancetype = response.get(Field.get("instancetype").getResponseName());
             isException = "3".equals(instancetype);
         }
