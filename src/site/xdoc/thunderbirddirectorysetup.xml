@@ -20,8 +20,9 @@
                     <img src="images/thunderbirdDirectory1.png" alt=""/>
                 </div>
 
-                <p>Choose a name, host is always localhost, LDAP base context&#x20;<code>ou=people</code>,
-                    adjust port to your settings and set user to your Active Directory account name,
+                <p>Choose a name, host is DavMail host (usually localhost), LDAP base context&#x20;<code>ou=people</code>,
+                    adjust port to your settings and set user to your Exchange account name,
+                    either your email address or Active Directory account name,
                     i.e. domain\account. Leave other options to default values.
                 </p>
                 <p>You may also want to use this directory for mail completion in compose window :
