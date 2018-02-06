@@ -1923,9 +1923,15 @@ public class EwsExchangeSession extends ExchangeSession {
                         );
                     } else {
                         if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
-                            createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SendAndSaveCopy,
+                            MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
+                            SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+                            if (vCalendar.isMeeting()) {
+                                messageDisposition = MessageDisposition.SendAndSaveCopy;
+                                sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
+                            }
+                            createOrUpdateItemMethod = new UpdateItemMethod(messageDisposition,
                                     ConflictResolution.AutoResolve,
-                                    SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
+                                    sendMeetingInvitationsOrCancellations,
                                     currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
                             // force context Timezone on Exchange 2010 and 2013
                             if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
@@ -2041,7 +2047,13 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
 
                     newItem.setFieldUpdates(updates);
-                    createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SendAndSaveCopy, SendMeetingInvitations.SendToAllAndSaveCopy, getFolderId(folderPath), newItem);
+                    MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
+                    SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
+                    if (vCalendar.isMeeting()) {
+                        messageDisposition = MessageDisposition.SendAndSaveCopy;
+                        sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
+                    }
+                    createOrUpdateItemMethod = new CreateItemMethod(messageDisposition, sendMeetingInvitations, getFolderId(folderPath), newItem);
                     // force context Timezone on Exchange 2010 and 2013
                     if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                         createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
