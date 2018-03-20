@@ -1925,7 +1925,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
                             MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                             SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
-                            if (vCalendar.isMeeting()) {
+                            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
                                 messageDisposition = MessageDisposition.SendAndSaveCopy;
                                 sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
                             }
