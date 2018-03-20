@@ -2049,7 +2049,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     newItem.setFieldUpdates(updates);
                     MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                     SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
-                    if (vCalendar.isMeeting()) {
+                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
                         messageDisposition = MessageDisposition.SendAndSaveCopy;
                         sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                     }
