@@ -1251,8 +1251,12 @@ public class CaldavConnection extends AbstractConnection {
         sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
         if (status != HttpStatus.SC_UNAUTHORIZED) {
             sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
-            String scheduleMode = "calendar-auto-schedule";
-            if (session instanceof DavExchangeSession) {
+            String scheduleMode;
+            // enable automatic scheduling over EWS, can be disabled
+            if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)
+                    && !(session instanceof DavExchangeSession)) {
+                scheduleMode = "calendar-auto-schedule";
+            } else {
                 scheduleMode = "calendar-schedule";
             }
             sendClient("DAV: 1, calendar-access, "+scheduleMode+", calendarserver-private-events, addressbook");

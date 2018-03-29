@@ -1886,7 +1886,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 // update existing item
                 if (currentItemId != null) {
-                    if (isMeetingResponse) {
+                    if (isMeetingResponse && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                         MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
                         String body = null;
@@ -1925,7 +1925,8 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
                             MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                             SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
-                            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
+                            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()
+                                    && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                                 messageDisposition = MessageDisposition.SendAndSaveCopy;
                                 sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
                             }
@@ -2049,7 +2050,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     newItem.setFieldUpdates(updates);
                     MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                     SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
-                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
+                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()
+                            && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         messageDisposition = MessageDisposition.SendAndSaveCopy;
                         sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                     }
@@ -2518,7 +2520,8 @@ public class EwsExchangeSession extends ExchangeSession {
             boolean hasAttendees = item.get(Field.get("displayto").getResponseName()) != null
                     || item.get(Field.get("displaycc").getResponseName()) != null;
 
-            if (isMeeting && isOrganizer && hasAttendees) {
+            if (isMeeting && isOrganizer && hasAttendees
+                    && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                 // cancel meeting
                 SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                 MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
