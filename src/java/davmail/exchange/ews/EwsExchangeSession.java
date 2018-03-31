@@ -190,10 +190,9 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Check endpoint url.
      *
-     * @param endPointUrl endpoint url
      * @throws IOException on error
      */
-    protected void checkEndPointUrl(String endPointUrl) throws IOException {
+    protected void checkEndPointUrl() throws IOException {
         GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
         int status = executeMethod(checkMethod);
         if (status == HttpStatus.SC_UNAUTHORIZED) {
@@ -242,21 +241,22 @@ public class EwsExchangeSession extends ExchangeSession {
 
         // check EWS access
         try {
-            checkEndPointUrl("/ews/exchange.asmx");
+            checkEndPointUrl();
             // workaround for Exchange bug: send fake request
             internalGetFolder("");
         } catch (IOException e) {
             // first failover: retry with NTLM
             DavGatewayHttpClientFacade.addNTLM(httpClient);
             try {
-                checkEndPointUrl("/ews/exchange.asmx");
+                checkEndPointUrl();
                 // workaround for Exchange bug: send fake request
                 internalGetFolder("");
             } catch (IOException e2) {
                 LOGGER.debug(e2.getMessage());
                 try {
                     // failover, try to retrieve EWS url from autodiscover
-                    checkEndPointUrl(getEwsUrlFromAutoDiscover());
+                    discoverEwsUrl();
+                    checkEndPointUrl();
                     // workaround for Exchange bug: send fake request
                     internalGetFolder("");
                 } catch (IOException e3) {
@@ -389,23 +389,20 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    protected String getEwsUrlFromAutoDiscover() throws DavMailAuthenticationException {
-        String ewsUrl;
+    protected void discoverEwsUrl() throws DavMailAuthenticationException {
         try {
-            ewsUrl = getEwsUrlFromAutoDiscover(null);
+            discoverEwsUrl(null);
         } catch (IOException e) {
             try {
-                ewsUrl = getEwsUrlFromAutoDiscover("autodiscover." + email.substring(email.indexOf('@') + 1));
+                discoverEwsUrl("autodiscover." + email.substring(email.indexOf('@') + 1));
             } catch (IOException e2) {
                 LOGGER.error(e2.getMessage());
                 throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
             }
         }
-        return ewsUrl;
     }
 
-    protected String getEwsUrlFromAutoDiscover(String autodiscoverHostname) throws IOException {
-        String ewsUrl;
+    protected void discoverEwsUrl(String autodiscoverHostname) throws IOException {
         AutoDiscoverMethod autoDiscoverMethod;
         if (autodiscoverHostname != null) {
             autoDiscoverMethod = new AutoDiscoverMethod(autodiscoverHostname, email);
@@ -417,18 +414,16 @@ public class EwsExchangeSession extends ExchangeSession {
             if (status != HttpStatus.SC_OK) {
                 throw DavGatewayHttpClientFacade.buildHttpException(autoDiscoverMethod);
             }
-            ewsUrl = autoDiscoverMethod.ewsUrl;
 
             // update host name
-            DavGatewayHttpClientFacade.setClientHost(httpClient, ewsUrl);
+            DavGatewayHttpClientFacade.setClientHost(httpClient, autoDiscoverMethod.ewsUrl);
 
-            if (ewsUrl == null) {
+            if (autoDiscoverMethod.ewsUrl == null) {
                 throw new IOException("Ews url not found");
             }
         } finally {
             autoDiscoverMethod.releaseConnection();
         }
-        return ewsUrl;
     }
 
     class Message extends ExchangeSession.Message {
@@ -739,7 +734,6 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         // limited search, do not use paged search, limit with maxCount, sort by imapUid descending to get latest items
         int resultCount;
-        List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>();
         FindItemMethod findItemMethod;
 
         // search items in folder, do not retrieve all properties
@@ -759,7 +753,7 @@ public class EwsExchangeSession extends ExchangeSession {
             findItemMethod.setSearchExpression((SearchExpression) condition);
         }
         executeMethod(findItemMethod);
-        results.addAll(findItemMethod.getResponseItems());
+        List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>(findItemMethod.getResponseItems());
         resultCount = results.size();
         if (resultCount > 0 && LOGGER.isDebugEnabled()) {
             LOGGER.debug("Folder " + folderPath + " - Search items count: " + resultCount + " maxCount: " + maxCount
@@ -1625,7 +1619,7 @@ public class EwsExchangeSession extends ExchangeSession {
         protected void handleModifiedOccurrences(ItemId currentItemId, VCalendar vCalendar) throws DavMailException {
             for (VObject modifiedOccurrence : vCalendar.getModifiedOccurrences()) {
                 VProperty originalDateProperty = modifiedOccurrence.getProperty("RECURRENCE-ID");
-                String convertedValue = null;
+                String convertedValue;
                 try {
                     convertedValue = vCalendar.convertCalendarDateToExchangeZulu(originalDateProperty.getValue(), originalDateProperty.getParamValue("TZID"));
                 } catch (IOException e) {
