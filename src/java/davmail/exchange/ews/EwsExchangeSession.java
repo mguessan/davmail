@@ -1881,6 +1881,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // update existing item
                 if (currentItemId != null) {
                     if (isMeetingResponse && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+                        // meeting response with server managed notifications
                         SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                         MessageDisposition messageDisposition = MessageDisposition.SendAndSaveCopy;
                         String body = null;
@@ -1915,28 +1916,26 @@ public class EwsExchangeSession extends ExchangeSession {
                                 getFolderId(SENT),
                                 item
                         );
-                    } else {
-                        if (Settings.getBooleanProperty("davmail.caldavRealUpdate", false)) {
-                            MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
-                            SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
-                            if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()
-                                    && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
-                                messageDisposition = MessageDisposition.SendAndSaveCopy;
-                                sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
-                            }
-                            createOrUpdateItemMethod = new UpdateItemMethod(messageDisposition,
-                                    ConflictResolution.AutoResolve,
-                                    sendMeetingInvitationsOrCancellations,
-                                    currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
-                            // force context Timezone on Exchange 2010 and 2013
-                            if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
-                                createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
-                            }
-                        } else {
-                            // old hard/delete approach on update
-                            DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
-                            executeMethod(deleteItemMethod);
+                    } else if (Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+                        // other changes with server side managed notifications
+                        MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
+                        SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
+                        if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
+                            messageDisposition = MessageDisposition.SendAndSaveCopy;
+                            sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
                         }
+                        createOrUpdateItemMethod = new UpdateItemMethod(messageDisposition,
+                                ConflictResolution.AutoResolve,
+                                sendMeetingInvitationsOrCancellations,
+                                currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
+                        // force context Timezone on Exchange 2010 and 2013
+                        if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
+                            createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
+                        }
+                    } else {
+                        // old hard/delete approach on update, used with client side notifications
+                        DeleteItemMethod deleteItemMethod = new DeleteItemMethod(currentItemId, DeleteType.HardDelete, SendMeetingCancellations.SendToNone);
+                        executeMethod(deleteItemMethod);
                     }
                 }
 
@@ -2046,6 +2045,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
                     if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()
                             && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
+                        // meeting request creation with server managed notifications
                         messageDisposition = MessageDisposition.SendAndSaveCopy;
                         sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
                     }

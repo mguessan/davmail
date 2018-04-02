@@ -59,6 +59,7 @@ public class SettingsFrame extends JFrame {
     protected JTextField keepDelayField;
     protected JTextField sentKeepDelayField;
     protected JTextField caldavPastDelayField;
+    protected JCheckBox caldavAutoScheduleCheckBox;
     protected JTextField imapIdleDelayField;
 
     protected JCheckBox useSystemProxiesField;
@@ -432,7 +433,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(14, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(15, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         folderSizeLimitField = new JTextField(Settings.getProperty("davmail.folderSizeLimit"), 6);
@@ -460,6 +461,8 @@ public class SettingsFrame extends JFrame {
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         disableUpdateCheck = new JCheckBox();
         disableUpdateCheck.setSelected(Settings.getBooleanProperty("davmail.disableUpdateCheck"));
+        caldavAutoScheduleCheckBox = new JCheckBox();
+        caldavAutoScheduleCheckBox.setSelected(Settings.getBooleanProperty("davmail.caldavAutoSchedule"));
 
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_FOLDER_SIZE_LIMIT"), folderSizeLimitField,
                 BundleMessage.format("UI_FOLDER_SIZE_LIMIT_HELP"));
@@ -489,6 +492,9 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SAVE_IN_SENT_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_UPDATE_CHECK"), disableUpdateCheck,
                 BundleMessage.format("UI_DISABLE_UPDATE_CHECK_HELP"));
+
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_CALDAV_AUTO_SCHEDULE"), caldavAutoScheduleCheckBox,
+                BundleMessage.format("UI_CALDAV_AUTO_SCHEDULE_HELP"));
 
         updateMaximumSize(otherSettingsPanel);
         return otherSettingsPanel;
@@ -774,6 +780,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
                 Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
                 Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
+                Settings.setProperty("davmail.caldavAutoSchedule", String.valueOf(caldavAutoScheduleCheckBox.isSelected()));
 
                 Settings.setProperty("davmail.caldavEditNotifications", String.valueOf(caldavEditNotificationsField.isSelected()));
                 Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
