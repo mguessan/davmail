@@ -1,3 +1,29 @@
+** DavMail 4.8.4 released **
+The main change in this release is the new davmail.caldavAutoSchedule setting to let users choose between
+client or server side calendar notification management. Most other fixes are also related to Caldav refactoring.
+
+Caldav:
+- Caldav: Add davmail.caldavAutoSchedule to GUI
+- Caldav: introduce a new setting davmail.caldavAutoSchedule to enable or disable automatic scheduling in EWS mode
+- Caldav: try to fix #674, do not send notifications on event update
+- Caldav: EWS refactoring, avoid converting simple events to meetings
+- Caldav: Restore calendar-schedule behavior in Webdav mode
+- Caldav: in EWS mode, ignore urlcompname and always use itemid as item name, except if explicitly requested
+- Caldav: isMeeting EWS flag is not reliable, check for attendees with displayto and displaycc
+- Caldav: Fix isorganizer detection in deleteItem
+
+IMAP:
+- IMAP: fix regression on search NOT KEYWORD
+
+Documentation:
+- Documentation: fix typo in FAQ
+- Doc: Improve Thunderbird LDAP documentation
+
+Enhancements:
+- EWS : cleanup from audit
+- Exclude log files from build
+
+
 ** DavMail 4.8.3 released **
 More EWS Caldav refactoring, fix regressions noticed in 4.8.2 and merge a lot of user provided patches.
 New calendar event handling is not yet enabled by default, please use davmail.caldavRealUpdate=true to 
