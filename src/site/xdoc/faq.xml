@@ -164,7 +164,7 @@ davmail server2.properties
                     <strong>How do I make DavMail start automatically ?</strong>
                 </p>
                 <p>Add DavMail.app to "Login Items", see
-                    <a href="https://support.apple.com/kb/PH25590?locale=fr_FR&viewlocale=en_US">
+                    <a href="https://support.apple.com/kb/PH25590?locale=fr_FR&amp;viewlocale=en_US">
                         Opening items automatically when you log in
                     </a>
                 </p>
