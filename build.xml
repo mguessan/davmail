@@ -232,57 +232,6 @@
         </deb>
     </target>
 
-    <target name='dist-rpm'>
-        <taskdef name='redline' classname='org.freecompany.redline.ant.RedlineTask'>
-            <classpath location="lib/redline-1.1.9.jar"/>
-        </taskdef>
-
-        <redline name='davmail'
-             summary='DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway'
-             version='${release}'
-             release='1'
-             license='GPL'
-             group='Applications/Internet'
-             sourcePackage='davmail-${release}.src.rpm'
-             description='Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP exchange
-                gateway allowing users to use any mail/calendar client (e.g. Thunderbird with Lightning or
-                Apple iCal) with an Exchange server, even from the internet or behind a firewall through
-                Outlook Web Access.
-                DavMail now includes an LDAP gateway to Exchange global address book and user personal
-                contacts to allow recipient address completion in mail compose window and full calendar
-                support with attendees free/busy display.
-                The main goal of DavMail is to provide standard compliant protocols in front of proprietary
-                Exchange. This means LDAP for global address book, SMTP to send messages, IMAP to browse
-                messages on the server in any folder, POP to retrieve inbox messages only, Caldav for
-                calendar support and Carddav for personal contacts sync.
-                Thus any standard compliant client can be used with Microsoft Exchange.
-                DavMail gateway is implemented in java and should run on any platform. Releases are tested
-                on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
-                (gateway running on a server).'
-             url='http://davmail.sourceforge.net'
-             vendor='Mickael Guessant'
-             destination='dist'>
-            <depends name="jre" version="1.6"/>
-            <zipfileset dir="dist" prefix="usr/share/davmail">
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <!-- exclude swt jars from package -->
-                <exclude name="lib/swt*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
-            </zipfileset>
-            <zipfileset dir="src/bin" prefix="usr/bin" filemode="755">
-                <include name="davmail"/>
-            </zipfileset>
-            <zipfileset dir="dist" prefix="usr/share/davmail">
-                <include name="davmail.png"/>
-            </zipfileset>
-            <zipfileset dir="dist" prefix="usr/share/applications">
-                <include name="davmail.desktop"/>
-            </zipfileset>
-        </redline>
-
-    </target>
-
     <target name="jar" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
@@ -388,38 +337,6 @@
         <jar destfile="dist/davmail-${release-name}.war">
             <fileset dir="dist/web"/>
         </jar>
-        <tar tarfile="dist/davmail-linux-x86-${release-name}.tgz" compression="gzip">
-            <tarfileset prefix="davmail-linux-x86-${release}" dir="dist" filemode="755">
-                <include name="davmail.sh"/>
-            </tarfileset>
-            <tarfileset prefix="davmail-linux-x86-${release}" dir="dist">
-                <include name="davmail.desktop"/>
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <include name="lib/swt-*-gtk-linux-x86.jar"/>
-                <exclude name="lib/swt-*-gtk-linux-x86_64.jar"/>
-                <exclude name="lib/swt-*-carbon-macosx.jar"/>
-                <exclude name="lib/swt-*-win32-*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
-                <exclude name="lib/winrun4j-*.jar"/>
-            </tarfileset>
-        </tar>
-        <tar tarfile="dist/davmail-linux-x86_64-${release-name}.tgz" compression="gzip">
-            <tarfileset prefix="davmail-linux-x86_64-${release}" dir="dist" filemode="755">
-                <include name="davmail.sh"/>
-            </tarfileset>
-            <tarfileset prefix="davmail-linux-x86_64-${release}" dir="dist">
-                <include name="davmail.desktop"/>
-                <include name="lib/*.jar"/>
-                <include name="*.jar"/>
-                <include name="lib/swt-*-gtk-linux-x86_64.jar"/>
-                <exclude name="lib/swt-*-gtk-linux-x86.jar"/>
-                <exclude name="lib/swt-*-carbon-macosx.jar"/>
-                <exclude name="lib/swt-*-win32-*.jar"/>
-                <exclude name="lib/libgrowl-*.jar"/>
-                <exclude name="lib/winrun4j-*.jar"/>
-            </tarfileset>
-        </tar>
         <zip file="dist/davmail-${release-name}-windows-noinstall.zip">
             <fileset dir="dist">
                 <include name="lib/*.jar"/>
@@ -432,7 +349,6 @@
         </zip>
         <antcall target="dist-nsis"/>
         <antcall target="dist-deb"/>
-        <!--antcall target="dist-rpm"/-->
         <antcall target="dist-osx"/>
         <!-- source with binary deps package -->
         <tar tarfile="dist/davmail-src-${release-name}.tgz" compression="gzip" longfile="gnu">

@@ -251,7 +251,7 @@
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>swt</artifactId>
-            <version>3.7.0</version>
+            <version>4.6.3</version>
             <optional>true</optional>
         </dependency>
         <dependency>
