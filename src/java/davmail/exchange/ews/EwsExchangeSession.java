@@ -2365,7 +2365,6 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
         EVENT_REQUEST_PROPERTIES.add("myresponsetype");
-        EVENT_REQUEST_PROPERTIES.add("isorganizer");
         EVENT_REQUEST_PROPERTIES.add("displayto");
         EVENT_REQUEST_PROPERTIES.add("displaycc");
     }
@@ -2510,7 +2509,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         if (item != null) {
             boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
-            boolean isOrganizer = "true".equals(item.get(Field.get("isorganizer").getResponseName()));
+            boolean isOrganizer = "Organizer".equals(item.get(Field.get("myresponsetype").getResponseName()));
             boolean hasAttendees = item.get(Field.get("displayto").getResponseName()) != null
                     || item.get(Field.get("displaycc").getResponseName()) != null;
 
