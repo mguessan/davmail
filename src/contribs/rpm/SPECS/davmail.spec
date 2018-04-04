@@ -27,16 +27,25 @@ BuildRequires: ant >= 1.7.1, desktop-file-utils
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
 %endif
+%if 0%{?el7}
+BuildRequires: java-1.8.0-openjdk-devel
+%else
 BuildRequires: java-devel >= 1.6.0
 BuildRequires: eclipse-swt
+%endif
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
 Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
-Requires: /etc/init.d, logrotate, jre >= 1.6.0
+
+%if 0%{?el7}
+Requires: /etc/init.d, logrotate, java-1.8.0-openjdk
+%else
+Requires: /etc/init.d, logrotate, jre >= 1.8.0
 Requires: eclipse-swt
+%endif
 
 %define davmaildotproperties davmail.properties
 
@@ -49,11 +58,11 @@ Source5: davmail.desktop
 Source6: davmail-wrapper
 
 %description
-DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing 
-users to use any mail/calendar client with an Exchange server, even from 
-the internet or behind a firewall through Outlook Web Access. DavMail 
-now includes an LDAP gateway to Exchange global address book and user 
-personal contacts to allow recipient address completion in mail compose 
+DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
+users to use any mail/calendar client with an Exchange server, even from
+the internet or behind a firewall through Outlook Web Access. DavMail
+now includes an LDAP gateway to Exchange global address book and user
+personal contacts to allow recipient address completion in mail compose
 window and full calendar support with attendees free/busy display.
 
 %prep
@@ -67,9 +76,15 @@ java_home=`dirname ${bin}` # level up
 export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
+
+%if 0%{?el7}
+echo keep included swt on el7
+%else
 # externalize SWT
 rm lib/swt*
 [ -f %{_libdir}/java/swt.jar ] && ln -s %{_libdir}/java/swt.jar lib/swt.jar || ln -s /usr/lib/java/swt.jar lib/swt.jar
+%endif
+
 # we have java 1.6
 ant -Dant.java.version=1.6 prepare-dist
 
@@ -178,6 +193,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Wed Apr 04 2018 Mickael Guessant <mguessan@free.fr>
+- update to 4.8.4 and build on EL7 with included SWT
+
 * Tue Dec 13 2017 Mickael Guessant <mguessan@free.fr>
 - update to 4.8.1 and fix RHEL 6 ant buildrequires
 
