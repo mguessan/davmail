@@ -2608,10 +2608,16 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected String getFreeBusyData(String attendee, String start, String end, int interval) throws IOException {
+    protected String getFreeBusyData(String attendee, String start, String end, int interval) {
+        String result = null;
         GetUserAvailabilityMethod getUserAvailabilityMethod = new GetUserAvailabilityMethod(attendee, start, end, interval);
-        executeMethod(getUserAvailabilityMethod);
-        return getUserAvailabilityMethod.getMergedFreeBusy();
+        try {
+            executeMethod(getUserAvailabilityMethod);
+            result = getUserAvailabilityMethod.getMergedFreeBusy();
+        } catch (IOException e) {
+            // ignore
+        }
+        return result;
     }
 
     @Override
