@@ -669,7 +669,7 @@ public class SettingsFrame extends JFrame {
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_DAVMAIL_SETTINGS"));
         try {
-            setIconImage(DavGatewayTray.getFrameIcon());
+            setIconImages(DavGatewayTray.getFrameIcons());
         } catch (NoSuchMethodError error) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
         }

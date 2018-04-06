@@ -49,7 +49,7 @@ public class AboutFrame extends JFrame {
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_ABOUT_DAVMAIL"));
         try {
-            setIconImage(DavGatewayTray.getFrameIcon());
+            setIconImages(DavGatewayTray.getFrameIcons());
         } catch (NoSuchMethodError error) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
         }

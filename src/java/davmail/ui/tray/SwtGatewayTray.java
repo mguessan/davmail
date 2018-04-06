@@ -41,6 +41,7 @@ import javax.swing.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 
 /**
  * Tray icon handler based on SWT
@@ -53,7 +54,8 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     AboutFrame aboutFrame;
 
     private static TrayItem trayItem;
-    private static java.awt.Image awtImage;
+    private static ArrayList<java.awt.Image> frameIcons;
+
     private static Image image;
     private static Image image2;
     private static Image inactiveImage;
@@ -72,8 +74,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      *
      * @return frame icon
      */
-    public java.awt.Image getFrameIcon() {
-        return awtImage;
+    @Override
+    public java.util.List<java.awt.Image> getFrameIcons() {
+        return frameIcons;
     }
 
     /**
@@ -235,8 +238,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         }
 
+                        frameIcons = new ArrayList<java.awt.Image>();
+                        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
+                        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
 
-                        awtImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
                         image = loadSwtImage(AwtGatewayTray.TRAY_PNG);
                         image2 = loadSwtImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
                         inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);

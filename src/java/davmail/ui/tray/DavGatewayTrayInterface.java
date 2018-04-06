@@ -53,7 +53,7 @@ public interface DavGatewayTrayInterface {
      *
      * @return frame icon
      */
-    Image getFrameIcon();
+    java.util.List<Image> getFrameIcons();
 
     /**
      * Display balloon message for log level.

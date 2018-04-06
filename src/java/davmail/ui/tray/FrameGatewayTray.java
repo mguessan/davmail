@@ -33,6 +33,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 /**
  * Failover GUI for Java 1.5 without SWT
@@ -48,8 +49,9 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     private static JEditorPane errorArea;
     private static JLabel errorLabel;
     private static JEditorPane messageArea;
+    private static ArrayList<Image> frameIcons;
     private static Image image;
-    private static Image image2;
+    private static Image activeImage;
     private static Image inactiveImage;
     private boolean isActive = true;
 
@@ -58,8 +60,9 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
      *
      * @return frame icon
      */
-    public Image getFrameIcon() {
-        return image;
+    @Override
+    public java.util.List<Image> getFrameIcons() {
+        return frameIcons;
     }
 
     /**
@@ -71,7 +74,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
             public void run() {
                 Image currentImage = mainFrame.getIconImage();
                 if (currentImage != null && currentImage.equals(image)) {
-                    mainFrame.setIconImage(image2);
+                    mainFrame.setIconImage(activeImage);
                 } else {
                     mainFrame.setIconImage(image);
                 }
@@ -265,14 +268,18 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     protected void createAndShowGUI() {
         System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
 
-        image = DavGatewayTray.loadImage("tray.png");
-        image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
+        image = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
+        activeImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
         inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+
+        frameIcons = new ArrayList<Image>();
+        frameIcons.add(image);
+        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
 
         mainFrame = new JFrame();
         mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         mainFrame.setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
-        mainFrame.setIconImage(image);
+        mainFrame.setIconImages(frameIcons);
 
         JPanel errorPanel = new JPanel();
         errorPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_LAST_MESSAGE")));

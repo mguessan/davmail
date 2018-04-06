@@ -33,15 +33,19 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 
 /**
  * Tray icon handler based on java 1.6
  */
-@SuppressWarnings("Since15")
 public class AwtGatewayTray implements DavGatewayTrayInterface {
-    protected static final String TRAY_ACTIVE_PNG = "tray2.png";
     protected static final String TRAY_PNG = "tray.png";
+    protected static final String TRAY128_PNG = "tray128.png";
+
+    protected static final String TRAY_ACTIVE_PNG = "tray2.png";
     protected static final String TRAY_INACTIVE_PNG = "trayinactive.png";
+
 
     protected AwtGatewayTray() {
     }
@@ -51,9 +55,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     ActionListener settingsListener;
 
     static TrayIcon trayIcon;
-    private static Image image;
-    private static Image image2;
-    private static Image inactiveImage;
+    private static ArrayList<Image> frameIcons;
+    private static BufferedImage image;
+    private static BufferedImage image2;
+    private static BufferedImage inactiveImage;
     static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
@@ -62,8 +67,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
      *
      * @return frame icon
      */
-    public Image getFrameIcon() {
-        return image;
+    @Override
+    public java.util.List<Image> getFrameIcons() {
+        return frameIcons;
     }
 
     /**
@@ -197,9 +203,13 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();
-        image = DavGatewayTray.loadImage(getTrayIconPath());
-        image2 = DavGatewayTray.loadImage(getTrayIconActivePath());
-        inactiveImage = DavGatewayTray.loadImage(getTrayIconInactivePath());
+        image = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
+        image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
+        inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+
+        frameIcons = new ArrayList<Image>();
+        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
+        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
 
         // create a popup menu
         PopupMenu popup = new PopupMenu();
@@ -288,15 +298,4 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         }
     }
 
-    protected String getTrayIconPath() {
-        return AwtGatewayTray.TRAY_PNG;
-    }
-
-    protected String getTrayIconActivePath() {
-        return AwtGatewayTray.TRAY_ACTIVE_PNG;
-    }
-
-    protected String getTrayIconInactivePath() {
-        return AwtGatewayTray.TRAY_INACTIVE_PNG;
-    }
 }

@@ -68,7 +68,7 @@ public class PasswordPromptDialog extends JDialog {
         setTitle(BundleMessage.format("UI_PASSWORD_PROMPT"));
         try {
             //noinspection Since15
-            setIconImage(DavGatewayTray.getFrameIcon());
+            setIconImages(DavGatewayTray.getFrameIcons());
         } catch (NoSuchMethodError error) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
         }

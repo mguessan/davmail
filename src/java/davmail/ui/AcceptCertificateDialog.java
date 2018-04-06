@@ -72,7 +72,7 @@ public class AcceptCertificateDialog extends JDialog {
 
         setTitle(BundleMessage.format("UI_ACCEPT_CERTIFICATE"));
         try {
-            setIconImage(DavGatewayTray.getFrameIcon());
+            setIconImages(DavGatewayTray.getFrameIcons());
         } catch (NoSuchMethodError error) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
         }

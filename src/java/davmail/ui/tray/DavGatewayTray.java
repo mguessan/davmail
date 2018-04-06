@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
@@ -48,12 +49,12 @@ public final class DavGatewayTray {
      *
      * @return frame icon
      */
-    public static Image getFrameIcon() {
-        Image icon = null;
+    public static java.util.List<Image> getFrameIcons() {
+        java.util.List<Image> icons = null;
         if (davGatewayTray != null) {
-            icon = davGatewayTray.getFrameIcon();
+            icons = davGatewayTray.getFrameIcons();
         }
-        return icon;
+        return icons;
     }
 
     /**
@@ -288,8 +289,17 @@ public final class DavGatewayTray {
      *
      * @return true on Mac OS X
      */
-    private static boolean isOSX() {
+    public static boolean isOSX() {
         return System.getProperty("os.name").toLowerCase().startsWith("mac os x");
+    }
+
+    /**
+     * Test if running on Windows
+     *
+     * @return true on Windows
+     */
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().startsWith("windows");
     }
 
     /**
@@ -298,8 +308,8 @@ public final class DavGatewayTray {
      * @param fileName image resource file name
      * @return image
      */
-    public static Image loadImage(String fileName) {
-        Image result = null;
+    public static BufferedImage loadImage(String fileName) {
+        BufferedImage result = null;
         try {
             ClassLoader classloader = DavGatewayTray.class.getClassLoader();
             URL imageUrl = classloader.getResource(fileName);
@@ -307,11 +317,69 @@ public final class DavGatewayTray {
                 throw new IOException("Missing resource: " + fileName);
             }
             result = ImageIO.read(imageUrl);
+            // workaround for Linux JDK bug: make image not transparent
+            result = setBackgroundColor(result);
+
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
         return result;
     }
+
+    private static BufferedImage setBackgroundColor(BufferedImage image) {
+        Color backgroundColor = null;
+        String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
+
+        boolean isKDE = "KDE".equals(System.getenv("XDG_CURRENT_DESKTOP"));
+        boolean isUnity = "Unity".equals(System.getenv("XDG_CURRENT_DESKTOP"));
+        if (backgroundColorString == null || backgroundColorString.length() == 0) {
+            // define color for default theme
+            if (isKDE) {
+                backgroundColorString = "#DDF6E8";
+            }
+            if (isUnity) {
+                backgroundColorString = "#4D4B45";
+            }
+        }
+
+        int imageType = BufferedImage.TYPE_INT_ARGB;
+        if (backgroundColorString != null && backgroundColorString.length() == 7
+                && backgroundColorString.startsWith("#")) {
+            int red = Integer.parseInt(backgroundColorString.substring(1,3), 16);
+            int green = Integer.parseInt(backgroundColorString.substring(3,5), 16);
+            int blue = Integer.parseInt(backgroundColorString.substring(5,7), 16);
+            backgroundColor = new Color(red, green, blue);
+            imageType = BufferedImage.TYPE_INT_RGB;
+        }
+
+        if (backgroundColor != null || isKDE || isUnity) {
+            int width = image.getWidth();
+            int height = image.getHeight();
+            int x = 0;
+            int y = 0;
+            if (isKDE) {
+                width = 22;
+                height = 22;
+                x = 4;
+                y = 4;
+            } else if (isUnity) {
+                width = 22;
+                height = 24;
+                x = 4;
+                y = 4;
+            }
+            BufferedImage bufferedImage = new BufferedImage(width, height, imageType);
+            Graphics2D graphics = bufferedImage.createGraphics();
+            graphics.setColor(backgroundColor);
+            graphics.fillRect(0, 0, width, height);
+            graphics.drawImage(image, x, y, null);
+            graphics.dispose();
+            return bufferedImage;
+        } else {
+            return image;
+        }
+    }
+
 
     /**
      * Dispose application tray icon
