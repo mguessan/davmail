@@ -75,21 +75,6 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
     }
 
     @Override
-    protected String getTrayIconPath() {
-        return OSXAwtGatewayTray.OSX_TRAY_PNG;
-    }
-
-    @Override
-    protected String getTrayIconActivePath() {
-        return OSXAwtGatewayTray.OSX_TRAY_ACTIVE_PNG;
-    }
-
-    @Override
-    protected String getTrayIconInactivePath() {
-        return OSXAwtGatewayTray.OSX_TRAY_INACTIVE_PNG;
-    }
-
-    @Override
     public void displayMessage(final String message, final Level level) {
         if (!GrowlUtils.isGrowlLoaded()) {
             super.displayMessage(message, level);

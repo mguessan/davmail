@@ -235,7 +235,10 @@ public final class DavGatewayTray {
         );
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if (!notray) {
+            if ("GNOME-Classic:GNOME".equals(currentDesktop)) {
+                LOGGER.info("System tray is not supported on Gnome, will switch to frame mode");
+            } else
+                if (!notray) {
                 if ("Unity".equals(currentDesktop)) {
                     LOGGER.info("Detected Unity desktop, please follow instructions at " +
                             "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
@@ -317,16 +320,13 @@ public final class DavGatewayTray {
                 throw new IOException("Missing resource: " + fileName);
             }
             result = ImageIO.read(imageUrl);
-            // workaround for Linux JDK bug: make image not transparent
-            result = setBackgroundColor(result);
-
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
         }
         return result;
     }
 
-    private static BufferedImage setBackgroundColor(BufferedImage image) {
+    public static BufferedImage adjustTrayIcon(BufferedImage image) {
         Color backgroundColor = null;
         String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
 

@@ -203,9 +203,9 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
         // get the SystemTray instance
         SystemTray tray = SystemTray.getSystemTray();
-        image = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
-        image2 = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
-        inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+        image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
+        image2 = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
+        inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG));
 
         frameIcons = new ArrayList<Image>();
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
