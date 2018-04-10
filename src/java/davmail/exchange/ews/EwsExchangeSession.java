@@ -2097,11 +2097,14 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
 
-            ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
-            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
-            getItemMethod.addAdditionalProperty(Field.get("etag"));
-            executeMethod(getItemMethod);
-            itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
+            // update etag
+            if (createOrUpdateItemMethod.getResponseItem() != null) {
+                ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
+                GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, newItemId, false);
+                getItemMethod.addAdditionalProperty(Field.get("etag"));
+                executeMethod(getItemMethod);
+                itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
+            }
 
             return itemResult;
 
