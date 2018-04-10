@@ -2126,7 +2126,9 @@ public class EwsExchangeSession extends ExchangeSession {
                     getItemMethod.addAdditionalProperty(Field.get("lastmodified"));
                     getItemMethod.addAdditionalProperty(Field.get("calendaruid"));
                     getItemMethod.addAdditionalProperty(Field.get("description"));
-                    getItemMethod.addAdditionalProperty(Field.get("textbody"));
+                    if (isExchange2013OrLater()) {
+                        getItemMethod.addAdditionalProperty(Field.get("textbody"));
+                    }
                     getItemMethod.addAdditionalProperty(Field.get("percentcomplete"));
                     getItemMethod.addAdditionalProperty(Field.get("taskstatus"));
                     getItemMethod.addAdditionalProperty(Field.get("startdate"));
@@ -2281,6 +2283,10 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
         }
+    }
+
+    private boolean isExchange2013OrLater() {
+        return "Exchange2013".compareTo(serverVersion) <= 0;
     }
 
     @Override
