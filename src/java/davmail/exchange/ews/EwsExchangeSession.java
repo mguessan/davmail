@@ -1724,7 +1724,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             if ("FREQ".equals(key)) {
                                 recurrenceFieldUpdate.setRecurrencePattern(value);
                             } else if ("UNTIL".equals(key)) {
-                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)));
+                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)+ "Z"));
                             } else if ("BYDAY".equals(key)) {
                                 recurrenceFieldUpdate.setByDay(value.split(","));
                             }
