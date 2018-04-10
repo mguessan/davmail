@@ -5,7 +5,7 @@
     <groupId>davmail</groupId>
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
-    <version>4.8.4</version>
+    <version>4.8.5</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway</name>
     <organization>
         <name>Mickaël Guessant</name>
@@ -263,7 +263,7 @@
         <dependency>
             <groupId>net.sourceforge.htmlcleaner</groupId>
             <artifactId>htmlcleaner</artifactId>
-            <version>2.2</version>
+            <version>2.21</version>
         </dependency>
         <!-- included in Java 1.6, needed with Java 1.5 -->
         <dependency>

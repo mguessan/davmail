@@ -1,3 +1,31 @@
+** DavMail 4.8.5 released **
+More Caldav fixes, drop SWT on windows and try to improve tray support detection on various Linux distributions.
+
+Caldav:
+- Caldav: test notification dialog
+- Caldav: do not throw exception on invalid email in getFreeBusyData
+- Caldav: EWS isorganizer is Exchange 2013 and later only, switch to myresponsetype
+- Caldav: fix #306, do not try to retrieve textbody on Exchange < 2013
+- Caldav: do not try to update etag if latest response item is empty
+- Caldav: fix #679, invalid date exception on recurring event with an end date update
+- Caldav: fix #346, map America/Chicago to Central Standard Time instead of Central America Standard Time
+
+Enhancements:
+- Drop redline library
+- Disable tray on Gnome
+- Drop platform specific Linux packages, drop SWT on windows, remove dist-rpm (user build.opensuse.org instead), upgrade SWT to 4.6 on Linux
+- Upgrade htmlcleaner to 2.21, see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=891916
+- Fix popMarkReadOnRetr setting save
+- Update winrun4j wrappers
+
+Linux:
+- Refactor icon handling, automatically adjust color/size to match common default themes on Linux and add a new davmail.trayBackgroundColor setting to let users set their own theme color
+- Make spec file compatible with RHEL 7 / Centos 7
+
+Documentation:
+- Doc: cleanup supported versions
+
+
 ** DavMail 4.8.4 released **
 The main change in this release is the new davmail.caldavAutoSchedule setting to let users choose between
 client or server side calendar notification management. Most other fixes are also related to Caldav refactoring.
