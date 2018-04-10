@@ -33,4 +33,11 @@ public class TestNotificationDialog extends TestCase {
         notificationDialog.setVisible(true);
         System.out.println(notificationDialog.getSendNotification());
     }
+
+    public void testCreateNotificationFromEWSFrame() throws IOException, ClassNotFoundException, UnsupportedLookAndFeelException, IllegalAccessException, InstantiationException {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        NotificationDialog notificationDialog = new NotificationDialog("subject", "description");
+        notificationDialog.setVisible(true);
+        System.out.println(notificationDialog.getSendNotification());
+    }
 }
