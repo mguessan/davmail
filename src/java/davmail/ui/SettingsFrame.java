@@ -626,7 +626,7 @@ public class SettingsFrame extends JFrame {
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
-        popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetrCheckBox", false));
+        popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetr", false));
         setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos", false));
