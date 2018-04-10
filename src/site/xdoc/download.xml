@@ -28,6 +28,9 @@
                         Download installation package
                         <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup.exe
                         </a>
+                        or
+                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-<em>version</em>-setup64.exe
+                        </a> for 64 bits Java
                         <br/>
                         and follow instructions at
                         <a href="windowssetup.html">DavMail Setup on windows</a>
@@ -52,22 +55,6 @@
                         <br/>
                         and follow instructions at
                         <a href="linuxsetup.html">DavMail Setup on linux</a>
-                    </li>
-                    <li>
-                        <strong>Linux (other):</strong>
-                        Download linux package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-linux-x86-<em>version</em>.tgz
-                        </a>
-                        , or 64 bits package
-                        <a href="http://sourceforge.net/projects/davmail/files/">davmail-linux-x86_64-
-                            <em>version</em>
-                            .tgz
-                        </a>
-                        <br/>
-                        and follow instructions at
-                        <a href="linuxsetup.html">DavMail Setup on linux</a>
-                        <br/>
-                        Note: the only difference between 32 and 64 bits packages is the included SWT library.
                     </li>
                     <li>
                         <strong>Other:</strong>
