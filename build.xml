@@ -253,7 +253,6 @@
                     <exclude name="junit-*.jar"/>
                     <exclude name="libgrowl-*.jar"/>
                     <exclude name="nsisant-*.jar"/>
-                    <exclude name="redline-*.jar"/>
                     <exclude name="servlet-api-*.jar"/>
                     <exclude name="swt-*.jar"/>
                     <exclude name="winrun4j-*.jar"/>
@@ -284,7 +283,6 @@
                 <exclude name="jarbundler-*.jar"/>
                 <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
-                <exclude name="redline-*.jar"/>
             </fileset>
         </copy>
         <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
