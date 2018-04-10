@@ -507,7 +507,7 @@ public abstract class ExchangeSession {
                     // another failover for script based logon forms (Exchange 2007)
                     List scriptList = node.getElementListByName("script", true);
                     for (Object script : scriptList) {
-                        List contents = ((TagNode) script).getChildren();
+                        List contents = ((TagNode) script).getAllChildren();
                         for (Object content : contents) {
                             if (content instanceof CommentNode) {
                                 String scriptValue = ((CommentNode) content).getCommentedContent();
