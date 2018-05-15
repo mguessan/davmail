@@ -1799,6 +1799,7 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId currentItemId = null;
             String ownerResponseReply = null;
             boolean isMeetingResponse = false;
+            boolean isMozSendInvitations = true;
 
             EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
             if (currentItem != null) {
@@ -1812,6 +1813,18 @@ public class EwsExchangeSession extends ExchangeSession {
                         && !newAttendeeStatus.equals(currentAttendeeStatus)
                         // avoid nullpointerexception on unknown status
                         && partstatToResponseMap.get(newAttendeeStatus) != null;
+
+                // Check mozilla last ack and snooze
+                String newmozlastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                String currentmozlastack = currentItem.get(Field.get("xmozlastack").getResponseName());
+                boolean ismozack = newmozlastack != null && !newmozlastack.equals(currentmozlastack);
+
+                String newmozsnoozetime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                String currentmozsnoozetime = currentItem.get(Field.get("xmozsnoozetime").getResponseName());
+                boolean ismozsnooze = newmozsnoozetime != null && !newmozsnoozetime.equals(currentmozsnoozetime);
+
+                isMozSendInvitations = (newmozlastack == null && newmozsnoozetime == null) // not thunderbird
+                        || !(ismozack || ismozsnooze);
 
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
@@ -1920,7 +1933,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         // other changes with server side managed notifications
                         MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                         SendMeetingInvitationsOrCancellations sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToNone;
-                        if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()) {
+                        if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations) {
                             messageDisposition = MessageDisposition.SendAndSaveCopy;
                             sendMeetingInvitationsOrCancellations = SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy;
                         }
@@ -2043,7 +2056,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     newItem.setFieldUpdates(updates);
                     MessageDisposition messageDisposition = MessageDisposition.SaveOnly;
                     SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToNone;
-                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer()
+                    if (vCalendar.isMeeting() && vCalendar.isMeetingOrganizer() && isMozSendInvitations
                             && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                         // meeting request creation with server managed notifications
                         messageDisposition = MessageDisposition.SendAndSaveCopy;
@@ -2376,6 +2389,9 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("myresponsetype");
         EVENT_REQUEST_PROPERTIES.add("displayto");
         EVENT_REQUEST_PROPERTIES.add("displaycc");
+
+        EVENT_REQUEST_PROPERTIES.add("xmozlastack");
+        EVENT_REQUEST_PROPERTIES.add("xmozsnoozetime");
     }
 
     @Override
