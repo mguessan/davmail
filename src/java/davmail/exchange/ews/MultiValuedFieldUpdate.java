@@ -55,7 +55,13 @@ public class MultiValuedFieldUpdate extends FieldUpdate {
      * @throws IOException on error
      */
     public void write(String itemType, Writer writer) throws IOException {
-        String action = "Set";
+        String action;
+        //noinspection VariableNotUsedInsideIf
+        if (values.isEmpty()) {
+            action = "Delete";
+        } else {
+            action = "Set";
+        }
         if (itemType != null) {
             writer.write("<t:");
             writer.write(action);

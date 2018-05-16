@@ -102,34 +102,40 @@ public class UnindexedFieldURI implements FieldURI {
         } else if (fieldURI.startsWith("contacts") && itemType != null) {
             itemType = "Contact";
         }
-        if (itemType != null) {
-            appendTo(buffer);
-            buffer.append("<t:");
-            buffer.append(itemType);
-            buffer.append('>');
-        }
-        buffer.append("<t:");
-        buffer.append(fieldName);
-        buffer.append('>');
-        for (String value : values) {
-            if ("RequiredAttendees".equals(fieldName) || "OptionalAttendees".equals(fieldName)) {
-                buffer.append("<t:Attendee><t:Mailbox><t:EmailAddress>");
-                buffer.append(StringUtil.xmlEncodeAttribute(value));
-                buffer.append("</t:EmailAddress></t:Mailbox></t:Attendee>");
-            } else {
-                buffer.append(StringUtil.xmlEncodeAttribute(value));
+        if (!values.isEmpty()) {
+            if (itemType != null) {
+                appendTo(buffer);
+                buffer.append("<t:");
+                buffer.append(itemType);
+                buffer.append('>');
             }
-        }
-
-        buffer.append("</t:");
-        buffer.append(fieldName);
-        buffer.append('>');
-
-        if (itemType != null) {
-            buffer.append("</t:");
-            buffer.append(itemType);
+            buffer.append("<t:");
+            buffer.append(fieldName);
             buffer.append('>');
+            for (String value : values) {
+                if ("RequiredAttendees".equals(fieldName) || "OptionalAttendees".equals(fieldName)) {
+                    buffer.append("<t:Attendee><t:Mailbox><t:EmailAddress>");
+                    buffer.append(StringUtil.xmlEncodeAttribute(value));
+                    buffer.append("</t:EmailAddress></t:Mailbox></t:Attendee>");
+                } else {
+                    buffer.append(StringUtil.xmlEncodeAttribute(value));
+                }
+            }
+
+            buffer.append("</t:");
+            buffer.append(fieldName);
+            buffer.append('>');
+
+            if (itemType != null) {
+                buffer.append("</t:");
+                buffer.append(itemType);
+                buffer.append('>');
+            }
+        } else if (itemType != null) {
+            // append field name only to remove values
+            appendTo(buffer);
         }
+
     }
 
     public String getResponseName() {
