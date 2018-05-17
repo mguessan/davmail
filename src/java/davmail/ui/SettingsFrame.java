@@ -278,18 +278,24 @@ public class SettingsFrame extends JFrame {
         httpProxyPortField.setEnabled(enableProxy);
         httpProxyUserField.setEnabled(enableProxy || useSystemProxies);
         httpProxyPasswordField.setEnabled(enableProxy || useSystemProxies);
-        noProxyForField.setEnabled(enableProxy || useSystemProxies);
+        noProxyForField.setEnabled(enableProxy);
 
         useSystemProxiesField.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 boolean newUseSystemProxies = useSystemProxiesField.isSelected();
-                boolean newEnableProxy = enableProxyField.isSelected();
-                enableProxyField.setEnabled(!newUseSystemProxies);
-                httpProxyField.setEnabled(!newUseSystemProxies && newEnableProxy);
-                httpProxyPortField.setEnabled(!newUseSystemProxies && newEnableProxy);
-                httpProxyUserField.setEnabled(newUseSystemProxies || newEnableProxy);
-                httpProxyPasswordField.setEnabled(newUseSystemProxies || newEnableProxy);
-                noProxyForField.setEnabled(newUseSystemProxies || newEnableProxy);
+                if (newUseSystemProxies) {
+                    enableProxyField.setSelected(false);
+                    enableProxyField.setEnabled(false);
+                    httpProxyField.setEnabled(false);
+                    httpProxyPortField.setEnabled(false);
+                    httpProxyUserField.setEnabled(true);
+                    httpProxyPasswordField.setEnabled(true);
+                    noProxyForField.setEnabled(false);
+                } else {
+                    enableProxyField.setEnabled(true);
+                    httpProxyUserField.setEnabled(false);
+                    httpProxyPasswordField.setEnabled(false);
+                }
             }
         });
         enableProxyField.addActionListener(new ActionListener() {
@@ -600,11 +606,11 @@ public class SettingsFrame extends JFrame {
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         enableProxyField.setSelected(enableProxy);
         enableProxyField.setEnabled(!useSystemProxies);
-        httpProxyField.setEnabled(!useSystemProxies && enableProxy);
-        httpProxyPortField.setEnabled(!useSystemProxies && enableProxy);
+        httpProxyField.setEnabled(enableProxy);
+        httpProxyPortField.setEnabled(enableProxy);
         httpProxyUserField.setEnabled(useSystemProxies || enableProxy);
         httpProxyPasswordField.setEnabled(useSystemProxies || enableProxy);
-        noProxyForField.setEnabled(useSystemProxies || enableProxy);
+        noProxyForField.setEnabled(enableProxy);
         httpProxyField.setText(Settings.getProperty("davmail.proxyHost"));
         httpProxyPortField.setText(Settings.getProperty("davmail.proxyPort"));
         httpProxyUserField.setText(Settings.getProperty("davmail.proxyUser"));

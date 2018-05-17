@@ -208,9 +208,7 @@ public final class DavGatewayHttpClientFacade {
 
         try {
             java.net.URI uri = new java.net.URI(url);
-            if (isNoProxyFor(uri)) {
-                LOGGER.debug("no proxy for " + uri.getHost());
-            } else if (useSystemProxies) {
+            if (useSystemProxies) {
                 // get proxy for url from system settings
                 System.setProperty("java.net.useSystemProxies", "true");
                 List<Proxy> proxyList = getProxyForURI(uri);
@@ -223,6 +221,8 @@ public final class DavGatewayHttpClientFacade {
                     proxyUser = Settings.getProperty("davmail.proxyUser");
                     proxyPassword = Settings.getProperty("davmail.proxyPassword");
                 }
+            } else  if (isNoProxyFor(uri)) {
+                LOGGER.debug("no proxy for " + uri.getHost());
             } else if (enableProxy) {
                 proxyHost = Settings.getProperty("davmail.proxyHost");
                 proxyPort = Settings.getIntProperty("davmail.proxyPort");
