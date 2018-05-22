@@ -46,9 +46,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,10 +67,12 @@ public final class DavGatewayHttpClientFacade {
 
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
+    private static Set<MultiThreadedHttpConnectionManager> ALL_CONNECTION_MANAGERS = new HashSet<MultiThreadedHttpConnectionManager>();
+
     static {
         // disable Client-initiated TLS renegotiation
         System.setProperty("jdk.tls.rejectClientInitiatedRenegotiation", "true");
-            // force strong ephemeral Diffie-Hellman parameter
+        // force strong ephemeral Diffie-Hellman parameter
         System.setProperty("jdk.tls.ephemeralDHKeySize", "2048");
 
         DavGatewayHttpClientFacade.start();
@@ -221,7 +221,7 @@ public final class DavGatewayHttpClientFacade {
                     proxyUser = Settings.getProperty("davmail.proxyUser");
                     proxyPassword = Settings.getProperty("davmail.proxyPassword");
                 }
-            } else  if (isNoProxyFor(uri)) {
+            } else if (isNoProxyFor(uri)) {
                 LOGGER.debug("no proxy for " + uri.getHost());
             } else if (enableProxy) {
                 proxyHost = Settings.getProperty("davmail.proxyHost");
@@ -263,7 +263,11 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void close(HttpClient httpClient) {
         if (httpClient != null) {
-            ((MultiThreadedHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
+            synchronized (LOCK) {
+                MultiThreadedHttpConnectionManager httpConnectionManager = ((MultiThreadedHttpConnectionManager) httpClient.getHttpConnectionManager());
+                ALL_CONNECTION_MANAGERS.remove(httpConnectionManager);
+                httpConnectionManager.shutdown();
+            }
         }
     }
 
@@ -798,10 +802,18 @@ public final class DavGatewayHttpClientFacade {
     public static void stop() {
         synchronized (LOCK) {
             if (httpConnectionManagerThread != null) {
+                httpConnectionManagerThread.shutdown();
                 httpConnectionManagerThread.interrupt();
                 httpConnectionManagerThread = null;
             }
-            MultiThreadedHttpConnectionManager.shutdownAll();
+            for (MultiThreadedHttpConnectionManager httpConnectionManager : ALL_CONNECTION_MANAGERS) {
+                // try to avoid deadlock by connection manager level lock,
+                // used internally in MultiThreadedHttpConnectionManager.freeConnection()
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (httpConnectionManager) {
+                    httpConnectionManager.shutdown();
+                }
+            }
         }
     }
 
@@ -812,10 +824,11 @@ public final class DavGatewayHttpClientFacade {
      */
     public static void createMultiThreadedHttpConnectionManager(HttpClient httpClient) {
         MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
-        connectionManager.getParams().setDefaultMaxConnectionsPerHost(Settings.getIntProperty("davmail.exchange.maxConnections",100));
-        connectionManager.getParams().setConnectionTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout",10) * 1000);
-        connectionManager.getParams().setSoTimeout(Settings.getIntProperty("davmail.exchange.soTimeout",120) * 1000);
+        connectionManager.getParams().setDefaultMaxConnectionsPerHost(Settings.getIntProperty("davmail.exchange.maxConnections", 100));
+        connectionManager.getParams().setConnectionTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout", 10) * 1000);
+        connectionManager.getParams().setSoTimeout(Settings.getIntProperty("davmail.exchange.soTimeout", 120) * 1000);
         synchronized (LOCK) {
+            ALL_CONNECTION_MANAGERS.add(connectionManager);
             httpConnectionManagerThread.addConnectionManager(connectionManager);
         }
         httpClient.setHttpConnectionManager(connectionManager);
