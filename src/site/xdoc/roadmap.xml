@@ -15,29 +15,45 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.7">
+            <subsection name="4.8.6">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
-                    <li>Switch from registry to link on windows</li>
-                    <li>Implement split authentication</li>
-                    <li>Test windows install on seven without admin rights</li>
-                    <li>Implement IMAP subscribe/unsubscribe</li>
+                    <li>Bugfix release, fix as many reported bugs as possible</li>
                 </ul>
             </subsection>
-            <subsection name="4.x">
+            <subsection name="5.0">
                 <p>
-                    <strong>Future version</strong>
+                    <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Improve EWS Caldav implementation</li>
+                    <li>Drop SWT for improved Linux reliability</li>
+                    <li>Complete EWS Caldav refactoring</li>
+                </ul>
+            </subsection>
+            <subsection name="Future">
+                <p>
+                    <strong>Features that may be implemented, but are not yet planned</strong>
+                </p>
+                <ul>
+                    <li>Implement split authentication</li>
                     <li>Implement Caldav attachments</li>
-                    <li>Implement ActiveSync backend</li>
-                    <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
                     <li>Implement custom authenticator interface to handle specific authentications
                         (e.g. token based)
                     </li>
+                    <li>Implement IMAP subscribe/unsubscribe</li>
+                </ul>
+            </subsection>
+            <subsection name="Not in roadmap">
+                <p>
+                    <strong>Features that will not be implemented for various reasons,
+                        from limited resources to impossible to implement</strong>
+                </p>
+                <ul>
+                    <li>Implement ActiveSync backend</li>
+                    <li>Implement EWS frontend for Exchange 2003 backend and Outlook 2011</li>
+                    <li>Implement instant messaging (chat)</li>
                 </ul>
             </subsection>
         </section>
