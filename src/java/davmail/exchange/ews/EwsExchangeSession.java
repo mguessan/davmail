@@ -2575,6 +2575,11 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(cancelItemMethod);
 
             } else {
+                DeleteType deleteType = DeleteType.MoveToDeletedItems;
+                if (isSharedFolder(folderPath)) {
+                    // can't move event to trash in a shared mailbox
+                    deleteType = DeleteType.HardDelete;
+                }
                 // delete item
                 DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.MoveToDeletedItems, SendMeetingCancellations.SendToAllAndSaveCopy);
                 executeMethod(deleteItemMethod);
