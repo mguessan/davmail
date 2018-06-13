@@ -2581,7 +2581,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     deleteType = DeleteType.HardDelete;
                 }
                 // delete item
-                DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), DeleteType.MoveToDeletedItems, SendMeetingCancellations.SendToAllAndSaveCopy);
+                DeleteItemMethod deleteItemMethod = new DeleteItemMethod(new ItemId(item), deleteType, SendMeetingCancellations.SendToAllAndSaveCopy);
                 executeMethod(deleteItemMethod);
             }
         }
