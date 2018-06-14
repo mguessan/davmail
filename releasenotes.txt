@@ -1,3 +1,24 @@
+** DavMail 4.8.6 released **
+Bugfix release with latest Caldav EWS enhancements, also includes fixes for old standing bugs in bug tracker.
+
+IMAP:
+- IMAP: Fix #631 IMAP SEARCH CHARSET US-ASCII fails
+
+Caldav:
+- Caldav: fix #687 can't move event to trash in a shared mailbox
+- Caldav: fix multivalued field update, send DeleteItemField instead of SetItemField with an empty value when field has no value, should fix bug #682
+- Caldav: Detect X-MOZ-LASTACK and X-MOZ-SNOOZE-TIME updates to avoid sending notifications on dismiss with Thunderbird
+
+Documentation:
+- Doc: update roadmap
+
+Enhancements
+- Fix #476, try to avoid deadlock with a connection manager object lock
+- Fix #456 longstanding proxy handling issue
+- Update spec file
+- Add GPLv2 license at root
+
+
 ** DavMail 4.8.5 released **
 More Caldav fixes, drop SWT on windows and try to improve tray support detection on various Linux distributions.
 
