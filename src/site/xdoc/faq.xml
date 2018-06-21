@@ -35,6 +35,13 @@
             </subsection>
             <subsection name="General">
                 <p>
+                    <strong>Office 365</strong>
+                </p>
+                <p>Office 365 EWS endpoint is now standard for all customers:</p>
+                <code>https://outlook.office365.com/EWS/Exchange.asmx</code>
+                <p>Also make sure you set mode to EWS in settings</p>
+
+                <p>
                     <strong>EWS endpoint not available</strong>
                 </p>
                 <p>Unfortunately, this may mean your Exchange administrators blocked EWS access.</p>
