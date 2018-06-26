@@ -1374,6 +1374,13 @@ public class EwsExchangeSession extends ExchangeSession {
                     put(attributeName, value);
                 }
             }
+
+            if (response.getMembers() != null)  {
+                for (EWSMethod.Member member : response.getMembers()) {
+                    String uid = null;
+                    addMember(member.name, member.email, uid);
+                }
+            }
         }
 
         /**
@@ -1524,20 +1531,6 @@ public class EwsExchangeSession extends ExchangeSession {
             itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
 
             return itemResult;
-        }
-    }
-
-    protected class DistributionList extends Contact {
-
-        public DistributionList(EWSMethod.Item response) throws IOException {
-            super(response);
-            
-            if (response.getMembers() != null)  {
-                for (EWSMethod.Member member : response.getMembers()) {
-                    String uid = null;
-                    addMember(member.name, member.email, uid);
-                }
-            }
         }
     }
 
@@ -2333,7 +2326,7 @@ public class EwsExchangeSession extends ExchangeSession {
         List<EWSMethod.Item> distributionListItems = searchItems(folderPath, CONTACT_ATTRIBUTES,
                 isEqualTo("outlookmessageclass", "IPM.DistList"), FolderQueryTraversal.SHALLOW, 0);
         for (EWSMethod.Item response : distributionListItems) {
-            contacts.add(new DistributionList(response));
+            contacts.add(new Contact(response));
         }
 
     }
@@ -2464,11 +2457,15 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         String itemType = item.type;
-        if ("Contact".equals(itemType)) {
+        if ("Contact".equals(itemType) || "DistributionList".equals(itemType)) {
             // retrieve Contact properties
             ItemId itemId = new ItemId(item);
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
-            for (String attribute : CONTACT_ATTRIBUTES) {
+            Set<String> attributes = CONTACT_ATTRIBUTES;
+            if ("DistributionList".equals(itemType)) {
+                attributes = DISTRIBUTION_LIST_ATTRIBUTES;
+            }
+            for (String attribute : attributes) {
                 getItemMethod.addAdditionalProperty(Field.get(attribute));
             }
             executeMethod(getItemMethod);
@@ -2477,19 +2474,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 throw new HttpNotFoundException(itemName + " not found in " + folderPath);
             }
             return new Contact(item);
-        } else if ("DistributionList".equals(itemType)) {
-            // retrieve Distribution list members
-            ItemId itemId = new ItemId(item);
-            GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
-            for (String attribute : DISTRIBUTION_LIST_ATTRIBUTES) {
-                getItemMethod.addAdditionalProperty(Field.get(attribute));
-            }
-            executeMethod(getItemMethod);
-            item = getItemMethod.getResponseItem();
-            if (item == null) {
-                throw new HttpNotFoundException(itemName + " not found in " + folderPath);
-            }
-            return new DistributionList(item);
         } else if ("CalendarItem".equals(itemType)
                 || "MeetingMessage".equals(itemType)
                 || "MeetingRequest".equals(itemType)
