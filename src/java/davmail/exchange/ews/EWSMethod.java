@@ -793,7 +793,10 @@ public abstract class EWSMethod extends PostMethod {
                     && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
                     ) {
                 try {
-                    throw new EWSException(errorDetail + ' ' + ((errorDescription != null) ? errorDescription : "") + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
+                    throw new EWSException(errorDetail
+                            + ' ' + ((errorDescription != null) ? errorDescription : "")
+                            + ' ' + ((errorValue != null) ? errorValue : "")
+                            + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     throw new EWSException(e.getMessage());
                 }
@@ -862,18 +865,30 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected String handleTag(XMLStreamReader reader, String localName) throws XMLStreamException {
-        String result = null;
+        StringBuilder result = null;
         int event = reader.getEventType();
         if (event == XMLStreamConstants.START_ELEMENT && localName.equals(reader.getLocalName())) {
+            result = new StringBuilder();
             while (reader.hasNext() &&
                     !((event == XMLStreamConstants.END_ELEMENT && localName.equals(reader.getLocalName())))) {
                 event = reader.next();
                 if (event == XMLStreamConstants.CHARACTERS) {
-                    result = reader.getText();
+                    result.append(reader.getText());
+                } else if ("MessageXml".equals(localName) && event == XMLStreamConstants.START_ELEMENT) {
+                    for (int i = 0;i<reader.getAttributeCount();i++) {
+                        if (result.length() > 0) {
+                            result.append(", ");
+                        }
+                        result.append(reader.getAttributeLocalName(i)).append(": ").append(reader.getAttributeValue(i));
+                    }
                 }
             }
         }
-        return result;
+        if (result != null && result.length() > 0) {
+            return result.toString();
+        } else {
+            return null;
+        }
     }
 
     protected void handleErrors(XMLStreamReader reader) throws XMLStreamException {
