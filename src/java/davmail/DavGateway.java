@@ -59,10 +59,13 @@ public final class DavGateway {
      */
     public static void main(String[] args) {
         boolean notray = false;
+        boolean server = false;
         for (String arg:args) {
             if (arg.startsWith("-")) {
                 if ("-notray".equals(arg)) {
                     notray = true;
+                } else if ("-server".equals(arg)) {
+                    server = true;
                 }
             } else {
                 Settings.setConfigFilePath(arg);
@@ -70,6 +73,10 @@ public final class DavGateway {
         }
 
         Settings.load();
+        if (server) {
+            Settings.setProperty("davmail.server", "true");
+            Settings.updateLoggingConfig();
+        }
         DavGatewayTray.init(notray);
 
         start();
