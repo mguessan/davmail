@@ -280,9 +280,11 @@ public final class Settings {
             }
 
             // disable ConsoleAppender in gui mode
-            if (!Settings.getBooleanProperty("davmail.server")) {
-                ConsoleAppender consoleAppender = (ConsoleAppender) Logger.getRootLogger().getAppender("ConsoleAppender");
-                if (consoleAppender != null) {
+            ConsoleAppender consoleAppender = (ConsoleAppender) Logger.getRootLogger().getAppender("ConsoleAppender");
+            if (consoleAppender != null) {
+                if (Settings.getBooleanProperty("davmail.server")) {
+                    consoleAppender.setThreshold(Level.ALL);
+                } else {
                     consoleAppender.setThreshold(Level.OFF);
                 }
             }
