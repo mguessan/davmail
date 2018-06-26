@@ -155,7 +155,7 @@ public final class StringUtil {
         }
 
         protected String replaceAll(String string) {
-            if (string != null && string.indexOf(match) >= 0) {
+            if (string != null && string.contains(match)) {
                 return pattern.matcher(string).replaceAll(value);
             } else {
                 return string;
