@@ -59,7 +59,7 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         }
     }
 
-    public enum RecurrencePattern {WeeklyRecurrence, DailyRecurrence, AbsoluteYearly, AbsoluteMonthly};
+    public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence};
     RecurrencePattern recurrencePattern;
     int recurrenceInterval = 1;
 
@@ -79,9 +79,9 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         } else if ("WEEKLY".equals(value)) {
             setRecurrencePattern(RecurrencePattern.WeeklyRecurrence);
         } else if ("MONTHLY".equals(value)) {
-            setRecurrencePattern(RecurrencePattern.AbsoluteMonthly);
+            setRecurrencePattern(RecurrencePattern.AbsoluteMonthlyRecurrence);
         } else if ("YEARLY".equals(value)) {
-            setRecurrencePattern(RecurrencePattern.AbsoluteYearly);
+            setRecurrencePattern(RecurrencePattern.AbsoluteYearlyRecurrence);
         }
     }
 
