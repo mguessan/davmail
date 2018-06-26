@@ -172,7 +172,7 @@ public abstract class ExchangeSession {
      * Build an ExchangeSession from an already authenticated HttpClient.
      *
      * @param httpClient httpClient instance with session cookies
-     * @param userName User name
+     * @param userName   User name
      */
     public ExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
         this.httpClient = httpClient;
@@ -1509,7 +1509,7 @@ public abstract class ExchangeSession {
     public abstract void copyMessage(Message message, String targetFolder) throws IOException;
 
     public void copyMessages(List<Message> messages, String targetFolder) throws IOException {
-        for (Message message: messages) {
+        for (Message message : messages) {
             copyMessage(message, targetFolder);
         }
     }
@@ -1525,7 +1525,7 @@ public abstract class ExchangeSession {
     public abstract void moveMessage(Message message, String targetFolder) throws IOException;
 
     public void moveMessages(List<Message> messages, String targetFolder) throws IOException {
-        for (Message message: messages) {
+        for (Message message : messages) {
             moveMessage(message, targetFolder);
         }
     }
@@ -2365,7 +2365,7 @@ public abstract class ExchangeSession {
      */
     public abstract class Contact extends Item {
 
-        protected ArrayList<DistributionListMember> distributionListMembers = null;
+        protected ArrayList<String> distributionListMembers = null;
 
         /**
          * @inheritDoc
@@ -2380,6 +2380,8 @@ public abstract class ExchangeSession {
          */
         protected Contact() {
         }
+
+        public abstract ItemResult createOrUpdate() throws IOException;
 
         /**
          * Convert EML extension to vcf.
@@ -2424,11 +2426,11 @@ public abstract class ExchangeSession {
             return "text/vcard";
         }
 
-        public void addMember(String name, String email, String uid) {
+        public void addMember(String member) {
             if (distributionListMembers == null) {
-                distributionListMembers = new ArrayList<DistributionListMember>();
+                distributionListMembers = new ArrayList<String>();
             }
-            distributionListMembers.add(new DistributionListMember(name, email, uid));
+            distributionListMembers.add(member);
         }
 
 
@@ -2449,12 +2451,8 @@ public abstract class ExchangeSession {
 
             if (distributionListMembers != null) {
                 writer.appendProperty("KIND", "group");
-                for (DistributionListMember distributionListMember : distributionListMembers) {
-                    if (distributionListMember.uid != null) {
-                        writer.appendProperty("MEMBER", "urn:uuid:" + distributionListMember.uid);
-                    } else {
-                        writer.appendProperty("MEMBER", "mailto:" + distributionListMember.email);
-                    }
+                for (String member : distributionListMembers) {
+                    writer.appendProperty("MEMBER", member);
                 }
             }
 
@@ -2530,10 +2528,10 @@ public abstract class ExchangeSession {
                     } catch (IOException e) {
                         LOGGER.warn("Unable to get photo from contact " + this.get("cn"));
                     }
+                }
 
-                    if (contactPhoto == null) {
-                        contactPhoto = getADPhoto(get("smtpemail1"));
-                    }
+                if (contactPhoto == null) {
+                    contactPhoto = getADPhoto(get("smtpemail1"));
                 }
             }
 
@@ -3097,30 +3095,6 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * list member
-     */
-    public static class DistributionListMember {
-        /**
-         * list member name
-         */
-        public String name;
-        /**
-         * list member email
-         */
-        public String email;
-        /**
-         * list member uid
-         */
-        public String uid;
-
-        public DistributionListMember(String name, String email, String uid) {
-            this.name = name;
-            this.email = email;
-            this.uid = uid;
-        }
-    }
-
-    /**
      * Retrieve contact photo attached to contact
      *
      * @param contact address book contact
@@ -3239,131 +3213,147 @@ public abstract class ExchangeSession {
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
         if ("group".equalsIgnoreCase(vcard.getPropertyValue("KIND"))) {
             properties.put("outlookmessageclass", "IPM.DistList");
+            properties.put("displayname", vcard.getPropertyValue("FN"));
         } else {
             properties.put("outlookmessageclass", "IPM.Contact");
-        }
-        for (VProperty property : vcard.getProperties()) {
-            if ("FN".equals(property.getKey())) {
-                properties.put("cn", property.getValue());
-                properties.put("subject", property.getValue());
-                properties.put("fileas", property.getValue());
 
-            } else if ("N".equals(property.getKey())) {
-                convertContactProperties(properties, VCARD_N_PROPERTIES, property.getValues());
-            } else if ("NICKNAME".equals(property.getKey())) {
-                properties.put("nickname", property.getValue());
-            } else if ("TEL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
-                    properties.put("mobile", property.getValue());
-                } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
-                    properties.put("telephoneNumber", property.getValue());
-                } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
-                    properties.put("homePhone", property.getValue());
-                } else if (property.hasParam("TYPE", "fax")) {
-                    if (property.hasParam("TYPE", "home")) {
-                        properties.put("homefax", property.getValue());
+            for (VProperty property : vcard.getProperties()) {
+                if ("FN".equals(property.getKey())) {
+                    properties.put("cn", property.getValue());
+                    properties.put("subject", property.getValue());
+                    properties.put("fileas", property.getValue());
+
+                } else if ("N".equals(property.getKey())) {
+                    convertContactProperties(properties, VCARD_N_PROPERTIES, property.getValues());
+                } else if ("NICKNAME".equals(property.getKey())) {
+                    properties.put("nickname", property.getValue());
+                } else if ("TEL".equals(property.getKey())) {
+                    if (property.hasParam("TYPE", "cell") || property.hasParam("X-GROUP", "cell")) {
+                        properties.put("mobile", property.getValue());
+                    } else if (property.hasParam("TYPE", "work") || property.hasParam("X-GROUP", "work")) {
+                        properties.put("telephoneNumber", property.getValue());
+                    } else if (property.hasParam("TYPE", "home") || property.hasParam("X-GROUP", "home")) {
+                        properties.put("homePhone", property.getValue());
+                    } else if (property.hasParam("TYPE", "fax")) {
+                        if (property.hasParam("TYPE", "home")) {
+                            properties.put("homefax", property.getValue());
+                        } else {
+                            properties.put("facsimiletelephonenumber", property.getValue());
+                        }
+                    } else if (property.hasParam("TYPE", "pager")) {
+                        properties.put("pager", property.getValue());
+                    } else if (property.hasParam("TYPE", "car")) {
+                        properties.put("othermobile", property.getValue());
                     } else {
-                        properties.put("facsimiletelephonenumber", property.getValue());
+                        properties.put("otherTelephone", property.getValue());
                     }
-                } else if (property.hasParam("TYPE", "pager")) {
-                    properties.put("pager", property.getValue());
-                } else if (property.hasParam("TYPE", "car")) {
-                    properties.put("othermobile", property.getValue());
-                } else {
-                    properties.put("otherTelephone", property.getValue());
+                } else if ("ADR".equals(property.getKey())) {
+                    // address
+                    if (property.hasParam("TYPE", "home")) {
+                        convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
+                    } else if (property.hasParam("TYPE", "work")) {
+                        convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
+                        // any other type goes to other address
+                    } else {
+                        convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
+                    }
+                } else if ("EMAIL".equals(property.getKey())) {
+                    if (property.hasParam("TYPE", "home")) {
+                        properties.put("email2", property.getValue());
+                        properties.put("smtpemail2", property.getValue());
+                    } else if (property.hasParam("TYPE", "other")) {
+                        properties.put("email3", property.getValue());
+                        properties.put("smtpemail3", property.getValue());
+                    } else {
+                        properties.put("email1", property.getValue());
+                        properties.put("smtpemail1", property.getValue());
+                    }
+                } else if ("ORG".equals(property.getKey())) {
+                    convertContactProperties(properties, VCARD_ORG_PROPERTIES, property.getValues());
+                } else if ("URL".equals(property.getKey())) {
+                    if (property.hasParam("TYPE", "work")) {
+                        properties.put("businesshomepage", property.getValue());
+                    } else if (property.hasParam("TYPE", "home")) {
+                        properties.put("personalHomePage", property.getValue());
+                    } else {
+                        // default: set personal home page
+                        properties.put("personalHomePage", property.getValue());
+                    }
+                } else if ("TITLE".equals(property.getKey())) {
+                    properties.put("title", property.getValue());
+                } else if ("NOTE".equals(property.getKey())) {
+                    properties.put("description", property.getValue());
+                } else if ("CUSTOM1".equals(property.getKey())) {
+                    properties.put("extensionattribute1", property.getValue());
+                } else if ("CUSTOM2".equals(property.getKey())) {
+                    properties.put("extensionattribute2", property.getValue());
+                } else if ("CUSTOM3".equals(property.getKey())) {
+                    properties.put("extensionattribute3", property.getValue());
+                } else if ("CUSTOM4".equals(property.getKey())) {
+                    properties.put("extensionattribute4", property.getValue());
+                } else if ("ROLE".equals(property.getKey())) {
+                    properties.put("profession", property.getValue());
+                } else if ("X-AIM".equals(property.getKey())) {
+                    properties.put("im", property.getValue());
+                } else if ("BDAY".equals(property.getKey())) {
+                    properties.put("bday", convertBDayToZulu(property.getValue()));
+                } else if ("ANNIVERSARY".equals(property.getKey()) || "X-ANNIVERSARY".equals(property.getKey())) {
+                    properties.put("anniversary", convertBDayToZulu(property.getValue()));
+                } else if ("CATEGORIES".equals(property.getKey())) {
+                    properties.put("keywords", property.getValue());
+                } else if ("CLASS".equals(property.getKey())) {
+                    if ("PUBLIC".equals(property.getValue())) {
+                        properties.put("sensitivity", "0");
+                        properties.put("private", "false");
+                    } else {
+                        properties.put("sensitivity", "2");
+                        properties.put("private", "true");
+                    }
+                } else if ("SEX".equals(property.getKey())) {
+                    String propertyValue = property.getValue();
+                    if ("1".equals(propertyValue)) {
+                        properties.put("gender", "2");
+                    } else if ("2".equals(propertyValue)) {
+                        properties.put("gender", "1");
+                    }
+                } else if ("FBURL".equals(property.getKey())) {
+                    properties.put("fburl", property.getValue());
+                } else if ("X-ASSISTANT".equals(property.getKey())) {
+                    properties.put("secretarycn", property.getValue());
+                } else if ("X-MANAGER".equals(property.getKey())) {
+                    properties.put("manager", property.getValue());
+                } else if ("X-SPOUSE".equals(property.getKey())) {
+                    properties.put("spousecn", property.getValue());
+                } else if ("PHOTO".equals(property.getKey())) {
+                    properties.put("photo", property.getValue());
+                    properties.put("haspicture", "true");
                 }
-            } else if ("ADR".equals(property.getKey())) {
-                // address
-                if (property.hasParam("TYPE", "home")) {
-                    convertContactProperties(properties, VCARD_ADR_HOME_PROPERTIES, property.getValues());
-                } else if (property.hasParam("TYPE", "work")) {
-                    convertContactProperties(properties, VCARD_ADR_WORK_PROPERTIES, property.getValues());
-                    // any other type goes to other address
-                } else {
-                    convertContactProperties(properties, VCARD_ADR_OTHER_PROPERTIES, property.getValues());
+            }
+            LOGGER.debug("Create or update contact " + itemName + ": " + properties);
+            // reset missing properties to null
+            for (String key : CONTACT_ATTRIBUTES) {
+                if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
+                        && !"lastmodified".equals(key) && !"sensitivity".equals(key) &&
+                        !properties.containsKey(key)) {
+                    properties.put(key, null);
                 }
-            } else if ("EMAIL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "home")) {
-                    properties.put("email2", property.getValue());
-                    properties.put("smtpemail2", property.getValue());
-                } else if (property.hasParam("TYPE", "other")) {
-                    properties.put("email3", property.getValue());
-                    properties.put("smtpemail3", property.getValue());
-                } else {
-                    properties.put("email1", property.getValue());
-                    properties.put("smtpemail1", property.getValue());
-                }
-            } else if ("ORG".equals(property.getKey())) {
-                convertContactProperties(properties, VCARD_ORG_PROPERTIES, property.getValues());
-            } else if ("URL".equals(property.getKey())) {
-                if (property.hasParam("TYPE", "work")) {
-                    properties.put("businesshomepage", property.getValue());
-                } else if (property.hasParam("TYPE", "home")) {
-                    properties.put("personalHomePage", property.getValue());
-                } else {
-                    // default: set personal home page
-                    properties.put("personalHomePage", property.getValue());
-                }
-            } else if ("TITLE".equals(property.getKey())) {
-                properties.put("title", property.getValue());
-            } else if ("NOTE".equals(property.getKey())) {
-                properties.put("description", property.getValue());
-            } else if ("CUSTOM1".equals(property.getKey())) {
-                properties.put("extensionattribute1", property.getValue());
-            } else if ("CUSTOM2".equals(property.getKey())) {
-                properties.put("extensionattribute2", property.getValue());
-            } else if ("CUSTOM3".equals(property.getKey())) {
-                properties.put("extensionattribute3", property.getValue());
-            } else if ("CUSTOM4".equals(property.getKey())) {
-                properties.put("extensionattribute4", property.getValue());
-            } else if ("ROLE".equals(property.getKey())) {
-                properties.put("profession", property.getValue());
-            } else if ("X-AIM".equals(property.getKey())) {
-                properties.put("im", property.getValue());
-            } else if ("BDAY".equals(property.getKey())) {
-                properties.put("bday", convertBDayToZulu(property.getValue()));
-            } else if ("ANNIVERSARY".equals(property.getKey()) || "X-ANNIVERSARY".equals(property.getKey())) {
-                properties.put("anniversary", convertBDayToZulu(property.getValue()));
-            } else if ("CATEGORIES".equals(property.getKey())) {
-                properties.put("keywords", property.getValue());
-            } else if ("CLASS".equals(property.getKey())) {
-                if ("PUBLIC".equals(property.getValue())) {
-                    properties.put("sensitivity", "0");
-                    properties.put("private", "false");
-                } else {
-                    properties.put("sensitivity", "2");
-                    properties.put("private", "true");
-                }
-            } else if ("SEX".equals(property.getKey())) {
-                String propertyValue = property.getValue();
-                if ("1".equals(propertyValue)) {
-                    properties.put("gender", "2");
-                } else if ("2".equals(propertyValue)) {
-                    properties.put("gender", "1");
-                }
-            } else if ("FBURL".equals(property.getKey())) {
-                properties.put("fburl", property.getValue());
-            } else if ("X-ASSISTANT".equals(property.getKey())) {
-                properties.put("secretarycn", property.getValue());
-            } else if ("X-MANAGER".equals(property.getKey())) {
-                properties.put("manager", property.getValue());
-            } else if ("X-SPOUSE".equals(property.getKey())) {
-                properties.put("spousecn", property.getValue());
-            } else if ("PHOTO".equals(property.getKey())) {
-                properties.put("photo", property.getValue());
-                properties.put("haspicture", "true");
             }
         }
-        LOGGER.debug("Create or update contact " + itemName + ": " + properties);
-        // reset missing properties to null
-        for (String key : CONTACT_ATTRIBUTES) {
-            if (!"imapUid".equals(key) && !"etag".equals(key) && !"urlcompname".equals(key)
-                    && !"lastmodified".equals(key) && !"sensitivity".equals(key) &&
-                    !properties.containsKey(key)) {
-                properties.put(key, null);
+
+        Contact contact = buildContact(folderPath, itemName, properties, etag, noneMatch);
+        for (VProperty property : vcard.getProperties()) {
+            if ("MEMBER".equals(property.getKey())) {
+                String member = property.getValue();
+                if (member.startsWith("urn:uuid:")) {
+                    Item item = getItem(folderPath, member.substring(9)+".EML");
+                    if (item != null && item.get("smtpemail1") != null) {
+                        member = "mailto:"+item.get("smtpemail1");
+                    }
+                }
+                contact.addMember(member);
             }
         }
-        return internalCreateOrUpdateContact(folderPath, itemName, properties, etag, noneMatch);
+        return contact.createOrUpdate();
     }
 
     protected String convertZuluDateToBday(String value) {
@@ -3405,7 +3395,7 @@ public abstract class ExchangeSession {
     }
 
 
-    protected abstract ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException;
+    protected abstract Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException;
 
     protected abstract ItemResult internalCreateOrUpdateEvent(String folderPath, String itemName, String contentClass, String icsBody, String etag, String noneMatch) throws IOException;
 
@@ -3602,6 +3592,7 @@ public abstract class ExchangeSession {
     }
 
     public static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<String>();
+
     static {
         DISTRIBUTION_LIST_ATTRIBUTES.add("imapUid");
         DISTRIBUTION_LIST_ATTRIBUTES.add("etag");

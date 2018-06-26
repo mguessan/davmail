@@ -54,6 +54,7 @@ public class MultiValuedFieldUpdate extends FieldUpdate {
      * @param writer   request writer
      * @throws IOException on error
      */
+    @Override
     public void write(String itemType, Writer writer) throws IOException {
         String action;
         //noinspection VariableNotUsedInsideIf

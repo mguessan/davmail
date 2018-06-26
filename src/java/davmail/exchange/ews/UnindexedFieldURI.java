@@ -101,6 +101,8 @@ public class UnindexedFieldURI implements FieldURI {
             itemType = "Task";
         } else if (fieldURI.startsWith("contacts") && itemType != null) {
             itemType = "Contact";
+        } else if (fieldURI.startsWith("distributionlist") && itemType != null) {
+            itemType = "DistributionList";
         }
         if (!values.isEmpty()) {
             if (itemType != null) {
@@ -117,6 +119,16 @@ public class UnindexedFieldURI implements FieldURI {
                     buffer.append("<t:Attendee><t:Mailbox><t:EmailAddress>");
                     buffer.append(StringUtil.xmlEncodeAttribute(value));
                     buffer.append("</t:EmailAddress></t:Mailbox></t:Attendee>");
+                } else if ("Members".equals(fieldName)) {
+                    if (value.toLowerCase().startsWith("mailto:")) {
+                        buffer.append("<t:Member><t:Mailbox><t:EmailAddress>");
+                        buffer.append(StringUtil.xmlEncodeAttribute(value.substring(7)));
+                        buffer.append("</t:EmailAddress></t:Mailbox></t:Member>");
+                    } else if (value.startsWith("urn:uuid:")){
+                        buffer.append("<t:Member><t:Mailbox><t:MailboxType>PrivateDL</t:MailboxType><t:ItemId Id=\"");
+                        buffer.append(StringUtil.xmlEncodeAttribute(value.substring(9)));
+                        buffer.append("\"/></t:Mailbox></t:Member>");
+                    }
                 } else {
                     buffer.append(StringUtil.xmlEncodeAttribute(value));
                 }

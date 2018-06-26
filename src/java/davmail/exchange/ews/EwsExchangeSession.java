@@ -1376,9 +1376,8 @@ public class EwsExchangeSession extends ExchangeSession {
             }
 
             if (response.getMembers() != null)  {
-                for (EWSMethod.Member member : response.getMembers()) {
-                    String uid = null;
-                    addMember(member.name, member.email, uid);
+                for (String member : response.getMembers()) {
+                    addMember(member);
                 }
             }
         }
@@ -1396,7 +1395,7 @@ public class EwsExchangeSession extends ExchangeSession {
         protected Contact() {
         }
 
-        protected void buildProperties(List<FieldUpdate> updates, boolean create) {
+        protected void buildFieldUpdates(List<FieldUpdate> updates, boolean create) {
             for (Map.Entry<String, String> entry : entrySet()) {
                 if ("photo".equals(entry.getKey())) {
                     updates.add(Field.createFieldUpdate("haspicture", "true"));
@@ -1421,6 +1420,17 @@ public class EwsExchangeSession extends ExchangeSession {
             if (emailFieldUpdate != null) {
                 updates.add(emailFieldUpdate);
             }
+            // handle list members
+            MultiValuedFieldUpdate memberFieldUpdate = null;
+            for (String member : distributionListMembers) {
+                if (memberFieldUpdate == null) {
+                    memberFieldUpdate = new MultiValuedFieldUpdate(Field.get("members"));
+                }
+                memberFieldUpdate.addValue(member);
+            }
+            if (memberFieldUpdate != null) {
+                updates.add(memberFieldUpdate);
+            }
         }
 
 
@@ -1430,6 +1440,7 @@ public class EwsExchangeSession extends ExchangeSession {
          * @return action result
          * @throws IOException on error
          */
+        @Override
         public ItemResult createOrUpdate() throws IOException {
             String photo = get("photo");
 
@@ -1471,7 +1482,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             List<FieldUpdate> fieldUpdates = new ArrayList<FieldUpdate>();
             if (currentItemId != null) {
-                buildProperties(fieldUpdates, false);
+                buildFieldUpdates(fieldUpdates, false);
                 // update
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
@@ -1480,10 +1491,14 @@ public class EwsExchangeSession extends ExchangeSession {
             } else {
                 // create
                 EWSMethod.Item newItem = new EWSMethod.Item();
-                newItem.type = "Contact";
+                if ("IPM.DistList".equals(get("outlookmessageclass"))) {
+                    newItem.type = "DistributionList";
+                } else {
+                    newItem.type = "Contact";
+                }
                 // force urlcompname on create
                 fieldUpdates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
-                buildProperties(fieldUpdates, true);
+                buildFieldUpdates(fieldUpdates, true);
                 newItem.setFieldUpdates(fieldUpdates);
                 createOrUpdateItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, getFolderId(folderPath), newItem);
             }
@@ -2637,8 +2652,8 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        return new Contact(folderPath, itemName, properties, StringUtil.removeQuotes(etag), noneMatch).createOrUpdate();
+    protected Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
+        return new Contact(folderPath, itemName, properties, StringUtil.removeQuotes(etag), noneMatch);
     }
 
     @Override

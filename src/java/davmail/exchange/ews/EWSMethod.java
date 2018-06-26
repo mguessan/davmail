@@ -532,26 +532,6 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     /**
-     * Distribution list member
-     */
-    public static class Member {
-        /**
-         * member name
-         */
-        public String name;
-
-        /**
-         * member email
-         */
-        public String email;
-
-        @Override
-        public String toString() {
-            return name + " " + email;
-        }
-    }
-
-    /**
      * Item
      */
     public static class Item extends HashMap<String, String> {
@@ -565,7 +545,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<Attendee> attendees;
         protected final List<String> fieldNames = new ArrayList<String>();
         protected List<Occurrence> occurrences;
-        protected List<Member> members;
+        protected List<String> members;
         protected ItemId referenceItemId;
 
         @Override
@@ -760,9 +740,9 @@ public abstract class EWSMethod extends PostMethod {
          *
          * @param member list member
          */
-        public void addMember(Member member) {
+        public void addMember(String member) {
             if (members == null) {
-                members = new ArrayList<Member>();
+                members = new ArrayList<String>();
             }
             members.add(member);
         }
@@ -772,7 +752,7 @@ public abstract class EWSMethod extends PostMethod {
          *
          * @return event members
          */
-        public List<Member> getMembers() {
+        public List<String> getMembers() {
             return members;
         }
     }
@@ -1022,19 +1002,19 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void handleMember(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
-        Member member = new Member();
+        String member = null;
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Member")) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
                 String tagLocalName = reader.getLocalName();
-                if ("Name".equals(tagLocalName)) {
-                    member.name = XMLStreamUtil.getElementText(reader);
-                } else if ("EmailAddress".equals(tagLocalName)) {
-                    member.email = XMLStreamUtil.getElementText(reader);
+                if ("EmailAddress".equals(tagLocalName) && member == null) {
+                    member = "mailto:"+XMLStreamUtil.getElementText(reader);
                 }
             }
         }
-        responseItem.addMember(member);
+        if (member != null) {
+            responseItem.addMember(member);
+        }
     }
 
     /**

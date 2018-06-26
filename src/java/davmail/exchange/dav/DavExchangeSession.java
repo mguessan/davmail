@@ -1207,6 +1207,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @return action result
          * @throws IOException on error
          */
+        @Override
         public ItemResult createOrUpdate() throws IOException {
             String encodedHref = URIUtil.encodePath(getHref());
             ExchangePropPatchMethod propPatchMethod = internalCreateOrUpdate(encodedHref);
@@ -2503,8 +2504,8 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected ItemResult internalCreateOrUpdateContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
-        return new Contact(getFolderPath(folderPath), itemName, properties, etag, noneMatch).createOrUpdate();
+    protected Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
+        return new Contact(getFolderPath(folderPath), itemName, properties, etag, noneMatch);
     }
 
     protected List<PropEntry> buildProperties(Map<String, String> properties) {
