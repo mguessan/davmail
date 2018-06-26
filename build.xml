@@ -35,6 +35,12 @@
         </not>
     </condition>
 
+    <condition property="is.java9">
+        <not>
+            <matches string="${ant.java.version}" pattern="1\.[0-8]"/>
+        </not>
+    </condition>
+
     <condition property="is.utf8">
         <equals arg1="${file.encoding}" arg2="UTF-8"/>
     </condition>
@@ -73,7 +79,19 @@
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile" depends="init">
+    <target name="compile-java9" depends="init" if="is.java9">
+        <mkdir dir="target/classes"/>
+        <javac srcdir="src/java" destdir="target/classes" source="9" debug="on" encoding="UTF-8"
+               includeantruntime="false">
+            <compilerarg value="--add-exports" />
+            <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED" />
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="compile-java" depends="init" unless="is.java9">
         <mkdir dir="target/classes"/>
         <javac srcdir="src/java" destdir="target/classes" source="1.6" target="1.6" debug="on" encoding="UTF-8"
                includeantruntime="false">
@@ -81,6 +99,9 @@
                 <path refid="classpath"/>
             </classpath>
         </javac>
+    </target>
+
+    <target name="compile" depends="compile-java,compile-java9">
         <copy todir="target/classes">
             <fileset dir="src/java">
                 <include name="**/*"/>
