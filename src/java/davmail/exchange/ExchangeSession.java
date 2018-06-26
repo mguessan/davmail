@@ -32,6 +32,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
@@ -2364,6 +2365,8 @@ public abstract class ExchangeSession {
      */
     public abstract class Contact extends Item {
 
+        protected ArrayList<DistributionListMember> distributionListMembers = null;
+
         /**
          * @inheritDoc
          */
@@ -2407,7 +2410,7 @@ public abstract class ExchangeSession {
          * @return uid
          * @throws URIException on error
          */
-        protected String getUid() throws URIException {
+        public String getUid() throws URIException {
             String uid = getName();
             int dotIndex = uid.lastIndexOf('.');
             if (dotIndex > 0) {
@@ -2421,6 +2424,13 @@ public abstract class ExchangeSession {
             return "text/vcard";
         }
 
+        public void addMember(String name, String email, String uid) {
+            if (distributionListMembers == null) {
+                distributionListMembers = new ArrayList<DistributionListMember>();
+            }
+            distributionListMembers.add(new DistributionListMember(name, email, uid));
+        }
+
 
         @Override
         public String getBody() throws HttpException {
@@ -2429,9 +2439,24 @@ public abstract class ExchangeSession {
             writer.startCard();
             writer.appendProperty("UID", getUid());
             // common name
-            writer.appendProperty("FN", get("cn"));
+            String cn = get("cn");
+            if (cn == null) {
+                cn = get("displayname");
+            }
+            writer.appendProperty("FN", cn);
             // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
             writer.appendProperty("N", get("sn"), get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
+
+            if (distributionListMembers != null) {
+                writer.appendProperty("KIND", "group");
+                for (DistributionListMember distributionListMember : distributionListMembers) {
+                    if (distributionListMember.uid != null) {
+                        writer.appendProperty("MEMBER", "urn:uuid:" + distributionListMember.uid);
+                    } else {
+                        writer.appendProperty("MEMBER", "mailto:" + distributionListMember.email);
+                    }
+                }
+            }
 
             writer.appendProperty("TEL;TYPE=cell", get("mobile"));
             writer.appendProperty("TEL;TYPE=work", get("telephoneNumber"));
@@ -2521,6 +2546,12 @@ public abstract class ExchangeSession {
             return writer.toString();
         }
 
+        public boolean hasEmail(String email) {
+            return email != null &&
+                    (email.equalsIgnoreCase(get("smtpemail1")) ||
+                            email.equalsIgnoreCase(get("smtpemail2")) ||
+                            email.equalsIgnoreCase(get("smtpemail3")));
+        }
     }
 
     /**
@@ -3066,6 +3097,30 @@ public abstract class ExchangeSession {
     }
 
     /**
+     * list member
+     */
+    public static class DistributionListMember {
+        /**
+         * list member name
+         */
+        public String name;
+        /**
+         * list member email
+         */
+        public String email;
+        /**
+         * list member uid
+         */
+        public String uid;
+
+        public DistributionListMember(String name, String email, String uid) {
+            this.name = name;
+            this.email = email;
+            this.uid = uid;
+        }
+    }
+
+    /**
      * Retrieve contact photo attached to contact
      *
      * @param contact address book contact
@@ -3077,7 +3132,7 @@ public abstract class ExchangeSession {
     /**
      * Retrieve contact photo from AD
      *
-     * @param contact address book contact
+     * @param email address book contact
      * @return contact photo
      */
     public ContactPhoto getADPhoto(String email) {
@@ -3180,9 +3235,13 @@ public abstract class ExchangeSession {
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
         Map<String, String> properties = new HashMap<String, String>();
-        properties.put("outlookmessageclass", "IPM.Contact");
 
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
+        if ("group".equalsIgnoreCase(vcard.getPropertyValue("KIND"))) {
+            properties.put("outlookmessageclass", "IPM.DistList");
+        } else {
+            properties.put("outlookmessageclass", "IPM.Contact");
+        }
         for (VProperty property : vcard.getProperties()) {
             if ("FN".equals(property.getKey())) {
                 properties.put("cn", property.getValue());
@@ -3540,6 +3599,16 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("private");
         CONTACT_ATTRIBUTES.add("sensitivity");
         CONTACT_ATTRIBUTES.add("fburl");
+    }
+
+    public static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<String>();
+    static {
+        DISTRIBUTION_LIST_ATTRIBUTES.add("imapUid");
+        DISTRIBUTION_LIST_ATTRIBUTES.add("etag");
+        DISTRIBUTION_LIST_ATTRIBUTES.add("urlcompname");
+
+        DISTRIBUTION_LIST_ATTRIBUTES.add("cn");
+        DISTRIBUTION_LIST_ATTRIBUTES.add("members");
     }
 
     /**

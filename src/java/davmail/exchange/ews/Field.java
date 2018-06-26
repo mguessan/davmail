@@ -112,6 +112,8 @@ public final class Field {
         //FIELD_MAP.put("fileas", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.PublicStrings, "urn:schemas:contacts:fileas"));
         FIELD_MAP.put("fileas", new UnindexedFieldURI("contacts:FileAs"));
 
+        FIELD_MAP.put("members", new UnindexedFieldURI("distributionlist:Members"));
+
         FIELD_MAP.put("homepostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801A, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("otherpostaladdress", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x801C, ExtendedFieldURI.PropertyType.String));
         FIELD_MAP.put("mailingaddressid", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.Address, 0x8022, ExtendedFieldURI.PropertyType.String));

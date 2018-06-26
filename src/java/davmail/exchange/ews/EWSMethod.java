@@ -532,6 +532,26 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     /**
+     * Distribution list member
+     */
+    public static class Member {
+        /**
+         * member name
+         */
+        public String name;
+
+        /**
+         * member email
+         */
+        public String email;
+
+        @Override
+        public String toString() {
+            return name + " " + email;
+        }
+    }
+
+    /**
      * Item
      */
     public static class Item extends HashMap<String, String> {
@@ -545,6 +565,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<Attendee> attendees;
         protected final List<String> fieldNames = new ArrayList<String>();
         protected List<Occurrence> occurrences;
+        protected List<Member> members;
         protected ItemId referenceItemId;
 
         @Override
@@ -733,6 +754,27 @@ public abstract class EWSMethod extends PostMethod {
         public List<Occurrence> getOccurrences() {
             return occurrences;
         }
+
+        /**
+         * Add member.
+         *
+         * @param member list member
+         */
+        public void addMember(Member member) {
+            if (members == null) {
+                members = new ArrayList<Member>();
+            }
+            members.add(member);
+        }
+
+        /**
+         * Get members.
+         *
+         * @return event members
+         */
+        public List<Member> getMembers() {
+            return members;
+        }
     }
 
     /**
@@ -869,6 +911,8 @@ public abstract class EWSMethod extends PostMethod {
                 String value = null;
                 if ("ExtendedProperty".equals(tagLocalName)) {
                     addExtendedPropertyValue(reader, responseItem);
+                } else if ("Members".equals(tagLocalName)) {
+                    handleMembers(reader, responseItem);
                 } else if (tagLocalName.endsWith("MimeContent")) {
                     handleMimeContent(reader, responseItem);
                 } else if ("Attachments".equals(tagLocalName)) {
@@ -948,6 +992,34 @@ public abstract class EWSMethod extends PostMethod {
             }
         }
         item.addOccurrence(occurrence);
+    }
+
+    protected void handleMembers(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Members")) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Member".equals(tagLocalName)) {
+                    handleMember(reader, responseItem);
+                }
+            }
+        }
+    }
+
+    protected void handleMember(XMLStreamReader reader, Item responseItem) throws XMLStreamException {
+        Member member = new Member();
+        while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "Member")) {
+            reader.next();
+            if (XMLStreamUtil.isStartTag(reader)) {
+                String tagLocalName = reader.getLocalName();
+                if ("Name".equals(tagLocalName)) {
+                    member.name = XMLStreamUtil.getElementText(reader);
+                } else if ("EmailAddress".equals(tagLocalName)) {
+                    member.email = XMLStreamUtil.getElementText(reader);
+                }
+            }
+        }
+        responseItem.addMember(member);
     }
 
     /**
@@ -1139,6 +1211,9 @@ public abstract class EWSMethod extends PostMethod {
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
+                    /*if (count > 0 && LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(new String(buffer, offset, count, "UTF-8"));
+                    }*/
                     return count;
                 }
             };
