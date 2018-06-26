@@ -2327,23 +2327,13 @@ public class EwsExchangeSession extends ExchangeSession {
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition,
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, or(condition, isEqualTo("outlookmessageclass", "IPM.DistList")),
                 FolderQueryTraversal.SHALLOW, maxCount);
 
         for (EWSMethod.Item response : responses) {
             contacts.add(new Contact(response));
         }
-        appendDistributionLists(folderPath, contacts);
         return contacts;
-    }
-
-    public void appendDistributionLists(String folderPath, List<ExchangeSession.Contact> contacts) throws IOException {
-        List<EWSMethod.Item> distributionListItems = searchItems(folderPath, CONTACT_ATTRIBUTES,
-                isEqualTo("outlookmessageclass", "IPM.DistList"), FolderQueryTraversal.SHALLOW, 0);
-        for (EWSMethod.Item response : distributionListItems) {
-            contacts.add(new Contact(response));
-        }
-
     }
 
     @Override
