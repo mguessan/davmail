@@ -3349,8 +3349,14 @@ public abstract class ExchangeSession {
                 String member = property.getValue();
                 if (member.startsWith("urn:uuid:")) {
                     Item item = getItem(folderPath, member.substring(9)+".EML");
-                    if (item != null && item.get("smtpemail1") != null) {
-                        member = "mailto:"+item.get("smtpemail1");
+                    if (item != null) {
+                        if (item.get("smtpemail1") != null) {
+                            member = "mailto:"+item.get("smtpemail1");
+                        } else if (item.get("smtpemail2") != null) {
+                            member = "mailto:" + item.get("smtpemail2");
+                        } else if (item.get("smtpemail3") != null) {
+                            member = "mailto:" + item.get("smtpemail3");
+                        }
                     }
                 }
                 contact.addMember(member);
