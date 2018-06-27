@@ -104,6 +104,7 @@ public abstract class ExchangeSession {
     protected static final String ADDRESSBOOK = "addressbook";
     protected static final String INBOX = "INBOX";
     protected static final String LOWER_CASE_INBOX = "inbox";
+    protected static final String MIXED_CASE_INBOX = "Inbox";
     protected static final String SENT = "Sent";
     protected static final String SENDMSG = "##DavMailSubmissionURI##";
     protected static final String DRAFTS = "Drafts";
@@ -1230,7 +1231,9 @@ public abstract class ExchangeSession {
     public List<Folder> getSubFolders(String folderName, boolean recursive, boolean wildcard) throws IOException {
         MultiCondition folderCondition = and();
         if (!Settings.getBooleanProperty("davmail.imapIncludeSpecialFolders", false)) {
-            folderCondition.add(or(isEqualTo("folderclass", "IPF.Note"), isNull("folderclass")));
+            folderCondition.add(or(isEqualTo("folderclass", "IPF.Note"),
+                    isEqualTo("folderclass", "IPF.Note.Microsoft.Conversation"),
+                    isNull("folderclass")));
         }
         if (wildcard) {
             folderCondition.add(startsWith("displayname", folderName));
