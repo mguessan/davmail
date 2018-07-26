@@ -268,8 +268,8 @@
         <!-- included in Java 1.6, needed with Java 1.5 -->
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
-            <artifactId>woodstox-core-asl</artifactId>
-            <version>4.1.2</version>
+            <artifactId>woodstox-core</artifactId>
+            <version>5.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.samba.jcifs</groupId>
