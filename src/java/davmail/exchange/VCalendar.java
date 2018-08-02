@@ -103,12 +103,19 @@ public class VCalendar extends VObject {
 
     @Override
     public void addVObject(VObject vObject) {
-        super.addVObject(vObject);
         if (firstVevent == null && ("VEVENT".equals(vObject.type) || "VTODO".equals(vObject.type))) {
             firstVevent = vObject;
         }
         if ("VTIMEZONE".equals(vObject.type)) {
-            vTimezone = vObject;
+            if (vTimezone == null) {
+                vTimezone = vObject;
+            } else if (vTimezone.getPropertyValue("TZID").equals(vObject.getPropertyValue("TZID"))){
+                // drop duplicate TZID definition (Korganizer bug)
+                vObject = null;
+            }
+        }
+        if (vObject != null) {
+            super.addVObject(vObject);
         }
     }
 
