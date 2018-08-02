@@ -1422,11 +1422,13 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             // handle list members
             MultiValuedFieldUpdate memberFieldUpdate = null;
-            for (String member : distributionListMembers) {
-                if (memberFieldUpdate == null) {
-                    memberFieldUpdate = new MultiValuedFieldUpdate(Field.get("members"));
+            if (distributionListMembers != null) {
+                for (String member : distributionListMembers) {
+                    if (memberFieldUpdate == null) {
+                        memberFieldUpdate = new MultiValuedFieldUpdate(Field.get("members"));
+                    }
+                    memberFieldUpdate.addValue(member);
                 }
-                memberFieldUpdate.addValue(member);
             }
             if (memberFieldUpdate != null) {
                 updates.add(memberFieldUpdate);
@@ -1520,7 +1522,9 @@ public class EwsExchangeSession extends ExchangeSession {
             ItemId newItemId = new ItemId(createOrUpdateItemMethod.getResponseItem());
 
             // disable contact picture handling on Exchange 2007
-            if (!"Exchange2007_SP1".equals(serverVersion)) {
+            if (!"Exchange2007_SP1".equals(serverVersion)
+                    // prefer user provided photo
+                    && getADPhoto(get("smtpemail1")) == null) {
                 // first delete current picture
                 if (currentFileAttachment != null) {
                     DeleteAttachmentMethod deleteAttachmentMethod = new DeleteAttachmentMethod(currentFileAttachment.attachmentId);
