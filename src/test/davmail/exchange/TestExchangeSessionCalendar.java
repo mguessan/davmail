@@ -327,6 +327,92 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
     }
 
+    public void testAnotherCreateEventBrokenTZ() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//K Desktop Environment//NONSGML libkcal 4.3//EN\n" +
+                "VERSION:2.0\n" +
+                "X-KDE-ICAL-IMPLEMENTATION-VERSION:1.0\n" +
+                "METHOD:PUBLISH\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Central Europe Standard Time\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0000\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19800405T230000\n" +
+                "RDATE:19800405T230000\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19810927T030000\n" +
+                "RRULE:FREQ=YEARLY;UNTIL=19961027T030000;COUNT=15;BYDAY=-1SU;BYMONTH=9\n" +
+                "END:STANDARD\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19971026T030000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
+                "END:STANDARD\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19800928T000000\n" +
+                "RDATE:19800928T000000\n" +
+                "RDATE:19950924T030000\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19810329T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Central Europe Standard Time\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:CET\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "DTSTART:19971026T030000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZNAME:CEST\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "DTSTART:19810329T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "DTSTAMP:20180726T130457Z\n" +
+                "CREATED:20180726T130457Z\n" +
+                "UID:0b930f17-1d52-47ac-a9cd-d123dfb5cf0b\n" +
+                "LAST-MODIFIED:20180726T130457Z\n" +
+                "SUMMARY:tesssssss\n" +
+                "DTSTART;TZID=Central Europe Standard Time:20180726T161500\n" +
+                "DTEND;TZID=Central Europe Standard Time:20180726T173000\n" +
+                "TRANSP:OPAQUE\n" +
+                "ORGANIZER:MAILTO:P20315@xxx.yyy.zz\n" +
+                "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
+                "BEGIN:VALARM\n" +
+                "DESCRIPTION:\n" +
+                "ACTION:DISPLAY\n" +
+                "TRIGGER:-PT15M\n" +
+                "X-KDE-KCALCORE-ENABLED:TRUE\n" +
+                "END:VALARM\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR\n";
+        String itemName = UUID.randomUUID().toString() + ".EML";
+        session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+    }
+
     public void testSearchTasks() throws IOException {
         List<ExchangeSession.Event> events = null;
         try {
