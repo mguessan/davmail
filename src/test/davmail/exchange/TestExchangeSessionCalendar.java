@@ -413,6 +413,41 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
     }
 
+    public void testMissingTimeZone() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
+                "VERSION:2.0\n" +
+                "METHOD:PUBLISH\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Missing timezone id\n" +
+                "BEGIN:STANDARD\n" +
+                "DTSTART:16010101T030000\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "DTSTART:16010101T020000\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "CREATED:20120611T113748Z\n" +
+                "LAST-MODIFIED:20120611T113823Z\n" +
+                "DTSTAMP:20120611T113823Z\n" +
+                "UID:040000008200E00074C5B7101A82E0080000000020EA852CF458CC0100000000000000001\n" +
+                " 000000011278A1693B8494C8592446E6E249BCF\n" +
+                "DTSTART;TZID=Missing timezone id:20120926T100000\n" +
+                "DTEND;TZID=Missing timezone id:20120926T120000\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR\n";
+        VCalendar vCalendar = new VCalendar(itemBody, session.getEmail(), session.getVTimezone());
+        vCalendar.convertCalendarDateToExchangeZulu("20120926T100000", "Missing timezone id");
+    }
+
+
     public void testSearchTasks() throws IOException {
         List<ExchangeSession.Event> events = null;
         try {

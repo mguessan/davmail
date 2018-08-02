@@ -871,7 +871,7 @@ public class VCalendar extends VObject {
                     convertedTzid = ResourceBundle.getBundle("tzoffsettimezones").getString(tzOffset);
                 }
             }
-            convertedTzid = ResourceBundle.getBundle("timezones").getString(tzid);
+            convertedTzid = ResourceBundle.getBundle("timezones").getString(convertedTzid);
         }
         return TimeZone.getTimeZone(convertedTzid);
 
