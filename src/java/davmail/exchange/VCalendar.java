@@ -858,11 +858,12 @@ public class VCalendar extends VObject {
     }
 
     public TimeZone getStandardTimezoneId(String tzid) {
-        String convertedTzid = null;
+        String convertedTzid;
         // convert Exchange TZID to standard timezone
         try {
             convertedTzid = ResourceBundle.getBundle("timezones").getString(tzid);
         } catch (MissingResourceException e) {
+            convertedTzid = tzid;
             // failover: detect timezone from offset
             VObject vTimezone = getVTimezone();
             for (VObject tzDefinition : vTimezone.vObjects) {
@@ -879,7 +880,7 @@ public class VCalendar extends VObject {
 
     public String convertCalendarDateToExchangeZulu(String vcalendarDateValue, String tzid) throws IOException {
         String zuluDateValue = null;
-        TimeZone timeZone = null;
+        TimeZone timeZone;
         if (tzid == null) {
             timeZone = ExchangeSession.GMT_TIMEZONE;
         } else {
