@@ -71,12 +71,12 @@ public class VCardWriter extends ICSBufferedWriter {
         if (value != null) {
             for (int i = 0; i < value.length(); i++) {
                 char c = value.charAt(i);
-                if (c == ',' || c == ';') {
+                if (c == ',' || c == ';' || c == '\\') {
                     buffer.append('\\');
                 }
                 if (c == '\n') {
                     buffer.append("\\n");
-                } else {
+                } else if(c != '\r') {
                     buffer.append(value.charAt(i));
                 }
             }
