@@ -18,14 +18,13 @@
  */
 package davmail.exchange;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * VCard property
  */
 public class VProperty {
+
     protected static enum State {
         KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
     }
@@ -195,6 +194,26 @@ public class VProperty {
     }
 
     /**
+     * Return property values as a map.
+     * Typical use for RRULE content
+     * @return values as map
+     */
+    public Map<String, String> getValuesAsMap() {
+        HashMap<String, String> valuesMap = new HashMap<String, String>();
+
+        if (values != null) {
+            for (String value:values) {
+                if (value.contains("=")) {
+                    int index = value.indexOf("=");
+                    valuesMap.put(value.substring(0, index), value.substring(index+1));
+                }
+            }
+        }
+        return valuesMap;
+    }
+
+
+    /**
      * Test if the property has a param named paramName with given value.
      *
      * @param paramName  param name
@@ -351,6 +370,21 @@ public class VProperty {
         }
         values.add(decodeValue(value));
     }
+
+    public void removeValue(String value) {
+        if (values != null) {
+            int index = -1;
+            for (int i=0;i<values.size();i++) {
+                if (value.equals(values.get(i))) {
+                    index = i;
+                }
+            }
+            if (index >= 0) {
+                values.remove(index);
+            }
+        }
+    }
+
 
     protected String decodeValue(String value) {
         if (value == null || (value.indexOf('\\') < 0 && value.indexOf(',') < 0)) {

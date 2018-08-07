@@ -356,6 +356,21 @@ public class VCalendar extends VObject {
                 }
             }
         }
+        
+        // validate RRULE - COUNT and UNTIL may not occur at once
+        if (vTimezone != null && vTimezone.vObjects != null) {
+            for (VObject vObject : vTimezone.vObjects) {
+                VProperty rrule = vObject.getProperty("RRULE");
+                if (rrule != null) {
+                    Map<String, String> rruleValueMap = rrule.getValuesAsMap();
+                    if (rruleValueMap.containsKey("UNTIL") && rruleValueMap.containsKey("COUNT")) {
+                        rrule.removeValue("UNTIL="+rruleValueMap.get("UNTIL"));
+                    }
+                }
+            }
+        }
+        // end validate RRULE
+        
         // convert TZID to Exchange time zone id
         ResourceBundle tzBundle = ResourceBundle.getBundle("exchtimezones");
         ResourceBundle tzidsBundle = ResourceBundle.getBundle("stdtimezones");
