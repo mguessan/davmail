@@ -163,25 +163,6 @@
     <prerequisites>
         <maven>3.0.1</maven>
     </prerequisites>
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Maven Repository Switchboard</name>
-            <layout>default</layout>
-            <url>http://repo1.maven.org/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>xwiki</id>
-            <layout>default</layout>
-            <url>http://maven.xwiki.org/externals</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -270,6 +251,11 @@
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core</artifactId>
             <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.woodstox</groupId>
+            <artifactId>stax2-api</artifactId>
+            <version>4.1</version>
         </dependency>
         <dependency>
             <groupId>org.samba.jcifs</groupId>
