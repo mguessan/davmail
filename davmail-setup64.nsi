@@ -115,7 +115,6 @@ Section "MainSection" SEC01
   File "dist\lib\stax2-api-3.1.1.jar"
   File "dist\lib\winrun4j-0.4.5.jar"
   File "dist\lib\woodstox-core-5.1.0.jar"
-  File "dist\lib\xercesImpl-2.8.1.jar"
 SectionEnd
 
 Section -AdditionalIcons
@@ -186,7 +185,6 @@ no_quest:
   Delete "$INSTDIR\lib\stax2-api-3.1.1.jar"
   Delete "$INSTDIR\lib\winrun4j-0.4.5.jar"
   Delete "$INSTDIR\lib\woodstox-core-5.1.0.jar"
-  Delete "$INSTDIR\lib\xercesImpl-2.8.1.jar"
 
   Delete "$INSTDIR\davmailservice64.exe"
   Delete "$INSTDIR\davmail64.exe"
