@@ -19,8 +19,6 @@
 package davmail.http;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -41,11 +39,11 @@ public final class SunPKCS11ProviderHandler {
      * @param pkcs11Config PKCS11 config string
      */
     public static void registerProvider(String pkcs11Config) {
-        Provider p = null;
+        Provider p;
 
         try {
             Class sunPkcs11Class = Class.forName("sun.security.pkcs11.SunPKCS11");
-            Constructor sunPkcs11Constructor = sunPkcs11Class.getDeclaredConstructor(InputStream.class);
+            @SuppressWarnings("unchecked") Constructor sunPkcs11Constructor = sunPkcs11Class.getDeclaredConstructor(InputStream.class);
             p = (Provider) sunPkcs11Constructor.newInstance(new ByteArrayInputStream(pkcs11Config.getBytes("UTF-8")));
         } catch (NoSuchMethodException e) {
             // try java 9 configuration
@@ -68,6 +66,7 @@ public final class SunPKCS11ProviderHandler {
         try {
             p = Security.getProvider("SunPKCS11");
             //p.configure("--"+pkcs11Config);
+            //noinspection JavaReflectionMemberAccess new Java 9 configure method
             Method configureMethod = Provider.class.getDeclaredMethod("configure", String.class);
             configureMethod.invoke(p, "--"+pkcs11Config);
         } catch (Exception e) {
