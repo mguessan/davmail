@@ -308,6 +308,23 @@ public abstract class ExchangeSession {
         return dateFormat;
     }
 
+    protected static SimpleDateFormat getExchangeDateFormat(String value) {
+        SimpleDateFormat dateFormat;
+        if (value.length() == 8) {
+            dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
+            dateFormat.setTimeZone(GMT_TIMEZONE);
+        } else if (value.length() == 15) {
+            dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+            dateFormat.setTimeZone(GMT_TIMEZONE);
+        } else if (value.length() == 16) {
+            dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.ENGLISH);
+            dateFormat.setTimeZone(GMT_TIMEZONE);
+        } else {
+            dateFormat = ExchangeSession.getExchangeZuluDateFormat();
+        }
+        return dateFormat;
+    }
+
     protected static SimpleDateFormat getExchangeZuluDateFormat() {
         SimpleDateFormat dateFormat = new SimpleDateFormat(YYYY_MM_DD_T_HHMMSS_Z, Locale.ENGLISH);
         dateFormat.setTimeZone(GMT_TIMEZONE);

@@ -3117,19 +3117,7 @@ public class DavExchangeSession extends ExchangeSession {
         String result = null;
         if (value != null && value.length() > 0) {
             try {
-                SimpleDateFormat parser;
-                if (value.length() == 8) {
-                    parser = new SimpleDateFormat("yyyyMMdd", Locale.ENGLISH);
-                    parser.setTimeZone(GMT_TIMEZONE);
-                } else if (value.length() == 15) {
-                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
-                    parser.setTimeZone(GMT_TIMEZONE);
-                } else if (value.length() == 16) {
-                    parser = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.ENGLISH);
-                    parser.setTimeZone(GMT_TIMEZONE);
-                } else {
-                    parser = ExchangeSession.getExchangeZuluDateFormat();
-                }
+                SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);;
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
                 calendarValue.setTime(parser.parse(value));
                 // zulu time: add 12 hours
