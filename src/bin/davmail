@@ -2,6 +2,9 @@
 #
 # Usage: davmail [</path/to/davmail.properties>]
 #
+# In case of SWT crash under JDK 9, use the following command:
+# exec java -Xmx512M -Dsun.net.inetaddr.ttl=60 -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+#
 export LD_LIBRARY_PATH=/usr/lib/jni
 for i in /usr/share/davmail/lib/*; do export CLASSPATH=$CLASSPATH:$i; done
 exec java -Xmx512M -Dsun.net.inetaddr.ttl=60 -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:$CLASSPATH davmail.DavGateway "$@" 
