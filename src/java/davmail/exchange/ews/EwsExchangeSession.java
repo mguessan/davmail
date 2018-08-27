@@ -180,7 +180,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (logonMethod == null) {
             LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", will try direct EWS access");
         } else {
-            logonMethod = postLogonMethod(httpClient, logonMethod, userName, password);
+            logonMethod = postLogonMethod(httpClient, logonMethod, password);
         }
 
         return logonMethod;

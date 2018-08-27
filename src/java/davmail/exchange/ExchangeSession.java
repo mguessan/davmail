@@ -32,7 +32,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.util.URIUtil;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
@@ -132,7 +131,7 @@ public abstract class ExchangeSession {
      * /users/<i>email</i>
      */
     protected String currentMailboxPath;
-    protected HttpClient httpClient = null;
+    protected HttpClient httpClient;
 
     protected String userName;
     /**
@@ -544,7 +543,7 @@ public abstract class ExchangeSession {
 
                             } else if (content instanceof ContentNode) {
                                 // Microsoft Forefront Unified Access Gateway redirect
-                                String scriptValue = ((ContentNode) content).getContent().toString();
+                                String scriptValue = ((ContentNode) content).getContent();
                                 String location = StringUtil.getToken(scriptValue, "window.location.replace(\"", "\"");
                                 if (location != null) {
                                     LOGGER.debug("Post logon redirect to: " + location);
@@ -564,7 +563,7 @@ public abstract class ExchangeSession {
         return logonMethod;
     }
 
-    protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String userName, String password) throws IOException {
+    protected HttpMethod postLogonMethod(HttpClient httpClient, HttpMethod logonMethod, String password) throws IOException {
 
         setAuthFormFields(logonMethod, httpClient, password);
 
@@ -587,7 +586,7 @@ public abstract class ExchangeSession {
                     // This applies to both the case the user entered a good OTP code (the usual login process
                     // takes place) and the case the user entered a wrong OTP code (another code will be asked to him).
                     // The user has up to MAX_OTP_RETRIES chances to input a valid OTP key.
-                    return postLogonMethod(httpClient, logonMethod, userName, password);
+                    return postLogonMethod(httpClient, logonMethod, password);
                 }
 
                 // if logonMethod is not null, try to follow redirection
@@ -669,7 +668,7 @@ public abstract class ExchangeSession {
             LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", trying default url");
             logonMethod = new PostMethod("/owa/auth/owaauth.dll");
         }
-        logonMethod = postLogonMethod(httpClient, logonMethod, userName, password);
+        logonMethod = postLogonMethod(httpClient, logonMethod, password);
 
         return logonMethod;
     }
@@ -914,7 +913,7 @@ public abstract class ExchangeSession {
     /**
      * Exchange search filter.
      */
-    public static interface Condition {
+    public interface Condition {
         /**
          * Append condition to buffer.
          *
@@ -1459,11 +1458,10 @@ public abstract class ExchangeSession {
      * Create Exchange message folder.
      *
      * @param folderName logical folder name
-     * @return status
      * @throws IOException on error
      */
-    public int createMessageFolder(String folderName) throws IOException {
-        return createFolder(folderName, "IPF.Note", null);
+    public void createMessageFolder(String folderName) throws IOException {
+        createFolder(folderName, "IPF.Note", null);
     }
 
     /**
@@ -1483,11 +1481,10 @@ public abstract class ExchangeSession {
      *
      * @param folderName logical folder name
      * @param properties folder properties
-     * @return status
      * @throws IOException on error
      */
-    public int createContactFolder(String folderName, Map<String, String> properties) throws IOException {
-        return createFolder(folderName, "IPF.Contact", properties);
+    public void createContactFolder(String folderName, Map<String, String> properties) throws IOException {
+        createFolder(folderName, "IPF.Contact", properties);
     }
 
     /**
@@ -2064,7 +2061,7 @@ public abstract class ExchangeSession {
             return mimeMessage;
         }
 
-        public Enumeration getMatchingHeaderLinesFromHeaders(String[] headerNames) throws MessagingException, IOException {
+        public Enumeration getMatchingHeaderLinesFromHeaders(String[] headerNames) throws MessagingException {
             Enumeration result = null;
             if (mimeMessage == null) {
                 // message not loaded, try to get headers only
@@ -2562,13 +2559,6 @@ public abstract class ExchangeSession {
 
             writer.endCard();
             return writer.toString();
-        }
-
-        public boolean hasEmail(String email) {
-            return email != null &&
-                    (email.equalsIgnoreCase(get("smtpemail1")) ||
-                            email.equalsIgnoreCase(get("smtpemail2")) ||
-                            email.equalsIgnoreCase(get("smtpemail3")));
         }
     }
 
@@ -3713,7 +3703,7 @@ public abstract class ExchangeSession {
         final HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
 
         StringBuilder getBusyBuffer(char type) {
-            String fbType = FBTYPES.get(Character.valueOf(type));
+            String fbType = FBTYPES.get(type);
             StringBuilder buffer = busyMap.get(fbType);
             if (buffer == null) {
                 buffer = new StringBuilder();
