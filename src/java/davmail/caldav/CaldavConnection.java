@@ -590,11 +590,10 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendGetRoot() throws IOException {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("Connected to DavMail<br/>");
-        buffer.append("UserName :").append(userName).append("<br/>");
-        buffer.append("Email :").append(session.getEmail()).append("<br/>");
-        sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer.toString(), true);
+        String buffer = "Connected to DavMail<br/>" +
+                "UserName :" + userName + "<br/>" +
+                "Email :" + session.getEmail() + "<br/>";
+        sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer, true);
     }
 
     /**
