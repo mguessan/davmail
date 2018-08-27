@@ -81,6 +81,7 @@ public final class Field {
         FIELD_MAP.put("msgfrom", new UnindexedFieldURI("message:From"));
         FIELD_MAP.put("msgto", new UnindexedFieldURI("message:ToRecipients"));
         FIELD_MAP.put("msgcc", new UnindexedFieldURI("message:CcRecipients"));
+        FIELD_MAP.put("msgbcc", new UnindexedFieldURI("message:BccRecipients"));
 
         FIELD_MAP.put("from", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "from"));
         FIELD_MAP.put("to", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "to"));
@@ -90,7 +91,6 @@ public final class Field {
         FIELD_MAP.put("bcc", new ExtendedFieldURI(ExtendedFieldURI.DistinguishedPropertySetType.InternetHeaders, "bcc"));
 
         FIELD_MAP.put("message-id", new UnindexedFieldURI("message:InternetMessageId"));
-        FIELD_MAP.put("bcc", new UnindexedFieldURI("message:BccRecipients"));
 
         FIELD_MAP.put("messageheaders", new ExtendedFieldURI(0x007D, ExtendedFieldURI.PropertyType.String)); // PR_TRANSPORT_MESSAGE_HEADERS
 
