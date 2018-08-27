@@ -2462,9 +2462,13 @@ public abstract class ExchangeSession {
             if (cn == null) {
                 cn = get("displayname");
             }
+            String sn = get("sn");
+            if (sn == null) {
+                sn = cn;
+            }
             writer.appendProperty("FN", cn);
             // RFC 2426: Family Name, Given Name, Additional Names, Honorific Prefixes, and Honorific Suffixes
-            writer.appendProperty("N", get("sn"), get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
+            writer.appendProperty("N", sn, get("givenName"), get("middlename"), get("personaltitle"), get("namesuffix"));
 
             if (distributionListMembers != null) {
                 writer.appendProperty("KIND", "group");
