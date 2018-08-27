@@ -1133,7 +1133,7 @@ public class ImapConnection extends AbstractConnection {
             try {
                 String unfoldedValue = MimeUtility.unfold(value[0]);
                 InternetAddress[] addresses = InternetAddress.parseHeader(unfoldedValue, false);
-                if (addresses != null && addresses.length > 0) {
+                if (addresses.length > 0) {
                     buffer.append('(');
                     for (InternetAddress address : addresses) {
                         buffer.append('(');
@@ -1147,7 +1147,7 @@ public class ImapConnection extends AbstractConnection {
                         String mail = address.getAddress();
                         int atIndex = mail.indexOf('@');
                         if (atIndex >= 0) {
-                            buffer.append('"').append(mail.substring(0, atIndex)).append('"');
+                            buffer.append('"').append(mail, 0, atIndex).append('"');
                             buffer.append(' ');
                             buffer.append('"').append(mail.substring(atIndex + 1)).append('"');
                         } else {
@@ -1441,7 +1441,7 @@ public class ImapConnection extends AbstractConnection {
             return session.isNull("deleted");
         } else if ("FLAGGED".equals(token)) {
             conditions.flagged = Boolean.TRUE;
-        } else if ("UNFLAGGED".equals(token) || "NEW".equals(token)) {
+        } else if ("UNFLAGGED".equals(token)) {
             conditions.flagged = Boolean.FALSE;
         } else if ("ANSWERED".equals(token)) {
             conditions.answered = Boolean.TRUE;
@@ -1456,12 +1456,12 @@ public class ImapConnection extends AbstractConnection {
             return session.headerIsEqualTo(headerName, value);
         } else if ("UID".equals(token)) {
             String range = tokens.nextToken();
-            if ("1:*".equals(range)) {
-                // ignore: this is a noop filter
-            } else {
+            // ignore 1:* noop filter
+            if (!"1:*".equals(range)) {
                 conditions.uidRange = range;
             }
-        } else if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
+        } else //noinspection StatementWithEmptyBody
+            if ("OLD".equals(token) || "RECENT".equals(token) || "ALL".equals(token)) {
             // ignore
         } else if (token.indexOf(':') >= 0 || token.matches("\\d+")) {
             // range search
@@ -1562,7 +1562,8 @@ public class ImapConnection extends AbstractConnection {
                         properties.put("answered", null);
                         message.answered = false;
                     }
-                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                } else //noinspection StatementWithEmptyBody
+                    if ("\\Draft".equalsIgnoreCase(flag)) {
                     // ignore, draft is readonly after create
                 } else if (message.keywords != null) {
                     properties.put("keywords", message.removeFlag(flag));
@@ -1602,7 +1603,8 @@ public class ImapConnection extends AbstractConnection {
                         properties.put("junk", "1");
                         message.junk = true;
                     }
-                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                } else //noinspection StatementWithEmptyBody
+                    if ("\\Draft".equalsIgnoreCase(flag)) {
                     // ignore, draft is readonly after create
                 } else {
                     properties.put("keywords", message.addFlag(flag));
@@ -1633,7 +1635,8 @@ public class ImapConnection extends AbstractConnection {
                     forwarded = true;
                 } else if ("Junk".equalsIgnoreCase(flag)) {
                     junk = true;
-                } else if ("\\Draft".equalsIgnoreCase(flag)) {
+                } else //noinspection StatementWithEmptyBody
+                    if ("\\Draft".equalsIgnoreCase(flag)) {
                     // ignore, draft is readonly after create
                 } else {
                     if (keywords == null) {
@@ -1731,7 +1734,7 @@ public class ImapConnection extends AbstractConnection {
      * Filter to output only headers, also count full size
      */
     private static final class PartOutputStream extends FilterOutputStream {
-        protected static enum State {
+        protected enum State {
             START, CR, CRLF, CRLFCR, BODY
         }
 
