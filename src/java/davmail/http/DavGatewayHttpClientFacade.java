@@ -336,7 +336,8 @@ public final class DavGatewayHttpClientFacade {
         return executeFollowRedirects(httpClient, method);
     }
 
-    private static int checkNTLM(HttpClient httpClient, HttpMethod currentMethod) throws IOException {
+    private static int executeMethod(HttpClient httpClient, HttpMethod currentMethod) throws IOException {
+        httpClient.executeMethod(currentMethod);
         int status = currentMethod.getStatusCode();
         if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
                 && acceptsNTLMOnly(currentMethod) && !hasNTLMorNegotiate(httpClient)) {
@@ -403,8 +404,7 @@ public final class DavGatewayHttpClientFacade {
         HttpMethod currentMethod = method;
         try {
             DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS", currentMethod.getURI()));
-            httpClient.executeMethod(currentMethod);
-            checkNTLM(httpClient, currentMethod);
+            executeMethod(httpClient, currentMethod);
 
             String locationValue = getLocationValue(currentMethod);
             // check javascript redirect (multiple authentication pages)
@@ -419,8 +419,7 @@ public final class DavGatewayHttpClientFacade {
                 currentMethod = new GetMethod(locationValue);
                 currentMethod.setFollowRedirects(false);
                 DavGatewayTray.debug(new BundleMessage("LOG_EXECUTE_FOLLOW_REDIRECTS_COUNT", currentMethod.getURI(), redirectCount));
-                httpClient.executeMethod(currentMethod);
-                checkNTLM(httpClient, currentMethod);
+                executeMethod(httpClient, currentMethod);
                 locationValue = getLocationValue(currentMethod);
             }
             if (locationValue != null) {
@@ -446,15 +445,7 @@ public final class DavGatewayHttpClientFacade {
     public static int executeNoRedirect(HttpClient httpClient, HttpMethod method) throws IOException {
         int status;
         try {
-            status = httpClient.executeMethod(method);
-            // check NTLM
-            if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
-                    && acceptsNTLMOnly(method) && !hasNTLMorNegotiate(httpClient)) {
-                LOGGER.debug("Received " + status + " unauthorized at " + method.getURI() + ", retrying with NTLM");
-                resetMethod(method);
-                addNTLM(httpClient);
-                status = httpClient.executeMethod(method);
-            }
+            status = executeMethod(httpClient, method);
         } finally {
             method.releaseConnection();
         }
@@ -525,18 +516,9 @@ public final class DavGatewayHttpClientFacade {
      * @throws IOException on error
      */
     public static MultiStatusResponse[] executeMethod(HttpClient httpClient, DavMethodBase method) throws IOException {
-        MultiStatusResponse[] responses = null;
+        MultiStatusResponse[] responses;
         try {
-            int status = httpClient.executeMethod(method);
-
-            // need to follow redirects (once) on public folders
-            if (isRedirect(status)) {
-                method.releaseConnection();
-                URI targetUri = new URI(method.getResponseHeader("Location").getValue(), true);
-                checkExpiredSession(targetUri.getQuery());
-                method.setURI(targetUri);
-                status = httpClient.executeMethod(method);
-            }
+            int status = executeMethodFollowRedirectOnce(httpClient, method);
 
             if (status != HttpStatus.SC_MULTI_STATUS) {
                 throw buildHttpException(method);
@@ -552,6 +534,28 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
+     * Execute method, redirect once if returned status is redirect.
+     *
+     * @param httpClient http client
+     * @param method http method
+     * @return status
+     * @throws IOException on error
+     */
+    protected static int executeMethodFollowRedirectOnce(HttpClient httpClient, HttpMethod method) throws IOException {
+        int status = httpClient.executeMethod(method);
+
+        // need to follow redirects (once) on public folders
+        if (isRedirect(status)) {
+            method.releaseConnection();
+            URI targetUri = new URI(method.getResponseHeader("Location").getValue(), true);
+            checkExpiredSession(targetUri.getQuery());
+            method.setURI(targetUri);
+            status = httpClient.executeMethod(method);
+        }
+        return status;
+    }
+
+    /**
      * Execute webdav request.
      *
      * @param httpClient http client instance
@@ -560,18 +564,9 @@ public final class DavGatewayHttpClientFacade {
      * @throws IOException on error
      */
     public static MultiStatusResponse[] executeMethod(HttpClient httpClient, ExchangeDavMethod method) throws IOException {
-        MultiStatusResponse[] responses = null;
+        MultiStatusResponse[] responses;
         try {
-            int status = httpClient.executeMethod(method);
-
-            // need to follow redirects (once) on public folders
-            if (isRedirect(status)) {
-                method.releaseConnection();
-                URI targetUri = new URI(method.getResponseHeader("Location").getValue(), true);
-                checkExpiredSession(targetUri.getQuery());
-                method.setURI(targetUri);
-                status = httpClient.executeMethod(method);
-            }
+            int status = executeMethodFollowRedirectOnce(httpClient, method);
 
             if (status != HttpStatus.SC_MULTI_STATUS) {
                 throw buildHttpException(method);
@@ -593,7 +588,7 @@ public final class DavGatewayHttpClientFacade {
      * @throws IOException on error
      */
     public static int executeHttpMethod(HttpClient httpClient, HttpMethod method) throws IOException {
-        int status = 0;
+        int status;
         try {
             status = httpClient.executeMethod(method);
         } finally {
