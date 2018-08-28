@@ -152,7 +152,7 @@
     </mailingLists>
     <scm>
         <connection>scm:svn:https://svn.code.sf.net/p/davmail/code/trunk</connection>
-        <developerConnection>scm:svn:svn+ssh://mguessan@svn.code.sf.net/p/davmail/code/trunk</developerConnection>
+        <developerConnection>scm:svn:https://svn.code.sf.net/p/davmail/code/trunk</developerConnection>
         <tag>HEAD</tag>
         <url>https://sourceforge.net/p/davmail/code/HEAD/tree/trunk/</url>
     </scm>
@@ -160,9 +160,6 @@
         <system>SourceForge</system>
         <url>http://sourceforge.net/p/davmail/_list/tickets</url>
     </issueManagement>
-    <prerequisites>
-        <maven>3.0.1</maven>
-    </prerequisites>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
