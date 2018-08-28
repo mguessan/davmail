@@ -76,7 +76,7 @@ public class VCardWriter extends ICSBufferedWriter {
                 }
                 if (c == '\n') {
                     buffer.append("\\n");
-                } else {
+                } else if (c != '\r') {
                     buffer.append(value.charAt(i));
                 }
             }
