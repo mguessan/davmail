@@ -21,6 +21,7 @@ package davmail.exchange;
 import davmail.Settings;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.log4j.Level;
 
 import java.io.*;
 import java.util.HashMap;
@@ -631,5 +632,24 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
 
         ExchangeSession.ItemResult result = session.createOrUpdateContact("testcontactfolder", itemName, itemBody, null, null);
         assertEquals(201, result.status);
+    }
+
+    public void testGetAllContacts() throws IOException {
+        //session.getAllContacts("contacts");
+        List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        for (ExchangeSession.Contact contact: contacts) {
+            ExchangeSession.Item item = session.getItem("contacts", contact.getName());
+            System.out.println((item).getBody());
+        }
+    }
+
+    public void testGetAllDistributionLists() throws IOException {
+        List<ExchangeSession.Contact> contacts = session.searchContacts("contacts", ExchangeSession.CONTACT_ATTRIBUTES, session.isEqualTo("outlookmessageclass", "IPM.DistList"), 0);
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        for (ExchangeSession.Contact contact: contacts) {
+            ExchangeSession.Item item = session.getItem("contacts", contact.getName());
+            System.out.println((item).getBody());
+        }
     }
 }
