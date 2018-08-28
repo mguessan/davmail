@@ -21,12 +21,9 @@ package davmail.exchange;
 import davmail.Settings;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.log4j.Level;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -119,7 +116,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertEquals("middlename", contact.get("middlename"));
         assertEquals("personaltitle", contact.get("personaltitle"));
         assertEquals("namesuffix", contact.get("namesuffix"));
-        assertNotNull("lastmodified");
+        assertNotNull(contact.get("lastmodified"));
         assertEquals("nickname", contact.get("nickname"));
 
         assertEquals("mobile", contact.get("mobile"));
@@ -203,7 +200,7 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
         assertNull(contact.get("middlename"));
         assertNull(contact.get("personaltitle"));
         assertNull(contact.get("namesuffix"));
-        assertNotNull("lastmodified");
+        assertNotNull(contact.get("lastmodified"));
         assertNull(contact.get("nickname"));
 
         assertNull(contact.get("mobile"));
@@ -651,5 +648,19 @@ public class TestExchangeSessionContact extends AbstractExchangeSessionTestCase 
             ExchangeSession.Item item = session.getItem("contacts", contact.getName());
             System.out.println((item).getBody());
         }
+    }
+
+    public void testMultilineProperty() {
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.appendProperty("NOTE", "multi line \r\n with crlf");
+        // should drop CR and convert LF to \\n
+        assertEquals("NOTE:multi line \\n with crlf\r\n", vCardWriter.toString());
+    }
+
+    public void testMultiValueMultilineProperty() {
+        VCardWriter vCardWriter = new VCardWriter();
+        vCardWriter.appendProperty("ADR", "value","multi line \r\n with crlf");
+        // should drop CR and convert LF to \\n
+        assertEquals("ADR:value;multi line \\n with crlf\r\n", vCardWriter.toString());
     }
 }
