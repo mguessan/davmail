@@ -73,6 +73,9 @@ public class GetUserPhotoMethod extends EWSMethod  {
     protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
         if (XMLStreamUtil.isStartTag(reader, "PictureData")) {
             pictureData = reader.getElementText();
+            if (pictureData.isEmpty()) {
+                pictureData = null;
+            }
         }
         if (XMLStreamUtil.isStartTag(reader, "ContentType")) {
             contentType = reader.getElementText();
