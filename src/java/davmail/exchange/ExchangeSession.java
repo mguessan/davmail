@@ -2557,7 +2557,7 @@ public abstract class ExchangeSession {
             }
 
             if (contactPhoto != null) {
-                writer.writeLine("PHOTO;BASE64;TYPE=\"" + contactPhoto.contentType + "\";ENCODING=\"b\":");
+                writer.writeLine("PHOTO;TYPE=" + contactPhoto.contentType + ";ENCODING=BASE64:");
                 writer.writeLine(contactPhoto.content, true);
             }
 
