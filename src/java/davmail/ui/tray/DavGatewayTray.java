@@ -235,7 +235,7 @@ public final class DavGatewayTray {
         );
 
         if (!Settings.getBooleanProperty("davmail.server")) {
-            if ("GNOME-Classic:GNOME".equals(currentDesktop)) {
+            if ("GNOME-Classic:GNOME".equals(currentDesktop) || "ubuntu:GNOME".equals(currentDesktop)) {
                 LOGGER.info("System tray is not supported on Gnome, will switch to frame mode");
             } else
                 if (!notray) {
