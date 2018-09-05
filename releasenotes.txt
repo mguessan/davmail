@@ -1,3 +1,72 @@
+** DavMail 4.9.0 released **
+Includes a lot of enhancements, library upgrades, improved Linux desktop support, code cleanup
+and a brand new Carddav distribution list support.
+DavMail repository is now synced with Github, including Travis CI integration.
+
+Enhancements:
+- Update Jcharset to 2.0
+- Upgrade JavaMail to 1.5.6
+- Fix maven dependencies, reference local jars for libraries missing in main Maven repository
+- Sample config to log connections in a separate log
+- Provide command to launch DavMail without SWT
+- Cleanup from audit
+- Fix from audit: remove duplicate code
+- Remove old repositories from Maven pom and add stax2-api dependency
+- Remove dependency to xercesImpl-2.8.1.jar
+- Drop jsmoothgen-ant-0.9.9-7-mgu2.jar, replaced with WinRun4J
+- Upgrade to Woodstox 5.1.0, waiting for pull request to drop patch, see https://github.com/FasterXML/woodstox/pull/56
+- Fix from code audit
+- Allow console logging in server mode
+- Implement -server command line option
+- Implement compile target for Java 9 and later
+
+Linux:
+- Linux: Allow JDK 11 with Debian package
+- Linux: disable system tray on Ubuntu 18
+
+Carddav:
+- Carddav: Add unit test to check CRLF conversion in multiline properties
+- Carddav: by jbhensley, drop carriage returns from property value
+- Carddav: distribution list / contacts unit tests
+- Carddav: by jbhensley, fix vCard PHOTO property. Tested on iOS 11.2.6 and Outlook 2013 
+- Carddav: Detect empty picture data
+- Carddav: Use cn as default sn for distribution lists
+- Carddav: avoid NullPointerException with empty distribution lists and prefer user provided photo
+- Carddav: search for members on all email attributes
+- Carddav: Merge contact and distribution list search
+- Carddav: implement distribution list create and update
+- Carddav: Merge DistributionList with Contact
+- Carddav: First step at distribution list implementation, retrieve DL and members
+
+Github:
+- Add link to github repo
+- Add Travis build status
+- Fix old developerConnection and remove prerequisites according to Travis CI log
+- First try at travis CI config
+- Added : /trunk/README.md
+
+IMAP:
+- IMAP: fix from code audit
+- IMAP: fix #689 Double space in UID FETCH response
+- IMAP: include Conversation History in standard folder list
+- IMAP: fix patch #49 mixed case INBOX select by google
+
+EWS:
+- EWS: fix duplicate bcc definition
+- EWS: improve error handling, get field names on update item error
+
+Caldav:
+- Caldav: workaround for invalid RRULE with both COUNT and UNTIL values leading to ErrorMimeContentConversion failed error
+- Caldav: cleanup from audit
+- Caldav: fix timezone failover
+- Caldav: unit test for Korganizer duplicate timezone bug
+- Caldav: workaround for Korganizer duplicate timezone bug
+- Caldav: Fix recurrence enumeration values
+
+Documentation:
+- Doc: add FAQ entry for Office 365
+
+
 ** DavMail 4.8.6 released **
 Bugfix release with latest Caldav EWS enhancements, also includes fixes for old standing bugs in bug tracker.
 

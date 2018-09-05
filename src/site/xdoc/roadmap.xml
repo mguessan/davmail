@@ -15,7 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.8.6">
+            <subsection name="4.9.1">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
@@ -28,8 +28,8 @@
                     <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Drop SWT for improved Linux reliability</li>
-                    <li>Complete EWS Caldav refactoring</li>
+                    <li>Implement EWS Oauth support</li>
+                    <li>Implement new OWA REST endpoint</li>
                 </ul>
             </subsection>
             <subsection name="Future">
