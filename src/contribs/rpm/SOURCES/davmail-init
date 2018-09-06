@@ -2,7 +2,7 @@
 #
 # davmail:	davmail exchange gateway daemon
 #
-# chkconfig:	35 98 02
+# chkconfig:	345 98 02
 # description:	DavMail gateway for Microsoft Exchange
 # processname:	davmail
 # config:	/etc/davmail.properties

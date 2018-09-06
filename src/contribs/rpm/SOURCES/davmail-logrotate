@@ -1,4 +1,5 @@
 /var/log/davmail.log {
+    copytruncate
     missingok
     notifempty
     size 30k
