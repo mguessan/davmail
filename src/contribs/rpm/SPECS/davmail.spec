@@ -193,6 +193,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Wed Sep 05 2018 Mickael Guessant <mguessan@free.fr>
+- update to 4.9.0
+
 * Wed Apr 04 2018 Mickael Guessant <mguessan@free.fr>
 - update to 4.8.4 and build on EL7 with included SWT
 
