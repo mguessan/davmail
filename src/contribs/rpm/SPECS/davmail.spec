@@ -196,7 +196,7 @@ fi
 * Wed Apr 04 2018 Mickael Guessant <mguessan@free.fr>
 - update to 4.8.4 and build on EL7 with included SWT
 
-* Tue Dec 13 2017 Mickael Guessant <mguessan@free.fr>
+* Wed Dec 13 2017 Mickael Guessant <mguessan@free.fr>
 - update to 4.8.1 and fix RHEL 6 ant buildrequires
 
 * Sun Oct 04 2015 Mickael Guessant <mguessan@free.fr>
