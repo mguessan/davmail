@@ -31,6 +31,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.util.ArrayList;
 
 /**
  * Extended Awt tray with OSX extensions.
@@ -59,6 +60,18 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
         }
         return true;
     }
+
+    @Override
+    protected void loadIcons() {
+        image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_PNG));
+        image2 = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_ACTIVE_PNG));
+        inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_INACTIVE_PNG));
+
+        frameIcons = new ArrayList<Image>();
+        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
+        frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
+    }
+
 
     @Override
     protected void createAndShowGUI() {

@@ -55,10 +55,10 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     ActionListener settingsListener;
 
     static TrayIcon trayIcon;
-    private static ArrayList<Image> frameIcons;
-    private static BufferedImage image;
-    private static BufferedImage image2;
-    private static BufferedImage inactiveImage;
+    protected static ArrayList<Image> frameIcons;
+    protected static BufferedImage image;
+    protected static BufferedImage image2;
+    protected static BufferedImage inactiveImage;
     static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
 
@@ -198,11 +198,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         }
     }
 
-    protected void createAndShowGUI() {
-        System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
-
-        // get the SystemTray instance
-        SystemTray tray = SystemTray.getSystemTray();
+    protected void loadIcons() {
         image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
         image2 = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
         inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG));
@@ -210,6 +206,14 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         frameIcons = new ArrayList<Image>();
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
+    }
+
+    protected void createAndShowGUI() {
+        System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
+
+        // get the SystemTray instance
+        SystemTray tray = SystemTray.getSystemTray();
+        loadIcons();
 
         // create a popup menu
         PopupMenu popup = new PopupMenu();
