@@ -75,7 +75,7 @@
     </target>
 
     <target name="init" depends="check-encoding, check-java6, svnrelease, defaultrelease">
-        <echo message="Creating DavMail ${release} dist package"/>
+        <echo message="Creating DavMail ${release} dist package" level="info"/>
         <mkdir dir="target/classes"/>
     </target>
 
