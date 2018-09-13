@@ -133,6 +133,11 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Map<String, String> folderIdMap;
     protected boolean directEws;
 
+    /**
+     * Oauth2 Bearer token
+     */
+    private String bearer;
+
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
     }
@@ -158,6 +163,17 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     public EwsExchangeSession(String url, String userName, String password) throws IOException {
         super(url, userName, password);
+    }
+
+    public EwsExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
+        this.httpClient = httpClient;
+        DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
+        this.email = userName;
+        this.userName = userName;
+    }
+
+    public void setBearer(String bearer) {
+        this.bearer = bearer;
     }
 
     /**
@@ -203,7 +219,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected void buildSessionInfo(HttpMethod method) throws DavMailException {
+    public void buildSessionInfo(HttpMethod method) throws DavMailException {
         // no need to check logon method body
         if (method != null) {
             method.releaseConnection();
@@ -2923,6 +2939,9 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void internalExecuteMethod(EWSMethod ewsMethod) throws IOException {
         try {
             ewsMethod.setServerVersion(serverVersion);
+            if (bearer != null) {
+                ewsMethod.setRequestHeader("Authorization", "Bearer " + bearer);
+            }
             httpClient.executeMethod(ewsMethod);
             if (serverVersion == null) {
                 serverVersion = ewsMethod.getServerVersion();

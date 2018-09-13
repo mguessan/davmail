@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
 public final class DavGatewayHttpClientFacade {
     static final Logger LOGGER = Logger.getLogger("davmail.http.DavGatewayHttpClientFacade");
 
-    static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)";
+    public static final String IE_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)";
     static final int MAX_REDIRECTS = 10;
     static final Object LOCK = new Object();
     private static boolean needNTLM;

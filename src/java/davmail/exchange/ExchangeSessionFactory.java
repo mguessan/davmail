@@ -26,6 +26,7 @@ import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.ui.EWSAuthenticationFrame;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -140,7 +141,17 @@ public final class ExchangeSessionFactory {
 
             if (session == null) {
                 String enableEws = Settings.getProperty("davmail.enableEws", "auto");
-                if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+                if (Settings.getBooleanProperty("davmail.enableOauth2", false)) {
+                    EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame();
+                    authenticationFrame.authenticate();
+                    // TODO: check that username matches authenticated username
+                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticationFrame.getEwsUrl());
+                    session = new EwsExchangeSession(httpClient, authenticationFrame.getUsername());
+                    // TODO: handle bearer refresh
+                    ((EwsExchangeSession) session).setBearer(authenticationFrame.getBearer());
+                    // TODO: refactor buildSessionInfo
+                    session.buildSessionInfo(null);
+                } else if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
                     try {

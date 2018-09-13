@@ -38,6 +38,7 @@ import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.w3c.dom.Document;
 
@@ -49,6 +50,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Date;
 
@@ -58,11 +60,11 @@ public class EWSAuthenticationFrame extends JFrame {
 
     String location;
     boolean isAuthenticated = false;
+    final JFXPanel fxPanel = new JFXPanel();
 
-    public EWSAuthenticationFrame(final String url, final String redirectUri) {
+    public EWSAuthenticationFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        //setTitle(BundleMessage.format("UI_OAUTH_FRAME_TITLE"));
-        setTitle("DavMail: " + url);
+        setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         try {
             setIconImages(DavGatewayTray.getFrameIcons());
         } catch (NoSuchMethodError error) {
@@ -70,7 +72,6 @@ public class EWSAuthenticationFrame extends JFrame {
         }
 
         JPanel mainPanel = new JPanel();
-        final JFXPanel fxPanel = new JFXPanel();
 
         mainPanel.add(fxPanel);
         add(BorderLayout.CENTER, mainPanel);
@@ -84,14 +85,6 @@ public class EWSAuthenticationFrame extends JFrame {
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
         setVisible(true);
-
-        // Run initFX as JavaFX-Thread
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                initFX(fxPanel, url, redirectUri);
-            }
-        });
     }
 
     private void initFX(final JFXPanel fxPanel, final String url, final String redirectUri) {
@@ -108,7 +101,7 @@ public class EWSAuthenticationFrame extends JFrame {
                 if (newState == State.SUCCEEDED) {
                     location = webViewEngine.getLocation();
                     setTitle("DavMail: " + location);
-                    LOGGER.debug("Webview location: "+location);
+                    LOGGER.debug("Webview location: " + location);
                     LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                     if (location.startsWith(redirectUri)) {
                         isAuthenticated = true;
@@ -138,9 +131,104 @@ public class EWSAuthenticationFrame extends JFrame {
                     new StreamResult(new OutputStreamWriter(baos, "UTF-8")));
             result = baos.toString("UTF-8");
         } catch (Exception e) {
-            result = e+" "+e.getMessage();
+            result = e + " " + e.getMessage();
         }
         return result;
+    }
+
+    String resource = "https://outlook.office365.com";
+    String ewsUrl = resource + "/EWS/Exchange.asmx";
+    String clientId = "ca0ffc83-9d26-408b-ae08-27b756ffcb1c"; // common davmail-test
+    String redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
+    String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
+
+    private String username;
+    private String bearer;
+
+    public String getBearer() {
+        return bearer;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getEwsUrl() {
+        return ewsUrl;
+    }
+
+    public void authenticate() throws IOException, JSONException {
+
+        // Run initFX as JavaFX-Thread
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                initFX(fxPanel,
+                        authorizeUrl + "?client_id=" + clientId
+                                + "&response_type=code"
+                                + "&redirect_uri=" + redirectUri
+                                + "&response_mode=query"
+                                + "&resource=https://outlook.office365.com"
+                        // force consent
+                        //+"&prompt=consent";
+                        , redirectUri);
+            }
+        });
+
+        while (!isAuthenticated && isVisible()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+
+        if (isAuthenticated) {
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
+
+            LOGGER.debug("Authenticated location: " + location);
+            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+            String sessionState = location.substring(location.lastIndexOf('='));
+
+            LOGGER.debug("Authentication Code: " + code);
+            LOGGER.debug("Authentication session state: " + sessionState);
+
+            PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
+            tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            tokenMethod.addParameter("grant_type", "authorization_code");
+            tokenMethod.addParameter("code", code);
+            tokenMethod.addParameter("redirect_uri", redirectUri);
+            tokenMethod.addParameter("client_id", clientId);
+
+            httpClient.executeMethod(tokenMethod);
+            LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
+
+
+            String responseBodyAsString = tokenMethod.getResponseBodyAsString();
+            tokenMethod.releaseConnection();
+            LOGGER.debug(responseBodyAsString);
+
+            JSONObject jsonObject = new JSONObject(responseBodyAsString);
+            bearer = jsonObject.getString("access_token");
+            long expireson = jsonObject.getLong("expires_on");
+            String expires_in = jsonObject.getString("expires_in");
+
+            LOGGER.debug("Bearer: " + bearer);
+            LOGGER.debug("Expires: " + new Date(expireson));
+            LOGGER.debug("Expires in: " + expires_in);
+
+            String decodedBearer = IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.')+1, bearer.lastIndexOf('.'))+"==");
+            LOGGER.debug("Decoded Bearer: " + decodedBearer);
+            JSONObject tokenBody = new JSONObject(decodedBearer);
+            LOGGER.debug(tokenBody);
+
+            username = tokenBody.getString("unique_name");
+            LOGGER.debug("Authenticated username: " + username);
+
+        } else {
+            LOGGER.error("Authentication failed");
+            throw new IOException("Authentication failed");
+        }
     }
 
     public static void main(String[] argv) {
@@ -148,99 +236,32 @@ public class EWSAuthenticationFrame extends JFrame {
             Settings.setDefaultSettings();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
-            String clientId = "ca0ffc83-9d26-408b-ae08-27b756ffcb1c"; // common davmail-test
-            String redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
-            String url = "https://login.microsoftonline.com/common/oauth2/authorize";
-            url += "?client_id=" + clientId;
-            url += "&response_type=code";
-            url += "&redirect_uri=" + redirectUri;
-            url += "&response_mode=query";
-            url += "&resource=https://outlook.office365.com";
-            // force consent
-            //url += "&prompt=consent";
+            EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame();
+            authenticationFrame.authenticate();
 
-            String ewsUrl = "https://outlook.office365.com/EWS/Exchange.asmx";
+            // switch to EWS url
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticationFrame.ewsUrl);
+            DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
 
-            EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame(url, redirectUri);
+            GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.bearer);
+            try {
+                //checkMethod.setServerVersion(serverVersion);
+                httpClient.executeMethod(checkMethod);
 
-            while (!authenticationFrame.isAuthenticated && authenticationFrame.isVisible()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    // ignore
-                }
+                checkMethod.checkSuccess();
+            } finally {
+                checkMethod.releaseConnection();
             }
+            System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
-            if (authenticationFrame.isAuthenticated) {
+            GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+            getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.bearer);
+            httpClient.executeMethod(getUserConfigurationMethod);
+            System.out.println(getUserConfigurationMethod.getResponseItem());
 
-                HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
-                //DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-
-                String location = authenticationFrame.location;
-                LOGGER.debug("Authenticated location: " + location);
-                String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-                String sessionState = location.substring(location.lastIndexOf('='));
-
-                LOGGER.debug("Authentication Code: " + code);
-                LOGGER.debug("Authentication session state: " + sessionState);
-
-                PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
-                tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                tokenMethod.addParameter("grant_type", "authorization_code");
-                tokenMethod.addParameter("code", code);
-                tokenMethod.addParameter("redirect_uri", redirectUri);
-                tokenMethod.addParameter("client_id", clientId);
-
-                httpClient.executeMethod(tokenMethod);
-                LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
-
-
-                String responseBodyAsString = tokenMethod.getResponseBodyAsString();
-                tokenMethod.releaseConnection();
-                LOGGER.debug(responseBodyAsString);
-
-                JSONObject jsonObject = new JSONObject(responseBodyAsString);
-                String bearer = jsonObject.getString("access_token");
-                long expireson = jsonObject.getLong("expires_on");
-                String expires_in = jsonObject.getString("expires_in");
-
-                LOGGER.debug("Bearer: " + bearer);
-                LOGGER.debug("Expires: " + new Date(expireson));
-                LOGGER.debug("Expires in: " + expires_in);
-
-                JSONObject tokenBody = new JSONObject(IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.'), bearer.lastIndexOf('.'))));
-                System.out.println(tokenBody);
-
-                String email = tokenBody.getString("unique_name");
-                LOGGER.debug("Authenticated user email: "+email);
-
-
-                // switch to EWS url
-                httpClient = DavGatewayHttpClientFacade.getInstance(ewsUrl);
-                DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-
-                GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-                checkMethod.setRequestHeader("Authorization", "Bearer " + bearer);
-                try {
-                    //checkMethod.setServerVersion(serverVersion);
-                    httpClient.executeMethod(checkMethod);
-
-                    checkMethod.checkSuccess();
-                } finally {
-                    checkMethod.releaseConnection();
-                }
-                System.out.println("Retrieved folder id "+checkMethod.getResponseItem().get("FolderId"));
-
-                GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + bearer);
-                httpClient.executeMethod(getUserConfigurationMethod);
-                System.out.println(getUserConfigurationMethod.getResponseItem());
-
-            } else {
-                LOGGER.error("Authentication failed");
-            }
         } catch (Exception e) {
-            LOGGER.error(e+" "+e.getMessage());
+            LOGGER.error(e + " " + e.getMessage());
             e.printStackTrace();
         }
         System.exit(0);

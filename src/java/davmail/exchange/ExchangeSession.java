@@ -168,6 +168,10 @@ public abstract class ExchangeSession {
      */
     private static final int MAX_OTP_RETRIES = 3;
 
+    public ExchangeSession() {
+        // empty constructor
+    }
+
     /**
      * Build an ExchangeSession from an already authenticated HttpClient.
      *
