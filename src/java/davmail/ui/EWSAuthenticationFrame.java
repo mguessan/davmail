@@ -153,6 +153,10 @@ public class EWSAuthenticationFrame extends JFrame {
         return username;
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public String getEwsUrl() {
         return ewsUrl;
     }
@@ -163,12 +167,13 @@ public class EWSAuthenticationFrame extends JFrame {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                initFX(fxPanel,
-                        authorizeUrl + "?client_id=" + clientId
+                initFX(fxPanel, authorizeUrl
+                                + "?client_id=" + clientId
                                 + "&response_type=code"
                                 + "&redirect_uri=" + redirectUri
                                 + "&response_mode=query"
-                                + "&resource=https://outlook.office365.com"
+                                + "&resource="+resource
+                                + "&login_hint="+username
                         // force consent
                         //+"&prompt=consent";
                         , redirectUri);

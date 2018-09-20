@@ -165,7 +165,7 @@ public class EwsExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
-    public EwsExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
+    public EwsExchangeSession(HttpClient httpClient, String userName) {
         this.httpClient = httpClient;
         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
         this.email = userName;

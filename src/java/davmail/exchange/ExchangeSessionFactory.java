@@ -143,6 +143,7 @@ public final class ExchangeSessionFactory {
                 String enableEws = Settings.getProperty("davmail.enableEws", "auto");
                 if (Settings.getBooleanProperty("davmail.enableOauth2", false)) {
                     EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame();
+                    authenticationFrame.setUsername(userName);
                     authenticationFrame.authenticate();
                     // TODO: check that username matches authenticated username
                     HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticationFrame.getEwsUrl());
