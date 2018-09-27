@@ -150,6 +150,9 @@ public final class ExchangeSessionFactory {
                         authenticator.setPassword(password);
                         authenticator.authenticate();
                     } catch (IOException e) {
+                        if (Settings.getBooleanProperty("davmail.server")) {
+                            throw e;
+                        }
                         // failover to interactive authentication
                         authenticator = new EWSAuthenticationFrame();
                         authenticator.setUsername(userName);
