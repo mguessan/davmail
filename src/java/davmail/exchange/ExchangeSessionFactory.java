@@ -142,14 +142,23 @@ public final class ExchangeSessionFactory {
             if (session == null) {
                 String enableEws = Settings.getProperty("davmail.enableEws", "auto");
                 if (Settings.getBooleanProperty("davmail.enableOauth2", false)) {
-                    EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame();
-                    authenticationFrame.setUsername(userName);
-                    authenticationFrame.authenticate();
-                    // TODO: check that username matches authenticated username
-                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticationFrame.getEwsUrl());
-                    session = new EwsExchangeSession(httpClient, authenticationFrame.getUsername());
-                    // TODO: handle bearer refresh
-                    ((EwsExchangeSession) session).setBearer(authenticationFrame.getBearer());
+                    // try non interactive first
+                    ExchangeAuthenticator authenticator;
+                    try {
+                        authenticator = new O365Authenticator();
+                        authenticator.setUsername(userName);
+                        authenticator.setPassword(password);
+                        authenticator.authenticate();
+                    } catch (IOException e) {
+                        // failover to interactive authentication
+                        authenticator = new EWSAuthenticationFrame();
+                        authenticator.setUsername(userName);
+                        authenticator.setPassword(password);
+                        authenticator.authenticate();
+                    }
+                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
+                    session = new EwsExchangeSession(httpClient, userName);
+                    ((EwsExchangeSession) session).setBearer(authenticator.getBearer());
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
                 } else if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {

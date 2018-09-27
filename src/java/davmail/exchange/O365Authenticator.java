@@ -69,7 +69,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     public void authenticate() throws IOException {
         try {
             // common DavMail client id
-            String clientId = Settings.getProperty("davmail.oauth.clientId", "ca0ffc83-9d26-408b-ae08-27b756ffcb1c");
+            String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
             // standard native app redirectUri
             String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
 
@@ -150,6 +150,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
                     // extract response
                     config = extractConfig(logonMethod.getResponseBodyAsString());
+                    LOGGER.debug("Please open the following url in a browser first to confirm consent:");
+                    LOGGER.debug(url);
                     throw new IOException("Authentication failed, invalid credentials or consent needed" + config);
                 }
                 String location = locationHeader.getValue();

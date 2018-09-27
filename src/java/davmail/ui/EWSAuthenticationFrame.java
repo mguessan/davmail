@@ -20,6 +20,7 @@ package davmail.ui;
 
 import davmail.BundleMessage;
 import davmail.Settings;
+import davmail.exchange.ExchangeAuthenticator;
 import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
@@ -52,9 +53,11 @@ import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.util.Date;
 
-public class EWSAuthenticationFrame extends JFrame {
+public class EWSAuthenticationFrame extends JFrame implements ExchangeAuthenticator {
 
     private static final Logger LOGGER = Logger.getLogger(EWSAuthenticationFrame.class);
 
@@ -88,6 +91,14 @@ public class EWSAuthenticationFrame extends JFrame {
     }
 
     private void initFX(final JFXPanel fxPanel, final String url, final String redirectUri) {
+        Authenticator.setDefault(new Authenticator() {
+            @Override
+            public PasswordAuthentication getPasswordAuthentication() {
+                LOGGER.debug("Password authentication with user "+username);
+                return new PasswordAuthentication(username, password.toCharArray());
+            }
+        });
+
         final WebView webView = new WebView();
         fxPanel.setScene(new Scene(webView));
         final WebEngine webViewEngine = webView.getEngine();
@@ -138,15 +149,21 @@ public class EWSAuthenticationFrame extends JFrame {
 
     String resource = "https://outlook.office365.com";
     String ewsUrl = resource + "/EWS/Exchange.asmx";
-    String clientId = "ca0ffc83-9d26-408b-ae08-27b756ffcb1c"; // common davmail-test
+    String clientId = "facd6cff-a294-4415-b59f-c5b01937d7bd"; // common DavMail client id
     String redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
     String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
 
     private String username;
+    private String password;
     private String bearer;
 
     public String getBearer() {
         return bearer;
+    }
+
+    @Override
+    public String getEWSUrl() {
+        return ewsUrl;
     }
 
     public String getUsername() {
@@ -157,11 +174,12 @@ public class EWSAuthenticationFrame extends JFrame {
         this.username = username;
     }
 
-    public String getEwsUrl() {
-        return ewsUrl;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public void authenticate() throws IOException, JSONException {
+
+    public void authenticate() throws IOException {
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
@@ -173,7 +191,7 @@ public class EWSAuthenticationFrame extends JFrame {
                                 + "&redirect_uri=" + redirectUri
                                 + "&response_mode=query"
                                 + "&resource="+resource
-                                + "&login_hint="+username
+                                + "&login_hint="+((username == null)?"":username)
                         // force consent
                         //+"&prompt=consent";
                         , redirectUri);
@@ -188,51 +206,55 @@ public class EWSAuthenticationFrame extends JFrame {
             }
         }
 
-        if (isAuthenticated) {
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
+        try {
+            if (isAuthenticated) {
+                HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
 
-            LOGGER.debug("Authenticated location: " + location);
-            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-            String sessionState = location.substring(location.lastIndexOf('='));
+                LOGGER.debug("Authenticated location: " + location);
+                String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+                String sessionState = location.substring(location.lastIndexOf('='));
 
-            LOGGER.debug("Authentication Code: " + code);
-            LOGGER.debug("Authentication session state: " + sessionState);
+                LOGGER.debug("Authentication Code: " + code);
+                LOGGER.debug("Authentication session state: " + sessionState);
 
-            PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
-            tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            tokenMethod.addParameter("grant_type", "authorization_code");
-            tokenMethod.addParameter("code", code);
-            tokenMethod.addParameter("redirect_uri", redirectUri);
-            tokenMethod.addParameter("client_id", clientId);
+                PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
+                tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                tokenMethod.addParameter("grant_type", "authorization_code");
+                tokenMethod.addParameter("code", code);
+                tokenMethod.addParameter("redirect_uri", redirectUri);
+                tokenMethod.addParameter("client_id", clientId);
 
-            httpClient.executeMethod(tokenMethod);
-            LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
+                httpClient.executeMethod(tokenMethod);
+                LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
 
 
-            String responseBodyAsString = tokenMethod.getResponseBodyAsString();
-            tokenMethod.releaseConnection();
-            LOGGER.debug(responseBodyAsString);
+                String responseBodyAsString = tokenMethod.getResponseBodyAsString();
+                tokenMethod.releaseConnection();
+                LOGGER.debug(responseBodyAsString);
 
-            JSONObject jsonObject = new JSONObject(responseBodyAsString);
-            bearer = jsonObject.getString("access_token");
-            long expireson = jsonObject.getLong("expires_on");
-            String expires_in = jsonObject.getString("expires_in");
+                JSONObject jsonObject = new JSONObject(responseBodyAsString);
+                bearer = jsonObject.getString("access_token");
+                long expireson = jsonObject.getLong("expires_on");
+                String expires_in = jsonObject.getString("expires_in");
 
-            LOGGER.debug("Bearer: " + bearer);
-            LOGGER.debug("Expires: " + new Date(expireson));
-            LOGGER.debug("Expires in: " + expires_in);
+                LOGGER.debug("Bearer: " + bearer);
+                LOGGER.debug("Expires: " + new Date(expireson));
+                LOGGER.debug("Expires in: " + expires_in);
 
-            String decodedBearer = IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.')+1, bearer.lastIndexOf('.'))+"==");
-            LOGGER.debug("Decoded Bearer: " + decodedBearer);
-            JSONObject tokenBody = new JSONObject(decodedBearer);
-            LOGGER.debug(tokenBody);
+                String decodedBearer = IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.') + 1, bearer.lastIndexOf('.')) + "==");
+                LOGGER.debug("Decoded Bearer: " + decodedBearer);
+                JSONObject tokenBody = new JSONObject(decodedBearer);
+                LOGGER.debug(tokenBody);
 
-            username = tokenBody.getString("unique_name");
-            LOGGER.debug("Authenticated username: " + username);
+                username = tokenBody.getString("unique_name");
+                LOGGER.debug("Authenticated username: " + username);
 
-        } else {
-            LOGGER.error("Authentication failed");
-            throw new IOException("Authentication failed");
+            } else {
+                LOGGER.error("Authentication failed");
+                throw new IOException("Authentication failed");
+            }
+        } catch (JSONException e) {
+            throw new IOException(e+" "+e.getMessage(), e);
         }
     }
 
