@@ -16,11 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package davmail.ui;
+package davmail.exchange.auth;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.exchange.ExchangeAuthenticator;
 import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
@@ -57,15 +56,15 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.util.Date;
 
-public class EWSAuthenticationFrame extends JFrame implements ExchangeAuthenticator {
+public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
 
-    private static final Logger LOGGER = Logger.getLogger(EWSAuthenticationFrame.class);
+    private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
 
     String location;
     boolean isAuthenticated = false;
     final JFXPanel fxPanel = new JFXPanel();
 
-    public EWSAuthenticationFrame() {
+    public O365InteractiveAuthenticator() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         try {
@@ -263,7 +262,7 @@ public class EWSAuthenticationFrame extends JFrame implements ExchangeAuthentica
             Settings.setDefaultSettings();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
-            EWSAuthenticationFrame authenticationFrame = new EWSAuthenticationFrame();
+            O365InteractiveAuthenticator authenticationFrame = new O365InteractiveAuthenticator();
             authenticationFrame.authenticate();
 
             // switch to EWS url

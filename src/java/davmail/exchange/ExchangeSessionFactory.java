@@ -23,10 +23,12 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.WebdavNotAvailableException;
+import davmail.exchange.auth.ExchangeAuthenticator;
+import davmail.exchange.auth.O365Authenticator;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
-import davmail.ui.EWSAuthenticationFrame;
+import davmail.exchange.auth.O365InteractiveAuthenticator;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -141,29 +143,18 @@ public final class ExchangeSessionFactory {
 
             if (session == null) {
                 String enableEws = Settings.getProperty("davmail.enableEws", "auto");
-                if (Settings.getBooleanProperty("davmail.enableOauth2", false)) {
-                    // try non interactive first
-                    ExchangeAuthenticator authenticator;
-                    try {
-                        authenticator = new O365Authenticator();
-                        authenticator.setUsername(userName);
-                        authenticator.setPassword(password);
-                        authenticator.authenticate();
-                    } catch (IOException e) {
-                        if (Settings.getBooleanProperty("davmail.server")) {
-                            throw e;
-                        }
-                        // failover to interactive authentication
-                        authenticator = new EWSAuthenticationFrame();
-                        authenticator.setUsername(userName);
-                        authenticator.setPassword(password);
-                        authenticator.authenticate();
-                    }
+                String authenticatorClass = Settings.getProperty("davmail.authenticator");
+                if (authenticatorClass != null) {
+                    ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass).newInstance();
+                    authenticator.setUsername(userName);
+                    authenticator.setPassword(password);
+                    authenticator.authenticate();
                     HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
                     session = new EwsExchangeSession(httpClient, userName);
                     ((EwsExchangeSession) session).setBearer(authenticator.getBearer());
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
+
                 } else if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
