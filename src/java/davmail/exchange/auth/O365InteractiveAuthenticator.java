@@ -102,7 +102,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         fxPanel.setScene(new Scene(webView));
         final WebEngine webViewEngine = webView.getEngine();
 
-        webViewEngine.setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT);
+        webViewEngine.setUserAgent(DavGatewayHttpClientFacade.getUserAgent());
 
         webViewEngine.load(url);
         webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {

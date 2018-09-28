@@ -99,7 +99,7 @@ public final class DavGatewayHttpClientFacade {
      */
     private static HttpClient getBaseInstance() {
         HttpClient httpClient = new HttpClient();
-        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, IE_USER_AGENT);
+        httpClient.getParams().setParameter(HttpMethodParams.USER_AGENT, getUserAgent());
         httpClient.getParams().setParameter(HttpClientParams.MAX_REDIRECTS, Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS));
         httpClient.getParams().setCookiePolicy("DavMailCookieSpec");
         return httpClient;
@@ -842,5 +842,9 @@ public final class DavGatewayHttpClientFacade {
                 httpConnectionManagerThread.start();
             }
         }
+    }
+
+    public static String getUserAgent() {
+        return Settings.getProperty("davmail.userAgent", IE_USER_AGENT);
     }
 }
