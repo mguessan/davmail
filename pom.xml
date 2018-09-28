@@ -311,6 +311,9 @@
         <resources>
             <resource>
                 <directory>src/java</directory>
+                <excludes>
+                    <exclude>**/O365Interactive*.java</exclude>
+                </excludes>
             </resource>
         </resources>
         <sourceDirectory>src/java</sourceDirectory>
@@ -322,7 +325,7 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <excludes>
-                        <exclude>davmail.auth.O365InteractiveAuthenticator.java</exclude>
+                        <exclude>**/O365Interactive*.java</exclude>
                     </excludes>
                 </configuration>
                 <version>3.3</version>
