@@ -6,4 +6,4 @@ Name=DavMail
 Icon=davmail
 Exec=/usr/bin/davmail
 Comment=DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway
-Categories=Network;
+Categories=GTK;GNOME;Network;
