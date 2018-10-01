@@ -186,7 +186,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 + "&redirect_uri=" + redirectUri
                 + "&response_mode=query"
                 + "&resource="+resource
-                + "&login_hint="+((username == null)?"": URIUtil.encodeWithinQuery(username));
+                + "&login_hint="+URIUtil.encodeWithinQuery(username);
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
@@ -247,8 +247,9 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 JSONObject tokenBody = new JSONObject(decodedBearer);
                 LOGGER.debug(tokenBody);
 
-                username = tokenBody.getString("unique_name");
-                LOGGER.debug("Authenticated username: " + username);
+                if (!username.equalsIgnoreCase(tokenBody.getString("unique_name"))) {
+                    throw new IOException("Authenticated username " + tokenBody.getString("unique_name") + " does not match " + username);
+                }
 
             } else {
                 LOGGER.error("Authentication failed");
