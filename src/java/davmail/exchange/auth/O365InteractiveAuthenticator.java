@@ -37,6 +37,7 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -179,18 +180,19 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
 
     public void authenticate() throws IOException {
+        final String initUrl = authorizeUrl
+                + "?client_id=" + clientId
+                + "&response_type=code"
+                + "&redirect_uri=" + redirectUri
+                + "&response_mode=query"
+                + "&resource="+resource
+                + "&login_hint="+((username == null)?"": URIUtil.encodeWithinQuery(username));
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                initFX(fxPanel, authorizeUrl
-                                + "?client_id=" + clientId
-                                + "&response_type=code"
-                                + "&redirect_uri=" + redirectUri
-                                + "&response_mode=query"
-                                + "&resource="+resource
-                                + "&login_hint="+((username == null)?"":username)
+                initFX(fxPanel, initUrl
                         // force consent
                         //+"&prompt=consent";
                         , redirectUri);

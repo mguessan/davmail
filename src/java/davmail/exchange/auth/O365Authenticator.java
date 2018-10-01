@@ -27,6 +27,7 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -79,7 +80,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     + "&redirect_uri=" + redirectUri
                     + "&response_mode=query"
                     + "&resource=" + RESOURCE
-                    + "&login_hint=" + username;
+                    + "&login_hint=" + URIUtil.encodeWithinQuery(username);
             // force consent
             //+"&prompt=consent"
 
