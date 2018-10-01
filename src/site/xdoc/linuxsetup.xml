@@ -23,6 +23,12 @@
                     install Java and the appropriate SWT package. After installation,
                     DavMail is available in the Applications menu.
                 </p>
+                <p>In order to run DavMail with systray on Ubuntu 18, you need:</p>
+                <ul>
+                    <li>Top icons and appindicator:<code>sudo apt-get install gnome-shell-extension-top-icons gnome-shell-extension-appindicator gnome-tweak-tool</code></li>
+                    <li>Enable both in Tweaks</li>
+                    <li>Then run DavMail: <code>XDG_CURRENT_DESKTOP= &amp;&amp; davmail</code></li>
+                </ul>
                 <p>Update for Ubuntu Unity users, you can install Indicator SystemtrayUnity:
                 <a href="http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html">
                     http://www.webupd8.org/2015/05/on-demand-system-tray-for-ubuntu.html
