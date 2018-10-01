@@ -1,9 +1,11 @@
 [Desktop Entry]
 Version=1.0
-Encoding=UTF-8
-Name=DavMail
 Type=Application
 Terminal=false
-Exec=/usr/bin/java -cp davmail.jar:lib/* davmail.DavGateway
-Path=.
-Comment=DavMail POP/SMTP Webdav Exchange Gateway
+Name=DavMail
+Comment=DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway
+Exec=/usr/bin/davmail
+Icon=/usr/share/icons/davmail.png
+Categories=GTK;GNOME;Network;
+Keywords=pop;imap;smtp;exchange;owa;outlook
+GenericName=DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway

@@ -195,19 +195,6 @@
         <taskdef resource="ant_deb_task.properties">
             <classpath location="lib/ant-deb-0.0.1.jar"/>
         </taskdef>
-        <desktopentry
-                toFile="dist/davmail.desktop"
-                name="DavMail"
-                comment="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway"
-                exec="/usr/bin/davmail"
-                icon="/usr/share/icons/davmail.png"
-                categories="GTK;GNOME;Network;"
-                genericname="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway"
-                />
-        <replaceregexp match="GenericName="
-                       replace="Keywords=pop;imap;smtp;exchange;owa;outlook&#10;GenericName=">
-            <fileset file="dist/davmail.desktop"/>
-        </replaceregexp>
         <deb todir="dist"
              package="davmail"
              section="mail"
@@ -247,7 +234,7 @@
             <tarfileset dir="dist" prefix="usr/share/icons">
                 <include name="davmail.png"/>
             </tarfileset>
-            <tarfileset dir="dist" prefix="usr/share/applications">
+            <tarfileset dir="src/desktop" prefix="usr/share/applications">
                 <include name="davmail.desktop"/>
             </tarfileset>
         </deb>
