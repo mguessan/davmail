@@ -16,7 +16,6 @@ mvn install:install-file -DgroupId=org.codehaus.woodstox -DartifactId=woodstox-c
 - check maven plugin versions: mvn versions:display-plugin-updates
 - generate site: mvn site
 - upload site: ant upload-site
-- upload releasenotes.txt to sourceforge
 - create tag in subversion
 - create news message at https://sourceforge.net/p/davmail/news/
 - send user mailing list message
