@@ -33,6 +33,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker.State;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
@@ -99,9 +101,16 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             }
         });
 
-        final WebView webView = new WebView();
-        fxPanel.setScene(new Scene(webView));
+        WebView webView = new WebView();
         final WebEngine webViewEngine = webView.getEngine();
+
+        final ProgressBar loadProgress = new ProgressBar();
+        loadProgress.progressProperty().bind(webViewEngine.getLoadWorker().progressProperty());
+
+        StackPane hBox = new StackPane();
+        hBox.getChildren().setAll(webView, loadProgress);
+        Scene scene = new Scene(hBox);
+        fxPanel.setScene(scene);
 
         webViewEngine.setUserAgent(DavGatewayHttpClientFacade.getUserAgent());
 
@@ -110,6 +119,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             @Override
             public void changed(ObservableValue ov, State oldState, State newState) {
                 if (newState == State.SUCCEEDED) {
+                    loadProgress.setVisible(false);
                     location = webViewEngine.getLocation();
                     setTitle("DavMail: " + location);
                     LOGGER.debug("Webview location: " + location);
@@ -118,6 +128,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                         isAuthenticated = true;
                         setVisible(false);
                     }
+                } else if (newState == State.RUNNING) {
+                    loadProgress.setVisible(true);
                 }
 
             }
@@ -247,7 +259,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 JSONObject tokenBody = new JSONObject(decodedBearer);
                 LOGGER.debug(tokenBody);
 
-                if (!username.equalsIgnoreCase(tokenBody.getString("unique_name"))) {
+                if (!username.isEmpty() && !username.equalsIgnoreCase(tokenBody.getString("unique_name"))) {
                     throw new IOException("Authenticated username " + tokenBody.getString("unique_name") + " does not match " + username);
                 }
 
@@ -266,6 +278,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
             O365InteractiveAuthenticator authenticationFrame = new O365InteractiveAuthenticator();
+            authenticationFrame.setUsername("");
             authenticationFrame.authenticate();
 
             // switch to EWS url
