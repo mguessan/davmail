@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import davmail.Settings;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.RestMethod;
 import davmail.util.IOUtil;
@@ -151,9 +152,15 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
                     // extract response
                     config = extractConfig(logonMethod.getResponseBodyAsString());
-                    LOGGER.debug("Please open the following url in a browser first to confirm consent:");
-                    LOGGER.debug(url);
-                    throw new IOException("Authentication failed, invalid credentials or consent needed" + config);
+                    if (config.optJSONArray("arrScopes") != null) {
+                        LOGGER.debug("Authentication successful but user consent needed, please open the following url in a browser");
+                        LOGGER.debug(url);
+                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                    } else if ("50126".equals(config.optString("sErrorCode"))) {
+                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                    } else {
+                        throw new IOException("Authentication failed, unknown error: " + config);
+                    }
                 }
                 String location = locationHeader.getValue();
                 code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
