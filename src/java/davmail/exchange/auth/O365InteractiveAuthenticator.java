@@ -25,8 +25,8 @@ import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.RestMethod;
 import davmail.ui.tray.DavGatewayTray;
-import davmail.util.IOUtil;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -38,10 +38,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.w3c.dom.Document;
 
@@ -57,7 +55,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
-import java.util.Date;
 
 public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
 
@@ -96,7 +93,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         Authenticator.setDefault(new Authenticator() {
             @Override
             public PasswordAuthentication getPasswordAuthentication() {
-                LOGGER.debug("Password authentication with user "+username);
+                LOGGER.debug("Password authentication with user " + username);
                 return new PasswordAuthentication(username, password.toCharArray());
             }
         });
@@ -120,6 +117,9 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             public void changed(ObservableValue ov, State oldState, State newState) {
                 if (newState == State.SUCCEEDED) {
                     loadProgress.setVisible(false);
+                    // bring window to top
+                    setAlwaysOnTop(true);
+                    setAlwaysOnTop(false);
                     location = webViewEngine.getLocation();
                     setTitle("DavMail: " + location);
                     LOGGER.debug("Webview location: " + location);
@@ -167,10 +167,10 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
     private String username;
     private String password;
-    private String bearer;
+    private O365Token token;
 
-    public String getBearer() {
-        return bearer;
+    public String getAccessToken() throws IOException {
+        return token.getAccessToken();
     }
 
     @Override
@@ -197,8 +197,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 + "&response_type=code"
                 + "&redirect_uri=" + redirectUri
                 + "&response_mode=query"
-                + "&resource="+resource
-                + "&login_hint="+URIUtil.encodeWithinQuery(username);
+                + "&resource=" + resource
+                + "&login_hint=" + URIUtil.encodeWithinQuery(username);
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
@@ -219,56 +219,42 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             }
         }
 
-        try {
-            if (isAuthenticated) {
-                HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
+        if (isAuthenticated) {
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
 
-                LOGGER.debug("Authenticated location: " + location);
-                String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-                String sessionState = location.substring(location.lastIndexOf('='));
+            LOGGER.debug("Authenticated location: " + location);
+            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+            String sessionState = location.substring(location.lastIndexOf('='));
 
-                LOGGER.debug("Authentication Code: " + code);
-                LOGGER.debug("Authentication session state: " + sessionState);
+            LOGGER.debug("Authentication Code: " + code);
+            LOGGER.debug("Authentication session state: " + sessionState);
 
-                PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
-                tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                tokenMethod.addParameter("grant_type", "authorization_code");
-                tokenMethod.addParameter("code", code);
-                tokenMethod.addParameter("redirect_uri", redirectUri);
-                tokenMethod.addParameter("client_id", clientId);
+            RestMethod tokenMethod = new RestMethod("https://login.microsoftonline.com/common/oauth2/token");
+            tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            tokenMethod.addParameter("grant_type", "authorization_code");
+            tokenMethod.addParameter("code", code);
+            tokenMethod.addParameter("redirect_uri", redirectUri);
+            tokenMethod.addParameter("client_id", clientId);
 
-                httpClient.executeMethod(tokenMethod);
-                LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
+            httpClient.executeMethod(tokenMethod);
+            LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
 
 
-                String responseBodyAsString = tokenMethod.getResponseBodyAsString();
-                tokenMethod.releaseConnection();
-                LOGGER.debug(responseBodyAsString);
+            JSONObject jsonToken = tokenMethod.getJsonResponse();
 
-                JSONObject jsonObject = new JSONObject(responseBodyAsString);
-                bearer = jsonObject.getString("access_token");
-                long expireson = jsonObject.getLong("expires_on");
-                String expires_in = jsonObject.getString("expires_in");
+            token = new O365Token();
+            token.setClientId(clientId);
+            token.setRedirectUri(redirectUri);
+            token.setJsonToken(jsonToken);
 
-                LOGGER.debug("Bearer: " + bearer);
-                LOGGER.debug("Expires: " + new Date(expireson));
-                LOGGER.debug("Expires in: " + expires_in);
-
-                String decodedBearer = IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.') + 1, bearer.lastIndexOf('.')) + "==");
-                LOGGER.debug("Decoded Bearer: " + decodedBearer);
-                JSONObject tokenBody = new JSONObject(decodedBearer);
-                LOGGER.debug(tokenBody);
-
-                if (!username.isEmpty() && !username.equalsIgnoreCase(tokenBody.getString("unique_name"))) {
-                    throw new IOException("Authenticated username " + tokenBody.getString("unique_name") + " does not match " + username);
-                }
-
-            } else {
-                LOGGER.error("Authentication failed");
-                throw new IOException("Authentication failed");
+            LOGGER.debug("Authenticated username: " + token.getUsername());
+            if (!username.equalsIgnoreCase(token.getUsername())) {
+                throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
             }
-        } catch (JSONException e) {
-            throw new IOException(e+" "+e.getMessage(), e);
+
+        } else {
+            LOGGER.error("Authentication failed");
+            throw new IOException("Authentication failed");
         }
     }
 
@@ -286,7 +272,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
 
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.bearer);
+            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getAccessToken());
             try {
                 //checkMethod.setServerVersion(serverVersion);
                 httpClient.executeMethod(checkMethod);
@@ -297,10 +283,16 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             }
             System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
-            GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-            getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.bearer);
-            httpClient.executeMethod(getUserConfigurationMethod);
-            System.out.println(getUserConfigurationMethod.getResponseItem());
+            // loop to check expiration
+            int i = 0;
+            while (i++ < 12 * 60 * 2) {
+                GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
+                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getAccessToken());
+                httpClient.executeMethod(getUserConfigurationMethod);
+                System.out.println(getUserConfigurationMethod.getResponseItem());
+
+                Thread.sleep(5000);
+            }
 
         } catch (Exception e) {
             LOGGER.error(e + " " + e.getMessage());

@@ -19,14 +19,16 @@
 
 package davmail.exchange.auth;
 
-import org.codehaus.jettison.json.JSONException;
-
 import java.io.IOException;
 
 public interface ExchangeAuthenticator {
     void setUsername(String username);
+
     void setPassword(String password);
+
     void authenticate() throws IOException;
-    String getBearer() throws IOException;
+
+    String getAccessToken() throws IOException;
+
     String getEWSUrl();
 }

@@ -23,9 +23,9 @@ import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.RestMethod;
-import davmail.util.IOUtil;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.util.URIUtil;
@@ -34,7 +34,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,9 +43,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     private static final String RESOURCE = "https://outlook.office365.com";
     private String username;
     private String password;
-    private String bearer;
-    private String refreshToken;
-    private long expireson;
+    private O365Token token;
 
     public void setUsername(String username) {
         this.username = username;
@@ -56,12 +53,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
-    public String getBearer() throws IOException {
-        // TODO: detect expiration and refresh token
-        if (System.currentTimeMillis() > expireson * 1000) {
-            throw new IOException("Token expired");
-        }
-        return bearer;
+    public String getAccessToken() throws IOException {
+        return token.getAccessToken();
     }
 
     public String getEWSUrl() {
@@ -69,6 +62,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     public void authenticate() throws IOException {
+        HttpClient httpClient = null;
         try {
             // common DavMail client id
             String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
@@ -85,7 +79,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // force consent
             //+"&prompt=consent"
 
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
+            httpClient = DavGatewayHttpClientFacade.getInstance(url);
             GetMethod getMethod = new GetMethod(url);
             JSONObject config = executeMethod(httpClient, getMethod);
 
@@ -170,7 +164,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 logonMethod.releaseConnection();
             }
 
-            PostMethod tokenMethod = new PostMethod("https://login.microsoftonline.com/common/oauth2/token");
+
+            RestMethod tokenMethod = new RestMethod("https://login.microsoftonline.com/common/oauth2/token");
             tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             tokenMethod.addParameter("grant_type", "authorization_code");
             tokenMethod.addParameter("code", code);
@@ -179,29 +174,27 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             try {
                 httpClient.executeMethod(tokenMethod);
+                JSONObject jsonToken = tokenMethod.getJsonResponse();
 
-                JSONObject jsonToken = new JSONObject(tokenMethod.getResponseBodyAsString());
+                token = new O365Token();
+                token.setClientId(clientId);
+                token.setRedirectUri(redirectUri);
+                token.setJsonToken(jsonToken);
 
-                bearer = jsonToken.getString("access_token");
-                // precious refresh token
-                refreshToken = jsonToken.getString("refresh_token");
-                expireson = jsonToken.getLong("expires_on");
-
-                LOGGER.debug("Bearer expires at " + new Date(expireson * 1000) + ": " + bearer);
-
-                String decodedBearer = IOUtil.decodeBase64AsString(bearer.substring(bearer.indexOf('.') + 1, bearer.lastIndexOf('.')) + "==");
-                JSONObject tokenBody = new JSONObject(decodedBearer);
-                LOGGER.debug("Token: " + tokenBody);
-
-                LOGGER.debug("Authenticated username: " + tokenBody.getString("unique_name"));
-                if (!username.equalsIgnoreCase(tokenBody.getString("unique_name"))) {
-                    throw new IOException("Authenticated username " + tokenBody.getString("unique_name") + " does not match " + username);
+                LOGGER.debug("Authenticated username: " + token.getUsername());
+                if (!username.equalsIgnoreCase(token.getUsername())) {
+                    throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
                 }
             } finally {
                 tokenMethod.releaseConnection();
             }
         } catch (JSONException e) {
             throw new IOException(e + " " + e.getMessage());
+        } finally {
+            // do not keep login connections open
+            if (httpClient != null) {
+                ((SimpleHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
+            }
         }
 
     }
