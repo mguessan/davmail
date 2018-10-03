@@ -149,7 +149,7 @@ public final class ExchangeSessionFactory {
                     authenticator.authenticate();
                     HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
                     session = new EwsExchangeSession(httpClient, userName);
-                    ((EwsExchangeSession) session).setBearer(authenticator.getAccessToken());
+                    ((EwsExchangeSession) session).setToken(authenticator.getToken());
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
 

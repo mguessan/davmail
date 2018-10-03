@@ -28,7 +28,7 @@ public interface ExchangeAuthenticator {
 
     void authenticate() throws IOException;
 
-    String getAccessToken() throws IOException;
+    O365Token getToken() throws IOException;
 
     String getEWSUrl();
 }

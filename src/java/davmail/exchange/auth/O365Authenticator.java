@@ -53,8 +53,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
-    public String getAccessToken() throws IOException {
-        return token.getAccessToken();
+    public O365Token getToken() throws IOException {
+        return token;
     }
 
     public String getEWSUrl() {
@@ -164,30 +164,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 logonMethod.releaseConnection();
             }
 
+            token = new O365Token(clientId, redirectUri, code);
 
-            RestMethod tokenMethod = new RestMethod("https://login.microsoftonline.com/common/oauth2/token");
-            tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            tokenMethod.addParameter("grant_type", "authorization_code");
-            tokenMethod.addParameter("code", code);
-            tokenMethod.addParameter("redirect_uri", redirectUri);
-            tokenMethod.addParameter("client_id", clientId);
-
-            try {
-                httpClient.executeMethod(tokenMethod);
-                JSONObject jsonToken = tokenMethod.getJsonResponse();
-
-                token = new O365Token();
-                token.setClientId(clientId);
-                token.setRedirectUri(redirectUri);
-                token.setJsonToken(jsonToken);
-
-                LOGGER.debug("Authenticated username: " + token.getUsername());
-                if (!username.equalsIgnoreCase(token.getUsername())) {
-                    throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
-                }
-            } finally {
-                tokenMethod.releaseConnection();
+            LOGGER.debug("Authenticated username: " + token.getUsername());
+            if (!username.equalsIgnoreCase(token.getUsername())) {
+                throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
             }
+
         } catch (JSONException e) {
             throw new IOException(e + " " + e.getMessage());
         } finally {

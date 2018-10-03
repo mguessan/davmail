@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.Date;
 
 public class O365Token {
+    protected final String URL = "https://login.microsoftonline.com/common/oauth2/token";
+
     protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
 
     private String clientId;
@@ -40,6 +42,21 @@ public class O365Token {
     private String refreshToken;
     private String accessToken;
     private long expireson;
+
+    public O365Token(String clientId, String redirectUri, String code) throws IOException {
+        this.clientId = clientId;
+        this.redirectUri = redirectUri;
+
+        RestMethod tokenMethod = new RestMethod(URL);
+        tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        tokenMethod.addParameter("grant_type", "authorization_code");
+        tokenMethod.addParameter("code", code);
+        tokenMethod.addParameter("redirect_uri", redirectUri);
+        tokenMethod.addParameter("client_id", clientId);
+
+        executeMethod(tokenMethod);
+    }
+
 
     public String getUsername() {
         return username;
@@ -96,15 +113,22 @@ public class O365Token {
         tokenMethod.addParameter("redirect_uri", redirectUri);
         tokenMethod.addParameter("client_id", clientId);
 
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(url);
+        executeMethod(tokenMethod);
+    }
 
+    private void executeMethod(RestMethod tokenMethod) throws IOException {
+        HttpClient httpClient = null;
         try {
+            httpClient = DavGatewayHttpClientFacade.getInstance(URL);
             httpClient.executeMethod(tokenMethod);
             setJsonToken(tokenMethod.getJsonResponse());
+
         } finally {
             tokenMethod.releaseConnection();
             // do not keep login connections open
-            ((SimpleHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
+            if (httpClient != null) {
+                ((SimpleHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
+            }
         }
 
     }

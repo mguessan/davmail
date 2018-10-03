@@ -25,7 +25,6 @@ import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
-import davmail.http.RestMethod;
 import davmail.ui.tray.DavGatewayTray;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -40,7 +39,6 @@ import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONObject;
 import org.w3c.dom.Document;
 
 import javax.swing.*;
@@ -123,7 +121,9 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                     location = webViewEngine.getLocation();
                     setTitle("DavMail: " + location);
                     LOGGER.debug("Webview location: " + location);
-                    LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
+                    }
                     if (location.startsWith(redirectUri)) {
                         isAuthenticated = true;
                         setVisible(false);
@@ -169,8 +169,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
     private String password;
     private O365Token token;
 
-    public String getAccessToken() throws IOException {
-        return token.getAccessToken();
+    public O365Token getToken() {
+        return token;
     }
 
     @Override
@@ -220,8 +220,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         }
 
         if (isAuthenticated) {
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authorizeUrl);
-
             LOGGER.debug("Authenticated location: " + location);
             String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
             String sessionState = location.substring(location.lastIndexOf('='));
@@ -229,23 +227,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             LOGGER.debug("Authentication Code: " + code);
             LOGGER.debug("Authentication session state: " + sessionState);
 
-            RestMethod tokenMethod = new RestMethod("https://login.microsoftonline.com/common/oauth2/token");
-            tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            tokenMethod.addParameter("grant_type", "authorization_code");
-            tokenMethod.addParameter("code", code);
-            tokenMethod.addParameter("redirect_uri", redirectUri);
-            tokenMethod.addParameter("client_id", clientId);
-
-            httpClient.executeMethod(tokenMethod);
-            LOGGER.debug(tokenMethod.getStatusCode() + " " + tokenMethod.getStatusText());
-
-
-            JSONObject jsonToken = tokenMethod.getJsonResponse();
-
-            token = new O365Token();
-            token.setClientId(clientId);
-            token.setRedirectUri(redirectUri);
-            token.setJsonToken(jsonToken);
+            token = new O365Token(clientId, redirectUri, code);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (!username.equalsIgnoreCase(token.getUsername())) {
@@ -272,7 +254,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
 
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getAccessToken());
+            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getToken().getAccessToken());
             try {
                 //checkMethod.setServerVersion(serverVersion);
                 httpClient.executeMethod(checkMethod);
@@ -287,7 +269,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             int i = 0;
             while (i++ < 12 * 60 * 2) {
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getAccessToken());
+                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getToken().getAccessToken());
                 httpClient.executeMethod(getUserConfigurationMethod);
                 System.out.println(getUserConfigurationMethod.getResponseItem());
 
