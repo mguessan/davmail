@@ -27,6 +27,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.VCalendar;
 import davmail.exchange.VObject;
 import davmail.exchange.VProperty;
+import davmail.exchange.auth.O365Token;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
@@ -134,9 +135,9 @@ public class EwsExchangeSession extends ExchangeSession {
     protected boolean directEws;
 
     /**
-     * Oauth2 Bearer token
+     * Oauth2 token
      */
-    private String bearer;
+    private O365Token token;
 
     protected class Folder extends ExchangeSession.Folder {
         public FolderId folderId;
@@ -172,8 +173,8 @@ public class EwsExchangeSession extends ExchangeSession {
         this.userName = userName;
     }
 
-    public void setBearer(String bearer) {
-        this.bearer = bearer;
+    public void setToken(O365Token token) {
+        this.token = token;
     }
 
     /**
@@ -2944,8 +2945,8 @@ public class EwsExchangeSession extends ExchangeSession {
     protected void internalExecuteMethod(EWSMethod ewsMethod) throws IOException {
         try {
             ewsMethod.setServerVersion(serverVersion);
-            if (bearer != null) {
-                ewsMethod.setRequestHeader("Authorization", "Bearer " + bearer);
+            if (token != null) {
+                ewsMethod.setRequestHeader("Authorization", "Bearer " + token.getAccessToken());
             }
             httpClient.executeMethod(ewsMethod);
             if (serverVersion == null) {
