@@ -31,7 +31,7 @@ import org.apache.commons.httpclient.HttpClient;
 import java.io.IOException;
 
 public class TestO365Authenticator extends AbstractDavMailTestCase {
-    public void testO365Authenticator() throws IOException {
+    public void testO365Authenticator() throws IOException, InterruptedException {
         davmail.exchange.auth.O365Authenticator authenticator = new O365Authenticator();
         authenticator.setUsername(username);
         authenticator.setPassword(password);
@@ -41,17 +41,21 @@ public class TestO365Authenticator extends AbstractDavMailTestCase {
         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
 
-        GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-        checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getBearer());
-        try {
-            //checkMethod.setServerVersion(serverVersion);
-            httpClient.executeMethod(checkMethod);
+        int i = 0;
+        while (i++ < 12 * 60 * 2) {
+            GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
+            try {
+                //checkMethod.setServerVersion(serverVersion);
+                httpClient.executeMethod(checkMethod);
 
-            checkMethod.checkSuccess();
-        } finally {
-            checkMethod.releaseConnection();
+                checkMethod.checkSuccess();
+            } finally {
+                checkMethod.releaseConnection();
+            }
+            System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
+            Thread.sleep(5000);
         }
-        System.out.println("Retrieved folder id " + checkMethod.getResponseItem().get("FolderId"));
 
     }
 
