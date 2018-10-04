@@ -128,8 +128,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                         isAuthenticated = true;
                         setVisible(false);
                     }
-                } else if (newState == State.RUNNING) {
-                    loadProgress.setVisible(true);
                 }
 
             }
@@ -204,10 +202,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                initFX(fxPanel, initUrl
-                        // force consent
-                        //+"&prompt=consent";
-                        , redirectUri);
+                initFX(fxPanel, initUrl, redirectUri);
             }
         });
 
