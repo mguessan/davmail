@@ -256,7 +256,6 @@
                 <fileset dir="lib">
                     <include name="*.jar"/>
                     <exclude name="ant-deb*.jar"/>
-                    <exclude name="jarbundler-*.jar"/>
                     <exclude name="jsmoothgen-ant-*.jar"/>
                     <exclude name="junit-*.jar"/>
                     <exclude name="libgrowl-*.jar"/>
@@ -288,7 +287,6 @@
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
                 <exclude name="jsmoothgen-ant-*.jar"/>
-                <exclude name="jarbundler-*.jar"/>
                 <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
             </fileset>
