@@ -118,6 +118,7 @@ rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
+install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 
 %clean
 rm -rf $RPM_BUILD_ROOT
