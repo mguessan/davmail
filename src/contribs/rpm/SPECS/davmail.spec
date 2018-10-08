@@ -22,12 +22,17 @@ Group: Applications/Internet
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, desktop-file-utils
+%{?fedora:BuildRequires: lua}
 %{?el6:BuildRequires: ant-apache-regexp}
 %if 0%{?fedora} == 18
 # missing ant dep on original Fedora 18
 BuildRequires:	xml-commons-apis
 %endif
-%if 0%{?el7}
+%if 0%{?is_opensuse}
+BuildRequires:	insserv-compat
+%endif
+
+%if 0%{?el7} || 0%{?fedora}
 BuildRequires: java-1.8.0-openjdk-devel
 %else
 BuildRequires: java-devel >= 1.6.0
@@ -40,7 +45,7 @@ Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 
-%if 0%{?el7}
+%if 0%{?el7} || 0%{?fedora}
 Requires: /etc/init.d, logrotate, java-1.8.0-openjdk
 %else
 Requires: /etc/init.d, logrotate, jre >= 1.8.0
@@ -77,7 +82,7 @@ export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 
-%if 0%{?el7}
+%if 0%{?el7} || 0%{?fedora}
 echo keep included swt on el7
 %else
 # externalize SWT
