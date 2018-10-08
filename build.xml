@@ -237,6 +237,9 @@
             <tarfileset dir="src/desktop" prefix="usr/share/applications">
                 <include name="davmail.desktop"/>
             </tarfileset>
+            <tarfileset dir="src/appstream" prefix="usr/share/metainfo">
+                <include name="org.davmail.DavMail.appdata.xml"/>
+            </tarfileset>
         </deb>
     </target>
 
