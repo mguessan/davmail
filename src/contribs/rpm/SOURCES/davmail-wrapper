@@ -1,13 +1,9 @@
 #!/bin/sh
-
+# davmail owns davmail.log
 LOGFILE=/var/log/davmail.log
+# davmail owned pidfile
 PIDFILE=/var/lib/davmail/pid
 
-for class in /usr/share/davmail/lib/*
-do
-	export CLASSPATH=${CLASSPATH}:${class}
-done
-
 echo $$ > $PIDFILE
-exec java -cp /usr/share/davmail/davmail.jar:${CLASSPATH} \
-	davmail.DavGateway "$@" >> $LOGFILE 2>&1
+exec java -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* \
+        davmail.DavGateway "$@" >> $LOGFILE 2>&1
