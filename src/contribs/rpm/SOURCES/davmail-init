@@ -22,9 +22,6 @@ if [ -e /etc/init.d/functions ]; then
 	. /etc/init.d/functions
 fi
 
-# LSB functions
-. /lib/lsb/init-functions
-
 # Check that networking is configured.
 [ "${NETWORKING}" = "no" ] && exit 0
 
@@ -43,7 +40,7 @@ start() {
 	if [ $RETVAL -eq 0 ]
 	then
 		echo -n $"DavMail gateway already running"
-		log_failure_msg
+		echo_failure
 		RETVAL=1
 		return
 	fi
@@ -54,9 +51,9 @@ start() {
 		sleep 1
 		cat $DAVMAIL_HOME/pid > $PIDFILE
 		touch $LOCKFILE
-		log_success_msg
+		echo_success
 	else
-		log_failure_msg
+		echo_failure
 	fi
 	return $RETVAL
 }
@@ -69,9 +66,9 @@ stop() {
 	if [ $RETVAL -eq 0 ]
 	then
 		rm -f $PIDFILE $LOCKFILE
-		log_success_msg
+		echo_success
 	else
-		log_failure_msg
+		echo_failure
 	fi
 	return $RETVAL
 }
