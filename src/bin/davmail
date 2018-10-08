@@ -2,9 +2,17 @@
 #
 # Usage: davmail [</path/to/davmail.properties>]
 #
-# In case of SWT crash under JDK 9, use the following command:
-# exec java -Xmx512M -Dsun.net.inetaddr.ttl=60 -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+# In case of SWT crash under JDK 9, uninstall SWT or remove the second case below
 #
-export LD_LIBRARY_PATH=/usr/lib/jni
-for i in /usr/share/davmail/lib/*; do export CLASSPATH=$CLASSPATH:$i; done
-exec java -Xmx512M -Dsun.net.inetaddr.ttl=60 -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:$CLASSPATH davmail.DavGateway "$@" 
+BASE=`dirname $0`
+JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
+if [ -f $BASE/davmail.jar ]; then
+    # this is the platform independent package
+    exec java $JAVA_OPTS -cp davmail.jar:lib/* davmail.DavGateway "$@"
+elif [ -f /usr/share/java/swt.jar ]; then
+    # standard install with SWT
+    export LD_LIBRARY_PATH=/usr/lib/jni
+    exec java $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+else
+    exec java $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+fi
