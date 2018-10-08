@@ -4,6 +4,6 @@ LOGFILE=/var/log/davmail.log
 # davmail owned pidfile
 PIDFILE=/var/lib/davmail/pid
 
-echo $$ > $PIDFILE
+echo $$ > ${PIDFILE}
 exec java -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/* \
-        davmail.DavGateway "$@" >> $LOGFILE 2>&1
+        davmail.DavGateway "$@" >> ${LOGFILE} 2>&1
