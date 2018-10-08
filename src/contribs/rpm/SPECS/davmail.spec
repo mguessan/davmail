@@ -1,7 +1,3 @@
-# do not hard-code ids https://sourceforge.net/mailarchive/message.php?msg_id=27249602
-%{?!davmail_uid:   %define davmail_uid   213}
-%{?!davmail_gid:   %define davmail_gid   213}
-
 %{?!davrel:   %define davrel   4.9.0}
 %{?!davsvn:   %define davsvn   2652}
 %define davver %{davrel}-%{davsvn}
@@ -129,10 +125,6 @@ install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_
 rm -rf $RPM_BUILD_ROOT
 
 %pre
-# do not hard-code ids https://sourceforge.net/mailarchive/message.php?msg_id=27249602
-#/usr/sbin/groupadd -g %{davmail_gid} -f -r davmail > /dev/null 2>&1 || :
-#/usr/sbin/useradd -u %{davmail_uid} -r -s /sbin/nologin -d /var/lib/davmail -M \
-#                  -g davmail davmail > /dev/null 2>&1 || :
 /usr/sbin/groupadd -f -r davmail > /dev/null 2>&1 || :
 /usr/sbin/useradd -r -s /sbin/nologin -d /var/lib/davmail -M \
                   -g davmail davmail > /dev/null 2>&1 || :
@@ -245,7 +237,7 @@ fi
 * Fri Mar 18 2011 Marcin Dulak <Marcin.Dulak@gmail.com>
 - fixed incorrect JAVA_HOME
 - added i386 i586 arch
-- uses {davmail_gid} and {davmail_uid} of default 213
+- uses davmail_gid and davmail_uid of default 213
 - uses /etc/init.d for compatibility with other dists
 - BuildRequires and Requires compatible with openSUSE 11.4
 - removed runlevels 2 4 from davmail-init: https://bugzilla.novell.com/show_bug.cgi?id=675870
