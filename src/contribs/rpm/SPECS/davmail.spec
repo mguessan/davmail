@@ -1,12 +1,6 @@
 %{?!davrel:   %define davrel   4.9.0}
 %{?!davsvn:   %define davsvn   2652}
 %define davver %{davrel}-%{davsvn}
-%ifarch i386 i586 i686
-%define davarch x86
-%endif
-%ifarch x86_64
-%define davarch x86_64
-%endif
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
 Name: davmail
