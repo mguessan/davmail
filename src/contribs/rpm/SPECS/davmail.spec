@@ -1,5 +1,5 @@
 %{?!davrel:   %define davrel   4.9.0}
-%{?!davsvn:   %define davsvn   2652}
+%{?!davsvn:   %define davsvn   2717-trunk}
 %define davver %{davrel}-%{davsvn}
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -21,11 +21,12 @@ BuildRequires:	xml-commons-apis
 %if 0%{?is_opensuse}
 BuildRequires:	insserv-compat
 %endif
-
+# force Java 7 on RHEL6
+%{?el6:BuildRequires: java-1.7.0-openjdk-devel}
 %if 0%{?el7} || 0%{?fedora}
 BuildRequires: java-1.8.0-openjdk-devel
 %else
-BuildRequires: java-devel >= 1.6.0
+BuildRequires: java-devel >= 1.8.0
 BuildRequires: eclipse-swt
 %endif
 Requires: coreutils
@@ -113,7 +114,11 @@ rm -f dist/lib/*x86*.jar
 rm -f dist/lib/*growl*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
+
+%if 0%{?sle_version} != 120300
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
+%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -182,6 +187,9 @@ fi
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
+%if 0%{?sle_version} != 120300
+%{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
+%endif
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
