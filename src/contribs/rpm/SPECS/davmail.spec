@@ -29,6 +29,8 @@ BuildRequires: java-1.8.0-openjdk-devel
 BuildRequires: java-devel >= 1.8.0
 BuildRequires: eclipse-swt
 %endif
+# compile with JavaFX on Fedora
+%{?fedora:BuildRequires: javafx}
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
