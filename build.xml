@@ -32,6 +32,7 @@
     <condition property="is.javafx">
         <available classname="javafx.embed.swing.JFXPanel"/>
     </condition>
+    <property name="is.javafx" value="false"/>
 
     <condition property="is.java6">
         <not>
