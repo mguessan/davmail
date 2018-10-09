@@ -259,7 +259,6 @@
                 <fileset dir="lib">
                     <include name="*.jar"/>
                     <exclude name="ant-deb*.jar"/>
-                    <exclude name="jsmoothgen-ant-*.jar"/>
                     <exclude name="junit-*.jar"/>
                     <exclude name="libgrowl-*.jar"/>
                     <exclude name="nsisant-*.jar"/>
@@ -289,7 +288,6 @@
                 <include name="*.jar"/>
                 <include name="*.jnilib"/>
                 <exclude name="nsisant*.jar"/>
-                <exclude name="jsmoothgen-ant-*.jar"/>
                 <exclude name="servlet-api.jar"/>
                 <exclude name="ant-deb-*.jar"/>
             </fileset>
@@ -314,7 +312,6 @@
             <fileset dir="dist/lib">
                 <include name="*.jar"/>
                 <exclude name="nsisant*.jar"/>
-                <exclude name="jsmoothgen-ant*.jar"/>
                 <exclude name="swt*.jar"/>
                 <exclude name="libgrowl-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
@@ -380,8 +377,6 @@
                 <exclude name="libgrowl/**"/>
                 <exclude name="nsis/**"/>
                 <exclude name="svnant/**"/>
-                <exclude name="jsmooth-*/**"/>
-                <exclude name="*.jsmooth"/>
                 <exclude name="user.properties"/>
                 <exclude name="src/winrun4j/**"/>
                 <exclude name="src/osx/**"/>
