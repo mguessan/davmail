@@ -29,8 +29,12 @@
         <available file=".svn"/>
     </condition>
 
-    <condition property="is.javafx" else="false">
+    <condition property="is.javafx">
         <available classname="javafx.embed.swing.JFXPanel"/>
+    </condition>
+
+    <condition property="is.javafx.message" value="available" else="missing">
+        <available classname="javafx.embed.swing.JFXPanel" property="is.javafx"/>
     </condition>
 
     <condition property="is.java6">
@@ -80,7 +84,7 @@
 
     <target name="init" depends="check-encoding, check-java6, svnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package" level="info"/>
-        <echo message="Java ${ant.java.version} and JavaFX: ${is.javafx}" level="info"/>
+        <echo message="Java ${ant.java.version} and JavaFX ${is.javafx.message}" level="info"/>
         <mkdir dir="target/classes"/>
     </target>
 
