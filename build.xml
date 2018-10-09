@@ -165,6 +165,7 @@
                 <exclude name="swt*.jar"/>
                 <exclude name="junit-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
+                <exclude name="jfxrt.jar"/>
             </fileset>
         </copy>
         <!-- move libgrowl to library path -->
@@ -227,6 +228,7 @@
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
+                <exclude name="lib/jfxrt.jar"/>
             </tarfileset>
             <tarfileset dir="src/bin" prefix="usr/bin" filemode="755">
                 <include name="davmail"/>
@@ -265,6 +267,7 @@
                     <exclude name="servlet-api-*.jar"/>
                     <exclude name="swt-*.jar"/>
                     <exclude name="winrun4j-*.jar"/>
+                    <exclude name="jfxrt.jar"/>
                 </fileset>
             </path>
         </pathconvert>
@@ -315,6 +318,7 @@
                 <exclude name="swt*.jar"/>
                 <exclude name="libgrowl-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
+                <exclude name="jfxrt.jar"/>
             </fileset>
         </copy>
         <copy todir="dist/web/WEB-INF/classes" file="src/etc/davmail.properties"/>
@@ -333,6 +337,7 @@
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
+                <exclude name="lib/jfxrt.jar"/>
             </zipfileset>
             <zipfileset  dir="dist" filemode="755">
                 <include name="davmail.sh"/>
@@ -346,6 +351,7 @@
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
                 <include name="davmail*.exe"/>
+                <exclude name="lib/jfxrt.jar"/>
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
