@@ -29,10 +29,9 @@
         <available file=".svn"/>
     </condition>
 
-    <condition property="is.javafx">
+    <condition property="is.javafx" else="false">
         <available classname="javafx.embed.swing.JFXPanel"/>
     </condition>
-    <property name="is.javafx" value="false"/>
 
     <condition property="is.java6">
         <not>
