@@ -153,7 +153,7 @@ davmail server2.properties
                     but is working quite well. However, you still need to enable it manually in .davmail.properties
                     with the following line:
                     <br/>
-                    <source>davmail.enableEws=true</source>
+                    <source>davmail.mode=EWS</source>
                     <br/>
                 </p>
                 <p>

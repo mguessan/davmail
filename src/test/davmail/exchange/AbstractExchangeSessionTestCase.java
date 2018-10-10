@@ -39,7 +39,7 @@ public class AbstractExchangeSessionTestCase extends AbstractDavMailTestCase {
             // open session, get username and password from davmail.properties
             // Note: those properties should *not* exist in normal production mode,
             // they are not used by DavMail, just by this test case
-            if (Settings.getBooleanProperty("davmail.enableEws")) {
+            if ("EWS".equals(Settings.getBooleanProperty("davmail.mode"))) {
                 session = new EwsExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));
             } else {
                 session = new DavExchangeSession(Settings.getProperty("davmail.url"), Settings.getProperty("davmail.username"), Settings.getProperty("davmail.password"));

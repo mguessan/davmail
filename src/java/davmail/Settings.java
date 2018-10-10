@@ -30,6 +30,15 @@ import java.util.*;
  * user home directory or in the file specified on the command line.
  */
 public final class Settings {
+
+    public static final String O365_URL = "https://outlook.office365.com/EWS/Exchange.asmx";
+    public static final String O365 = "O365";
+    public static final String O365_MODERN = "O365Modern";
+    public static final String O365_INTERACTIVE = "O365Interactive";
+    public static final String WEBDAV = "WebDav";
+    public static final String EWS = "EWS";
+    public static final String AUTO = "Auto";
+
     private Settings() {
     }
 
@@ -127,6 +136,7 @@ public final class Settings {
      * Ports above 1024 for unix/linux
      */
     public static void setDefaultSettings() {
+        SETTINGS.put("davmail.mode", "EWS");
         SETTINGS.put("davmail.url", "https://outlook.office365.com/EWS/Exchange.asmx");
         SETTINGS.put("davmail.popPort", "1110");
         SETTINGS.put("davmail.imapPort", "1143");
@@ -145,7 +155,6 @@ public final class Settings {
         SETTINGS.put("davmail.bindAddress", "");
         SETTINGS.put("davmail.useSystemProxies", Boolean.FALSE.toString());
         SETTINGS.put("davmail.enableProxy", Boolean.FALSE.toString());
-        SETTINGS.put("davmail.enableEws", "true");
         SETTINGS.put("davmail.enableKerberos", "false");
         SETTINGS.put("davmail.disableUpdateCheck", "false");
         SETTINGS.put("davmail.proxyHost", "");

@@ -103,7 +103,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox imapAutoExpungeCheckBox;
     protected JCheckBox enableKeepAliveCheckBox;
     protected JCheckBox popMarkReadOnRetrCheckBox;
-    protected JComboBox enableEwsComboBox;
+    protected JComboBox modeComboBox;
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
@@ -153,8 +153,27 @@ public class SettingsFrame extends JFrame {
         JPanel settingsPanel = new JPanel(new GridLayout(7, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
-        enableEwsComboBox = new JComboBox(new String[]{WEBDAV, EWS, AUTO});
-        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
+        modeComboBox = new JComboBox();
+        modeComboBox.addItem(Settings.EWS);
+        modeComboBox.addItem(Settings.O365);
+        modeComboBox.addItem(Settings.O365_MODERN);
+        if (isJavaFXAvailable()) {
+            modeComboBox.addItem(Settings.O365_INTERACTIVE);
+        }
+        modeComboBox.addItem(Settings.WEBDAV);
+        modeComboBox.addItem(Settings.AUTO);
+        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
+        modeComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                String selectedItem = (String)modeComboBox.getSelectedItem();
+                if (selectedItem != null && selectedItem.startsWith("O365")) {
+                    urlField.setEnabled(false);
+                    urlField.setText(Settings.O365_URL);
+                } else {
+                    urlField.setEnabled(true);
+                }
+            }
+        });
         urlField = new JTextField(Settings.getProperty("davmail.url"), 20);
         popPortField = new JTextField(Settings.getProperty("davmail.popPort"), 4);
         popPortCheckBox = new JCheckBox();
@@ -221,7 +240,7 @@ public class SettingsFrame extends JFrame {
             }
         });
 
-        addSettingComponent(settingsPanel, BundleMessage.format("UI_ENABLE_EWS"), enableEwsComboBox,
+        addSettingComponent(settingsPanel, BundleMessage.format("UI_ENABLE_EWS"), modeComboBox,
                 BundleMessage.format("UI_ENABLE_EWS_HELP"));
         addSettingComponent(settingsPanel, BundleMessage.format("UI_OWA_URL"), urlField, BundleMessage.format("UI_OWA_URL_HELP"));
         addPortSettingComponent(settingsPanel, BundleMessage.format("UI_POP_PORT"), popPortField, popPortCheckBox,
@@ -235,6 +254,17 @@ public class SettingsFrame extends JFrame {
         addPortSettingComponent(settingsPanel, BundleMessage.format("UI_LDAP_PORT"), ldapPortField, ldapPortCheckBox,
                 ldapNoSSLCheckBox, BundleMessage.format("UI_LDAP_PORT_HELP"));
         return settingsPanel;
+    }
+
+    private boolean isJavaFXAvailable() {
+        boolean isJavaFXAvailable = false;
+        try {
+            Class.forName("javafx.embed.swing.JFXPanel");
+            isJavaFXAvailable = true;
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+        return isJavaFXAvailable;
     }
 
     protected JPanel getDelaysPanel() {
@@ -422,20 +452,6 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SERVER_CERTIFICATE_HASH_HELP"));
         updateMaximumSize(networkSettingsPanel);
         return networkSettingsPanel;
-    }
-
-    protected static final String WEBDAV = "WebDav";
-    protected static final String EWS = "EWS";
-    protected static final String AUTO = "Auto";
-
-    protected void setEwsModeSelectedItem(String ewsMode) {
-        if ("true".equals(ewsMode)) {
-            enableEwsComboBox.setSelectedItem(EWS);
-        } else if ("false".equals(ewsMode)) {
-            enableEwsComboBox.setSelectedItem(WEBDAV);
-        } else {
-            enableEwsComboBox.setSelectedItem(AUTO);
-        }
     }
 
     protected JPanel getOtherSettingsPanel() {
@@ -633,7 +649,7 @@ public class SettingsFrame extends JFrame {
         imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
         popMarkReadOnRetrCheckBox.setSelected(Settings.getBooleanProperty("davmail.popMarkReadOnRetr", false));
-        setEwsModeSelectedItem(Settings.getProperty("davmail.enableEws", "auto"));
+        modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
         smtpSaveInSentCheckBox.setSelected(Settings.getBooleanProperty("davmail.smtpSaveInSent", true));
         enableKerberosCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKerberos", false));
         folderSizeLimitField.setText(Settings.getProperty("davmail.folderSizeLimit"));
@@ -798,16 +814,8 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.imapAlwaysApproxMsgSize", String.valueOf(imapAlwaysApproxMsgSizeCheckBox.isSelected()));
                 Settings.setProperty("davmail.enableKeepAlive", String.valueOf(enableKeepAliveCheckBox.isSelected()));
                 Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
-                String selectedEwsMode = (String) enableEwsComboBox.getSelectedItem();
-                String enableEws;
-                if (EWS.equals(selectedEwsMode)) {
-                    enableEws = "true";
-                } else if (WEBDAV.equals(selectedEwsMode)) {
-                    enableEws = "false";
-                } else {
-                    enableEws = "auto";
-                }
-                Settings.setProperty("davmail.enableEws", enableEws);
+
+                Settings.setProperty("davmail.mode", (String) modeComboBox.getSelectedItem());
                 Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
                 Settings.setProperty("davmail.folderSizeLimit", folderSizeLimitField.getText());
                 Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));

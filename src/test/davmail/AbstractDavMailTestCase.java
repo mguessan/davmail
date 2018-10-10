@@ -85,7 +85,7 @@ public class AbstractDavMailTestCase extends TestCase {
             // enable WIRE debug log
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
             // enable EWS support
-            //Settings.setProperty("davmail.enableEws", "false");
+            //Settings.setProperty("davmail.mode", "EWS");
 
         }
     }

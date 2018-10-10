@@ -140,8 +140,25 @@ public final class ExchangeSessionFactory {
             }
 
             if (session == null) {
-                String enableEws = Settings.getProperty("davmail.enableEws", "auto");
+                String mode = Settings.getProperty("davmail.mode");
+                // convert old setting
+                if (mode == null) {
+                    if ("false".equals(Settings.getProperty("davmail.enableEws"))) {
+                        mode = Settings.WEBDAV;
+                    } else {
+                        mode = Settings.EWS;
+                    }
+                }
+                // check for overridden authenticator
                 String authenticatorClass = Settings.getProperty("davmail.authenticator");
+                if (authenticatorClass == null) {
+                    if (Settings.O365_MODERN.equals(mode)) {
+                        authenticatorClass = "davmail.exchange.auth.O365Authenticator";
+                    } else if (Settings.O365_INTERACTIVE.equals(mode)) {
+                        authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
+                    }
+                }
+
                 if (authenticatorClass != null) {
                     ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass).newInstance();
                     authenticator.setUsername(userName);
@@ -153,13 +170,13 @@ public final class ExchangeSessionFactory {
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
 
-                } else if ("true".equals(enableEws) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+                } else if (Settings.EWS.equals(mode) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                 } else {
                     try {
                         session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                     } catch (WebdavNotAvailableException e) {
-                        if ("auto".equals(enableEws)) {
+                        if (Settings.AUTO.equals(mode)) {
                             ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
                             session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
                         } else {
