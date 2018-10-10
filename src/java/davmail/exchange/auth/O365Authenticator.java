@@ -53,7 +53,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         this.password = password;
     }
 
-    public O365Token getToken() throws IOException {
+    public O365Token getToken() {
         return token;
     }
 
@@ -276,8 +276,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
             endAuthMethod.releaseConnection();
             LOGGER.debug(config);
             String resultValue = config.getString("ResultValue");
-            if ("PhoneAppDenied".equals(resultValue)) {
-                throw new IOException("Authentication failed: " + resultValue);
+            if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED_REASON", resultValue);
             }
             if (config.getBoolean("Success")) {
                 success = true;
