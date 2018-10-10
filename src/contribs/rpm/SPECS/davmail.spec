@@ -1,5 +1,5 @@
 %{?!davrel:   %define davrel   4.9.0}
-%{?!davsvn:   %define davsvn   2717-trunk}
+%{?!davsvn:   %define davsvn   2721-trunk}
 %define davver %{davrel}-%{davsvn}
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -45,15 +45,7 @@ Requires: /etc/init.d, logrotate, jre >= 1.8.0
 Requires: eclipse-swt
 %endif
 
-%define davmaildotproperties davmail.properties
-
 Source0: %{name}-src-%{davver}.tgz
-Source1: davmail.sh
-Source2: davmail-logrotate
-Source3: davmail-init
-Source4: %{davmaildotproperties}
-Source5: davmail.desktop
-Source6: davmail-wrapper
 
 %description
 DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange gateway allowing
@@ -99,14 +91,14 @@ mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/log
 
 # Init scripts, icons, configurations
-install -m 0775 %{SOURCE1} $RPM_BUILD_ROOT%{_bindir}/davmail
-install -m 0644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
-install -m 0775 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
+install -m 0775 src/bin/davmail $RPM_BUILD_ROOT%{_bindir}/davmail
+install -m 0644 src/init/davmail-logrotate $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/davmail
+install -m 0775 src/init/davmail-init $RPM_BUILD_ROOT%{_sysconfdir}/init.d/davmail
 ln -sf %{_sysconfdir}/init.d/davmail $RPM_BUILD_ROOT%{_sbindir}/rcdavmail
-install -m 0644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}
+install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
-desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ %{SOURCE5} --vendor=""
-install -m 0775 %{SOURCE6} $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
+desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
+install -m 0775 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
 
 # Actual DavMail files
 install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT%{_datadir}/pixmaps/davmail.png
@@ -185,7 +177,7 @@ fi
 %{_sbindir}/rcdavmail
 %{_sysconfdir}/init.d/davmail
 %config(noreplace) %{_sysconfdir}/logrotate.d/davmail
-%config(noreplace) %{_sysconfdir}/%{davmaildotproperties}
+%config(noreplace) %{_sysconfdir}/davmail.properties
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
