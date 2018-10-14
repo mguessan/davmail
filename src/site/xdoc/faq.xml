@@ -42,6 +42,43 @@
                 <p>Also make sure you set mode to EWS in settings</p>
 
                 <p>
+                    <strong>Is Office 365 modern authentication / MFA supported ?</strong>
+                </p>
+                <p>Office 365 modern authentication is available with the following modes:</p>
+                    <ul>
+                        <li>O365Interactive: will open an authentication window to let you enter your credentials
+                            and go through MFA check and consent.</li>
+                        <li>O365Modern: same logic as O365Interactive, but use client provided credentials for Oauth
+                            negotiation, trigger PhoneApp MFA check transparently</li>
+                    </ul>
+                <p>Additional notes:</p>
+                <ul>
+                    <li>You will have to give your consent to DavMail access on first call,
+                        check davmail log for exact url or use O365Interactive once</li>
+                    <li>You can use your own application client id instead of DavMail provided value,
+                        just create your application and add in davmail.properties:<br/>
+                        <source>
+davmail.oauth.clientId=<i>yourappid></i>
+davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient
+                        </source>
+                    </li>
+                </ul>
+                <p>The required scopes are:</p>
+                <source>
+"requiredResourceAccess": [
+{ "resourceAppId": "00000002-0000-0ff1-ce00-000000000000",
+  "resourceAccess": [ { "id": "3b5f3d61-589b-4a3c-a359-5dd4b5ee5bd5", "type": "Scope" } ]
+},
+{ "resourceAppId": "00000002-0000-0000-c000-000000000000",
+"resourceAccess": [ { "id": "311a71cc-e848-46a1-bdf8-97ff7156d8e6", "type": "Scope" } ]
+} ]
+                </source>
+
+                <p>In both cases (O365Interactive and O365Modern), once initial authentication succeeds DavMail keeps
+                    the refresh token and should automatically renew access token on expiration.
+                </p>
+
+                <p>
                     <strong>EWS endpoint not available</strong>
                 </p>
                 <p>Unfortunately, this may mean your Exchange administrators blocked EWS access.</p>
