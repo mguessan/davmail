@@ -68,6 +68,16 @@ public final class DesktopBrowser {
                     DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e2);
                 }
             }
+        } catch (java.lang.UnsupportedOperationException e) {
+            if (System.getProperty("os.name").toLowerCase().startsWith("linux")) {
+                try {
+                    XdgDesktopBrowser.browse(location);
+                } catch (Exception e2) {
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e2);
+                }
+            } else {
+                DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
+            }
         } catch (Exception e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
         }
