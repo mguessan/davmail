@@ -22,7 +22,7 @@ install:
   - cmd: java -version
   - cmd: ant -version
 build_script:
-  - ant compile
+  - ant dist
 test: off
 cache:
 - C:\ant
