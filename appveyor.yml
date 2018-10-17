@@ -9,8 +9,10 @@ environment:
 install:
   - appveyor DownloadFile http://www.eu.apache.org/dist/ant/binaries/apache-ant-1.10.5-bin.zip
   - 7z x apache-ant-1.10.5-bin.zip > nul
-  - cmd: SET PATH=C:\apache-ant-1.10.5-bin\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=C:\apache-ant-1.10.5\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
 build_script:
   - ant
 test_script: off
+cache:
+- C:\apache-ant-1.10.5
