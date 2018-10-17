@@ -12,12 +12,13 @@ install:
   - 7z x apache-ant-1.10.5-bin.zip
   - cmd: set PATH=%ANT_HOME%\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
+  - cmd: dir C:\apache-ant-1.10.5
 build_script:
   - echo ANT_HOME %ANT_HOME%
   - echo PATH %PATH%
   - echo CD %CD%
   - java -version
-  - dir %ANT_HOME%
+  - dir C:\apache-ant-1.10.5
   - ant.cmd
 test_script: off
 cache:
