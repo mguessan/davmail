@@ -16,7 +16,8 @@ build_script:
   - echo ANT_HOME %ANT_HOME%
   - echo PATH %PATH%
   - echo CD %CD%
-  - ant
+  - java -version
+  - %ANT_HOME%\bin\ant.cmd
 test_script: off
 cache:
 - C:\apache-ant-1.10.5
