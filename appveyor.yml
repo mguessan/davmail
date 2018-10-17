@@ -19,12 +19,10 @@ install:
       }
   - cmd: SET PATH=C:\ant\apache-ant-1.10.5\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
-  - cmd: echo %USERPROFILE%
-  - cmd: echo %PATH%
   - cmd: java -version
   - cmd: ant -version
 build_script:
   - ant compile
-test_script: off
+test: off
 cache:
 - C:\ant
