@@ -2,6 +2,7 @@ version: '{build}'
 os: Windows Server 2012
 
 environment:
+  ANT_HOME: C:\apache-ant-1.10.5
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk9
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
@@ -9,9 +10,12 @@ environment:
 install:
   - appveyor DownloadFile http://www.eu.apache.org/dist/ant/binaries/apache-ant-1.10.5-bin.zip
   - 7z x apache-ant-1.10.5-bin.zip > nul
-  - cmd: SET PATH=C:\apache-ant-1.10.5\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: set PATH=%ANT_HOME%\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
 build_script:
+  - echo ANT_HOME %ANT_HOME%
+  - echo PATH %PATH%
+  - echo CD %CD%
   - ant
 test_script: off
 cache:
