@@ -21,6 +21,7 @@ install:
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
   - cmd: ant -version
+  - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins"
 build_script:
   - ant dist
 test: off
