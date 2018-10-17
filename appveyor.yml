@@ -27,3 +27,8 @@ build_script:
 test: off
 cache:
 - C:\ant
+artifacts:
+  - path: dist/*.zip
+  - path: dist/*.deb
+  - path: dist/*.tgz
+  - path: dist/davmail-*.exe
