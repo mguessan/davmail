@@ -157,10 +157,10 @@
             <classpath location="lib/nsisant-1.2.jar"/>
         </taskdef>
         <nsis script="davmail-setup.nsi" verbosity="4" out="build.log" noconfig="yes">
-            <define name="VERSION" value="${release}"/>
+            <define name="VERSION" value="${release-name}"/>
         </nsis>
         <nsis script="davmail-setup64.nsi" verbosity="4" out="build64.log" noconfig="yes">
-            <define name="VERSION" value="${release}"/>
+            <define name="VERSION" value="${release-name}"/>
         </nsis>
     </target>
 
@@ -210,7 +210,7 @@
              package="davmail"
              section="mail"
              depends="openjdk-11-jre|openjdk-8-jre|openjdk-7-jre|openjdk-6-jre|oracle-java7-jre|sun-java6-jre|default-jre,libswt-gtk-3-java|libswt-gtk-3.6-java|libswt-gtk-3.5-java|libswt-gtk-3.4-java,libswt-cairo-gtk-3-jni|libswt-cairo-gtk-3.5-jni">
-            <version upstream="${release}"/>
+            <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
             <description synopsis="DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway">
                 Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP exchange
