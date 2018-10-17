@@ -21,7 +21,7 @@ install:
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
   - cmd: ant -version
-  - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins"
+  - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-ansi"
 build_script:
   - ant prepare-dist
   - makensis /V4 /OC:\projects\davmail\build.log /NOCONFIG /DVERSION=4.9.0 C:\projects\davmail\davmail-setup.nsi
