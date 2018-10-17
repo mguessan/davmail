@@ -2,7 +2,7 @@ version: '{build}'
 os: Windows Server 2012
 
 environment:
-  ANT_HOME: C:\apache-ant-1.10.5
+  ANT_HOME: C:\ant\apache-ant-1.10.5
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk9
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
@@ -22,6 +22,7 @@ install:
   - cmd: echo %USERPROFILE%
   - cmd: echo %PATH%
   - cmd: java -version
+  - cmd: ant -version
 build_script:
   - ant compile
 test_script: off
