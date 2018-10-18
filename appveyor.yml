@@ -24,7 +24,7 @@ install:
   - cmd: ant -version
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-ansi"
 build_script:
-  - ant dist
+  - ant -Drelease.name=trunk dist
 test: off
 cache:
 - C:\ant
