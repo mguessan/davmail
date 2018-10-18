@@ -58,7 +58,7 @@
                     <li>You can use your own application client id instead of DavMail provided value,
                         just create your application and add in davmail.properties:<br/>
                         <source>
-davmail.oauth.clientId=<i>yourappid></i>
+davmail.oauth.clientId=<i>yourappid</i>
 davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient
                         </source>
                     </li>
