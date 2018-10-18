@@ -304,7 +304,6 @@
             </fileset>
         </copy>
         <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
-        <copy file="davmail.sh" todir="dist"/>
 
         <!-- use WinRun4J wrappers -->
         <copy file="src/winrun4j/davmail.exe" todir="dist"/>
@@ -337,16 +336,14 @@
             <zipfileset dir="dist">
                 <include name="lib/*.jar"/>
                 <include name="*.jar"/>
-                <include name="davmail.desktop"/>
-                <exclude name="davmail.sh"/>
                 <!-- exclude swt jars from platform independent package -->
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
             </zipfileset>
-            <zipfileset  dir="dist" filemode="755">
-                <include name="davmail.sh"/>
+            <zipfileset  dir="src/bin" filemode="755">
+                <include name="davmail"/>
             </zipfileset>
         </zip>
         <jar destfile="dist/davmail-${release-name}.war">
