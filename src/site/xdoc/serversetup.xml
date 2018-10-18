@@ -11,7 +11,7 @@
     <body>
 
         <section name="DavMail Setup as a standalone server">
-            <p>Prerequisite : Sun (Oracle) JRE or OpenJDK 6 to 8.
+            <p>Prerequisite : Sun (Oracle) JRE or OpenJDK 6 to 11.
             </p>
 
             <p>Davmail Gateway can run in server mode as a gateway between the mail
@@ -20,6 +20,12 @@
                 This mode was tested successfully with Iphone and Android phones and should work with
                 any equipment with POP/IMAP/SMTP/LDAP/Caldav/Carddav client.
                 In this mode many users can share the same DavMail instance.
+            </p>
+
+            <p>The following documentation describes how to run DavMail as a non root user.
+                The <a href="https://packages.debian.org/sid/davmail">DavMail Debian package</a>
+                and <a href="https://software.opensuse.org//download.html?project=home%3Amguessan%3Adavmail&package=davmail">DavMail RPM package</a>
+                include init scripts to run DavMail as a service.
             </p>
 
             <p>Download the noinstall package for Windows or platform independent DavMail package
@@ -173,9 +179,9 @@ davmail.enableKerberos=false]]>
                 the options. Make sure davmail.server is set to true (no icon tray) and allow
                 remote connections: davmail.allowRemote=true.
             </p>
-            <p>To disable a service, set an empty port value.</p>
+            <p>To disable a listener, set an empty port value.</p>
             <p>Launch Davmail with the following command:
-                <source>nohup davmail.sh davmail.properties &amp;</source>.
+                <source>nohup davmail davmail.properties &amp;</source>.
             </p>
             <p>Then check messages:
                 <source>tail -f nohup.out</source>
@@ -205,7 +211,7 @@ davmail.enableKerberos=false]]>
     <true/>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/libexec/davmail/davmail.sh</string>
+        <string>/usr/libexec/davmail/davmail</string>
         <string>/usr/libexec/davmail/davmail.properties</string>
     </array>
 </dict>
@@ -213,7 +219,7 @@ davmail.enableKerberos=false]]>
         </section>
 
         <section name="DavMail Setup as a JEE Web Application">
-            <p>Prerequisites : Sun JRE 5, 6 or 7 or OpenJDK 6 or 7 and any JEE compliant web container
+            <p>Prerequisites : Oracle JRE 6 or later or OpenJDK 6 or later and any JEE compliant web container
             </p>
 
             <p>Davmail Gateway can now be deployed in any JEE application server using
