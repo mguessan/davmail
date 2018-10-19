@@ -159,8 +159,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
     String resource = "https://outlook.office365.com";
     String ewsUrl = resource + "/EWS/Exchange.asmx";
-    String clientId = "facd6cff-a294-4415-b59f-c5b01937d7bd"; // common DavMail client id
-    String redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
     String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
 
     private String username;
@@ -190,6 +188,11 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
 
     public void authenticate() throws IOException {
+        // common DavMail client id
+        final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
+        // standard native app redirectUri
+        final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+
         final String initUrl = authorizeUrl
                 + "?client_id=" + clientId
                 + "&response_type=code"
