@@ -51,12 +51,34 @@ import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
+import java.net.*;
 
 public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
 
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
+
+    static {
+        // register a stream handler for msauth protocol
+        URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
+            @Override
+            public URLStreamHandler createURLStreamHandler(String protocol) {
+                if ("msauth".equals(protocol)) {
+                    return new URLStreamHandler() {
+                        @Override
+                        protected URLConnection openConnection(URL u) {
+                            return new URLConnection(u) {
+                                @Override
+                                public void connect() {
+                                    // ignore
+                                }
+                            };
+                        }
+                    };
+                }
+                return null;
+            }
+        });
+    }
 
     String location;
     boolean isAuthenticated = false;
@@ -113,6 +135,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
             @Override
             public void changed(ObservableValue ov, State oldState, State newState) {
+                LOGGER.debug(webViewEngine.getLocation());
+                LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                 if (newState == State.SUCCEEDED) {
                     loadProgress.setVisible(false);
                     // bring window to top
@@ -228,7 +252,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             token = new O365Token(clientId, redirectUri, code);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
-            if (!username.equalsIgnoreCase(token.getUsername())) {
+            if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {
                 throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
             }
 
