@@ -50,6 +50,9 @@ public class DavMailCookieSpec extends RFC2109Spec {
                     - cookie.getDomain().length());
             dotIndex = hostWithoutDomain.indexOf('.');
         }
+        if (".login.microsoftonline.com".equals(cookie.getDomain())) {
+            cookie.setDomain(host);
+        }
         if (dotIndex != -1) {
             // discard additional host name part
             super.validate(host.substring(dotIndex + 1), port, path, secure, cookie);
