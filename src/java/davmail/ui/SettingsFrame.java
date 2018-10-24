@@ -166,6 +166,7 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 String selectedItem = (String)modeComboBox.getSelectedItem();
+                modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
                 if (selectedItem != null && selectedItem.startsWith("O365")) {
                     urlField.setEnabled(false);
                     urlField.setText(Settings.O365_URL);
