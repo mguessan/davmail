@@ -77,7 +77,10 @@ public final class DavGateway {
             Settings.setProperty("davmail.server", "true");
             Settings.updateLoggingConfig();
         }
-        DavGatewayTray.init(notray);
+
+        if (!Settings.getBooleanProperty("davmail.server")) {
+            DavGatewayTray.init(notray);
+        }
 
         start();
 
