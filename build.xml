@@ -303,7 +303,7 @@
                 <exclude name="ant-deb-*.jar"/>
             </fileset>
         </copy>
-        <copy file="src/java/tray48.png" tofile="dist/davmail.png"/>
+        <copy file="src/icon/davmail.png" todir="dist"/>
 
         <!-- use WinRun4J wrappers -->
         <copy file="src/winrun4j/davmail.exe" todir="dist"/>
