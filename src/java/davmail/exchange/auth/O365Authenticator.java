@@ -341,6 +341,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         try {
             return new JSONObject(extract("Config=([^\n]+);", content));
         } catch (JSONException e1) {
+            LOGGER.debug(content);
             throw new IOException("Unable to extract config from response body");
         }
     }
