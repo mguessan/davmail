@@ -25,6 +25,7 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.RestMethod;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -41,12 +42,21 @@ public class O365Authenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger(O365Authenticator.class);
 
     private static final String RESOURCE = "https://outlook.office365.com";
+    // Office 365 username
     private String username;
+    // authentication userid, can be different from username
+    private String userid;
     private String password;
     private O365Token token;
 
     public void setUsername(String username) {
-        this.username = username;
+        if (username.contains("|")) {
+            this.userid = username.substring(0, username.indexOf("|"));
+            this.username = username.substring(username.indexOf("|") + 1);
+        } else {
+            this.username = username;
+            this.userid = username;
+        }
     }
 
     public void setPassword(String password) {
@@ -119,49 +129,56 @@ public class O365Authenticator implements ExchangeAuthenticator {
             getCredentialMethod.releaseConnection();
             LOGGER.debug("CredentialType=" + credentialType);
 
-            PostMethod logonMethod = new PostMethod("https://login.microsoftonline.com/common/login");
-            logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-            logonMethod.setRequestHeader("Referer", referer);
-
-            logonMethod.setParameter("canary", canary);
-            logonMethod.setParameter("ctx", context);
-            logonMethod.setParameter("flowToken", flowToken);
-            logonMethod.setParameter("hpgrequestid", sessionId);
-            logonMethod.setParameter("login", username);
-            logonMethod.setParameter("loginfmt", username);
-            logonMethod.setParameter("passwd", password);
-
+            JSONObject credentials = credentialType.getJSONObject("Credentials");
+            String federationRedirectUrl = credentials.optString("FederationRedirectUrl");
             String code;
-            try {
-                httpClient.executeMethod(logonMethod);
-                String responseBodyAsString = logonMethod.getResponseBodyAsString();
-                if (responseBodyAsString.indexOf("arrUserProofs") > 0) {
-                    logonMethod.releaseConnection();
-                    logonMethod = handleMfa(httpClient, logonMethod, username, clientRequestId);
-                }
+            if (federationRedirectUrl != null && !federationRedirectUrl.isEmpty()) {
+                LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
+                code = authenticateADFS(httpClient, federationRedirectUrl);
+            } else {
+                PostMethod logonMethod = new PostMethod("https://login.microsoftonline.com/common/login");
+                logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-                Header locationHeader = logonMethod.getResponseHeader("Location");
-                if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
-                    // extract response
-                    config = extractConfig(logonMethod.getResponseBodyAsString());
-                    if (config.optJSONArray("arrScopes") != null) {
-                        LOGGER.debug("Authentication successful but user consent needed, please open the following url in a browser");
-                        LOGGER.debug(url);
-                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                    } else if ("50126".equals(config.optString("sErrorCode"))) {
-                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                    } else {
-                        throw new IOException("Authentication failed, unknown error: " + config);
+                logonMethod.setRequestHeader("Referer", referer);
+
+                logonMethod.setParameter("canary", canary);
+                logonMethod.setParameter("ctx", context);
+                logonMethod.setParameter("flowToken", flowToken);
+                logonMethod.setParameter("hpgrequestid", sessionId);
+                logonMethod.setParameter("login", username);
+                logonMethod.setParameter("loginfmt", username);
+                logonMethod.setParameter("passwd", password);
+
+                try {
+                    httpClient.executeMethod(logonMethod);
+                    String responseBodyAsString = logonMethod.getResponseBodyAsString();
+                    if (responseBodyAsString.indexOf("arrUserProofs") > 0) {
+                        logonMethod.releaseConnection();
+                        logonMethod = handleMfa(httpClient, logonMethod, username, clientRequestId);
                     }
-                }
-                String location = locationHeader.getValue();
-                code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
 
-                LOGGER.debug("Authentication Code: " + code);
-            } finally {
-                logonMethod.releaseConnection();
+                    Header locationHeader = logonMethod.getResponseHeader("Location");
+                    if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
+                        // extract response
+                        config = extractConfig(logonMethod.getResponseBodyAsString());
+                        if (config.optJSONArray("arrScopes") != null) {
+                            LOGGER.debug("Authentication successful but user consent needed, please open the following url in a browser");
+                            LOGGER.debug(url);
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("50126".equals(config.optString("sErrorCode"))) {
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else {
+                            throw new IOException("Authentication failed, unknown error: " + config);
+                        }
+                    }
+                    String location = locationHeader.getValue();
+                    code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+
+                    LOGGER.debug("Authentication Code: " + code);
+                } finally {
+                    logonMethod.releaseConnection();
+                }
             }
 
             token = new O365Token(clientId, redirectUri, code);
@@ -180,6 +197,77 @@ public class O365Authenticator implements ExchangeAuthenticator {
             }
         }
 
+    }
+
+    private String authenticateADFS(HttpClient httpClient, String federationRedirectUrl) throws IOException {
+        String responseBodyAsString;
+
+        // get ADFS login form
+        GetMethod logonFormMethod = new GetMethod(federationRedirectUrl);
+
+        try {
+            httpClient.executeMethod(logonFormMethod);
+            responseBodyAsString = logonFormMethod.getResponseBodyAsString();
+        } finally {
+            logonFormMethod.releaseConnection();
+        }
+
+        // parse form to get target url, authenticate as userid
+        PostMethod logonMethod = new PostMethod(extract("method=\"post\" action=\"([^\"]+)\"", responseBodyAsString));
+        logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        logonMethod.setParameter("UserName", userid);
+        logonMethod.setParameter("Password", password);
+        logonMethod.setParameter("AuthMethod", "FormsAuthentication");
+
+        try {
+            httpClient.executeMethod(logonMethod);
+        } finally {
+            logonMethod.releaseConnection();
+        }
+
+        if (logonMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || logonMethod.getResponseHeader("Location") == null) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+        }
+
+        GetMethod redirectMethod = new GetMethod(logonMethod.getResponseHeader("Location").getValue());
+        try {
+            httpClient.executeMethod(redirectMethod);
+            responseBodyAsString = redirectMethod.getResponseBodyAsString();
+        } finally {
+            redirectMethod.releaseConnection();
+        }
+
+        if (!responseBodyAsString.contains("login.microsoftonline.com")) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+        }
+        String targetUrl = extract("action=\"([^\"]+)\"", responseBodyAsString);
+        String wa = extract("name=\"wa\" value=\"([^\"]+)\"", responseBodyAsString);
+        String wresult = extract("name=\"wresult\" value=\"([^\"]+)\"", responseBodyAsString);
+        // decode wresult
+        wresult = wresult.replaceAll("&quot;", "\"");
+        wresult = wresult.replaceAll("&lt;", "<");
+        wresult = wresult.replaceAll("&gt;", ">");
+        String wctx = extract("name=\"wctx\" value=\"([^\"]+)\"", responseBodyAsString);
+        wctx = wctx.replaceAll("&amp;", "&");
+
+        PostMethod targetMethod = new PostMethod(targetUrl);
+        targetMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        targetMethod.setParameter("wa", wa);
+        targetMethod.setParameter("wresult", wresult);
+        targetMethod.setParameter("wctx", wctx);
+        try {
+            httpClient.executeMethod(targetMethod);
+            responseBodyAsString = logonMethod.getResponseBodyAsString();
+        } finally {
+            targetMethod.releaseConnection();
+        }
+
+        LOGGER.debug(targetMethod.getURI().toString());
+        LOGGER.debug(targetMethod.getStatusLine());
+        LOGGER.debug(responseBodyAsString);
+
+        throw new IOException("ADFS authentication not yet implemented");
     }
 
     private PostMethod handleMfa(HttpClient httpClient, PostMethod logonMethod, String username, String clientRequestId) throws JSONException, IOException {
