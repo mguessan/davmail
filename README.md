@@ -12,18 +12,18 @@ Main project site is still on Sourceforge at http://davmail.sourceforge.net/.
 
 This git repository is synchronized with subversion repository in order to make contributions easier for Github users.
 
-##### Download
+## Download
 Download latest DavMail release on Sourceforge
 [http://davmail.sourceforge.net/download.html](http://davmail.sourceforge.net/download.html)
 
-##### Trunk builds
+## Trunk builds
 Latest working builds are now available on Appveyor:
 
 * Windows setup [davmail-4.9.0-trunk-setup.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-4.9.0-trunk-setup.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 * Windows 64 bits setup [davmail-4.9.0-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-4.9.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 * Windows noinstall package [davmail-4.9.0-trunk-windows-noinstall.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-4.9.0-trunk-windows-noinstall.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
-* Platform independent package [davmail-4.9.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-4.9.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Platform independent package [davmail-4.9.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-4.9.0-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
 * Debian package [davmail_4.9.0-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_4.9.0-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
