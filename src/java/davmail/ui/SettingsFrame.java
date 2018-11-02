@@ -109,6 +109,9 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox smtpSaveInSentCheckBox;
 	protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
 
+	protected JTextField oauthClientIdField;
+    protected JTextField oauthRedirectUriField;
+
     JCheckBox osxHideFromDockCheckBox;
 
     protected void addSettingComponent(JPanel panel, String label, JComponent component) {
@@ -122,6 +125,7 @@ public class SettingsFrame extends JFrame {
         panel.add(fieldLabel);
         component.setMaximumSize(component.getPreferredSize());
         JPanel innerPanel = new JPanel();
+        innerPanel.setBorder(BorderFactory.createEmptyBorder(1,0,0,0));
         innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.X_AXIS));
         innerPanel.add(component);
         panel.add(innerPanel);
@@ -357,9 +361,9 @@ public class SettingsFrame extends JFrame {
 
         keystoreTypeCombo = new JComboBox(new String[]{"JKS", "PKCS12"});
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
-        keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 17);
-        keystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.keystorePass"), 15);
-        keyPassField = new JPasswordField(Settings.getProperty("davmail.ssl.keyPass"), 15);
+        keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 20);
+        keystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.keystorePass"), 20);
+        keyPassField = new JPasswordField(Settings.getProperty("davmail.ssl.keyPass"), 20);
 
         addSettingComponent(keyStorePanel, BundleMessage.format("UI_KEY_STORE_TYPE"), keystoreTypeCombo,
                 BundleMessage.format("UI_KEY_STORE_TYPE_HELP"));
@@ -384,11 +388,11 @@ public class SettingsFrame extends JFrame {
             clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
         }
         clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
-        clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 17);
-        clientKeystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.clientKeystorePass"), 15);
+        clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 20);
+        clientKeystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.clientKeystorePass"), 20);
 
-        pkcs11LibraryField = new JTextField(Settings.getProperty("davmail.ssl.pkcs11Library"), 17);
-        pkcs11ConfigField = new JTextArea(2, 17);
+        pkcs11LibraryField = new JTextField(Settings.getProperty("davmail.ssl.pkcs11Library"), 20);
+        pkcs11ConfigField = new JTextArea(2, 20);
         pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
         pkcs11ConfigField.setBorder(pkcs11LibraryField.getBorder());
         pkcs11ConfigField.setFont(pkcs11LibraryField.getFont());
@@ -406,7 +410,9 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_CLIENT_KEY_STORE_HELP"));
         addSettingComponent(clientKeystoreFilePanel, BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD"), clientKeystorePassField,
                 BundleMessage.format("UI_CLIENT_KEY_STORE_PASSWORD_HELP"));
-        cardPanel.add(clientKeystoreFilePanel, "FILE");
+        JPanel wrapperPanel = new JPanel();
+        wrapperPanel.add(clientKeystoreFilePanel);
+        cardPanel.add(wrapperPanel, "FILE");
 
         JPanel pkcs11Panel = new JPanel(new GridLayout(2, 2));
         addSettingComponent(pkcs11Panel, BundleMessage.format("UI_PKCS11_LIBRARY"), pkcs11LibraryField,
@@ -429,6 +435,21 @@ public class SettingsFrame extends JFrame {
         });
         updateMaximumSize(clientKeystorePanel);
         return clientKeystorePanel;
+    }
+
+    protected JPanel getOauthPanel() {
+        JPanel oAuthPanel = new JPanel(new GridLayout(2, 2));
+        oAuthPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OAUTH")));
+
+        oauthClientIdField = new JTextField(Settings.getProperty("davmail.oauth.clientId"), 20);
+        oauthRedirectUriField = new JTextField(Settings.getProperty("davmail.oauth.redirectUri"), 20);
+
+        addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_CLIENTID"), oauthClientIdField,
+                BundleMessage.format("UI_OAUTH_CLIENTID_HELP"));
+        addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_REDIRECTURI"), oauthRedirectUriField,
+                BundleMessage.format("UI_OAUTH_REDIRECTURI_HELP"));
+        updateMaximumSize(oAuthPanel);
+        return oAuthPanel;
     }
 
     protected JPanel getNetworkSettingsPanel() {
@@ -664,6 +685,9 @@ public class SettingsFrame extends JFrame {
         pkcs11LibraryField.setText(Settings.getProperty("davmail.ssl.pkcs11Library"));
         pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
 
+        oauthClientIdField.setText(Settings.getProperty("davmail.oauth.clientId"));
+        oauthRedirectUriField.setText(Settings.getProperty("davmail.oauth.redirectUri"));
+
         rootLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("rootLogger"));
         davmailLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("davmail"));
         httpclientLoggingLevelField.setSelectedItem(Settings.getLoggingLevel("org.apache.commons.httpclient"));
@@ -735,6 +759,7 @@ public class SettingsFrame extends JFrame {
         encryptionPanel.setLayout(new BoxLayout(encryptionPanel, BoxLayout.Y_AXIS));
         encryptionPanel.add(getKeystorePanel());
         encryptionPanel.add(getSmartCardPanel());
+        encryptionPanel.add(getOauthPanel());
         // empty panel
         encryptionPanel.add(new JPanel());
         tabbedPane.add(BundleMessage.format("UI_TAB_ENCRYPTION"), encryptionPanel);
@@ -831,6 +856,9 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.ssl.clientKeystorePass", String.valueOf(clientKeystorePassField.getPassword()));
                 Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
                 Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
+
+                Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
+                Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
 
                 Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
                 Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
