@@ -46,6 +46,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.*;
+import java.security.Security;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,6 +75,8 @@ public final class DavGatewayHttpClientFacade {
         System.setProperty("jdk.tls.rejectClientInitiatedRenegotiation", "true");
         // force strong ephemeral Diffie-Hellman parameter
         System.setProperty("jdk.tls.ephemeralDHKeySize", "2048");
+
+        Security.setProperty("ssl.SocketFactory.provider", "davmail.http.DavGatewaySSLSocketFactory");
 
         DavGatewayHttpClientFacade.start();
 

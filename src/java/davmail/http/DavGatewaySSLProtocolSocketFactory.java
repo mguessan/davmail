@@ -88,6 +88,24 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
 
     private SSLContext sslcontext;
 
+    public String[] getDefaultCipherSuites() {
+        try {
+            return getSSLContext().getSocketFactory().getDefaultCipherSuites();
+        } catch (Exception e) {
+            // ignore
+        }
+        return new String[]{};
+    }
+
+    public String[] getSupportedCipherSuites() {
+        try {
+            return getSSLContext().getSocketFactory().getSupportedCipherSuites();
+        } catch (Exception e) {
+            // ignore
+        }
+        return new String[]{};
+    }
+
     private SSLContext createSSLContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, KeyManagementException, KeyStoreException {
         // PKCS11 client certificate settings
         String pkcs11Library = Settings.getProperty("davmail.ssl.pkcs11Library");
@@ -214,6 +232,34 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (KeyManagementException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (KeyStoreException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new IOException(e + " " + e.getMessage());
+        }
+    }
+
+    public Socket createSocket(InetAddress host, int port) throws IOException {
+        try {
+            return getSSLContext().getSocketFactory().createSocket(host, port);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (KeyManagementException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (KeyStoreException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new IOException(e + " " + e.getMessage());
+        }
+    }
+
+    public Socket createSocket(InetAddress host, int port, InetAddress clientHost, int clientPort) throws IOException {
+        try {
+            return getSSLContext().getSocketFactory().createSocket(host, port, clientHost, clientPort);
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e + " " + e.getMessage());
         } catch (KeyManagementException e) {
