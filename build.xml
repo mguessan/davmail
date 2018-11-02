@@ -304,6 +304,7 @@
             </fileset>
         </copy>
         <copy file="src/icon/davmail.png" todir="dist"/>
+        <copy file="src/bin/davmail" todir="dist"/>
 
         <!-- use WinRun4J wrappers -->
         <copy file="src/winrun4j/davmail.exe" todir="dist"/>
