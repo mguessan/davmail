@@ -8,7 +8,7 @@ BASE=`dirname $0`
 JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
 if [ -f $BASE/davmail.jar ]; then
     # this is the platform independent package
-    exec java $JAVA_OPTS -cp davmail.jar:lib/* davmail.DavGateway "$@"
+    exec java $JAVA_OPTS -cp $BASE/davmail.jar:$BASE/lib/* davmail.DavGateway "$@"
 elif [ -f /usr/share/java/swt.jar ]; then
     # standard install with SWT
     export LD_LIBRARY_PATH=/usr/lib/jni
