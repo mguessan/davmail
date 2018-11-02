@@ -29,5 +29,10 @@ Latest working builds are now available on Appveyor:
 
 * OSX application [DavMail-MacOSX-4.9.0-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-4.9.0-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
+## Contribute
+Contributions are welcome, you can either [submit a patch](https://sourceforge.net/p/davmail/patches/) or create a [Github pull request](https://github.com/mguessan/davmail/pulls).
+
+In case you are looking for tasks to work on, please check current
+[Backlog](https://sourceforge.net/p/davmail/feature-requests/milestone/Backlog/).
 
 
