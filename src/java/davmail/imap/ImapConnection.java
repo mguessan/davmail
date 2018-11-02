@@ -69,9 +69,9 @@ public class ImapConnection extends AbstractConnection {
         final String capabilities;
         int imapIdleDelay = Settings.getIntProperty("davmail.imapIdleDelay") * 60;
         if (imapIdleDelay > 0) {
-            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE MOVE";
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN IDLE MOVE SPECIAL-USE";
         } else {
-            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN MOVE";
+            capabilities = "CAPABILITY IMAP4REV1 AUTH=LOGIN MOVE SPECIAL-USE";
         }
 
         String line;

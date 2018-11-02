@@ -111,6 +111,8 @@ public abstract class ExchangeSession {
     protected static final String JUNK = "Junk";
     protected static final String UNSENT = "Unsent Messages";
 
+    protected static final List<String> SPECIAL = Arrays.asList(new String[]{SENT, DRAFTS, TRASH, JUNK});
+
     static {
         // Adjust Mime decoder settings
         System.setProperty("mail.mime.ignoreunknownencoding", "true");
@@ -1708,12 +1710,16 @@ public abstract class ExchangeSession {
          * @return folder flags in IMAP format
          */
         public String getFlags() {
+            String specialFlag = "";
+            if (SPECIAL.contains(folderPath)) {
+                specialFlag = "\\"+folderPath+" ";
+            }
             if (noInferiors) {
-                return "\\NoInferiors";
+                return specialFlag+"\\NoInferiors";
             } else if (hasChildren) {
-                return "\\HasChildren";
+                return specialFlag+"\\HasChildren";
             } else {
-                return "\\HasNoChildren";
+                return specialFlag+"\\HasNoChildren";
             }
         }
 
