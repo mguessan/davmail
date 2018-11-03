@@ -444,7 +444,7 @@
                 <exclude name="*.MD5"/>
             </fileset>
         </move>
-        <copy file="releasenotes.txt" todir="dist/${version}"/>
+        <copy file="RELEASE-NOTES.md" todir="dist/${version}"/>
         <concat destfile="dist/${version}/checksums.md5">
             <fileset dir="dist">
                 <include name="*.MD5"/>
