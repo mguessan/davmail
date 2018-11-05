@@ -82,6 +82,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
     String location;
     boolean isAuthenticated = false;
+    String errorCode = "";
     final JFXPanel fxPanel = new JFXPanel();
 
     public O365InteractiveAuthenticator() {
@@ -149,7 +150,12 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                         LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                     }
                     if (location.startsWith(redirectUri)) {
-                        isAuthenticated = true;
+                        LOGGER.debug("Location starts with redirectUri, check code");
+
+                        isAuthenticated = location.indexOf("code=") >= 0 && location.indexOf("&session_state=") >= 0;
+                        if (!isAuthenticated && location.indexOf("error=") >= 0) {
+                            errorCode = location.substring(location.indexOf("error="));
+                        }
                         setVisible(false);
                     }
                 }
@@ -257,8 +263,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             }
 
         } else {
-            LOGGER.error("Authentication failed");
-            throw new IOException("Authentication failed");
+            LOGGER.error("Authentication failed "+errorCode);
+            throw new IOException("Authentication failed "+errorCode);
         }
     }
 
