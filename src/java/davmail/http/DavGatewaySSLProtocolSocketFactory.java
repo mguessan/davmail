@@ -33,14 +33,16 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import java.awt.*;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.security.*;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 
 /**
@@ -78,8 +80,15 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             return new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
                 public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                     if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
-                        PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
-                        ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
+                        if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                            // headless or server mode
+                            System.out.print(((PasswordCallback) callbacks[0]).getPrompt()+": ");
+                            String password = new BufferedReader(new InputStreamReader(System.in)).readLine();
+                            ((PasswordCallback) callbacks[0]).setPassword(password.toCharArray());
+                        } else {
+                            PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
+                            ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
+                        }
                     }
                 }
             });

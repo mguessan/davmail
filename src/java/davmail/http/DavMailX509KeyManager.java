@@ -18,10 +18,16 @@
  */
 package davmail.http;
 
+import davmail.Settings;
+import davmail.ui.AcceptCertificateDialog;
 import davmail.ui.SelectCertificateDialog;
 import org.apache.log4j.Logger;
 
 import javax.net.ssl.X509KeyManager;
+import java.awt.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -126,14 +132,21 @@ public class DavMailX509KeyManager implements X509KeyManager {
                 }
                 descriptionsArray[i++] = subject + " [" + issuer + "]";
             }
-            SelectCertificateDialog selectCertificateDialog = new SelectCertificateDialog(aliasesArray, descriptionsArray);
+            String selectedAlias = null;
+            if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                // headless or server mode
+                selectedAlias = chooseClientAlias(aliasesArray, descriptionsArray);
+            } else {
+                SelectCertificateDialog selectCertificateDialog = new SelectCertificateDialog(aliasesArray, descriptionsArray);
 
-            LOGGER.debug("User selected Key Alias: " + selectCertificateDialog.getSelectedAlias());
+                selectedAlias = selectCertificateDialog.getSelectedAlias();
+                LOGGER.debug("User selected Key Alias: " + selectedAlias);
+            }
 
-            cachedAlias = stripAlias(selectCertificateDialog.getSelectedAlias());
+            cachedAlias = stripAlias(selectedAlias);
             LOGGER.debug("Stored Key Alias Pattern: " + cachedAlias);
 
-            return selectCertificateDialog.getSelectedAlias();
+            return selectedAlias;
 
             // exactly one, simply return that and don't bother the user
         } else if (aliases.size() == 1) {
@@ -145,6 +158,28 @@ public class DavMailX509KeyManager implements X509KeyManager {
             LOGGER.debug("No Private Keys found");
             return null;
         }
+    }
+
+    private String chooseClientAlias(String[] aliasesArray, String[] descriptionsArray) {
+        System.out.println("Choose client alias:");
+        int i = 1;
+        for (String aliasDescription:descriptionsArray) {
+            System.out.println(i+++": "+aliasDescription);
+        }
+        BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+        int chosenIndex = 0;
+        while (chosenIndex == 0 || chosenIndex > descriptionsArray.length) {
+            try {
+                System.out.print("Alias: ");
+                chosenIndex = Integer.parseInt(inReader.readLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid");
+            } catch (IOException e) {
+                System.out.println("Invalid");
+            }
+        }
+
+        return aliasesArray[chosenIndex - 1];
     }
 
     /**

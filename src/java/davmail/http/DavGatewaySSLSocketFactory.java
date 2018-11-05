@@ -19,18 +19,19 @@
 
 package davmail.http;
 
+import org.apache.log4j.Logger;
+
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 
 public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
+    static final Logger LOGGER = Logger.getLogger(DavGatewaySSLSocketFactory.class);
+
     private DavGatewaySSLProtocolSocketFactory socketFactory;
 
-    public DavGatewaySSLSocketFactory() throws KeyManagementException, NoSuchAlgorithmException {
+    public DavGatewaySSLSocketFactory() {
         socketFactory = new DavGatewaySSLProtocolSocketFactory();
     }
 
@@ -46,26 +47,31 @@ public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
 
     @Override
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
+        LOGGER.debug("createSocket " + host + " " + port);
         return socketFactory.createSocket(socket, host, port, autoClose);
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException {
+        LOGGER.debug("createSocket " + host + " " + port);
         return socketFactory.createSocket(host, port);
     }
 
     @Override
-    public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort) throws IOException, UnknownHostException {
+    public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort) throws IOException {
+        LOGGER.debug("createSocket " + host + " " + port + " " + clientHost + " " + clientPort);
         return socketFactory.createSocket(host, port, clientHost, clientPort);
     }
 
     @Override
     public Socket createSocket(InetAddress host, int port) throws IOException {
+        LOGGER.debug("createSocket " + host + " " + port);
         return socketFactory.createSocket(host, port);
     }
 
     @Override
     public Socket createSocket(InetAddress host, int port, InetAddress clientHost, int clientPort) throws IOException {
+        LOGGER.debug("createSocket " + host + " " + port + " " + clientHost + " " + clientPort);
         return socketFactory.createSocket(host, port, clientHost, clientPort);
     }
 }
