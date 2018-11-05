@@ -357,7 +357,7 @@ public final class Settings {
      * @return property value
      */
     public static synchronized String getProperty(String property, String defaultValue) {
-        String value = SETTINGS.getProperty(property);
+        String value = getProperty(property);
         if (value == null) {
             value = defaultValue;
         }
