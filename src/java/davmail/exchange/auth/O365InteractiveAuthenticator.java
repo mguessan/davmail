@@ -152,11 +152,12 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                     if (location.startsWith(redirectUri)) {
                         LOGGER.debug("Location starts with redirectUri, check code");
 
-                        isAuthenticated = location.indexOf("code=") >= 0 && location.indexOf("&session_state=") >= 0;
-                        if (!isAuthenticated && location.indexOf("error=") >= 0) {
+                        isAuthenticated = location.contains("code=") && location.contains("&session_state=");
+                        if (!isAuthenticated && location.contains("error=")) {
                             errorCode = location.substring(location.indexOf("error="));
                         }
                         setVisible(false);
+                        dispose();
                     }
                 }
 
