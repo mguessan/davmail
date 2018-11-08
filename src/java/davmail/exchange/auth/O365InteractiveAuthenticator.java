@@ -111,14 +111,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
     }
 
     private void initFX(final JFXPanel fxPanel, final String url, final String redirectUri) {
-        Authenticator.setDefault(new Authenticator() {
-            @Override
-            public PasswordAuthentication getPasswordAuthentication() {
-                LOGGER.debug("Password authentication with user " + username);
-                return new PasswordAuthentication(username, password.toCharArray());
-            }
-        });
-
         WebView webView = new WebView();
         final WebEngine webViewEngine = webView.getEngine();
 
@@ -231,6 +223,36 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 + "&response_mode=query"
                 + "&resource=" + resource
                 + "&login_hint=" + URIUtil.encodeWithinQuery(username);
+
+        // set system proxy settings
+        if (Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE)) {
+            System.setProperty("java.net.useSystemProxies", "true");
+        } else if (Settings.getProperty("davmail.proxyHost") != null) {
+            System.setProperty("https.proxyHost", Settings.getProperty("davmail.proxyHost"));
+            System.setProperty("https.proxyPort", Settings.getProperty("davmail.proxyPort"));
+        }
+
+        // set default authenticator
+        Authenticator.setDefault(new Authenticator() {
+            @Override
+            public PasswordAuthentication getPasswordAuthentication() {
+                if (getRequestorType() == RequestorType.PROXY) {
+                    String proxyUser = Settings.getProperty("davmail.proxyUser");
+                    String proxyPassword = Settings.getProperty("davmail.proxyPassword");
+                    if (proxyUser != null && proxyPassword != null) {
+                        LOGGER.debug("Proxy authentication with user " + proxyUser);
+                        return new PasswordAuthentication(proxyUser, proxyPassword.toCharArray());
+                    } else {
+                        LOGGER.debug("Missing proxy credentials ");
+                        return null;
+                    }
+                } else {
+                    LOGGER.debug("Password authentication with user " + username);
+                    return new PasswordAuthentication(username, password.toCharArray());
+                }
+            }
+        });
+
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
