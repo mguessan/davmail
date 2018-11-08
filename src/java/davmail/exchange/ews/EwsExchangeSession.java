@@ -169,8 +169,10 @@ public class EwsExchangeSession extends ExchangeSession {
     public EwsExchangeSession(HttpClient httpClient, String userName) {
         this.httpClient = httpClient;
         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-        this.email = userName;
         this.userName = userName;
+        if (userName.contains("@")) {
+            this.email = userName;
+        }
     }
 
     public void setToken(O365Token token) {
