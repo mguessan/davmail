@@ -238,6 +238,9 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         } else if (Settings.getProperty("davmail.proxyHost") != null) {
             System.setProperty("https.proxyHost", Settings.getProperty("davmail.proxyHost"));
             System.setProperty("https.proxyPort", Settings.getProperty("davmail.proxyPort"));
+            if (Settings.getProperty("davmail.noProxyFor") != null) {
+                System.setProperty("http.nonProxyHosts", Settings.getProperty("davmail.noProxyFor"));
+            }
         }
 
         // set default authenticator
