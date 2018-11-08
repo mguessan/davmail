@@ -151,6 +151,14 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                         setVisible(false);
                         dispose();
                     }
+                } else if (newState == State.FAILED) {
+                    Throwable e = webViewEngine.getLoadWorker().getException();
+                    if (e != null) {
+                        LOGGER.error(e+" "+e.getMessage());
+                        errorCode = e.getMessage();
+                    }
+                    setVisible(false);
+                    dispose();
                 }
 
             }
@@ -295,6 +303,8 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         try {
             Settings.setDefaultSettings();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+            Settings.setProperty("davmail.proxyHost", "proxy.free.fr");
+            Settings.setProperty("davmail.proxyPort", "3128");
 
             O365InteractiveAuthenticator authenticationFrame = new O365InteractiveAuthenticator();
             authenticationFrame.setUsername("");
