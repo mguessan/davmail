@@ -171,7 +171,11 @@ public final class ExchangeSessionFactory {
                     session.buildSessionInfo(null);
 
                 } else if (Settings.EWS.equals(mode) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
-                    session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
+                    DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
+                    DavGatewayHttpClientFacade.addNTLM(httpClient);
+                    session = new EwsExchangeSession(httpClient, poolKey.userName);
+                    session.buildSessionInfo(null);
                 } else {
                     try {
                         session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
