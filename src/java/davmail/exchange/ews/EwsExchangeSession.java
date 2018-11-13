@@ -1477,7 +1477,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String currentEtag = null;
             ItemId currentItemId = null;
             FileAttachment currentFileAttachment = null;
-            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
+            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, ITEM_PROPERTIES);
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
@@ -1851,7 +1851,7 @@ public class EwsExchangeSession extends ExchangeSession {
             boolean isMeetingResponse = false;
             boolean isMozSendInvitations = true;
 
-            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName);
+            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
@@ -2444,19 +2444,26 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("xmozsnoozetime");
     }
 
+    protected static final HashSet<String> CALENDAR_ITEM_REQUEST_PROPERTIES = new HashSet<String>();
+
+    static {
+        CALENDAR_ITEM_REQUEST_PROPERTIES.addAll(EVENT_REQUEST_PROPERTIES);
+        CALENDAR_ITEM_REQUEST_PROPERTIES.add("ismeeting");
+    }
+
     @Override
     protected Set<String> getItemProperties() {
         return ITEM_PROPERTIES;
     }
 
-    protected EWSMethod.Item getEwsItem(String folderPath, String itemName) throws IOException {
+    protected EWSMethod.Item getEwsItem(String folderPath, String itemName, Set<String> itemProperties) throws IOException {
         EWSMethod.Item item = null;
         String urlcompname = convertItemNameToEML(itemName);
         // workaround for missing urlcompname in Exchange 2010
         if (isItemId(urlcompname)) {
             ItemId itemId = new ItemId(StringUtil.urlToBase64(urlcompname.substring(0, urlcompname.indexOf('.'))));
             GetItemMethod getItemMethod = new GetItemMethod(BaseShape.ID_ONLY, itemId, false);
-            for (String attribute : EVENT_REQUEST_PROPERTIES) {
+            for (String attribute : itemProperties) {
                 getItemMethod.addAdditionalProperty(Field.get(attribute));
             }
             executeMethod(getItemMethod);
@@ -2475,13 +2482,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Item getItem(String folderPath, String itemName) throws IOException {
-        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
         if (item == null && isMainCalendar(folderPath)) {
             // look for item in task folder, replace extension first
             if (itemName.endsWith(".ics")) {
-                item = getEwsItem(TASKS, itemName.substring(0, itemName.length() - 3) + "EML");
+                item = getEwsItem(TASKS, itemName.substring(0, itemName.length() - 3) + "EML", EVENT_REQUEST_PROPERTIES);
             } else {
-                item = getEwsItem(TASKS, itemName);
+                item = getEwsItem(TASKS, itemName, EVENT_REQUEST_PROPERTIES);
             }
         }
 
@@ -2581,10 +2588,14 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void deleteItem(String folderPath, String itemName) throws IOException {
-        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
+        if (item != null && "CalendarItem".equals(item.type)) {
+            // reload with ismeeting property
+            item = getEwsItem(folderPath, itemName, CALENDAR_ITEM_REQUEST_PROPERTIES);
+        }
         if (item == null && isMainCalendar(folderPath)) {
             // look for item in task folder
-            item = getEwsItem(TASKS, itemName);
+            item = getEwsItem(TASKS, itemName, EVENT_REQUEST_PROPERTIES);
         }
         if (item != null) {
             boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
@@ -2643,7 +2654,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void processItem(String folderPath, String itemName) throws IOException {
-        EWSMethod.Item item = getEwsItem(folderPath, itemName);
+        EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
         if (item != null) {
             HashMap<String, String> localProperties = new HashMap<String, String>();
             localProperties.put("processed", "1");
