@@ -1851,7 +1851,12 @@ public class EwsExchangeSession extends ExchangeSession {
             boolean isMeetingResponse = false;
             boolean isMozSendInvitations = true;
 
-            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
+            HashSet<String> itemRequestProperties = CALENDAR_ITEM_REQUEST_PROPERTIES;
+            if (vCalendar.isTodo()) {
+                itemRequestProperties = EVENT_REQUEST_PROPERTIES;
+            }
+
+            EWSMethod.Item currentItem = getEwsItem(folderPath, itemName, itemRequestProperties);
             if (currentItem != null) {
                 currentItemId = new ItemId(currentItem);
                 currentEtag = currentItem.get(Field.get("etag").getResponseName());
@@ -2436,7 +2441,6 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("displayname");
         EVENT_REQUEST_PROPERTIES.add("subject");
         EVENT_REQUEST_PROPERTIES.add("urlcompname");
-        EVENT_REQUEST_PROPERTIES.add("myresponsetype");
         EVENT_REQUEST_PROPERTIES.add("displayto");
         EVENT_REQUEST_PROPERTIES.add("displaycc");
 
@@ -2449,6 +2453,7 @@ public class EwsExchangeSession extends ExchangeSession {
     static {
         CALENDAR_ITEM_REQUEST_PROPERTIES.addAll(EVENT_REQUEST_PROPERTIES);
         CALENDAR_ITEM_REQUEST_PROPERTIES.add("ismeeting");
+        CALENDAR_ITEM_REQUEST_PROPERTIES.add("myresponsetype");
     }
 
     @Override
@@ -2590,7 +2595,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public void deleteItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
         if (item != null && "CalendarItem".equals(item.type)) {
-            // reload with ismeeting property
+            // reload with calendar property
             item = getEwsItem(folderPath, itemName, CALENDAR_ITEM_REQUEST_PROPERTIES);
         }
         if (item == null && isMainCalendar(folderPath)) {
