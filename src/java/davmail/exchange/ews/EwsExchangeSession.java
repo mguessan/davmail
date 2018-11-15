@@ -2435,7 +2435,6 @@ public class EwsExchangeSession extends ExchangeSession {
     protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
 
     static {
-        EVENT_REQUEST_PROPERTIES.add("ismeeting");
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
         EVENT_REQUEST_PROPERTIES.add("etag");
         EVENT_REQUEST_PROPERTIES.add("displayname");
@@ -2476,7 +2475,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         // find item by urlcompname
         if (item == null) {
-            List<EWSMethod.Item> responses = searchItems(folderPath, EVENT_REQUEST_PROPERTIES, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW, 0);
+            List<EWSMethod.Item> responses = searchItems(folderPath, itemProperties, isEqualTo("urlcompname", urlcompname), FolderQueryTraversal.SHALLOW, 0);
             if (!responses.isEmpty()) {
                 item = responses.get(0);
             }
