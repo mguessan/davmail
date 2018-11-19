@@ -61,25 +61,29 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
     static {
         // register a stream handler for msauth protocol
-        URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
-            @Override
-            public URLStreamHandler createURLStreamHandler(String protocol) {
-                if ("msauth".equals(protocol)) {
-                    return new URLStreamHandler() {
-                        @Override
-                        protected URLConnection openConnection(URL u) {
-                            return new URLConnection(u) {
-                                @Override
-                                public void connect() {
-                                    // ignore
-                                }
-                            };
-                        }
-                    };
+        try {
+            URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
+                @Override
+                public URLStreamHandler createURLStreamHandler(String protocol) {
+                    if ("msauth".equals(protocol)) {
+                        return new URLStreamHandler() {
+                            @Override
+                            protected URLConnection openConnection(URL u) {
+                                return new URLConnection(u) {
+                                    @Override
+                                    public void connect() {
+                                        // ignore
+                                    }
+                                };
+                            }
+                        };
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+        } catch (Throwable t) {
+            LOGGER.warn("Unable to register msauth protocol handler");
+        }
     }
 
     String location;
