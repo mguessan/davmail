@@ -48,7 +48,9 @@ public class DavGatewayProxySelector extends ProxySelector {
         String proxyHost = Settings.getProperty("davmail.proxyHost");
         int proxyPort = Settings.getIntProperty("davmail.proxyPort");
         String scheme = uri.getScheme();
-        if (useSystemProxies) {
+        if ("socket".equals(scheme)) {
+            return DIRECT;
+        } else if (useSystemProxies) {
             List<Proxy> proxyes = proxySelector.select(uri);
             LOGGER.debug("Selected " + proxyes + " proxy for " + uri);
             return proxyes;
