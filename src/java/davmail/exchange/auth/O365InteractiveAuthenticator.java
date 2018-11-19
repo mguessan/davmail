@@ -52,6 +52,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.*;
+import java.util.List;
 
 public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
 
@@ -306,8 +307,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         try {
             Settings.setDefaultSettings();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-            Settings.setProperty("davmail.proxyHost", "proxy.free.fr");
-            Settings.setProperty("davmail.proxyPort", "3128");
 
             O365InteractiveAuthenticator authenticationFrame = new O365InteractiveAuthenticator();
             authenticationFrame.setUsername("");
