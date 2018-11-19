@@ -33,6 +33,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.log4j.Logger;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -73,12 +74,21 @@ public final class DavGateway {
         }
 
         Settings.load();
+        if (GraphicsEnvironment.isHeadless()) {
+            // force server mode
+            LOGGER.debug("Headless mode, do not create GUI");
+            server = true;
+        }
         if (server) {
             Settings.setProperty("davmail.server", "true");
             Settings.updateLoggingConfig();
         }
 
-        if (!Settings.getBooleanProperty("davmail.server")) {
+
+        if (Settings.getBooleanProperty("davmail.server")) {
+            LOGGER.debug("Start DavMail in server mode");
+        } else {
+            LOGGER.debug("Start DavMail in GUI mode");
             DavGatewayTray.init(notray);
         }
 

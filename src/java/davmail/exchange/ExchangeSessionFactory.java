@@ -31,6 +31,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
+import java.awt.*;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -156,6 +157,9 @@ public final class ExchangeSessionFactory {
                         authenticatorClass = "davmail.exchange.auth.O365Authenticator";
                     } else if (Settings.O365_INTERACTIVE.equals(mode)) {
                         authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
+                        if (GraphicsEnvironment.isHeadless()) {
+                            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Interactive not supported in headless mode");
+                        }
                     }
                 }
 
