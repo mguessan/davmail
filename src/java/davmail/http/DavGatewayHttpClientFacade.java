@@ -89,6 +89,12 @@ public final class DavGatewayHttpClientFacade {
         } catch (Throwable t) {
             // ignore
         }
+
+        // set system property *before* calling ProxySelector.getDefault()
+        if (Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE)) {
+            System.setProperty("java.net.useSystemProxies", "true");
+        }
+        ProxySelector.setDefault(new DavGatewayProxySelector(ProxySelector.getDefault()));
     }
 
 
