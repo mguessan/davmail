@@ -52,11 +52,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.*;
-import java.util.List;
 
 public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
 
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
+
+    private static final int MAX_COUNT = 300;
 
     static {
         // register a stream handler for msauth protocol
@@ -125,7 +126,6 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
         webViewEngine.setUserAgent(DavGatewayHttpClientFacade.getUserAgent());
 
-        webViewEngine.load(url);
         webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
             @Override
             public void changed(ObservableValue ov, State oldState, State newState) {
@@ -149,22 +149,21 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                         if (!isAuthenticated && location.contains("error=")) {
                             errorCode = location.substring(location.indexOf("error="));
                         }
-                        setVisible(false);
-                        dispose();
+                        close();
                     }
                 } else if (newState == State.FAILED) {
                     Throwable e = webViewEngine.getLoadWorker().getException();
                     if (e != null) {
-                        LOGGER.error(e+" "+e.getMessage());
+                        LOGGER.error(e + " " + e.getMessage());
                         errorCode = e.getMessage();
                     }
-                    setVisible(false);
-                    dispose();
+                    close();
                 }
 
             }
 
         });
+        webViewEngine.load(url);
 
 
     }
@@ -264,22 +263,33 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 }
             }
         });
-
+        Platform.setImplicitExit(false);
 
         // Run initFX as JavaFX-Thread
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                initFX(fxPanel, initUrl, redirectUri);
+                try {
+                    initFX(fxPanel, initUrl, redirectUri);
+                } catch (Throwable e) {
+                    LOGGER.error(e + " " + e.getMessage());
+                    errorCode = e.getMessage();
+                    close();
+                }
             }
         });
 
-        while (!isAuthenticated && isVisible()) {
+        int count = 0;
+
+        while (!isAuthenticated && isVisible() && count++ < MAX_COUNT) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 // ignore
             }
+        }
+        if (isVisible()) {
+            close();
         }
 
         if (isAuthenticated) {
@@ -298,9 +308,14 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             }
 
         } else {
-            LOGGER.error("Authentication failed "+errorCode);
-            throw new IOException("Authentication failed "+errorCode);
+            LOGGER.error("Authentication failed " + errorCode);
+            throw new IOException("Authentication failed " + errorCode);
         }
+    }
+
+    void close() {
+        setVisible(false);
+        dispose();
     }
 
     public static void main(String[] argv) {
