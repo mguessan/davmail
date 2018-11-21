@@ -1,3 +1,171 @@
+## DavMail 5.0.0 2018-11-21
+Major release with Office 365 modern authentication (Oauth2) and MFA support.
+DavMail now supports IMAP SPECIAL-USE RFC6154.
+On the packaging side, RPM files are now included in source package and more 
+distributions are supported by the spec file. An appveyor configuration is in place to
+provide up to date trunk builds. Thanks to wberrier DavMail is now available as a
+flatpack package, see https://flathub.org/apps/details/org.davmail.DavMail
+This release also includes many bug fixes and enhancements, see below.
+
+Known issues/limitations:
+- Office 365 interactive authentication is based on OpenJFX (JavaFX),
+which is available in Oracle JDK but not in OpenJDK. On windows use latest Oracle JDK (>=9),
+on Linux OpenJDK 8 + JavaFX is the best option. This is obviously not available in server mode.
+- Office 365 modern authentication does not have those constraints, however it will only work
+with native Office 365 authentication, and not with ADFS.
+
+### EWS
+- EWS: catch errors in setURLStreamHandlerFactory
+- EWS: custom proxy selector, do not return proxies for direct socket connections
+- EWS: create a custom proxy selector to manage O365 interactive authentication proxy
+- EWS: improve error handling in O365 interactive authenticator, do not implicitly close JavaFX thread
+- EWS: cleanup O365 interactive
+- EWS: Set http.nonProxyHosts from davmail.noProxyFor in O365 interactive authentication
+- EWS: improve error handling in O365 interactive authentication
+- EWS: implement proxy support in O365 interactive authentication
+- EWS: username with @ is email
+- Do not try form authentication with direct EWS
+- EWS: Force dispose of interactive frame
+- EWS: improve interactive authentication error handling
+- Fix main test case to support new authentication modes
+- EWS: Enable DavMail custom SSLSocketFactory in O365 interactive authentication 
+- EWS: Add Oauth authentication section in DavMail settings interface
+- EWS: Experimental ADFS authentication, not yet functional
+- EWS: log page content on error in O365Authenticator
+- EWS: register a stream handler for msauth protocol
+- EWS: Allow clientId override in interactive authenticator
+- EWS: Send authentication failed on phone MFA denied/no response
+- EWS: enable progress bar on first page load only
+- EWS: Office 365 unit test with loop
+- EWS: make sure httpclient connections are closed, remove duplicated code
+- EWS: use renewable token in EwsExchangeSession
+- EWS: refactor O365 authentication to implement token refresh
+- EWS: improve headless Office 365 authenticator error handling
+- EWS: implement progress bar in interactive authentication frame
+- EWS: check username in Office365 interactive authenticator
+- EWS: Encode username in Office365 authenticator
+- EWS: exclude JavaFX authenticator from Maven pom
+- EWS: Remove reference to JavaFX authenticator in ExchangeSessionFactory
+- EWS: Reorganise authenticators
+- JavaFX dependencies are Java 11 only, revert and exclude JavaFX authenticator from Maven build
+- Add JavaFX scene web dependency
+- Add JavaFX swing dependency in POM
+- EWS: add jettison dependency in pom
+- Do not try interactive authentication in server mode
+- EWS: Merge non interactive Oauth2 authentication
+- EWS: Office365 modern authentication (Oauth2) with phone application MFA support
+- EWS: Implement REST/Json method for Oauth authentication
+- EWS: send username to interactive authentication frame
+- EWS: implement interactive OAuth2 authentication (still experimental)
+- EWS: Add jettison library for Oauth support
+- EWS: First working prototype of interactive Oauth2 authentication
+
+### Enhancements
+- Improve SWT not available message
+- Detect headless to force server mode, do not allow O365 interactive authentication in this case
+- Javafx cleanup
+- Fix empty setting handling: return default setting on empty value
+- Implement headless choose client certificate and PKCS11 password prompt
+- Package hi res image
+- Merge #50 Assume notray in server mode 
+- Display connection mode help as a tooltip
+- Merge DesktopBrowser: add support for xdg-open directly, see https://github.com/mguessan/davmail/pull/5
+- Workaround for login.microsoftonline.com cookie domain
+- i18n new davmail.mode setting
+- Drop davmail.enableEws to create a new davmail.mode setting that can be EWS, WebDav, O365, O365Modern, O365Interactive or Auto
+- Another JavaFX message fix
+- Fix is.javafx default value
+- Default is.javafx value
+- Improve version check message
+- Add a JavaFX check message
+- Drop JavaFX runtime and use conditional build instead
+- Add JavaFX runtime as a compile time dependency
+- Remove last jsmooth dependency
+- Adjust default davmail.properties for server mode usage
+- Drop jarbundler
+- Add jettison dependency to windows wrappers and installers
+- Fix RFE #101: Add a new davmail.userAgent setting to let users force DavMail user agent
+- Add oraclejdk11 and openjdk11 to Travis CI targets
+- Try to add Javafx dependency for OpenJDK 11
+- Make message info level in ant build
+
+### Linux
+- Linux: Move spec file to root
+- Fix relative path in launch script
+- Copy davmail launch script to dist
+- Linux: Drop old davmail.sh script
+- Linux: merge external source files in main source tree
+- Linux: Move init files from contribs to src/init
+- Linux: compile with JavaFX on Fedora
+- Linux: force Java 7 on RHEL 6 and do not deploy appstream on openSUSE_Leap_42.3
+- Linux: drop reference to old architecture specific package
+- Remove old hardcoded uids reference
+- Linux: drop dependency to LSB functions in init script
+- Linux: merge pull request https://github.com/mguessan/davmail/pull/4 include appdata file in rpm and deb packages
+- Linux: merge davmail.sh to use a single script in all cases
+- Linux: improve wrapper according to audit
+- Linux: adjust desktop categories according to OpenSuse constraints, see https://en.opensuse.org/openSUSE:Packaging_desktop_menu_categories
+- Linux: Simplify DavMail wrapper
+- Linux: make spec file compatible with more distributions
+- Linux: Additional notes on running DavMail with systray on Ubuntu 18
+- Linux: merge RPM and Debian desktop files
+- Linux: use simple name instead of path in desktop file
+- Linux: drop desktopentry ant task
+- Linux: move old desktop file to src/desktop
+- Linux: Prepare desktop file merge
+- Linux: merge pull request https://github.com/mguessan/davmail/pull/2 remove deprecations and duplicate main categories in desktop file, missing lf
+- Linux: merge pull request https://github.com/mguessan/davmail/pull/2 remove deprecations and duplicate main categories in desktop file
+- Linux: Add changelog entry for release in spec file
+- Linux: fix spec file changelog date
+- RPM: update init and logrotate from build.opensuse.org
+
+### Caldav
+- Caldav: another fix for #344 Problem with Calendar and tasks, fix properties list
+- Caldav: fix for #344 Problem with Calendar and tasks, calendar:MyResponseType is also calendar only on Exchange 2007
+- Caldav: fix for #344 Problem with Calendar and tasks, Exchange 2007 does not accept ismeeting property request on non calendar items
+
+### Documentation
+- Doc: Convert release notes to markdown format
+- Doc: add contribute section in README.md
+- Doc: fix appveyor link
+- Add download links to README.md
+- Doc: fix typo
+- Doc: update linux instructions, remove obsolete content
+- Doc: reference official debian package and build.opensuse RPM packages in server setup documentation
+- Doc: Drop piwik reference from site, no longer available on Sourceforge
+- Doc: Add appveyor badge in README.md
+- Doc: Add an FAQ entry on Office 365 modern authentication and MFA
+- Doc: adjust indentation to match pull request
+- Doc: appdata file from https://github.com/mguessan/davmail/pull/3
+- Doc: make image link relative in README.md
+- Doc: update release notes
+- Add Sourceforge download badge to README.md
+
+### IMAP
+- IMAP: implement #341 imap SPECIAL-USE
+
+### Appveyor
+- appveyor: add Java 10 in matrix
+- Build: use -trunk suffix for all artifacts
+- appveyor: get artifacts
+- Back to ant dist
+- appveyor: fix for nsis 3
+- appveyor: separate makensis from build file
+- appveyor: copy processwork nsis plugin
+- appveyor: switch from compile to dist target
+- appveyor: disable test
+- appveyor: fix ANT_HOME
+- appveyor: debug
+- appveyor: fix ant path
+- Try to create an appveyor build descriptor
+
+### Carddav
+- Carddav: prefer urlcompname (client provided item name) for contacts over EWS
+
+### OSX
+- OSX: restore OSX greyscale icons
+
+
 ## DavMail 4.9.0 2018-09-05
 Includes a lot of enhancements, library upgrades, improved Linux desktop support, code cleanup
 and a brand new Carddav distribution list support.
