@@ -24,7 +24,7 @@
 
             <p>The following documentation describes how to run DavMail as a non root user.
                 The <a href="https://packages.debian.org/sid/davmail">DavMail Debian package</a>
-                and <a href="https://software.opensuse.org//download.html?project=home%3Amguessan%3Adavmail&package=davmail">DavMail RPM package</a>
+                and <a href="https://software.opensuse.org/download.html?project=home%3Amguessan%3Adavmail&amp;package=davmail">DavMail RPM package</a>
                 include init scripts to run DavMail as a service.
             </p>
 
