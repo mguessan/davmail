@@ -20,6 +20,7 @@ package davmail.exchange.auth;
 
 import davmail.BundleMessage;
 import davmail.Settings;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
@@ -297,7 +298,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {
-                throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
+                throw new DavMailAuthenticationException("Authenticated username " + token.getUsername() + " does not match " + username);
             }
 
         } else {
