@@ -3094,15 +3094,22 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     protected String convertDateFromExchange(String exchangeDateValue) throws DavMailException {
-        String zuluDateValue = null;
-        if (exchangeDateValue != null) {
-            try {
-                zuluDateValue = getZuluDateFormat().format(getExchangeZuluDateFormat().parse(exchangeDateValue));
-            } catch (ParseException e) {
+        // yyyy-MM-dd'T'HH:mm:ss'Z' to yyyyMMdd'T'HHmmss'Z'
+        if (exchangeDateValue == null) {
+            return null;
+        } else {
+            if (exchangeDateValue.length() != 20) {
                 throw new DavMailException("EXCEPTION_INVALID_DATE", exchangeDateValue);
             }
+            StringBuilder buffer = new StringBuilder();
+            for (int i = 0; i < exchangeDateValue.length(); i++) {
+                if (i == 4 || i == 7 || i == 13 || i == 16) {
+                    i++;
+                }
+                buffer.append(exchangeDateValue.charAt(i));
+            }
+            return buffer.toString();
         }
-        return zuluDateValue;
     }
 
     protected String convertCalendarDateToExchange(String vcalendarDateValue) throws DavMailException {

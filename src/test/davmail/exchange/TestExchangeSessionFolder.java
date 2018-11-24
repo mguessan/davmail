@@ -133,4 +133,12 @@ public class TestExchangeSessionFolder extends AbstractExchangeSessionTestCase {
         assertNotNull(folder);
     }
 
+    public void testCreateSlashFolder() throws IOException {
+        String folderName = "test_xF8FF_slash";
+        session.deleteFolder(folderName);
+        session.createMessageFolder(folderName);
+        ExchangeSession.Folder folder = session.getFolder(folderName);
+        assertEquals(folderName, folder.displayName);
+    }
+
 }
