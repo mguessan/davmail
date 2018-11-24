@@ -1153,7 +1153,7 @@ public class EwsExchangeSession extends ExchangeSession {
     protected Folder buildFolder(EWSMethod.Item item) {
         Folder folder = new Folder();
         folder.folderId = new FolderId(item);
-        folder.displayName = item.get(Field.get("folderDisplayName").getResponseName());
+        folder.displayName = encodeSlash(item.get(Field.get("folderDisplayName").getResponseName()));
         folder.folderClass = item.get(Field.get("folderclass").getResponseName());
         folder.etag = item.get(Field.get("lastmodified").getResponseName());
         folder.ctag = item.get(Field.get("ctag").getResponseName());
@@ -1247,7 +1247,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item folder = new EWSMethod.Item();
         folder.type = "Folder";
         folder.put("FolderClass", folderClass);
-        folder.put("DisplayName", path.folderName);
+        folder.put("DisplayName", decodeSlash(path.folderName));
         // TODO: handle properties
         CreateFolderMethod createFolderMethod = new CreateFolderMethod(getFolderId(path.parentPath), folder);
         executeMethod(createFolderMethod);
@@ -2909,7 +2909,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 parentFolderId,
                 FOLDER_PROPERTIES,
                 new TwoOperandExpression(TwoOperandExpression.Operator.IsEqualTo,
-                        Field.get("folderDisplayName"), folderName),
+                        Field.get("folderDisplayName"), decodeSlash(folderName)),
                 0, 1
         );
         executeMethod(findFolderMethod);
@@ -2918,6 +2918,22 @@ public class EwsExchangeSession extends ExchangeSession {
             folderId = new FolderId(item);
         }
         return folderId;
+    }
+
+    private String decodeSlash(String folderName) {
+        if (folderName.contains("_xF8FF_")) {
+            return folderName.replaceAll("_xF8FF_", "/");
+        } else {
+            return folderName;
+        }
+    }
+
+    private String encodeSlash(String folderName) {
+        if (folderName.contains("/")) {
+            return folderName.replaceAll("/", "_xF8FF_");
+        } else {
+            return folderName;
+        }
     }
 
     long throttlingTimestamp = 0;
