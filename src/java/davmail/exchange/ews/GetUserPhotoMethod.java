@@ -59,16 +59,6 @@ public class GetUserPhotoMethod extends EWSMethod  {
 
     }
 
-    protected Item createResponseItem() {
-        if (responseItems.isEmpty()) {
-            Item responseItem = new Item();
-            responseItems.add(responseItem);
-            return responseItem;
-        } else {
-            return responseItems.get(0);
-        }
-    }
-
     @Override
     protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
         if (XMLStreamUtil.isStartTag(reader, "PictureData")) {
