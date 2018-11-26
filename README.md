@@ -14,7 +14,7 @@ This git repository is synchronized with subversion repository in order to make 
 
 ## Download
 Download latest DavMail release on Sourceforge
-[http://davmail.sourceforge.net/download.html](http://davmail.sourceforge.net/download.html)
+[https://sourceforge.net/projects/davmail/files/davmail/5.0.0/](https://sourceforge.net/projects/davmail/files/davmail/5.0.0/)
 
 ## Trunk builds
 Latest working builds are now available on Appveyor:
