@@ -56,7 +56,8 @@
                     <li>You will have to give your consent to DavMail access on first call,
                         check davmail log for exact url or use O365Interactive once</li>
                     <li>You can use your own application client id instead of DavMail provided value,
-                        just create your application and add in davmail.properties:<br/>
+                        just create your application at <a href="https://apps.dev.microsoft.com/">https://apps.dev.microsoft.com/</a>
+                        or directly on Azure AD if you have the rights, and add in davmail.properties:<br/>
                         <source>
 davmail.oauth.clientId=<i>yourappid</i>
 davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient
