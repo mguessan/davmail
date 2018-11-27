@@ -18,7 +18,6 @@
  */
 package davmail.exchange.auth;
 
-import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exchange.ews.BaseShape;
@@ -26,172 +25,23 @@ import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
-import davmail.ui.tray.DavGatewayTray;
-import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.concurrent.Worker.State;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.Scene;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
 
 import javax.swing.*;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.awt.*;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.*;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 
-public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuthenticator {
-
-    private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
+public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
     private static final int MAX_COUNT = 300;
+    private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticator.class);
 
-    static {
-        // register a stream handler for msauth protocol
-        try {
-            URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
-                @Override
-                public URLStreamHandler createURLStreamHandler(String protocol) {
-                    if ("msauth".equals(protocol)) {
-                        return new URLStreamHandler() {
-                            @Override
-                            protected URLConnection openConnection(URL u) {
-                                return new URLConnection(u) {
-                                    @Override
-                                    public void connect() {
-                                        // ignore
-                                    }
-                                };
-                            }
-                        };
-                    }
-                    return null;
-                }
-            });
-        } catch (Throwable t) {
-            LOGGER.warn("Unable to register msauth protocol handler");
-        }
-    }
-
-    String location;
     boolean isAuthenticated = false;
-    String errorCode = "";
-    final JFXPanel fxPanel = new JFXPanel();
-
-    public O365InteractiveAuthenticator() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
-        try {
-            setIconImages(DavGatewayTray.getFrameIcons());
-        } catch (NoSuchMethodError error) {
-            DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_SET_ICON_IMAGE"));
-        }
-
-        JPanel mainPanel = new JPanel();
-
-        mainPanel.add(fxPanel);
-        add(BorderLayout.CENTER, mainPanel);
-
-        pack();
-        setResizable(true);
-        // center frame
-        setSize(600, 600);
-        setLocation(getToolkit().getScreenSize().width / 2 -
-                        getSize().width / 2,
-                getToolkit().getScreenSize().height / 2 -
-                        getSize().height / 2);
-        setVisible(true);
-    }
-
-    private void initFX(final JFXPanel fxPanel, final String url, final String redirectUri) {
-        WebView webView = new WebView();
-        final WebEngine webViewEngine = webView.getEngine();
-
-        final ProgressBar loadProgress = new ProgressBar();
-        loadProgress.progressProperty().bind(webViewEngine.getLoadWorker().progressProperty());
-
-        StackPane hBox = new StackPane();
-        hBox.getChildren().setAll(webView, loadProgress);
-        Scene scene = new Scene(hBox);
-        fxPanel.setScene(scene);
-
-        webViewEngine.setUserAgent(DavGatewayHttpClientFacade.getUserAgent());
-
-        webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
-            @Override
-            public void changed(ObservableValue ov, State oldState, State newState) {
-                LOGGER.debug(webViewEngine.getLocation());
-                LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
-                if (newState == State.SUCCEEDED) {
-                    loadProgress.setVisible(false);
-                    // bring window to top
-                    setAlwaysOnTop(true);
-                    setAlwaysOnTop(false);
-                    location = webViewEngine.getLocation();
-                    setTitle("DavMail: " + location);
-                    LOGGER.debug("Webview location: " + location);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
-                    }
-                    if (location.startsWith(redirectUri)) {
-                        LOGGER.debug("Location starts with redirectUri, check code");
-
-                        isAuthenticated = location.contains("code=") && location.contains("&session_state=");
-                        if (!isAuthenticated && location.contains("error=")) {
-                            errorCode = location.substring(location.indexOf("error="));
-                        }
-                        close();
-                    }
-                } else if (newState == State.FAILED) {
-                    Throwable e = webViewEngine.getLoadWorker().getException();
-                    if (e != null) {
-                        LOGGER.error(e + " " + e.getMessage());
-                        errorCode = e.getMessage();
-                    }
-                    close();
-                }
-
-            }
-
-        });
-        webViewEngine.load(url);
-
-
-    }
-
-    public String dumpDocument(Document document) {
-        String result;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-            transformer.transform(new DOMSource(document),
-                    new StreamResult(new OutputStreamWriter(baos, "UTF-8")));
-            result = baos.toString("UTF-8");
-        } catch (Exception e) {
-            result = e + " " + e.getMessage();
-        }
-        return result;
-    }
+    String errorCode = null;
+    String code = null;
 
     String resource = "https://outlook.office365.com";
     String ewsUrl = resource + "/EWS/Exchange.asmx";
@@ -257,43 +107,27 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
                 }
             }
         });
-        Platform.setImplicitExit(false);
 
-        // Run initFX as JavaFX-Thread
-        Platform.runLater(new Runnable() {
+        SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                try {
-                    initFX(fxPanel, initUrl, redirectUri);
-                } catch (Throwable e) {
-                    LOGGER.error(e + " " + e.getMessage());
-                    errorCode = e.getMessage();
-                    close();
-                }
+                O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
+                o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
             }
         });
 
         int count = 0;
 
-        while (!isAuthenticated && isVisible() && count++ < MAX_COUNT) {
+        while (!isAuthenticated && errorCode == null && count++ < MAX_COUNT) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 // ignore
             }
         }
-        if (isVisible()) {
-            close();
-        }
 
         if (isAuthenticated) {
-            LOGGER.debug("Authenticated location: " + location);
-            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-            String sessionState = location.substring(location.lastIndexOf('='));
-
-            LOGGER.debug("Authentication Code: " + code);
-            LOGGER.debug("Authentication session state: " + sessionState);
-
             token = new O365Token(clientId, redirectUri, code);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
@@ -307,26 +141,20 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
         }
     }
 
-    void close() {
-        setVisible(false);
-        dispose();
-    }
-
     public static void main(String[] argv) {
         try {
             Settings.setDefaultSettings();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
-            O365InteractiveAuthenticator authenticationFrame = new O365InteractiveAuthenticator();
-            authenticationFrame.setUsername("");
-            authenticationFrame.authenticate();
+            O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
+            authenticator.setUsername("");
+            authenticator.authenticate();
 
             // switch to EWS url
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticationFrame.ewsUrl);
-            DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.ewsUrl);
 
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
-            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getToken().getAccessToken());
+            checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
             try {
                 //checkMethod.setServerVersion(serverVersion);
                 httpClient.executeMethod(checkMethod);
@@ -341,7 +169,7 @@ public class O365InteractiveAuthenticator extends JFrame implements ExchangeAuth
             int i = 0;
             while (i++ < 12 * 60 * 2) {
                 GetUserConfigurationMethod getUserConfigurationMethod = new GetUserConfigurationMethod();
-                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticationFrame.getToken().getAccessToken());
+                getUserConfigurationMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());
                 httpClient.executeMethod(getUserConfigurationMethod);
                 System.out.println(getUserConfigurationMethod.getResponseItem());
 
