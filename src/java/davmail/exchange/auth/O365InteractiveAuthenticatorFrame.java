@@ -42,6 +42,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
@@ -86,6 +88,15 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
     public O365InteractiveAuthenticatorFrame() {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (!authenticator.isAuthenticated && authenticator.errorCode == null) {
+                    authenticator.errorCode = "user closed authentication window";
+                }
+            }
+        });
+
         setTitle(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
         try {
             setIconImages(DavGatewayTray.getFrameIcons());
