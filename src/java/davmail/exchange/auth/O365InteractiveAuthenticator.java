@@ -47,6 +47,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     String ewsUrl = resource + "/EWS/Exchange.asmx";
     String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
 
+    private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
+
     private String username;
     private String password;
     private O365Token token;
@@ -111,7 +113,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
                 o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                 o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
             }
@@ -126,6 +128,19 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                 // ignore
             }
         }
+
+        if (count > MAX_COUNT) {
+            errorCode = "Timed out waiting for interactive authentication";
+        }
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                if (o365InteractiveAuthenticatorFrame != null && o365InteractiveAuthenticatorFrame.isVisible()) {
+                    o365InteractiveAuthenticatorFrame.close();
+                }
+            }
+        });
 
         if (isAuthenticated) {
             token = new O365Token(clientId, redirectUri, code);
