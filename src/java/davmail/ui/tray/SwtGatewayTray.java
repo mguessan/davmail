@@ -32,9 +32,9 @@ import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.internal.gtk.GdkRectangle;
-import org.eclipse.swt.internal.gtk.OS;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.*;
 
 import javax.swing.*;
@@ -184,7 +184,16 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 throw new IOException(fileName);
             }
             byte[] imageContent = IOUtil.readFully(imageUrl.openStream());
-            result = new Image(display, new ByteArrayInputStream(imageContent));
+            Image tempImage = new Image(display, new ByteArrayInputStream(imageContent));
+            Image backgroundImage = new Image(null, 24, 24);
+            ImageData imageData = backgroundImage.getImageData();
+            imageData.transparentPixel = imageData.getPixel(0, 0);
+            backgroundImage.dispose();
+            result = new Image(null, imageData);
+
+            GC gc = new GC(result);
+            gc.drawImage(tempImage, 4, 4);
+            tempImage.dispose();
 
         } catch (IOException e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_LOAD_IMAGE"), e);
@@ -196,12 +205,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        // register error handler to avoid application crash on concurrent X access from SWT and AWT
-        try {
-            OS.gdk_error_trap_push();
-        } catch (NoClassDefFoundError e) {
-            // ignore
-        }
         final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
@@ -226,17 +229,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         trayItem = new TrayItem(tray, SWT.NONE);
                         trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
-
-                        // Under Unity, check if tray is indeed available
-                        if (systemLookAndFeelClassName.contains("gtk") &&
-                                "Unity".equals(System.getenv("XDG_CURRENT_DESKTOP"))) {
-                            GdkRectangle area = new GdkRectangle();
-                            OS.gtk_status_icon_get_geometry(trayItem.handle, 0, area, 0);
-
-                            if (area.x == 0 && area.y == 0) {
-                                throw new Error("System tray not available");
-                            }
-                        }
 
                         frameIcons = new ArrayList<java.awt.Image>();
                         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
