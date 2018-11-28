@@ -30,11 +30,11 @@
     </condition>
 
     <condition property="is.javafx">
-        <available classname="javafx.embed.swing.JFXPanel"/>
+        <available classname="javafx.embed.swing.JFXPanel" classpathref="classpath"/>
     </condition>
 
     <condition property="is.javafx.message" value="available" else="missing">
-        <available classname="javafx.embed.swing.JFXPanel" property="is.javafx"/>
+        <available classname="javafx.embed.swing.JFXPanel" property="is.javafx" classpathref="classpath"/>
     </condition>
 
     <condition property="is.java6">
