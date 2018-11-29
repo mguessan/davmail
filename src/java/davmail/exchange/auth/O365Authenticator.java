@@ -162,8 +162,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
                         // extract response
                         config = extractConfig(logonMethod.getResponseBodyAsString());
-                        if (config.optJSONArray("arrScopes") != null) {
-                            LOGGER.debug("Authentication successful but user consent needed, please open the following url in a browser");
+                        if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
+                            LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
                             LOGGER.debug(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if ("50126".equals(config.optString("sErrorCode"))) {
