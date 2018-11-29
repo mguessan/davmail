@@ -148,6 +148,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                     location = webViewEngine.getLocation();
                     setTitle("DavMail: " + location);
                     LOGGER.debug("Webview location: " + location);
+                    // override console.log
+                    JSLogger.register(webViewEngine);
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                     }
