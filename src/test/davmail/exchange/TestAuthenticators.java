@@ -45,8 +45,16 @@ public class TestAuthenticators extends AbstractDavMailTestCase {
     public void testO365ModernAuthenticator() throws IOException {
         Settings.setProperty("davmail.mode", Settings.O365_MODERN);
         ExchangeSessionFactory.checkConfig();
-        // try application password for MFA enabledusers
+        // use normal user password
         ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),
                 Settings.getProperty("davmail.password"));
+    }
+
+    public void testO365InteractiveAuthenticator() throws IOException {
+        Settings.setProperty("davmail.mode", Settings.O365_INTERACTIVE);
+        ExchangeSessionFactory.checkConfig();
+        // password entered by end user
+        ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),
+                "unused");
     }
 }
