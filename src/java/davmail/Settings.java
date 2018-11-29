@@ -540,4 +540,11 @@ public final class Settings {
         Settings.save();
     }
 
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().startsWith("windows");
+    }
+
+    public static boolean isJava8() {
+        return "1.8".equals(System.getProperty("java.specification.version"));
+    }
 }
