@@ -20,6 +20,7 @@ package davmail.exchange.auth;
 
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
 import davmail.exchange.ews.BaseShape;
 import davmail.exchange.ews.DistinguishedFolderId;
 import davmail.exchange.ews.GetFolderMethod;
@@ -76,6 +77,9 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
 
     public void authenticate() throws IOException {
+        if (Settings.isWindows() && Settings.isJava8()) {
+            LOGGER.warn("O365 interactive authenticator may not work with Java 8 on windows");
+        }
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
@@ -113,9 +117,13 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
-                o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
-                o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
+                try {
+                    o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                    o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
+                    o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
+                } catch (NoClassDefFoundError e) {
+                    errorCode = "Unable to load JavaFX (OpenJFX)";
+                }
             }
         });
 
@@ -152,7 +160,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
         } else {
             LOGGER.error("Authentication failed " + errorCode);
-            throw new IOException("Authentication failed " + errorCode);
+            throw new DavMailException("EXCEPTION_AUTHENTICATION_FAILED_REASON", errorCode);
         }
     }
 
