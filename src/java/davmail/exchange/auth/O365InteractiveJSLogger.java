@@ -23,15 +23,15 @@ import javafx.scene.web.WebEngine;
 import netscape.javascript.JSObject;
 import org.apache.log4j.Logger;
 
-public class JSLogger {
-    private static final Logger LOGGER = Logger.getLogger(JSLogger.class);
+public class O365InteractiveJSLogger {
+    private static final Logger LOGGER = Logger.getLogger(O365InteractiveJSLogger.class);
     public void log(String message) {
         LOGGER.info(message);
     }
 
     public static void register(WebEngine webEngine) {
         JSObject window = (JSObject) webEngine.executeScript("window");
-        window.setMember("davmail", new JSLogger());
+        window.setMember("davmail", new O365InteractiveJSLogger());
         webEngine.executeScript("console.log = function(message) { davmail.log(message); }");
     }
 }
