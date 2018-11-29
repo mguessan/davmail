@@ -902,10 +902,7 @@ public class SettingsFrame extends JFrame {
         pack();
         //setResizable(false);
         // center frame
-        setLocation(getToolkit().getScreenSize().width / 2 -
-                getSize().width / 2,
-                getToolkit().getScreenSize().height / 2 -
-                        getSize().height / 2);
+        setLocationRelativeTo(null);
         urlField.requestFocus();
     }
 }
