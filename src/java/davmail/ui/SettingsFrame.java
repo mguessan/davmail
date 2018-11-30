@@ -266,7 +266,9 @@ public class SettingsFrame extends JFrame {
         try {
             Class.forName("javafx.embed.swing.JFXPanel");
             isJavaFXAvailable = true;
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+        } catch (ClassNotFoundException e) {
+            // ignore
+        } catch (NoClassDefFoundError e) {
             // ignore
         }
         return isJavaFXAvailable;
