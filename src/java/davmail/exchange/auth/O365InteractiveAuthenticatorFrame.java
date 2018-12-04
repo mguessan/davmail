@@ -22,6 +22,7 @@ package davmail.exchange.auth;
 import davmail.BundleMessage;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.tray.DavGatewayTray;
+import davmail.util.IOUtil;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -34,6 +35,7 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
+import sun.net.www.protocol.https.HttpsURLConnectionImpl;
 
 import javax.swing.*;
 import javax.xml.transform.OutputKeys;
@@ -44,12 +46,8 @@ import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandler;
-import java.net.URLStreamHandlerFactory;
+import java.io.*;
+import java.net.*;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
@@ -73,6 +71,46 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                     }
                                 };
                             }
+                        };
+                    } else if ("https".equals(protocol)) {
+                        return new sun.net.www.protocol.https.Handler() {
+                            @Override
+                            protected URLConnection openConnection(URL url, Proxy proxy) throws IOException {
+                                System.out.println("openConnection " + url);
+
+                                if (url.toExternalForm().endsWith("/common/handlers/watson")) {
+                                    LOGGER.warn("Failed: form calls watson");
+                                }
+                                final HttpsURLConnectionImpl httpsURLConnection = (HttpsURLConnectionImpl) super.openConnection(url, proxy);
+                                if ("login.microsoftonline.com".equals(url.getHost())
+                                        && "/common/oauth2/authorize".equals(url.getPath())) {
+
+                                    return new URLConnection(url) {
+                                        @Override
+                                        public void connect() throws IOException {
+                                            httpsURLConnection.connect();
+                                        }
+
+                                        public InputStream getInputStream() throws IOException {
+                                            byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
+                                            String contentAsString = new String(content,"UTF-8");
+                                            LOGGER.debug(contentAsString);
+                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                            baos.write(contentAsString.replaceAll("integrity", "integrity.disabled").getBytes("UTF-8"));
+                                            return new ByteArrayInputStream(baos.toByteArray());
+                                        }
+
+                                        public OutputStream getOutputStream() throws IOException {
+                                            return httpsURLConnection.getOutputStream();
+                                        }
+
+                                    };
+
+                                } else {
+                                    return httpsURLConnection;
+                                }
+                            }
+
                         };
                     }
                     return null;
@@ -138,8 +176,6 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<Worker.State>() {
             @Override
             public void changed(ObservableValue ov, Worker.State oldState, Worker.State newState) {
-                LOGGER.debug(webViewEngine.getLocation());
-                LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
                 if (newState == Worker.State.SUCCEEDED) {
                     loadProgress.setVisible(false);
                     // bring window to top
