@@ -46,6 +46,8 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.*;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
@@ -72,17 +74,23 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                             }
                         };
                     } else if ("https".equals(protocol)) {
-                        return new sun.net.www.protocol.https.Handler() {
+                        return new URLStreamHandler() {
+                            @Override
+                            protected URLConnection openConnection(URL url) throws IOException {
+                                return openConnection(url, null);
+                            }
+
                             @Override
                             protected URLConnection openConnection(URL url, Proxy proxy) throws IOException {
-                                System.out.println("openConnection " + url);
+                                LOGGER.debug("openConnection " + url);
 
                                 if (url.toExternalForm().endsWith("/common/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
-                                final URLConnection httpsURLConnection = super.openConnection(url, proxy);
+                                final URLConnection httpsURLConnection = nativeOpenConnection(url, proxy);
                                 if ("login.microsoftonline.com".equals(url.getHost())
                                         && "/common/oauth2/authorize".equals(url.getPath())) {
+                                    LOGGER.debug("Disable integrity check on external resources");
 
                                     return new URLConnection(url) {
                                         @Override
@@ -108,6 +116,24 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
                                 } else {
                                     return httpsURLConnection;
+                                }
+                            }
+
+                            /**
+                             * Call native openConnection, use reflection to avoid java 9 errors
+                             * @param url url
+                             * @param proxy proxy
+                             * @return Https url connection
+                             * @throws IOException on error
+                             */
+                            private URLConnection nativeOpenConnection(URL url, Proxy proxy) throws IOException {
+                                try {
+                                    URLStreamHandler streamHandler = (URLStreamHandler)Class.forName("sun.net.www.protocol.https.Handler").newInstance();
+                                    Method openConnectionMethod = streamHandler.getClass().getDeclaredMethod("openConnection", URL.class, Proxy.class);
+                                    openConnectionMethod.setAccessible(true);
+                                    return (URLConnection) openConnectionMethod.invoke(streamHandler, url, proxy);
+                                } catch (Exception e) {
+                                    throw new IOException(e);
                                 }
                             }
 
