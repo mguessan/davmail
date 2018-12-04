@@ -35,7 +35,6 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
-import sun.net.www.protocol.https.HttpsURLConnectionImpl;
 
 import javax.swing.*;
 import javax.xml.transform.OutputKeys;
@@ -81,7 +80,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 if (url.toExternalForm().endsWith("/common/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
-                                final HttpsURLConnectionImpl httpsURLConnection = (HttpsURLConnectionImpl) super.openConnection(url, proxy);
+                                final URLConnection httpsURLConnection = super.openConnection(url, proxy);
                                 if ("login.microsoftonline.com".equals(url.getHost())
                                         && "/common/oauth2/authorize".equals(url.getPath())) {
 
@@ -91,9 +90,10 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                             httpsURLConnection.connect();
                                         }
 
+                                        @Override
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
-                                            String contentAsString = new String(content,"UTF-8");
+                                            String contentAsString = new String(content, "UTF-8");
                                             LOGGER.debug(contentAsString);
                                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                             baos.write(contentAsString.replaceAll("integrity", "integrity.disabled").getBytes("UTF-8"));
