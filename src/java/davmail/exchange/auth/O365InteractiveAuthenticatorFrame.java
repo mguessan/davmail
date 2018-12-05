@@ -86,8 +86,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
                                 final URLConnection httpsURLConnection = super.openConnection(url, proxy);
-                                if ("login.microsoftonline.com".equals(url.getHost())
-                                        && "/common/oauth2/authorize".equals(url.getPath())) {
+                                if (("login.microsoftonline.com".equals(url.getHost()) && "/common/oauth2/authorize".equals(url.getPath()))
+                                    || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
+                                ) {
                                     LOGGER.debug("Disable integrity check on external resources");
 
                                     return new URLConnection(url) {
