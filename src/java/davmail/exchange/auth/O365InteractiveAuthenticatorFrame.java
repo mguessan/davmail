@@ -47,6 +47,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.*;
+import java.util.List;
+import java.util.Map;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
@@ -89,6 +91,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 if (("login.microsoftonline.com".equals(url.getHost()) && "/common/oauth2/authorize".equals(url.getPath()))
                                     || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
                                     || ("login.microsoftonline.com".equals(url.getHost()) && "/common/login".equals(url.getPath()))
+                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/common/SAS/ProcessAuth".equals(url.getPath()))
                                 ) {
                                     LOGGER.debug("Disable integrity check on external resources");
 
@@ -96,6 +99,16 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         @Override
                                         public void setRequestMethod(String method) throws ProtocolException {
                                             httpsURLConnection.setRequestMethod(method);
+                                        }
+
+                                        @Override
+                                        public void setInstanceFollowRedirects(boolean followRedirects) {
+                                            httpsURLConnection.setInstanceFollowRedirects(followRedirects);
+                                        }
+
+                                        @Override
+                                        public boolean getInstanceFollowRedirects() {
+                                            return httpsURLConnection.getInstanceFollowRedirects();
                                         }
 
                                         @Override
@@ -111,6 +124,22 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         @Override
                                         public String getResponseMessage() throws IOException {
                                             return httpsURLConnection.getResponseMessage();
+                                        }
+
+                                        @Override
+                                        public Map<String,List<String>> getHeaderFields() {
+                                            LOGGER.debug(httpsURLConnection.getHeaderFields());
+                                            return httpsURLConnection.getHeaderFields();
+                                        }
+
+                                        @Override
+                                        public String getHeaderField(String name) {
+                                            return httpsURLConnection.getHeaderField(name);
+                                        }
+
+                                        @Override
+                                        public String getHeaderField(int n) {
+                                            return httpsURLConnection.getHeaderField(n);
                                         }
 
                                         @Override
