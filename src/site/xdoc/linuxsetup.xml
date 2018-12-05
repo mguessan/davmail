@@ -64,7 +64,7 @@
                 <p>Download the the platform independent package from Sourceforge and uncompress it with
                     your favorite tool. If you want improved SWT tray icon add the appropriate SWT library in lib
                     folder from <a href="http://www.eclipse.org/swt/">http://www.eclipse.org/swt/</a>, e.g.
-                    swt-4.6.3-gtk-linux-x86_64.jar
+                    swt-4.9-gtk-linux-x86_64.jar
                 </p>
                 <p>Just run <code>davmail</code> to launch DavMail.
                     You should now see the DavMail gateway icon in the tray :
