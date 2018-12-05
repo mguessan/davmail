@@ -307,8 +307,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                toFront();
-                requestFocus();
+                setState(JFrame.NORMAL);
+                setAlwaysOnTop(true);
+                setAlwaysOnTop(false);
                 setTitle("DavMail: " + location);
             }
         });
