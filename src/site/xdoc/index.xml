@@ -43,8 +43,8 @@
                         </p>
                     </td>
                     <td>
-                        <div style="text-align: center">
-                            <a target="_blank" href="https://www.openhub.net/p/davmail?ref=Thin+badge"><img alt='Open Hub project report for DavMail POP/IMAP/SMTP/Caldav to Exchange' border='0' src='https://www.openhub.net/p/davmail/widgets/project_thin_badge?format=gif&amp;ref=Thin+badge'/></a>
+                        <div style="text-align: center;padding: 8px;">
+                            <a target="_blank" style="background-image: none;" href="https://www.openhub.net/p/davmail?ref=Thin+badge"><img alt='Open Hub project report for DavMail POP/IMAP/SMTP/Caldav to Exchange' border='0' src='https://www.openhub.net/p/davmail/widgets/project_thin_badge?format=gif&amp;ref=Thin+badge'/></a>
                         </div>
                         <a class="donate" href="https://www.paypal.com/cgi-bin/webscr?item_name=Donation+to+DavMail+POP%2FIMAP%2FSMTP%2FCaldav+to+Exchange&amp;cmd=_donations&amp;business=mguessan%40free.fr&amp;lc=US"
                            title="Donate dollars">
@@ -58,14 +58,15 @@
                             Download<br/>DavMail<br/>Gateway
                         </a>
                         <div style='padding: 20px;'>
-                        <a href="http://www.jetbrains.com/idea/"
-                           style="position: relative;display:block; width:88px; height:31px; border:0; margin:0;padding:0;text-decoration:none;text-indent:0;">
-                            <span style="margin: 0;padding: 0;position: absolute;top: -1px;left: 4px;font-size: 10px;cursor:pointer;  background-image:none;border:0;color: #0d3a9e; font-family: trebuchet ms,arial,sans-serif;font-weight: normal;text-align:left;">
-                                Developed with
-                            </span>
-                            <img src="http://www.jetbrains.com/idea/opensource/img/all/banners/idea88x31_white.gif"
-                                 alt="The best Java IDE" border="0"/>
-                        </a>
+                            <a href="http://www.jetbrains.com/idea/" style="background-image: none;position: relative;display:block; height:32px; border:0; margin:0;padding:0;text-decoration:none;text-indent:0;">
+                                <span style="margin: 0;padding: 0;font-size: 10px;cursor:pointer;  background-image:none;border:0;color: #0d3a9e; font-family: Gotham SSm A, Gotham SSm B, Helvetica, Arial, sans-serif;font-weight: normal;text-align:left;">
+                                    Developed with
+                                </span>
+
+                                <span style="white-space: nowrap;font-size: 18px;font-family: Gotham SSm A, Gotham SSm B, Helvetica, Arial, sans-serif">
+                                    <img src="http://resources.jetbrains.com/storage/products/intellij-idea/img/meta/intellij-idea_logo_300x300.png" width="32" height="32" alt="The best Java IDE" border="0" />
+                                    IntelliJ IDEA</span>
+                            </a>
                         </div>
                     </td>
                 </tr>
