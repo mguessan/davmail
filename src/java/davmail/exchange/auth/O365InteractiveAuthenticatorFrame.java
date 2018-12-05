@@ -46,8 +46,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.*;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
@@ -74,7 +72,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                             }
                         };
                     } else if ("https".equals(protocol)) {
-                        return new URLStreamHandler() {
+                        return new sun.net.www.protocol.https.Handler() {
                             @Override
                             protected URLConnection openConnection(URL url) throws IOException {
                                 return openConnection(url, null);
@@ -87,7 +85,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 if (url.toExternalForm().endsWith("/common/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
-                                final URLConnection httpsURLConnection = nativeOpenConnection(url, proxy);
+                                final URLConnection httpsURLConnection = super.openConnection(url, proxy);
                                 if ("login.microsoftonline.com".equals(url.getHost())
                                         && "/common/oauth2/authorize".equals(url.getPath())) {
                                     LOGGER.debug("Disable integrity check on external resources");
@@ -116,24 +114,6 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
                                 } else {
                                     return httpsURLConnection;
-                                }
-                            }
-
-                            /**
-                             * Call native openConnection, use reflection to avoid java 9 errors
-                             * @param url url
-                             * @param proxy proxy
-                             * @return Https url connection
-                             * @throws IOException on error
-                             */
-                            private URLConnection nativeOpenConnection(URL url, Proxy proxy) throws IOException {
-                                try {
-                                    URLStreamHandler streamHandler = (URLStreamHandler)Class.forName("sun.net.www.protocol.https.Handler").newInstance();
-                                    Method openConnectionMethod = streamHandler.getClass().getDeclaredMethod("openConnection", URL.class, Proxy.class);
-                                    openConnectionMethod.setAccessible(true);
-                                    return (URLConnection) openConnectionMethod.invoke(streamHandler, url, proxy);
-                                } catch (Exception e) {
-                                    throw new IOException(e);
                                 }
                             }
 
@@ -179,6 +159,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         setSize(600, 600);
         setLocationRelativeTo(null);
         setVisible(true);
+        // bring window to top
+        setAlwaysOnTop(true);
+        setAlwaysOnTop(false);
     }
 
     public void setO365InteractiveAuthenticator(O365InteractiveAuthenticator authenticator) {
@@ -204,11 +187,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
             public void changed(ObservableValue ov, Worker.State oldState, Worker.State newState) {
                 if (newState == Worker.State.SUCCEEDED) {
                     loadProgress.setVisible(false);
-                    // bring window to top
-                    setAlwaysOnTop(true);
-                    setAlwaysOnTop(false);
                     location = webViewEngine.getLocation();
-                    setTitle("DavMail: " + location);
+                    updateTitleAndFocus(location);
                     LOGGER.debug("Webview location: " + location);
                     // override console.log
                     O365InteractiveJSLogger.register(webViewEngine);
@@ -249,6 +229,16 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
         });
         webViewEngine.load(url);
+    }
+
+    private void updateTitleAndFocus(String location) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                requestFocus();
+                setTitle("DavMail: " + location);
+            }
+        });
     }
 
     public String dumpDocument(Document document) {
@@ -295,8 +285,13 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
     }
 
     public void close() {
-        setVisible(false);
-        dispose();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                setVisible(false);
+                dispose();
+            }
+        });
     }
 
 }

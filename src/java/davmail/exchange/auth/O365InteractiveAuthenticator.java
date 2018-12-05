@@ -141,14 +141,9 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             errorCode = "Timed out waiting for interactive authentication";
         }
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (o365InteractiveAuthenticatorFrame != null && o365InteractiveAuthenticatorFrame.isVisible()) {
-                    o365InteractiveAuthenticatorFrame.close();
-                }
-            }
-        });
+        if (o365InteractiveAuthenticatorFrame != null && o365InteractiveAuthenticatorFrame.isVisible()) {
+            o365InteractiveAuthenticatorFrame.close();
+        }
 
         if (isAuthenticated) {
             token = new O365Token(clientId, redirectUri, code);
