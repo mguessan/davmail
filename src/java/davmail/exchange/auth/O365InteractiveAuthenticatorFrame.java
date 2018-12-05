@@ -231,7 +231,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         webViewEngine.load(url);
     }
 
-    private void updateTitleAndFocus(String location) {
+    private void updateTitleAndFocus(final String location) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
