@@ -88,7 +88,7 @@
         <mkdir dir="target/classes"/>
     </target>
 
-    <target name="compile-java9" depends="init" if="is.java9">
+    <target name="compile-java9" depends="init">
         <mkdir dir="target/classes"/>
         <javac srcdir="src/java" destdir="target/classes" source="9" debug="on" encoding="UTF-8"
                includeantruntime="false">
@@ -103,7 +103,7 @@
         </javac>
     </target>
 
-    <target name="compile-java" depends="init" unless="is.java9">
+    <target name="compile-java" depends="init">
         <mkdir dir="target/classes"/>
         <javac srcdir="src/java" destdir="target/classes" source="1.6" target="1.6" debug="on" encoding="UTF-8"
                includeantruntime="false">
@@ -114,7 +114,7 @@
         </javac>
     </target>
 
-    <target name="compile" depends="compile-java,compile-java9">
+    <target name="compile" depends="compile-java">
         <copy todir="target/classes">
             <fileset dir="src/java">
                 <include name="**/*"/>
