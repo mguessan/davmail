@@ -211,7 +211,7 @@
         <deb todir="dist"
              package="davmail"
              section="mail"
-             depends="openjdk-11-jre|openjdk-8-jre|openjdk-7-jre|openjdk-6-jre|oracle-java7-jre|sun-java6-jre|default-jre"
+             depends="openjdk-11-jre|openjdk-8-jre|openjdk-7-jre|openjdk-6-jre|oracle-java7-jre|sun-java6-jre|default-jre,libopenjfx-java"
              suggests="libswt-gtk-4-java|libswt-cairo-gtk-4-jni|libswt-gtk-3-java|libswt-gtk-3.6-java|libswt-gtk-3.5-java|libswt-gtk-3.4-java,libswt-cairo-gtk-3-jni|libswt-cairo-gtk-3.5-jni">
             <version upstream="${release-name}"/>
             <maintainer email="mguessan@free.fr" name="Mickaël Guessant"/>
