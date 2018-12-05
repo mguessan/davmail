@@ -95,6 +95,8 @@
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
             <compilerarg value="--add-exports" />
             <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED" />
+            <compilerarg value="--add-exports" />
+            <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED" />
             <classpath>
                 <path refid="classpath"/>
             </classpath>
