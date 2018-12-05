@@ -85,13 +85,49 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 if (url.toExternalForm().endsWith("/common/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
-                                final URLConnection httpsURLConnection = super.openConnection(url, proxy);
+                                final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
                                 if (("login.microsoftonline.com".equals(url.getHost()) && "/common/oauth2/authorize".equals(url.getPath()))
                                     || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
+                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/common/login".equals(url.getPath()))
                                 ) {
                                     LOGGER.debug("Disable integrity check on external resources");
 
-                                    return new URLConnection(url) {
+                                    return new HttpURLConnection(url) {
+                                        @Override
+                                        public void setRequestMethod(String method) throws ProtocolException {
+                                            httpsURLConnection.setRequestMethod(method);
+                                        }
+
+                                        @Override
+                                        public String getRequestMethod() {
+                                            return httpsURLConnection.getRequestMethod();
+                                        }
+
+                                        @Override
+                                        public int getResponseCode() throws IOException {
+                                            return httpsURLConnection.getResponseCode();
+                                        }
+
+                                        @Override
+                                        public String getResponseMessage() throws IOException {
+                                            return httpsURLConnection.getResponseMessage();
+                                        }
+
+                                        @Override
+                                        public void disconnect() {
+                                            httpsURLConnection.disconnect();
+                                        }
+
+                                        @Override
+                                        public void setDoOutput(boolean dooutput) {
+                                            httpsURLConnection.setDoOutput(dooutput);
+                                        }
+
+                                        @Override
+                                        public boolean usingProxy() {
+                                            return httpsURLConnection.usingProxy();
+                                        }
+
                                         @Override
                                         public void connect() throws IOException {
                                             httpsURLConnection.connect();
@@ -107,8 +143,14 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                             return new ByteArrayInputStream(baos.toByteArray());
                                         }
 
+                                        @Override
                                         public OutputStream getOutputStream() throws IOException {
                                             return httpsURLConnection.getOutputStream();
+                                        }
+
+                                        @Override
+                                        public InputStream getErrorStream() {
+                                            return httpsURLConnection.getErrorStream();
                                         }
 
                                     };
