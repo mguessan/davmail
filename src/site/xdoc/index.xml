@@ -21,11 +21,9 @@
                             contacts to allow recipient address completion in mail compose window and full calendar
                             support with attendees free/busy display.
                         </p>
-                        <p>DavMail also supports the CardDav protocol to sync address books. This new feature
-                            is sponsored by
-                            <a href="http://www.defense.gouv.fr/dga/">French Defense / DGA</a>
-                            through project
-                            <a href="http://www.trustedbird.org">Trustedbird</a>
+                        <p>DavMail is developed with <a href="http://www.jetbrains.com/idea/">JetBrains IntelliJ IDEA</a>.
+                            YourKit also supports open source projects, including DavMail, with its full-featured
+                            <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>.
                         </p>
                         <div style="width: 100%;text-align: center">
                             <img src="images/davmailArchitecture.png" alt="DavMail Architecture" width="550"
@@ -40,6 +38,10 @@
                         <p>DavMail gateway is implemented in java and should run on any platform. Releases are tested
                             on Windows, Linux (Ubuntu) and Mac OSX. Tested successfully with the Iphone
                             (gateway running on a server).
+                        </p>
+                        <p>DavMail CardDav implementation was sponsored by
+                            <a href="http://www.defense.gouv.fr/dga/">French Defense / DGA</a>
+                            through project <a href="http://www.trustedbird.org">Trustedbird</a>
                         </p>
                     </td>
                     <td>
@@ -57,8 +59,8 @@
                         <a class="download" href="download.html">
                             Download<br/>DavMail<br/>Gateway
                         </a>
-                        <div style='padding: 20px;'>
-                            <a href="http://www.jetbrains.com/idea/" style="background-image: none;position: relative;display:block; height:32px; border:0; margin:0;padding:0;text-decoration:none;text-indent:0;">
+                        <div style='text-align: center;padding: 20px;'>
+                            <a target="_blank" href="http://www.jetbrains.com/idea/" style="background-image: none;position: relative;display:block; height:32px; border:0; margin:0;padding:0;text-decoration:none;text-indent:0;">
                                 <span style="margin: 0;padding: 0;font-size: 10px;cursor:pointer;  background-image:none;border:0;color: #0d3a9e; font-family: Gotham SSm A, Gotham SSm B, Helvetica, Arial, sans-serif;font-weight: normal;text-align:left;">
                                     Developed with
                                 </span>
@@ -67,6 +69,9 @@
                                     <img src="http://resources.jetbrains.com/storage/products/intellij-idea/img/meta/intellij-idea_logo_300x300.png" width="32" height="32" alt="The best Java IDE" border="0" />
                                     IntelliJ IDEA</span>
                             </a>
+                        </div>
+                        <div style="text-align: center;padding: 20px;">
+                            <a target="_blank" style="background-image: none;" href="https://www.yourkit.com/java/profiler/"><img width="128" alt='Yourkit Java Profiler' border='0' src='https://www.yourkit.com/images/yklogo.png'/></a>
                         </div>
                     </td>
                 </tr>
