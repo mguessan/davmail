@@ -41,11 +41,13 @@ import java.util.ArrayList;
  */
 public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected static final String TRAY_PNG = "tray.png";
-    protected static final String TRAY128_PNG = "tray128.png";
 
     protected static final String TRAY_ACTIVE_PNG = "tray2.png";
     protected static final String TRAY_INACTIVE_PNG = "trayinactive.png";
 
+    protected static final String TRAY128_PNG = "tray128.png";
+    protected static final String TRAY128_ACTIVE_PNG = "tray128active.png";
+    protected static final String TRAY128_INACTIVE_PNG = "tray128inactive.png";
 
     protected AwtGatewayTray() {
     }
@@ -57,7 +59,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     static TrayIcon trayIcon;
     protected static ArrayList<Image> frameIcons;
     protected static BufferedImage image;
-    protected static BufferedImage image2;
+    protected static BufferedImage activeImage;
     protected static BufferedImage inactiveImage;
     static LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
@@ -80,7 +82,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 if (trayIcon.getImage().equals(image)) {
-                    trayIcon.setImage(image2);
+                    trayIcon.setImage(activeImage);
                 } else {
                     trayIcon.setImage(image);
                 }
@@ -200,7 +202,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
 
     protected void loadIcons() {
         image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
-        image2 = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
+        activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG));
         inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG));
 
         frameIcons = new ArrayList<Image>();

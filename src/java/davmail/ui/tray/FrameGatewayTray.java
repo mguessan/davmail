@@ -266,11 +266,23 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     protected void createAndShowGUI() {
-        System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
-
-        image = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG);
-        activeImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_ACTIVE_PNG);
-        inactiveImage = DavGatewayTray.loadImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
+        if (Settings.isLinux()) {
+            System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
+        } else {
+            System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
+        }
+        String imageName = AwtGatewayTray.TRAY_PNG;
+        String activeImageName = AwtGatewayTray.TRAY_ACTIVE_PNG;
+        String inactiveImageName = AwtGatewayTray.TRAY_INACTIVE_PNG;
+        // use hi res icons on Linux
+        if (Settings.isLinux()) {
+            imageName = AwtGatewayTray.TRAY128_PNG;
+            activeImageName = AwtGatewayTray.TRAY128_ACTIVE_PNG;
+            inactiveImageName = AwtGatewayTray.TRAY128_INACTIVE_PNG;
+        }
+        image = DavGatewayTray.loadImage(imageName);
+        activeImage = DavGatewayTray.loadImage(activeImageName);
+        inactiveImage = DavGatewayTray.loadImage(inactiveImageName);
 
         frameIcons = new ArrayList<Image>();
         frameIcons.add(image);

@@ -64,7 +64,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
     @Override
     protected void loadIcons() {
         image = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_PNG));
-        image2 = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_ACTIVE_PNG));
+        activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_ACTIVE_PNG));
         inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_INACTIVE_PNG));
 
         frameIcons = new ArrayList<Image>();
