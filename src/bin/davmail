@@ -15,5 +15,5 @@ elif [ -f /usr/share/java/swt.jar ]; then
     exec java $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
 else
     JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
-    exec java $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
+    exec java -Djdk.gtk.version=2.2 $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
 fi
