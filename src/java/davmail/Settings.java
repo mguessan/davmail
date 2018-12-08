@@ -540,8 +540,22 @@ public final class Settings {
         Settings.save();
     }
 
+    /**
+     * Test if running on Windows
+     *
+     * @return true on Windows
+     */
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().startsWith("windows");
+    }
+
+    /**
+     * Test if running on Linux
+     *
+     * @return true on Linux
+     */
+    public static boolean isLinux() {
+        return System.getProperty("os.name").toLowerCase().startsWith("linux");
     }
 
     public static boolean isJava8() {
