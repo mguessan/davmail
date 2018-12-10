@@ -79,7 +79,7 @@ public class NotificationDialog extends JDialog {
     public NotificationDialog(String to, String cc, String subject, String description) {
         hasRecipients = to != null || cc != null;
         setModal(true);
-        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle(BundleMessage.format("UI_CALDAV_NOTIFICATION"));
         try {
             setIconImages(DavGatewayTray.getFrameIcons());
