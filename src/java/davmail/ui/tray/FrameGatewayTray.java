@@ -266,7 +266,8 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     }
 
     protected void createAndShowGUI() {
-        if (Settings.isLinux()) {
+        // set cross platform look and feel on Linux, except is swing.defaultlaf is set
+        if (Settings.isLinux() && System.getProperty("swing.defaultlaf") == null) {
             System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
         } else {
             System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
