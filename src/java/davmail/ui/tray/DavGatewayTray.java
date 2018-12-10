@@ -249,19 +249,23 @@ public final class DavGatewayTray {
                             "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
                             "or run DavMail in server mode");
                 }
-                // first try to load SWT before with Java AWT
-                ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-                try {
-                    // trigger ClassNotFoundException
-                    classloader.loadClass("org.eclipse.swt.SWT");
-                    // SWT available, create tray
-                    davGatewayTray = new SwtGatewayTray();
-                    davGatewayTray.init();
-                } catch (ClassNotFoundException e) {
-                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                } catch (Throwable e) {
-                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                    davGatewayTray = null;
+                if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
+                    LOGGER.info("O365Interactive is not compatible with SWT, do not try to create SWT tray");
+                } else {
+                    // first try to load SWT before with Java AWT
+                    ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+                    try {
+                        // trigger ClassNotFoundException
+                        classloader.loadClass("org.eclipse.swt.SWT");
+                        // SWT available, create tray
+                        davGatewayTray = new SwtGatewayTray();
+                        davGatewayTray.init();
+                    } catch (ClassNotFoundException e) {
+                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                    } catch (Throwable e) {
+                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                        davGatewayTray = null;
+                    }
                 }
                 // try java6 tray support, except on Linux
                 if (davGatewayTray == null /*&& !isLinux()*/) {
