@@ -32,6 +32,7 @@ import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -208,10 +209,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
-            if (systemLookAndFeelClassName.contains("gtk")) {
+            if (Settings.isLinux() && System.getProperty("swing.defaultlaf") == null) {
                 System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
             } else {
-                System.setProperty("swing.defaultlaf", systemLookAndFeelClassName);
+                System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
             }
         } catch (Exception e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
@@ -221,7 +222,9 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             @Override
             public void run() {
                 try {
-                    display = new Display();
+                    DeviceData data = new DeviceData();
+                    data.debug = true;
+                    display = new Display(data);
                     shell = new Shell(display);
 
                     final Tray tray = display.getSystemTray();
