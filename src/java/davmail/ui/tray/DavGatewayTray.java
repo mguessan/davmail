@@ -229,10 +229,16 @@ public final class DavGatewayTray {
         String javaVersion = System.getProperty("java.version");
         String arch = System.getProperty("sun.arch.data.model");
         LOGGER.debug("OS Name: " + System.getProperty("os.name") +
-                        " Java version: " + javaVersion + ((arch != null) ? ' ' + arch : "") +
-                        " System tray " + (SystemTray.isSupported() ? "" : "not ") + "supported " +
-                        ((currentDesktop == null) ? "" : "Current Desktop: " + currentDesktop)
+                " Java version: " + javaVersion + ((arch != null) ? ' ' + arch : "") +
+                " System tray " + (SystemTray.isSupported() ? "" : "not ") + "supported " +
+                ((currentDesktop == null) ? "" : "Current Desktop: " + currentDesktop)
         );
+
+        if (Settings.isLinux()) {
+            // enable anti aliasing on linux
+            System.setProperty("awt.useSystemAAFontSettings", "on");
+            System.setProperty("swing.aatext", "true");
+        }
 
         if (!Settings.getBooleanProperty("davmail.server")) {
             if ("GNOME-Classic:GNOME".equals(currentDesktop) || "ubuntu:GNOME".equals(currentDesktop)) {
@@ -243,26 +249,22 @@ public final class DavGatewayTray {
                             "http://davmail.sourceforge.net/linuxsetup.html to restore normal systray " +
                             "or run DavMail in server mode");
                 }
-                if (Settings.O365_INTERACTIVE.equals(Settings.getProperty("davmail.mode"))) {
-                    LOGGER.info("O365Interactive is not compatible with SWT, do not try to create SWT tray");
-                } else {
-                    // first try to load SWT before with Java AWT
-                    ClassLoader classloader = DavGatewayTray.class.getClassLoader();
-                    try {
-                        // trigger ClassNotFoundException
-                        classloader.loadClass("org.eclipse.swt.SWT");
-                        // SWT available, create tray
-                        davGatewayTray = new SwtGatewayTray();
-                        davGatewayTray.init();
-                    } catch (ClassNotFoundException e) {
-                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                    } catch (Throwable e) {
-                        DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
-                        davGatewayTray = null;
-                    }
+                // first try to load SWT before with Java AWT
+                ClassLoader classloader = DavGatewayTray.class.getClassLoader();
+                try {
+                    // trigger ClassNotFoundException
+                    classloader.loadClass("org.eclipse.swt.SWT");
+                    // SWT available, create tray
+                    davGatewayTray = new SwtGatewayTray();
+                    davGatewayTray.init();
+                } catch (ClassNotFoundException e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                } catch (Throwable e) {
+                    DavGatewayTray.info(new BundleMessage("LOG_SWT_NOT_AVAILABLE"));
+                    davGatewayTray = null;
                 }
                 // try java6 tray support, except on Linux
-                if (davGatewayTray == null && !isLinux()) {
+                if (davGatewayTray == null /*&& !isLinux()*/) {
                     try {
                         if (SystemTray.isSupported()) {
                             if (isOSX()) {
@@ -357,9 +359,9 @@ public final class DavGatewayTray {
         int imageType = BufferedImage.TYPE_INT_ARGB;
         if (backgroundColorString != null && backgroundColorString.length() == 7
                 && backgroundColorString.startsWith("#")) {
-            int red = Integer.parseInt(backgroundColorString.substring(1,3), 16);
-            int green = Integer.parseInt(backgroundColorString.substring(3,5), 16);
-            int blue = Integer.parseInt(backgroundColorString.substring(5,7), 16);
+            int red = Integer.parseInt(backgroundColorString.substring(1, 3), 16);
+            int green = Integer.parseInt(backgroundColorString.substring(3, 5), 16);
+            int blue = Integer.parseInt(backgroundColorString.substring(5, 7), 16);
             backgroundColor = new Color(red, green, blue);
             imageType = BufferedImage.TYPE_INT_RGB;
         }
