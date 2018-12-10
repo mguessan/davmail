@@ -2,18 +2,28 @@
 #
 # Usage: davmail [</path/to/davmail.properties>]
 #
-# In case of SWT crash under JDK 9, uninstall SWT or remove the second case below
+# In case of SWT crash under JDK 9/11, uninstall SWT or remove SWT cases below
 #
 BASE=`dirname $0`
-JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60"
+# force GTK2 to avoid crash with OpenJDK 11
+JAVA_OPTS="-Xmx512M -Dsun.net.inetaddr.ttl=60 -Djdk.gtk.version=2.2"
+JAVA=java
+# uncomment this to force JDK 8
+#JAVA=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+# add JFX to classpath with OpenJDK 11
+JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
 if [ -f $BASE/davmail.jar ]; then
     # this is the platform independent package
-    exec java $JAVA_OPTS -cp $BASE/davmail.jar:$BASE/lib/* davmail.DavGateway "$@"
+    exec ${JAVA} $JAVA_OPTS -cp $BASE/davmail.jar:$BASE/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
 elif [ -f /usr/share/java/swt.jar ]; then
-    # standard install with SWT
+    # SWT 3 is available
     export LD_LIBRARY_PATH=/usr/lib/jni
-    exec java $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+    exec ${JAVA} $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+elif [ -f /usr/share/java/swt4.jar ]; then
+    # SWT 4 is available, force GTK 2 in SWT
+    export LD_LIBRARY_PATH=/usr/lib/jni
+    export SWT_GTK3=0
+    exec ${JAVA} $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt4.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/* davmail.DavGateway "$@"
 else
-    JFX_CLASSPATH=/usr/share/java/javafx-base.jar:/usr/share/java/javafx-controls.jar:/usr/share/java/javafx-fxml.jar:/usr/share/java/javafx-graphics.jar:/usr/share/java/javafx-media.jar:/usr/share/java/javafx-swing.jar:/usr/share/java/javafx-web.jar
-    exec java -Djdk.gtk.version=2.2 $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
+    exec ${JAVA} $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/davmail/lib/*:${JFX_CLASSPATH} davmail.DavGateway "$@"
 fi
