@@ -36,6 +36,8 @@ import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.internal.gtk.GDK;
+import org.eclipse.swt.internal.gtk.GTK;
 import org.eclipse.swt.widgets.*;
 
 import javax.swing.*;
@@ -48,6 +50,8 @@ import java.util.ArrayList;
  * Tray icon handler based on SWT
  */
 public class SwtGatewayTray implements DavGatewayTrayInterface {
+    private static final Logger LOGGER = Logger.getLogger(SwtGatewayTray.class);
+
     protected SwtGatewayTray() {
     }
 
@@ -206,14 +210,13 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        final String systemLookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
+        if (GTK.GTK3) {
+            throw new RuntimeException("GTK 3 not supported, please set SWT_GTK=0");
+        }
+        GDK.gdk_error_trap_push();
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
-            if (Settings.isLinux() && System.getProperty("swing.defaultlaf") == null) {
-                System.setProperty("swing.defaultlaf", UIManager.getCrossPlatformLookAndFeelClassName());
-            } else {
-                System.setProperty("swing.defaultlaf", UIManager.getSystemLookAndFeelClassName());
-            }
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
             DavGatewayTray.warn(new BundleMessage("LOG_UNABLE_TO_SET_LOOK_AND_FEEL"));
         }
@@ -273,7 +276,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         aboutItem.setText(BundleMessage.format("UI_ABOUT"));
                         aboutItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                display.asyncExec(
+                                SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
                                                 if (aboutFrame == null) {
@@ -288,9 +291,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         });
 
+                        // create menu item for the default action
                         trayItem.addListener(SWT.DefaultSelection, new Listener() {
                             public void handleEvent(Event event) {
-                                display.asyncExec(
+                                SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
                                                 // create frame on first call
@@ -306,12 +310,11 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             }
                         });
 
-                        // create menu item for the default action
                         MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
                         defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
                         defaultItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                display.asyncExec(
+                                SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
                                                 // create frame on first call
@@ -331,7 +334,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
                         logItem.addListener(SWT.Selection, new Listener() {
                             public void handleEvent(Event event) {
-                                display.asyncExec(
+                                SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
 
@@ -364,13 +367,19 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         // display settings frame on first start
                         if (Settings.isFirstStart()) {
-                            // create frame on first call
-                            if (settingsFrame == null) {
-                                settingsFrame = new SettingsFrame();
-                            }
-                            settingsFrame.setVisible(true);
-                            settingsFrame.toFront();
-                            settingsFrame.requestFocus();
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // create frame on first call
+                                    if (settingsFrame == null) {
+                                        settingsFrame = new SettingsFrame();
+                                    }
+                                    settingsFrame.setVisible(true);
+                                    settingsFrame.toFront();
+                                    settingsFrame.requestFocus();
+                                }
+                            });
+
                         }
 
                         synchronized (mainThread) {
