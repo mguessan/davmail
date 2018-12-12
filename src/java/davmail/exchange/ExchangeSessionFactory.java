@@ -174,12 +174,18 @@ public final class ExchangeSessionFactory {
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
 
-                } else if (Settings.EWS.equals(mode) || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
-                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
-                    DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
-                    DavGatewayHttpClientFacade.addNTLM(httpClient);
-                    session = new EwsExchangeSession(httpClient, poolKey.userName);
-                    session.buildSessionInfo(null);
+                } else if (Settings.EWS.equals(mode)) {
+                    if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
+                        ExchangeSession.LOGGER.debug("Direct EWS authentication");
+                        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
+                        DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
+                        DavGatewayHttpClientFacade.addNTLM(httpClient);
+                        session = new EwsExchangeSession(httpClient, poolKey.userName);
+                        session.buildSessionInfo(null);
+                    } else {
+                        ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");
+                        session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                    }
                 } else {
                     try {
                         session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
