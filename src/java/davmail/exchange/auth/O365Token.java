@@ -64,6 +64,9 @@ public class O365Token {
 
     public void setJsonToken(JSONObject jsonToken) throws IOException {
         try {
+            if (jsonToken.optString("error") != null) {
+                throw new IOException(jsonToken.optString("error")+" "+jsonToken.optString("error_description"));
+            }
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
             // precious refresh token
