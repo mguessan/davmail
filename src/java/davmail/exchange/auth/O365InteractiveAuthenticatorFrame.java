@@ -196,7 +196,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 }
             });
         } catch (Throwable t) {
-            LOGGER.warn("Unable to register msauth protocol handler");
+            LOGGER.warn("Unable to register protocol handler");
         }
     }
 
