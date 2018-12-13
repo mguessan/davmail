@@ -61,7 +61,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
             URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
                 @Override
                 public URLStreamHandler createURLStreamHandler(String protocol) {
-                    if ("msauth".equals(protocol)) {
+                    if ("msauth".equals(protocol) || "urn".equals(protocol)) {
                         return new URLStreamHandler() {
                             @Override
                             protected URLConnection openConnection(URL u) {
