@@ -43,6 +43,11 @@ public class O365Token {
     private String accessToken;
     private long expireson;
 
+    public O365Token(String clientId, String redirectUri) throws IOException {
+        this.clientId = clientId;
+        this.redirectUri = redirectUri;
+    }
+
     public O365Token(String clientId, String redirectUri, String code) throws IOException {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
@@ -107,7 +112,7 @@ public class O365Token {
         this.accessToken = accessToken;
     }
 
-    private void refreshToken() throws IOException {
+    public void refreshToken() throws IOException {
         String url = "https://login.microsoftonline.com/common/oauth2/token";
         RestMethod tokenMethod = new RestMethod(url);
         tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -134,5 +139,9 @@ public class O365Token {
             }
         }
 
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }
