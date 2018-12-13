@@ -642,7 +642,9 @@ public final class DavGatewayHttpClientFacade {
         // separate domain from username in credentials
         AuthScope authScope = new AuthScope(null, -1);
         NTCredentials credentials = (NTCredentials) httpClient.getState().getCredentials(authScope);
-        setCredentials(httpClient, credentials.getUserName(), credentials.getPassword());
+        if (credentials.getDomain() == null) {
+            setCredentials(httpClient, credentials.getUserName(), credentials.getPassword());
+        }
     }
 
     /**
