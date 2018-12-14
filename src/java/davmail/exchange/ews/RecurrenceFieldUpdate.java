@@ -20,6 +20,7 @@
 package davmail.exchange.ews;
 
 import davmail.exchange.ExchangeSession;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -30,6 +31,7 @@ import java.util.*;
  * Handle calendar item recurrence update
  */
 public class RecurrenceFieldUpdate extends FieldUpdate {
+    public static final Logger LOGGER = Logger.getLogger(RecurrenceFieldUpdate.class);
     static final HashMap<String, String> calDayToDayOfWeek = new HashMap<String, String>();
     static {
         calDayToDayOfWeek.put("SU", "Sunday");
@@ -55,7 +57,12 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     public void setByDay(String[] days) {
         byDays = new HashSet<String>();
         for (String day: days) {
-            byDays.add(calDayToDayOfWeek.get(day));
+            String value = calDayToDayOfWeek.get(day);
+            if (value == null) {
+                LOGGER.warn("Invalid day value: "+day);
+            } else {
+                byDays.add(value);
+            }
         }
     }
 
