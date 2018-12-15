@@ -110,6 +110,8 @@ public class O365Token {
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
+        // assume unexpired token
+        expireson = System.currentTimeMillis() + 1000 * 60 * 60;
     }
 
     public void refreshToken() throws IOException {
