@@ -32,7 +32,6 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
 
     String resource = "https://outlook.office365.com";
     String ewsUrl = resource + "/EWS/Exchange.asmx";
-    String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
 
     private String username;
     private O365Token token;
@@ -54,13 +53,19 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         // standard native app redirectUri
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
         String refreshToken = Settings.getProperty("davmail.oauth.refreshToken");
-        if (refreshToken == null) {
-            throw new IOException("Missing refresh token");
+        String accessToken = Settings.getProperty("davmail.oauth.accessToken");
+        if (refreshToken == null && accessToken == null) {
+            throw new IOException("Missing token");
         }
 
         token = new O365Token(clientId, redirectUri);
-        token.setRefreshToken(refreshToken);
-        token.refreshToken();
+        if (accessToken != null) {
+            // for tests only: load access token, will expire in at most one hour
+            token.setAccessToken(accessToken);
+        } else {
+            token.setRefreshToken(refreshToken);
+            token.refreshToken();
+        }
     }
 
     @Override
@@ -70,6 +75,6 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
 
     @Override
     public String getEWSUrl() {
-        return null;
+        return ewsUrl;
     }
 }
