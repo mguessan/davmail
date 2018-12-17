@@ -2764,6 +2764,9 @@ public class EwsExchangeSession extends ExchangeSession {
             CreateItemMethod createItemMethod = new CreateItemMethod(MessageDisposition.SaveOnly, SendMeetingInvitations.SendToNone, getFolderId("davmailtemp"), item);
             executeMethod(createItemMethod);
             item = createItemMethod.getResponseItem();
+            if (item == null) {
+                throw new IOException("Empty timezone item");
+            }
             VCalendar vCalendar = new VCalendar(getContent(new ItemId(item)), email, null);
             this.vTimezone = vCalendar.getVTimezone();
             // delete temporary folder
