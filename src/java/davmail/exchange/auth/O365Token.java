@@ -32,7 +32,8 @@ import java.io.IOException;
 import java.util.Date;
 
 public class O365Token {
-    protected final String URL = "https://login.microsoftonline.com/common/oauth2/token";
+    protected final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/token";
+    protected final String RESOURCE_URL = "https://outlook.office365.com/";
 
     protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
 
@@ -52,7 +53,7 @@ public class O365Token {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
 
-        RestMethod tokenMethod = new RestMethod(URL);
+        RestMethod tokenMethod = new RestMethod(TOKEN_URL);
         tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         tokenMethod.addParameter("grant_type", "authorization_code");
         tokenMethod.addParameter("code", code);
@@ -115,13 +116,13 @@ public class O365Token {
     }
 
     public void refreshToken() throws IOException {
-        String url = "https://login.microsoftonline.com/common/oauth2/token";
-        RestMethod tokenMethod = new RestMethod(url);
+        RestMethod tokenMethod = new RestMethod(TOKEN_URL);
         tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         tokenMethod.addParameter("grant_type", "refresh_token");
         tokenMethod.addParameter("refresh_token", refreshToken);
         tokenMethod.addParameter("redirect_uri", redirectUri);
         tokenMethod.addParameter("client_id", clientId);
+        tokenMethod.addParameter("resource", "https://outlook.office365.com/");
 
         executeMethod(tokenMethod);
     }
@@ -129,7 +130,7 @@ public class O365Token {
     private void executeMethod(RestMethod tokenMethod) throws IOException {
         HttpClient httpClient = null;
         try {
-            httpClient = DavGatewayHttpClientFacade.getInstance(URL);
+            httpClient = DavGatewayHttpClientFacade.getInstance(RESOURCE_URL);
             httpClient.executeMethod(tokenMethod);
             setJsonToken(tokenMethod.getJsonResponse());
 
