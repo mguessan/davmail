@@ -215,7 +215,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             logonFormMethod.releaseConnection();
         }
 
-        String location = null;
+        String location;
 
         if (logonFormMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY && logonFormMethod.getResponseHeader("Location") != null) {
             LOGGER.info("Already authenticated through Basic or NTLM");
@@ -269,7 +269,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         targetMethod.setParameter("wctx", wctx);
         try {
             httpClient.executeMethod(targetMethod);
-            responseBodyAsString = logonMethod.getResponseBodyAsString();
+            responseBodyAsString = targetMethod.getResponseBodyAsString();
         } finally {
             targetMethod.releaseConnection();
         }
