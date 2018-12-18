@@ -1,4 +1,4 @@
-# DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway
+# DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway
 
 [![Build Status: Linux](https://travis-ci.org/mguessan/davmail.svg?branch=master)](https://travis-ci.org/mguessan/davmail)
 [![Build status: Windows](https://ci.appveyor.com/api/projects/status/d7tx645gwqvprd4g?svg=true)](https://ci.appveyor.com/project/mguessan/davmail)
