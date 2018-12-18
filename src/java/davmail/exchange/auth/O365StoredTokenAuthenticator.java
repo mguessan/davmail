@@ -52,7 +52,11 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
-        String refreshToken = Settings.getProperty("davmail.oauth.refreshToken");
+        String refreshToken = Settings.getProperty("davmail.oauth."+username.toLowerCase()+".refreshToken");
+        if (refreshToken == null) {
+            // single user mode
+            refreshToken = Settings.getProperty("davmail.oauth.refreshToken");
+        }
         String accessToken = Settings.getProperty("davmail.oauth.accessToken");
         if (refreshToken == null && accessToken == null) {
             throw new IOException("Missing token");
