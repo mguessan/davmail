@@ -19,6 +19,7 @@
 
 package davmail.exchange.auth;
 
+import davmail.Settings;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.RestMethod;
 import davmail.util.IOUtil;
@@ -44,7 +45,7 @@ public class O365Token {
     private String accessToken;
     private long expireson;
 
-    public O365Token(String clientId, String redirectUri) throws IOException {
+    public O365Token(String clientId, String redirectUri) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
     }
@@ -86,6 +87,11 @@ public class O365Token {
             JSONObject tokenBody = new JSONObject(decodedBearer);
             LOGGER.debug("Token: " + tokenBody);
             username = tokenBody.getString("unique_name");
+
+            if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
+                Settings.setProperty("davmail.oauth."+username.toLowerCase()+".refreshToken", refreshToken);
+                Settings.save();
+            }
         } catch (JSONException e) {
             throw new IOException("Exception parsing token", e);
         }
