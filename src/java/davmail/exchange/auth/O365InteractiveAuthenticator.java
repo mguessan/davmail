@@ -77,9 +77,6 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
 
     public void authenticate() throws IOException {
-        if (Settings.isWindows() && Settings.isJava8()) {
-            LOGGER.warn("O365 interactive authenticator may not work with Java 8 on windows");
-        }
         // common DavMail client id
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
