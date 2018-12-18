@@ -200,6 +200,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
     }
 
     private String authenticateADFS(HttpClient httpClient, String federationRedirectUrl) throws IOException {
+        // set NTLM credentials
+        DavGatewayHttpClientFacade.setCredentials(httpClient, userid, password);
+        DavGatewayHttpClientFacade.addNTLM(httpClient);
         String responseBodyAsString;
 
         // get ADFS login form
@@ -212,25 +215,33 @@ public class O365Authenticator implements ExchangeAuthenticator {
             logonFormMethod.releaseConnection();
         }
 
-        // parse form to get target url, authenticate as userid
-        PostMethod logonMethod = new PostMethod(extract("method=\"post\" action=\"([^\"]+)\"", responseBodyAsString));
-        logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        String location = null;
 
-        logonMethod.setParameter("UserName", userid);
-        logonMethod.setParameter("Password", password);
-        logonMethod.setParameter("AuthMethod", "FormsAuthentication");
+        if (logonFormMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY && logonFormMethod.getResponseHeader("Location") != null) {
+            LOGGER.info("Already authenticated through Basic or NTLM");
+            location = logonFormMethod.getResponseHeader("Location").getValue();
+        } else {
+            // parse form to get target url, authenticate as userid
+            PostMethod logonMethod = new PostMethod(extract("method=\"post\" action=\"([^\"]+)\"", responseBodyAsString));
+            logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-        try {
-            httpClient.executeMethod(logonMethod);
-        } finally {
-            logonMethod.releaseConnection();
+            logonMethod.setParameter("UserName", userid);
+            logonMethod.setParameter("Password", password);
+            logonMethod.setParameter("AuthMethod", "FormsAuthentication");
+
+            try {
+                httpClient.executeMethod(logonMethod);
+            } finally {
+                logonMethod.releaseConnection();
+            }
+
+            if (logonMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || logonMethod.getResponseHeader("Location") == null) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+            }
+            location = logonMethod.getResponseHeader("Location").getValue();
         }
 
-        if (logonMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || logonMethod.getResponseHeader("Location") == null) {
-            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-        }
-
-        GetMethod redirectMethod = new GetMethod(logonMethod.getResponseHeader("Location").getValue());
+        GetMethod redirectMethod = new GetMethod(location);
         try {
             httpClient.executeMethod(redirectMethod);
             responseBodyAsString = redirectMethod.getResponseBodyAsString();
