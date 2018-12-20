@@ -1589,6 +1589,44 @@ public class LdapConnection extends AbstractConnection {
             return results;
         }
 
+        public String escapeDN(String name) {
+            StringBuffer sb = new StringBuffer(); // If using JDK >= 1.5 consider using StringBuilder
+            if ((name.length() > 0) && ((name.charAt(0) == ' ') || (name.charAt(0) == '#'))) {
+                sb.append('\\'); // add the leading backslash if needed
+            }
+            for (int i = 0; i < name.length(); i++) {
+                char curChar = name.charAt(i);
+                switch (curChar) {
+                    case '\\':
+                        sb.append("\\\\");
+                        break;
+                    case ',':
+                        sb.append("\\,");
+                        break;
+                    case '+':
+                        sb.append("\\+");
+                        break;
+                    case '"':
+                        sb.append("\\\"");
+                        break;
+                    case '<':
+                        sb.append("\\<");
+                        break;
+                    case '>':
+                        sb.append("\\>");
+                        break;
+                    case ';':
+                        sb.append("\\;");
+                        break;
+                    default:
+                        sb.append(curChar);
+                }
+            }
+            if ((name.length() > 1) && ((name.charAt(name.length() - 1) == ' ') || (name.charAt(name.length() - 1) == '#'))) {
+                sb.insert(sb.length() - 1, '\\'); // add the trailing backslash if needed
+            }
+            return sb.toString();
+        }
 
         /**
          * Convert to LDAP attributes and send entry
@@ -1681,8 +1719,8 @@ public class LdapConnection extends AbstractConnection {
                         ldapPerson.put("uidnumber", userName);
                     }
                 }
-                DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
-                sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
+                DavGatewayTray.debug(new BundleMessage( "LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
+                sendEntry(currentMessageId, "uid=" + escapeDN(ldapPerson.get("uid") + baseContext), ldapPerson);
             }
 
         }
