@@ -31,6 +31,8 @@ import davmail.exchange.dav.DavExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
 import javax.security.auth.callback.*;
 import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.Sasl;
@@ -527,6 +529,22 @@ public class LdapConnection extends AbstractConnection {
                 reqBer.parseSeq(null);
                 ldapVersion = reqBer.parseInt();
                 userName = reqBer.parseString(isLdapV3());
+
+                // Remove attribute type names from user name
+                // formatted as a valid LDAP DNs.
+                //
+                // In case of LDAP DNs formatted value, we are only interested in
+                // the last (leftmost) RDN pair. Attribute type name is also not
+                // important here.
+                try {
+                    LdapName userDn = new LdapName(userName);
+                    String userDnParsed = userDn.get(userDn.size() - 1);
+                    String[] parts = userDnParsed.toString().split("=");
+                    LOGGER.debug("Seems like username " + userName + " is in LDAP DN format. Removing an atribute name.");
+                    userName = parts[parts.length - 1];
+                } catch (Exception ignore) {
+                }
+
                 if (reqBer.peekByte() == (Ber.ASN_CONTEXT | Ber.ASN_CONSTRUCTOR | 3)) {
                     // SASL authentication
                     reqBer.parseSeq(null);
