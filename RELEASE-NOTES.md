@@ -1,3 +1,115 @@
+## DavMail 5.1.0 2018-12-18
+Much improved interactive O365 authentication with OpenJFX bug workaround, 
+experimental stored Oauth refresh token support. More Linux distributions were tested
+to make DavMail work with recent KDE and Gnome environments.
+
+### EWS:
+- EWS: more progress on ADFS authentication
+- EWS: cleanup warning message
+- EWS: experimental, implement davmail.oauth.persistToken to store Oauth refresh token
+- EWS: make progress on O365 ADFS authentication, fix method
+- EWS: stored token authentication, load token by username
+- EWS: make progress on O365 ADFS authentication, enable NTLM and pass credentials
+- EWS: O365 authentication, set resource url on token refresh
+- EWS: set default access token expiration
+- EWS: implement stored access token in addition to refresh token (will only last one hour)
+- EWS: experimental, load Oauth refresh token from setting davmail.oauth.refreshToken
+- EWS: fix https://github.com/mguessan/davmail/issues/15 empty domain in NTLM authentication
+- EWS: revert to 4.9.0 behavior for EWS mode
+- EWS: fix regression in token handling
+- EWS: allow urn protocol in O365 authenticator
+- EWS: fix regression when main authentication relies on OWA and/or ADFS
+- EWS: check for errors in returned json token
+- EWS: Fix warning message
+- EWS: workaround for JavaFX bug, add one more URL
+- EWS: call setAlwaysOnTop(true); on page load success
+- EWS: in addition to requestFocus, call toFront
+- EWS: workaround for JavaFX bug, handle more methods in connection wrapper
+- EWS: workaround for JavaFX bug, handle post requests
+- EWS: workaround for JavaFX bug, add additional microsoft url
+- EWS: workaround for JavaFX bug, fix java 8 regression
+- EWS: Add export compiler arg java.base/sun.net.www.protocol.https for webview bug workaround 
+- EWS: improve interactive authenticator focus handling and remove reflection calls
+- EWS: workaround for JavaFX bug, use reflection to avoid java 9 errors
+- EWS: workaround for JavaFX bug, drop reference to internal sun class HttpsURLConnectionImpl
+- EWS: workaround for JavaFX bug, disable integrity check on external resources in O365 authentication form
+- EWS: javafx test can also trigger NoClassDefFoundError
+- EWS: Rename JSLogger
+- EWS: improve O365 interactive error handling
+- EWS: override console.log to send error messages to Log4J
+- EWS: More EWS test cases
+- EWS: new authenticator test cases
+- EWS: detect when user settings validation is required by Office 365
+- EWS: detect manual window close event
+- EWS: Make sure we close frame on timeout, improve error message
+- EWS: refactor O365 authenticator to do all gui calls in Swing thread
+- EWS: cleanup from audit
+- EWS: encode slash inside folder names
+- EWS: convert date without SimpleDateFormat during load messages to improve performance and reduce memory footprint
+- EWS: Send authentication failed instead of generic error in case of username mismatch in O365Authenticator
+
+### Documentation:
+- Doc: update project description in README.md
+- Doc: update project description
+- Doc: adjust IntelliJ link according to JetBrains recommendation
+- Doc: revert openhub change, was a target side issue
+- Doc: add YourKit Java Profiler logo to home page
+- Doc: improve IntelliJ IDEA home page logo
+- Doc: fix swt gtk version in documentation
+- Doc: fix openhub link
+- Doc: add link to https://apps.dev.microsoft.com/
+- Doc: direct link to latest release package download list in README.md
+- Doc: fix link in server setup documentation
+
+### OSX:
+- OSX: upgrade universalJavaApplicationStub to 3.0.4
+
+### Linux:
+- Linux: prepare systemd service
+- Linux: missing openjfx dependency
+- Linux: set cross platform look and feel on Linux, except is swing.defaultlaf is set
+- Linux: enable anti aliasing in GUI
+- Linux: improve launch scripts to handle more cases (OpenJDK 11 with or without SWT)
+- Linux: remove swt4 suggests and revert gtk force, does not work under debian sid
+- Linux: Force gtk version no longer required with cross platform look and feel
+- Linux: use hi res icon images in frame mode
+- Linux: Add JavaFX classpath to launch script
+- Linux: add libopenjfx-java dependency to debian package
+- Linux: switch swt dependency to suggests
+
+### Caldav:
+- Caldav: another NullPointerException fix
+- Caldav: fix #694 Null pointer exception writing days of week
+
+### Enhancements:
+- Avoid nullpointerexception on missing credentials
+- Move isLinux method to Settings
+- Revert back to Java 6 build in all cases
+- Restore Java 6 compatibility
+- Add utility methods in Settings
+- Do not try SWT when O365 interactive mode is selected.
+
+### Windows:
+- Windows: update winrun4j 64 wrapper to support java > 8, see https://github.com/poidasmith/winrun4j/pull/81
+
+### GUI:
+- GUI: dispose notification dialog on close
+- GUI: increase default frame size
+- GUI: add hi res icon images
+- GUI: use setLocationRelativeTo to set frame location
+
+### SWT:
+- SWT: O365Interactive is not compatible with SWT, do not try to create SWT tray
+- SWT: call GDK.gdk_error_trap_push() to avoid crash
+- SWT: Enable debug mode
+- SWT: upgrade SWT to 4.9
+- SWT: drop deprecated SWT 3 calls and adjust tray icon image to 22px
+
+### Appveyor:
+- Appveyor: build with JDK11
+- Merge patch #51 Check for javafx in compile classpath
+
+
 ## DavMail 5.0.0 2018-11-21
 Major release with Office 365 modern authentication (Oauth2) and MFA support.
 DavMail now supports IMAP SPECIAL-USE RFC6154.
