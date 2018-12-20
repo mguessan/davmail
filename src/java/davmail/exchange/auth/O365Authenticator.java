@@ -134,7 +134,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             String code;
             if (federationRedirectUrl != null && !federationRedirectUrl.isEmpty()) {
                 LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
-                code = authenticateADFS(httpClient, federationRedirectUrl);
+                code = authenticateADFS(httpClient, federationRedirectUrl, url);
             } else {
                 PostMethod logonMethod = new PostMethod("https://login.microsoftonline.com/common/login");
                 logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -199,7 +199,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private String authenticateADFS(HttpClient httpClient, String federationRedirectUrl) throws IOException {
+    private String authenticateADFS(HttpClient httpClient, String federationRedirectUrl, String authorizeUrl) throws IOException {
         // set NTLM credentials
         DavGatewayHttpClientFacade.setCredentials(httpClient, userid, password);
         DavGatewayHttpClientFacade.addNTLM(httpClient);
@@ -276,7 +276,24 @@ public class O365Authenticator implements ExchangeAuthenticator {
         LOGGER.debug(targetMethod.getStatusLine());
         LOGGER.debug(responseBodyAsString);
 
-        throw new IOException("ADFS authentication not yet implemented");
+        if (targetMethod.getStatusCode() == HttpStatus.SC_OK) {
+            JSONObject config = extractConfig(responseBodyAsString);
+            if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
+                LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
+                LOGGER.debug(authorizeUrl);
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+            }
+        } else if (targetMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || targetMethod.getRequestHeader("Location") == null) {
+            throw new IOException("Unknown ADFS authentication failure");
+        }
+
+        location = targetMethod.getRequestHeader("Location").getValue();
+        if (location.contains("code=") && location.contains("&session_state=")) {
+            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+            LOGGER.debug("Authentication Code: " + code);
+            return code;
+        }
+        throw new IOException("Unknown ADFS authentication failure");
     }
 
     private PostMethod handleMfa(HttpClient httpClient, PostMethod logonMethod, String username, String clientRequestId) throws JSONException, IOException {
