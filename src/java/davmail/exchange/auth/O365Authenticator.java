@@ -217,9 +217,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         String location;
 
-        if (logonFormMethod.getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY && logonFormMethod.getResponseHeader("Location") != null) {
+        if (responseBodyAsString.contains("login.microsoftonline.com")) {
             LOGGER.info("Already authenticated through Basic or NTLM");
-            location = logonFormMethod.getResponseHeader("Location").getValue();
         } else {
             // parse form to get target url, authenticate as userid
             PostMethod logonMethod = new PostMethod(extract("method=\"post\" action=\"([^\"]+)\"", responseBodyAsString));
@@ -239,14 +238,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
             location = logonMethod.getResponseHeader("Location").getValue();
-        }
-
-        GetMethod redirectMethod = new GetMethod(location);
-        try {
-            httpClient.executeMethod(redirectMethod);
-            responseBodyAsString = redirectMethod.getResponseBodyAsString();
-        } finally {
-            redirectMethod.releaseConnection();
+            GetMethod redirectMethod = new GetMethod(location);
+            try {
+                httpClient.executeMethod(redirectMethod);
+                responseBodyAsString = redirectMethod.getResponseBodyAsString();
+            } finally {
+                redirectMethod.releaseConnection();
+            }
         }
 
         if (!responseBodyAsString.contains("login.microsoftonline.com")) {
