@@ -1,5 +1,5 @@
 %{?!davrel:   %define davrel   5.1.0}
-%{?!davsvn:   %define davsvn   2890}
+%{?!davsvn:   %define davsvn   2891}
 %define davver %{davrel}-%{davsvn}
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -67,8 +67,8 @@ export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 
-%if 0%{?el7} || 0%{?fedora}
-echo keep included swt on el7
+%if 0%{?el6} || 0%{?el7} || 0%{?fedora} || 0%{?is_opensuse}
+echo keep included swt on el7 and opensuse
 %else
 # externalize SWT
 rm lib/swt*
