@@ -36,8 +36,7 @@ import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.internal.gtk.GDK;
-import org.eclipse.swt.internal.gtk.GTK;
+import org.eclipse.swt.internal.gtk.OS;
 import org.eclipse.swt.widgets.*;
 
 import javax.swing.*;
@@ -210,10 +209,34 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        if (GTK.GTK3) {
-            throw new RuntimeException("GTK 3 not supported, please set SWT_GTK=0");
+        boolean isGTK3 = false;
+        // SWT 4.9 and later
+        try {
+            Class gtk = Class.forName("org.eclipse.swt.internal.gtk.GTK");
+            isGTK3 = (Boolean) gtk.getDeclaredField("GTK3").get(null);
+            LOGGER.debug("org.eclipse.swt.internal.gtk.GTK.GTK3="+isGTK3);
+            if (isGTK3) {
+                LOGGER.warn("GTK 3 not supported, please set SWT_GTK3=0");
+            }
+        } catch (Exception e) {
+            // ignore
         }
-        GDK.gdk_error_trap_push();
+        try {
+            Class gdk = Class.forName("org.eclipse.swt.internal.gtk.GDK");
+            //noinspection unchecked
+            gdk.getDeclaredMethod("gdk_error_trap_push").invoke(null);
+            LOGGER.debug("Called org.eclipse.swt.internal.gtk.GDK.gdk_error_trap_push");
+        } catch (Exception e) {
+            // ignore
+        }
+
+        try {
+            //noinspection JavaReflectionMemberAccess
+            OS.class.getDeclaredMethod("gdk_error_trap_push").invoke(null);
+            LOGGER.debug("Called org.eclipse.swt.internal.gtk.OS.gdk_error_trap_push");
+        } catch (Exception e) {
+            // ignore
+        }
         try {
             // workaround for bug when SWT and AWT both try to access Gtk
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
