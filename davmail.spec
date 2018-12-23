@@ -26,11 +26,13 @@ BuildRequires:	insserv-compat
 %if 0%{?el7} || 0%{?fedora}
 BuildRequires: java-1.8.0-openjdk-devel
 %else
-BuildRequires: java-devel >= 1.8.0
+BuildRequires: java-devel >= 1.7.0
 BuildRequires: eclipse-swt
 %endif
 # compile with JavaFX on Fedora
-%{?fedora:BuildRequires: javafx}
+%if 0%{?fedora} > 25
+BuildRequires: javafx
+%endif
 Requires: coreutils
 Requires: filesystem
 Requires(pre): /usr/sbin/useradd, /usr/sbin/groupadd
@@ -67,7 +69,7 @@ export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 
-%if 0%{?el6} || 0%{?el7} || 0%{?fedora} || 0%{?is_opensuse}
+%if 0%{?el6} || 0%{?el7} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
 echo keep included swt on el7 and opensuse
 %else
 # externalize SWT
@@ -109,7 +111,7 @@ rm -f dist/lib/*growl*.jar
 install -m 0664 dist/lib/* $RPM_BUILD_ROOT%{_datadir}/davmail/lib/
 install -m 0664 dist/*.jar $RPM_BUILD_ROOT%{_datadir}/davmail/
 
-%if 0%{?sle_version} != 120300
+%if 0%{?sle_version} != 120300 && 0%{?suse_version} != 1310 && 0%{?suse_version} != 1320
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/metainfo
 install -m 0644 src/appstream/org.davmail.DavMail.appdata.xml $RPM_BUILD_ROOT%{_datadir}/metainfo
 %endif
@@ -181,7 +183,7 @@ fi
 %{_datadir}/applications/*
 %{_datadir}/pixmaps/*
 %{_datadir}/davmail/
-%if 0%{?sle_version} != 120300
+%if 0%{?sle_version} != 120300 && 0%{?suse_version} != 1310 && 0%{?suse_version} != 1320
 %{_datadir}/metainfo/org.davmail.DavMail.appdata.xml
 %endif
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
