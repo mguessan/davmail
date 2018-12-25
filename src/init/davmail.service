@@ -10,8 +10,8 @@ Type=simple
 User=davmail
 PermissionsStartOnly=true
 ExecStartPre=/usr/bin/touch /var/log/davmail.log
-ExecStartPre=/bin/chown davmail:adm /var/log/davmail.log
-ExecStart=/usr/bin/davmail /etc/davmail.properties
+ExecStartPre=/bin/chown davmail:davmail /var/log/davmail.log
+ExecStart=/usr/bin/davmail -server /etc/davmail.properties
 SuccessExitStatus=143
 
 [Install]
