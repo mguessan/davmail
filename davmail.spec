@@ -101,6 +101,9 @@ install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
 install -m 0775 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
+%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?fedora}
+install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
+%endif
 
 # Actual DavMail files
 install -m 0644 src/java/tray32.png $RPM_BUILD_ROOT%{_datadir}/pixmaps/davmail.png
@@ -178,6 +181,11 @@ fi
 %{_bindir}/*
 %{_sbindir}/rcdavmail
 %{_sysconfdir}/init.d/davmail
+
+%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?fedora}
+%{_unitdir}/davmail.service
+%endif
+
 %config(noreplace) %{_sysconfdir}/logrotate.d/davmail
 %config(noreplace) %{_sysconfdir}/davmail.properties
 %{_datadir}/applications/*
