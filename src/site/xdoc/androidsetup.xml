@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange Gateway - Android setup</title>
+        <author email="mguessan@free.fr">Mickael Guessant</author>
+    </properties>
+
+    <body>
+
+        <section name="Android setup">
+            <p>In order to use DavMail on Android, you need to install DavMail in server mode.
+                This server must be available directly on the internet or through a Wifi connection.
+                See
+                <a href="serversetup.html">Server setup</a>
+                for more information.
+            </p>
+
+            <p>As mail data between your phone and DavMail travels on the internet, you probably want
+                to switch DavMail to encrypted mode, see
+                <a href="sslsetup.html">SSL setup</a>
+            </p>
+
+            <p>Once you have a working DavMail server, proceed to:
+                <a href="androidmailsetup.html">Android Mail setup</a>
+            </p>
+            <p>Then sync your Exchange calendar and contacts:
+                <a href="androiddavdroidsetup.html">Davdroid setup</a>
+            </p>
+        </section>
+
+    </body>
+</document>
