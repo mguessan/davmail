@@ -15,9 +15,37 @@
                 see&#x20;<a href="androidsetup.html">Android setup</a>.
             </p>
 
-            <subsection name="Create a new IMAP account">
+            <subsection name="Create a new mail account">
                 <p>Use the standard Android Email application to create an IMAP/SMTP account to
-                connect to your DavMail server.</p>
+                connect to your DavMail server. Under manage accounts choose Add account and
+                    enter your email address and password, then select <em>Manual Setup</em>:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount1.png" alt=""/>
+                </div>
+                <p>Choose IMAP ACCOUNT:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount2.png" alt=""/>
+                </div>
+                <p>Confirm your email address, enter you login (can be different from email address
+                when windows credentials are used to connect to Exchange/Office365). The IMAP server
+                is your DavMail server, choose SSL (Accept all certificates) and enter DavMail IMAP port:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount3.png" alt=""/>
+                </div>
+                <p>Next screen is dedicated to outgoing SMTP configuration. The SMTP server
+                    is your DavMail server, choose SSL (Accept all certificates) and enter DavMail SMTP port:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount4.png" alt=""/>
+                </div>
+                <p>Adjust synchronisation settings to your needs and choose Next:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount5.png" alt=""/>
+                </div>
+                <p>Enter an account name and set sender name and finish account creation:</p>
+                <div style="width: 100%;text-align: center">
+                    <img width="320" src="images/android/androidemailaccount6.png" alt=""/>
+                </div>
+                <p>Proceed to <a href="androiddavdroidsetup.html">Davdroid setup</a></p>
             </subsection>
 
 

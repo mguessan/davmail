@@ -64,6 +64,11 @@
             <item name="IMAP Mail setup" href="/osximapmailsetup.html"/>
             <item name="Address book setup" href="/osxaddressbooksetup.html"/>
         </menu>
+        <menu name="Android Setup">
+            <item name="Android setup" href="/androidsetup.html"/>
+            <item name="Mail setup" href="/androidmailsetup.html"/>
+            <item name="Calendar/Contact setup" href="/androiddavdroidsetup.html"/>
+        </menu>
         <menu name="iPhone Setup">
             <item name="iPhone setup" href="/iphonesetup.html"/>
             <item name="Mail setup" href="/iphonemailsetup.html"/>

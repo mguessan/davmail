@@ -12,7 +12,7 @@
 
         <section name="iPhone setup">
             <p>In order to use DavMail with an iPhone, you need to install DavMail in server mode.
-                This server should be available directly on the internet or through a Wifi connection.
+                This server must be available directly on the internet or through a Wifi connection.
                 See
                 <a href="serversetup.html">Server setup</a>
                 for more information.
