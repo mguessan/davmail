@@ -108,10 +108,10 @@ public class O365Token {
     public String getAccessToken() throws IOException {
         // detect expiration and refresh token
         if (System.currentTimeMillis() > expireson - 60000) {
-            LOGGER.info("Access token expires soon, trying to refresh it");
+            LOGGER.debug("Access token expires soon, trying to refresh it");
             refreshToken();
         }
-        LOGGER.info("Access token for " + username + " expires in " + (expireson - System.currentTimeMillis()) / 60000 + " minutes");
+        LOGGER.debug("Access token for " + username + " expires in " + (expireson - System.currentTimeMillis()) / 60000 + " minutes");
         return accessToken;
     }
 
