@@ -30,21 +30,20 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
+import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.log4j.Level;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 public class TestHttpClient4 extends AbstractDavMailTestCase {
     public void testBasicGetRequest() throws IOException {
@@ -128,9 +127,9 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
     }
 
     public void testBasicAuthentication() throws IOException {
+        Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
 
         RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
-
         schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
                 SSLConnectionSocketFactory.getDefaultHostnameVerifier()));
 
@@ -246,5 +245,59 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         } finally {
             httpClient.close();
         }
+    }
+
+    public void testTimeouts() throws IOException, InterruptedException {
+        Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
+        Settings.setLoggingLevel("org.apache.http.impl.conn", Level.DEBUG);
+
+        RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
+        schemeRegistry.register("http", new PlainConnectionSocketFactory());
+        schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
+                SSLConnectionSocketFactory.getDefaultHostnameVerifier()));
+
+        Registry<ConnectionSocketFactory> registry = schemeRegistry.build();
+
+        RequestConfig config = RequestConfig.custom()
+                // time to get request from the pool
+                .setConnectionRequestTimeout(5000)
+                // socket connect timeout
+                .setConnectTimeout(5000)
+                // inactivity timeout
+                .setSocketTimeout(5000)
+                // disable redirect
+                .setRedirectsEnabled(false)
+                .build();
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(registry);
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+                .disableRedirectHandling()
+                .setDefaultRequestConfig(config)
+                .setConnectionManager(connectionManager);
+
+        IdleConnectionEvictor evictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
+        evictor.start();
+        CloseableHttpClient httpClient = clientBuilder.build();
+
+        try {
+
+            HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
+
+            CloseableHttpResponse response = httpClient.execute(httpget);
+            try {
+                assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                String responseString = new BasicResponseHandler().handleResponse(response);
+                System.out.println(responseString);
+            } finally {
+                response.close();
+            }
+            while (connectionManager.getTotalStats().getAvailable() > 0) {
+                Thread.sleep(5000);
+                System.out.println("Pool: "+connectionManager.getTotalStats());
+            }
+        } finally {
+            evictor.shutdown();
+            httpClient.close();
+        }
+
     }
 }
