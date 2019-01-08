@@ -101,7 +101,7 @@ Section "MainSection" SEC01
   File "dist\davmailservice64.exe"
   SetOutPath "$INSTDIR\lib"
   File "dist\lib\activation-1.1.1.jar"
-  File "dist\lib\commons-codec-1.3.jar"
+  File "dist\lib\commons-codec-1.11.jar"
   File "dist\lib\commons-collections-3.1.jar"
   File "dist\lib\commons-httpclient-3.1.jar"
   File "dist\lib\commons-logging-1.0.4.jar"
@@ -172,7 +172,7 @@ no_quest:
   Delete "$INSTDIR\uninst.exe"
   
   Delete "$INSTDIR\lib\activation-1.1.1.jar"
-  Delete "$INSTDIR\lib\commons-codec-1.3.jar"
+  Delete "$INSTDIR\lib\commons-codec-1.11.jar"
   Delete "$INSTDIR\lib\commons-collections-3.1.jar"
   Delete "$INSTDIR\lib\commons-httpclient-3.1.jar"
   Delete "$INSTDIR\lib\commons-logging-1.0.4.jar"
