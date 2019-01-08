@@ -21,6 +21,7 @@ package davmail.http;
 
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -80,8 +81,6 @@ public class HttpClientAdapter {
                 .setConnectTimeout(Settings.getIntProperty("davmail.exchange.connectionTimeout", 10) * 1000)
                 // inactivity timeout
                 .setSocketTimeout(Settings.getIntProperty("davmail.exchange.soTimeout", 120) * 1000)
-                // max redirect
-                .setMaxRedirects(Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS))
                 .build();
 
         // set system property *before* calling ProxySelector.getDefault()
@@ -94,13 +93,16 @@ public class HttpClientAdapter {
     PoolingHttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
     IdleConnectionEvictor idleConnectionEvictor;
-
+    String domain;
+    String userid;
+    String userEmail;
 
     public HttpClientAdapter(String url) throws DavMailException {
         this(url, null, null);
     }
 
     public HttpClientAdapter(String url, String username, String password) throws DavMailException {
+        parseUserName(username);
         connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .disableRedirectHandling()
@@ -111,18 +113,9 @@ public class HttpClientAdapter {
         SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
         clientBuilder.setRoutePlanner(routePlanner);
         CredentialsProvider provider = null;
-        if (username != null && password != null) {
+        if (userid != null && password != null) {
             provider = new BasicCredentialsProvider();
-            NTCredentials credentials;
-            int backSlashIndex = username.indexOf('\\');
-            if (backSlashIndex >= 0) {
-                // separate domain from username in credentials
-                String domain = username.substring(0, backSlashIndex);
-                username = username.substring(backSlashIndex + 1);
-                credentials = new NTCredentials(username, password, WORKSTATION_NAME, domain);
-            } else {
-                credentials = new NTCredentials(username, password, WORKSTATION_NAME, "");
-            }
+            NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
             provider.setCredentials(AuthScope.ANY, credentials);
         }
 
@@ -186,6 +179,28 @@ public class HttpClientAdapter {
 
     }
 
+    private void parseUserName(String username) {
+        if (username != null) {
+            int pipeIndex = username.indexOf("|");
+            if (pipeIndex >= 0) {
+                userid = username.substring(0, pipeIndex);
+                userEmail = username.substring(pipeIndex + 1);
+            } else {
+                userid = username;
+                userEmail = username;
+            }
+            // separate domain name
+            int backSlashIndex = userid.indexOf('\\');
+            if (backSlashIndex >= 0) {
+                // separate domain from username in credentials
+                domain = userid.substring(0, backSlashIndex);
+                userid = userid.substring(backSlashIndex + 1);
+            } else {
+                domain = Settings.getProperty("davmail.defaultDomain", "");
+            }
+        }
+    }
+
     /**
      * Retrieve Proxy Selector
      *
@@ -227,7 +242,54 @@ public class HttpClientAdapter {
         httpClient.close();
     }
 
+    /**
+     * Execute request, do not follow redirects
+     *
+     * @param request Http request
+     * @return Http response
+     * @throws IOException on error
+     */
     public CloseableHttpResponse execute(HttpRequestBase request) throws IOException {
         return httpClient.execute(request);
+    }
+
+    /**
+     * Execute request, manually follow redirects
+     *
+     * @param request Http request
+     * @return Http response
+     * @throws IOException on error
+     */
+    public CloseableHttpResponse executeFollowRedirects(HttpRequestBase request) throws IOException {
+        CloseableHttpResponse httpResponse;
+        int count = 0;
+        int maxRedirect = Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS);
+        httpResponse = execute(request);
+        while (count++ < maxRedirect
+                && isRedirect(httpResponse.getStatusLine().getStatusCode())
+                && httpResponse.getFirstHeader("Location") != null) {
+            // close previous response
+            httpResponse.close();
+            String location = httpResponse.getFirstHeader("Location").getValue();
+            LOGGER.debug("Redirect " + request.getURI() + " to " + location);
+            // replace uri with target location
+            request.setURI(URI.create(location));
+            httpResponse = execute(request);
+        }
+
+        return httpResponse;
+    }
+
+    /**
+     * Check if status is a redirect (various 30x values).
+     *
+     * @param status Http status
+     * @return true if status is a redirect
+     */
+    public static boolean isRedirect(int status) {
+        return status == HttpStatus.SC_MOVED_PERMANENTLY
+                || status == HttpStatus.SC_MOVED_TEMPORARILY
+                || status == HttpStatus.SC_SEE_OTHER
+                || status == HttpStatus.SC_TEMPORARY_REDIRECT;
     }
 }
