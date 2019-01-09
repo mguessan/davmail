@@ -513,5 +513,59 @@ public class TestExchangeSessionCalendar extends AbstractExchangeSessionTestCase
         session.createMessageFolder("davmailtemp");
         assertNotNull(session.getVTimezone());
     }
+
+    public void testInvalidRrule() throws IOException {
+        String itemBody = "BEGIN:VCALENDAR\n" +
+                "PRODID:-//Mozilla.org/NONSGML Mozilla Calendar V1.1//EN\n" +
+                "VERSION:2.0\n" +
+                "METHOD:PUBLISH\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Romance Standard Time\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0200\n" +
+                "TZNAME:CEST\n" +
+                "DTSTART:19700329T020000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" +
+                "END:DAYLIGHT\n" +
+                "BEGIN:STANDARD\n" +
+                "TZOFFSETFROM:+0200\n" +
+                "TZOFFSETTO:+0100\n" +
+                "TZNAME:CET\n" +
+                "DTSTART:19701025T030000\n" +
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" +
+                "END:STANDARD\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "LAST-MODIFIED:20190109T121039Z\n" +
+                "DTSTAMP:20190109T121039Z\n" +
+                "UID:ba509d7e-31d4-4a6e-a32f-bf9859e56710\n" +
+                "SUMMARY:test rrule\n" +
+                "PRIORITY:5\n" +
+                "STATUS:CONFIRMED\n" +
+                "DTSTART;TZID=Romance Standard Time:20190126T140000\n" +
+                "DTEND;TZID=Romance Standard Time:20190126T150000\n" +
+                "CLASS:PUBLIC\n" +
+                "TRANSP:OPAQUE\n" +
+                "SEQUENCE:1\n" +
+                "X-MICROSOFT-CDO-APPT-SEQUENCE:0\n" +
+                "X-MICROSOFT-CDO-OWNERAPPTID:2117160174\n" +
+                "X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n" +
+                "X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY\n" +
+                "X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n" +
+                "X-MICROSOFT-CDO-IMPORTANCE:1\n" +
+                "X-MICROSOFT-CDO-INSTTYPE:0\n" +
+                "X-MICROSOFT-DISALLOW-COUNTER:FALSE\n" +
+                "X-MOZ-GENERATION:1\n" +
+                "ORGANIZER:MAILTO:"+session.getEmail()+"\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR";
+        String itemName = UUID.randomUUID().toString() + ".EML";
+        session.createOrUpdateItem("calendar", itemName, itemBody, null, null);
+        VCalendar vCalendar = new VCalendar(itemBody, session.getEmail(), session.getVTimezone());
+        vCalendar.getFirstVevent().setPropertyValue("RRULE","FREQ=MONTHLY");
+        session.createOrUpdateItem("calendar", itemName, vCalendar.toString(), null, null);
+    }
+
 }
 
