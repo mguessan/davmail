@@ -14,6 +14,7 @@ This git repository is synchronized with subversion repository in order to make 
 
 ## Download
 Download latest DavMail release on Sourceforge
+
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/5.1.0/)
 
 ## Trunk builds
