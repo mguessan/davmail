@@ -15,7 +15,7 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="4.9.1">
+            <subsection name="5.1.2">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
@@ -23,13 +23,12 @@
                     <li>Bugfix release, fix as many reported bugs as possible</li>
                 </ul>
             </subsection>
-            <subsection name="5.0">
+            <subsection name="5.2">
                 <p>
                     <strong>Next major release</strong>
                 </p>
                 <ul>
-                    <li>Implement EWS Oauth support</li>
-                    <li>Implement new OWA REST endpoint</li>
+                    <li>Migrate to HttpClient 4</li>
                 </ul>
             </subsection>
             <subsection name="Future">
@@ -37,6 +36,7 @@
                     <strong>Features that may be implemented, but are not yet planned</strong>
                 </p>
                 <ul>
+                    <li>Implement new OWA REST endpoint</li>
                     <li>Implement split authentication</li>
                     <li>Implement Caldav attachments</li>
                     <li>Implement custom authenticator interface to handle specific authentications
