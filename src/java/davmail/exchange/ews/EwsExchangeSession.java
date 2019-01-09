@@ -1198,14 +1198,14 @@ public class EwsExchangeSession extends ExchangeSession {
                 Folder folder = buildFolder(item);
                 if (parentFolderPath.length() > 0) {
                     if (parentFolderPath.endsWith("/")) {
-                        folder.folderPath = parentFolderPath + item.get(Field.get("folderDisplayName").getResponseName());
+                        folder.folderPath = parentFolderPath + folder.displayName;
                     } else {
-                        folder.folderPath = parentFolderPath + '/' + item.get(Field.get("folderDisplayName").getResponseName());
+                        folder.folderPath = parentFolderPath + '/' + folder.displayName;
                     }
                 } else if (folderIdMap.get(folder.folderId.value) != null) {
                     folder.folderPath = folderIdMap.get(folder.folderId.value);
                 } else {
-                    folder.folderPath = item.get(Field.get("folderDisplayName").getResponseName());
+                    folder.folderPath = folder.displayName;
                 }
                 folders.add(folder);
                 if (recursive && folder.hasChildren) {
