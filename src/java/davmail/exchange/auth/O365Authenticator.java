@@ -288,6 +288,19 @@ public class O365Authenticator implements ExchangeAuthenticator {
         }
 
         location = targetMethod.getRequestHeader("Location").getValue();
+        if (location.startsWith("https://device.login.microsoftonline.com")) {
+            LOGGER.debug("Proceed to device authentication");
+            GetMethod deviceLoginMethod = new GetMethod(location);
+            try {
+                httpClient.executeMethod(deviceLoginMethod);
+                if (targetMethod.getRequestHeader("Location") != null) {
+                    location = targetMethod.getRequestHeader("Location").getValue();
+                }
+            } finally {
+                deviceLoginMethod.releaseConnection();
+            }
+        }
+
         if (location.contains("code=") && location.contains("&session_state=")) {
             String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
             LOGGER.debug("Authentication Code: " + code);
