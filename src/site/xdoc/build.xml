@@ -64,5 +64,33 @@
             <p>Packages are then available under dist
             </p>
         </section>
+        <section name="Generating DavMail website content">
+            <p>The source for the DavMail website is in the same version control system as the Davmail source.
+            </p>
+            <p>To generate the HTML, have maven and the maven site plugin installed.
+            </p>
+            <ul>
+                <li>on .deb systems:
+                    <source>sudo apt install maven libmaven-site-plugin-java</source>
+                </li>
+                <li>on .rpm systems:
+                    <source>sudo yum install maven libmaven-site-plugin-java</source>
+                </li>
+                <li>on other systems:
+                    <i>Install maven and maven-site-plugin</i>
+                </li>
+            </ul>
+            <p>Generating the actual HTML is done by these commands:
+            </p>
+            <p>
+                <source>mvn site</source>
+            </p>
+            <p>
+                <source>ant fix-site</source>
+            </p>
+            <p>The HTML files are then available under
+                <i>target/site/</i>
+            </p>
+        </section>
     </body>
 </document>
