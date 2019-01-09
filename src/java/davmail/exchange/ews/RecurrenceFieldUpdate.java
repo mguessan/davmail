@@ -25,7 +25,10 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
 
 /**
  * Handle calendar item recurrence update
@@ -66,7 +69,8 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         }
     }
 
-    public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence};
+    public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence}
+
     RecurrencePattern recurrencePattern;
     int recurrenceInterval = 1;
 
@@ -92,8 +96,8 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
         }
     }
 
-    public void setRecurrenceInterval(RecurrencePattern recurrencePattern) {
-        this.recurrencePattern = recurrencePattern;
+    public void setRecurrenceInterval(String interval) {
+        this.recurrenceInterval = Integer.parseInt(interval);
     }
 
     /**
@@ -119,11 +123,16 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
             writer.write("<t:");
             writer.write(recurrencePattern.toString());
             writer.write(">");
-            writer.write("<t:Interval>");
-            writer.write(String.valueOf(recurrenceInterval));
-            writer.write("</t:Interval>");
-            writeDaysOfWeek(writer);
-            writeDayOfMonth(writer);
+            if (recurrencePattern == RecurrencePattern.AbsoluteYearlyRecurrence) {
+                writeDayOfMonth(writer);
+                writeMonth(writer);
+            } else if (recurrencePattern == RecurrencePattern.AbsoluteMonthlyRecurrence) {
+                writeInterval(writer);
+                writeDayOfMonth(writer);
+            } else if (recurrencePattern == RecurrencePattern.WeeklyRecurrence) {
+                writeInterval(writer);
+                writeDaysOfWeek(writer);
+            }
             writer.write("</t:");
             writer.write(recurrencePattern.toString());
             writer.write(">");
@@ -138,6 +147,12 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
             writer.write(itemType);
             writer.write("Field>");
         }
+    }
+
+    private void writeInterval(Writer writer) throws IOException {
+        writer.write("<t:Interval>");
+        writer.write(String.valueOf(recurrenceInterval));
+        writer.write("</t:Interval>");
     }
 
     private void writeStartEnd(Writer writer) throws IOException {
@@ -177,16 +192,25 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
 
     private void writeDayOfMonth(Writer writer) throws IOException {
-        if (recurrencePattern == RecurrencePattern.AbsoluteMonthlyRecurrence
-        ||recurrencePattern == RecurrencePattern.AbsoluteYearlyRecurrence) {
-            writer.write("<t:DayOfMonth>");
-            writer.write(getDayOfMonth());
-            writer.write("</t:DayOfMonth>");
-        }
+        writer.write("<t:DayOfMonth>");
+        writer.write(getDayOfMonth());
+        writer.write("</t:DayOfMonth>");
+    }
+
+    private void writeMonth(Writer writer) throws IOException {
+        writer.write("<t:Month>");
+        writer.write(getMonth());
+        writer.write("</t:Month>");
     }
 
     private String getDayOfWeek() {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE", Locale.ENGLISH);
+        simpleDateFormat.setTimeZone(ExchangeSession.GMT_TIMEZONE);
+        return simpleDateFormat.format(startDate);
+    }
+
+    private String getMonth() {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMMMM", Locale.ENGLISH);
         simpleDateFormat.setTimeZone(ExchangeSession.GMT_TIMEZONE);
         return simpleDateFormat.format(startDate);
     }
