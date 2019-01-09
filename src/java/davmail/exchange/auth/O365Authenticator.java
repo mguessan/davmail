@@ -289,16 +289,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
         location = targetMethod.getRequestHeader("Location").getValue();
         if (location.startsWith("https://device.login.microsoftonline.com")) {
-            LOGGER.debug("Proceed to device authentication");
-            GetMethod deviceLoginMethod = new GetMethod(location);
-            try {
-                httpClient.executeMethod(deviceLoginMethod);
-                if (targetMethod.getRequestHeader("Location") != null) {
-                    location = targetMethod.getRequestHeader("Location").getValue();
-                }
-            } finally {
-                deviceLoginMethod.releaseConnection();
-            }
+            location = processDeviceLogin(httpClient, location);
         }
 
         if (location.contains("code=") && location.contains("&session_state=")) {
@@ -307,6 +298,40 @@ public class O365Authenticator implements ExchangeAuthenticator {
             return code;
         }
         throw new IOException("Unknown ADFS authentication failure");
+    }
+
+    private String processDeviceLogin(HttpClient httpClient, String location) throws IOException {
+        String result = location;
+        LOGGER.debug("Proceed to device authentication");
+        GetMethod deviceLoginMethod = new GetMethod(location);
+        try {
+            httpClient.executeMethod(deviceLoginMethod);
+            String responseBodyAsString = deviceLoginMethod.getResponseBodyAsString();
+            if (responseBodyAsString.contains("login.microsoftonline.com")) {
+                String ctx = extract("name=\"ctx\" value=\"([^\"]+)\"", responseBodyAsString);
+                String flowtoken = extract("name=\"flowtoken\" value=\"([^\"]+)\"", responseBodyAsString);
+
+                PostMethod processMethod = new PostMethod(extract("action=\"([^\"]+)\"", responseBodyAsString));
+                processMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+                processMethod.setParameter("ctx", ctx);
+                processMethod.setParameter("flowtoken", flowtoken);
+
+                try {
+                    httpClient.executeMethod(processMethod);
+                } finally {
+                    processMethod.releaseConnection();
+                }
+
+                if (processMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || processMethod.getResponseHeader("Location") == null) {
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                }
+                result = processMethod.getResponseHeader("Location").getValue();
+            }
+        } finally {
+            deviceLoginMethod.releaseConnection();
+        }
+        return result;
     }
 
     private PostMethod handleMfa(HttpClient httpClient, PostMethod logonMethod, String username, String clientRequestId) throws JSONException, IOException {
