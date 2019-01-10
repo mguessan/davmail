@@ -1727,8 +1727,13 @@ public class EwsExchangeSession extends ExchangeSession {
                 if ("Exchange2007_SP1".equals(serverVersion)) {
                     updates.add(Field.createFieldUpdate("meetingtimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
                 } else {
-                    updates.add(Field.createFieldUpdate("starttimezone", vEvent.getProperty("DTSTART").getParamValue("TZID")));
-                    updates.add(Field.createFieldUpdate("endtimezone", vEvent.getProperty("DTEND").getParamValue("TZID")));
+                    String starttimezone = vEvent.getProperty("DTSTART").getParamValue("TZID");
+                    String endtimezone = starttimezone;
+                    if (vEvent.getProperty("DTEND") != null) {
+                        endtimezone = vEvent.getProperty("DTEND").getParamValue("TZID");
+                    }
+                    updates.add(Field.createFieldUpdate("starttimezone", starttimezone));
+                    updates.add(Field.createFieldUpdate("endtimezone", endtimezone));
                 }
 
                 String status = statusToBusyStatusMap.get(vEvent.getPropertyValue("STATUS"));
