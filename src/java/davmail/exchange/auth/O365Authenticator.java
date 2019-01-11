@@ -283,11 +283,11 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 LOGGER.debug(authorizeUrl);
                 throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
-        } else if (targetMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || targetMethod.getRequestHeader("Location") == null) {
+        } else if (targetMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || targetMethod.getResponseHeader("Location") == null) {
             throw new IOException("Unknown ADFS authentication failure");
         }
 
-        location = targetMethod.getRequestHeader("Location").getValue();
+        location = targetMethod.getResponseHeader("Location").getValue();
         if (location.startsWith("https://device.login.microsoftonline.com")) {
             location = processDeviceLogin(httpClient, location);
         }
