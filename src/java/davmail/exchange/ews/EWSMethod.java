@@ -34,6 +34,7 @@ import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.codehaus.stax2.typed.TypedXMLStreamReader;
+import org.jetbrains.annotations.NotNull;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -45,7 +46,6 @@ import java.util.zip.GZIPInputStream;
 /**
  * EWS SOAP method.
  */
-@SuppressWarnings("Since15")
 public abstract class EWSMethod extends PostMethod {
     protected static final Logger LOGGER = Logger.getLogger(EWSMethod.class);
     protected static final int CHUNK_LENGTH = 131072;
@@ -1198,7 +1198,7 @@ public abstract class EWSMethod extends PostMethod {
                 int lastLogCount;
 
                 @Override
-                public int read(byte[] buffer, int offset, int length) throws IOException {
+                public int read(@NotNull byte[] buffer, int offset, int length) throws IOException {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024 * 128) {
