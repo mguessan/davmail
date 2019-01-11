@@ -2602,6 +2602,9 @@ public class EwsExchangeSession extends ExchangeSession {
         EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
         if (item != null && "CalendarItem".equals(item.type)) {
             // reload with calendar property
+            if (serverVersion.compareTo("Exchange2013") >= 0) {
+                CALENDAR_ITEM_REQUEST_PROPERTIES.add("isorganizer");
+            }
             item = getEwsItem(folderPath, itemName, CALENDAR_ITEM_REQUEST_PROPERTIES);
         }
         if (item == null && isMainCalendar(folderPath)) {
@@ -2610,7 +2613,13 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         if (item != null) {
             boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
-            boolean isOrganizer = "Organizer".equals(item.get(Field.get("myresponsetype").getResponseName()));
+            boolean isOrganizer = false;
+            if (item.get(Field.get("isorganizer").getResponseName()) != null) {
+                // Exchange 2013 or later
+                isOrganizer = "true".equals(item.get(Field.get("isorganizer").getResponseName()));
+            } else {
+                isOrganizer = "Organizer".equals(item.get(Field.get("myresponsetype").getResponseName()));
+            }
             boolean hasAttendees = item.get(Field.get("displayto").getResponseName()) != null
                     || item.get(Field.get("displaycc").getResponseName()) != null;
 
