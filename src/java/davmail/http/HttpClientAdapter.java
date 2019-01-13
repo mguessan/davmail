@@ -21,6 +21,7 @@ package davmail.http;
 
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exchange.ExchangeSession;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
@@ -42,6 +43,10 @@ import org.apache.http.impl.client.IdleConnectionEvictor;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
+import org.apache.jackrabbit.webdav.DavException;
+import org.apache.jackrabbit.webdav.MultiStatus;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
+import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -300,6 +305,21 @@ public class HttpClientAdapter {
         }
 
         return httpResponse;
+    }
+
+    public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException, DavException {
+        MultiStatus multiStatus;
+        CloseableHttpResponse response = execute(request);
+        try {
+            if (!request.succeeded(response)) {
+                throw request.getResponseException(response);
+            }
+
+            multiStatus = request.getResponseBodyAsMultiStatus(response);
+        } finally {
+            response.close();
+        }
+        return multiStatus;
     }
 
     /**
