@@ -349,6 +349,7 @@ public final class DavGatewayTray {
         String backgroundColorString = Settings.getProperty("davmail.trayBackgroundColor");
 
         boolean isKDE = "KDE".equals(System.getenv("XDG_CURRENT_DESKTOP"));
+        boolean isXFCE = "XFCE".equals(System.getenv("XDG_CURRENT_DESKTOP"));
         boolean isUnity = "Unity".equals(System.getenv("XDG_CURRENT_DESKTOP"));
         if (backgroundColorString == null || backgroundColorString.length() == 0) {
             // define color for default theme
@@ -357,6 +358,9 @@ public final class DavGatewayTray {
             }
             if (isUnity) {
                 backgroundColorString = "#4D4B45";
+            }
+            if (isXFCE) {
+                backgroundColorString = "#E8E8E7";
             }
         }
 
@@ -370,12 +374,12 @@ public final class DavGatewayTray {
             imageType = BufferedImage.TYPE_INT_RGB;
         }
 
-        if (backgroundColor != null || isKDE || isUnity) {
+        if (backgroundColor != null || isKDE || isUnity || isXFCE) {
             int width = image.getWidth();
             int height = image.getHeight();
             int x = 0;
             int y = 0;
-            if (isKDE) {
+            if (isKDE || isXFCE) {
                 width = 22;
                 height = 22;
                 x = 4;
