@@ -382,8 +382,8 @@ public final class DavGatewayTray {
             if (isKDE || isXFCE) {
                 width = 22;
                 height = 22;
-                x = 4;
-                y = 4;
+                x = 3;
+                y = 3;
             } else if (isUnity) {
                 width = 22;
                 height = 24;
