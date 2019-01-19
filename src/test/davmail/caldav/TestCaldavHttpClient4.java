@@ -168,4 +168,67 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(events.size(), responses.length);
     }
 
+    public void testReportInbox() throws IOException, DavException {
+        String buffer = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">" +
+                "<D:prop>" +
+                "<C:calendar-data/>" +
+                "</D:prop>" +
+                "<C:filter>" +
+                "</C:filter>" +
+                "</C:calendar-query>";
+        BaseDavRequest method = new BaseDavRequest(URI.create("/users/" + session.getEmail() + "/inbox/")) {
+            @Override
+            public String getMethod() {
+                return DavMethods.METHOD_REPORT;
+            }
+        };
+        method.setEntity(new StringEntity(buffer, ContentType.create("text/xml", "UTF-8")));
+
+        MultiStatus multiStatus = httpClient.executeDavRequest(method);
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+    }
+
+    public void testReportTasks() throws IOException, DavException {
+        String buffer = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">" +
+                "<D:prop>" +
+                "<C:calendar-data/>" +
+                "</D:prop>" +
+                "<C:comp-filter name=\"VCALENDAR\">" +
+                "<C:comp-filter name=\"VTODO\"/>" +
+                "</C:comp-filter>" +
+                "<C:filter>" +
+                "</C:filter>" +
+                "</C:calendar-query>";
+        BaseDavRequest method = new BaseDavRequest(URI.create("/users/" + session.getEmail() + "/calendar/")) {
+            @Override
+            public String getMethod() {
+                return DavMethods.METHOD_REPORT;
+            }
+        };
+        method.setEntity(new StringEntity(buffer, ContentType.create("text/xml", "UTF-8")));
+
+        MultiStatus multiStatus = httpClient.executeDavRequest(method);
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+    }
+
+    public void testInvalidDavRequest() throws IOException, DavException {
+        BaseDavRequest method = new BaseDavRequest(URI.create("/users/" + session.getEmail() + "/calendar/")) {
+            @Override
+            public String getMethod() {
+                return DavMethods.METHOD_REPORT;
+            }
+        };
+        method.setEntity(new StringEntity("invalid", ContentType.create("text/xml", "UTF-8")));
+
+        try {
+            httpClient.executeDavRequest(method);
+            fail("Should fail");
+        } catch (DavException e) {
+            assertEquals(503, e.getErrorCode());
+        }
+
+    }
+
 }
