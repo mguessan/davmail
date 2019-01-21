@@ -26,11 +26,11 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.HttpClientAdapter;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.jackrabbit.webdav.*;
@@ -45,6 +45,7 @@ import org.apache.jackrabbit.webdav.xml.Namespace;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -241,10 +242,10 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testCreateCalendar() throws IOException, DavException {
+    public void testCreateCalendar() throws IOException, DavException, URISyntaxException {
         String folderName = "test & accentué";
         //String folderName = "justatest";
-        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/" + folderName + '/');
+        URI uri = new URIBuilder().setPath("/users/" + session.getEmail() + "/calendar/" + folderName + '/').build();
         // first delete calendar
         session.deleteFolder("calendar/" + folderName);
         String body =
@@ -261,7 +262,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
                         "       </D:prop>\n" +
                         "     </D:set>\n" +
                         "   </C:mkcalendar>";
-        BaseDavRequest method = new BaseDavRequest(URI.create(encodedFolderpath)) {
+        BaseDavRequest method = new BaseDavRequest(uri) {
             @Override
             public String getMethod() {
                 return "MKCALENDAR";
@@ -276,7 +277,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
 
         httpClient.executeDavRequest(method);
 
-        HttpGet getRequest = new HttpGet(encodedFolderpath);
+        HttpGet getRequest = new HttpGet(uri);
         CloseableHttpResponse getResponse = httpClient.execute(getRequest);
         assertEquals(org.apache.commons.httpclient.HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
     }
@@ -295,10 +296,10 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(1, responses.length);
     }
 
-    public void testRenameCalendar() throws IOException, DavException {
+    public void testRenameCalendar() throws IOException, DavException, URISyntaxException {
         String folderName = "testcalendarfolder";
         String renamedFolderName = "renamedcalendarfolder";
-        String encodedFolderpath = URIUtil.encodePath("/users/" + session.getEmail() + "/calendar/" + folderName + "/");
+        URI uri = new URIBuilder().setPath("/users/" + session.getEmail() + "/calendar/" + folderName + '/').build();
         // first delete calendar
         session.deleteFolder("calendar/" + folderName);
         session.deleteFolder("calendar/" + renamedFolderName);
@@ -308,7 +309,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         DavPropertySet davPropertySet = new DavPropertySet();
         davPropertySet.add(new DefaultDavProperty(DavPropertyName.create("displayname", Namespace.getNamespace("DAV:")), renamedFolderName));
 
-        HttpProppatch propPatchMethod = new HttpProppatch(URI.create(encodedFolderpath), davPropertySet, new DavPropertyNameSet());
+        HttpProppatch propPatchMethod = new HttpProppatch(uri, davPropertySet, new DavPropertyNameSet());
         httpClient.executeDavRequest(propPatchMethod);
 
         ExchangeSession.Folder renamedFolder = session.getFolder("calendar/" + renamedFolderName);
