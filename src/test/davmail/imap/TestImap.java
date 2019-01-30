@@ -330,6 +330,22 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
+    public void testBodyFetch() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH " + messageUid + " (UID BODY[])");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
+    public void testRfc822Fetch() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH " + messageUid + " (UID RFC822)");
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+    }
+
     public void testFetchInternalDate() throws IOException {
         resetTestFolder();
         appendMessage();

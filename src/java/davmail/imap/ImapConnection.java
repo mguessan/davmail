@@ -973,7 +973,11 @@ public class ImapConnection extends AbstractConnection {
                     if ("RFC822.HEADER".equals(param)) {
                         buffer.append(" RFC822.HEADER");
                     } else {
-                        buffer.append(" BODY[").append(partIndexString).append(']');
+                        buffer.append(" BODY[");
+                        if (partIndexString != null) {
+                            buffer.append(partIndexString);
+                        }
+                        buffer.append(']');
                     }
                     // partial
                     if (startIndex > 0 || maxSize != Integer.MAX_VALUE) {
