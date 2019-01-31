@@ -18,11 +18,13 @@
  */
 package davmail.ldap;
 
+import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
 import davmail.exchange.AbstractExchangeSessionTestCase;
 import davmail.exchange.ExchangeSessionFactory;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -30,6 +32,7 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.Rdn;
 import java.io.IOException;
 import java.util.Hashtable;
 
@@ -37,7 +40,7 @@ import java.util.Hashtable;
  * Test LDAP.
  */
 @SuppressWarnings({"JavaDoc"})
-public class TestLdap extends AbstractExchangeSessionTestCase {
+public class TestLdap extends AbstractDavMailTestCase {
     InitialLdapContext ldapContext;
 
     @Override
@@ -192,5 +195,22 @@ public class TestLdap extends AbstractExchangeSessionTestCase {
         searchControls.setReturningAttributes(new String[]{"mail", "cn"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people",
                 "(|(sn=mich*)(mail=mich*)(cn=mich*))", searchControls);
+    }
+
+    public void testLdapDnAuthentication() throws NamingException {
+        String dn = new Rdn("uid", Settings.getProperty("davmail.username"))+",ou=people";
+        Hashtable<String, String> env = new Hashtable<String, String>();
+        //env.put("java.naming.security.authentication", "CRAM-MD5");
+        env.put("java.naming.security.authentication", "simple");
+        env.put("java.naming.security.principal", dn);
+        env.put("java.naming.security.credentials", Settings.getProperty("davmail.password"));
+
+        env.put("com.sun.jndi.ldap.connect.pool", "true");
+        env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory");
+        env.put("java.naming.provider.url", "ldap://127.0.0.1:" + Settings.getIntProperty("davmail.ldapPort"));
+        env.put("java.naming.referral", "follow");
+
+        new InitialLdapContext(env, null);
+
     }
 }
