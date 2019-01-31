@@ -323,6 +323,11 @@ calendar.debug.log.verbose=true]]></source>
                     Synchronization &amp; Storage options under Account Settings.
                 </p>
                 <p>
+                    <strong>Client disconnects from DavMail server after a few minutes</strong>
+                </p>
+                <p>The server sets a timeout on the socket which listens for client connections, controlled by the property <code>davmail.clientSoTimeout</code>. If there is no activity before the timeout period elapses, the connection will be closed. Setting this to <code>0</code> will disable the socket timeout.
+                </p>
+                <p>
                     <strong>Message deleted over IMAP still visible through OWA</strong>
                 </p>
                 <p>Delete action is not immediate with IMAP: you need to EXPUNGE the folder to actually
