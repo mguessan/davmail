@@ -32,6 +32,7 @@ import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
 import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.callback.*;
 import javax.security.sasl.AuthorizeCallback;
@@ -608,6 +609,8 @@ public class LdapConnection extends AbstractConnection {
                     if (userName.length() > 0 && password.length() > 0) {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                         try {
+                            // check for dn authentication
+                            userName = extractRdnValue(userName);
                             session = ExchangeSessionFactory.getInstance(userName, password);
                             logConnection("LOGON", userName);
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
@@ -687,6 +690,23 @@ public class LdapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_SENDING_ERROR_TO_CLIENT"), e2);
             }
             throw e;
+        }
+    }
+
+    /**
+     * Extract rdn value from username
+     * @param dn distinguished name or username
+     * @return username
+     */
+    private String extractRdnValue(String dn) throws IOException {
+        if (userName.startsWith("uid=") && userName.contains(",")) {
+            try {
+                return (String) new Rdn(dn.substring(0, dn.indexOf(','))).getValue();
+            } catch (InvalidNameException e) {
+                throw new IOException(e);
+            }
+        } else {
+            return dn;
         }
     }
 
