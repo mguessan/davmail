@@ -1,5 +1,5 @@
 /*
-* DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway
+ * DavMail POP/IMAP/SMTP/CalDav/LDAP Exchange Gateway
  * Copyright (C) 2009  Mickael Guessant
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,8 @@ import davmail.exchange.dav.DavExchangeSession;
 import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.Rdn;
 import javax.security.auth.callback.*;
 import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.Sasl;
@@ -579,7 +581,7 @@ public class LdapConnection extends AbstractConnection {
                         properties.put("javax.security.sasl.qop", "auth,auth-int");
                         saslServer = Sasl.createSaslServer(mechanism, "ldap", client.getLocalAddress().getHostAddress(), properties, callbackHandler);
                         if (saslServer == null) {
-                            throw new IOException("Unable to create SASL server for mechanism "+mechanism);
+                            throw new IOException("Unable to create SASL server for mechanism " + mechanism);
                         }
                         serverResponse = saslServer.evaluateResponse(EMPTY_BYTE_ARRAY);
                         status = LDAP_SASL_BIND_IN_PROGRESS;
@@ -1682,7 +1684,12 @@ public class LdapConnection extends AbstractConnection {
                     }
                 }
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
-                sendEntry(currentMessageId, "uid=" + ldapPerson.get("uid") + baseContext, ldapPerson);
+
+                try {
+                    sendEntry(currentMessageId, new Rdn("uid", (String) ldapPerson.get("uid")) + baseContext, ldapPerson);
+                } catch (InvalidNameException e) {
+                    throw new IOException(e);
+                }
             }
 
         }
