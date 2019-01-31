@@ -3050,6 +3050,9 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("mobile", "MobilePhone");
         GALFIND_ATTRIBUTE_MAP.put("facsimiletelephonenumber", "BusinessFax");
         GALFIND_ATTRIBUTE_MAP.put("secretarycn", "AssistantName");
+
+        GALFIND_ATTRIBUTE_MAP.put("homePhone", "HomePhone");
+        GALFIND_ATTRIBUTE_MAP.put("pager", "Pager");
     }
 
     protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<String>();
