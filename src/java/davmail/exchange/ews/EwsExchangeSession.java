@@ -1593,8 +1593,21 @@ public class EwsExchangeSession extends ExchangeSession {
             etag = response.get(Field.get("etag").getResponseName());
             displayName = response.get(Field.get("displayname").getResponseName());
             subject = response.get(Field.get("subject").getResponseName());
-            // ignore urlcompname and use item id
-            itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+
+            // for client that rely on client item name for sync
+            if (Settings.getBooleanProperty("davmail.caldavPreserveUrl", false)) {
+                // prefer urlcompname (client provided item name)
+                itemName = StringUtil.decodeUrlcompname(response.get(Field.get("urlcompname").getResponseName()));
+                // if urlcompname is empty, this is a server created item
+                // if urlcompname is an itemId, something went wrong, ignore
+                if (itemName == null || isItemId(itemName)) {
+                    itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+                }
+            // for most Caldav clients, use item id as item name to avoid url encoding issues
+            } else {
+                // ignore urlcompname and use item id
+                itemName = StringUtil.base64ToUrl(itemId.id) + ".EML";
+            }
             String instancetype = response.get(Field.get("instancetype").getResponseName());
             isException = "3".equals(instancetype);
         }
