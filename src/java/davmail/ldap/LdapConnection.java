@@ -698,7 +698,7 @@ public class LdapConnection extends AbstractConnection {
      * @return username
      */
     private String extractRdnValue(String dn) throws IOException {
-        if (userName.startsWith("uid=") && userName.contains(",")) {
+        if (dn.startsWith("uid=") && dn.contains(",")) {
             try {
                 return (String) new Rdn(dn.substring(0, dn.indexOf(','))).getValue();
             } catch (InvalidNameException e) {
