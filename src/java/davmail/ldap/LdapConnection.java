@@ -1372,7 +1372,7 @@ public class LdapConnection extends AbstractConnection {
             if (mappedAttribute != null) {
                 contactAttributeName = mappedAttribute;
             }
-        } else {
+        } else if (!"hassubordinates".equals(ldapAttributeName)){
             DavGatewayTray.debug(new BundleMessage("UNKNOWN_ATTRIBUTE", ldapAttributeName));
         }
         return contactAttributeName;
@@ -1666,6 +1666,8 @@ public class LdapConnection extends AbstractConnection {
                                 }
                             }
                             ldapPerson.put(ldapAttribute, value);
+                        } else if ("hassubordinates".equals(ldapAttribute)) {
+                            ldapPerson.put(ldapAttribute, "false");
                         }
                     }
                 }
