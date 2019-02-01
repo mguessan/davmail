@@ -28,6 +28,7 @@
     </p>
   </description>
   <url type="homepage">http://davmail.sourceforge.net</url>
+  <url type="donation">https://sourceforge.net/donate/index.php?group_id=184600</url>
   <screenshots>
     <screenshot type="default">
       <image>https://screenshots.debian.net/screenshots/000/015/485/large.png</image>
@@ -36,28 +37,7 @@
   </screenshots>
   <project_license>GPL-2.0</project_license>
   <developer_name>Mickaël Guessant</developer_name>
-  <content_rating type="oars-1.0">
-    <content_attribute id="violence-cartoon">none</content_attribute>
-    <content_attribute id="violence-fantasy">none</content_attribute>
-    <content_attribute id="violence-realistic">none</content_attribute>
-    <content_attribute id="violence-bloodshed">none</content_attribute>
-    <content_attribute id="violence-sexual">none</content_attribute>
-    <content_attribute id="drugs-alcohol">none</content_attribute>
-    <content_attribute id="drugs-narcotics">none</content_attribute>
-    <content_attribute id="drugs-tobacco">none</content_attribute>
-    <content_attribute id="sex-nudity">none</content_attribute>
-    <content_attribute id="sex-themes">none</content_attribute>
-    <content_attribute id="language-profanity">none</content_attribute>
-    <content_attribute id="language-humor">none</content_attribute>
-    <content_attribute id="language-discrimination">none</content_attribute>
-    <content_attribute id="social-chat">none</content_attribute>
-    <content_attribute id="social-info">none</content_attribute>
-    <content_attribute id="social-audio">none</content_attribute>
-    <content_attribute id="social-location">none</content_attribute>
-    <content_attribute id="social-contacts">none</content_attribute>
-    <content_attribute id="money-purchasing">none</content_attribute>
-    <content_attribute id="money-gambling">none</content_attribute>
-  </content_rating>
+  <content_rating type="oars-1.1" />
   <releases>
     <release version="5.1.0" date="2018-12-18">
       <description>
