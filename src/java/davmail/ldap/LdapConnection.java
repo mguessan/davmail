@@ -529,7 +529,8 @@ public class LdapConnection extends AbstractConnection {
             if (requestOperation == LDAP_REQ_BIND) {
                 reqBer.parseSeq(null);
                 ldapVersion = reqBer.parseInt();
-                userName = reqBer.parseString(isLdapV3());
+                // check for dn authentication
+                userName = extractRdnValue(reqBer.parseString(isLdapV3()));
                 if (reqBer.peekByte() == (Ber.ASN_CONTEXT | Ber.ASN_CONSTRUCTOR | 3)) {
                     // SASL authentication
                     reqBer.parseSeq(null);
@@ -542,7 +543,7 @@ public class LdapConnection extends AbstractConnection {
                             // look for username in callbacks
                             for (Callback callback : callbacks) {
                                 if (callback instanceof NameCallback) {
-                                    userName = ((NameCallback) callback).getDefaultName();
+                                    userName = extractRdnValue(((NameCallback) callback).getDefaultName());
                                     // get password from session pool
                                     password = ExchangeSessionFactory.getUserPassword(userName);
                                 }
@@ -609,8 +610,6 @@ public class LdapConnection extends AbstractConnection {
                     if (userName.length() > 0 && password.length() > 0) {
                         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_USER", currentMessageId, userName));
                         try {
-                            // check for dn authentication
-                            userName = extractRdnValue(userName);
                             session = ExchangeSessionFactory.getInstance(userName, password);
                             logConnection("LOGON", userName);
                             DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_BIND_SUCCESS"));
