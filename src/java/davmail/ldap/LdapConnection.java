@@ -32,7 +32,6 @@ import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Logger;
 
 import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.callback.*;
 import javax.security.sasl.AuthorizeCallback;
@@ -539,7 +538,7 @@ public class LdapConnection extends AbstractConnection {
 
                     byte[] serverResponse;
                     CallbackHandler callbackHandler = new CallbackHandler() {
-                        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                        public void handle(Callback[] callbacks) throws IOException {
                             // look for username in callbacks
                             for (Callback callback : callbacks) {
                                 if (callback instanceof NameCallback) {
@@ -698,9 +697,9 @@ public class LdapConnection extends AbstractConnection {
      * @return username
      */
     private String extractRdnValue(String dn) throws IOException {
-        if (dn.startsWith("uid=") && dn.contains(",")) {
+        if (dn.startsWith("uid=")) {
             try {
-                return (String) new Rdn(dn.substring(0, dn.indexOf(','))).getValue();
+                return (String) new Rdn(dn.substring(0, Math.max(dn.indexOf(','), dn.length()))).getValue();
             } catch (InvalidNameException e) {
                 throw new IOException(e);
             }
@@ -790,7 +789,7 @@ public class LdapConnection extends AbstractConnection {
 
         if ("uid".equalsIgnoreCase(attributeName) && sValue.equals(userName)) {
             // replace with actual alias instead of login name search, only in Dav mode
-            if (sValue.equals(userName) && session instanceof DavExchangeSession) {
+            if (session instanceof DavExchangeSession) {
                 sValue = session.getAlias();
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REPLACED_UID_FILTER", userName, sValue));
             }
@@ -1023,7 +1022,7 @@ public class LdapConnection extends AbstractConnection {
         os.flush();
     }
 
-    static interface LdapFilter {
+    interface LdapFilter {
         ExchangeSession.Condition getContactSearchFilter();
 
         Map<String, ExchangeSession.Contact> findInGAL(ExchangeSession session, Set<String> returningAttributes, int sizeLimit) throws IOException;
@@ -1460,7 +1459,6 @@ public class LdapConnection extends AbstractConnection {
                             // first search in contact
                             try {
                                 // check if this is a contact uid
-                                //noinspection ResultOfMethodCallIgnored
                                 Integer.parseInt(uid);
                                 persons = contactFind(session.isEqualTo("imapUid", uid), returningAttributes, sizeLimit);
                             } catch (NumberFormatException e) {
@@ -1707,7 +1705,7 @@ public class LdapConnection extends AbstractConnection {
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_SEARCH_SEND_PERSON", currentMessageId, ldapPerson.get("uid"), baseContext, ldapPerson));
 
                 try {
-                    sendEntry(currentMessageId, new Rdn("uid", (String) ldapPerson.get("uid")) + baseContext, ldapPerson);
+                    sendEntry(currentMessageId, new Rdn("uid", ldapPerson.get("uid")) + baseContext, ldapPerson);
                 } catch (InvalidNameException e) {
                     throw new IOException(e);
                 }
