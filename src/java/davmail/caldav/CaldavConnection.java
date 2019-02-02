@@ -288,7 +288,7 @@ public class CaldavConnection extends AbstractConnection {
             String etag = request.getHeader("if-match");
             String noneMatch = request.getHeader("if-none-match");
             ExchangeSession.ItemResult itemResult = session.createOrUpdateItem(request.getFolderPath(), lastPath, request.getBody(), etag, noneMatch);
-            sendHttpResponse(itemResult.status, buildEtagHeader(itemResult.etag), null, "", true);
+            sendHttpResponse(itemResult.status, buildEtagHeader(request, itemResult), null, "", true);
 
         } else if (request.isDelete()) {
             if (request.getFolderPath().endsWith("inbox")) {
@@ -364,6 +364,22 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
+    protected HashMap<String, String> buildEtagHeader(CaldavRequest request, ExchangeSession.ItemResult itemResult) throws URIException {
+        HashMap<String, String> headers = null;
+        if (itemResult.etag != null) {
+            headers = new HashMap<String, String>();
+            headers.put("ETag", itemResult.etag);
+        }
+        if (itemResult.itemName != null) {
+            if (headers == null) {
+                headers = new HashMap<String, String>();
+            }
+            headers.put("Location", buildEventPath(request, itemResult.itemName));
+        }
+        return headers;
+    }
+
+
     protected HashMap<String, String> buildEtagHeader(String etag) {
         if (etag != null) {
             HashMap<String, String> etagHeader = new HashMap<String, String>();
@@ -394,15 +410,18 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    protected void appendItemResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Item item) throws IOException {
+    protected String buildEventPath(CaldavRequest request, String itemName) throws URIException {
         StringBuilder eventPath = new StringBuilder();
-        eventPath.append(encodePath(request, request.getPath()));
+        eventPath.append(encodePath(request, request.getFolderPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
             eventPath.append('/');
         }
-        String itemName = StringUtil.xmlEncode(item.getName());
-        eventPath.append(URIUtil.encodeWithinQuery(itemName));
-        response.startResponse(eventPath.toString());
+        eventPath.append(URIUtil.encodeWithinQuery(StringUtil.xmlEncode(itemName)));
+        return eventPath.toString();
+    }
+
+    protected void appendItemResponse(CaldavResponse response, CaldavRequest request, ExchangeSession.Item item) throws IOException {
+        response.startResponse(buildEventPath(request, item.getName()));
         response.startPropstat();
         if (request.hasProperty("calendar-data") && item instanceof ExchangeSession.Event) {
             response.appendCalendarData(item.getBody());
@@ -424,7 +443,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendProperty("D:resourcetype");
         }
         if (request.hasProperty("displayname")) {
-            response.appendProperty("D:displayname", itemName);
+            response.appendProperty("D:displayname", item.getName());
         }
         response.endPropStatOK();
         response.endResponse();

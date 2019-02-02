@@ -2192,6 +2192,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 getItemMethod.addAdditionalProperty(Field.get("etag"));
                 executeMethod(getItemMethod);
                 itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
+                itemResult.itemName = StringUtil.base64ToUrl(newItemId.id) + ".EML";;
             }
 
             return itemResult;
@@ -3078,7 +3079,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         for (Map.Entry<String, String> entry : GALFIND_ATTRIBUTE_MAP.entrySet()) {
             String attributeValue = response.get(entry.getValue());
-            if (attributeValue != null) {
+            if (attributeValue != null && !attributeValue.isEmpty()) {
                 contact.put(entry.getKey(), attributeValue);
             }
         }

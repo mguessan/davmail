@@ -3184,6 +3184,10 @@ public abstract class ExchangeSession {
          * Event etag from response HTTP header
          */
         public String etag;
+        /**
+         * Created item name
+         */
+        public String itemName;
     }
 
     /**
