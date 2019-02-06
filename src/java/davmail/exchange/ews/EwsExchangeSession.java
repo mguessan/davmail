@@ -817,6 +817,9 @@ public class EwsExchangeSession extends ExchangeSession {
                 findItemMethod.setSearchExpression((SearchExpression) condition);
             }
             executeMethod(findItemMethod);
+            if (findItemMethod.getStatusCode() == HttpStatus.SC_FORBIDDEN) {
+                throw new EWSException(findItemMethod.errorDetail);
+            }
 
             long highestUid = 0;
             if (resultCount > 0) {
@@ -2378,10 +2381,22 @@ public class EwsExchangeSession extends ExchangeSession {
         return "Exchange2013".compareTo(serverVersion) <= 0;
     }
 
+    /**
+     * Get all contacts and distribution lists in provided folder.
+     *
+     * @param folderPath Exchange folder path
+     * @return list of contacts
+     * @throws IOException on error
+     */
+    @Override
+    public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
+        return searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, or(isEqualTo("outlookmessageclass", "IPM.Contact"), isEqualTo("outlookmessageclass", "IPM.DistList")), 0);
+    }
+
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
         List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
-        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, and(condition, isEqualTo("outlookmessageclass", "IPM.DistList")),
+        List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition,
                 FolderQueryTraversal.SHALLOW, maxCount);
 
         for (EWSMethod.Item response : responses) {
