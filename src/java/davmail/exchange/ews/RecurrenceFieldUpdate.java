@@ -67,6 +67,10 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
                 byDays.add(value);
             }
         }
+        // fix recurrence for Thunderbird weekday pattern
+        if (recurrencePattern == RecurrencePattern.DailyRecurrence) {
+            recurrencePattern = RecurrencePattern.WeeklyRecurrence;
+        }
     }
 
     public enum RecurrencePattern {DailyRecurrence, WeeklyRecurrence,  AbsoluteMonthlyRecurrence, AbsoluteYearlyRecurrence}
@@ -132,6 +136,8 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
             } else if (recurrencePattern == RecurrencePattern.WeeklyRecurrence) {
                 writeInterval(writer);
                 writeDaysOfWeek(writer);
+            } else if (recurrencePattern == RecurrencePattern.DailyRecurrence) {
+                writeInterval(writer);
             }
             writer.write("</t:");
             writer.write(recurrencePattern.toString());
