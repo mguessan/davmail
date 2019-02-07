@@ -35,7 +35,7 @@ import java.util.Locale;
 /**
  * IMAP tests, an instance of DavMail Gateway must be available
  */
-@SuppressWarnings({"JavaDoc", "UseOfSystemOutOrSystemErr"})
+@SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestImap extends AbstractImapTestCase {
 
     protected String getLastMonth() {
@@ -50,7 +50,7 @@ public class TestImap extends AbstractImapTestCase {
         resetTestFolder();
     }
 
-    public void testCreateMessage() throws IOException, MessagingException {
+    public void testCreateMessage() throws IOException {
         resetTestFolder();
         appendMessage();
     }
@@ -519,7 +519,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK SEARCH completed", readFullAnswer("."));
     }
 
-    public void testDraftMessageMessageId() throws IOException, InterruptedException, MessagingException {
+    public void testDraftMessageMessageId() throws IOException, MessagingException {
         resetTestFolder();
         appendMessage();
 
@@ -709,7 +709,7 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". OK UID FETCH completed", readFullAnswer("."));
     }
 
-    public void testCopyMessage() throws IOException, InterruptedException, MessagingException {
+    public void testCopyMessage() throws IOException {
         resetTestFolder();
         appendMessage();
 
@@ -727,4 +727,18 @@ public class TestImap extends AbstractImapTestCase {
 
     }
 
+    public void testCopyMessageMissingFolder() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID FETCH 1:* (FLAGS)");
+        String messageLine = readLine();
+        int uidIndex = messageLine.indexOf("UID ") + 4;
+        messageUid = messageLine.substring(uidIndex, messageLine.indexOf(' ', uidIndex));
+        assertEquals(". OK UID FETCH completed", readFullAnswer("."));
+
+        writeLine(". UID COPY " + messageUid + " Missing");
+        assertEquals(". NO [TRYCREATE] Folder 'Missing' not found", readFullAnswer("."));
+
+    }
 }

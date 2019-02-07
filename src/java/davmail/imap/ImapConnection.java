@@ -358,6 +358,8 @@ public class ImapConnection extends AbstractConnection {
                                                     }
                                                     sendClient(commandId + " OK " + subcommand + " completed");
                                                 }
+                                            } catch (HttpNotFoundException e) {
+                                                sendClient(commandId + " NO [TRYCREATE] " + e.getMessage());
                                             } catch (HttpException e) {
                                                 sendClient(commandId + " NO " + e.getMessage());
                                             }
