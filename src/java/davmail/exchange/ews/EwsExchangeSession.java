@@ -1710,7 +1710,7 @@ public class EwsExchangeSession extends ExchangeSession {
                                 UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                                         ConflictResolution.AutoResolve,
                                         SendMeetingInvitationsOrCancellations.SendToAllAndSaveCopy,
-                                        new ItemId(getItemMethod.getResponseItem()), buildFieldUpdates(vCalendar, modifiedOccurrence));
+                                        new ItemId(getItemMethod.getResponseItem()), buildFieldUpdates(vCalendar, modifiedOccurrence, false));
                                 // force context Timezone on Exchange 2010 and 2013
                                 if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                                     updateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
@@ -1732,9 +1732,22 @@ public class EwsExchangeSession extends ExchangeSession {
             }
         }
 
-        protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent) throws DavMailException {
+        protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent, boolean isMozDismiss) throws DavMailException {
 
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+
+            if (isMozDismiss) {
+                String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
+                if (xMozLastack != null) {
+                    updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
+                }
+                String xMozSnoozeTime = vCalendar.getFirstVeventPropertyValue("X-MOZ-SNOOZE-TIME");
+                if (xMozSnoozeTime != null) {
+                    updates.add(Field.createFieldUpdate("xmozsnoozetime", xMozSnoozeTime));
+                }
+                return updates;
+            }
+
             // if we are not organizer, update only reminder info
             if (!vCalendar.isMeeting() || vCalendar.isMeetingOrganizer()) {
                 // TODO: update all event fields and handle other occurrences
@@ -1873,6 +1886,7 @@ public class EwsExchangeSession extends ExchangeSession {
             String ownerResponseReply = null;
             boolean isMeetingResponse = false;
             boolean isMozSendInvitations = true;
+            boolean isMozDismiss = false;
 
             HashSet<String> itemRequestProperties = CALENDAR_ITEM_REQUEST_PROPERTIES;
             if (vCalendar.isTodo()) {
@@ -1903,6 +1917,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 isMozSendInvitations = (newmozlastack == null && newmozsnoozetime == null) // not thunderbird
                         || !(ismozack || ismozsnooze);
+                isMozDismiss = ismozack || ismozsnooze;
 
                 LOGGER.debug("Existing item found with etag: " + currentEtag + " client etag: " + etag + " id: " + currentItemId.id);
             }
@@ -2018,7 +2033,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         createOrUpdateItemMethod = new UpdateItemMethod(messageDisposition,
                                 ConflictResolution.AutoResolve,
                                 sendMeetingInvitationsOrCancellations,
-                                currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent()));
+                                currentItemId, buildFieldUpdates(vCalendar, vCalendar.getFirstVevent(), isMozDismiss));
                         // force context Timezone on Exchange 2010 and 2013
                         if (serverVersion != null && serverVersion.startsWith("Exchange201")) {
                             createOrUpdateItemMethod.setTimezoneContext(EwsExchangeSession.this.getVTimezone().getPropertyValue("TZID"));
