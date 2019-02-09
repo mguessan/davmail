@@ -465,6 +465,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
         try {
             LOGGER.debug(method.getURI());
             httpClient.executeMethod(method);
+            if (method.getURI().getHost().endsWith("okta.com")) {
+                throw new IOException("Okta authentication not supported, please try O365Interactive");
+            }
 
             JSONObject config = extractConfig(method.getResponseBodyAsString());
             LOGGER.debug(config);
