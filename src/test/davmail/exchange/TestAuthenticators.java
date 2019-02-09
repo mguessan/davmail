@@ -57,4 +57,15 @@ public class TestAuthenticators extends AbstractDavMailTestCase {
         ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),
                 "unused");
     }
+
+    public void testO365StoredAuthenticator() throws IOException {
+        Settings.setConfigFilePath("davmail.properties");
+        Settings.load();
+        Settings.setProperty("davmail.authenticator", "davmail.exchange.auth.O365StoredTokenAuthenticator");
+
+        ExchangeSessionFactory.checkConfig();
+        // password entered by end user
+        ExchangeSessionFactory.getInstance(Settings.getProperty("davmail.username"),
+                "unused");
+    }
 }
