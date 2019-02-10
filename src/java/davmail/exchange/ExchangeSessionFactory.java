@@ -120,6 +120,11 @@ public final class ExchangeSessionFactory {
     public static ExchangeSession getInstance(String baseUrl, String userName, String password) throws IOException {
         ExchangeSession session = null;
         try {
+            String mode = Settings.getProperty("davmail.mode");
+            if (Settings.O365.equals(mode)) {
+                // force url wit O365
+                baseUrl = Settings.O365_URL;
+            }
 
             PoolKey poolKey = new PoolKey(baseUrl, userName, password);
 
@@ -141,7 +146,6 @@ public final class ExchangeSessionFactory {
             }
 
             if (session == null) {
-                String mode = Settings.getProperty("davmail.mode");
                 // convert old setting
                 if (mode == null) {
                     if ("false".equals(Settings.getProperty("davmail.enableEws"))) {
@@ -174,7 +178,7 @@ public final class ExchangeSessionFactory {
                     // TODO: refactor buildSessionInfo
                     session.buildSessionInfo(null);
 
-                } else if (Settings.EWS.equals(mode)) {
+                } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                         ExchangeSession.LOGGER.debug("Direct EWS authentication");
                         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
@@ -341,7 +345,6 @@ public final class ExchangeSessionFactory {
             if (enumeration != null) {
                 while (!up && enumeration.hasMoreElements()) {
                     NetworkInterface networkInterface = enumeration.nextElement();
-                    //noinspection Since15
                     up = networkInterface.isUp() && !networkInterface.isLoopback()
                             && networkInterface.getInetAddresses().hasMoreElements();
                 }
