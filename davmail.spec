@@ -1,5 +1,5 @@
-%{?!davrel:   %define davrel   5.1.0}
-%{?!davsvn:   %define davsvn   2891}
+%{?!davrel:   %define davrel   5.2.0}
+%{?!davsvn:   %define davsvn   2961}
 %define davver %{davrel}-%{davsvn}
 
 Summary: DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway for Microsoft Exchange
@@ -197,6 +197,9 @@ fi
 %attr(0775,davmail,davmail) %{_localstatedir}/lib/davmail
 
 %changelog
+* Mon Feb 11 2019 Mickael Guessant <mguessan@free.fr>
+- update to 5.2.0
+
 * Thu Dec 20 2018 Mickael Guessant <mguessan@free.fr>
 - update to 5.1.0
 

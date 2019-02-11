@@ -1,3 +1,93 @@
+## DavMail 5.2.0 2019-02-10
+Includes improved ADFS compatibility and support Okta authentication in interactive mode, 
+a fix for Thunderbird dismiss issue, a few LDAP and IMAP enhancements (TRYCREATE support).
+Also upgraded libraries to prepare HttpClient 4 upgrade.
+
+###EWS:
+- EWS: improve O365 mode handling, force url
+- EWS: detect Okta authentication and explicitly fail in this case with O365Authenticator
+- EWS: O365StoredTokenAuthenticator test case
+- EWS: allow cross domain requests for Okta form support in O365Interactive mode
+- EWS: try to fix #702, add login.srf to OpenJFX workaround
+- EWS: Remove Jetbrains only annotation
+- EWS: Fix O365 device login check
+- EWS: cleanup from audit
+- EWS: Another step in O365 device login
+- EWS: detect devicelogin after O365 ADFS authentication, try to follow redirect
+- EWS: adjust 0365Token log statement level
+
+###Caldav:
+- Caldav: explicitly detect Thunderbird dismiss/snooze events to update only mozilla custom properties
+- Caldav: fix #705 daily recurrence issue
+- Caldav: experimental, return created item URL in Location header
+- Caldav: enable isorganizer field
+- Caldav: adjust isOrganizer check (again) to work on all Exchange server versions
+- Caldav: workaround for missing DTEND in event, avoid NullPointerException
+- Caldav: fix recurrence options and implement interval over EWS
+- Caldav: fix montly recurrence handling
+
+###IMAP:
+- IMAP: fix #704 implement [TRYCREATE] on folder not found
+- IMAP: Fix FETCH RFC822 request for python imap client.
+- IMAP: Additional fix for slash in folder name
+
+###Carddav:
+- Carddav: fix regression, override getAllContacts to list contacts and distribution lists
+
+###LDAP:
+- LDAP: cleanup from audit and support simple rdn authentication, see https://github.com/mguessan/davmail/pull/18
+- LDAP: implement hassubordinates attribute
+- LDAP: fix contact filter over EWS
+- LDAP: fix dn authentication, fix https://github.com/mguessan/davmail/pull/18
+- LDAP: improve dn authentication, fix https://github.com/mguessan/davmail/pull/18
+- LDAP: implement dn authentication, see https://github.com/mguessan/davmail/pull/18
+- LDAP: test case for dn authentication, see https://github.com/mguessan/davmail/pull/18
+- LDAP: encode uid value in dn, see https://github.com/mguessan/davmail/pull/18
+- LDAP: add mappings for HomePhone and Pager attributes
+
+###Documentation
+- Doc: fix https://github.com/mguessan/davmail/pull/21
+- Doc: Improve documentation of client connection timeout, merge https://github.com/mguessan/davmail/pull/20
+- Doc: remove alt from OpenHub link
+- Doc: merge documentation provided by Geert Stappers
+- Doc: Update roadmap
+- Doc: update README.md
+- Doc: document Android configuration with a DavMail server
+- Doc: prepare android setup instructions
+- Doc: improve download link in README.md
+- Doc: update Debian package description
+- Doc: fix openhub link
+
+###HTTP:
+- HTTP: switch from URIUtil to URIBuilder in Caldav test cases
+- HTTP: more Caldav test cases with HttpClientAdapter
+- HTTP: implement caldav report and search test case with HttpClientAdapter
+- HTTP: implement Dav request in HttpClient 4 adapter
+- HTTP: improve HttpClient 4 adapter, detect relative url
+- HTTP: implement HttpClientAdapter follow redirects and parse username
+- HTTP: first HttpClientAdapter draft
+- HTTP: include HttpClient 4
+- Update commons-codec to 1.11 (prepare HttpClient 4 migration)
+- HTTP: test HttpClient 4 connection pool management and expiration
+- HTTP: More HttpClient 4 test cases for authentication, proxy, redirects and URI handling
+- HTTP: Basic HttpClient 4 test cases
+- Update jackrabbit to 2.14.6 (latest version to support httpclient 3.1
+
+###Linux:
+- Linux: adjust tray icon for XFCE and KDE
+- Linux: try to adjust tray icon for XFCE
+- Linux: fix swt jar exists test in launch script
+- Linux: fix SWT version in POM and update description
+- Linux: adjust systemd service to rhel/centos
+- Add DavMail systemd service in spec file
+- Linux: fix compatibility with older distributions
+- SWT: Improve code to make it compatible with older SWT libraries in Ubuntu 18.
+- Linux: fix spec file regression
+
+###Maven:
+- Maven: reenable site plugins in pom
+
+
 ## DavMail 5.1.0 2018-12-18
 Much improved interactive O365 authentication with OpenJFX bug workaround, 
 experimental stored Oauth refresh token support. More Linux distributions were tested
