@@ -81,7 +81,7 @@ public class O365Token {
             // expires_on is in second, not millisecond
             expireson = jsonToken.getLong("expires_on") * 1000;
 
-            LOGGER.debug("Access token expires at " + new Date(expireson) + ": " + accessToken);
+            LOGGER.debug("Access token expires " + new Date(expireson));
 
             String decodedBearer = IOUtil.decodeBase64AsString(accessToken.substring(accessToken.indexOf('.') + 1, accessToken.lastIndexOf('.')) + "==");
             JSONObject tokenBody = new JSONObject(decodedBearer);
@@ -111,7 +111,7 @@ public class O365Token {
             LOGGER.debug("Access token expires soon, trying to refresh it");
             refreshToken();
         }
-        LOGGER.debug("Access token for " + username + " expires in " + (expireson - System.currentTimeMillis()) / 60000 + " minutes");
+        //LOGGER.debug("Access token for " + username + " expires in " + (expireson - System.currentTimeMillis()) / 60000 + " minutes");
         return accessToken;
     }
 
