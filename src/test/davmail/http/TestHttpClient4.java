@@ -21,6 +21,7 @@ package davmail.http;
 
 import davmail.AbstractDavMailTestCase;
 import davmail.Settings;
+import davmail.exchange.ews.AutoDiscoverMethod;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
@@ -292,12 +293,50 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
             }
             while (connectionManager.getTotalStats().getAvailable() > 0) {
                 Thread.sleep(5000);
-                System.out.println("Pool: "+connectionManager.getTotalStats());
+                System.out.println("Pool: " + connectionManager.getTotalStats());
             }
         } finally {
             evictor.shutdown();
             httpClient.close();
         }
 
+    }
+
+    public void testAutoDiscover() throws IOException {
+        Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
+        //Settings.setLoggingLevel("org.apache.http.impl.conn", Level.DEBUG);
+
+        String userid;
+        String userEmail;
+        int pipeIndex = username.indexOf("|");
+        if (pipeIndex >= 0) {
+            userid = username.substring(0, pipeIndex);
+            userEmail = username.substring(pipeIndex + 1);
+        } else {
+            userid = username;
+            userEmail = username;
+        }
+
+
+        String suffix = userEmail.substring(userEmail.indexOf("@") + 1);
+        String autodiscoverHost = "autodiscover." + suffix;
+        url = "http://" + autodiscoverHost + "/autodiscover/autodiscover.xml";
+
+        String ewsUrl;
+
+        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password);
+        try {
+            AutoDiscoverMethod autoDiscoverRequest = new AutoDiscoverMethod(url, userEmail);
+            CloseableHttpResponse httpResponse = httpClientAdapter.executeFollowRedirects(autoDiscoverRequest);
+            try {
+                ewsUrl = (String) autoDiscoverRequest.handleResponse(httpResponse);
+            } finally {
+                httpResponse.close();
+            }
+        } finally {
+            httpClientAdapter.close();
+        }
+        System.out.println(ewsUrl);
+        assertNotNull(ewsUrl);
     }
 }
