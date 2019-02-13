@@ -30,6 +30,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -152,9 +153,9 @@ public class TestCaldav extends AbstractDavMailTestCase {
 
     public void testGetOtherUserCalendar() throws IOException {
         Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-        PropFindMethod method = new PropFindMethod("/principals/users/" + Settings.getProperty("davmail.to") + "/calendar/");
+        PropFindMethod method = new PropFindMethod("/principals/users/" + Settings.getProperty("davmail.usera"));
         httpClient.executeMethod(method);
-        assertEquals(HttpStatus.SC_OK, method.getStatusCode());
+        assertEquals(HttpStatus.SC_MULTI_STATUS, method.getStatusCode());
     }
 
     public void testReportCalendar() throws IOException, DavException {
