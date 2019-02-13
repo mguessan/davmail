@@ -19,7 +19,6 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.ui.AcceptCertificateDialog;
 import davmail.ui.SelectCertificateDialog;
 import org.apache.log4j.Logger;
 

@@ -21,7 +21,6 @@ package davmail.exchange;
 import davmail.Settings;
 import org.apache.log4j.Logger;
 
-import javax.mail.MessagingException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketException;

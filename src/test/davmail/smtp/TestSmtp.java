@@ -26,6 +26,7 @@ import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.util.IOUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.log4j.Level;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
