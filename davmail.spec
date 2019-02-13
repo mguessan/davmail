@@ -13,6 +13,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: ant >= 1.7.1, desktop-file-utils
 %{?fedora:BuildRequires: lua}
+%{?fedora:BuildRequires: systemd}
 %{?el6:BuildRequires: ant-apache-regexp}
 %if 0%{?fedora} == 18
 # missing ant dep on original Fedora 18
