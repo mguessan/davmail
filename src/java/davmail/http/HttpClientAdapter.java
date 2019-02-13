@@ -21,11 +21,12 @@ package davmail.http;
 
 import davmail.Settings;
 import davmail.exception.DavMailException;
-import davmail.exchange.ExchangeSession;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -36,6 +37,10 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.auth.BasicSchemeFactory;
+import org.apache.http.impl.auth.DigestSchemeFactory;
+import org.apache.http.impl.auth.KerberosSchemeFactory;
+import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -45,7 +50,6 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
-import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.log4j.Logger;
 
@@ -59,6 +63,7 @@ public class HttpClientAdapter {
     static final Logger LOGGER = Logger.getLogger("davmail.http.DavGatewayHttpClientFacade");
 
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
+    static final Registry<AuthSchemeProvider> AUTH_SCHEME_REGISTRY;
     static final RequestConfig DEFAULT_REQUEST_CONFIG;
     static String WORKSTATION_NAME = "UNKNOWN";
     static final int MAX_REDIRECTS = 10;
@@ -83,6 +88,14 @@ public class HttpClientAdapter {
         } catch (Throwable t) {
             // ignore
         }
+
+        AUTH_SCHEME_REGISTRY = RegistryBuilder.<AuthSchemeProvider>create()
+                .register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
+                .register(AuthSchemes.BASIC, new BasicSchemeFactory())
+                .register(AuthSchemes.DIGEST, new DigestSchemeFactory())
+                .register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
+                .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory())
+                .build();
 
         DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
                 // socket connect timeout
@@ -132,6 +145,7 @@ public class HttpClientAdapter {
                     .disableRedirectHandling()
                     .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
                     .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
+                    .setDefaultAuthSchemeRegistry(AUTH_SCHEME_REGISTRY)
                     .setConnectionManager(connectionManager);
 
             SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
@@ -308,14 +322,13 @@ public class HttpClientAdapter {
     }
 
     public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException, DavException {
-        MultiStatus multiStatus;
+        MultiStatus multiStatus = null;
         CloseableHttpResponse response = execute(request);
         try {
-            if (!request.succeeded(response)) {
-                throw request.getResponseException(response);
+            request.checkSuccess(response);
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MULTI_STATUS) {
+                multiStatus = request.getResponseBodyAsMultiStatus(response);
             }
-
-            multiStatus = request.getResponseBodyAsMultiStatus(response);
         } finally {
             response.close();
         }
