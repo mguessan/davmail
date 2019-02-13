@@ -64,7 +64,7 @@ public class NTLMv2Scheme implements AuthScheme {
         if (spaceIndex != -1) {
             try {
                 type2Message = new Type2Message(Base64.decodeBase64(EncodingUtil.getBytes(
-                        challenge.substring(spaceIndex, challenge.length()).trim(), "ASCII")));
+                        challenge.substring(spaceIndex).trim(), "ASCII")));
             } catch (IOException e) {
                 throw new MalformedChallengeException("Invalid NTLM challenge: " + challenge, e);
             }
@@ -140,13 +140,9 @@ public class NTLMv2Scheme implements AuthScheme {
      * @param method      method name
      * @param uri         URI
      * @return an NTLM authorization string
-     * @throws InvalidCredentialsException if authentication credentials
-     *                                     are not valid or not applicable for this authentication scheme
-     * @throws AuthenticationException     if authorization string cannot
-     *                                     be generated due to an authentication failure
      */
     @Deprecated
-    public String authenticate(final Credentials credentials, String method, String uri) throws AuthenticationException {
+    public String authenticate(final Credentials credentials, String method, String uri) {
         throw new UnsupportedOperationException();
     }
 
