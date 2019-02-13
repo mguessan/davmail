@@ -209,7 +209,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        boolean isGTK3 = false;
+        boolean isGTK3;
         // SWT 4.9 and later
         try {
             Class gtk = Class.forName("org.eclipse.swt.internal.gtk.GTK");
@@ -320,14 +320,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
-                                                // create frame on first call
-                                                if (settingsFrame == null) {
-                                                    settingsFrame = new SettingsFrame();
-                                                }
-                                                settingsFrame.reload();
-                                                settingsFrame.setVisible(true);
-                                                settingsFrame.toFront();
-                                                settingsFrame.requestFocus();
+                                                openSettingsFrame();
                                             }
                                         });
                             }
@@ -340,14 +333,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                                 SwingUtilities.invokeLater(
                                         new Runnable() {
                                             public void run() {
-                                                // create frame on first call
-                                                if (settingsFrame == null) {
-                                                    settingsFrame = new SettingsFrame();
-                                                }
-                                                settingsFrame.reload();
-                                                settingsFrame.setVisible(true);
-                                                settingsFrame.toFront();
-                                                settingsFrame.requestFocus();
+                                                openSettingsFrame();
                                             }
                                         });
                             }
@@ -453,6 +439,17 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
             }
         }
+    }
+
+    private void openSettingsFrame() {
+        // create frame on first call
+        if (settingsFrame == null) {
+            settingsFrame = new SettingsFrame();
+        }
+        settingsFrame.reload();
+        settingsFrame.setVisible(true);
+        settingsFrame.toFront();
+        settingsFrame.requestFocus();
     }
 
     public void dispose() {
