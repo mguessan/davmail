@@ -78,6 +78,9 @@ public final class DavGatewayHttpClientFacade {
 
         Security.setProperty("ssl.SocketFactory.provider", "davmail.http.DavGatewaySSLSocketFactory");
 
+        // reenable basic proxy authentication on Java >= 1.8.111
+        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
+
         DavGatewayHttpClientFacade.start();
 
         // register custom cookie policy
