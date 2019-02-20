@@ -28,6 +28,8 @@
     <string>tray.icns</string>
     <key>JVMMainClassName</key>
     <string>davmail.DavGateway</string>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
     <key>JVMOptions</key>
     <array>
     <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
