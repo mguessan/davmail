@@ -161,7 +161,12 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
                                         @Override
                                         public void connect() throws IOException {
-                                            httpsURLConnection.connect();
+                                            try {
+                                                httpsURLConnection.connect();
+                                            } catch (IOException e) {
+                                                LOGGER.error(e.getMessage());
+                                                throw e;
+                                            }
                                         }
 
                                         @Override
