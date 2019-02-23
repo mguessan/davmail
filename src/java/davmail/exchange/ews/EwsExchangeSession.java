@@ -834,7 +834,6 @@ public class EwsExchangeSession extends ExchangeSession {
                     && ((ExtendedFieldURI) fieldURI).propertyType == ExtendedFieldURI.PropertyType.Integer) {
                 // check value
                 try {
-                    //noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     buffer.append(value);
                 } catch (NumberFormatException e) {
@@ -2095,7 +2094,6 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(getItemMethod);
                 itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
                 itemResult.itemName = StringUtil.base64ToUrl(newItemId.id) + ".EML";
-                ;
             }
 
             return itemResult;
@@ -2542,7 +2540,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         if (item != null) {
             boolean isMeeting = "true".equals(item.get(Field.get("ismeeting").getResponseName()));
-            boolean isOrganizer = false;
+            boolean isOrganizer;
             if (item.get(Field.get("isorganizer").getResponseName()) != null) {
                 // Exchange 2013 or later
                 isOrganizer = "true".equals(item.get(Field.get("isorganizer").getResponseName()));
