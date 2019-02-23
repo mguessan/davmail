@@ -32,10 +32,11 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
 import javax.mail.MessagingException;
@@ -271,21 +272,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 // workaround for Exchange bug: send fake request
                 internalGetFolder("");
             } catch (IOException e2) {
-                LOGGER.debug(e2.getMessage());
-                try {
-                    // failover, try to retrieve EWS url from autodiscover
-                    discoverEwsUrl();
-                    checkEndPointUrl();
-                    // workaround for Exchange bug: send fake request
-                    internalGetFolder("");
-                } catch (IOException e3) {
-                    // autodiscover failed and initial exception was authentication failure => throw original exception
-                    if (e instanceof DavMailAuthenticationException) {
-                        throw (DavMailAuthenticationException) e;
-                    }
-                    LOGGER.error(e2.getMessage());
-                    throw new DavMailException("EXCEPTION_EWS_NOT_AVAILABLE");
+                // initial exception was authentication failure => throw original exception
+                if (e instanceof DavMailAuthenticationException) {
+                    throw (DavMailAuthenticationException) e;
                 }
+                LOGGER.error(e2.getMessage());
+                throw new DavMailException("EXCEPTION_EWS_NOT_AVAILABLE");
             }
         }
 
@@ -347,101 +339,6 @@ public class EwsExchangeSession extends ExchangeSession {
 
         } catch (IOException e) {
             // ignore
-        }
-    }
-
-    protected static class AutoDiscoverMethod extends PostMethod {
-        AutoDiscoverMethod(String autodiscoverHost, String userEmail) throws IOException {
-            super("https://" + autodiscoverHost + "/autodiscover/autodiscover.xml");
-            setAutoDiscoverRequestEntity(userEmail);
-        }
-
-        AutoDiscoverMethod(String userEmail) throws IOException {
-            super("/autodiscover/autodiscover.xml");
-            setAutoDiscoverRequestEntity(userEmail);
-        }
-
-        void setAutoDiscoverRequestEntity(String userEmail) throws IOException {
-            String body = "<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006\">" +
-                    "<Request>" +
-                    "<EMailAddress>" + userEmail + "</EMailAddress>" +
-                    "<AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>" +
-                    "</Request>" +
-                    "</Autodiscover>";
-            setRequestEntity(new StringRequestEntity(body, "text/xml", "UTF-8"));
-        }
-
-        String ewsUrl;
-
-        @Override
-        protected void processResponseBody(HttpState httpState, HttpConnection httpConnection) {
-            Header contentTypeHeader = getResponseHeader("Content-Type");
-            if (contentTypeHeader != null &&
-                    ("text/xml; charset=utf-8".equals(contentTypeHeader.getValue())
-                            || "text/html; charset=utf-8".equals(contentTypeHeader.getValue())
-                    )) {
-                BufferedReader autodiscoverReader = null;
-                try {
-                    autodiscoverReader = new BufferedReader(new InputStreamReader(getResponseBodyAsStream(), "UTF-8"));
-                    String line;
-                    // find ews url
-                    //noinspection StatementWithEmptyBody
-                    while ((line = autodiscoverReader.readLine()) != null
-                            && (!line.contains("<EwsUrl>"))
-                            && (!line.contains("</EwsUrl>"))) {
-                    }
-                    if (line != null) {
-                        ewsUrl = line.substring(line.indexOf("<EwsUrl>") + 8, line.indexOf("</EwsUrl>"));
-                    }
-                } catch (IOException e) {
-                    LOGGER.debug(e);
-                } finally {
-                    if (autodiscoverReader != null) {
-                        try {
-                            autodiscoverReader.close();
-                        } catch (IOException e) {
-                            LOGGER.debug(e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    protected void discoverEwsUrl() throws DavMailAuthenticationException {
-        try {
-            discoverEwsUrl(null);
-        } catch (IOException e) {
-            try {
-                discoverEwsUrl("autodiscover." + email.substring(email.indexOf('@') + 1));
-            } catch (IOException e2) {
-                LOGGER.error(e2.getMessage());
-                throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
-            }
-        }
-    }
-
-    protected void discoverEwsUrl(String autodiscoverHostname) throws IOException {
-        AutoDiscoverMethod autoDiscoverMethod;
-        if (autodiscoverHostname != null) {
-            autoDiscoverMethod = new AutoDiscoverMethod(autodiscoverHostname, email);
-        } else {
-            autoDiscoverMethod = new AutoDiscoverMethod(email);
-        }
-        try {
-            int status = DavGatewayHttpClientFacade.executeNoRedirect(httpClient, autoDiscoverMethod);
-            if (status != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(autoDiscoverMethod);
-            }
-
-            // update host name
-            DavGatewayHttpClientFacade.setClientHost(httpClient, autoDiscoverMethod.ewsUrl);
-
-            if (autoDiscoverMethod.ewsUrl == null) {
-                throw new IOException("Ews url not found");
-            }
-        } finally {
-            autoDiscoverMethod.releaseConnection();
         }
     }
 
@@ -1402,7 +1299,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
-            if (response.getMembers() != null)  {
+            if (response.getMembers() != null) {
                 for (String member : response.getMembers()) {
                     addMember(member);
                 }
@@ -1795,7 +1692,7 @@ public class EwsExchangeSession extends ExchangeSession {
                             if ("FREQ".equals(key)) {
                                 recurrenceFieldUpdate.setRecurrencePattern(value);
                             } else if ("UNTIL".equals(key)) {
-                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value)+ "Z"));
+                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
                             } else if ("BYDAY".equals(key)) {
                                 recurrenceFieldUpdate.setByDay(value.split(","));
                             } else if ("INTERVAL".equals(key)) {
@@ -2197,7 +2094,8 @@ public class EwsExchangeSession extends ExchangeSession {
                 getItemMethod.addAdditionalProperty(Field.get("etag"));
                 executeMethod(getItemMethod);
                 itemResult.etag = getItemMethod.getResponseItem().get(Field.get("etag").getResponseName());
-                itemResult.itemName = StringUtil.base64ToUrl(newItemId.id) + ".EML";;
+                itemResult.itemName = StringUtil.base64ToUrl(newItemId.id) + ".EML";
+                ;
             }
 
             return itemResult;
