@@ -26,6 +26,7 @@ import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -138,6 +139,7 @@ public class HttpClientAdapter {
     public HttpClientAdapter(String url, String username, String password, boolean enablePool) throws DavMailException {
         try {
             parseUserName(username);
+            // TODO: switch to URI in signature ?
             uri = URI.create(url);
             if (enablePool) {
                 connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
@@ -270,6 +272,7 @@ public class HttpClientAdapter {
     }
 
     public void startEvictorThread() {
+        // TODO: create a common connection evictor for all connection managers
         idleConnectionEvictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
         idleConnectionEvictor.start();
     }
@@ -281,8 +284,15 @@ public class HttpClientAdapter {
         httpClient.close();
     }
 
+    public static void close(HttpClientAdapter httpClientAdapter) throws IOException {
+        if (httpClientAdapter != null) {
+            httpClientAdapter.close();
+        }
+    }
+
     /**
-     * Execute request, do not follow redirects
+     * Execute request, do not follow redirects.
+     * if request is an instance of ResponseHandler, process and close response
      *
      * @param request Http request
      * @return Http response
@@ -294,7 +304,15 @@ public class HttpClientAdapter {
             request.setURI(URIUtils.resolve(uri, requestURI));
         }
         uri = request.getURI();
-        return httpClient.execute(request);
+        CloseableHttpResponse response = httpClient.execute(request);
+        if (request instanceof ResponseHandler && !isRedirect(response.getStatusLine().getStatusCode())) {
+            try {
+                ((ResponseHandler) request).handleResponse(response);
+            } finally {
+                response.close();
+            }
+        }
+        return response;
     }
 
     /**
