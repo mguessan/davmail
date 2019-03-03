@@ -25,15 +25,17 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+/**
+ * Custom proxy selector based on DavMail settings.
+ * Interactive O365 authentication relies on native HttpUrlConnection so we need to override default proxy selector.
+ */
 public class DavGatewayProxySelector extends ProxySelector {
     static final Logger LOGGER = Logger.getLogger(DavGatewayProxySelector.class);
 
-    static final ArrayList<Proxy> DIRECT = new ArrayList<Proxy>();
-    static {
-        DIRECT.add(Proxy.NO_PROXY);
-    }
+    static final List<Proxy> DIRECT = Collections.singletonList(Proxy.NO_PROXY);
 
     ProxySelector proxySelector;
 
@@ -57,7 +59,7 @@ public class DavGatewayProxySelector extends ProxySelector {
         } else if (enableProxy
                 && proxyHost != null && proxyHost.length() > 0 && proxyPort > 0
                 && !DavGatewayHttpClientFacade.isNoProxyFor(uri)
-                && ("http".equals(scheme) || "https".equals(scheme)) && enableProxy) {
+                && ("http".equals(scheme) || "https".equals(scheme))) {
             // DavMail defined proxies
             ArrayList<Proxy> proxies = new ArrayList<Proxy>();
             proxies.add(new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(proxyHost, proxyPort)));
@@ -68,7 +70,7 @@ public class DavGatewayProxySelector extends ProxySelector {
     }
 
     @Override
-    public void connectFailed(java.net.URI uri, SocketAddress sa, IOException ioe) {
+    public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
         LOGGER.debug("Connection to "+uri+" failed, socket address "+sa+" "+ioe);
         proxySelector.connectFailed(uri, sa, ioe);
     }
