@@ -34,7 +34,6 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
@@ -387,7 +386,7 @@ public final class DavGatewayHttpClientFacade {
     }
 
 
-    private static String getLocationValue(HttpMethod method) throws URIException {
+    private static String getLocationValue(HttpMethod method) {
         String locationValue = null;
         Header location = method.getResponseHeader("Location");
         if (location != null && isRedirect(method.getStatusCode())) {

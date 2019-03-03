@@ -32,10 +32,9 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.util.URIUtil;
+import davmail.http.URIUtil;
+import org.apache.http.HttpStatus;
+import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.apache.log4j.Logger;
 
 import javax.xml.stream.XMLStreamConstants;
@@ -66,15 +65,15 @@ public class CaldavConnection extends AbstractConnection {
      */
     public static final BitSet ical_allowed_abs_path = new BitSet(256);
     static {
-        ical_allowed_abs_path.or(URI.allowed_abs_path);
+        ical_allowed_abs_path.or(URIUtil.allowed_abs_path);
         ical_allowed_abs_path.clear('@');
     }
 
-    static String encodePath(CaldavRequest request, String path) throws URIException {
+    static String encodePath(CaldavRequest request, String path) {
         if (request.isIcal5()) {
-            return URIUtil.encode(path, ical_allowed_abs_path, "UTF-8");
+            return URIUtil.encode(path, ical_allowed_abs_path);
         } else {
-            return URIUtil.encodePath(path, "UTF-8");
+            return URIUtil.encodePath(path);
         }
     }
 
@@ -364,7 +363,7 @@ public class CaldavConnection extends AbstractConnection {
 
     }
 
-    protected HashMap<String, String> buildEtagHeader(CaldavRequest request, ExchangeSession.ItemResult itemResult) throws URIException {
+    protected HashMap<String, String> buildEtagHeader(CaldavRequest request, ExchangeSession.ItemResult itemResult) {
         HashMap<String, String> headers = null;
         if (itemResult.etag != null) {
             headers = new HashMap<String, String>();
@@ -410,7 +409,7 @@ public class CaldavConnection extends AbstractConnection {
         }
     }
 
-    protected String buildEventPath(CaldavRequest request, String itemName) throws URIException {
+    protected String buildEventPath(CaldavRequest request, String itemName) {
         StringBuilder eventPath = new StringBuilder();
         eventPath.append(encodePath(request, request.getFolderPath()));
         if (!(eventPath.charAt(eventPath.length() - 1) == '/')) {
@@ -1266,7 +1265,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, byte[] content, boolean keepAlive) throws IOException {
-        sendClient("HTTP/1.1 " + status + ' ' + HttpStatus.getStatusText(status));
+        sendClient("HTTP/1.1 " + status + ' ' + EnglishReasonPhraseCatalog.INSTANCE.getReason(status, Locale.ENGLISH));
         if (status != HttpStatus.SC_UNAUTHORIZED) {
             sendClient("Server: DavMail Gateway " + DavGateway.getCurrentVersion());
             String scheduleMode;
