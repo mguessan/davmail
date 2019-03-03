@@ -29,12 +29,14 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,15 +81,20 @@ public class O365Authenticator implements ExchangeAuthenticator {
             // standard native app redirectUri
             String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
 
-            String url = "https://login.microsoftonline.com/common/oauth2/authorize"
-                    + "?client_id=" + clientId
-                    + "&response_type=code"
-                    + "&redirect_uri=" + redirectUri
-                    + "&response_mode=query"
-                    + "&resource=" + RESOURCE
-                    + "&login_hint=" + URIUtil.encodeWithinQuery(username);
-            // force consent
-            //+"&prompt=consent"
+            URI uri = new URIBuilder()
+                    .setScheme("https")
+                    .setHost("login.microsoftonline.com")
+                    .setPath("/common/oauth2/authorize")
+                    .addParameter("client_id", clientId)
+                    .addParameter("response_type", "code")
+                    .addParameter("redirect_uri", redirectUri)
+                    .addParameter("response_mode", "query")
+                    .addParameter("resource", RESOURCE)
+                    .addParameter("login_hint", username)
+                    // force consent
+                    //.addParameter("prompt", "consent")
+                    .build();
+            String url = uri.toString();
 
             httpClient = DavGatewayHttpClientFacade.getInstance(url);
             GetMethod getMethod = new GetMethod(url);
@@ -189,6 +196,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
             }
 
         } catch (JSONException e) {
+            throw new IOException(e + " " + e.getMessage());
+        } catch (URISyntaxException e) {
             throw new IOException(e + " " + e.getMessage());
         } finally {
             // do not keep login connections open

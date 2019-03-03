@@ -27,13 +27,15 @@ import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
@@ -85,13 +87,25 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         // standard native app redirectUri
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
 
-        final String initUrl = authorizeUrl
-                + "?client_id=" + clientId
-                + "&response_type=code"
-                + "&redirect_uri=" + redirectUri
-                + "&response_mode=query"
-                + "&resource=" + resource
-                + "&login_hint=" + URIUtil.encodeWithinQuery(username);
+        URI uri;
+        try {
+            uri = new URIBuilder()
+                    .setScheme("https")
+                    .setHost("login.microsoftonline.com")
+                    .setPath("/common/oauth2/authorize")
+                    .addParameter("client_id", clientId)
+                    .addParameter("response_type", "code")
+                    .addParameter("redirect_uri", redirectUri)
+                    .addParameter("response_mode", "query")
+                    .addParameter("resource", resource)
+                    .addParameter("login_hint", username)
+                    // force consent
+                    //.addParameter("prompt", "consent")
+                    .build();
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+        final String initUrl = uri.toString();
 
         // set default authenticator
         Authenticator.setDefault(new Authenticator() {
