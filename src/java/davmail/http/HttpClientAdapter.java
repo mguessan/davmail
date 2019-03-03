@@ -76,6 +76,9 @@ public class HttpClientAdapter {
 
         Security.setProperty("ssl.SocketFactory.provider", "davmail.http.DavGatewaySSLSocketFactory");
 
+        // reenable basic proxy authentication on Java >= 1.8.111
+        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
+
         RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
         schemeRegistry.register("http", new PlainConnectionSocketFactory());
         schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
