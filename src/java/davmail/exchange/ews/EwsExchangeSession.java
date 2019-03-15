@@ -1619,7 +1619,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
             List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
 
-            if (isMozDismiss) {
+            if (isMozDismiss || "1".equals(vEvent.getPropertyValue("X-MOZ-FAKED-MASTER"))) {
                 String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
                 if (xMozLastack != null) {
                     updates.add(Field.createFieldUpdate("xmozlastack", xMozLastack));
