@@ -23,15 +23,13 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.http.GetRequest;
 import davmail.http.HttpClientAdapter;
 import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
@@ -60,7 +58,7 @@ public final class DavGateway {
     public static void main(String[] args) {
         boolean notray = false;
         boolean server = false;
-        for (String arg:args) {
+        for (String arg : args) {
             if (arg.startsWith("-")) {
                 if ("-notray".equals(arg)) {
                     notray = true;
@@ -244,14 +242,10 @@ public final class DavGateway {
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
             HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
             try {
-                HttpGet httpget = new HttpGet(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
-                CloseableHttpResponse response = httpClientAdapter.execute(httpget);
-                try {
-                    version = new BasicResponseHandler().handleResponse(response);
-                    LOGGER.debug("DavMail released version: " + version);
-                } finally {
-                    response.close();
-                }
+                GetRequest getRequest = new GetRequest(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+                httpClientAdapter.execute(getRequest);
+                version = getRequest.getResponseBodyAsString();
+                LOGGER.debug("DavMail released version: " + version);
             } catch (IOException e) {
                 DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
             } finally {
