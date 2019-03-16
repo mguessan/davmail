@@ -26,7 +26,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.ContentType;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -38,6 +37,7 @@ import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 
 public class RestRequest extends HttpPost implements ResponseHandler {
+    private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
     protected static final Logger LOGGER = Logger.getLogger(RestRequest.class);
 
     JSONObject jsonBody;
@@ -83,7 +83,7 @@ public class RestRequest extends HttpPost implements ResponseHandler {
                 return false;
             }
         };
-        httpEntity.setContentType("application/json; charset=UTF-8");
+        httpEntity.setContentType(JSON_CONTENT_TYPE);
         setEntity(httpEntity);
 
     }
@@ -97,9 +97,9 @@ public class RestRequest extends HttpPost implements ResponseHandler {
     }
 
     @Override
-    public Object handleResponse(HttpResponse response) throws IOException {
+    public Object handleResponse(HttpResponse response) {
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
-        if (contentTypeHeader != null && "application/json; charset=utf-8".equals(contentTypeHeader.getValue())) {
+        if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
             try {
                 InputStream inputStream = response.getEntity().getContent();
                 if (isGzipEncoded(response)) {
