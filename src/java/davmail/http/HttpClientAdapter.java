@@ -20,7 +20,8 @@
 package davmail.http;
 
 import davmail.Settings;
-import davmail.exception.DavMailException;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
@@ -55,7 +56,11 @@ import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.security.Security;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -124,100 +129,101 @@ public class HttpClientAdapter {
     String userid;
     String userEmail;
 
-    public HttpClientAdapter(String url) throws DavMailException {
-        this(url, null, null, false);
+    public HttpClientAdapter(String url) {
+        this(URI.create(url));
     }
 
-    public HttpClientAdapter(String url, boolean enablePool) throws DavMailException {
-        this(url, null, null, enablePool);
+    public HttpClientAdapter(String url, String username, String password) {
+        this(URI.create(url), username, password, false);
     }
 
-    public HttpClientAdapter(String url, String username, String password) throws DavMailException {
-        this(url, username, password, false);
+    public HttpClientAdapter(URI uri) {
+        this(uri, null, null, false);
     }
 
-    public HttpClientAdapter(String url, String username, String password, boolean enablePool) throws DavMailException {
-        try {
-            parseUserName(username);
-            // TODO: switch to URI in signature ?
-            uri = URI.create(url);
-            if (enablePool) {
-                connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
-            } else {
-                connectionManager = new BasicHttpClientConnectionManager(SCHEME_REGISTRY);
-            }
-            HttpClientBuilder clientBuilder = HttpClientBuilder.create()
-                    .disableRedirectHandling()
-                    .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
-                    .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
-                    .setDefaultAuthSchemeRegistry(AUTH_SCHEME_REGISTRY)
-                    .setConnectionManager(connectionManager);
+    public HttpClientAdapter(URI uri, boolean enablePool) {
+        this(uri, null, null, enablePool);
+    }
 
-            SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
-            clientBuilder.setRoutePlanner(routePlanner);
-            CredentialsProvider provider = null;
-            if (userid != null && password != null) {
-                provider = new BasicCredentialsProvider();
-                NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
-                provider.setCredentials(AuthScope.ANY, credentials);
-            }
+    public HttpClientAdapter(URI uri, String username, String password) {
+        this(uri, username, password, false);
+    }
 
-            boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
-            boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
-            String proxyHost = null;
-            int proxyPort = 0;
-            String proxyUser = null;
-            String proxyPassword = null;
+    public HttpClientAdapter(URI uri, String username, String password, boolean enablePool) {
+        parseUserName(username);
+        if (enablePool) {
+            connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
+        } else {
+            connectionManager = new BasicHttpClientConnectionManager(SCHEME_REGISTRY);
+        }
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+                .disableRedirectHandling()
+                .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
+                .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
+                .setDefaultAuthSchemeRegistry(AUTH_SCHEME_REGISTRY)
+                .setConnectionManager(connectionManager);
 
-            java.net.URI uri = new java.net.URI(url);
-            if (useSystemProxies) {
-                // get proxy for url from system settings
-                System.setProperty("java.net.useSystemProxies", "true");
-                List<Proxy> proxyList = getProxyForURI(uri);
-                if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
-                    InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
-                    proxyHost = inetSocketAddress.getHostName();
-                    proxyPort = inetSocketAddress.getPort();
+        SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
+        clientBuilder.setRoutePlanner(routePlanner);
+        CredentialsProvider provider = null;
+        if (userid != null && password != null) {
+            provider = new BasicCredentialsProvider();
+            NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
+            provider.setCredentials(AuthScope.ANY, credentials);
+        }
 
-                    // we may still need authentication credentials
-                    proxyUser = Settings.getProperty("davmail.proxyUser");
-                    proxyPassword = Settings.getProperty("davmail.proxyPassword");
-                }
-            } else if (isNoProxyFor(uri)) {
-                LOGGER.debug("no proxy for " + uri.getHost());
-            } else if (enableProxy) {
-                proxyHost = Settings.getProperty("davmail.proxyHost");
-                proxyPort = Settings.getIntProperty("davmail.proxyPort");
+        boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
+        boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
+        String proxyHost = null;
+        int proxyPort = 0;
+        String proxyUser = null;
+        String proxyPassword = null;
+
+        if (useSystemProxies) {
+            // get proxy for url from system settings
+            System.setProperty("java.net.useSystemProxies", "true");
+            List<Proxy> proxyList = getProxyForURI(uri);
+            if (!proxyList.isEmpty() && proxyList.get(0).address() != null) {
+                InetSocketAddress inetSocketAddress = (InetSocketAddress) proxyList.get(0).address();
+                proxyHost = inetSocketAddress.getHostName();
+                proxyPort = inetSocketAddress.getPort();
+
+                // we may still need authentication credentials
                 proxyUser = Settings.getProperty("davmail.proxyUser");
                 proxyPassword = Settings.getProperty("davmail.proxyPassword");
             }
+        } else if (isNoProxyFor(uri)) {
+            LOGGER.debug("no proxy for " + uri.getHost());
+        } else if (enableProxy) {
+            proxyHost = Settings.getProperty("davmail.proxyHost");
+            proxyPort = Settings.getIntProperty("davmail.proxyPort");
+            proxyUser = Settings.getProperty("davmail.proxyUser");
+            proxyPassword = Settings.getProperty("davmail.proxyPassword");
+        }
 
-            if (proxyHost != null && proxyHost.length() > 0) {
-                if (proxyUser != null && proxyUser.length() > 0) {
+        if (proxyHost != null && proxyHost.length() > 0) {
+            if (proxyUser != null && proxyUser.length() > 0) {
 
-                    AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
-                    if (provider == null) {
-                        provider = new BasicCredentialsProvider();
-                    }
+                AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
+                if (provider == null) {
+                    provider = new BasicCredentialsProvider();
+                }
 
-                    // detect ntlm authentication (windows domain name in user name)
-                    int backslashindex = proxyUser.indexOf('\\');
-                    if (backslashindex > 0) {
-                        provider.setCredentials(authScope, new NTCredentials(proxyUser.substring(backslashindex + 1),
-                                proxyPassword, WORKSTATION_NAME,
-                                proxyUser.substring(0, backslashindex)));
-                    } else {
-                        provider.setCredentials(authScope, new NTCredentials(proxyUser, proxyPassword, WORKSTATION_NAME, ""));
-                    }
+                // detect ntlm authentication (windows domain name in user name)
+                int backslashindex = proxyUser.indexOf('\\');
+                if (backslashindex > 0) {
+                    provider.setCredentials(authScope, new NTCredentials(proxyUser.substring(backslashindex + 1),
+                            proxyPassword, WORKSTATION_NAME,
+                            proxyUser.substring(0, backslashindex)));
+                } else {
+                    provider.setCredentials(authScope, new NTCredentials(proxyUser, proxyPassword, WORKSTATION_NAME, ""));
                 }
             }
-
-            clientBuilder.setDefaultCredentialsProvider(provider);
-
-            httpClient = clientBuilder.build();
-        } catch (URISyntaxException e) {
-            throw new DavMailException("LOG_INVALID_URL", url);
         }
+
+        clientBuilder.setDefaultCredentialsProvider(provider);
+
+        httpClient = clientBuilder.build();
     }
 
     private void parseUserName(String username) {
@@ -277,11 +283,15 @@ public class HttpClientAdapter {
         idleConnectionEvictor.start();
     }
 
-    public void close() throws IOException {
+    public void close() {
         if (idleConnectionEvictor != null) {
             idleConnectionEvictor.shutdown();
         }
-        httpClient.close();
+        try {
+            httpClient.close();
+        } catch (IOException e) {
+            LOGGER.warn("Exception closing http client", e);
+        }
     }
 
     public static void close(HttpClientAdapter httpClientAdapter) throws IOException {
@@ -368,4 +378,19 @@ public class HttpClientAdapter {
                 || status == HttpStatus.SC_SEE_OTHER
                 || status == HttpStatus.SC_TEMPORARY_REDIRECT;
     }
+
+    /**
+     * Check if status is a redirect (various 30x values).
+     *
+     * @param response Http response
+     * @return URI target location
+     */
+    public static URI getRedirectLocation(HttpResponse response) {
+        Header location = response.getFirstHeader("Location");
+        if (isRedirect(response.getStatusLine().getStatusCode()) && location != null) {
+            return URI.create(location.getValue());
+        }
+        return null;
+    }
+
 }
