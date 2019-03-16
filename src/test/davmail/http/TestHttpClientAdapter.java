@@ -21,19 +21,21 @@ package davmail.http;
 
 import davmail.AbstractDavMailTestCase;
 import davmail.Settings;
-import davmail.exception.DavMailException;
+import org.apache.http.Consts;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.log4j.Level;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 public class TestHttpClientAdapter extends AbstractDavMailTestCase {
     public void testBasicGetRequest() throws IOException {
@@ -100,50 +102,83 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
             GetRequest getRequest = new GetRequest(uri);
             CloseableHttpResponse response = httpClientAdapter.executeFollowRedirects(getRequest);
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+            if ("login.microsoftonline.com".equals(getRequest.getURI().getHost())) {
 
-            System.out.println(getRequest.getResponsePart("Config=([^\n]+);"));
-            JSONObject config = new JSONObject(getRequest.getResponsePart("Config=([^\n]+);"));
-            assertNotNull(config.getString("sCtx"));
+                System.out.println(getRequest.getResponsePart("Config=([^\n]+);"));
+                JSONObject config = new JSONObject(getRequest.getResponsePart("Config=([^\n]+);"));
+                assertNotNull(config.getString("sCtx"));
 
-            String context = config.getString("sCtx"); // csts request
-            String apiCanary = config.getString("apiCanary"); // canary for API calls
-            String clientRequestId = config.getString("correlationId");
-            String hpgact = config.getString("hpgact");
-            String hpgid = config.getString("hpgid");
-            String flowToken = config.getString("sFT");
-            String canary = config.getString("canary");
-            String sessionId = config.getString("sessionId");
+                String context = config.getString("sCtx"); // csts request
+                String apiCanary = config.getString("apiCanary"); // canary for API calls
+                String clientRequestId = config.getString("correlationId");
+                String hpgact = config.getString("hpgact");
+                String hpgid = config.getString("hpgid");
+                String flowToken = config.getString("sFT");
+                String canary = config.getString("canary");
+                String sessionId = config.getString("sessionId");
 
-            String referer = getRequest.getURI().toString();
+                String referer = getRequest.getURI().toString();
 
-            RestRequest getCredentialRequest = new RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
-            getCredentialRequest.setHeader("Accept", "application/json");
-            getCredentialRequest.setHeader("canary", apiCanary);
-            getCredentialRequest.setHeader("client-request-id", clientRequestId);
-            getCredentialRequest.setHeader("hpgact", hpgact);
-            getCredentialRequest.setHeader("hpgid", hpgid);
-            getCredentialRequest.setHeader("hpgrequestid", sessionId);
-            getCredentialRequest.setHeader("Referer", referer);
+                RestRequest getCredentialRequest = new RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
+                getCredentialRequest.setHeader("Accept", "application/json");
+                getCredentialRequest.setHeader("canary", apiCanary);
+                getCredentialRequest.setHeader("client-request-id", clientRequestId);
+                getCredentialRequest.setHeader("hpgact", hpgact);
+                getCredentialRequest.setHeader("hpgid", hpgid);
+                getCredentialRequest.setHeader("hpgrequestid", sessionId);
+                getCredentialRequest.setHeader("Referer", referer);
 
-            final JSONObject jsonObject = new JSONObject();
-            jsonObject.put("username", username);
-            jsonObject.put("isOtherIdpSupported", true);
-            jsonObject.put("checkPhones", false);
-            jsonObject.put("isRemoteNGCSupported", false);
-            jsonObject.put("isCookieBannerShown", false);
-            jsonObject.put("isFidoSupported", false);
-            jsonObject.put("flowToken", flowToken);
-            jsonObject.put("originalRequest", context);
+                final JSONObject jsonObject = new JSONObject();
+                jsonObject.put("username", username);
+                jsonObject.put("isOtherIdpSupported", true);
+                jsonObject.put("checkPhones", false);
+                jsonObject.put("isRemoteNGCSupported", false);
+                jsonObject.put("isCookieBannerShown", false);
+                jsonObject.put("isFidoSupported", false);
+                jsonObject.put("flowToken", flowToken);
+                jsonObject.put("originalRequest", context);
 
-            getCredentialRequest.setJsonBody(jsonObject);
+                getCredentialRequest.setJsonBody(jsonObject);
 
-            httpClientAdapter.execute(getCredentialRequest);
-            JSONObject credentialType = getCredentialRequest.getJsonResponse();
-            System.out.println("CredentialType=" + credentialType);
+                httpClientAdapter.execute(getCredentialRequest);
+                JSONObject credentialType = getCredentialRequest.getJsonResponse();
+                System.out.println("CredentialType=" + credentialType);
 
-            JSONObject credentials = credentialType.getJSONObject("Credentials");
-            String federationRedirectUrl = credentials.optString("FederationRedirectUrl");
-            System.out.println("federationRedirectUrl=" + federationRedirectUrl);
+                JSONObject credentials = credentialType.getJSONObject("Credentials");
+                String federationRedirectUrl = credentials.optString("FederationRedirectUrl");
+                System.out.println("federationRedirectUrl=" + federationRedirectUrl);
+
+                if (federationRedirectUrl == null || federationRedirectUrl.isEmpty()) {
+                    PostRequest logonMethod = new PostRequest(URI.create("https://login.microsoftonline.com/common/login"));
+                    logonMethod.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    logonMethod.setHeader("Content-Type", "application/x-www-form-urlencoded");
+
+                    logonMethod.setHeader("Referer", referer);
+
+                    logonMethod.setParameter("canary", canary);
+                    logonMethod.setParameter("ctx", context);
+                    logonMethod.setParameter("flowToken", flowToken);
+                    logonMethod.setParameter("hpgrequestid", sessionId);
+                    logonMethod.setParameter("login", username);
+                    logonMethod.setParameter("loginfmt", username);
+                    logonMethod.setParameter("passwd", password);
+
+                    response = httpClientAdapter.execute(logonMethod);
+                    URI location = HttpClientAdapter.getRedirectLocation(response);
+                    System.out.println(HttpClientAdapter.getRedirectLocation(response));
+                    if (location == null) {
+                        System.out.println(getRequest.getResponsePart("Config=([^\n]+);"));
+                    }
+                    assertNotNull(location);
+
+                    System.out.println(location.getQuery());
+
+                    List<NameValuePair> responseParams = URLEncodedUtils.parse(location, Consts.UTF_8);
+                    assertNotNull(responseParams.get(0));
+                    assertEquals("code", responseParams.get(0).getName());
+
+                }
+            }
         } finally {
             HttpClientAdapter.close(httpClientAdapter);
         }
