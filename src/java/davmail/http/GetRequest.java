@@ -36,6 +36,10 @@ public class GetRequest extends HttpGet implements ResponseHandler {
         super(uri);
     }
 
+    public GetRequest(final String url) {
+        super(URI.create(url));
+    }
+
     @Override
     public Object handleResponse(HttpResponse response) throws IOException {
         responseBodyAsString = new BasicResponseHandler().handleResponse(response);

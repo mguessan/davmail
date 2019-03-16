@@ -41,6 +41,10 @@ public class PostRequest extends HttpPost implements ResponseHandler {
         super(uri);
     }
 
+    public PostRequest(final String url) {
+        super(URI.create(url));
+    }
+
     @Override
     public HttpEntity getEntity() {
         return new UrlEncodedFormEntity(parameters, Consts.UTF_8);
