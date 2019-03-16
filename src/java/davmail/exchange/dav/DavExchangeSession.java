@@ -23,12 +23,12 @@ import davmail.Settings;
 import davmail.exception.*;
 import davmail.exchange.*;
 import davmail.http.DavGatewayHttpClientFacade;
+import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.*;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -562,8 +562,8 @@ public class DavExchangeSession extends ExchangeSession {
             checkPublicFolder();
             try {
                 buildEmail(method.getURI().getHost());
-            } catch (URIException uriException) {
-                LOGGER.warn(uriException);
+            } catch (IOException e) {
+                LOGGER.warn(e);
             }
         } else {
             // Exchange 2007 : get alias and email from options page
@@ -580,8 +580,8 @@ public class DavExchangeSession extends ExchangeSession {
             if (alias == null || email == null) {
                 try {
                     buildEmail(method.getURI().getHost());
-                } catch (URIException uriException) {
-                    LOGGER.warn(uriException);
+                } catch (IOException e) {
+                    LOGGER.warn(e);
                 }
             }
 
@@ -721,7 +721,7 @@ public class DavExchangeSession extends ExchangeSession {
         return emailResult;
     }
 
-    protected String getURIPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
+    protected String getURIPropertyIfExists(DavPropertySet properties, String alias) throws IOException {
         DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return null;
@@ -753,7 +753,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
                 httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
             }
-        } catch (URIException e) {
+        } catch (IOException e) {
             LOGGER.warn("Unable to update http client host:" + e.getMessage(), e);
         }
     }
@@ -1133,10 +1133,10 @@ public class DavExchangeSession extends ExchangeSession {
          * Build Contact instance from multistatusResponse info
          *
          * @param multiStatusResponse response
-         * @throws URIException     on error
+         * @throws IOException     on error
          * @throws DavMailException on error
          */
-        public Contact(MultiStatusResponse multiStatusResponse) throws URIException, DavMailException {
+        public Contact(MultiStatusResponse multiStatusResponse) throws IOException, DavMailException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
             permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
@@ -1329,7 +1329,7 @@ public class DavExchangeSession extends ExchangeSession {
          * @param multiStatusResponse response
          * @throws URIException on error
          */
-        public Event(MultiStatusResponse multiStatusResponse) throws URIException {
+        public Event(MultiStatusResponse multiStatusResponse) throws IOException {
             setHref(URIUtil.decode(multiStatusResponse.getHref()));
             DavPropertySet properties = multiStatusResponse.getProperties(HttpStatus.SC_OK);
             permanentUrl = getURLPropertyIfExists(properties, "permanenturl");
@@ -1982,7 +1982,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected String getURLPropertyIfExists(DavPropertySet properties, String alias) throws URIException {
+    protected String getURLPropertyIfExists(DavPropertySet properties, String alias) throws IOException {
         String result = getPropertyIfExists(properties, alias);
         if (result != null) {
             result = URIUtil.decode(result);
@@ -2031,7 +2031,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
 
-    protected Message buildMessage(MultiStatusResponse responseEntity) throws URIException, DavMailException {
+    protected Message buildMessage(MultiStatusResponse responseEntity) throws IOException, DavMailException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
