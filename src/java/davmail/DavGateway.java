@@ -23,20 +23,19 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
+import davmail.http.HttpClientAdapter;
 import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
 import davmail.pop.PopServer;
 import davmail.smtp.SmtpServer;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 /**
@@ -243,27 +242,20 @@ public final class DavGateway {
     public static String getReleasedVersion() {
         String version = null;
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
-            BufferedReader versionReader = null;
-            GetMethod getMethod = new GetMethod(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+            HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
             try {
-                HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
-                int status = httpClient.executeMethod(getMethod);
-                if (status == HttpStatus.SC_OK) {
-                    versionReader = new BufferedReader(new InputStreamReader(getMethod.getResponseBodyAsStream(), "UTF-8"));
-                    version = versionReader.readLine();
+                HttpGet httpget = new HttpGet(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
+                CloseableHttpResponse response = httpClientAdapter.execute(httpget);
+                try {
+                    version = new BasicResponseHandler().handleResponse(response);
                     LOGGER.debug("DavMail released version: " + version);
+                } finally {
+                    response.close();
                 }
             } catch (IOException e) {
                 DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
             } finally {
-                if (versionReader != null) {
-                    try {
-                        versionReader.close();
-                    } catch (IOException e) {
-                        // ignore
-                    }
-                }
-                getMethod.releaseConnection();
+                httpClientAdapter.close();
             }
         }
         return version;
