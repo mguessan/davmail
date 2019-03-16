@@ -19,21 +19,31 @@
 
 package davmail.http;
 
+import org.apache.http.Consts;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
 
-public class GetRequest extends HttpGet implements ResponseHandler {
-    protected String responseBodyAsString;
+public class PostRequest extends HttpPost implements ResponseHandler {
+    ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+    String responseBodyAsString = null;
 
-    public GetRequest(final URI uri) {
+    public PostRequest(final URI uri) {
         super(uri);
+    }
+
+    @Override
+    public HttpEntity getEntity() {
+        return new UrlEncodedFormEntity(parameters, Consts.UTF_8);
     }
 
     @Override
@@ -42,21 +52,12 @@ public class GetRequest extends HttpGet implements ResponseHandler {
         return responseBodyAsString;
     }
 
+    public void setParameter(final String name, final String value) {
+        parameters.add(new BasicNameValuePair(name, value));
+    }
+
     public String getResponseBodyAsString() {
         return responseBodyAsString;
     }
 
-    public String getResponsePart(String pattern) throws IOException {
-        if (responseBodyAsString == null) {
-            throw new IOException("No response body");
-        }
-        String value;
-        Matcher matcher = Pattern.compile(pattern).matcher(responseBodyAsString);
-        if (matcher.find()) {
-            value = matcher.group(1);
-        } else {
-            throw new IOException("pattern " + pattern + " not found in response body");
-        }
-        return value;
-    }
 }
