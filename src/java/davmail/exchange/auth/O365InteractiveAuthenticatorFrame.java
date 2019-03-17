@@ -193,7 +193,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
                                             String contentAsString = new String(content, "UTF-8")
-                                                    .replaceAll("integrity=", "integrity.disabled=");
+                                                    .replaceAll("integrity ?=", "integrity.disabled=");
                                             LOGGER.debug(contentAsString);
                                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                             baos.write(contentAsString.getBytes("UTF-8"));
