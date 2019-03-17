@@ -99,6 +99,10 @@ public class RestRequest extends HttpPost implements ResponseHandler {
         this.jsonBody = jsonBody;
     }
 
+    public void setRequestHeader(String name, String value) {
+        setHeader(name, value);
+    }
+
     @Override
     public Object handleResponse(HttpResponse response) {
         Header contentTypeHeader = response.getFirstHeader("Content-Type");

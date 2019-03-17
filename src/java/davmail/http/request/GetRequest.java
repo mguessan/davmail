@@ -19,6 +19,7 @@
 
 package davmail.http.request;
 
+import davmail.http.HttpClientAdapter;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -45,8 +46,12 @@ public class GetRequest extends HttpGet implements ResponseHandler {
 
     @Override
     public Object handleResponse(HttpResponse response) throws IOException {
-        responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-        return responseBodyAsString;
+        if (HttpClientAdapter.isRedirect(response)) {
+            return null;
+        } else {
+            responseBodyAsString = new BasicResponseHandler().handleResponse(response);
+            return responseBodyAsString;
+        }
     }
 
     public String getResponseBodyAsString() {

@@ -19,7 +19,9 @@
 
 package davmail.http.request;
 
+import davmail.http.HttpClientAdapter;
 import org.apache.http.Consts;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 public class PostRequest extends HttpPost implements ResponseHandler {
     ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
     String responseBodyAsString = null;
+    private HttpResponse response;
 
     public PostRequest(final URI uri) {
         super(uri);
@@ -48,6 +51,10 @@ public class PostRequest extends HttpPost implements ResponseHandler {
         super(URI.create(url));
     }
 
+    public void setRequestHeader(String name, String value) {
+        setHeader(name, value);
+    }
+
     @Override
     public HttpEntity getEntity() {
         return new UrlEncodedFormEntity(parameters, Consts.UTF_8);
@@ -55,8 +62,14 @@ public class PostRequest extends HttpPost implements ResponseHandler {
 
     @Override
     public Object handleResponse(HttpResponse response) throws IOException {
-        responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-        return responseBodyAsString;
+        this.response = response;
+        if (HttpClientAdapter.isRedirect(response)) {
+            return null;
+        } else {
+            responseBodyAsString = new BasicResponseHandler().handleResponse(response);
+            return responseBodyAsString;
+        }
+
     }
 
     public void setParameter(final String name, final String value) {
@@ -67,4 +80,24 @@ public class PostRequest extends HttpPost implements ResponseHandler {
         return responseBodyAsString;
     }
 
+    public Header getResponseHeader(String name) {
+        if (response == null) {
+            throw new RuntimeException("Should execute request first");
+        }
+        return response.getFirstHeader(name);
+    }
+
+    public int getStatusCode() {
+        if (response == null) {
+            throw new RuntimeException("Should execute request first");
+        }
+        return response.getStatusLine().getStatusCode();
+    }
+
+    public Object getStatusLine() {
+        if (response == null) {
+            throw new RuntimeException("Should execute request first");
+        }
+        return response.getStatusLine().getReasonPhrase();
+    }
 }

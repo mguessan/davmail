@@ -315,7 +315,7 @@ public class HttpClientAdapter {
         }
         uri = request.getURI();
         CloseableHttpResponse response = httpClient.execute(request);
-        if (request instanceof ResponseHandler && !isRedirect(response.getStatusLine().getStatusCode())) {
+        if (request instanceof ResponseHandler) {
             try {
                 ((ResponseHandler) request).handleResponse(response);
             } finally {
@@ -364,6 +364,10 @@ public class HttpClientAdapter {
             response.close();
         }
         return multiStatus;
+    }
+
+    public static boolean isRedirect(HttpResponse response) {
+        return isRedirect(response.getStatusLine().getStatusCode());
     }
 
     /**
