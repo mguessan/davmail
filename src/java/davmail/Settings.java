@@ -307,6 +307,9 @@ public final class Settings {
         Settings.setLoggingLevel("davmail", Settings.getLoggingLevel("davmail"));
         Settings.setLoggingLevel("httpclient.wire", Settings.getLoggingLevel("httpclient.wire"));
         Settings.setLoggingLevel("org.apache.commons.httpclient", Settings.getLoggingLevel("org.apache.commons.httpclient"));
+        // set logging levels for HttpClient 4
+        Settings.setLoggingLevel("org.apache.http.wire", Settings.getLoggingLevel("httpclient.wire"));
+        Settings.setLoggingLevel("org.apache.http", Settings.getLoggingLevel("org.apache.commons.httpclient"));
     }
 
     /**
