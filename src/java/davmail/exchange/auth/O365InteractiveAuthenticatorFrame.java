@@ -335,11 +335,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                 } else if (newState == Worker.State.FAILED) {
                     Throwable e = webViewEngine.getLoadWorker().getException();
                     if (e != null) {
-                        LOGGER.error(e + " " + e.getMessage());
-                        authenticator.errorCode = e.getMessage();
-                        if (authenticator.errorCode == null) {
-                            authenticator.errorCode = e.toString();
-                        }
+                        handleError(e);
                     }
                     close();
                 }
@@ -391,18 +387,20 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                     Platform.setImplicitExit(false);
 
                     initFX(fxPanel, initUrl, redirectUri);
-                } catch (Throwable e) {
-                    LOGGER.error(e + " " + e.getMessage());
-                    authenticator.errorCode = e.getMessage();
-                    if (authenticator.errorCode == null) {
-                        authenticator.errorCode = e.toString();
-                    }
+                } catch (Throwable t) {
+                    handleError(t);
                     close();
                 }
             }
         });
+    }
 
-
+    public void handleError(Throwable t) {
+        LOGGER.error(t + " " + t.getMessage());
+        authenticator.errorCode = t.getMessage();
+        if (authenticator.errorCode == null) {
+            authenticator.errorCode = t.toString();
+        }
     }
 
     public void close() {
