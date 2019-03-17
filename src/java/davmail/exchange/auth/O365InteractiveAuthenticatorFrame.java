@@ -28,10 +28,13 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebErrorEvent;
+import javafx.scene.web.WebEvent;
 import javafx.scene.web.WebView;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -45,8 +48,19 @@ import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.*;
-import java.net.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.ProtocolException;
+import java.net.Proxy;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import java.net.URLStreamHandlerFactory;
 import java.util.List;
 import java.util.Map;
 
@@ -91,17 +105,17 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 httpsURLConnection.setRequestProperty("User-Agent", DavGatewayHttpClientFacade.getUserAgent());
 
                                 if (("login.microsoftonline.com".equals(url.getHost()) && "/common/oauth2/authorize".equals(url.getPath()))
-                                    || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
-                                    || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
-                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
-                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/common/login".equals(url.getPath()))
-                                    || ("login.microsoftonline.com".equals(url.getHost()) && "/common/SAS/ProcessAuth".equals(url.getPath()))
-                                    // Okta authentication form
-                                    || (url.getHost().endsWith(".okta.com") &&
+                                        || ("login.live.com".equals(url.getHost()) && "/oauth20_authorize.srf".equals(url.getPath()))
+                                        || ("login.live.com".equals(url.getHost()) && "/ppsecure/post.srf".equals(url.getPath()))
+                                        || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
+                                        || ("login.microsoftonline.com".equals(url.getHost()) && "/common/login".equals(url.getPath()))
+                                        || ("login.microsoftonline.com".equals(url.getHost()) && "/common/SAS/ProcessAuth".equals(url.getPath()))
+                                        // Okta authentication form
+                                        || (url.getHost().endsWith(".okta.com") &&
                                         ("/login/login.htm".equals(url.getPath())
-                                        || "/auth/services/devicefingerprint".equals(url.getPath())))
+                                                || "/auth/services/devicefingerprint".equals(url.getPath())))
                                 ) {
-                                    LOGGER.debug("Disable integrity check on external resources at "+url);
+                                    LOGGER.debug("Disable integrity check on external resources at " + url);
 
                                     return new HttpURLConnection(url) {
                                         @Override
@@ -135,7 +149,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         }
 
                                         @Override
-                                        public Map<String,List<String>> getHeaderFields() {
+                                        public Map<String, List<String>> getHeaderFields() {
                                             LOGGER.debug(httpsURLConnection.getHeaderFields());
                                             return httpsURLConnection.getHeaderFields();
                                         }
@@ -178,10 +192,11 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         @Override
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
-                                            String contentAsString = new String(content, "UTF-8");
+                                            String contentAsString = new String(content, "UTF-8")
+                                                    .replaceAll("integrity=", "integrity.disabled=");
                                             LOGGER.debug(contentAsString);
                                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                            baos.write(contentAsString.replaceAll("integrity", "integrity.disabled").getBytes("UTF-8"));
+                                            baos.write(contentAsString.getBytes("UTF-8"));
                                             return new ByteArrayInputStream(baos.toByteArray());
                                         }
 
@@ -266,6 +281,25 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         fxPanel.setScene(scene);
 
         webViewEngine.setUserAgent(DavGatewayHttpClientFacade.getUserAgent());
+        webViewEngine.setOnAlert(new EventHandler<WebEvent<String>>() {
+            @Override
+            public void handle(final WebEvent<String> stringWebEvent) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        String message = stringWebEvent.getData();
+                        JOptionPane.showMessageDialog(O365InteractiveAuthenticatorFrame.this, message);
+                    }
+                });
+            }
+        });
+        webViewEngine.setOnError(new EventHandler<WebErrorEvent>() {
+            @Override
+            public void handle(WebErrorEvent event) {
+                LOGGER.error(event.getMessage());
+            }
+        });
+
 
         webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<Worker.State>() {
             @Override
