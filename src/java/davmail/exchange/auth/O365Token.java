@@ -20,16 +20,19 @@
 package davmail.exchange.auth;
 
 import davmail.Settings;
-import davmail.http.DavGatewayHttpClientFacade;
-import davmail.http.RestMethod;
+import davmail.http.HttpClientAdapter;
+import davmail.http.request.RestRequest;
 import davmail.util.IOUtil;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.SimpleHttpConnectionManager;
+import org.apache.http.Consts;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class O365Token {
@@ -54,14 +57,15 @@ public class O365Token {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
 
-        RestMethod tokenMethod = new RestMethod(TOKEN_URL);
-        tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        tokenMethod.addParameter("grant_type", "authorization_code");
-        tokenMethod.addParameter("code", code);
-        tokenMethod.addParameter("redirect_uri", redirectUri);
-        tokenMethod.addParameter("client_id", clientId);
+        ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+        parameters.add(new BasicNameValuePair("grant_type", "authorization_code"));
+        parameters.add(new BasicNameValuePair("code", code));
+        parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
+        parameters.add(new BasicNameValuePair("client_id", clientId));
 
-        executeMethod(tokenMethod);
+        RestRequest tokenRequest = new RestRequest(TOKEN_URL, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+
+        executeRequest(tokenRequest);
     }
 
 
@@ -72,7 +76,7 @@ public class O365Token {
     public void setJsonToken(JSONObject jsonToken) throws IOException {
         try {
             if (jsonToken.opt("error") != null) {
-                throw new IOException(jsonToken.optString("error")+" "+jsonToken.optString("error_description"));
+                throw new IOException(jsonToken.optString("error") + " " + jsonToken.optString("error_description"));
             }
             // access token expires after one hour
             accessToken = jsonToken.getString("access_token");
@@ -89,7 +93,7 @@ public class O365Token {
             username = tokenBody.getString("unique_name");
 
             if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
-                Settings.setProperty("davmail.oauth."+username.toLowerCase()+".refreshToken", refreshToken);
+                Settings.setProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken", refreshToken);
                 Settings.save();
             }
         } catch (JSONException e) {
@@ -122,30 +126,27 @@ public class O365Token {
     }
 
     public void refreshToken() throws IOException {
-        RestMethod tokenMethod = new RestMethod(TOKEN_URL);
-        tokenMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        tokenMethod.addParameter("grant_type", "refresh_token");
-        tokenMethod.addParameter("refresh_token", refreshToken);
-        tokenMethod.addParameter("redirect_uri", redirectUri);
-        tokenMethod.addParameter("client_id", clientId);
-        tokenMethod.addParameter("resource", "https://outlook.office365.com/");
+        ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+        parameters.add(new BasicNameValuePair("grant_type", "refresh_token"));
+        parameters.add(new BasicNameValuePair("refresh_token", refreshToken));
+        parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
+        parameters.add(new BasicNameValuePair("client_id", clientId));
+        parameters.add(new BasicNameValuePair("resource", "https://outlook.office365.com/"));
 
-        executeMethod(tokenMethod);
+        RestRequest tokenRequest = new RestRequest(TOKEN_URL, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+
+        executeRequest(tokenRequest);
     }
 
-    private void executeMethod(RestMethod tokenMethod) throws IOException {
-        HttpClient httpClient = null;
+    private void executeRequest(RestRequest tokenMethod) throws IOException {
+        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL);
         try {
-            httpClient = DavGatewayHttpClientFacade.getInstance(RESOURCE_URL);
-            httpClient.executeMethod(tokenMethod);
+            httpClientAdapter.execute(tokenMethod);
             setJsonToken(tokenMethod.getJsonResponse());
 
         } finally {
-            tokenMethod.releaseConnection();
             // do not keep login connections open
-            if (httpClient != null) {
-                ((SimpleHttpConnectionManager) httpClient.getHttpConnectionManager()).shutdown();
-            }
+            httpClientAdapter.close();
         }
 
     }
