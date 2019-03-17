@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-package davmail.http;
+package davmail.http.request;
 
 import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 
+/**
+ * Http post request to handle response transparently.
+ */
 public class PostRequest extends HttpPost implements ResponseHandler {
     ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
     String responseBodyAsString = null;

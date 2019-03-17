@@ -21,6 +21,9 @@ package davmail.http;
 
 import davmail.AbstractDavMailTestCase;
 import davmail.Settings;
+import davmail.http.request.GetRequest;
+import davmail.http.request.PostRequest;
+import davmail.http.request.RestRequest;
 import org.apache.http.Consts;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -99,7 +102,7 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
                     //.addParameter("prompt", "consent")
                     .build();
             httpClientAdapter = new HttpClientAdapter(uri.toString());
-            GetRequest getRequest = new GetRequest(uri);
+            davmail.http.request.GetRequest getRequest = new GetRequest(uri);
             CloseableHttpResponse response = httpClientAdapter.executeFollowRedirects(getRequest);
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
             if ("login.microsoftonline.com".equals(getRequest.getURI().getHost())) {
@@ -119,7 +122,7 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
 
                 String referer = getRequest.getURI().toString();
 
-                RestRequest getCredentialRequest = new RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
+                RestRequest getCredentialRequest = new davmail.http.request.RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
                 getCredentialRequest.setHeader("Accept", "application/json");
                 getCredentialRequest.setHeader("canary", apiCanary);
                 getCredentialRequest.setHeader("client-request-id", clientRequestId);
@@ -149,7 +152,7 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
                 System.out.println("federationRedirectUrl=" + federationRedirectUrl);
 
                 if (federationRedirectUrl == null || federationRedirectUrl.isEmpty()) {
-                    PostRequest logonMethod = new PostRequest(URI.create("https://login.microsoftonline.com/common/login"));
+                    davmail.http.request.PostRequest logonMethod = new PostRequest(URI.create("https://login.microsoftonline.com/common/login"));
                     logonMethod.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                     logonMethod.setHeader("Content-Type", "application/x-www-form-urlencoded");
 

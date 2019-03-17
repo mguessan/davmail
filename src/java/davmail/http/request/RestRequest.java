@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-package davmail.http;
+package davmail.http.request;
 
 import davmail.util.IOUtil;
 import org.apache.http.Consts;
@@ -36,6 +36,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Generic Rest request.
+ */
 public class RestRequest extends HttpPost implements ResponseHandler {
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
     protected static final Logger LOGGER = Logger.getLogger(RestRequest.class);

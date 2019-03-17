@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-package davmail.http;
+package davmail.http.request;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
@@ -29,6 +29,9 @@ import java.net.URI;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Http get request to handle response transparently.
+ */
 public class GetRequest extends HttpGet implements ResponseHandler {
     protected String responseBodyAsString;
 

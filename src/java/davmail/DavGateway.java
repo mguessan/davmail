@@ -23,7 +23,7 @@ import davmail.exception.DavMailException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewaySSLProtocolSocketFactory;
-import davmail.http.GetRequest;
+import davmail.http.request.GetRequest;
 import davmail.http.HttpClientAdapter;
 import davmail.imap.ImapServer;
 import davmail.ldap.LdapServer;
