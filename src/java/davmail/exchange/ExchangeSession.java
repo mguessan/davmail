@@ -25,13 +25,19 @@ import davmail.exception.DavMailException;
 import davmail.exception.WebdavNotAvailableException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
+import davmail.http.URIUtil;
 import davmail.ui.NotificationDialog;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.httpclient.util.URIUtil;
+import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
@@ -40,7 +46,11 @@ import org.htmlcleaner.TagNode;
 
 import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
-import javax.mail.internet.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.InternetHeaders;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -752,7 +762,7 @@ public abstract class ExchangeSession {
                         || "UserContext".equals(cookie.getName())
                         // Direct EWS access
                         || "exchangecookie".equals(cookie.getName())
-                        ) {
+                ) {
                     authenticated = true;
                     break;
                 }
@@ -1438,7 +1448,7 @@ public abstract class ExchangeSession {
         if (currentFolder.ctag == null || !currentFolder.ctag.equals(newFolder.ctag)
                 // ctag stamp is limited to second, check message count
                 || !(currentFolder.count == newFolder.count)
-                ) {
+        ) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Contenttag or count changed on " + currentFolder.folderPath +
                         " ctag: " + currentFolder.ctag + " => " + newFolder.ctag +
@@ -1712,14 +1722,14 @@ public abstract class ExchangeSession {
         public String getFlags() {
             String specialFlag = "";
             if (SPECIAL.contains(folderPath)) {
-                specialFlag = "\\"+folderPath+" ";
+                specialFlag = "\\" + folderPath + " ";
             }
             if (noInferiors) {
-                return specialFlag+"\\NoInferiors";
+                return specialFlag + "\\NoInferiors";
             } else if (hasChildren) {
-                return specialFlag+"\\HasChildren";
+                return specialFlag + "\\HasChildren";
             } else {
-                return specialFlag+"\\HasNoChildren";
+                return specialFlag + "\\HasNoChildren";
             }
         }
 
@@ -2336,7 +2346,7 @@ public abstract class ExchangeSession {
          * Retrieve item body from Exchange
          *
          * @return item body
-         * @throws HttpException on error
+         * @throws IOException on error
          */
         public abstract String getBody() throws IOException;
 
@@ -2437,9 +2447,8 @@ public abstract class ExchangeSession {
          * Compute vcard uid from name.
          *
          * @return uid
-         * @throws URIException on error
          */
-        public String getUid() throws URIException {
+        public String getUid() {
             String uid = getName();
             int dotIndex = uid.lastIndexOf('.');
             if (dotIndex > 0) {
@@ -2626,7 +2635,7 @@ public abstract class ExchangeSession {
          * Retrieve item body from Exchange
          *
          * @return item content
-         * @throws HttpException on error
+         * @throws IOException on error
          */
         public abstract byte[] getEventContent() throws IOException;
 
@@ -3373,10 +3382,10 @@ public abstract class ExchangeSession {
             if ("MEMBER".equals(property.getKey())) {
                 String member = property.getValue();
                 if (member.startsWith("urn:uuid:")) {
-                    Item item = getItem(folderPath, member.substring(9)+".EML");
+                    Item item = getItem(folderPath, member.substring(9) + ".EML");
                     if (item != null) {
                         if (item.get("smtpemail1") != null) {
-                            member = "mailto:"+item.get("smtpemail1");
+                            member = "mailto:" + item.get("smtpemail1");
                         } else if (item.get("smtpemail2") != null) {
                             member = "mailto:" + item.get("smtpemail2");
                         } else if (item.get("smtpemail3") != null) {
