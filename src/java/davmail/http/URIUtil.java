@@ -21,8 +21,6 @@ package davmail.http;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.net.URLCodec;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.URIException;
 import org.apache.http.Consts;
 
 import java.io.IOException;
@@ -285,6 +283,26 @@ public class URIUtil {
     }
 
     /**
+     * Those characters that are allowed for the query component.
+     */
+    public static final BitSet allowed_query = new BitSet(256);
+    // Static initializer for allowed_query
+    static {
+        allowed_query.or(uric);
+        allowed_query.clear('%');
+    }
+
+    /**
+     * Those characters that are allowed within the query component.
+     */
+    public static final BitSet allowed_within_query = new BitSet(256);
+    // Static initializer for allowed_within_query
+    static {
+        allowed_within_query.or(allowed_query);
+        allowed_within_query.andNot(reserved); // excluded 'reserved'
+    }
+
+    /**
      * Decode url encoded string.
      * @param escaped encoded string
      * @return decoded string
@@ -323,7 +341,7 @@ public class URIUtil {
      * @return encoded string query string
      */
     public static String encodeWithinQuery(String unescaped) {
-        return encode(unescaped, URI.allowed_within_query);
+        return encode(unescaped, allowed_within_query);
     }
 
     /**
@@ -334,10 +352,10 @@ public class URIUtil {
     public static String encodePathQuery(String unescaped){
         int at = unescaped.indexOf('?');
         if (at < 0) {
-            return encode(unescaped, URI.allowed_abs_path);
+            return encode(unescaped, allowed_abs_path);
         } else {
-            return encode(unescaped.substring(0, at), URI.allowed_abs_path)
-                    + '?' + encode(unescaped.substring(at + 1), URI.allowed_query);
+            return encode(unescaped.substring(0, at), allowed_abs_path)
+                    + '?' + encode(unescaped.substring(at + 1), allowed_query);
         }
     }
 
