@@ -20,15 +20,37 @@ package davmail.exchange.dav;
 
 import davmail.BundleMessage;
 import davmail.Settings;
-import davmail.exception.*;
-import davmail.exchange.*;
+import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.InsufficientStorageException;
+import davmail.exception.LoginTimeoutException;
+import davmail.exception.WebdavNotAvailableException;
+import davmail.exchange.ExchangeSession;
+import davmail.exchange.VCalendar;
+import davmail.exchange.VObject;
+import davmail.exchange.VProperty;
+import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.*;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpConnection;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpState;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
+import org.apache.commons.httpclient.methods.DeleteMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.HeadMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -51,7 +73,14 @@ import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.URL;
@@ -501,8 +530,8 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected void buildSessionInfo(HttpMethod method) throws DavMailException {
-        buildMailPath(method);
+    protected void buildSessionInfo(URI uri) throws DavMailException {
+        buildMailPath(uri);
 
         // get base http mailbox http urls
         getWellKnownFolders();
@@ -513,14 +542,16 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * Exchange 2003: get mailPath from welcome page
      *
-     * @param method current http method
+     * @param uri current uri
      * @return mail path from body
      */
-    protected String getMailpathFromWelcomePage(HttpMethod method) {
+    protected String getMailpathFromWelcomePage(URI uri) {
         String welcomePageMailPath = null;
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
+        GetMethod method = null;
         try {
+            method = new GetMethod(uri.toString());
             mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
             String line;
             //noinspection StatementWithEmptyBody
@@ -545,23 +576,25 @@ public class DavExchangeSession extends ExchangeSession {
                     LOGGER.error("Error parsing main page at " + method.getPath());
                 }
             }
-            method.releaseConnection();
+            if (method != null) {
+                method.releaseConnection();
+            }
         }
         return welcomePageMailPath;
     }
 
-    protected void buildMailPath(HttpMethod method) throws DavMailAuthenticationException {
+    protected void buildMailPath(URI uri) throws DavMailAuthenticationException {
         // get mailPath from welcome page on Exchange 2003
-        mailPath = getMailpathFromWelcomePage(method);
+        mailPath = getMailpathFromWelcomePage(uri);
 
         //noinspection VariableNotUsedInsideIf
         if (mailPath != null) {
             // Exchange 2003
             serverVersion = "Exchange2003";
-            fixClientHost(method);
+            fixClientHost(uri);
             checkPublicFolder();
             try {
-                buildEmail(method.getURI().getHost());
+                buildEmail(uri.getHost());
             } catch (IOException e) {
                 LOGGER.warn(e);
             }
@@ -571,7 +604,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             // Gallookup is an Exchange 2003 only feature
             disableGalLookup = true;
-            fixClientHost(method);
+            fixClientHost(uri);
             getEmailAndAliasFromOptions();
 
             checkPublicFolder();
@@ -579,7 +612,7 @@ public class DavExchangeSession extends ExchangeSession {
             // failover: try to get email through Webdav and Galfind
             if (alias == null || email == null) {
                 try {
-                    buildEmail(method.getURI().getHost());
+                    buildEmail(uri.getHost());
                 } catch (IOException e) {
                     LOGGER.warn(e);
                 }
@@ -746,10 +779,9 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected void fixClientHost(HttpMethod method) {
+    protected void fixClientHost(URI currentUri) {
         try {
             // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
-            URI currentUri = method.getURI();
             if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
                 httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
             }
@@ -1133,7 +1165,7 @@ public class DavExchangeSession extends ExchangeSession {
          * Build Contact instance from multistatusResponse info
          *
          * @param multiStatusResponse response
-         * @throws IOException     on error
+         * @throws IOException      on error
          * @throws DavMailException on error
          */
         public Contact(MultiStatusResponse multiStatusResponse) throws IOException, DavMailException {
@@ -3117,7 +3149,8 @@ public class DavExchangeSession extends ExchangeSession {
         String result = null;
         if (value != null && value.length() > 0) {
             try {
-                SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);;
+                SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);
+                ;
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
                 calendarValue.setTime(parser.parse(value));
                 // zulu time: add 12 hours

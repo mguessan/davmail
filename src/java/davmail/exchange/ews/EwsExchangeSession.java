@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
@@ -44,7 +45,12 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -223,14 +229,14 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void buildSessionInfo(HttpMethod method) throws DavMailException {
-        // no need to check logon method body
-        if (method != null) {
-            method.releaseConnection();
+    public void buildSessionInfo(org.apache.commons.httpclient.URI uri) throws DavMailException {
+        try {
+            directEws = uri == null
+                    || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
+                    || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
+        } catch (URIException e) {
+            throw new DavMailException("LOG_MESSAGE", e);
         }
-        directEws = method == null
-                || "/ews/services.wsdl".equalsIgnoreCase(method.getPath())
-                || "/ews/exchange.asmx".equalsIgnoreCase(method.getPath());
 
         // options page is not available in direct EWS mode
         if (!directEws) {

@@ -263,7 +263,8 @@ public abstract class ExchangeSession {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 
-            buildSessionInfo(method);
+            buildSessionInfo(method.getURI());
+            method.releaseConnection();
 
         } catch (DavMailAuthenticationException exc) {
             close();
@@ -787,7 +788,7 @@ public abstract class ExchangeSession {
         }
     }
 
-    protected abstract void buildSessionInfo(HttpMethod method) throws DavMailException;
+    protected abstract void buildSessionInfo(URI uri) throws DavMailException;
 
     /**
      * Create message in specified folder.
