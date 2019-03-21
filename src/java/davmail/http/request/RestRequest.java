@@ -22,6 +22,7 @@ package davmail.http.request;
 import davmail.util.IOUtil;
 import org.apache.http.Consts;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
@@ -90,6 +91,12 @@ public class RestRequest extends HttpPost implements ResponseHandler {
         setEntity(httpEntity);
 
     }
+
+    public RestRequest(String uri, HttpEntity entity) {
+        super(uri);
+        setEntity(entity);
+    }
+
 
     protected byte[] getJsonContent() {
         return jsonBody.toString().getBytes(Consts.UTF_8);
