@@ -95,7 +95,7 @@ import java.util.zip.GZIPInputStream;
  * Compatible with Exchange 2003 and 2007 with webdav available.
  */
 public class DavExchangeSession extends ExchangeSession {
-    protected static enum FolderQueryTraversal {
+    protected enum FolderQueryTraversal {
         Shallow, Deep
     }
 
@@ -512,7 +512,7 @@ public class DavExchangeSession extends ExchangeSession {
                 "&u=SMTP:" + attendee;
         GetMethod getMethod = new GetMethod(freebusyUrl);
         getMethod.setRequestHeader("Content-Type", "text/xml");
-        String fbdata = null;
+        String fbdata;
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
             fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
@@ -520,13 +520,6 @@ public class DavExchangeSession extends ExchangeSession {
             getMethod.releaseConnection();
         }
         return fbdata;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public DavExchangeSession(String url, String userName, String password) throws IOException {
-        super(url, userName, password);
     }
 
     public DavExchangeSession(HttpClient httpClient, java.net.URI uri, String userName) throws IOException {
@@ -947,7 +940,6 @@ public class DavExchangeSession extends ExchangeSession {
             } else if (field.isIntValue()) {
                 // check value
                 try {
-                    //noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     buffer.append(value);
                 } catch (NumberFormatException e) {
@@ -2324,7 +2316,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
-        ContactPhoto contactPhoto = null;
+        ContactPhoto contactPhoto;
         final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
         method.setRequestHeader("Translate", "f");
         method.setRequestHeader("Accept-Encoding", "gzip");

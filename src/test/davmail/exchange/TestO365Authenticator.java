@@ -38,7 +38,7 @@ public class TestO365Authenticator extends AbstractDavMailTestCase {
         authenticator.authenticate();
 
         // switch to EWS url
-        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
+        HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getExchangeUri().toString());
         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
 
         int i = 0;

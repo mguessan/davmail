@@ -51,11 +51,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Form based Exchange authentication.
+ */
 public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
 
+    /**
+     * Various username fields found on custom Exchange authentication forms
+     */
     protected static final Set<String> USER_NAME_FIELDS = new HashSet<String>();
-
     static {
         USER_NAME_FIELDS.add("username");
         USER_NAME_FIELDS.add("txtusername");
@@ -65,8 +70,10 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         USER_NAME_FIELDS.add("login");
     }
 
+    /**
+     * Various password fields found on custom Exchange authentication forms
+     */
     protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
-
     static {
         PASSWORD_FIELDS.add("password");
         PASSWORD_FIELDS.add("txtUserPass");
@@ -75,17 +82,35 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         PASSWORD_FIELDS.add("passwd");
     }
 
+    /**
+     * Various OTP (one time password) fields found on custom Exchange authentication forms.
+     * Used to open OTP dialog
+     */
     protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
-
     static {
         TOKEN_FIELDS.add("SafeWordPassword");
         TOKEN_FIELDS.add("passcode");
     }
 
 
+    /**
+     * User provided username.
+     * Old preauth syntax: preauthusername"username
+     * Windows authentication with domain: domain\\username
+     * Note that OSX Mail.app does not support backslash in username, set default domain in DavMail settings instead
+     */
     private String username;
+    /**
+     * User provided password
+     */
     private String password;
+    /**
+     * OWA or EWS url
+     */
     private String url;
+    /**
+     * HttpClient 3 instance
+     */
     private HttpClient httpClient;
     /**
      * A OTP pre-auth page may require a different username.
@@ -112,7 +137,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * Maximum number of times the user can try to input again the OTP pre-auth key before giving up.
      */
     private static final int MAX_OTP_RETRIES = 3;
-    // base URI after authentication
+    // base Exchange URI after authentication
     private java.net.URI exchangeUri;
 
 
@@ -136,7 +161,10 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             httpClient = DavGatewayHttpClientFacade.getInstance(url);
             // set private connection pool
             DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-            boolean isBasicAuthentication = isBasicAuthentication(httpClient, url);
+            boolean isHttpAuthentication = isHttpAuthentication(httpClient, url);
+            if (isHttpAuthentication) {
+                DavGatewayHttpClientFacade.addNTLM(httpClient);
+            }
             // clear cookies created by authentication test
             httpClient.getState().clearCookies();
 
@@ -164,7 +192,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             HttpMethod method = DavGatewayHttpClientFacade.executeFollowRedirects(httpClient, url);
 
             if (!this.isAuthenticated(method)) {
-                if (isBasicAuthentication) {
+                if (isHttpAuthentication) {
                     int status = method.getStatusCode();
 
                     if (status == HttpStatus.SC_UNAUTHORIZED) {
@@ -176,15 +204,15 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                     // workaround for basic authentication on /exchange and form based authentication at /owa
                     if ("/owa/auth/logon.aspx".equals(method.getPath())) {
-                        method = formLogin(httpClient, method, username, password);
+                        method = formLogin(httpClient, method, password);
                     }
                 } else {
-                    method = formLogin(httpClient, method, username, password);
+                    method = formLogin(httpClient, method, password);
                 }
             }
 
             // avoid 401 roundtrips, only if NTLM is disabled and basic authentication enabled
-            if (isBasicAuthentication && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
+            if (isHttpAuthentication && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 
@@ -223,7 +251,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * @param httpClient httpClient instance
      * @return true if basic authentication detected
      */
-    protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
+    protected boolean isHttpAuthentication(HttpClient httpClient, String url) {
         return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
@@ -256,7 +284,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         return authenticated;
     }
 
-    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String username, String password) throws IOException {
+    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
 
         HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
@@ -650,6 +678,11 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         DavGatewayHttpClientFacade.close(httpClient);
     }
 
+    /**
+     * Oauth token.
+     * Only for Office 365 authenticators
+     * @return unsupported
+     */
     @Override
     public O365Token getToken() {
         throw new UnsupportedOperationException();

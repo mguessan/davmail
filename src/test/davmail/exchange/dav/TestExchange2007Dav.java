@@ -19,8 +19,7 @@
 
 package davmail.exchange.dav;
 
-import davmail.AbstractDavMailTestCase;
-import davmail.Settings;
+import davmail.AbstractExchange2007TestCase;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
 
 import java.io.IOException;
@@ -29,23 +28,7 @@ import java.io.IOException;
  * Test cases for on premise Exchange 2007 in DAV mode.
  * Get connection info from test.properties
  */
-public class TestExchange2007Dav extends AbstractDavMailTestCase {
-    private String domain;
-    private String email;
-    private String server;
-
-    @Override
-    public void setUp() throws IOException {
-        super.setUp();
-        // set Exchange 2007 server info from test.properties
-        Settings.setProperty("davmail.server.certificate.hash",
-                Settings.getProperty("davmail.exchange2007.server.certificate.hash"));
-        server = Settings.getProperty("davmail.exchange2007.server");
-        domain = Settings.getProperty("davmail.exchange2007.domain");
-        username = Settings.getProperty("davmail.exchange2007.username");
-        email = Settings.getProperty("davmail.exchange2007.email");
-        password = Settings.getProperty("davmail.exchange2007.password");
-    }
+public class TestExchange2007Dav extends AbstractExchange2007TestCase {
 
     public void testSimpleUsernameOWAFormAuthenticator() throws IOException {
         String url = "https://" + server + "/owa";

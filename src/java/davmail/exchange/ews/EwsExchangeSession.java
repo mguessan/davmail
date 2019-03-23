@@ -34,9 +34,7 @@ import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 
@@ -191,21 +189,6 @@ public class EwsExchangeSession extends ExchangeSession {
     protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
         return !url.toLowerCase().endsWith("/ews/exchange.asmx") && super.isBasicAuthentication(httpClient, url);
     }
-
-    @Override
-    protected HttpMethod formLogin(HttpClient httpClient, HttpMethod initmethod, String userName, String password) throws IOException {
-        LOGGER.debug("Form based authentication detected");
-
-        HttpMethod logonMethod = buildLogonMethod(httpClient, initmethod);
-        if (logonMethod == null) {
-            LOGGER.debug("Authentication form not found at " + initmethod.getURI() + ", will try direct EWS access");
-        } else {
-            logonMethod = postLogonMethod(httpClient, logonMethod, password);
-        }
-
-        return logonMethod;
-    }
-
 
     /**
      * Check endpoint url.
