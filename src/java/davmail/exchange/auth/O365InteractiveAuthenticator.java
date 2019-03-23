@@ -47,8 +47,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     String code = null;
 
     String resource = "https://outlook.office365.com";
-    String ewsUrl = resource + "/EWS/Exchange.asmx";
-    String authorizeUrl = "https://login.microsoftonline.com/common/oauth2/authorize";
+    URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
 
     private O365InteractiveAuthenticatorFrame o365InteractiveAuthenticatorFrame;
 
@@ -61,7 +60,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     }
 
     @Override
-    public String getEWSUrl() {
+    public URI getExchangeUri() {
         return ewsUrl;
     }
 
@@ -183,7 +182,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             authenticator.authenticate();
 
             // switch to EWS url
-            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.ewsUrl);
+            HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.ewsUrl.toString());
 
             GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
             checkMethod.setRequestHeader("Authorization", "Bearer " + authenticator.getToken().getAccessToken());

@@ -20,6 +20,7 @@
 package davmail.exchange.auth;
 
 import java.io.IOException;
+import java.net.URI;
 
 public interface ExchangeAuthenticator {
     void setUsername(String username);
@@ -30,5 +31,5 @@ public interface ExchangeAuthenticator {
 
     O365Token getToken() throws IOException;
 
-    String getEWSUrl();
+    URI getExchangeUri();
 }

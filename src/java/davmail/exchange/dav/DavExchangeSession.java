@@ -38,9 +38,9 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpConnection;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpState;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
@@ -529,8 +529,15 @@ public class DavExchangeSession extends ExchangeSession {
         super(url, userName, password);
     }
 
+    public DavExchangeSession(HttpClient httpClient, java.net.URI uri, String userName) throws IOException {
+        this.httpClient = httpClient;
+        this.userName = userName;
+        buildSessionInfo(uri);
+    }
+
+
     @Override
-    protected void buildSessionInfo(URI uri) throws DavMailException {
+    public void buildSessionInfo(java.net.URI uri) throws DavMailException {
         buildMailPath(uri);
 
         // get base http mailbox http urls
@@ -545,13 +552,14 @@ public class DavExchangeSession extends ExchangeSession {
      * @param uri current uri
      * @return mail path from body
      */
-    protected String getMailpathFromWelcomePage(URI uri) {
+    protected String getMailpathFromWelcomePage(java.net.URI uri) {
         String welcomePageMailPath = null;
         // get user mail URL from html body (multi frame)
         BufferedReader mainPageReader = null;
         GetMethod method = null;
         try {
             method = new GetMethod(uri.toString());
+            httpClient.executeMethod(method);
             mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
             String line;
             //noinspection StatementWithEmptyBody
@@ -583,7 +591,7 @@ public class DavExchangeSession extends ExchangeSession {
         return welcomePageMailPath;
     }
 
-    protected void buildMailPath(URI uri) throws DavMailAuthenticationException {
+    protected void buildMailPath(java.net.URI uri) throws DavMailAuthenticationException {
         // get mailPath from welcome page on Exchange 2003
         mailPath = getMailpathFromWelcomePage(uri);
 
@@ -593,11 +601,7 @@ public class DavExchangeSession extends ExchangeSession {
             serverVersion = "Exchange2003";
             fixClientHost(uri);
             checkPublicFolder();
-            try {
-                buildEmail(uri.getHost());
-            } catch (IOException e) {
-                LOGGER.warn(e);
-            }
+            buildEmail(uri.getHost());
         } else {
             // Exchange 2007 : get alias and email from options page
             serverVersion = "Exchange2007";
@@ -611,11 +615,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             // failover: try to get email through Webdav and Galfind
             if (alias == null || email == null) {
-                try {
-                    buildEmail(uri.getHost());
-                } catch (IOException e) {
-                    LOGGER.warn(e);
-                }
+                buildEmail(uri.getHost());
             }
 
             // build standard mailbox link with email
@@ -779,14 +779,10 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected void fixClientHost(URI currentUri) {
-        try {
-            // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
-            if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
-                httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
-            }
-        } catch (IOException e) {
-            LOGGER.warn("Unable to update http client host:" + e.getMessage(), e);
+    protected void fixClientHost(java.net.URI currentUri) {
+        // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
+        if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
+            httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
         }
     }
 

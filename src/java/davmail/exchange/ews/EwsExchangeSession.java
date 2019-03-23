@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -166,20 +167,13 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    /**
-     * @inheritDoc
-     */
-    public EwsExchangeSession(String url, String userName, String password) throws IOException {
-        super(url, userName, password);
-    }
-
-    public EwsExchangeSession(HttpClient httpClient, String userName) {
+    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws DavMailException {
         this.httpClient = httpClient;
-        DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
         this.userName = userName;
         if (userName.contains("@")) {
             this.email = userName;
         }
+        buildSessionInfo(uri);
     }
 
     public void setToken(O365Token token) {
@@ -229,14 +223,10 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void buildSessionInfo(org.apache.commons.httpclient.URI uri) throws DavMailException {
-        try {
-            directEws = uri == null
-                    || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
-                    || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
-        } catch (URIException e) {
-            throw new DavMailException("LOG_MESSAGE", e);
-        }
+    public void buildSessionInfo(java.net.URI uri) throws DavMailException {
+        directEws = uri == null
+                || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
+                || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
 
         // options page is not available in direct EWS mode
         if (!directEws) {

@@ -23,6 +23,7 @@ import davmail.Settings;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Experimental: load Oauth2 token from settings
@@ -31,7 +32,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     private static final Logger LOGGER = Logger.getLogger(O365StoredTokenAuthenticator.class);
 
     String resource = "https://outlook.office365.com";
-    String ewsUrl = resource + "/EWS/Exchange.asmx";
+    URI ewsUrl = URI.create(resource + "/EWS/Exchange.asmx");
 
     private String username;
     private O365Token token;
@@ -78,7 +79,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     }
 
     @Override
-    public String getEWSUrl() {
+    public URI getExchangeUri() {
         return ewsUrl;
     }
 }

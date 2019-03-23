@@ -24,6 +24,7 @@ import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
 import davmail.exception.WebdavNotAvailableException;
 import davmail.exchange.auth.ExchangeAuthenticator;
+import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.dav.DavExchangeSession;
 import davmail.exchange.ews.EwsExchangeSession;
 import davmail.http.DavGatewayHttpClientFacade;
@@ -172,31 +173,45 @@ public final class ExchangeSessionFactory {
                     authenticator.setUsername(userName);
                     authenticator.setPassword(password);
                     authenticator.authenticate();
-                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getEWSUrl());
-                    session = new EwsExchangeSession(httpClient, userName);
+                    HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getExchangeUri().toString());
+                    DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
+                    session = new EwsExchangeSession(httpClient, null, userName);
                     ((EwsExchangeSession) session).setToken(authenticator.getToken());
-                    // TODO: refactor buildSessionInfo
-                    session.buildSessionInfo(null);
 
                 } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                         ExchangeSession.LOGGER.debug("Direct EWS authentication");
                         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
+                        DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
                         DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
                         DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        session = new EwsExchangeSession(httpClient, poolKey.userName);
-                        session.buildSessionInfo(null);
+                        session = new EwsExchangeSession(httpClient, null, poolKey.userName);
                     } else {
                         ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");
-                        session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                        ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
+                        exchangeFormAuthenticator.setUrl(poolKey.url);
+                        exchangeFormAuthenticator.setUsername(poolKey.userName);
+                        exchangeFormAuthenticator.setPassword(poolKey.password);
+                        exchangeFormAuthenticator.authenticate();
+                        session = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+                                exchangeFormAuthenticator.getExchangeUri(), exchangeFormAuthenticator.getUsername());
                     }
                 } else {
+                    ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();
+                    exchangeFormAuthenticator.setUrl(poolKey.url);
+                    exchangeFormAuthenticator.setUsername(poolKey.userName);
+                    exchangeFormAuthenticator.setPassword(poolKey.password);
+                    exchangeFormAuthenticator.authenticate();
                     try {
-                        session = new DavExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                        session = new DavExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+                                exchangeFormAuthenticator.getExchangeUri(),
+                                exchangeFormAuthenticator.getUsername());
                     } catch (WebdavNotAvailableException e) {
                         if (Settings.AUTO.equals(mode)) {
                             ExchangeSession.LOGGER.debug(e.getMessage() + ", retry with EWS");
-                            session = new EwsExchangeSession(poolKey.url, poolKey.userName, poolKey.password);
+                            session = new EwsExchangeSession(exchangeFormAuthenticator.getHttpClient(),
+                                    exchangeFormAuthenticator.getExchangeUri(),
+                                    exchangeFormAuthenticator.getUsername());
                         } else {
                             throw e;
                         }

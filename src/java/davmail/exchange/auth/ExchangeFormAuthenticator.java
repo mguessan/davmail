@@ -113,7 +113,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      */
     private static final int MAX_OTP_RETRIES = 3;
     // base URI after authentication
-    private URI uri;
+    private java.net.URI exchangeUri;
 
 
     @Override
@@ -188,7 +188,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
             }
 
-            uri = method.getURI();
+            exchangeUri = java.net.URI.create(method.getURI().getURI());
             method.releaseConnection();
 
         } catch (DavMailAuthenticationException exc) {
@@ -655,12 +655,33 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Base Exchange URL.
+     * Welcome page for Exchange 2003, EWS url for Exchange 2007 and later
+     *
+     * @return Exchange url
+     */
     @Override
-    public String getEWSUrl() {
-        throw new UnsupportedOperationException();
+    public java.net.URI getExchangeUri() {
+        return exchangeUri;
     }
 
-    public URI getURI() {
-        return uri;
+    /**
+     * Authenticated httpClient (with cookies).
+     *
+     * @return http client
+     */
+    public HttpClient getHttpClient() {
+        return httpClient;
+    }
+
+    /**
+     * Actual username.
+     * may be different from input username with preauth
+     *
+     * @return username
+     */
+    public String getUsername() {
+        return username;
     }
 }
