@@ -233,7 +233,7 @@ public class CaldavConnection extends AbstractConnection {
         } else if (request.isPath(1, ".well-known")) {
             sendWellKnown();
         } else {
-            sendUnsupported(request);
+            sendNotFound(request);
         }
     }
 
@@ -248,7 +248,7 @@ public class CaldavConnection extends AbstractConnection {
             } else if (request.isPropFind() && request.isPathLength(3)) {
                 sendPrincipalsFolder(request);
             } else {
-                sendUnsupported(request);
+                sendNotFound(request);
             }
         } else if (request.isPath(2, "public")) {
             StringBuilder prefixBuffer = new StringBuilder("public");
@@ -257,7 +257,7 @@ public class CaldavConnection extends AbstractConnection {
             }
             sendPrincipal(request, URIUtil.decode(prefixBuffer.toString()), URIUtil.decode(request.getLastPath()));
         } else {
-            sendUnsupported(request);
+            sendNotFound(request);
         }
     }
 
@@ -358,7 +358,7 @@ public class CaldavConnection extends AbstractConnection {
             session.moveItem(request.path, URIUtil.decode(new URL(destinationUrl).getPath()));
             sendHttpResponse(HttpStatus.SC_CREATED, null);
         } else {
-            sendUnsupported(request);
+            sendNotFound(request);
         }
 
     }
@@ -608,9 +608,9 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendGetRoot() throws IOException {
-        String buffer = "Connected to DavMail<br/>" +
-                "UserName :" + userName + "<br/>" +
-                "Email :" + session.getEmail() + "<br/>";
+        String buffer = "Connected to DavMail"+DavGateway.getCurrentVersion()+"<br/>" +
+                "UserName: " + userName + "<br/>" +
+                "Email: " + session.getEmail() + "<br/>";
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer, true);
     }
 
@@ -1160,15 +1160,15 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     /**
-     * Send 400 bad response for unsupported request.
+     * Send 404 not found for unknown request.
      *
      * @param request Caldav request
      * @throws IOException on error
      */
-    public void sendUnsupported(CaldavRequest request) throws IOException {
+    public void sendNotFound(CaldavRequest request) throws IOException {
         BundleMessage message = new BundleMessage("LOG_UNSUPPORTED_REQUEST", request);
-        DavGatewayTray.error(message);
-        sendErr(HttpStatus.SC_BAD_REQUEST, message.format());
+        DavGatewayTray.warn(message);
+        sendErr(HttpStatus.SC_NOT_FOUND, message.format());
     }
 
     /**
