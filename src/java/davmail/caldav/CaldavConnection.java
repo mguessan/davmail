@@ -22,25 +22,33 @@ import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.DavGateway;
 import davmail.Settings;
-import davmail.exception.*;
+import davmail.exception.DavMailAuthenticationException;
+import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpServerErrorException;
 import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.ICSBufferedReader;
 import davmail.exchange.XMLStreamUtil;
 import davmail.exchange.dav.DavExchangeSession;
+import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpException;
-import davmail.http.URIUtil;
 import org.apache.http.HttpStatus;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.apache.log4j.Logger;
 
-import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
+import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -390,12 +398,13 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     private void appendContactsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Contact> contacts) throws IOException {
-        int size = contacts.size();
-        int count = 0;
-        for (ExchangeSession.Contact contact : contacts) {
-            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, size));
-            DavGatewayTray.switchIcon();
-            appendItemResponse(response, request, contact);
+        if (contacts != null) {
+            int count = 0;
+            for (ExchangeSession.Contact contact : contacts) {
+                DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, contacts.size()));
+                DavGatewayTray.switchIcon();
+                appendItemResponse(response, request, contact);
+            }
         }
     }
 
@@ -1114,12 +1123,12 @@ public class CaldavConnection extends AbstractConnection {
                     .append("PRODID:-//davmail.sf.net/NONSGML DavMail Calendar V1.1//EN").append((char) 13).append((char) 10)
                     .append("METHOD:REPLY").append((char) 13).append((char) 10)
                     .append("BEGIN:VFREEBUSY").append((char) 13).append((char) 10)
-                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append("").append((char) 13).append((char) 10)
-                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append("").append((char) 13).append((char) 10)
-                    .append("DTSTART:").append(valueMap.get("DTSTART")).append("").append((char) 13).append((char) 10)
-                    .append("DTEND:").append(valueMap.get("DTEND")).append("").append((char) 13).append((char) 10)
-                    .append("UID:").append(valueMap.get("UID")).append("").append((char) 13).append((char) 10)
-                    .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append("").append((char) 13).append((char) 10);
+                    .append("DTSTAMP:").append(valueMap.get("DTSTAMP")).append((char) 13).append((char) 10)
+                    .append("ORGANIZER:").append(valueMap.get("ORGANIZER")).append((char) 13).append((char) 10)
+                    .append("DTSTART:").append(valueMap.get("DTSTART")).append((char) 13).append((char) 10)
+                    .append("DTEND:").append(valueMap.get("DTEND")).append((char) 13).append((char) 10)
+                    .append("UID:").append(valueMap.get("UID")).append((char) 13).append((char) 10)
+                    .append(attendeeKeyMap.get(attendee)).append(':').append(attendee).append((char) 13).append((char) 10);
             entry.getValue().appendTo(ics);
             ics.append("END:VFREEBUSY").append((char) 13).append((char) 10)
                     .append("END:VCALENDAR");
@@ -1494,11 +1503,11 @@ public class CaldavConnection extends AbstractConnection {
 
         protected boolean isUserAgent(String key) {
             String userAgent = headers.get("user-agent");
-            return userAgent != null && userAgent.indexOf(key) >= 0;
+            return userAgent != null && userAgent.contains(key);
         }
 
         public boolean isFreeBusy() {
-            return body != null && body.indexOf("VFREEBUSY") >= 0;
+            return body != null && body.contains("VFREEBUSY");
         }
 
         protected void buildDepth() {
@@ -1569,12 +1578,8 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
 
-        protected boolean isEndTag(XMLStreamReader reader, String tagLocalName) {
-            return (reader.getEventType() == XMLStreamConstants.END_ELEMENT) && (reader.getLocalName().equals(tagLocalName));
-        }
-
         public void handleCompFilter(XMLStreamReader reader) throws XMLStreamException {
-            while (reader.hasNext() && !isEndTag(reader, "comp-filter")) {
+            while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "comp-filter")) {
                 reader.next();
                 if (XMLStreamUtil.isStartTag(reader, "comp-filter")) {
                     String name = reader.getAttributeValue(null, "name");
@@ -1591,7 +1596,7 @@ public class CaldavConnection extends AbstractConnection {
         }
 
         public void handleProp(XMLStreamReader reader) throws XMLStreamException {
-            while (reader.hasNext() && !isEndTag(reader, "prop")) {
+            while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, "prop")) {
                 reader.next();
                 if (XMLStreamUtil.isStartTag(reader)) {
                     String tagLocalName = reader.getLocalName();
@@ -1709,15 +1714,13 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient(Integer.toHexString(length));
                     sendClient(data, offset, length);
                     if (wireLogger.isDebugEnabled()) {
-                        StringBuilder logBuffer = new StringBuilder("> ");
-                        logBuffer.append(new String(data, offset, length, "UTF-8"));
-                        wireLogger.debug(logBuffer.toString());
+                        wireLogger.debug("> " + new String(data, offset, length, "UTF-8"));
                     }
                     sendClient("");
                 }
 
                 @Override
-                public void write(int b) throws IOException {
+                public void write(int b) {
                     throw new UnsupportedOperationException();
                 }
 
@@ -1797,25 +1800,24 @@ public class CaldavConnection extends AbstractConnection {
 
         public void appendProperty(String propertyName, String namespace, String propertyValue) throws IOException {
             if (propertyValue != null) {
-                writer.write('<');
-                writer.write(propertyName);
-                if (namespace != null) {
-                    writer.write("  xmlns:");
-                    writer.write(namespace);
-                }
+                startTag(propertyName, namespace);
                 writer.write('>');
                 writer.write(propertyValue);
                 writer.write("</");
                 writer.write(propertyName);
                 writer.write('>');
             } else {
-                writer.write('<');
-                writer.write(propertyName);
-                if (namespace != null) {
-                    writer.write("  xmlns:");
-                    writer.write(namespace);
-                }
+                startTag(propertyName, namespace);
                 writer.write("/>");
+            }
+        }
+
+        private void startTag(String propertyName, String namespace) throws IOException {
+            writer.write('<');
+            writer.write(propertyName);
+            if (namespace != null) {
+                writer.write(" xmlns:");
+                writer.write(namespace);
             }
         }
 
