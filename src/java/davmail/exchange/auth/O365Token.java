@@ -46,7 +46,7 @@ public class O365Token {
     private String username;
     private String refreshToken;
     private String accessToken;
-    private long expireson;
+    private long expiresOn;
 
     public O365Token(String clientId, String redirectUri) {
         this.clientId = clientId;
@@ -83,9 +83,9 @@ public class O365Token {
             // precious refresh token
             refreshToken = jsonToken.getString("refresh_token");
             // expires_on is in second, not millisecond
-            expireson = jsonToken.getLong("expires_on") * 1000;
+            expiresOn = jsonToken.getLong("expires_on") * 1000;
 
-            LOGGER.debug("Access token expires " + new Date(expireson));
+            LOGGER.debug("Access token expires " + new Date(expiresOn));
 
             String decodedBearer = IOUtil.decodeBase64AsString(accessToken.substring(accessToken.indexOf('.') + 1, accessToken.lastIndexOf('.')) + "==");
             JSONObject tokenBody = new JSONObject(decodedBearer);
@@ -111,18 +111,18 @@ public class O365Token {
 
     public String getAccessToken() throws IOException {
         // detect expiration and refresh token
-        if (System.currentTimeMillis() > expireson - 60000) {
+        if (System.currentTimeMillis() > expiresOn - 60000) {
             LOGGER.debug("Access token expires soon, trying to refresh it");
             refreshToken();
         }
-        //LOGGER.debug("Access token for " + username + " expires in " + (expireson - System.currentTimeMillis()) / 60000 + " minutes");
+        //LOGGER.debug("Access token for " + username + " expires in " + (expiresOn - System.currentTimeMillis()) / 60000 + " minutes");
         return accessToken;
     }
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
         // assume unexpired token
-        expireson = System.currentTimeMillis() + 1000 * 60 * 60;
+        expiresOn = System.currentTimeMillis() + 1000 * 60 * 60;
     }
 
     public void refreshToken() throws IOException {

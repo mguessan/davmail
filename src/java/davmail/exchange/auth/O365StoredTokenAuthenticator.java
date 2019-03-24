@@ -28,6 +28,7 @@ import java.net.URI;
 /**
  * Experimental: load Oauth2 token from settings
  */
+@SuppressWarnings("unused")
 public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     private static final Logger LOGGER = Logger.getLogger(O365StoredTokenAuthenticator.class);
 
@@ -60,7 +61,8 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         }
         String accessToken = Settings.getProperty("davmail.oauth.accessToken");
         if (refreshToken == null && accessToken == null) {
-            throw new IOException("Missing token");
+            LOGGER.warn("No stored Oauth refresh token found for "+username);
+            throw new IOException("No stored Oauth refresh token found for "+username);
         }
 
         token = new O365Token(clientId, redirectUri);
@@ -74,7 +76,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
     }
 
     @Override
-    public O365Token getToken() throws IOException {
+    public O365Token getToken() {
         return token;
     }
 
