@@ -2002,7 +2002,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected String getURLPropertyIfExists(DavPropertySet properties, String alias) throws IOException {
+    protected String getURLPropertyIfExists(DavPropertySet properties, @SuppressWarnings("SameParameterValue") String alias) throws IOException {
         String result = getPropertyIfExists(properties, alias);
         if (result != null) {
             result = URIUtil.decode(result);
@@ -2019,7 +2019,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected long getLongPropertyIfExists(DavPropertySet properties, String alias) {
+    protected long getLongPropertyIfExists(DavPropertySet properties, @SuppressWarnings("SameParameterValue") String alias) {
         DavProperty property = properties.get(Field.getPropertyName(alias));
         if (property == null) {
             return 0;
@@ -2028,7 +2028,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected double getDoublePropertyIfExists(DavPropertySet properties, String alias) {
+    protected double getDoublePropertyIfExists(DavPropertySet properties, @SuppressWarnings("SameParameterValue") String alias) {
         DavProperty property = properties.get(Field.getResponsePropertyName(alias));
         if (property == null) {
             return 0;
@@ -2037,7 +2037,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    protected byte[] getBinaryPropertyIfExists(DavPropertySet properties, String alias) {
+    protected byte[] getBinaryPropertyIfExists(DavPropertySet properties, @SuppressWarnings("SameParameterValue") String alias) {
         byte[] property = null;
         String base64Property = getPropertyIfExists(properties, alias);
         if (base64Property != null) {
@@ -2051,7 +2051,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
 
-    protected Message buildMessage(MultiStatusResponse responseEntity) throws IOException, DavMailException {
+    protected Message buildMessage(MultiStatusResponse responseEntity) throws IOException {
         Message message = new Message();
         message.messageUrl = URIUtil.decode(responseEntity.getHref());
         DavPropertySet properties = responseEntity.getProperties(HttpStatus.SC_OK);
@@ -2524,7 +2524,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     @Override
-    protected Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) throws IOException {
+    protected Contact buildContact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
         return new Contact(getFolderPath(folderPath), itemName, properties, etag, noneMatch);
     }
 
@@ -3138,7 +3138,7 @@ public class DavExchangeSession extends ExchangeSession {
         if (value != null && value.length() > 0) {
             try {
                 SimpleDateFormat parser = ExchangeSession.getExchangeDateFormat(value);
-                ;
+
                 Calendar calendarValue = Calendar.getInstance(GMT_TIMEZONE);
                 calendarValue.setTime(parser.parse(value));
                 // zulu time: add 12 hours

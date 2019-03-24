@@ -83,7 +83,7 @@ public class Field {
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    protected static enum DistinguishedPropertySetType {
+    protected enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
 
@@ -371,13 +371,13 @@ public class Field {
         fieldMap.put(field.alias, field);
     }
 
-    protected static void createField(String alias, DistinguishedPropertySetType propertySetType) {
+    protected static void createField(String alias,@SuppressWarnings("SameParameterValue") DistinguishedPropertySetType propertySetType) {
         Field field = new Field(Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
                 '{' + distinguishedPropertySetMap.get(propertySetType) + "}/"), alias);
         fieldMap.put(field.alias, field);
     }
 
-    protected static void createField(String alias, DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
+    protected static void createField(String alias, @SuppressWarnings("SameParameterValue") DistinguishedPropertySetType propertySetType, int propertyTag, String responseAlias) {
         createField(alias, propertySetType, propertyTag, responseAlias, null);
     }
 
@@ -411,6 +411,7 @@ public class Field {
         fieldMap.put(field.alias, field);
     }
 
+    @SuppressWarnings("SameParameterValue")
     protected static void createField(String alias, Namespace namespace, String name, PropertyType propertyType) {
         Field field = new Field(alias, namespace, name, propertyType);
         fieldMap.put(field.alias, field);
@@ -554,17 +555,17 @@ public class Field {
                 });
             }
 
-            return new DefaultDavProperty(field.updatePropertyName, valueList);
+            return new DefaultDavProperty<List<XmlSerializable>>(field.updatePropertyName, valueList);
         } else if (field.isBooleanValue && !"haspicture".equals(alias)) {
             if ("true".equals(value)) {
-                return new DefaultDavProperty(field.updatePropertyName, "1");
+                return new DefaultDavProperty<String>(field.updatePropertyName, "1");
             } else if ("false".equals(value)) {
-                return new DefaultDavProperty(field.updatePropertyName, "0");
+                return new DefaultDavProperty<String>(field.updatePropertyName, "0");
             } else {
                 throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }
         } else {
-            return new DefaultDavProperty(field.updatePropertyName, value);
+            return new DefaultDavProperty<String>(field.updatePropertyName, value);
         }
     }
 

@@ -21,7 +21,6 @@ package davmail.exchange.dav;
 /**
  * MAPI property types.
  */
-@SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
 public enum PropertyType {
     ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray,
     Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object,
