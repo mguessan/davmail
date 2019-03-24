@@ -19,7 +19,11 @@
 package davmail.exchange.dav;
 
 import davmail.exchange.XMLStreamUtil;
-import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpConnection;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpState;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -183,7 +187,7 @@ public abstract class ExchangeDavMethod extends PostMethod {
                 } else {
                     String tagContent = getTagContent(reader);
                     if (tagContent != null) {
-                        multiStatusResponse.add(new DefaultDavProperty(tagLocalName, tagContent, namespace));
+                        multiStatusResponse.add(new DefaultDavProperty<String>(tagLocalName, tagContent, namespace));
                     }
                 }
             }
@@ -203,7 +207,7 @@ public abstract class ExchangeDavMethod extends PostMethod {
                 }
             }
         }
-        multiStatusResponse.add(new DefaultDavProperty(tagLocalName, values, namespace));
+        multiStatusResponse.add(new DefaultDavProperty<ArrayList<String>>(tagLocalName, values, namespace));
     }
 
     protected String getTagContent(XMLStreamReader reader) throws XMLStreamException {
@@ -233,7 +237,7 @@ public abstract class ExchangeDavMethod extends PostMethod {
         if (responses == null) {
             throw new HttpException(getStatusLine().toString());
         }
-        return responses.toArray(new MultiStatusResponse[responses.size()]);
+        return responses.toArray(new MultiStatusResponse[0]);
     }
 
     /**
