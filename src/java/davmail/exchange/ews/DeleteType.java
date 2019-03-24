@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * DeleteItem disposal type.
  */
-@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration"})
 public final class DeleteType extends AttributeOption {
     private DeleteType(String value) {
         super("DeleteType", value);

@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * Item delete option.
  */
-@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration"})
 public final class AffectedTaskOccurrences extends AttributeOption {
     private AffectedTaskOccurrences(String value) {
         super("AffectedTaskOccurrences", value);

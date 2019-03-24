@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * MessageDisposition flag.
  */
-@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration"})
 public final class MessageDisposition extends AttributeOption {
 
     private MessageDisposition(String value) {

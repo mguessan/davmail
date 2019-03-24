@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * Item update conflict resolution
  */
-@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration"})
 public final class ConflictResolution extends AttributeOption {
     private ConflictResolution(String value) {
         super("ConflictResolution", value);

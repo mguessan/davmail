@@ -21,7 +21,7 @@ package davmail.exchange.ews;
 /**
  * ResolveNames search scope.
  */
-@SuppressWarnings({"JavaDoc", "UnusedDeclaration"})
+@SuppressWarnings({"UnusedDeclaration"})
 public final class SearchScope extends AttributeOption {
     private SearchScope(String value) {
         super("SearchScope", value);

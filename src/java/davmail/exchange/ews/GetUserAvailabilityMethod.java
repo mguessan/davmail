@@ -20,7 +20,6 @@ package davmail.exchange.ews;
 
 import davmail.exchange.XMLStreamUtil;
 
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.Writer;
@@ -98,7 +97,7 @@ public class GetUserAvailabilityMethod extends EWSMethod {
     }
 
     @Override
-    protected void handleCustom(XMLStreamReader reader) throws XMLStreamException {
+    protected void handleCustom(XMLStreamReader reader) {
         if (XMLStreamUtil.isStartTag(reader, "MergedFreeBusy")) {
             this.mergedFreeBusy = XMLStreamUtil.getElementText(reader);
         }

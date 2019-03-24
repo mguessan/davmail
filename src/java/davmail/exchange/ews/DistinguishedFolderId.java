@@ -37,7 +37,7 @@ public final class DistinguishedFolderId extends FolderId {
     /**
      * DistinguishedFolderId names
      */
-    @SuppressWarnings({"UnusedDeclaration", "JavaDoc"})
+    @SuppressWarnings({"UnusedDeclaration"})
     public static enum Name {
         calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
         publicfoldersroot, root, junkemail, searchfolders, voicemail,

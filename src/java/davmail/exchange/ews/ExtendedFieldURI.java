@@ -33,7 +33,7 @@ public class ExtendedFieldURI implements FieldURI {
     }
 
     @SuppressWarnings({"UnusedDeclaration"})
-    protected static enum DistinguishedPropertySetType {
+    protected enum DistinguishedPropertySetType {
         Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task
     }
 
@@ -105,7 +105,7 @@ public class ExtendedFieldURI implements FieldURI {
             buffer.append(" PropertyName=\"").append(propertyName).append('"');
         }
         if (propertyId != 0) {
-            buffer.append(" PropertyId=\"").append(String.valueOf(propertyId)).append('"');
+            buffer.append(" PropertyId=\"").append(propertyId).append('"');
         }
         if (propertyType != null) {
             buffer.append(" PropertyType=\"").append(propertyType.toString()).append('"');
