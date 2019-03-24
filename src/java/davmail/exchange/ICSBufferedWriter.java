@@ -58,7 +58,7 @@ public class ICSBufferedWriter {
             buffer.append(' ');
         }
         if (line.length() > maxLength) {
-            buffer.append(line.substring(0, maxLength));
+            buffer.append(line, 0, maxLength);
             newLine();
             writeLine(line.substring(maxLength), true);
         } else {

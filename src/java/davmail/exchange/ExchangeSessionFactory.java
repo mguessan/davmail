@@ -36,7 +36,6 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;

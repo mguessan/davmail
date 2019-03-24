@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class VProperty {
 
-    protected static enum State {
+    protected enum State {
         KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
     }
 
