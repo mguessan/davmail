@@ -165,17 +165,34 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws DavMailException {
+    public EwsExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
             this.email = userName;
         }
+        buildSessionInfo(null);
+    }
+
+    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws DavMailException {
+        this.httpClient = httpClient;
+        this.userName = userName;
+        if (userName.contains("@")) {
+            this.email = userName;
+            this.alias = userName.substring(0, userName.indexOf('@'));
+        }
         buildSessionInfo(uri);
     }
 
-    public void setToken(O365Token token) {
+    public EwsExchangeSession(HttpClient httpClient, O365Token token, String userName) throws DavMailException {
+        this.httpClient = httpClient;
+        this.userName = userName;
+        if (userName.contains("@")) {
+            this.email = userName;
+            this.alias = userName.substring(0, userName.indexOf('@'));
+        }
         this.token = token;
+        buildSessionInfo(null);
     }
 
     /**
@@ -207,16 +224,45 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public void buildSessionInfo(java.net.URI uri) throws DavMailException {
+        try {
+            // send a first request to get server version
+            checkEndPointUrl();
+        } catch (IOException e) {
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+        }
+
+        // new approach based on ConvertId to find primary email address
+        if (email == null || alias == null) {
+            try {
+                GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+                executeMethod(getFolderMethod);
+                EWSMethod.Item item = getFolderMethod.getResponseItem();
+                String folderId = item.get("FolderId");
+
+                ConvertIdMethod convertIdMethod = new ConvertIdMethod(folderId);
+                executeMethod(convertIdMethod);
+                EWSMethod.Item convertIdItem = convertIdMethod.getResponseItem();
+                if (convertIdItem != null) {
+                    email = convertIdItem.get("Mailbox");
+                    alias = email.substring(0, email.indexOf('@'));
+                }
+
+            } catch (IOException e) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+            }
+        }
+
         directEws = uri == null
                 || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
                 || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
 
         // options page is not available in direct EWS mode
-        if (!directEws) {
+        if (!directEws && (email == null || alias == null)) {
             // retrieve email and alias from options page
             getEmailAndAliasFromOptions();
         }
 
+        // failover, should not happen
         if (email == null || alias == null) {
             // OWA authentication failed, get email address from login
             if (userName.indexOf('@') >= 0) {
@@ -238,35 +284,13 @@ public class EwsExchangeSession extends ExchangeSession {
 
         currentMailboxPath = "/users/" + email.toLowerCase();
 
-        // check EWS access
-        try {
-            checkEndPointUrl();
-            // workaround for Exchange bug: send fake request
-            internalGetFolder("");
-        } catch (IOException e) {
-            // first failover: retry with NTLM
-            DavGatewayHttpClientFacade.addNTLM(httpClient);
-            try {
-                checkEndPointUrl();
-                // workaround for Exchange bug: send fake request
-                internalGetFolder("");
-            } catch (IOException e2) {
-                // initial exception was authentication failure => throw original exception
-                if (e instanceof DavMailAuthenticationException) {
-                    throw (DavMailAuthenticationException) e;
-                }
-                LOGGER.error(e2.getMessage());
-                throw new DavMailException("EXCEPTION_EWS_NOT_AVAILABLE");
-            }
-        }
-
         // enable preemptive authentication on non NTLM endpoints
         if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
             httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, true);
         }
 
         // direct EWS: get primary smtp email address with ResolveNames
-        if (directEws) {
+        if (directEws && email == null) {
             try {
                 ResolveNamesMethod resolveNamesMethod = new ResolveNamesMethod(alias);
                 executeMethod(resolveNamesMethod);

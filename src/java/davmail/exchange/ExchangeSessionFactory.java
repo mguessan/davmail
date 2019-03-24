@@ -36,6 +36,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -175,8 +176,7 @@ public final class ExchangeSessionFactory {
                     authenticator.authenticate();
                     HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getExchangeUri().toString());
                     DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-                    session = new EwsExchangeSession(httpClient, null, userName);
-                    ((EwsExchangeSession) session).setToken(authenticator.getToken());
+                    session = new EwsExchangeSession(httpClient, authenticator.getToken(), userName);
 
                 } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
@@ -185,7 +185,7 @@ public final class ExchangeSessionFactory {
                         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
                         DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
                         DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        session = new EwsExchangeSession(httpClient, null, poolKey.userName);
+                        session = new EwsExchangeSession(httpClient, poolKey.userName);
                     } else {
                         ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");
                         ExchangeFormAuthenticator exchangeFormAuthenticator = new ExchangeFormAuthenticator();

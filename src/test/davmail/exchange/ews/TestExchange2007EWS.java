@@ -20,7 +20,10 @@
 package davmail.exchange.ews;
 
 import davmail.AbstractExchange2007TestCase;
+import davmail.Settings;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.log4j.Level;
 
 import java.io.IOException;
 
@@ -39,6 +42,7 @@ public class TestExchange2007EWS extends AbstractExchange2007TestCase {
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
         session.getFolder("");
+
     }
 
     public void testSimpleUsernameEWSFormAuthenticator() throws IOException {
@@ -49,11 +53,11 @@ public class TestExchange2007EWS extends AbstractExchange2007TestCase {
         authenticator.setPassword(password);
         authenticator.authenticate();
         assertEquals("/EWS/Services.wsdl", authenticator.getExchangeUri().toString());
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         // create session
         EwsExchangeSession session = new EwsExchangeSession(authenticator.getHttpClient(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
-        session.getFolder("");
     }
 }
