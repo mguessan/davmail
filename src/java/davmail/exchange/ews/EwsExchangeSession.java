@@ -2808,7 +2808,8 @@ public class EwsExchangeSession extends ExchangeSession {
         } else if (folderPath.startsWith(ARCHIVE_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archivemsgfolderroot);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
-        } else if (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX) || folderPath.startsWith(MIXED_CASE_INBOX)) {
+        } else if ((folderPath.length() <=  5 || folderPath.charAt(5) == '/') &&
+                (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX) || folderPath.startsWith(MIXED_CASE_INBOX))) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
         } else if (folderPath.startsWith(CALENDAR)) {
