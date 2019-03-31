@@ -2802,38 +2802,39 @@ public class EwsExchangeSession extends ExchangeSession {
         String[] folderNames;
         FolderId currentFolderId;
 
-        if (folderPath.startsWith(PUBLIC_ROOT)) {
+        if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
-        } else if (folderPath.startsWith(ARCHIVE_ROOT)) {
+        } else if (isSubFolderOf(folderPath,ARCHIVE_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archivemsgfolderroot);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
-        } else if ((folderPath.length() <=  5 || folderPath.charAt(5) == '/') &&
-                (folderPath.startsWith(INBOX) || folderPath.startsWith(LOWER_CASE_INBOX) || folderPath.startsWith(MIXED_CASE_INBOX))) {
+        } else if (isSubFolderOf(folderPath, INBOX) ||
+                isSubFolderOf(folderPath, LOWER_CASE_INBOX) ||
+                isSubFolderOf(folderPath, MIXED_CASE_INBOX)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.inbox);
             folderNames = folderPath.substring(INBOX.length()).split("/");
-        } else if (folderPath.startsWith(CALENDAR)) {
+        } else if (isSubFolderOf(folderPath, CALENDAR)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.calendar);
             folderNames = folderPath.substring(CALENDAR.length()).split("/");
-        } else if (folderPath.startsWith(TASKS)) {
+        } else if (isSubFolderOf(folderPath, TASKS)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.tasks);
             folderNames = folderPath.substring(TASKS.length()).split("/");
-        } else if (folderPath.startsWith(CONTACTS)) {
+        } else if (isSubFolderOf(folderPath, CONTACTS)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.contacts);
             folderNames = folderPath.substring(CONTACTS.length()).split("/");
-        } else if (folderPath.startsWith(SENT)) {
+        } else if (isSubFolderOf(folderPath, SENT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.sentitems);
             folderNames = folderPath.substring(SENT.length()).split("/");
-        } else if (folderPath.startsWith(DRAFTS)) {
+        } else if (isSubFolderOf(folderPath, DRAFTS)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.drafts);
             folderNames = folderPath.substring(DRAFTS.length()).split("/");
-        } else if (folderPath.startsWith(TRASH)) {
+        } else if (isSubFolderOf(folderPath, TRASH)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.deleteditems);
             folderNames = folderPath.substring(TRASH.length()).split("/");
-        } else if (folderPath.startsWith(JUNK)) {
+        } else if (isSubFolderOf(folderPath, JUNK)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.junkemail);
             folderNames = folderPath.substring(JUNK.length()).split("/");
-        } else if (folderPath.startsWith(UNSENT)) {
+        } else if (isSubFolderOf(folderPath, UNSENT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.outbox);
             folderNames = folderPath.substring(UNSENT.length()).split("/");
         } else {
@@ -2849,6 +2850,17 @@ public class EwsExchangeSession extends ExchangeSession {
             }
         }
         return currentFolderId;
+    }
+
+    /**
+     * Check if folderPath is base folder or a sub folder path.
+     * @param folderPath folder path
+     * @param baseFolder base folder
+     * @return true if folderPath is under baseFolder
+     */
+    private boolean isSubFolderOf(String folderPath, String baseFolder) {
+        return folderPath.startsWith(baseFolder)
+                && (folderPath.length() == baseFolder.length() || folderPath.charAt(baseFolder.length()) == '/');
     }
 
     protected FolderId getSubFolderByName(FolderId parentFolderId, String folderName) throws IOException {
