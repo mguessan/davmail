@@ -20,6 +20,12 @@
 package davmail.http;
 
 import davmail.Settings;
+import davmail.exception.HttpForbiddenException;
+import davmail.exception.HttpNotFoundException;
+import davmail.exception.HttpPreconditionFailedException;
+import davmail.exception.HttpServerErrorException;
+import davmail.exception.LoginTimeoutException;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -32,6 +38,7 @@ import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -39,10 +46,12 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.auth.BasicSchemeFactory;
 import org.apache.http.impl.auth.DigestSchemeFactory;
 import org.apache.http.impl.auth.KerberosSchemeFactory;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -53,6 +62,8 @@ import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
+import org.apache.jackrabbit.webdav.client.methods.HttpCopy;
+import org.apache.jackrabbit.webdav.client.methods.HttpMove;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -122,6 +133,8 @@ public class HttpClientAdapter {
 
     HttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
+    CredentialsProvider provider = new BasicCredentialsProvider();
+    BasicCookieStore cookieStore = new BasicCookieStore();
     IdleConnectionEvictor idleConnectionEvictor;
     // current URI
     URI uri;
@@ -137,6 +150,10 @@ public class HttpClientAdapter {
         this(URI.create(url), username, password, false);
     }
 
+    public HttpClientAdapter(String url, boolean enablePool) {
+        this(URI.create(url), null, null, enablePool);
+    }
+
     public HttpClientAdapter(URI uri) {
         this(uri, null, null, false);
     }
@@ -150,7 +167,6 @@ public class HttpClientAdapter {
     }
 
     public HttpClientAdapter(URI uri, String username, String password, boolean enablePool) {
-        parseUserName(username);
         if (enablePool) {
             connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
         } else {
@@ -165,12 +181,10 @@ public class HttpClientAdapter {
 
         SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
         clientBuilder.setRoutePlanner(routePlanner);
-        CredentialsProvider provider = null;
-        if (userid != null && password != null) {
-            provider = new BasicCredentialsProvider();
-            NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
-            provider.setCredentials(AuthScope.ANY, credentials);
-        }
+
+        clientBuilder.setDefaultCookieStore(cookieStore);
+
+        setCredentials(username, password);
 
         boolean enableProxy = Settings.getBooleanProperty("davmail.enableProxy");
         boolean useSystemProxies = Settings.getBooleanProperty("davmail.useSystemProxies", Boolean.FALSE);
@@ -294,7 +308,7 @@ public class HttpClientAdapter {
         }
     }
 
-    public static void close(HttpClientAdapter httpClientAdapter) throws IOException {
+    public static void close(HttpClientAdapter httpClientAdapter) {
         if (httpClientAdapter != null) {
             httpClientAdapter.close();
         }
@@ -309,12 +323,25 @@ public class HttpClientAdapter {
      * @throws IOException on error
      */
     public CloseableHttpResponse execute(HttpRequestBase request) throws IOException {
+        return execute(request, null);
+    }
+
+    /**
+     * Execute request, do not follow redirects.
+     * if request is an instance of ResponseHandler, process and close response
+     *
+     * @param request Http request
+     * @param context Http request context
+     * @return Http response
+     * @throws IOException on error
+     */
+    public CloseableHttpResponse execute(HttpRequestBase request, HttpClientContext context) throws IOException {
         URI requestURI = request.getURI();
         if (!requestURI.isAbsolute()) {
             request.setURI(URIUtils.resolve(uri, requestURI));
         }
         uri = request.getURI();
-        CloseableHttpResponse response = httpClient.execute(request);
+        CloseableHttpResponse response = httpClient.execute(request, context);
         if (request instanceof ResponseHandler) {
             try {
                 ((ResponseHandler) request).handleResponse(response);
@@ -397,4 +424,53 @@ public class HttpClientAdapter {
         return null;
     }
 
+    public void setCredentials(String username, String password) {
+        parseUserName(username);
+        if (userid != null && password != null) {
+            NTCredentials credentials = new NTCredentials(userid, password, WORKSTATION_NAME, domain);
+            provider.setCredentials(AuthScope.ANY, credentials);
+        }
+    }
+
+    public List<Cookie> getCookies() {
+        return cookieStore.getCookies();
+    }
+
+    public void addCookie(Cookie cookie) {
+        cookieStore.addCookie(cookie);
+    }
+
+    /**
+     * Build Http Exception from method status
+     *
+     * @param method Http Method
+     * @return Http Exception
+     */
+    public static HttpException buildHttpException(HttpRequestBase method, HttpResponse response) {
+        int status = response.getStatusLine().getStatusCode();
+        StringBuilder message = new StringBuilder();
+        message.append(status).append(' ').append(response.getStatusLine().getReasonPhrase());
+        message.append(" at ").append(method.getURI());
+        if (method instanceof HttpCopy || method instanceof HttpMove) {
+            message.append(" to ").append(method.getFirstHeader("Destination"));
+        }
+        // 440 means forbidden on Exchange
+        if (status == 440) {
+            return new LoginTimeoutException(message.toString());
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN) {
+            return new HttpForbiddenException(message.toString());
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND) {
+            return new HttpNotFoundException(message.toString());
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_PRECONDITION_FAILED) {
+            return new HttpPreconditionFailedException(message.toString());
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+            return new HttpServerErrorException(message.toString());
+        } else {
+            return new HttpException(message.toString());
+        }
+    }
+
+    public String getHost() {
+        return uri.getHost();
+    }
 }
