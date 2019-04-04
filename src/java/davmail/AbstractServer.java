@@ -120,7 +120,7 @@ public abstract class AbstractServer extends Thread {
                         protocols.add(protocol);
                     }
                 }
-                ((SSLServerSocket) serverSocket).setEnabledProtocols(protocols.toArray(new String[protocols.size()]));
+                ((SSLServerSocket) serverSocket).setEnabledProtocols(protocols.toArray(new String[0]));
                 ((SSLServerSocket) serverSocket).setNeedClientAuth(Settings.getBooleanProperty("davmail.ssl.needClientAuth", false));
             }
 
