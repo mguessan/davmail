@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
  * Http get request to handle response transparently.
  */
 public class GetRequest extends HttpGet implements ResponseHandler {
+    protected  HttpResponse response;
     protected String responseBodyAsString;
 
     public GetRequest(final URI uri) {
@@ -46,12 +47,17 @@ public class GetRequest extends HttpGet implements ResponseHandler {
 
     @Override
     public Object handleResponse(HttpResponse response) throws IOException {
+        this.response = response;
         if (HttpClientAdapter.isRedirect(response)) {
             return null;
         } else {
             responseBodyAsString = new BasicResponseHandler().handleResponse(response);
             return responseBodyAsString;
         }
+    }
+
+    public HttpResponse getResponse() {
+        return response;
     }
 
     public String getResponseBodyAsString() {
@@ -70,5 +76,13 @@ public class GetRequest extends HttpGet implements ResponseHandler {
             throw new IOException("pattern " + pattern + " not found in response body");
         }
         return value;
+    }
+
+    public int getStatusCode() {
+        return response.getStatusLine().getStatusCode();
+    }
+
+    public String getPath() {
+        return getURI().getPath();
     }
 }

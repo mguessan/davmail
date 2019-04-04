@@ -76,6 +76,16 @@ public class PostRequest extends HttpPost implements ResponseHandler {
         parameters.add(new BasicNameValuePair(name, value));
     }
 
+    public void removeParameter(final String name) {
+        ArrayList<NameValuePair> toDelete = new ArrayList<NameValuePair>();
+        for (NameValuePair param: parameters) {
+            if (param.getName().equals(name)) {
+                toDelete.add(param);
+            }
+        }
+        parameters.removeAll(toDelete);
+    }
+
     public String getResponseBodyAsString() {
         return responseBodyAsString;
     }
