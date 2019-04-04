@@ -753,7 +753,7 @@ public final class DavGatewayHttpClientFacade {
     }
 
     /**
-     * Build Http Exception from methode status
+     * Build Http Exception from method status
      *
      * @param method Http Method
      * @return Http Exception

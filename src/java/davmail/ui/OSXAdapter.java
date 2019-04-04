@@ -67,7 +67,7 @@ public class OSXAdapter implements InvocationHandler {
         if (enableAboutMenu) {
             setHandler(new OSXAdapter("handleAbout", target, aboutHandler));
         }
-        Method enableAboutMethod = macOSXApplication.getClass().getDeclaredMethod("setEnabledAboutMenu", new Class[]{boolean.class});
+        Method enableAboutMethod = macOSXApplication.getClass().getDeclaredMethod("setEnabledAboutMenu", boolean.class);
         enableAboutMethod.invoke(macOSXApplication, enableAboutMenu);
     }
 
@@ -88,7 +88,7 @@ public class OSXAdapter implements InvocationHandler {
         if (enablePrefsMenu) {
             setHandler(new OSXAdapter("handlePreferences", target, prefsHandler));
         }
-        Method enablePrefsMethod = macOSXApplication.getClass().getDeclaredMethod("setEnabledPreferencesMenu", new Class[]{boolean.class});
+        Method enablePrefsMethod = macOSXApplication.getClass().getDeclaredMethod("setEnabledPreferencesMenu", boolean.class);
         enablePrefsMethod.invoke(macOSXApplication, enablePrefsMenu);
     }
 
@@ -142,7 +142,7 @@ public class OSXAdapter implements InvocationHandler {
             macOSXApplication = applicationClass.getConstructor((Class[]) null).newInstance((Object[]) null);
         }
         Class applicationListenerClass = Class.forName("com.apple.eawt.ApplicationListener");
-        Method addListenerMethod = applicationClass.getDeclaredMethod("addApplicationListener", new Class[]{applicationListenerClass});
+        Method addListenerMethod = applicationClass.getDeclaredMethod("addApplicationListener", applicationListenerClass);
         // Create a proxy object around this handler that can be reflectively added as an Apple ApplicationListener
         Object osxAdapterProxy = Proxy.newProxyInstance(OSXAdapter.class.getClassLoader(), new Class[]{applicationListenerClass}, adapter);
         addListenerMethod.invoke(macOSXApplication, osxAdapterProxy);
@@ -223,7 +223,7 @@ public class OSXAdapter implements InvocationHandler {
      */
     protected void setApplicationEventHandled(Object event, boolean handled) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         if (event != null) {
-            Method setHandledMethod = event.getClass().getDeclaredMethod("setHandled", new Class[]{boolean.class});
+            Method setHandledMethod = event.getClass().getDeclaredMethod("setHandled", boolean.class);
             // If the target method returns a boolean, use that as a hint
             setHandledMethod.invoke(event, handled);
         }
