@@ -168,11 +168,7 @@ public final class IOUtil {
      */
     public static byte[] readFully(InputStream inputStream) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] bytes = new byte[8192];
-        int length;
-        while ((length = inputStream.read(bytes)) > 0) {
-            baos.write(bytes, 0, length);
-        }
+        write(inputStream, baos);
         return baos.toByteArray();
     }
 

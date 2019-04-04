@@ -2335,11 +2335,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             InputStream partInputStream = inputStream;
-            byte[] bytes = new byte[8192];
-            int length;
-            while ((length = partInputStream.read(bytes)) > 0) {
-                baos.write(bytes, 0, length);
-            }
+            IOUtil.write(partInputStream, baos);
             contactPhoto.content = IOUtil.encodeBase64AsString(baos.toByteArray());
         } finally {
             if (inputStream != null) {
