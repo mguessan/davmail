@@ -1092,9 +1092,27 @@ public abstract class ExchangeSession {
     public String convertFlagsToKeywords(HashSet<String> flags) {
         HashSet<String> keywordSet = new HashSet<String>();
         for (String flag : flags) {
-            keywordSet.add(convertFlagToKeyword(flag));
+            keywordSet.add(decodeKeyword(convertFlagToKeyword(flag)));
         }
         return StringUtil.join(keywordSet, ",");
+    }
+
+    protected String decodeKeyword(String keyword) {
+        String result = keyword;
+        if (keyword.contains("_x0028_") || keyword.contains("_x0029_")) {
+            result = result.replaceAll("_x0028_", "(")
+                    .replaceAll("_x0029_", ")");
+        }
+        return result;
+    }
+
+    protected String encodeKeyword(String keyword) {
+        String result = keyword;
+        if (keyword.indexOf('(') >= 0|| keyword.indexOf(')') >= 0) {
+            result = result.replaceAll("\\(", "_x0028_")
+                    .replaceAll("\\)", "_x0029_" );
+        }
+        return result;
     }
 
     /**
@@ -1470,7 +1488,7 @@ public abstract class ExchangeSession {
             }
             if (keywords != null) {
                 for (String keyword : keywords.split(",")) {
-                    buffer.append(convertKeywordToFlag(keyword)).append(" ");
+                    buffer.append(encodeKeyword(convertKeywordToFlag(keyword))).append(" ");
                 }
             }
             return buffer.toString().trim();
