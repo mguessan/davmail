@@ -3,24 +3,30 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/DECORATION/1.0.0 http://maven.apache.org/xsd/decoration-1.0.0.xsd">
     <version position="left"/>
-
-    <bannerLeft>
-        <name>DavMail Gateway</name>
-        <src>images/davmailLogo.png</src>
-        <href>http://davmail.sourceforge.net</href>
-    </bannerLeft>
-    <bannerRight>
-        <name>SourceForge</name>
-        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=13</src>
-        <href>http://sourceforge.net/projects/davmail</href>
-    </bannerRight>
+    <custom>
+        <reflowSkin>
+            <highlightJs>false</highlightJs>
+            <brand>
+                <name><![CDATA[<a class="navbar-brand" href="index.html"><img src="images/davmail.svg" alt="DavMail Gateway"/></a>]]></name>
+            </brand>
+            <slogan>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</slogan>
+            <titleTemplate>%2$s</titleTemplate>
+            <bottomNav>
+                <column>Quick Links</column>
+                <column>.*Setup</column>
+                <column>reports</column>
+            </bottomNav>
+            <skinAttribution>false</skinAttribution>
+        </reflowSkin>
+    </custom>
     <poweredBy>
         <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"
               img="https://sourceforge.net/images/project-support.jpg"/>
     </poweredBy>
     <skin>
-        <groupId>org.apache.maven.skins</groupId>
-        <artifactId>maven-default-skin</artifactId>
+        <groupId>lt.velykis.maven.skins</groupId>
+        <artifactId>reflow-maven-skin</artifactId>
+        <version>1.1.1</version>
     </skin>
     <body>
         <head>
@@ -76,5 +82,8 @@
             <item name="Calendar setup" href="/iphonecaldavsetup.html"/>
         </menu>
         <menu ref="reports"/>
+        <footer>
+            <![CDATA[<hr /><p>Yo! <a href="https://www.youtube.com/watch?v=eUK_plnFBPw">MTV</a> is on 24 hours a day. You should catch a few.</p>]]>
+        </footer>
     </body>
 </project>

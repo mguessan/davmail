@@ -1,4 +1,35 @@
 /* You can override this file with your own styles */
+/* custom bootstrap reflow */
+.navbar .brand {
+    padding: 4px;
+}
+.brand img {
+    height: 32px;
+}
+.breadcrumb {
+    background-color: transparent;
+    font-size: 0.7rem;
+    border: 0;
+    padding: 0.2rem;
+    margin: 0;
+}
+.page-header {
+    padding: 0;
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
+.page-header h2 {
+    padding: 0;
+    margin: 0;
+}
+.subfooter {
+    padding: 0.5em;
+}
+/* hide broken back to top link */
+.subfooter .pull-right{
+    display: none;
+}
+
 body {
         background:#F1FAFF url(../images/inner-gd.png) repeat-x scroll 0 0;
 }
@@ -16,20 +47,21 @@ body {
 	font-size:17px;
 }
 .section h2 {
-	border-bottom:1px solid;
 	padding:1px;
 }
 .section h3 {
+    margin-left: 0.5rem;
 	margin-top: 0;
     margin-bottom: 0;
 	font-size:16px;
 	font-weight:bold;
 }
-.section p {
-	padding-left:15px;
+.section p, .section ul, .section pre {
+	padding-left: 15px;
 }
-
-
+.section pre {
+    margin-left: 15px;
+}
 
 .section table {
 	margin-left:10px;
