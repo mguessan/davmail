@@ -4,6 +4,16 @@
          xsi:schemaLocation="http://maven.apache.org/DECORATION/1.0.0 http://maven.apache.org/xsd/decoration-1.0.0.xsd">
     <version position="left"/>
     <custom>
+        <fluidoSkin>
+            <topBarEnabled>false</topBarEnabled>
+            <sideBarEnabled>true</sideBarEnabled>
+            <topBarIcon>
+                <name>DavMail</name>
+                <alt>DavMail</alt>
+                <src>/images/davmail.svg</src>
+                <href>/index.html</href>
+            </topBarIcon>
+        </fluidoSkin>
         <reflowSkin>
             <highlightJs>false</highlightJs>
             <brand>
@@ -19,22 +29,32 @@
             <skinAttribution>false</skinAttribution>
         </reflowSkin>
     </custom>
+    <bannerLeft>
+        <name>DavMail Gateway</name>
+        <src>images/davmailLogo.png</src>
+        <href>http://davmail.sourceforge.net</href>
+    </bannerLeft>
+    <bannerRight>
+        <name>SourceForge</name>
+        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=13</src>
+        <href>http://sourceforge.net/projects/davmail</href>
+    </bannerRight>
     <poweredBy>
         <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"
               img="https://sourceforge.net/images/project-support.jpg"/>
     </poweredBy>
     <skin>
-        <groupId>lt.velykis.maven.skins</groupId>
-        <artifactId>reflow-maven-skin</artifactId>
-        <version>1.1.1</version>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>1.7</version>
     </skin>
     <body>
-        <head>
-            <link rel="shortcut icon" href="/favicon.ico" />
-            <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16" />
-            <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32" />
-            <link rel="icon" type="image/png" href="/android-chrome-96x96.png" sizes="96x96" />
-        </head>
+        <head><![CDATA[
+        <link rel="shortcut icon" href="/favicon.ico"/>
+        <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16"/>
+        <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32"/>
+        <link rel="icon" type="image/png" href="/android-chrome-96x96.png" sizes="96x96"/>
+        ]]></head>
         <menu name="Quick Links">
             <item name="Home" href="/index.html"/>
             <item name="Download" href="/download.html"/>
@@ -82,8 +102,5 @@
             <item name="Calendar setup" href="/iphonecaldavsetup.html"/>
         </menu>
         <menu ref="reports"/>
-        <footer>
-            <![CDATA[<hr /><p>Yo! <a href="https://www.youtube.com/watch?v=eUK_plnFBPw">MTV</a> is on 24 hours a day. You should catch a few.</p>]]>
-        </footer>
     </body>
 </project>
