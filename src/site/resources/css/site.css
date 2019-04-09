@@ -1,12 +1,41 @@
-/* custom bootstrap */
+/* custom fluido bootstrap */
+/* restore normal link icon */
 a.externalLink[href^="https"] {
     background: url('../images/internet-web-browser.png') right center no-repeat;
+}
+/* hide sourceforge logo on small screens */
+@media (max-width: 979px) {
+    body {
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
+    .nav-collapse .nav .nav-header {
+        color: black;
+    }
+    .nav-collapse .nav > li > a, .nav-collapse .dropdown-menu a {
+        color: #08c;
+        font-weight: normal;
+    }
+    .nav-collapse .nav > li.active > a {
+        color: white;
+    }
+}
+.nav-header {
+    color: black;
+}
+
+/* force logo size */
+#bannerLeft img {
+    height: 32px;
 }
 .navbar .brand {
     padding: 4px;
 }
 .brand img {
     height: 32px;
+}
+footer p {
+    font-size: 0.7rem;
 }
 .breadcrumb {
     background-color: transparent;
@@ -17,6 +46,9 @@ a.externalLink[href^="https"] {
 }
 body {
     background:#F1FAFF url(../images/inner-gd.png) repeat-x scroll 0 0;
+}
+hr {
+    margin: 0.5rem;
 }
 #breadcrumbs {
     background-color: white;
@@ -42,10 +74,10 @@ body {
     font-weight:bold;
 }
 .section p, .section ul, .section pre {
-    padding-left: 15px;
+    padding-left: 0.5rem;
 }
 .section pre {
-    margin-left: 15px;
+    margin-left: 0.5rem;
 }
 
 .section table {

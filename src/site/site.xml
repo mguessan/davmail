@@ -7,37 +7,17 @@
         <fluidoSkin>
             <topBarEnabled>false</topBarEnabled>
             <sideBarEnabled>true</sideBarEnabled>
-            <topBarIcon>
-                <name>DavMail</name>
-                <alt>DavMail</alt>
-                <src>/images/davmail.svg</src>
-                <href>/index.html</href>
-            </topBarIcon>
         </fluidoSkin>
-        <reflowSkin>
-            <highlightJs>false</highlightJs>
-            <brand>
-                <name><![CDATA[<a class="navbar-brand" href="index.html"><img src="images/davmail.svg" alt="DavMail Gateway"/></a>]]></name>
-            </brand>
-            <slogan>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</slogan>
-            <titleTemplate>%2$s</titleTemplate>
-            <bottomNav>
-                <column>Quick Links</column>
-                <column>.*Setup</column>
-                <column>reports</column>
-            </bottomNav>
-            <skinAttribution>false</skinAttribution>
-        </reflowSkin>
     </custom>
     <bannerLeft>
-        <name>DavMail Gateway</name>
+        <name>DavMail</name>
         <src>images/davmailLogo.png</src>
         <href>http://davmail.sourceforge.net</href>
     </bannerLeft>
     <bannerRight>
-        <name>SourceForge</name>
-        <src>http://sflogo.sourceforge.net/sflogo.php?group_id=184600&amp;type=13</src>
-        <href>http://sourceforge.net/projects/davmail</href>
+        <name>#</name>
+        <src>#</src>
+        <href>#</href>
     </bannerRight>
     <poweredBy>
         <logo name="Donate" href="https://sourceforge.net/donate/index.php?group_id=184600"

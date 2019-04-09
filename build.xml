@@ -405,6 +405,21 @@
                        replace="">
             <fileset dir="target/site"/>
         </replaceregexp>
+
+        <replaceregexp match=" &lt;div id=&quot;bodyColumn&quot;"
+                       replace=" &lt;/div&gt;&lt;div id=&quot;bodyColumn&quot;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
+
+        <replaceregexp match=" &lt;div id=&quot;leftColumn&quot; class=&quot;span2&quot;&gt;"
+                       replace=" &lt;div class=&quot;nav-collapse&quot;&gt;&lt;div id=&quot;leftColumn&quot; class=&quot;span2&quot;&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
+
+        <replaceregexp match="&lt;a href=&quot;#&quot; id=&quot;bannerRight&quot;&gt;&lt;img src=&quot;#&quot;  alt=&quot;#&quot;/&gt;&lt;/a&gt;"
+                       replace="&lt;div class=&quot;navbar&quot;&gt;&lt;div class=&quot;container&quot;&gt;&lt;a class=&quot;btn btn-navbar&quot; data-toggle=&quot;collapse&quot; data-target=&quot;.nav-collapse&quot;&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;">
+            <fileset dir="target/site"/>
+        </replaceregexp>
     </target>
 
     <target name='upload-site' depends="fix-site">
