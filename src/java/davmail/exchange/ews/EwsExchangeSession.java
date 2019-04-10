@@ -68,7 +68,8 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Message types.
      *
-     * @see <a href="http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx">http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx</a>
+     * @see <a href="http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx">
+     * http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx</a>
      */
     protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
 
@@ -213,7 +214,8 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     protected void checkEndPointUrl() throws IOException {
-        GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+        GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY,
+                DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
         int status = executeMethod(checkMethod);
         if (status == HttpStatus.SC_UNAUTHORIZED) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -234,7 +236,9 @@ public class EwsExchangeSession extends ExchangeSession {
         // new approach based on ConvertId to find primary email address
         if (email == null || alias == null) {
             try {
-                GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY, DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+                GetFolderMethod getFolderMethod = new GetFolderMethod(BaseShape.ID_ONLY,
+                        DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root),
+                        null);
                 executeMethod(getFolderMethod);
                 EWSMethod.Item item = getFolderMethod.getResponseItem();
                 String folderId = item.get("FolderId");
@@ -2805,7 +2809,7 @@ public class EwsExchangeSession extends ExchangeSession {
         if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
-        } else if (isSubFolderOf(folderPath,ARCHIVE_ROOT)) {
+        } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archivemsgfolderroot);
             folderNames = folderPath.substring(ARCHIVE_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, INBOX) ||
@@ -2854,6 +2858,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     /**
      * Check if folderPath is base folder or a sub folder path.
+     *
      * @param folderPath folder path
      * @param baseFolder base folder
      * @return true if folderPath is under baseFolder
