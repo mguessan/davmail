@@ -1864,17 +1864,11 @@ public abstract class ExchangeSession {
 
         protected ArrayList<String> distributionListMembers = null;
 
-        /**
-         * @inheritDoc
-         */
         public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
             super(folderPath, itemName.endsWith(".vcf") ? itemName.substring(0, itemName.length() - 3) + "EML" : itemName, etag, noneMatch);
             this.putAll(properties);
         }
 
-        /**
-         * @inheritDoc
-         */
         protected Contact() {
         }
 
@@ -2053,9 +2047,6 @@ public abstract class ExchangeSession {
         protected String subject;
         protected VCalendar vCalendar;
 
-        /**
-         * @inheritDoc
-         */
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
@@ -2066,9 +2057,6 @@ public abstract class ExchangeSession {
             }
         }
 
-        /**
-         * @inheritDoc
-         */
         protected Event() {
         }
 

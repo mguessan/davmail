@@ -33,9 +33,6 @@ public class DoubleDotOutputStream extends FilterOutputStream {
     // remember last 2 bytes written
     final int[] buf = {0, 0};
 
-    /**
-     * @inheritDoc
-     */
     public DoubleDotOutputStream(OutputStream out) {
         super(out);
     }

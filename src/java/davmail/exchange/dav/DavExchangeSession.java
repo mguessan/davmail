@@ -1176,9 +1176,6 @@ public class DavExchangeSession extends ExchangeSession {
             }
         }
 
-        /**
-         * @inheritDoc
-         */
         public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
             super(folderPath, itemName, properties, etag, noneMatch);
         }
@@ -1365,9 +1362,6 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
 
-        /**
-         * @inheritDoc
-         */
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
         }

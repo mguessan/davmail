@@ -30,9 +30,6 @@ public class DoubleDotInputStream extends PushbackInputStream {
     final int[] buffer = new int[4];
     int index = -1;
 
-    /**
-     * @inheritDoc
-     */
     public DoubleDotInputStream(InputStream in) {
         super(in, 4);
     }

@@ -39,9 +39,6 @@ public class AbstractConnection extends Thread {
     protected static class LineReaderInputStream extends PushbackInputStream {
         final String encoding;
 
-        /**
-         * @inheritDoc
-         */
         protected LineReaderInputStream(InputStream in, String encoding) {
             super(in);
             if (encoding == null) {
