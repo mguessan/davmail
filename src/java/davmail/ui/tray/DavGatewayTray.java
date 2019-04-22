@@ -61,7 +61,7 @@ public final class DavGatewayTray {
      * Switch tray icon between active and standby icon.
      */
     public static void switchIcon() {
-        if (davGatewayTray != null) {
+        if (davGatewayTray != null && !Settings.getBooleanProperty("davmail.disableTrayActivitySwitch")) {
             if (System.currentTimeMillis() - lastIconSwitch > ICON_SWITCH_MINIMUM_DELAY) {
                 davGatewayTray.switchIcon();
                 lastIconSwitch = System.currentTimeMillis();
