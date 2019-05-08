@@ -183,7 +183,6 @@ public final class ExchangeSessionFactory {
                         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
                         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
                         DavGatewayHttpClientFacade.setCredentials(httpClient, poolKey.userName, poolKey.password);
-                        DavGatewayHttpClientFacade.addNTLM(httpClient);
                         session = new EwsExchangeSession(httpClient, poolKey.userName);
                     } else {
                         ExchangeSession.LOGGER.debug("OWA authentication in EWS mode");

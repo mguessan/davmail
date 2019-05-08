@@ -86,6 +86,8 @@ public final class DavGatewayHttpClientFacade {
         CookiePolicy.registerCookieSpec("DavMailCookieSpec", DavMailCookieSpec.class);
 
         AuthPolicy.registerAuthScheme(AuthPolicy.BASIC, LenientBasicScheme.class);
+        // register the jcifs based NTLMv2 implementation
+        AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
         try {
             WORKSTATION_NAME = InetAddress.getLocalHost().getHostName();
         } catch (Throwable t) {
@@ -628,9 +630,6 @@ public final class DavGatewayHttpClientFacade {
     public static void addNTLM(HttpClient httpClient) {
         // disable preemptive authentication
         httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, false);
-
-        // register the jcifs based NTLMv2 implementation
-        AuthPolicy.registerAuthScheme(AuthPolicy.NTLM, NTLMv2Scheme.class);
 
         ArrayList<String> authPrefs = new ArrayList<String>();
         authPrefs.add(AuthPolicy.NTLM);
