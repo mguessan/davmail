@@ -166,7 +166,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    public EwsExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
+    public EwsExchangeSession(HttpClient httpClient, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -175,7 +175,7 @@ public class EwsExchangeSession extends ExchangeSession {
         buildSessionInfo(null);
     }
 
-    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws DavMailException {
+    public EwsExchangeSession(HttpClient httpClient, URI uri, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -185,7 +185,7 @@ public class EwsExchangeSession extends ExchangeSession {
         buildSessionInfo(uri);
     }
 
-    public EwsExchangeSession(HttpClient httpClient, O365Token token, String userName) throws DavMailException {
+    public EwsExchangeSession(HttpClient httpClient, O365Token token, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         if (userName.contains("@")) {
@@ -225,13 +225,9 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     @Override
-    public void buildSessionInfo(java.net.URI uri) throws DavMailException {
-        try {
+    public void buildSessionInfo(java.net.URI uri) throws IOException {
             // send a first request to get server version
-            checkEndPointUrl();
-        } catch (IOException e) {
-            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-        }
+        checkEndPointUrl();
 
         // new approach based on ConvertId to find primary email address
         if (email == null || alias == null) {

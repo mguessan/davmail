@@ -122,7 +122,7 @@ public abstract class ExchangeSession {
      * @param httpClient httpClient instance with session cookies
      * @param userName   User name
      */
-    public ExchangeSession(HttpClient httpClient, String userName) throws DavMailException {
+    public ExchangeSession(HttpClient httpClient, String userName) throws IOException {
         this.httpClient = httpClient;
         this.userName = userName;
         buildSessionInfo(null);
@@ -230,7 +230,7 @@ public abstract class ExchangeSession {
         return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
-    protected abstract void buildSessionInfo(java.net.URI uri) throws DavMailException;
+    protected abstract void buildSessionInfo(java.net.URI uri) throws IOException;
 
     /**
      * Create message in specified folder.
