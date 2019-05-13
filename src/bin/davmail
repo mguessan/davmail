@@ -18,7 +18,7 @@ if [ -e $BASE/davmail.jar ]; then
 elif [ -e /usr/share/java/swt.jar ]; then
     # SWT 3 is available
     export LD_LIBRARY_PATH=/usr/lib/jni
-    exec ${JAVA} $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:/usr/share/davmail/lib/* davmail.DavGateway "$@"
+    exec ${JAVA} $JAVA_OPTS -cp /usr/share/davmail/davmail.jar:/usr/share/java/swt.jar:${JFX_CLASSPATH}:/usr/share/davmail/lib/* davmail.DavGateway "$@"
 elif [ -e /usr/share/java/swt4.jar ]; then
     # SWT 4 is available, force GTK 2 in SWT
     export LD_LIBRARY_PATH=/usr/lib/jni
