@@ -68,6 +68,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         USER_NAME_FIELDS.add("SafeWordUser");
         USER_NAME_FIELDS.add("user_name");
         USER_NAME_FIELDS.add("login");
+        USER_NAME_FIELDS.add("UserName");
     }
 
     /**
@@ -80,6 +81,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
         PASSWORD_FIELDS.add("pw");
         PASSWORD_FIELDS.add("basicPassword");
         PASSWORD_FIELDS.add("passwd");
+        PASSWORD_FIELDS.add("Password");
     }
 
     /**
