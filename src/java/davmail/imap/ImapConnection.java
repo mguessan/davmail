@@ -376,12 +376,15 @@ public class ImapConnection extends AbstractConnection {
                                             sendClient("* SEARCH");
                                         } else {
                                             int currentIndex = 0;
+                                            StringBuilder buffer = new StringBuilder("* SEARCH");
                                             for (ExchangeSession.Message message : currentFolder.messages) {
                                                 currentIndex++;
                                                 if (uidList.contains(message.getImapUid())) {
-                                                    sendClient("* SEARCH " + currentIndex);
+                                                    buffer.append(' ');
+                                                    buffer.append(currentIndex);
                                                 }
                                             }
+                                            sendClient(buffer.toString());
                                         }
                                         sendClient(commandId + " OK SEARCH completed");
                                     }
