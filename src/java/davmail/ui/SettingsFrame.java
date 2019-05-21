@@ -161,9 +161,7 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addItem(Settings.EWS);
         modeComboBox.addItem(Settings.O365);
         modeComboBox.addItem(Settings.O365_MODERN);
-        if (isJavaFXAvailable()) {
-            modeComboBox.addItem(Settings.O365_INTERACTIVE);
-        }
+        modeComboBox.addItem(Settings.O365_INTERACTIVE);
         modeComboBox.addItem(Settings.WEBDAV);
         modeComboBox.addItem(Settings.AUTO);
         modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
@@ -259,19 +257,6 @@ public class SettingsFrame extends JFrame {
         addPortSettingComponent(settingsPanel, BundleMessage.format("UI_LDAP_PORT"), ldapPortField, ldapPortCheckBox,
                 ldapNoSSLCheckBox, BundleMessage.format("UI_LDAP_PORT_HELP"));
         return settingsPanel;
-    }
-
-    private boolean isJavaFXAvailable() {
-        boolean isJavaFXAvailable = false;
-        try {
-            Class.forName("javafx.embed.swing.JFXPanel");
-            isJavaFXAvailable = true;
-        } catch (ClassNotFoundException e) {
-            // ignore
-        } catch (NoClassDefFoundError e) {
-            // ignore
-        }
-        return isJavaFXAvailable;
     }
 
     protected JPanel getDelaysPanel() {
