@@ -34,7 +34,7 @@ import java.awt.event.ActionListener;
 import java.net.URISyntaxException;
 
 public class O365ManualAuthenticatorDialog extends JDialog {
-    final JTextField codeField = new JTextField(15);
+    final JTextField codeField = new JTextField(30);
     protected String code;
 
     /**
@@ -57,8 +57,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
     public O365ManualAuthenticatorDialog(String initUrl) {
         setAlwaysOnTop(true);
 
-        // TODO setTitle(BundleMessage.format("UI_O365_MANUAL_PROMPT"));
-        setTitle("Office 365 Manual authentication");
+        setTitle(BundleMessage.format("UI_O365_MANUAL_PROMPT"));
 
         try {
             setIconImages(DavGatewayTray.getFrameIcons());
@@ -80,7 +79,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         stylesheet.addRule("body { font-size:small;font-family: " + ((font==null)?"Arial":font.getFamily()) + '}');
         jEditorPane.setEditorKit(htmlEditorKit);
         jEditorPane.setContentType("text/html");
-        jEditorPane.setText(getContent(initUrl));
+        jEditorPane.setText(BundleMessage.format("UI_0365_AUTHENTICATION_PROMPT", initUrl));
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
@@ -98,9 +97,10 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         messagePanel.add(jEditorPane);
 
 
-        JPanel credentialPanel = new JPanel(new GridLayout(1, 2));
+        JPanel credentialPanel = new JPanel();
+        credentialPanel.setLayout(new BoxLayout(credentialPanel, BoxLayout.X_AXIS));
 
-        JLabel promptLabel = new JLabel("Authentication code: ");
+        JLabel promptLabel = new JLabel(BundleMessage.format("UI_0365_AUTHENTICATION_CODE"));
         promptLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         promptLabel.setVerticalAlignment(SwingConstants.CENTER);
 
@@ -128,12 +128,6 @@ public class O365ManualAuthenticatorDialog extends JDialog {
                         getSize().height / 2);
         setAlwaysOnTop(true);
         setVisible(true);
-    }
-
-    private String getContent(String initUrl) {
-        return "Please open the following url: <a href=\""+initUrl+"\">"+"Office 365 login"+"</a>," +
-                "<br/> proceed through authentication steps and " +
-                "<br/> paste back the final url that contains authentication code (blank page)";
     }
 
     protected JPanel getButtonPanel() {

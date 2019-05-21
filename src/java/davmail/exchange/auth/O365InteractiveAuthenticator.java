@@ -135,7 +135,10 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                     o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
                     o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
                 } catch (NoClassDefFoundError e) {
-                    errorCode = "Unable to load JavaFX (OpenJFX)";
+                    LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
+                    O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
+                    code = o365ManualAuthenticatorDialog.getCode();
+                    isAuthenticated = code != null;
                 }
             }
         });
