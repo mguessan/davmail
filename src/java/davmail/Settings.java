@@ -19,10 +19,23 @@
 package davmail;
 
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.log4j.*;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeSet;
 
 /**
  * Settings facade.
@@ -561,7 +574,13 @@ public final class Settings {
         return System.getProperty("os.name").toLowerCase().startsWith("linux");
     }
 
+    public static boolean isUnix() {
+        return isLinux() ||
+                System.getProperty("os.name").toLowerCase().startsWith("freebsd");
+    }
+
     public static boolean isJava8() {
         return "1.8".equals(System.getProperty("java.specification.version"));
     }
+
 }

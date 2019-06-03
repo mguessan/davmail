@@ -19,9 +19,13 @@
 package davmail.ui.browser;
 
 import davmail.BundleMessage;
+import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.tray.DavGatewayTray;
 
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -69,7 +73,7 @@ public final class DesktopBrowser {
                 }
             }
         } catch (java.lang.UnsupportedOperationException e) {
-            if (System.getProperty("os.name").toLowerCase().startsWith("linux")) {
+            if (Settings.isUnix()) {
                 try {
                     XdgDesktopBrowser.browse(location);
                 } catch (Exception e2) {
