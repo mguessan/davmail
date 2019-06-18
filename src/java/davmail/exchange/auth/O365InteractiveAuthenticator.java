@@ -139,6 +139,9 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
                     O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
                     code = o365ManualAuthenticatorDialog.getCode();
                     isAuthenticated = code != null;
+                    if (!isAuthenticated) {
+                        errorCode = "User did not provide authentication code";
+                    }
                 }
             }
         });
