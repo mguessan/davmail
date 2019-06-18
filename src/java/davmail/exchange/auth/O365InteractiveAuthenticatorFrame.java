@@ -111,8 +111,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
                                         // Okta authentication form
                                         || (url.getHost().endsWith(".okta.com") &&
-                                        ("/login/login.htm".equals(url.getPath())
-                                                || "/auth/services/devicefingerprint".equals(url.getPath())))
+                                        !url.getPath().startsWith("/api/v1/authn"))
                                 ) {
                                     LOGGER.debug("Disable integrity check on external resources at " + url);
 
