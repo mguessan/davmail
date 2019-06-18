@@ -43,7 +43,7 @@ public class O365ManualAuthenticatorDialog extends JDialog {
      * @return authentication code
      */
     public String getCode() {
-        if (code.contains("code=") && code.contains("&session_state=")) {
+        if (code != null && code.contains("code=") && code.contains("&session_state=")) {
             code = code.substring(code.indexOf("code=")+5, code.indexOf("&session_state="));
         }
         return code;
