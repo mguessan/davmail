@@ -114,78 +114,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                 ) {
                                     LOGGER.debug("Disable integrity check on external resources at " + url);
 
-                                    return new HttpURLConnection(url) {
-                                        @Override
-                                        public void setRequestMethod(String method) throws ProtocolException {
-                                            httpsURLConnection.setRequestMethod(method);
-                                        }
-
-                                        @Override
-                                        public void setInstanceFollowRedirects(boolean followRedirects) {
-                                            httpsURLConnection.setInstanceFollowRedirects(followRedirects);
-                                        }
-
-                                        @Override
-                                        public boolean getInstanceFollowRedirects() {
-                                            return httpsURLConnection.getInstanceFollowRedirects();
-                                        }
-
-                                        @Override
-                                        public String getRequestMethod() {
-                                            return httpsURLConnection.getRequestMethod();
-                                        }
-
-                                        @Override
-                                        public int getResponseCode() throws IOException {
-                                            return httpsURLConnection.getResponseCode();
-                                        }
-
-                                        @Override
-                                        public String getResponseMessage() throws IOException {
-                                            return httpsURLConnection.getResponseMessage();
-                                        }
-
-                                        @Override
-                                        public Map<String, List<String>> getHeaderFields() {
-                                            LOGGER.debug(httpsURLConnection.getHeaderFields());
-                                            return httpsURLConnection.getHeaderFields();
-                                        }
-
-                                        @Override
-                                        public String getHeaderField(String name) {
-                                            return httpsURLConnection.getHeaderField(name);
-                                        }
-
-                                        @Override
-                                        public String getHeaderField(int n) {
-                                            return httpsURLConnection.getHeaderField(n);
-                                        }
-
-                                        @Override
-                                        public void disconnect() {
-                                            httpsURLConnection.disconnect();
-                                        }
-
-                                        @Override
-                                        public void setDoOutput(boolean dooutput) {
-                                            httpsURLConnection.setDoOutput(dooutput);
-                                        }
-
-                                        @Override
-                                        public boolean usingProxy() {
-                                            return httpsURLConnection.usingProxy();
-                                        }
-
-                                        @Override
-                                        public void connect() throws IOException {
-                                            try {
-                                                httpsURLConnection.connect();
-                                            } catch (IOException e) {
-                                                LOGGER.error(e.getMessage());
-                                                throw e;
-                                            }
-                                        }
-
+                                    return new HttpURLConnectionWrapper(httpsURLConnection, url) {
                                         @Override
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
@@ -198,19 +127,26 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         }
 
                                         @Override
-                                        public OutputStream getOutputStream() throws IOException {
-                                            return httpsURLConnection.getOutputStream();
+                                        public void setRequestProperty(String key, String value) {
+                                            if ("Accept-Encoding".equals(key)) {
+                                                LOGGER.debug("Ignore Accept-Encoding");
+                                            } else {
+                                                httpURLConnection.setRequestProperty(key, value);
+                                            }
                                         }
 
                                         @Override
-                                        public InputStream getErrorStream() {
-                                            return httpsURLConnection.getErrorStream();
+                                        public void addRequestProperty(String key, String value) {
+                                            if ("Accept-Encoding".equals(key)) {
+                                                LOGGER.debug("Ignore Accept-Encoding");
+                                            } else {
+                                                httpURLConnection.setRequestProperty(key, value);
+                                            }
                                         }
-
                                     };
 
                                 } else {
-                                    return httpsURLConnection;
+                                    return new HttpURLConnectionWrapper(httpsURLConnection, url);
                                 }
                             }
 
