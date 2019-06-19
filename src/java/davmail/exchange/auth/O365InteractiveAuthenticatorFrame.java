@@ -108,6 +108,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         || ("login.microsoftonline.com".equals(url.getHost()) && "/login.srf".equals(url.getPath()))
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/login"))
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
+                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/federation/oauth2"))
                                         // Okta authentication form
                                         || (url.getHost().endsWith(".okta.com") &&
                                         !url.getPath().startsWith("/api/v1/authn"))
@@ -119,7 +120,8 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
                                             String contentAsString = new String(content, "UTF-8")
-                                                    .replaceAll("integrity ?=", "integrity.disabled=");
+                                                    .replaceAll("integrity ?=", "integrity.disabled=")
+                                                    .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"");
                                             LOGGER.debug(contentAsString);
                                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                             baos.write(contentAsString.getBytes("UTF-8"));
