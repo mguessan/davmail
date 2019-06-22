@@ -85,13 +85,15 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+        // company tenantId or common
+        String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
         URI uri;
         try {
             uri = new URIBuilder()
                     .setScheme("https")
                     .setHost("login.microsoftonline.com")
-                    .setPath("/common/oauth2/authorize")
+                    .setPath("/"+tenantId+"/oauth2/authorize")
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
@@ -165,7 +167,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         }
 
         if (isAuthenticated) {
-            token = new O365Token(clientId, redirectUri, code);
+            token = new O365Token(tenantId, clientId, redirectUri, code);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {

@@ -42,6 +42,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger(O365Authenticator.class);
 
     private static final String RESOURCE = "https://outlook.office365.com";
+
+    private String tenantId;
     // Office 365 username
     private String username;
     // authentication userid, can be different from username
@@ -78,11 +80,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
             String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
             // standard native app redirectUri
             String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+            // company tenantId or common
+            tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
             URI uri = new URIBuilder()
                     .setScheme("https")
                     .setHost("login.microsoftonline.com")
-                    .setPath("/common/oauth2/authorize")
+                    .setPath("/"+tenantId+"/oauth2/authorize")
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
@@ -110,7 +114,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             String referer = getMethod.getURI().toString();
 
-            RestRequest getCredentialMethod = new RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
+            RestRequest getCredentialMethod = new RestRequest("https://login.microsoftonline.com/"+tenantId+"/GetCredentialType");
             getCredentialMethod.setRequestHeader("Accept", "application/json");
             getCredentialMethod.setRequestHeader("canary", apiCanary);
             getCredentialMethod.setRequestHeader("client-request-id", clientRequestId);
@@ -142,7 +146,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
                 code = authenticateADFS(httpClientAdapter, federationRedirectUrl, url);
             } else {
-                PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/common/login");
+                PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/login");
                 logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                 logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -183,7 +187,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             }
 
-            token = new O365Token(clientId, redirectUri, code);
+            token = new O365Token(tenantId, clientId, redirectUri, code);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (!username.equalsIgnoreCase(token.getUsername())) {
@@ -434,7 +438,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         flowToken = config.getString("FlowToken");
 
         // process auth
-        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/common/SAS/ProcessAuth");
+        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/SAS/ProcessAuth");
         processAuthMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         processAuthMethod.setParameter("type", type);
         processAuthMethod.setParameter("request", context);

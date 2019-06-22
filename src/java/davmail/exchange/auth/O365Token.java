@@ -36,26 +36,28 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class O365Token {
-    protected final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/token";
     protected final String RESOURCE_URL = "https://outlook.office365.com/";
 
     protected static final Logger LOGGER = Logger.getLogger(O365Token.class);
 
     private String clientId;
+    private String tokenUrl;
     private String redirectUri;
     private String username;
     private String refreshToken;
     private String accessToken;
     private long expiresOn;
 
-    public O365Token(String clientId, String redirectUri) {
+    public O365Token(String tenantId, String clientId, String redirectUri) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
+        this.tokenUrl = "https://login.microsoftonline.com/"+tenantId+"/oauth2/token";
     }
 
-    public O365Token(String clientId, String redirectUri, String code) throws IOException {
+    public O365Token(String tenantId, String clientId, String redirectUri, String code) throws IOException {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
+        this.tokenUrl = "https://login.microsoftonline.com/"+tenantId+"/oauth2/token";
 
         ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
         parameters.add(new BasicNameValuePair("grant_type", "authorization_code"));
@@ -63,7 +65,7 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
         parameters.add(new BasicNameValuePair("client_id", clientId));
 
-        RestRequest tokenRequest = new RestRequest(TOKEN_URL, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+        RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
         executeRequest(tokenRequest);
     }
@@ -133,7 +135,7 @@ public class O365Token {
         parameters.add(new BasicNameValuePair("client_id", clientId));
         parameters.add(new BasicNameValuePair("resource", "https://outlook.office365.com/"));
 
-        RestRequest tokenRequest = new RestRequest(TOKEN_URL, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
+        RestRequest tokenRequest = new RestRequest(tokenUrl, new UrlEncodedFormEntity(parameters, Consts.UTF_8));
 
         executeRequest(tokenRequest);
     }

@@ -54,6 +54,9 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
         final String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
         // standard native app redirectUri
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+        // company tenantId or common
+        String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
+
         String refreshToken = Settings.getProperty("davmail.oauth."+username.toLowerCase()+".refreshToken");
         if (refreshToken == null) {
             // single user mode
@@ -65,7 +68,7 @@ public class O365StoredTokenAuthenticator implements ExchangeAuthenticator {
             throw new IOException("No stored Oauth refresh token found for "+username);
         }
 
-        token = new O365Token(clientId, redirectUri);
+        token = new O365Token(tenantId, clientId, redirectUri);
         if (accessToken != null) {
             // for tests only: load access token, will expire in at most one hour
             token.setAccessToken(accessToken);

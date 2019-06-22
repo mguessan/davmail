@@ -97,7 +97,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                             protected URLConnection openConnection(URL url, Proxy proxy) throws IOException {
                                 LOGGER.debug("openConnection " + url);
 
-                                if (url.toExternalForm().endsWith("/common/handlers/watson")) {
+                                if (url.toExternalForm().endsWith("/handlers/watson")) {
                                     LOGGER.warn("Failed: form calls watson");
                                 }
                                 final HttpURLConnection httpsURLConnection = (HttpURLConnection) super.openConnection(url, proxy);
