@@ -109,7 +109,8 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox smtpSaveInSentCheckBox;
 	protected JCheckBox imapAlwaysApproxMsgSizeCheckBox;
 
-	protected JTextField oauthClientIdField;
+    protected JTextField oauthTenantIdField;
+    protected JTextField oauthClientIdField;
     protected JTextField oauthRedirectUriField;
 
     JCheckBox osxHideFromDockCheckBox;
@@ -425,12 +426,15 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOauthPanel() {
-        JPanel oAuthPanel = new JPanel(new GridLayout(2, 2));
+        JPanel oAuthPanel = new JPanel(new GridLayout(3, 2));
         oAuthPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OAUTH")));
 
+        oauthTenantIdField = new JTextField(Settings.getProperty("davmail.oauth.tenantId"), 20);
         oauthClientIdField = new JTextField(Settings.getProperty("davmail.oauth.clientId"), 20);
         oauthRedirectUriField = new JTextField(Settings.getProperty("davmail.oauth.redirectUri"), 20);
 
+        addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_TENANTID"), oauthTenantIdField,
+                BundleMessage.format("UI_OAUTH_TENANTID_HELP"));
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_CLIENTID"), oauthClientIdField,
                 BundleMessage.format("UI_OAUTH_CLIENTID_HELP"));
         addSettingComponent(oAuthPanel, BundleMessage.format("UI_OAUTH_REDIRECTURI"), oauthRedirectUriField,
@@ -672,6 +676,7 @@ public class SettingsFrame extends JFrame {
         pkcs11LibraryField.setText(Settings.getProperty("davmail.ssl.pkcs11Library"));
         pkcs11ConfigField.setText(Settings.getProperty("davmail.ssl.pkcs11Config"));
 
+        oauthTenantIdField.setText(Settings.getProperty("davmail.oauth.tenantId"));
         oauthClientIdField.setText(Settings.getProperty("davmail.oauth.clientId"));
         oauthRedirectUriField.setText(Settings.getProperty("davmail.oauth.redirectUri"));
 
@@ -844,6 +849,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
                 Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
 
+                Settings.setProperty("davmail.oauth.tenantId", oauthTenantIdField.getText());
                 Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
                 Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
 

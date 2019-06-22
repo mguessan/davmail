@@ -63,6 +63,11 @@ davmail.oauth.clientId=<i>yourappid</i>
 davmail.oauth.redirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient
                         </source>
                     </li>
+                    <li>Default tenant id is common, set tenantId to force company tenant:<br/>
+                        <source>
+                            davmail.oauth.tenantId=<i>yourtenantid</i>
+                        </source>
+                    </li>
                 </ul>
                 <p>The required scopes are:</p>
                 <source>
