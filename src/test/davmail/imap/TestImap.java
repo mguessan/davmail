@@ -741,4 +741,13 @@ public class TestImap extends AbstractImapTestCase {
         assertEquals(". NO [TRYCREATE] Folder 'Missing' not found", readFullAnswer("."));
 
     }
+
+    public void testSearchNotUid() throws IOException {
+        resetTestFolder();
+        appendMessage();
+
+        writeLine(". UID SEARCH NOT UID 1");
+        assertEquals("* SEARCH", readLine());
+        assertEquals(". OK SEARCH completed", readFullAnswer("."));
+    }
 }

@@ -1093,11 +1093,31 @@ public class ImapConnection extends AbstractConnection {
                     && (conditions.answered == null || message.answered == conditions.answered)
                     && (conditions.draft == null || message.draft == conditions.draft)
                     // range iterator: include messages available in search result
-                    && (localMessagesUidList == null || localMessagesUidList.contains(message.getImapUid()))) {
+                    && (localMessagesUidList == null || localMessagesUidList.contains(message.getImapUid()))
+                    && isNotExcluded(conditions.notUidRange, message.getImapUid())) {
                 uidList.add(message.getImapUid());
             }
         }
         return uidList;
+    }
+
+    /**
+     * Check NOT UID condition.
+     * @param notUidRange excluded uid range
+     * @param imapUid current message imap uid
+     * @return true if not excluded
+     */
+    private boolean isNotExcluded(String notUidRange, long imapUid) {
+        if (notUidRange == null) {
+            return true;
+        }
+        String imapUidAsString = String.valueOf(imapUid);
+        for (String rangeValue: notUidRange.split(",")) {
+            if (imapUidAsString.equals(rangeValue)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected void appendEnvelope(StringBuilder buffer, MessageWrapper message) throws IOException {
@@ -1374,6 +1394,7 @@ public class ImapConnection extends AbstractConnection {
         Boolean draft;
         String indexRange;
         String uidRange;
+        String notUidRange;
     }
 
     protected ExchangeSession.MultiCondition appendOrSearchParams(String token, SearchConditions conditions) throws IOException {
@@ -1404,6 +1425,8 @@ public class ImapConnection extends AbstractConnection {
                 return session.isNull("deleted");
             } else if ("KEYWORD".equals(nextToken)) {
                 return appendNotSearchParams(nextToken+" "+tokens.nextToken(), conditions);
+            } else if ("UID".equals(nextToken)) {
+                conditions.notUidRange = tokens.nextToken();
             } else {
                 return appendNotSearchParams(nextToken, conditions);
             }
