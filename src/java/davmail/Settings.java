@@ -48,6 +48,7 @@ public final class Settings {
     public static final String O365 = "O365";
     public static final String O365_MODERN = "O365Modern";
     public static final String O365_INTERACTIVE = "O365Interactive";
+    public static final String O365_MANUAL = "O365Manual";
     public static final String WEBDAV = "WebDav";
     public static final String EWS = "EWS";
     public static final String AUTO = "Auto";
