@@ -100,6 +100,8 @@ public class SettingsFrame extends JFrame {
     protected JTextField defaultDomainField;
     protected JCheckBox showStartupBannerCheckBox;
     protected JCheckBox disableGuiNotificationsCheckBox;
+    protected JCheckBox disableTrayActivitySwitchCheckBox;
+
     protected JCheckBox imapAutoExpungeCheckBox;
     protected JCheckBox enableKeepAliveCheckBox;
     protected JCheckBox popMarkReadOnRetrCheckBox;
@@ -163,6 +165,7 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addItem(Settings.O365);
         modeComboBox.addItem(Settings.O365_MODERN);
         modeComboBox.addItem(Settings.O365_INTERACTIVE);
+        modeComboBox.addItem(Settings.O365_MANUAL);
         modeComboBox.addItem(Settings.WEBDAV);
         modeComboBox.addItem(Settings.AUTO);
         modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
@@ -468,7 +471,7 @@ public class SettingsFrame extends JFrame {
     }
 
     protected JPanel getOtherSettingsPanel() {
-        JPanel otherSettingsPanel = new JPanel(new GridLayout(15, 2));
+        JPanel otherSettingsPanel = new JPanel(new GridLayout(16, 2));
         otherSettingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_OTHER")));
 
         folderSizeLimitField = new JTextField(Settings.getProperty("davmail.folderSizeLimit"), 6);
@@ -484,6 +487,8 @@ public class SettingsFrame extends JFrame {
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox = new JCheckBox();
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
+        disableTrayActivitySwitchCheckBox =  new JCheckBox();
+        disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
         imapAutoExpungeCheckBox = new JCheckBox();
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
 		imapAlwaysApproxMsgSizeCheckBox = new JCheckBox();
@@ -515,6 +520,8 @@ public class SettingsFrame extends JFrame {
                 BundleMessage.format("UI_SHOW_STARTUP_BANNER_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS"), disableGuiNotificationsCheckBox,
                 BundleMessage.format("UI_DISABLE_GUI_NOTIFICATIONS_HELP"));
+        addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH"), disableTrayActivitySwitchCheckBox,
+                BundleMessage.format("UI_DISABLE_TRAY_ACTIVITY_SWITCH_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_IMAP_AUTO_EXPUNGE"), imapAutoExpungeCheckBox,
                 BundleMessage.format("UI_IMAP_AUTO_EXPUNGE_HELP"));
         addSettingComponent(otherSettingsPanel, BundleMessage.format("UI_ALWAYS_APPROXIMATE_MSG_SIZE"), imapAlwaysApproxMsgSizeCheckBox,
@@ -658,6 +665,7 @@ public class SettingsFrame extends JFrame {
         defaultDomainField.setText(Settings.getProperty("davmail.defaultDomain"));
         showStartupBannerCheckBox.setSelected(Settings.getBooleanProperty("davmail.showStartupBanner", true));
         disableGuiNotificationsCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableGuiNotifications", false));
+        disableTrayActivitySwitchCheckBox.setSelected(Settings.getBooleanProperty("davmail.disableTrayActivitySwitch", false));
         imapAutoExpungeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAutoExpunge", true));
         imapAlwaysApproxMsgSizeCheckBox.setSelected(Settings.getBooleanProperty("davmail.imapAlwaysApproxMsgSize", false));
         enableKeepAliveCheckBox.setSelected(Settings.getBooleanProperty("davmail.enableKeepAlive", false));
@@ -828,6 +836,7 @@ public class SettingsFrame extends JFrame {
                 Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
                 Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
                 Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
+                Settings.setProperty("davmail.disableTrayActivitySwitch", String.valueOf(disableTrayActivitySwitchCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
                 Settings.setProperty("davmail.imapAlwaysApproxMsgSize", String.valueOf(imapAlwaysApproxMsgSizeCheckBox.isSelected()));
                 Settings.setProperty("davmail.enableKeepAlive", String.valueOf(enableKeepAliveCheckBox.isSelected()));
