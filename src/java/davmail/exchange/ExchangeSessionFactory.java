@@ -220,6 +220,7 @@ public final class ExchangeSessionFactory {
                         }
                     }
                 }
+                checkWhiteList(session.getEmail());
                 ExchangeSession.LOGGER.debug("Created new session " + session + " for user " + poolKey.userName);
             }
             // successful login, put session in cache
@@ -242,6 +243,27 @@ public final class ExchangeSessionFactory {
             handleNetworkDown(exc);
         }
         return session;
+    }
+
+    /**
+     * Check if whitelist is empty or email is allowed.
+     * userWhiteList is a comma separated list of values.
+     * \@company.com means all domain users are allowed
+     * @param email user email
+     */
+    private static void checkWhiteList(String email) throws DavMailAuthenticationException {
+        String whiteListString = Settings.getProperty("davmail.userWhiteList");
+        if (whiteListString != null && !whiteListString.isEmpty()) {
+            for (String whiteListvalue : whiteListString.split(",")) {
+                if (whiteListvalue.startsWith("@") && email.endsWith(whiteListvalue)) {
+                    return;
+                } else if (email.equalsIgnoreCase(whiteListvalue)) {
+                    return;
+                }
+            }
+            ExchangeSession.LOGGER.warn(email + " not allowed by whitelist");
+            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+        }
     }
 
     /**
