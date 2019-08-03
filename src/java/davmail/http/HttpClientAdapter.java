@@ -77,7 +77,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class HttpClientAdapter {
-    static final Logger LOGGER = Logger.getLogger("davmail.http.DavGatewayHttpClientFacade");
+    static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
     static final Registry<AuthSchemeProvider> AUTH_SCHEME_REGISTRY;
@@ -457,13 +457,13 @@ public class HttpClientAdapter {
         // 440 means forbidden on Exchange
         if (status == 440) {
             return new LoginTimeoutException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN) {
+        } else if (status == org.apache.http.HttpStatus.SC_FORBIDDEN) {
             return new HttpForbiddenException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND) {
+        } else if (status == org.apache.http.HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_PRECONDITION_FAILED) {
+        } else if (status == org.apache.http.HttpStatus.SC_PRECONDITION_FAILED) {
             return new HttpPreconditionFailedException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+        } else if (status == org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return new HttpServerErrorException(message.toString());
         } else {
             return new HttpException(message.toString());
