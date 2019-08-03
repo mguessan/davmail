@@ -18,12 +18,7 @@
  */
 package davmail.imap;
 
-import davmail.Settings;
-
 import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
@@ -55,7 +50,7 @@ public class TestImapFolders extends AbstractImapTestCase {
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 
-    public void testEwsPaging() throws IOException, InterruptedException, MessagingException {
+    public void testEwsPaging() throws IOException, MessagingException {
         resetTestFolder();
         appendHundredMessages();
 
@@ -70,5 +65,14 @@ public class TestImapFolders extends AbstractImapTestCase {
         assertEquals("* LIST (\\HasNoChildren) \"/\" \"testfolder\"", readLine());
         assertEquals(". OK LIST completed", readFullAnswer("."));
     }
+
+    public void testListInboxDash() throws IOException {
+        writeLine(". LIST \"\" \"%/%\"");
+        assertEquals(". OK LIST completed", readFullAnswer("."));
+
+        writeLine(". SELECT \"Inbox-2019\"");
+        assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
+    }
+
 
 }
