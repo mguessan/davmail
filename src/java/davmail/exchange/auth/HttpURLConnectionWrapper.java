@@ -19,7 +19,6 @@
 
 package davmail.exchange.auth;
 
-import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -43,9 +42,6 @@ public class HttpURLConnectionWrapper extends HttpURLConnection {
     @Override
     public void setRequestMethod(String method) throws ProtocolException {
         httpURLConnection.setRequestMethod(method);
-        if ("POST".equals(method)) {
-            System.out.println("POST");
-        }
     }
 
     @Override
