@@ -1,3 +1,125 @@
+## DavMail 5.3.0 2019-08-06
+Major update with a focus on O365 and MFA support, this release includes a new davmail.userWhiteList
+setting to filter users by email or domain. We now have a more modern responsive site thanks to new Maven skin.
+Migration to HttpClient 4 is in progress but not finished yet.
+
+
+###Enhancements:
+- Cleanup from audit
+- Update Maven POM
+- Implement a new davmail.userWhiteList setting to only allow limited users and/or domains, see https://github.com/mguessan/davmail/issues/47
+value is a comma separated list of emails or domains (user@company.com or @company.com)
+- Cleanup: remove duplicate code
+
+###IMAP:
+- IMAP: additional folder test case
+- IMAP: Fix #714 StringIndexOutOfBoundsException with NOT UID condition
+- IMAP: fix https://github.com/mguessan/davmail/issues/35, Result of of a mailbox search is different between search and uid_search
+- IMAP: try to encode invalid character ( and ) in keywords
+- IMAP: fix #708 issue, more generic patch when folder name starts with a special folder name
+- IMAP: fix #708 issue with folder name that starts with Inbox
+- IMAP: encode greater than character in folder name
+
+###HTTP:
+- Fix logger and remove old httpClient dependency in HttpClientAdapter
+- HTTP: Full Http Client 4 form authentication module
+- HTTP: experimental Http Client 4 authenticator
+- HTTP: Implement execute with custom local context and manage cookies
+- HTTP: cleanup from audit
+- HTTP: remove form authentication code from ExchangeSession
+- HTTP: Switch to new ExchangeFormAuthenticator
+- HTTP: adjust RestRequest for HttpClient 4 Exchange DAV requests
+- HTTP: implement HttpClient 4 Exchange DAV requests
+- HTTP: prepare major refactoring, extract form authentication from ExchangeSession
+- HTTP: migrate O365Token to HttpClient4
+- HTTP: remove last dependencies to HttpClient3 in URIUtil
+- HTTP: set logging levels for HttpClient 4
+- HTTP: improve request implementation
+- HTTP: move requests to new package
+- HTTP: improve REST request
+- HTTP: Accept String urls in GetRequest and PostRequest
+- HTTP: switch to GetRequest in getReleasedVersion
+- HTTP: Http Client 4 GET and POST request wrappers
+- HTTP: a few more test cases
+- HTTP: improve HttpClientAdapter interface
+- HTTP: switch check released version to HttpClient 4
+- HTTP: implement Get and Rest requests with HttpClient 4
+- HTTP: reenable basic proxy authentication on Java >= 1.8.111 in HttpClientAdapter
+- HTTP: reimplement URIUtil to prepare HttpClient 4 migration
+- HTTP: Cleanup from audit
+- HTTP: reenable basic proxy authentication on Java >= 1.8.111: jdk.http.auth.tunneling.disabledSchemes=""
+- HTTP: Implement JCIFS NTLM authentication with HttpClient 4
+
+###GUI:
+- GUI: translate disableTrayActivitySwitch messages
+- GUI: merge Add davmail.disableTrayActivitySwitch to disable tray icon activity, see https://github.com/mguessan/davmail/pull/28
+
+###EWS:
+- EWS: O365Manual add mode in Settings
+- EWS: O365Manual enable in ExchangeSessionFactory
+- EWS: O365Manual missing label
+- EWS: add davmail.oauth.tenantId setting to GUI and documentation
+- EWS: create a new davmail.oauth.tenantId setting to set actual company tenant
+- EWS: additional cases for Microsoft account authentication
+- EWS: refactor O365 interactive to always use an HttpURLConnectionWrapper
+- EWS: Fix error handling in manual authentication failover
+- EWS: fix NPE in manual authenticator
+- EWS: do not force user agent in O365 interactive authenticator, breaks Microsoft login form browser detection
+- EWS: improve Okta support in O365 interactive authenticator
+- EWS: prepare tenant independent authenticator: do not hard code /common/
+- EWS: always enable interactive authenticator in settings now that we have a failover without JavaFX
+- EWS: i18n manual authentication messages
+- EWS: Prepare a failover manual authenticator when OpenJFX is not available
+- EWS: merge https://github.com/mguessan/davmail/pull/26, Added input names for form authentication
+- EWS: do not call addNTLM in ExchangeSessionFactory to avoid kerberos configuration conflict
+- EWS: fix regression to correctly detect network down
+- EWS: fix regression, do not force user-agent in 0365 interactive authenticator
+- EWS: cleanup from audit
+- EWS: O36 authenticators cleanup from audit
+- EWS: use ConvertId to retrieve current mailbox primary SMTP address, more reliable than ResolveNames
+- EWS: migrate O365Authenticator to HttpClient 4
+- EWS: remove duplicate code in O365 interactive authenticator
+- EWS: improve interactive authenticator, adjust integrity workaround for Okta
+- EWS: improve interactive authenticator, adjust integrity workaround and catch javascript errors
+- EWS: Apply integrity disable workaround to Okta form second step
+- EWS: use URIBuilder instead of URIUtil to build URI
+- EWS: fix support for new Okta authentication form, need to disable integrity check
+- EWS: drop old Autodiscover failover, need to implement before authentication instead
+- EWS: log connection errors in O365InteractiveAuthenticator
+- EWS: new AutoDiscoverMethod implementation
+- EWS: improve O365 token logging
+
+###Linux:
+- Linux: adjust AWT tray icon for Linux Mint Cinnamon
+- Linux: Merge patch, add JFX_CLASSPATH when SWT3 is available
+- Linux: Fix spec file for copr
+
+###Unix:
+- Unix: failover to xdg-open on both Linux and Freebsd
+
+###Documentation:
+- Doc: fix title in page
+- Doc: improved site skin with collapsible sidebar
+- Doc: upgrade Maven Javadoc plugin
+- Doc: Switch to modern responsive Maven fluido skin
+- Doc: Switch to modern responsive Maven reflow skin
+
+###DAV:
+- DAV: cleanup from audit
+- DAV: remove dependency to old URIException
+
+###Caldav:
+- Caldav: cleanup from audit
+- Caldav: send 404 not found instead of 400 for unknown requests
+- Caldav: Do not try to update event is X-MOZ-FAKED-MASTER is set
+- Caldav: fix test case
+
+###OSX:
+- OSX: merge patch #54 Set NSSupportsAutomaticGraphicsSwitching to Yes to prevent macOS GPU access
+
+###SWT:
+- SWT: merge duplicate code
+
 ## DavMail 5.2.0 2019-02-10
 Includes improved ADFS compatibility and support Okta authentication in interactive mode, 
 a fix for Thunderbird dismiss issue, a few LDAP and IMAP enhancements (TRYCREATE support).

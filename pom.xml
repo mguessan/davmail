@@ -5,7 +5,7 @@
     <groupId>davmail</groupId>
     <artifactId>davmail</artifactId>
     <packaging>jar</packaging>
-    <version>5.2.0</version>
+    <version>5.3.0</version>
     <name>DavMail POP/IMAP/SMTP/Caldav/Carddav/LDAP Exchange and Office 365 Gateway</name>
     <organization>
         <name>Mickaël Guessant</name>

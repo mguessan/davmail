@@ -15,20 +15,20 @@ This git repository is synchronized with subversion repository in order to make 
 ## Download
 Download latest DavMail release on Sourceforge
 
-[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/5.2.0/)
+[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/davmail/files/davmail/5.3.0/)
 
 ## Trunk builds
 Latest working builds are now available on Appveyor:
 
-* Windows setup [davmail-5.2.0-trunk-setup.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.2.0-trunk-setup.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Windows 64 bits setup [davmail-5.2.0-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.2.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
-* Windows noinstall package [davmail-5.2.0-trunk-windows-noinstall.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.2.0-trunk-windows-noinstall.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Windows setup [davmail-5.3.0-trunk-setup.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.3.0-trunk-setup.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Windows 64 bits setup [davmail-5.3.0-trunk-setup64.exe](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.3.0-trunk-setup64.exe?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Windows noinstall package [davmail-5.3.0-trunk-windows-noinstall.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.3.0-trunk-windows-noinstall.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
-* Platform independent package [davmail-5.2.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.2.0-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Platform independent package [davmail-5.3.0-trunk.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail-5.3.0-trunk.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
-* Debian package [davmail_5.2.0-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_5.2.0-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* Debian package [davmail_5.3.0-trunk-1_all.deb](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2Fdavmail_5.3.0-trunk-1_all.deb?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
-* OSX application [DavMail-MacOSX-5.2.0-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-5.2.0-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
+* OSX application [DavMail-MacOSX-5.3.0-trunk.app.zip](https://ci.appveyor.com/api/projects/mguessan/davmail/artifacts/dist%2FDavMail-MacOSX-5.3.0-trunk.app.zip?job=Environment%3A%20JAVA_HOME%3DC%3A%5CProgram%20Files%5CJava%5Cjdk1.8.0)
 
 ## Contribute
 Contributions are welcome, you can either [submit a patch](https://sourceforge.net/p/davmail/patches/) or create a [Github pull request](https://github.com/mguessan/davmail/pulls).
