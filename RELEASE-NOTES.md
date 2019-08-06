@@ -3,7 +3,6 @@ Major update with a focus on O365 and MFA support, this release includes a new d
 setting to filter users by email or domain. We now have a more modern responsive site thanks to new Maven skin.
 Migration to HttpClient 4 is in progress but not finished yet.
 
-
 ###Enhancements:
 - Cleanup from audit
 - Update Maven POM
