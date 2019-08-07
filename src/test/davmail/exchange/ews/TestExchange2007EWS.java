@@ -21,14 +21,16 @@ package davmail.exchange.ews;
 
 import davmail.AbstractExchange2007TestCase;
 import davmail.Settings;
+import davmail.exchange.ExchangeSession;
+import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
-import org.apache.commons.httpclient.HttpClient;
 import org.apache.log4j.Level;
 
 import java.io.IOException;
 
 public class TestExchange2007EWS extends AbstractExchange2007TestCase {
     public void testSimpleUsernameOWAFormAuthenticator() throws IOException {
+        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         String url = "https://" + server + "/owa";
         ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
         authenticator.setUrl(url);
@@ -57,6 +59,18 @@ public class TestExchange2007EWS extends AbstractExchange2007TestCase {
         // create session
         EwsExchangeSession session = new EwsExchangeSession(authenticator.getHttpClient(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
+        assertEquals(username, session.getAlias());
+        assertEquals(email, session.getEmail());
+    }
+
+    public void testDirectEWSAuthentication() throws IOException {
+        //Settings.setProperty("davmail.enableKerberos", "true");
+        Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+
+        String url = "https://" + server + "/EWS/Exchange.asmx";
+
+        ExchangeSession session = ExchangeSessionFactory.getInstance(url, username,  password);
+
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
     }

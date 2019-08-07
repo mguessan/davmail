@@ -217,6 +217,15 @@ public class EwsExchangeSession extends ExchangeSession {
         GetFolderMethod checkMethod = new GetFolderMethod(BaseShape.ID_ONLY,
                 DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
         int status = executeMethod(checkMethod);
+        // add NTLM if required
+        if ((status == HttpStatus.SC_UNAUTHORIZED || status == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED)
+                && DavGatewayHttpClientFacade.acceptsNTLMOnly(checkMethod) && !DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
+            LOGGER.debug("Received " + status + " unauthorized at " + checkMethod.getURI() + ", retrying with NTLM");
+            DavGatewayHttpClientFacade.addNTLM(httpClient);
+            checkMethod = new GetFolderMethod(BaseShape.ID_ONLY,
+                    DistinguishedFolderId.getInstance(null, DistinguishedFolderId.Name.root), null);
+            status = executeMethod(checkMethod);
+        }
         if (status == HttpStatus.SC_UNAUTHORIZED) {
             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
         } else if (status != HttpStatus.SC_OK) {
@@ -242,7 +251,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 ConvertIdMethod convertIdMethod = new ConvertIdMethod(folderId);
                 executeMethod(convertIdMethod);
                 EWSMethod.Item convertIdItem = convertIdMethod.getResponseItem();
-                if (convertIdItem != null) {
+                if (convertIdItem != null && !convertIdItem.isEmpty()) {
                     email = convertIdItem.get("Mailbox");
                     alias = email.substring(0, email.indexOf('@'));
                 }
