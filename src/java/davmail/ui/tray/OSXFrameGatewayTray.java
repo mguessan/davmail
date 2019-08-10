@@ -20,24 +20,25 @@ package davmail.ui.tray;
 
 import davmail.BundleMessage;
 import davmail.DavGateway;
-import davmail.ui.OSXAdapter;
+import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.lang.reflect.Method;
+import java.util.EventObject;
 
 /**
  * MacOSX specific frame to handle menu
  */
-public class OSXFrameGatewayTray extends FrameGatewayTray {
+public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInterface {
+    protected static final Logger LOGGER = Logger.getLogger(OSXFrameGatewayTray.class);
 
     /**
      * Exit DavMail Gateway.
      *
-     * @return true
      */
-    @SuppressWarnings({"SameReturnValue", "UnusedDeclaration"})
-    public boolean quit() {
+    public void quit() {
         DavGateway.stop();
         // dispose frames
         settingsFrame.dispose();
@@ -45,7 +46,6 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
         if (logBrokerMonitor != null) {
             logBrokerMonitor.dispose();
         }
-        return true;
     }
 
     @Override
@@ -71,9 +71,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray {
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         super.createAndShowGUI();
         try {
-            OSXAdapter.setAboutHandler(this, FrameGatewayTray.class.getDeclaredMethod("about", (Class[]) null));
-            OSXAdapter.setPreferencesHandler(this, FrameGatewayTray.class.getDeclaredMethod("preferences", (Class[]) null));
-            OSXAdapter.setQuitHandler(this, OSXFrameGatewayTray.class.getDeclaredMethod("quit", (Class[]) null));
+            new OSXHandler(this);
         } catch (Exception e) {
             DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_OSXADAPTER"), e);
         }

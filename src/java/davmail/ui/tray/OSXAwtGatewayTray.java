@@ -36,7 +36,7 @@ import java.util.ArrayList;
 /**
  * Extended Awt tray with OSX extensions.
  */
-public class OSXAwtGatewayTray extends AwtGatewayTray {
+public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterface {
     protected static final String OSX_TRAY_ACTIVE_PNG = "osxtray2.png";
     protected static final String OSX_TRAY_PNG = "osxtray.png";
     protected static final String OSX_TRAY_INACTIVE_PNG = "osxtrayinactive.png";
@@ -46,10 +46,8 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
     /**
      * Exit DavMail Gateway.
      *
-     * @return true
      */
-    @SuppressWarnings({"SameReturnValue", "UnusedDeclaration"})
-    public boolean quit() {
+    public void quit() {
         DavGateway.stop();
         // dispose frames
         settingsFrame.dispose();
@@ -57,7 +55,6 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
         if (logBrokerMonitor != null) {
             logBrokerMonitor.dispose();
         }
-        return true;
     }
 
     @Override
@@ -78,9 +75,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray {
         super.createAndShowGUI();
         trayIcon.removeActionListener(settingsListener);
         try {
-            OSXAdapter.setAboutHandler(this, AwtGatewayTray.class.getDeclaredMethod("about", (Class[]) null));
-            OSXAdapter.setPreferencesHandler(this, AwtGatewayTray.class.getDeclaredMethod("preferences", (Class[]) null));
-            OSXAdapter.setQuitHandler(this, OSXAwtGatewayTray.class.getDeclaredMethod("quit", (Class[]) null));
+            new OSXHandler(this);
         } catch (Exception e) {
             DavGatewayTray.error(new BundleMessage("LOG_ERROR_LOADING_OSXADAPTER"), e);
         }
