@@ -55,7 +55,7 @@ import java.util.Set;
  * Form based Exchange authentication.
  */
 public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
-    protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
+    protected static final Logger LOGGER = Logger.getLogger(ExchangeFormAuthenticator.class);
 
     /**
      * Various username fields found on custom Exchange authentication forms
@@ -243,7 +243,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             LOGGER.error(BundleMessage.formatLog("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc));
             throw new DavMailException("EXCEPTION_EXCHANGE_LOGIN_FAILED", exc);
         }
-        LOGGER.debug("Session " + this + " created");
+        LOGGER.debug("Authenticated with "+url);
     }
 
     /**
