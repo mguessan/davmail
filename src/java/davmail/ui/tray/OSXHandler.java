@@ -39,39 +39,32 @@ public class OSXHandler implements InvocationHandler {
             InvocationTargetException {
 
         Class<?> applicationClass;
-        Class<?> quitHandlerClass;
         Class<?> aboutHandlerClass;
         Class<?> preferencesHandlerClass;
 
         Object application;
-
         if (IS_JAVA9) {
             applicationClass = Class.forName("java.awt.Desktop");
             application = Desktop.getDesktop();
-            quitHandlerClass = Class.forName("java.awt.desktop.QuitHandler");
             aboutHandlerClass = Class.forName("java.awt.desktop.AboutHandler");
             preferencesHandlerClass = Class.forName("java.awt.desktop.PreferencesHandler");
         } else {
             applicationClass = Class.forName("com.apple.eawt.Application");
             application = applicationClass.getMethod("getApplication").invoke(null);
-            quitHandlerClass = Class.forName("com.apple.eawt.QuitHandler");
             aboutHandlerClass = Class.forName("com.apple.eawt.AboutHandler");
             preferencesHandlerClass = Class.forName("com.apple.eawt.PreferencesHandler");
         }
 
         Object proxy = Proxy.newProxyInstance(OSXHandler.class.getClassLoader(), new Class<?>[]{
-                quitHandlerClass, aboutHandlerClass, preferencesHandlerClass}, this);
+                aboutHandlerClass, preferencesHandlerClass}, this);
 
-        applicationClass.getDeclaredMethod("setQuitHandler", quitHandlerClass).invoke(application, proxy);
         applicationClass.getDeclaredMethod("setAboutHandler", aboutHandlerClass).invoke(application, proxy);
         applicationClass.getDeclaredMethod("setPreferencesHandler", preferencesHandlerClass).invoke(application, proxy);
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-        if ("handleQuitRequestWith".equals(method.getName())) {
-            davGatewayTray.quit();
-        } else if ("handleAbout".equals(method.getName())) {
+        if ("handleAbout".equals(method.getName())) {
             davGatewayTray.about();
         } else if ("handlePreferences".equals(method.getName())) {
             davGatewayTray.preferences();
