@@ -19,8 +19,6 @@
 package davmail.ui.tray;
 
 import davmail.BundleMessage;
-import davmail.DavGateway;
-import davmail.ui.OSXAdapter;
 import info.growl.Growl;
 import info.growl.GrowlException;
 import info.growl.GrowlUtils;
@@ -42,20 +40,6 @@ public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterfac
     protected static final String OSX_TRAY_INACTIVE_PNG = "osxtrayinactive.png";
 
     private static final Logger LOGGER = Logger.getLogger(OSXAwtGatewayTray.class);
-
-    /**
-     * Exit DavMail Gateway.
-     *
-     */
-    public void quit() {
-        DavGateway.stop();
-        // dispose frames
-        settingsFrame.dispose();
-        aboutFrame.dispose();
-        if (logBrokerMonitor != null) {
-            logBrokerMonitor.dispose();
-        }
-    }
 
     @Override
     protected void loadIcons() {

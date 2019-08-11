@@ -20,8 +20,6 @@
 package davmail.ui.tray;
 
 public interface OSXTrayInterface {
-    void quit();
-
     void about();
 
     void preferences();

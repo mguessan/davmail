@@ -19,34 +19,17 @@
 package davmail.ui.tray;
 
 import davmail.BundleMessage;
-import davmail.DavGateway;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.lang.reflect.Method;
-import java.util.EventObject;
 
 /**
  * MacOSX specific frame to handle menu
  */
 public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInterface {
     protected static final Logger LOGGER = Logger.getLogger(OSXFrameGatewayTray.class);
-
-    /**
-     * Exit DavMail Gateway.
-     *
-     */
-    public void quit() {
-        DavGateway.stop();
-        // dispose frames
-        settingsFrame.dispose();
-        aboutFrame.dispose();
-        if (logBrokerMonitor != null) {
-            logBrokerMonitor.dispose();
-        }
-    }
 
     @Override
     protected void buildMenu() {
