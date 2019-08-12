@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <plist version="1.0">
   <dict>
-    <key>LSEnvironment</key>
-    <dict><key>JAVA_HOME</key><string>jre</string></dict>
+    <!--key>LSEnvironment</key>
+    <dict><key>JAVA_HOME</key><string>jre</string></dict-->
     <key>LSUIElement</key><string>0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
