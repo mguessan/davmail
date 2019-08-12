@@ -1,3 +1,25 @@
+## DavMail 5.3.1 2019-08-12
+Bugfix release to fix NTLM authentication for some Exchange on premise instances.
+Also includes a new OSX handlers implementation required to support recent OSX JDKs.
+
+###Enhancements:
+- Reprocess credentials in addNTLM
+- Use github download link instead of direct sourceforge link in About dialog
+- Improve ExchangeFormAuthenticator logging
+
+###EWS:
+- EWS: fix possible bug with username with authenticatorClass
+- EWS: add an Open button to O365ManualAuthenticatorDialog in case links are not working
+- EWS: fix regression in OWA authentication mode, enable NTLM if required by EWS endpoint
+
+###OSX:
+- OSX: comment zulufx jre embed
+- OSX: prepare zulufx jre embed
+- OSX: drop old OSXAdapter
+- OSX: cleanup unused methods
+- OSX: no need to register QuitHandler, default is fine
+- OSX: implement new Desktop handlers on Java 9 and later, keep compatibility with com.apple.eawt.Application
+
 ## DavMail 5.3.0 2019-08-06
 Major update with a focus on O365 and MFA support, this release includes a new davmail.userWhiteList
 setting to filter users by email or domain. We now have a more modern responsive site thanks to new Maven skin.
