@@ -175,12 +175,12 @@ public final class ExchangeSessionFactory {
 
                 if (authenticatorClass != null) {
                     ExchangeAuthenticator authenticator = (ExchangeAuthenticator) Class.forName(authenticatorClass).newInstance();
-                    authenticator.setUsername(userName);
-                    authenticator.setPassword(password);
+                    authenticator.setUsername(poolKey.userName);
+                    authenticator.setPassword(poolKey.password);
                     authenticator.authenticate();
                     HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(authenticator.getExchangeUri().toString());
                     DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
-                    session = new EwsExchangeSession(httpClient, authenticator.getToken(), userName);
+                    session = new EwsExchangeSession(httpClient, authenticator.getToken(), poolKey.userName);
 
                 } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
