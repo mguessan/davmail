@@ -101,91 +101,96 @@ public class O365Authenticator implements ExchangeAuthenticator {
             httpClientAdapter = new HttpClientAdapter(url, userid, password);
 
             GetRequest getMethod = new GetRequest(url);
-            JSONObject config = executeRequest(httpClientAdapter, getMethod);
-
-            String context = config.getString("sCtx"); // csts request
-            String apiCanary = config.getString("apiCanary"); // canary for API calls
-            String clientRequestId = config.getString("correlationId");
-            String hpgact = config.getString("hpgact");
-            String hpgid = config.getString("hpgid");
-            String flowToken = config.getString("sFT");
-            String canary = config.getString("canary");
-            String sessionId = config.getString("sessionId");
-
-            String referer = getMethod.getURI().toString();
-
-            RestRequest getCredentialMethod = new RestRequest("https://login.microsoftonline.com/"+tenantId+"/GetCredentialType");
-            getCredentialMethod.setRequestHeader("Accept", "application/json");
-            getCredentialMethod.setRequestHeader("canary", apiCanary);
-            getCredentialMethod.setRequestHeader("client-request-id", clientRequestId);
-            getCredentialMethod.setRequestHeader("hpgact", hpgact);
-            getCredentialMethod.setRequestHeader("hpgid", hpgid);
-            getCredentialMethod.setRequestHeader("hpgrequestid", sessionId);
-            getCredentialMethod.setRequestHeader("Referer", referer);
-
-            final JSONObject jsonObject = new JSONObject();
-            jsonObject.put("username", username);
-            jsonObject.put("isOtherIdpSupported", true);
-            jsonObject.put("checkPhones", false);
-            jsonObject.put("isRemoteNGCSupported", false);
-            jsonObject.put("isCookieBannerShown", false);
-            jsonObject.put("isFidoSupported", false);
-            jsonObject.put("flowToken", flowToken);
-            jsonObject.put("originalRequest", context);
-
-            getCredentialMethod.setJsonBody(jsonObject);
-
-            JSONObject credentialType = executeRequest(httpClientAdapter, getCredentialMethod);
-            getCredentialMethod.releaseConnection();
-            LOGGER.debug("CredentialType=" + credentialType);
-
-            JSONObject credentials = credentialType.getJSONObject("Credentials");
-            String federationRedirectUrl = credentials.optString("FederationRedirectUrl");
+            String responseBodyAsString = executeRequest(httpClientAdapter, getMethod);
             String code;
-            if (federationRedirectUrl != null && !federationRedirectUrl.isEmpty()) {
-                LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
-                code = authenticateADFS(httpClientAdapter, federationRedirectUrl, url);
+            if (!responseBodyAsString.contains("Config=")) {
+                // we are no longer on Microsoft, try ADFS
+                code = authenticateADFS(httpClientAdapter, responseBodyAsString, url);
             } else {
-                PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/login");
-                logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                JSONObject config = extractConfig(responseBodyAsString);
 
-                logonMethod.setRequestHeader("Referer", referer);
+                String context = config.getString("sCtx"); // csts request
+                String apiCanary = config.getString("apiCanary"); // canary for API calls
+                String clientRequestId = config.getString("correlationId");
+                String hpgact = config.getString("hpgact");
+                String hpgid = config.getString("hpgid");
+                String flowToken = config.getString("sFT");
+                String canary = config.getString("canary");
+                String sessionId = config.getString("sessionId");
 
-                logonMethod.setParameter("canary", canary);
-                logonMethod.setParameter("ctx", context);
-                logonMethod.setParameter("flowToken", flowToken);
-                logonMethod.setParameter("hpgrequestid", sessionId);
-                logonMethod.setParameter("login", username);
-                logonMethod.setParameter("loginfmt", username);
-                logonMethod.setParameter("passwd", password);
+                String referer = getMethod.getURI().toString();
 
-                httpClientAdapter.execute(logonMethod);
-                String responseBodyAsString = logonMethod.getResponseBodyAsString();
-                if (responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
-                    logonMethod = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
-                }
+                RestRequest getCredentialMethod = new RestRequest("https://login.microsoftonline.com/" + tenantId + "/GetCredentialType");
+                getCredentialMethod.setRequestHeader("Accept", "application/json");
+                getCredentialMethod.setRequestHeader("canary", apiCanary);
+                getCredentialMethod.setRequestHeader("client-request-id", clientRequestId);
+                getCredentialMethod.setRequestHeader("hpgact", hpgact);
+                getCredentialMethod.setRequestHeader("hpgid", hpgid);
+                getCredentialMethod.setRequestHeader("hpgrequestid", sessionId);
+                getCredentialMethod.setRequestHeader("Referer", referer);
 
-                Header locationHeader = logonMethod.getResponseHeader("Location");
-                if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
-                    // extract response
-                    config = extractConfig(logonMethod.getResponseBodyAsString());
-                    if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
-                        LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
-                        LOGGER.debug(url);
-                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                    } else if ("50126".equals(config.optString("sErrorCode"))) {
-                        throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                    } else {
-                        throw new DavMailAuthenticationException("LOG_MESSAGE", "Authentication failed, unknown error: " + config);
+                final JSONObject jsonObject = new JSONObject();
+                jsonObject.put("username", username);
+                jsonObject.put("isOtherIdpSupported", true);
+                jsonObject.put("checkPhones", false);
+                jsonObject.put("isRemoteNGCSupported", false);
+                jsonObject.put("isCookieBannerShown", false);
+                jsonObject.put("isFidoSupported", false);
+                jsonObject.put("flowToken", flowToken);
+                jsonObject.put("originalRequest", context);
+
+                getCredentialMethod.setJsonBody(jsonObject);
+
+                JSONObject credentialType = executeRequestGetConfig(httpClientAdapter, getCredentialMethod);
+                getCredentialMethod.releaseConnection();
+                LOGGER.debug("CredentialType=" + credentialType);
+
+                JSONObject credentials = credentialType.getJSONObject("Credentials");
+                String federationRedirectUrl = credentials.optString("FederationRedirectUrl");
+
+                if (federationRedirectUrl != null && !federationRedirectUrl.isEmpty()) {
+                    LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
+                    code = authenticateRedirectADFS(httpClientAdapter, federationRedirectUrl, url);
+                } else {
+                    PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/login");
+                    logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+                    logonMethod.setRequestHeader("Referer", referer);
+
+                    logonMethod.setParameter("canary", canary);
+                    logonMethod.setParameter("ctx", context);
+                    logonMethod.setParameter("flowToken", flowToken);
+                    logonMethod.setParameter("hpgrequestid", sessionId);
+                    logonMethod.setParameter("login", username);
+                    logonMethod.setParameter("loginfmt", username);
+                    logonMethod.setParameter("passwd", password);
+
+                    httpClientAdapter.execute(logonMethod);
+                    responseBodyAsString = logonMethod.getResponseBodyAsString();
+                    if (responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
+                        logonMethod = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
                     }
+
+                    Header locationHeader = logonMethod.getResponseHeader("Location");
+                    if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
+                        // extract response
+                        config = extractConfig(logonMethod.getResponseBodyAsString());
+                        if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
+                            LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
+                            LOGGER.debug(url);
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if ("50126".equals(config.optString("sErrorCode"))) {
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else {
+                            throw new DavMailAuthenticationException("LOG_MESSAGE", "Authentication failed, unknown error: " + config);
+                        }
+                    }
+                    String location = locationHeader.getValue();
+                    code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
                 }
-                String location = locationHeader.getValue();
-                code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-
-                LOGGER.debug("Authentication Code: " + code);
-
             }
+            LOGGER.debug("Authentication Code: " + code);
 
             token = new O365Token(tenantId, clientId, redirectUri, code);
 
@@ -207,16 +212,16 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
-        // set NTLM credentials
-        String responseBodyAsString;
-
+    private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
         // get ADFS login form
         GetRequest logonFormMethod = new GetRequest(federationRedirectUrl);
 
         httpClientAdapter.execute(logonFormMethod);
-        responseBodyAsString = logonFormMethod.getResponseBodyAsString();
+        String responseBodyAsString = logonFormMethod.getResponseBodyAsString();
+        return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
+    }
 
+    private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException {
         String location;
 
         if (responseBodyAsString.contains("login.microsoftonline.com")) {
@@ -453,19 +458,17 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private JSONObject executeRequest(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
+    private String executeRequest(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
         LOGGER.debug(getRequest.getURI());
         httpClientAdapter.executeFollowRedirects(getRequest);
         if (getRequest.getURI().getHost().endsWith("okta.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
         }
 
-        JSONObject config = extractConfig(getRequest.getResponseBodyAsString());
-        LOGGER.debug(config);
-        return config;
+        return getRequest.getResponseBodyAsString();
     }
 
-    private JSONObject executeRequest(HttpClientAdapter httpClientAdapter, RestRequest restRequest) throws IOException {
+    private JSONObject executeRequestGetConfig(HttpClientAdapter httpClientAdapter, RestRequest restRequest) throws IOException {
         LOGGER.debug(restRequest.getURI());
         httpClientAdapter.execute(restRequest);
 
