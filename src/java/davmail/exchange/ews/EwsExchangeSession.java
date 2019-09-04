@@ -2805,7 +2805,9 @@ public class EwsExchangeSession extends ExchangeSession {
         String[] folderNames;
         FolderId currentFolderId;
 
-        if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
+        if ("/public".equals(folderPath)) {
+            return DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
+        } if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
