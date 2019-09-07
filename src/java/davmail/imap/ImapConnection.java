@@ -182,7 +182,7 @@ public class ImapConnection extends AbstractConnection {
                                                     folderQuery = "*";
                                                 }
                                                 boolean wildcard = folderQuery.endsWith("%") && !folderQuery.contains("/") && !folderQuery.equals("%");
-                                                boolean recursive = folderQuery.endsWith("*") && !folderQuery.startsWith("/public");
+                                                boolean recursive = folderQuery.endsWith("*");
                                                 sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard);
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
