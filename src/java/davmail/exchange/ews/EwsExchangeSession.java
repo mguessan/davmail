@@ -2807,7 +2807,9 @@ public class EwsExchangeSession extends ExchangeSession {
 
         if ("/public".equals(folderPath)) {
             return DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
-        } if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
+        } else if ("/archive".equals(folderPath)) {
+            return DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.archivemsgfolderroot);
+        } else if (isSubFolderOf(folderPath, PUBLIC_ROOT)) {
             currentFolderId = DistinguishedFolderId.getInstance(mailbox, DistinguishedFolderId.Name.publicfoldersroot);
             folderNames = folderPath.substring(PUBLIC_ROOT.length()).split("/");
         } else if (isSubFolderOf(folderPath, ARCHIVE_ROOT)) {
@@ -2865,8 +2867,12 @@ public class EwsExchangeSession extends ExchangeSession {
      * @return true if folderPath is under baseFolder
      */
     private boolean isSubFolderOf(String folderPath, String baseFolder) {
-        return folderPath.startsWith(baseFolder)
-                && (folderPath.length() == baseFolder.length() || folderPath.charAt(baseFolder.length()) == '/');
+        if (PUBLIC_ROOT.equals(baseFolder) || ARCHIVE_ROOT.equals(baseFolder)) {
+            return folderPath.startsWith(baseFolder);
+        } else {
+            return folderPath.startsWith(baseFolder)
+                    && (folderPath.length() == baseFolder.length() || folderPath.charAt(baseFolder.length()) == '/');
+        }
     }
 
     protected FolderId getSubFolderByName(FolderId parentFolderId, String folderName) throws IOException {
