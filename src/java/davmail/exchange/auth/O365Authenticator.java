@@ -180,6 +180,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
                             LOGGER.debug(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                        } else if (config.optString("strServiceExceptionMessage") != null) {
+                            LOGGER.debug("O365 returned error: "+config.optString("strServiceExceptionMessage"));
+                            throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if ("50126".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else {
