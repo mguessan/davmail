@@ -26,11 +26,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -333,16 +330,46 @@ public final class Settings {
     public static synchronized void save() {
         // configFilePath is null in some test cases
         if (configFilePath != null) {
-            FileOutputStream fileOutputStream = null;
-            try {
-                fileOutputStream = new FileOutputStream(configFilePath);
-                SETTINGS.store(fileOutputStream, "DavMail settings");
+            // clone settings
+            Properties properties = new Properties();
+            properties.putAll(SETTINGS);
+            // file lines
+            ArrayList<String> lines = new ArrayList<String>();
+            BufferedReader reader = null;
+            BufferedWriter writer = null;
+            try  {
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFilePath), "ISO-8859-1"));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lines.add(convertLine(line, properties));
+                }
+
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), "ISO-8859-1"));
+                for (String value : lines) {
+                    writer.write(value);
+                    writer.newLine();
+                }
+
+                // write remaining lines
+                Enumeration propertyEnumeration = properties.propertyNames();
+                while (propertyEnumeration.hasMoreElements()) {
+                    String propertyName = (String) propertyEnumeration.nextElement();
+                    writer.write(propertyName+"="+ escapeValue(properties.getProperty(propertyName)));
+                    writer.newLine();
+                }
             } catch (IOException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
             } finally {
-                if (fileOutputStream != null) {
+                if (reader != null) {
                     try {
-                        fileOutputStream.close();
+                        reader.close();
+                    } catch (IOException e) {
+                        DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
+                    }
+                }
+                if (writer != null) {
+                    try {
+                        writer.close();
                     } catch (IOException e) {
                         DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
                     }
@@ -351,6 +378,52 @@ public final class Settings {
         }
         updateLoggingConfig();
     }
+
+    /**
+     * Convert input property line to new line with value from properties.
+     * Preserve comments
+     *
+     * @param line input line
+     * @param properties new property values
+     * @return new line
+     */
+    private static String convertLine(String line, Properties properties) {
+        String comment = "";
+        int hashIndex = line.indexOf('#');
+        if (hashIndex >= 0) {
+            comment = line.substring(hashIndex);
+            line = line.substring(0, hashIndex);
+        }
+        int index = line.indexOf('=');
+        if (index >= 0) {
+            String key = line.substring(0, index);
+            String value = properties.getProperty(key);
+            if (value != null) {
+                // build property with new value
+                line = key+"="+ escapeValue(value);
+                // remove property from source
+                properties.remove(key);
+            }
+        }
+        return line+comment;
+    }
+
+    /**
+     * Escape backslash in value.
+     * @param value value
+     * @return escaped value
+     */
+    private static String escapeValue(String value) {
+        StringBuilder buffer = new StringBuilder();
+        for (char c:value.toCharArray()) {
+            if (c == '\\') {
+                buffer.append('\\');
+            }
+            buffer.append(c);
+        }
+        return buffer.toString();
+    }
+
 
     /**
      * Get a property value as String.
