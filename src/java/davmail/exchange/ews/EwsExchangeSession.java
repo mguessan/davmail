@@ -2557,6 +2557,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     || item.get(Field.get("displaycc").getResponseName()) != null;
 
             if (isMeeting && isOrganizer && hasAttendees
+                    && !isSharedFolder(folderPath)
                     && Settings.getBooleanProperty("davmail.caldavAutoSchedule", true)) {
                 // cancel meeting
                 SendMeetingInvitations sendMeetingInvitations = SendMeetingInvitations.SendToAllAndSaveCopy;
