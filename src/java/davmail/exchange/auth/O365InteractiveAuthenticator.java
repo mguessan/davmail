@@ -88,6 +88,13 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
 
+        // first try to load stored token
+        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+        if (token != null) {
+            isAuthenticated = true;
+            return;
+        }
+
         URI uri;
         try {
             uri = new URIBuilder()
@@ -167,7 +174,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
         }
 
         if (isAuthenticated) {
-            token = new O365Token(tenantId, clientId, redirectUri, code);
+            token = O365Token.build(tenantId, clientId, redirectUri, code, password);
 
             LOGGER.debug("Authenticated username: " + token.getUsername());
             if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {

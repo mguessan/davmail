@@ -335,14 +335,10 @@ public final class Settings {
             properties.putAll(SETTINGS);
             // file lines
             ArrayList<String> lines = new ArrayList<String>();
-            BufferedReader reader = null;
+
             BufferedWriter writer = null;
             try  {
-                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFilePath), "ISO-8859-1"));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(convertLine(line, properties));
-                }
+                readLines(lines, properties);
 
                 writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), "ISO-8859-1"));
                 for (String value : lines) {
@@ -360,13 +356,6 @@ public final class Settings {
             } catch (IOException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
             } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
-                    }
-                }
                 if (writer != null) {
                     try {
                         writer.close();
@@ -377,6 +366,31 @@ public final class Settings {
             }
         }
         updateLoggingConfig();
+    }
+
+    private static void readLines(ArrayList<String> lines, Properties properties) {
+        BufferedReader reader = null;
+        try {
+            File configFile = new File(configFilePath);
+            if (configFile.exists()) {
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), "ISO-8859-1"));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lines.add(convertLine(line, properties));
+                }
+            }
+        } catch (IOException e) {
+            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_LOAD_SETTINGS"), e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
+                }
+            }
+        }
     }
 
     /**
@@ -542,6 +556,14 @@ public final class Settings {
         return value;
     }
 
+    public static synchronized String loadRefreshToken(String username) {
+        return Settings.getProperty("davmail.oauth."+username.toLowerCase()+".refreshToken");
+    }
+
+    public static synchronized void storeRefreshToken(String refreshToken, String username) {
+        Settings.setProperty("davmail.oauth."+username.toLowerCase()+".refreshToken", refreshToken);
+        Settings.save();
+    }
     /**
      * Build logging properties prefix.
      *

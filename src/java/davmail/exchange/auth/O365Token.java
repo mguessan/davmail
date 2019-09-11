@@ -23,6 +23,7 @@ import davmail.Settings;
 import davmail.http.HttpClientAdapter;
 import davmail.http.request.RestRequest;
 import davmail.util.IOUtil;
+import davmail.util.StringEncryptor;
 import org.apache.http.Consts;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -94,10 +95,6 @@ public class O365Token {
             LOGGER.debug("Token: " + tokenBody);
             username = tokenBody.getString("unique_name");
 
-            if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
-                Settings.setProperty("davmail.oauth." + username.toLowerCase() + ".refreshToken", refreshToken);
-                Settings.save();
-            }
         } catch (JSONException e) {
             throw new IOException("Exception parsing token", e);
         }
@@ -127,6 +124,14 @@ public class O365Token {
         expiresOn = System.currentTimeMillis() + 1000 * 60 * 60;
     }
 
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
     public void refreshToken() throws IOException {
         ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
         parameters.add(new BasicNameValuePair("grant_type", "refresh_token"));
@@ -153,7 +158,47 @@ public class O365Token {
 
     }
 
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
+    static O365Token build(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
+        O365Token token = new O365Token(tenantId, clientId, redirectUri, code);
+        if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
+            try {
+                Settings.storeRefreshToken(encryptToken(token.getRefreshToken(), password), token.getUsername());
+            } catch (IOException e) {
+                LOGGER.warn("Unable to store refreshToken: "+e.getMessage());
+            }
+        }
+        return token;
+    }
+
+
+    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws IOException {
+        O365Token token = null;
+        if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
+            String encryptedRefreshToken = Settings.loadRefreshToken(username);
+            if (encryptedRefreshToken != null) {
+                String refreshToken = null;
+                try {
+                    refreshToken = decryptToken(encryptedRefreshToken, password);
+                    LOGGER.debug("Loaded stored token for " + username);
+                    O365Token localToken = new O365Token(tenantId, clientId, redirectUri);
+
+                    localToken.setRefreshToken(refreshToken);
+                    localToken.refreshToken();
+                    LOGGER.debug("Authenticated user " + localToken.getUsername()+" from stored token");
+                    token = localToken;
+                } catch (IOException e) {
+                    LOGGER.warn("refresh token failed " + e.getMessage());
+                }
+            }
+        }
+        return token;
+    }
+
+    private static String decryptToken(String encryptedRefreshToken,String password) throws IOException {
+        return new StringEncryptor(password).decryptString(encryptedRefreshToken);
+    }
+
+    private static String encryptToken(String refreshToken, String password) throws IOException {
+        return new StringEncryptor(password).encryptString(refreshToken);
     }
 }

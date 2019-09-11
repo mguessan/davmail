@@ -50,6 +50,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
     private O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog;
 
     private String username;
+    private String password;
     private O365Token token;
 
     public O365Token getToken() {
@@ -70,7 +71,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
     }
 
     public void setPassword(String password) {
-        // unused
+        this.password = password;
     }
 
 
@@ -81,6 +82,12 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
         final String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
         // company tenantId or common
         String tenantId = Settings.getProperty("davmail.oauth.tenantId", "common");
+
+        // first try to load stored token
+        token = O365Token.load(tenantId, clientId, redirectUri, username, password);
+        if (token != null) {
+            return;
+        }
 
         URI uri;
         try {
@@ -121,7 +128,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             throw new DavMailException("EXCEPTION_AUTHENTICATION_FAILED_REASON", errorCode);
         }
 
-        token = new O365Token(tenantId, clientId, redirectUri, code);
+        token = O365Token.build(tenantId, clientId, redirectUri, code, password);
 
         LOGGER.debug("Authenticated username: " + token.getUsername());
         if (username != null && !username.isEmpty() && !username.equalsIgnoreCase(token.getUsername())) {
