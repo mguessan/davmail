@@ -3,7 +3,6 @@ dist: trusty
 language: java
 
 jdk:
-- openjdk7
 - openjdk8
 - oraclejdk11
 - openjdk11
