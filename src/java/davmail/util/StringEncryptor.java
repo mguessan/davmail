@@ -19,10 +19,11 @@
 
 package davmail.util;
 
+import org.apache.log4j.Logger;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import java.io.IOException;
@@ -36,15 +37,26 @@ import java.security.spec.InvalidKeySpecException;
  * Simple implementation based on AES
  */
 public class StringEncryptor {
+    private static final Logger LOGGER = Logger.getLogger(StringEncryptor.class);
 
-    static final String ALGO = "PBEWithHmacSHA256AndAES_128";
+    static String ALGO = "PBEWithHmacSHA256AndAES_128";
     static String fingerprint;
 
     static {
         try {
-            fingerprint = InetAddress.getLocalHost().getHostName().substring(0, 16);
+            fingerprint = InetAddress.getLocalHost().getCanonicalHostName().substring(0, 16);
         } catch (Throwable t) {
             fingerprint = "davmailgateway!&";
+        }
+        try {
+            Cipher.getInstance(ALGO);
+        } catch (Throwable t) {
+            try {
+                ALGO = "PBEWithSHA1AndDESede";
+                Cipher.getInstance(ALGO);
+            } catch (Throwable t2) {
+                LOGGER.error(t2 + " " + t2.getMessage());
+            }
         }
     }
 
@@ -92,6 +104,6 @@ public class StringEncryptor {
 
     private PBEParameterSpec getPBEParameterSpec() throws UnsupportedEncodingException {
         byte[] bytes = fingerprint.getBytes("UTF-8");
-        return new PBEParameterSpec(bytes, 10000, new IvParameterSpec(bytes));
+        return new PBEParameterSpec(bytes, 10000);
     }
 }
