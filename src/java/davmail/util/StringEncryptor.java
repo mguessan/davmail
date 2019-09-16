@@ -74,7 +74,7 @@ public class StringEncryptor {
             Cipher enc = Cipher.getInstance(ALGO);
             enc.init(Cipher.ENCRYPT_MODE, getSecretKey(), getPBEParameterSpec());
             byte[] encrypted = enc.doFinal(plaintext);
-            return IOUtil.encodeBase64AsString(encrypted);
+            return "{AES}"+IOUtil.encodeBase64AsString(encrypted);
 
         } catch (Exception e) {
             throw new IOException(e);
@@ -82,16 +82,20 @@ public class StringEncryptor {
     }
 
     public String decryptString(String value) throws IOException {
-        try {
-            byte[] encrypted = IOUtil.decodeBase64(value);
+        if (value != null && value.startsWith("{AES}")) {
+            try {
+                byte[] encrypted = IOUtil.decodeBase64(value.substring(5));
 
-            Cipher dec = Cipher.getInstance(ALGO);
-            dec.init(Cipher.DECRYPT_MODE, getSecretKey(), getPBEParameterSpec());
-            byte[] decrypted = dec.doFinal(encrypted);
-            return new String(decrypted, "UTF-8");
+                Cipher dec = Cipher.getInstance(ALGO);
+                dec.init(Cipher.DECRYPT_MODE, getSecretKey(), getPBEParameterSpec());
+                byte[] decrypted = dec.doFinal(encrypted);
+                return new String(decrypted, "UTF-8");
 
-        } catch (Exception e) {
-            throw new IOException(e);
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        } else {
+            return value;
         }
     }
 
