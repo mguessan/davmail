@@ -254,14 +254,14 @@ public class AbstractConnection extends Thread {
             try {
                 in.close();
             } catch (IOException e2) {
-                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_INPUT_STREAM"), e2);
+                // ignore
             }
         }
         if (os != null) {
             try {
                 os.close();
             } catch (IOException e2) {
-                DavGatewayTray.debug(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_OUTPUT_STREAM"), e2);
+                // ignore
             }
         }
         try {
