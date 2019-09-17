@@ -24,7 +24,7 @@ BuildRequires:	insserv-compat
 %endif
 # force Java 7 on RHEL6
 %{?el6:BuildRequires: java-1.7.0-openjdk-devel}
-%if 0%{?el7} || 0%{?fedora}
+%if 0%{?el7} || 0%{?el8} || 0%{?fedora}
 BuildRequires: java-1.8.0-openjdk-devel
 %else
 BuildRequires: java-devel >= 1.7.0
@@ -41,7 +41,7 @@ Requires(post): coreutils, filesystem, /sbin/chkconfig
 Requires(preun): /sbin/service, coreutils, /sbin/chkconfig, /usr/sbin/userdel, /usr/sbin/groupdel
 Requires(postun): /sbin/service
 
-%if 0%{?el7} || 0%{?fedora}
+%if 0%{?el7} || 0%{?el8} || 0%{?fedora}
 Requires: /etc/init.d, logrotate, java-1.8.0-openjdk
 %else
 Requires: /etc/init.d, logrotate, jre >= 1.8.0
@@ -70,7 +70,7 @@ export JAVA_HOME=${java_home}
 # /scratch/rpmbuild/davmail-src-4.2.0-2066/build.xml:41: Please force UTF-8 encoding to build debian package with set ANT_OPTS=-Dfile.encoding=UTF-8
 export ANT_OPTS="-Dfile.encoding=UTF-8"
 
-%if 0%{?el6} || 0%{?el7} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
+%if 0%{?el6} || 0%{?el7} || 0%{?el8} || 0%{?fedora} || 0%{?is_opensuse} || 0%{?suse_version}
 echo keep included swt on el7 and opensuse
 %else
 # externalize SWT
@@ -102,7 +102,7 @@ install -m 0644 src/etc/davmail.properties $RPM_BUILD_ROOT%{_sysconfdir}
 # https://fedoraproject.org/wiki/TomCallaway/DesktopFileVendor
 desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications/ src/desktop/davmail.desktop --vendor=""
 install -m 0775 src/init/davmail-wrapper $RPM_BUILD_ROOT%{_localstatedir}/lib/davmail/davmail
-%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?fedora}
+%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}
 install -D -m 644 src/init/davmail.service %{buildroot}%{_unitdir}/davmail.service
 %endif
 
@@ -183,7 +183,7 @@ fi
 %{_sbindir}/rcdavmail
 %{_sysconfdir}/init.d/davmail
 
-%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?fedora}
+%if 0%{?suse_version} >= 1210 || 0%{?el7} || 0%{?el8} || 0%{?fedora}
 %{_unitdir}/davmail.service
 %endif
 
