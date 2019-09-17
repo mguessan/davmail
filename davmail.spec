@@ -23,11 +23,11 @@ BuildRequires:	xml-commons-apis
 BuildRequires:	insserv-compat
 %endif
 # force Java 7 on RHEL6
-%{?el6:BuildRequires: java-1.7.0-openjdk-devel}
+%{?el6:BuildRequires: java-1.8.0-openjdk-devel}
 %if 0%{?el7} || 0%{?el8} || 0%{?fedora}
 BuildRequires: java-1.8.0-openjdk-devel
 %else
-BuildRequires: java-devel >= 1.7.0
+BuildRequires: java-devel >= 1.8.0
 BuildRequires: eclipse-swt
 %endif
 # compile with JavaFX on Fedora
@@ -79,7 +79,7 @@ rm lib/swt*
 %endif
 
 # we have java 1.6
-ant -Dant.java.version=1.6 prepare-dist
+ant -Dant.java.version=1.8 prepare-dist
 
 %install
 rm -rf $RPM_BUILD_ROOT
