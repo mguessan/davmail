@@ -182,7 +182,9 @@ public final class ExchangeSessionFactory {
                     DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(httpClient);
                     session = new EwsExchangeSession(httpClient, authenticator.getToken(), poolKey.userName);
 
-                } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)) {
+                } else if (Settings.EWS.equals(mode) || Settings.O365.equals(mode)
+                            // direct EWS even if mode is different
+                            || poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                     if (poolKey.url.toLowerCase().endsWith("/ews/exchange.asmx")) {
                         ExchangeSession.LOGGER.debug("Direct EWS authentication");
                         HttpClient httpClient = DavGatewayHttpClientFacade.getInstance(poolKey.url);
