@@ -282,8 +282,6 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 if (cookie.getName().startsWith("cadata") || "sessionid".equals(cookie.getName())
                         // Exchange 2007 cookie
                         || "UserContext".equals(cookie.getName())
-                        // Direct EWS access
-                        || "exchangecookie".equals(cookie.getName())
                 ) {
                     authenticated = true;
                     break;
