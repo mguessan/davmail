@@ -19,6 +19,7 @@
 
 package davmail.exchange.auth;
 
+import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.exception.DavMailException;
@@ -32,7 +33,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
+import java.awt.*;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -94,7 +98,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             uri = new URIBuilder()
                     .setScheme("https")
                     .setHost("login.microsoftonline.com")
-                    .setPath("/"+tenantId+"/oauth2/authorize")
+                    .setPath("/" + tenantId + "/oauth2/authorize")
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
@@ -109,19 +113,24 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
         }
         final String initUrl = uri.toString();
 
-        try {
-            SwingUtilities.invokeAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
-                }
-            });
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        } catch (InvocationTargetException e) {
-            throw new IOException(e);
+        if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+            // command line mode
+            code = getCodeFromConsole(initUrl);
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(new Runnable() {
+                    @Override
+                    public void run() {
+                        o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
+                    }
+                });
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } catch (InvocationTargetException e) {
+                throw new IOException(e);
+            }
+            code = o365ManualAuthenticatorDialog.getCode();
         }
-        code = o365ManualAuthenticatorDialog.getCode();
 
         if (code == null) {
             LOGGER.error("Authentication failed, code not available");
@@ -137,9 +146,27 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
 
     }
 
+    private String getCodeFromConsole(String initUrl) {
+        BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(BundleMessage.format("UI_0365_AUTHENTICATION_PROMPT_CONSOLE", initUrl)).append("\n")
+        .append(BundleMessage.format("UI_0365_AUTHENTICATION_CODE"));
+        try {
+            System.out.print(buffer.toString());
+            code = inReader.readLine();
+            if (code != null && code.contains("code=") && code.contains("&session_state=")) {
+                code = code.substring(code.indexOf("code=")+5, code.indexOf("&session_state="));
+            }
+        } catch (IOException e) {
+            System.err.println(e + " " + e.getMessage());
+        }
+        return code;
+    }
+
     public static void main(String[] argv) {
         try {
             Settings.setDefaultSettings();
+            Settings.setProperty("davmail.server", "false");
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
             O365ManualAuthenticator authenticator = new O365ManualAuthenticator();
