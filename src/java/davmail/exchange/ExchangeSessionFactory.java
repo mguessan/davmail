@@ -167,9 +167,6 @@ public final class ExchangeSessionFactory {
                         }
                     } else if (Settings.O365_MANUAL.equals(mode)) {
                         authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
-                        if (GraphicsEnvironment.isHeadless()) {
-                            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Manual not supported in headless mode");
-                        }
                     }
                 }
 
