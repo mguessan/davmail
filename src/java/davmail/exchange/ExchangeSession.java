@@ -1863,6 +1863,7 @@ public abstract class ExchangeSession {
     public abstract class Contact extends Item {
 
         protected ArrayList<String> distributionListMembers = null;
+        protected String vCardVersion;
 
         public Contact(String folderPath, String itemName, Map<String, String> properties, String etag, String noneMatch) {
             super(folderPath, itemName.endsWith(".vcf") ? itemName.substring(0, itemName.length() - 3) + "EML" : itemName, etag, noneMatch);
@@ -1870,6 +1871,10 @@ public abstract class ExchangeSession {
         }
 
         protected Contact() {
+        }
+
+        public void setVCardVersion(String vCardVersion) {
+            this.vCardVersion = vCardVersion;
         }
 
         public abstract ItemResult createOrUpdate() throws IOException;
@@ -1928,7 +1933,7 @@ public abstract class ExchangeSession {
         public String getBody() {
             // build RFC 2426 VCard from contact information
             VCardWriter writer = new VCardWriter();
-            writer.startCard();
+            writer.startCard(vCardVersion);
             writer.appendProperty("UID", getUid());
             // common name
             String cn = get("cn");
@@ -2388,10 +2393,11 @@ public abstract class ExchangeSession {
      * Search contacts in provided folder.
      *
      * @param folderPath Exchange folder path
+     * @param includeDistList include distribution lists
      * @return list of contacts
      * @throws IOException on error
      */
-    public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
+    public List<ExchangeSession.Contact> getAllContacts(String folderPath, boolean includeDistList) throws IOException {
         return searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, isEqualTo("outlookmessageclass", "IPM.Contact"), 0);
     }
 

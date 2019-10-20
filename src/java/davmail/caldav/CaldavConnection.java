@@ -310,10 +310,11 @@ public class CaldavConnection extends AbstractConnection {
                 String folderPath = request.getFolderPath();
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 if (folder.isContact()) {
-                    List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath);
+                    List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath, !isOldCardavClient(request));
                     ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/vcard;charset=UTF-8");
 
                     for (ExchangeSession.Contact contact : contacts) {
+                        ((ExchangeSession.Contact)contact).setVCardVersion(getVCardVersion(request));
                         String contactBody = contact.getBody();
                         if (contactBody != null) {
                             response.append(contactBody);
@@ -350,6 +351,9 @@ public class CaldavConnection extends AbstractConnection {
                 }
             } else {
                 ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
+                if (item instanceof ExchangeSession.Contact) {
+                    ((ExchangeSession.Contact)item).setVCardVersion(getVCardVersion(request));
+                }
                 sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), item.getBody(), true);
             }
         } else if (request.isHead()) {
@@ -369,6 +373,18 @@ public class CaldavConnection extends AbstractConnection {
             sendNotFound(request);
         }
 
+    }
+
+    private boolean isOldCardavClient(CaldavRequest request) {
+        return request.isUserAgent("iOS/");
+    }
+
+    private String getVCardVersion(CaldavRequest request) {
+        if (isOldCardavClient(request)) {
+            return "3.0";
+        } else {
+            return "4.0";
+        }
     }
 
     protected HashMap<String, String> buildEtagHeader(CaldavRequest request, ExchangeSession.ItemResult itemResult) {
@@ -435,6 +451,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendCalendarData(item.getBody());
         }
         if (request.hasProperty("address-data") && item instanceof ExchangeSession.Contact) {
+            ((ExchangeSession.Contact)item).setVCardVersion(getVCardVersion(request));
             response.appendContactData(item.getBody());
         }
         if (request.hasProperty("getcontenttype")) {
@@ -679,7 +696,7 @@ public class CaldavConnection extends AbstractConnection {
         List<ExchangeSession.Folder> folderList = null;
         if (request.getDepth() == 1) {
             if (folder.isContact()) {
-                contacts = session.getAllContacts(folderPath);
+                contacts = session.getAllContacts(folderPath, !isOldCardavClient(request));
             } else if (folder.isCalendar() || folder.isTask()) {
                 events = session.getAllEvents(folderPath);
                 if (!folderPath.startsWith("/public")) {
@@ -807,7 +824,7 @@ public class CaldavConnection extends AbstractConnection {
         } else {
             ExchangeSession.Folder folder = session.getFolder(folderPath);
             if (folder.isContact()) {
-                List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath);
+                List<ExchangeSession.Contact> contacts = session.getAllContacts(folderPath, !isOldCardavClient(request));
                 appendContactsResponses(response, request, contacts);
             } else {
                 if (request.vTodoOnly) {

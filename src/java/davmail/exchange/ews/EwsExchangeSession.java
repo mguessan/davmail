@@ -2293,8 +2293,14 @@ public class EwsExchangeSession extends ExchangeSession {
      * @throws IOException on error
      */
     @Override
-    public List<ExchangeSession.Contact> getAllContacts(String folderPath) throws IOException {
-        return searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, or(isEqualTo("outlookmessageclass", "IPM.Contact"), isEqualTo("outlookmessageclass", "IPM.DistList")), 0);
+    public List<ExchangeSession.Contact> getAllContacts(String folderPath, boolean includeDistList) throws IOException {
+        Condition condition;
+        if (includeDistList) {
+            condition = or(isEqualTo("outlookmessageclass", "IPM.Contact"), isEqualTo("outlookmessageclass", "IPM.DistList"));
+        } else {
+            condition = isEqualTo("outlookmessageclass", "IPM.Contact");
+        }
+        return searchContacts(folderPath, ExchangeSession.CONTACT_ATTRIBUTES, condition, 0);
     }
 
     @Override

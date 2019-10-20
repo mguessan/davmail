@@ -26,8 +26,15 @@ public class VCardWriter extends ICSBufferedWriter {
      * Begin VCard and version
      */
     public void startCard() {
+        startCard(null);
+    }
+
+    /**
+     * Begin VCard and version
+     */
+    public void startCard(String version) {
         writeLine("BEGIN:VCARD");
-        writeLine("VERSION:4.0");
+        writeLine("VERSION:"+((version == null)?"4.0":version));
     }
 
     /**
