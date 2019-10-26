@@ -1181,7 +1181,7 @@ public abstract class ExchangeSession {
          */
         public String getFlags() {
             String specialFlag = "";
-            if (SPECIAL.contains(folderPath)) {
+            if (isSpecial()) {
                 specialFlag = "\\" + folderPath + " ";
             }
             if (noInferiors) {
@@ -1191,6 +1191,14 @@ public abstract class ExchangeSession {
             } else {
                 return specialFlag + "\\HasNoChildren";
             }
+        }
+
+        /**
+         * Special folder flag (Sent, Drafts, Trash, Junk).
+         * @return true if folder is special
+         */
+        public boolean isSpecial() {
+            return SPECIAL.contains(folderPath);
         }
 
         /**

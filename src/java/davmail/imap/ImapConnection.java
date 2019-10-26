@@ -163,11 +163,13 @@ public class ImapConnection extends AbstractConnection {
                                         String folderContext = buildFolderContext(tokens.nextToken());
                                         if (tokens.hasMoreTokens()) {
                                             String folderQuery = folderContext + decodeFolderPath(tokens.nextToken());
+                                            String returnOption = getReturnOption(tokens);
+                                            boolean specialOnly = "SPECIAL-USE".equalsIgnoreCase(returnOption);
                                             if (folderQuery.endsWith("%/%") && !"/%/%".equals(folderQuery)) {
                                                 List<ExchangeSession.Folder> folders = session.getSubFolders(folderQuery.substring(0, folderQuery.length() - 3), false, false);
                                                 for (ExchangeSession.Folder folder : folders) {
                                                     sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + encodeFolderPath(folder.folderPath) + '\"');
-                                                    sendSubFolders(command, folder.folderPath, false, false);
+                                                    sendSubFolders(command, folder.folderPath, false, false, specialOnly);
                                                 }
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else if (folderQuery.endsWith("%") || folderQuery.endsWith("*")) {
@@ -183,7 +185,7 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                                 boolean wildcard = folderQuery.endsWith("%") && !folderQuery.contains("/") && !folderQuery.equals("%");
                                                 boolean recursive = folderQuery.endsWith("*");
-                                                sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard);
+                                                sendSubFolders(command, folderQuery.substring(0, folderQuery.length() - 1), recursive, wildcard, specialOnly);
                                                 sendClient(commandId + " OK " + command + " completed");
                                             } else {
                                                 ExchangeSession.Folder folder = null;
@@ -681,6 +683,15 @@ public class ImapConnection extends AbstractConnection {
             close();
         }
         DavGatewayTray.resetIcon();
+    }
+
+    private String getReturnOption(ImapTokenizer tokens) {
+        if (tokens.hasMoreTokens()) {
+            if ("RETURN".equalsIgnoreCase(tokens.nextToken()) && tokens.hasMoreTokens()) {
+                return tokens.nextToken();
+            }
+        }
+        return null;
     }
 
     protected String lastCommand;
@@ -1367,11 +1378,13 @@ public class ImapConnection extends AbstractConnection {
         }
     }
 
-    protected void sendSubFolders(String command, String folderPath, boolean recursive, boolean wildcard) throws IOException {
+    protected void sendSubFolders(String command, String folderPath, boolean recursive, boolean wildcard, boolean specialOnly) throws IOException {
         try {
             List<ExchangeSession.Folder> folders = session.getSubFolders(folderPath, recursive, wildcard);
             for (ExchangeSession.Folder folder : folders) {
-                sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + encodeFolderPath(folder.folderPath) + '\"');
+                if (!specialOnly || folder.isSpecial()) {
+                    sendClient("* " + command + " (" + folder.getFlags() + ") \"/\" \"" + encodeFolderPath(folder.folderPath) + '\"');
+                }
             }
         } catch (HttpForbiddenException e) {
             // access forbidden, ignore
