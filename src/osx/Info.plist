@@ -33,8 +33,8 @@
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>JVMOptions</key>
-    <array>
-    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m</string>
+    <array><!-- export J2D_TRACE_LEVEL=4-->
+    <string>-Dsun.net.inetaddr.ttl=60 -Xmx512m -Dsun.java2d.opengl=false -Djavafx.embed.singleThread=true</string>
     </array>
   </dict>
 </plist>
