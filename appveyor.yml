@@ -2,7 +2,7 @@ version: '{build}'
 os: Windows Server 2012
 
 environment:
-  ANT_HOME: C:\ant\apache-ant-1.10.5
+  ANT_HOME: C:\ant\apache-ant-1.10.7
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk9
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
@@ -14,21 +14,21 @@ environment:
 install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
-      if (!(Test-Path -Path "C:\ant\apache-ant-1.10.5" )) {
+      if (!(Test-Path -Path "C:\ant\apache-ant-1.10.7" )) {
         (new-object System.Net.WebClient).DownloadFile(
-        'http://www.eu.apache.org/dist/ant/binaries/apache-ant-1.10.5-bin.zip',
+        'https://www-eu.apache.org/dist//ant/binaries/apache-ant-1.10.7-bin.zip',
           'C:\ant-bin.zip'
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\ant-bin.zip", "C:\ant")
       }
-  - cmd: SET PATH=C:\ant\apache-ant-1.10.5\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=C:\ant\apache-ant-1.10.7\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: set ANT_OPTS=-Dfile.encoding=UTF-8
   - cmd: java -version
   - cmd: ant -version
   - cmd: copy /y C:\projects\davmail\nsis\* "C:\Program Files (x86)\NSIS\Plugins\x86-ansi"
 build_script:
   - ant dist
-test: off
+test: false
 cache:
 - C:\ant
 artifacts:
