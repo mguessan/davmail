@@ -2932,6 +2932,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     Thread.sleep(throttlingDelay);
                 } catch (InterruptedException e1) {
                     LOGGER.error("Throttling delay interrupted " + e1.getMessage());
+                    Thread.currentThread().interrupt();
                 }
             }
             internalExecuteMethod(ewsMethod);
@@ -2953,6 +2954,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 Thread.sleep(throttlingDelay);
             } catch (InterruptedException e1) {
                 LOGGER.error("Throttling delay interrupted " + e1.getMessage());
+                Thread.currentThread().interrupt();
             }
             // retry once
             internalExecuteMethod(ewsMethod);

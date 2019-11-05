@@ -409,6 +409,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
                 LOGGER.debug("Interrupted");
+                Thread.currentThread().interrupt();
             }
 
             RestRequest endAuthMethod = new RestRequest(urlEndAuth);

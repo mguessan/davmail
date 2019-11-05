@@ -125,7 +125,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
                     }
                 });
             } catch (InterruptedException e) {
-                throw new IOException(e);
+                Thread.currentThread().interrupt();
             } catch (InvocationTargetException e) {
                 throw new IOException(e);
             }

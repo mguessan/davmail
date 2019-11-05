@@ -110,6 +110,7 @@ public final class DavGateway {
                 DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_INTERRUPTED"));
                 stop();
                 DavGatewayTray.debug(new BundleMessage("LOG_GATEWAY_STOP"));
+                Thread.currentThread().interrupt();
             }
 
         }
@@ -214,6 +215,7 @@ public final class DavGateway {
                 server.join();
             } catch (InterruptedException e) {
                 DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_WAITING_SERVER_THREAD_DIE"), e);
+                Thread.currentThread().interrupt();
             }
         }
     }

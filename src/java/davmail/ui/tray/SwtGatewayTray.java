@@ -439,6 +439,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                 }
             } catch (InterruptedException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
+                Thread.currentThread().interrupt();
             }
         }
     }
