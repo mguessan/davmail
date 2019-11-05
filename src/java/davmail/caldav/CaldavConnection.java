@@ -1179,7 +1179,7 @@ public class CaldavConnection extends AbstractConnection {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ie) {
-                // ignore
+                Thread.currentThread().interrupt();
             }
             sendErr(HttpStatus.SC_SERVICE_UNAVAILABLE, message);
         }
