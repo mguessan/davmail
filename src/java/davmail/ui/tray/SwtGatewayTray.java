@@ -51,6 +51,8 @@ import java.util.ArrayList;
 public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static final Logger LOGGER = Logger.getLogger(SwtGatewayTray.class);
 
+    private static final Object LOCK = new Object();
+
     protected SwtGatewayTray() {
     }
 
@@ -218,7 +220,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             if (isGTK3) {
                 LOGGER.warn("GTK 3 not supported, please set SWT_GTK3=0");
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // ignore
         }
         try {
@@ -226,7 +228,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
             //noinspection unchecked
             gdk.getDeclaredMethod("gdk_error_trap_push").invoke(null);
             LOGGER.debug("Called org.eclipse.swt.internal.gtk.GDK.gdk_error_trap_push");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // ignore
         }
 
@@ -391,10 +393,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
 
                         }
 
-                        synchronized (mainThread) {
+                        synchronized (LOCK) {
                             // ready
                             isReady = true;
-                            mainThread.notifyAll();
+                            LOCK.notifyAll();
                         }
 
                         while (!shell.isDisposed()) {
@@ -426,14 +428,14 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
         while (true) {
             // wait for SWT init
             try {
-                synchronized (mainThread) {
+                synchronized (LOCK) {
                     if (error != null) {
                         throw error;
                     }
                     if (isReady) {
                         break;
                     }
-                    mainThread.wait(1000);
+                    LOCK.wait(1000);
                 }
             } catch (InterruptedException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_ERROR_WAITING_FOR_SWT_INIT"), e);
