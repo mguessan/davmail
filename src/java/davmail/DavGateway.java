@@ -164,8 +164,7 @@ public final class DavGateway {
         final String currentVersion = getCurrentVersion();
         boolean showStartupBanner = Settings.getBooleanProperty("davmail.showStartupBanner", true);
         if (showStartupBanner) {
-            DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING",
-                    currentVersion == null ? "" : currentVersion, messages));
+            DavGatewayTray.info(new BundleMessage("LOG_DAVMAIL_GATEWAY_LISTENING", currentVersion, messages));
         }
         if (!errorMessages.isEmpty()) {
             DavGatewayTray.error(new BundleMessage("LOG_MESSAGE", errorMessages));
