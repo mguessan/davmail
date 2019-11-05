@@ -47,12 +47,11 @@ public class MessageLoadThread extends Thread {
      * @throws IOException        on error
      * @throws MessagingException on error
      */
-    public static void loadMimeMessage(ExchangeSession.Message message, OutputStream outputStream) throws IOException, MessagingException {
+    public static void loadMimeMessage(ExchangeSession.Message message, OutputStream outputStream) throws IOException, MessagingException, InterruptedException {
         if (message.size < 1024 * 1024) {
             message.loadMimeMessage();
         } else {
             LOGGER.debug("Load large message " + (message.size / 1024) + "KB uid " + message.getUid() + " imapUid " + message.getImapUid() + " in a separate thread");
-            try {
                 MessageLoadThread messageLoadThread = new MessageLoadThread(currentThread().getName(), message);
                 messageLoadThread.start();
                 while (!messageLoadThread.isComplete) {
@@ -76,9 +75,6 @@ public class MessageLoadThread extends Thread {
                 if (messageLoadThread.messagingException != null) {
                     throw messageLoadThread.messagingException;
                 }
-            } catch (InterruptedException e) {
-                throw new IOException(e + " " + e.getMessage());
-            }
         }
     }
 }
