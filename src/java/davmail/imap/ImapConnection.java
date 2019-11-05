@@ -1942,7 +1942,7 @@ public class ImapConnection extends AbstractConnection {
             ExchangeSession.Message message = messages.get(currentIndex++);
             long uid = message.getImapUid();
             if (uid < startUid || uid > endUid) {
-                throw new RuntimeException("Message uid " + uid + " not in range " + startUid + ':' + endUid);
+                throw new NoSuchElementException("Message uid " + uid + " not in range " + startUid + ':' + endUid);
             }
             return message;
         }
@@ -2022,6 +2022,9 @@ public class ImapConnection extends AbstractConnection {
         }
 
         public ExchangeSession.Message next() {
+            if (currentIndex >= messages.size()) {
+                throw new NoSuchElementException();
+            }
             return messages.get(currentIndex++);
         }
 
