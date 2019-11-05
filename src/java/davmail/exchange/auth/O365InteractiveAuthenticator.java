@@ -161,7 +161,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                // ignore
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -190,6 +190,8 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
     public static void main(String[] argv) {
         try {
             Settings.setDefaultSettings();
+            //Settings.setConfigFilePath("davmail-interactive.properties");
+            //Settings.load();
             //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
             O365InteractiveAuthenticator authenticator = new O365InteractiveAuthenticator();
