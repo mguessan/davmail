@@ -164,7 +164,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException e) {
-                                // ignore
+                                Thread.currentThread().interrupt();
                             }
                         }
                         toolTip.setVisible(true);

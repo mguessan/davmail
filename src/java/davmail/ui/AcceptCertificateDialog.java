@@ -156,6 +156,7 @@ public class AcceptCertificateDialog extends JDialog {
             });
         } catch (InterruptedException ie) {
             DavGatewayTray.error(new BundleMessage("UI_ERROR_WAITING_FOR_CERTIFICATE_CHECK"), ie);
+            Thread.currentThread().interrupt();
         } catch (InvocationTargetException ite) {
             DavGatewayTray.error(new BundleMessage("UI_ERROR_WAITING_FOR_CERTIFICATE_CHECK"), ite);
         }
