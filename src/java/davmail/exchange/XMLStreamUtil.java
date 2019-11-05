@@ -34,7 +34,6 @@ import java.util.Map;
 /**
  * XmlStreamReader utility methods
  */
-@SuppressWarnings("Since15")
 public final class XMLStreamUtil {
     private static final Logger LOGGER = Logger.getLogger(XMLStreamUtil.class);
 
@@ -50,6 +49,11 @@ public final class XMLStreamUtil {
         XMLInputFactory inputFactory = XMLInputFactory.newInstance();
         inputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
         inputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
+        inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
+        // Woodstox 5.2.0
+        //if (inputFactory.isPropertySupported("com.ctc.wstx.allowXml11EscapedCharsInXml10")) {
+        //    inputFactory.setProperty("com.ctc.wstx.allowXml11EscapedCharsInXml10", Boolean.TRUE);
+        //}
         return inputFactory;
     }
 
@@ -76,14 +80,17 @@ public final class XMLStreamUtil {
                 if (event == XMLStreamConstants.START_ELEMENT && rowName.equals(reader.getLocalName())) {
                     item = new HashMap<String, String>();
                 } else if (event == XMLStreamConstants.END_ELEMENT && rowName.equals(reader.getLocalName())) {
-                    if (item.containsKey(idName)) {
+                    if (item != null && item.containsKey(idName)) {
                         results.put(item.get(idName).toLowerCase(), item);
                     }
                     item = null;
                 } else if (event == XMLStreamConstants.START_ELEMENT && item != null) {
                     currentElement = reader.getLocalName();
                 } else if (event == XMLStreamConstants.CHARACTERS && currentElement != null) {
-                    item.put(currentElement, reader.getText());
+                    String text = reader.getText();
+                    if (item != null) {
+                        item.put(currentElement, text);
+                    }
                     currentElement = null;
                 }
             }
