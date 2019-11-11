@@ -469,5 +469,12 @@
             </fileset>
         </concat>
     </target>
+    
+     <target name="sonar">
+        <property file="sonar.properties"/>
+        <property name="sonar.projectVersion" value="${version}"/>
+        <taskdef resource="org/sonar/ant/antlib.xml" classpath="lib/sonarqube-ant-task-2.7.0.1612.jar"/>
+        <sonar/>
+    </target>
 
 </project>
