@@ -39,29 +39,82 @@
   <developer_name>Mickaël Guessant</developer_name>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="5.3.1" date="2019-08-12">
+    <release version="5.4.0" date="2019-11-11">
       <description>
         <p>
             Bugfix release to fix NTLM authentication for some Exchange on premise instances.
             Also includes a new OSX handlers implementation required to support recent OSX JDKs.
 
+            Main new feature is experimental support for stored Oauth tokens with davmail.oauth.persistToken=true,
+            tokens are stored encrypted with client provided password.
+            Also improved SPECIAL-USE IMAP support and fixed a few regressions related to ExchangeSessionFactory refactoring
+            and a lot of bug fixed from user feedback.
+
             ###Enhancements:
-            - Reprocess credentials in addNTLM
-            - Use github download link instead of direct sourceforge link in About dialog
-            - Improve ExchangeFormAuthenticator logging
+            - Add sonar target to ant build
+            - Sonar configuration
+            - Add sonarqube-ant-task to lib
+            - Throw NoSuchElementException in message iterator for iteration beyond the end of the collection
+            - InterruptedException should not be ignored
+            - currentVersion is never null
+            - Make AbstractConnection abstract
+            - Update default user agent to latest version of Edge on Windows
+            - Add .gitignore file
+            - Update StringEncryptor to Java 8
+            - Update Maven and Ant build to Java 1.8
+            - Drop Java 7 in travis config
+            - Add {AES} prefix to encrypted strings
+            - Improve StringEncryptor compatibility with older jdks
+            - Ignore stream errors on disconnect, messages cleanup
+            - Testcase for password based string encryptor
+            - Implement password based string encryptor
+            - Refactor settings save to preserve comments
+            - Force Trusty in Travis config
+
+            ###Appveyor:
+            - Appveyor: Update to ant 1.10.7
+            - Appveyor: test JDK 12 and 13 build
+
+            ###Security:
+            - Security: secure XML transformer
+            - Security: Untrusted XML should be parsed without resolving external data
+
+            ###SWT:
+            - SWT: Refactor the synchronisation mechanism to not use a Thread instance as a monitor
+
+            ###LDAP:
+            - LDAP: Add a note to Thunderbird directory config on uid=username syntax
+
+            ###IMAP:
+            - IMAP: implement RETURN (SPECIAL-USE) in IMAP list command, return special folders only, fix for https://sourceforge.net/p/davmail/bugs/721
+            - IMAP: allow recursive search on public folders
+
+            ###Carddav:
+            - Carddav: iOS does not support VCard 4, detect its old Carddav client and send VCard 3 content, exclude unsupported distribution list items
+
+            ###Caldav:
+            - Caldav: do not try to send cancel notifications on shared and public calendars
 
             ###EWS:
-            - EWS: fix possible bug with username with authenticatorClass
-            - EWS: add an Open button to O365ManualAuthenticatorDialog in case links are not working
-            - EWS: fix regression in OWA authentication mode, enable NTLM if required by EWS endpoint
+            - EWS: allow O365Manual in headless mode
+            - EWS: implement command line mode for O365ManualAuthenticator, as suggested in https://github.com/mguessan/davmail/issues/48
+            - EWS: exchangecookie is not a good check of successful authentication
+            - EWS: detect direct EWS even if mode is different
+            - EWS: experimental, store Oauth refresh tokens in davmail.properties when davmail.oauth.persistToken=true
+            - EWS: fix /public and /archive folders access over EWS
+            - EWS: improve O365Authenticator error detection
+            - EWS: fix access to /public folder
+            - EWS: Try to improve O365 authentication with ADFS tenants
 
-            ###OSX:
-            - OSX: comment zulufx jre embed
-            - OSX: prepare zulufx jre embed
-            - OSX: drop old OSXAdapter
-            - OSX: cleanup unused methods
-            - OSX: no need to register QuitHandler, default is fine
-            - OSX: implement new Desktop handlers on Java 9 and later, keep compatibility with com.apple.eawt.Application
+            ###Documentation:
+            - Doc: fix trusterbird link on home page
+
+            ###Linux:
+            - Linux: switch spec file to java-1.8.0
+            - Linux: prepare rhel8 support
+
+            ###SMTP:
+            - SMTP: fix #720 Davmail returns 503 instead of 530 when trying to send mail before authentication
         </p>
       </description>
     </release>

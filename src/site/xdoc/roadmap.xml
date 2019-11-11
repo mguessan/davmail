@@ -15,12 +15,13 @@
                 for improvement. The following section lists the expected new features
                 and enhancements in next DavMail versions.
             </p>
-            <subsection name="5.3.2">
+            <subsection name="5.4.1">
                 <p>
                     <strong>Next minor release</strong>
                 </p>
                 <ul>
                     <li>Bugfix release, fix as many reported bugs as possible</li>
+                    <li>Investigate Caldav recurring events issues</li>
                 </ul>
             </subsection>
             <subsection name="5.5">
