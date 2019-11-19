@@ -53,6 +53,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -72,6 +73,7 @@ public class CaldavConnection extends AbstractConnection {
      * custom url encode path set for iCal 5
      */
     public static final BitSet ical_allowed_abs_path = new BitSet(256);
+
     static {
         ical_allowed_abs_path.or(URIUtil.allowed_abs_path);
         ical_allowed_abs_path.clear('@');
@@ -97,7 +99,7 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected Map<String, String> parseHeaders() throws IOException {
-        HashMap<String, String> headers = new HashMap<String, String>();
+        HashMap<String, String> headers = new HashMap<>();
         String line;
         while ((line = readClient()) != null && line.length() > 0) {
             int index = line.indexOf(':');
@@ -314,7 +316,7 @@ public class CaldavConnection extends AbstractConnection {
                     ChunkedResponse response = new ChunkedResponse(HttpStatus.SC_OK, "text/vcard;charset=UTF-8");
 
                     for (ExchangeSession.Contact contact : contacts) {
-                        ((ExchangeSession.Contact)contact).setVCardVersion(getVCardVersion(request));
+                        contact.setVCardVersion(getVCardVersion(request));
                         String contactBody = contact.getBody();
                         if (contactBody != null) {
                             response.append(contactBody);
@@ -352,7 +354,7 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
                 if (item instanceof ExchangeSession.Contact) {
-                    ((ExchangeSession.Contact)item).setVCardVersion(getVCardVersion(request));
+                    ((ExchangeSession.Contact) item).setVCardVersion(getVCardVersion(request));
                 }
                 sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), item.getBody(), true);
             }
@@ -361,7 +363,7 @@ public class CaldavConnection extends AbstractConnection {
             ExchangeSession.Item item = session.getItem(request.getFolderPath(), lastPath);
             sendHttpResponse(HttpStatus.SC_OK, buildEtagHeader(item.getEtag()), item.getContentType(), (byte[]) null, true);
         } else if (request.isMkCalendar()) {
-            HashMap<String, String> properties = new HashMap<String, String>();
+            HashMap<String, String> properties = new HashMap<>();
             //properties.put("displayname", request.getProperty("displayname"));
             int status = session.createCalendarFolder(request.getFolderPath(), properties);
             sendHttpResponse(status, null);
@@ -390,12 +392,12 @@ public class CaldavConnection extends AbstractConnection {
     protected HashMap<String, String> buildEtagHeader(CaldavRequest request, ExchangeSession.ItemResult itemResult) {
         HashMap<String, String> headers = null;
         if (itemResult.etag != null) {
-            headers = new HashMap<String, String>();
+            headers = new HashMap<>();
             headers.put("ETag", itemResult.etag);
         }
         if (itemResult.itemName != null) {
             if (headers == null) {
-                headers = new HashMap<String, String>();
+                headers = new HashMap<>();
             }
             headers.put("Location", buildEventPath(request, itemResult.itemName));
         }
@@ -405,7 +407,7 @@ public class CaldavConnection extends AbstractConnection {
 
     protected HashMap<String, String> buildEtagHeader(String etag) {
         if (etag != null) {
-            HashMap<String, String> etagHeader = new HashMap<String, String>();
+            HashMap<String, String> etagHeader = new HashMap<>();
             etagHeader.put("ETag", etag);
             return etagHeader;
         } else {
@@ -425,12 +427,14 @@ public class CaldavConnection extends AbstractConnection {
     }
 
     protected void appendEventsResponses(CaldavResponse response, CaldavRequest request, List<ExchangeSession.Event> events) throws IOException {
-        int size = events.size();
-        int count = 0;
-        for (ExchangeSession.Event event : events) {
-            DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, size));
-            DavGatewayTray.switchIcon();
-            appendItemResponse(response, request, event);
+        if (events != null) {
+            int size = events.size();
+            int count = 0;
+            for (ExchangeSession.Event event : events) {
+                DavGatewayTray.debug(new BundleMessage("LOG_LISTING_ITEM", ++count, size));
+                DavGatewayTray.switchIcon();
+                appendItemResponse(response, request, event);
+            }
         }
     }
 
@@ -451,7 +455,7 @@ public class CaldavConnection extends AbstractConnection {
             response.appendCalendarData(item.getBody());
         }
         if (request.hasProperty("address-data") && item instanceof ExchangeSession.Contact) {
-            ((ExchangeSession.Contact)item).setVCardVersion(getVCardVersion(request));
+            ((ExchangeSession.Contact) item).setVCardVersion(getVCardVersion(request));
             response.appendContactData(item.getBody());
         }
         if (request.hasProperty("getcontenttype")) {
@@ -634,7 +638,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendGetRoot() throws IOException {
-        String buffer = "Connected to DavMail"+DavGateway.getCurrentVersion()+"<br/>" +
+        String buffer = "Connected to DavMail" + DavGateway.getCurrentVersion() + "<br/>" +
                 "UserName: " + userName + "<br/>" +
                 "Email: " + session.getEmail() + "<br/>";
         sendHttpResponse(HttpStatus.SC_OK, null, "text/html;charset=UTF-8", buffer, true);
@@ -775,7 +779,7 @@ public class CaldavConnection extends AbstractConnection {
     public void reportItems(CaldavRequest request) throws IOException {
         String folderPath = request.getFolderPath();
         List<ExchangeSession.Event> events;
-        List<String> notFound = new ArrayList<String>();
+        List<String> notFound = new ArrayList<>();
 
         CaldavResponse response = new CaldavResponse(HttpStatus.SC_MULTI_STATUS);
         response.startMultistatus();
@@ -803,7 +807,7 @@ public class CaldavConnection extends AbstractConnection {
 
                         }
                         if (!eventName.equals(item.getName())) {
-                            DavGatewayTray.warn(new BundleMessage("LOG_MESSAGE", "wrong item name requested "+eventName+" received "+item.getName()));
+                            DavGatewayTray.warn(new BundleMessage("LOG_MESSAGE", "wrong item name requested " + eventName + " received " + item.getName()));
                             // force item name to requested value
                             item.setItemName(eventName);
                         }
@@ -999,7 +1003,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendWellKnown() throws IOException {
-        HashMap<String, String> headers = new HashMap<String, String>();
+        HashMap<String, String> headers = new HashMap<>();
         headers.put("Location", "/");
         sendHttpResponse(HttpStatus.SC_MOVED_PERMANENTLY, headers);
     }
@@ -1093,9 +1097,9 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendFreeBusy(String body) throws IOException {
-        HashMap<String, String> valueMap = new HashMap<String, String>();
-        ArrayList<String> attendees = new ArrayList<String>();
-        HashMap<String, String> attendeeKeyMap = new HashMap<String, String>();
+        HashMap<String, String> valueMap = new HashMap<>();
+        ArrayList<String> attendees = new ArrayList<>();
+        HashMap<String, String> attendeeKeyMap = new HashMap<>();
         ICSBufferedReader reader = new ICSBufferedReader(new StringReader(body));
         String line;
         String key;
@@ -1120,7 +1124,7 @@ public class CaldavConnection extends AbstractConnection {
             }
         }
         // get freebusy for each attendee
-        HashMap<String, ExchangeSession.FreeBusy> freeBusyMap = new HashMap<String, ExchangeSession.FreeBusy>();
+        HashMap<String, ExchangeSession.FreeBusy> freeBusyMap = new HashMap<>();
         for (String attendee : attendees) {
             ExchangeSession.FreeBusy freeBusy = session.getFreebusy(attendee, valueMap.get("DTSTART"), valueMap.get("DTEND"));
             if (freeBusy != null) {
@@ -1214,7 +1218,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendOptions() throws IOException {
-        HashMap<String, String> headers = new HashMap<String, String>();
+        HashMap<String, String> headers = new HashMap<>();
         headers.put("Allow", "OPTIONS, PROPFIND, HEAD, GET, REPORT, PROPPATCH, PUT, DELETE, POST");
         sendHttpResponse(HttpStatus.SC_OK, headers);
     }
@@ -1225,7 +1229,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendUnauthorized() throws IOException {
-        HashMap<String, String> headers = new HashMap<String, String>();
+        HashMap<String, String> headers = new HashMap<>();
         headers.put("WWW-Authenticate", "Basic realm=\"" + BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\"');
         sendHttpResponse(HttpStatus.SC_UNAUTHORIZED, headers, null, (byte[]) null, true);
     }
@@ -1259,7 +1263,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendChunkedHttpResponse(int status, String contentType) throws IOException {
-        HashMap<String, String> headers = new HashMap<String, String>();
+        HashMap<String, String> headers = new HashMap<>();
         headers.put("Transfer-Encoding", "chunked");
         sendHttpResponse(status, headers, contentType, (byte[]) null, true);
     }
@@ -1276,7 +1280,7 @@ public class CaldavConnection extends AbstractConnection {
      * @throws IOException on error
      */
     public void sendHttpResponse(int status, Map<String, String> headers, String contentType, String content, boolean keepAlive) throws IOException {
-        sendHttpResponse(status, headers, contentType, content.getBytes("UTF-8"), keepAlive);
+        sendHttpResponse(status, headers, contentType, content.getBytes(StandardCharsets.UTF_8), keepAlive);
     }
 
     /**
@@ -1302,7 +1306,7 @@ public class CaldavConnection extends AbstractConnection {
             } else {
                 scheduleMode = "calendar-schedule";
             }
-            sendClient("DAV: 1, calendar-access, "+scheduleMode+", calendarserver-private-events, addressbook");
+            sendClient("DAV: 1, calendar-access, " + scheduleMode + ", calendarserver-private-events, addressbook");
             SimpleDateFormat formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
             // force GMT timezone
             formatter.setTimeZone(ExchangeSession.GMT_TIMEZONE);
@@ -1330,7 +1334,7 @@ public class CaldavConnection extends AbstractConnection {
         if (content != null && content.length > 0) {
             // full debug trace
             if (wireLogger.isDebugEnabled()) {
-                wireLogger.debug("> " + new String(content, "UTF-8"));
+                wireLogger.debug("> " + new String(content, StandardCharsets.UTF_8));
             }
             sendClient(content);
         }
@@ -1371,7 +1375,7 @@ public class CaldavConnection extends AbstractConnection {
         protected final Map<String, String> headers;
         protected int depth;
         protected final String body;
-        protected final HashMap<String, String> properties = new HashMap<String, String>();
+        protected final HashMap<String, String> properties = new HashMap<>();
         protected HashSet<String> hrefs;
         protected boolean isMultiGet;
         protected String timeRangeStart;
@@ -1533,7 +1537,7 @@ public class CaldavConnection extends AbstractConnection {
                 depth = Integer.MAX_VALUE;
             } else if (depthValue != null) {
                 try {
-                    depth = Integer.valueOf(depthValue);
+                    depth = Integer.parseInt(depthValue);
                 } catch (NumberFormatException e) {
                     DavGatewayTray.warn(new BundleMessage("LOG_INVALID_DEPTH", depthValue));
                 }
@@ -1572,7 +1576,7 @@ public class CaldavConnection extends AbstractConnection {
                             handleCompFilter(streamReader);
                         } else if ("href".equals(tagLocalName)) {
                             if (hrefs == null) {
-                                hrefs = new HashSet<String>();
+                                hrefs = new HashSet<>();
                             }
                             if (isBrokenHrefEncoding()) {
                                 hrefs.add(streamReader.getElementText());
@@ -1698,7 +1702,7 @@ public class CaldavConnection extends AbstractConnection {
                  * If your public folder address book path has spaces, then Address Book app just ignores that account
                  * This kludge allows you to specify the path in which spaces are encoded as ___
                  * It'll make Address book to not ignore the account and communicate with DavMail.
-                 * Here we replace the ___ in the path with spaces. Be warned if your actual address book path has ___ 
+                 * Here we replace the ___ in the path with spaces. Be warned if your actual address book path has ___
                  * it'll fail.
                  */
                 String result = calendarPath.toString();
@@ -1731,7 +1735,7 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient(Integer.toHexString(length));
                     sendClient(data, offset, length);
                     if (wireLogger.isDebugEnabled()) {
-                        wireLogger.debug("> " + new String(data, offset, length, "UTF-8"));
+                        wireLogger.debug("> " + new String(data, offset, length, StandardCharsets.UTF_8));
                     }
                     sendClient("");
                 }
@@ -1746,7 +1750,7 @@ public class CaldavConnection extends AbstractConnection {
                     sendClient("0");
                     sendClient("");
                 }
-            }), "UTF-8");
+            }), StandardCharsets.UTF_8);
             sendChunkedHttpResponse(status, contentType);
         }
 
