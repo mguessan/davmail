@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +56,7 @@ public class ExchangePropFindRequest extends ExchangeDavRequest {
         try {
             // build namespace map
             int currentChar = 'e';
-            final Map<String, Integer> nameSpaceMap = new HashMap<String, Integer>();
+            final Map<String, Integer> nameSpaceMap = new HashMap<>();
             nameSpaceMap.put("DAV:", (int) 'D');
             if (propertyNameSet != null) {
                 DavPropertyNameIterator propertyNameIterator = propertyNameSet.iterator();
@@ -72,34 +73,34 @@ public class ExchangePropFindRequest extends ExchangeDavRequest {
             }
             // <D:propfind xmlns:D="DAV:"><D:prop><D:displayname/></D:prop></D:propfind>
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
-            writer.write("<D:propfind ");
-            for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
-                writer.write(" xmlns:");
-                writer.write((char) mapEntry.getValue().intValue());
-                writer.write("=\"");
-                writer.write(mapEntry.getKey());
-                writer.write("\"");
-            }
-            writer.write(">");
-            if (propertyNameSet == null || propertyNameSet.isEmpty()) {
-                writer.write("<D:allprop/>");
-            } else {
-                writer.write("<D:prop>");
-                DavPropertyNameIterator propertyNameIterator = propertyNameSet.iterator();
-                while (propertyNameIterator.hasNext()) {
-                    DavPropertyName davPropertyName = propertyNameIterator.nextPropertyName();
-                    char nameSpaceChar = (char) nameSpaceMap.get(davPropertyName.getNamespace().getURI()).intValue();
-                    writer.write('<');
-                    writer.write(nameSpaceChar);
-                    writer.write(':');
-                    writer.write(davPropertyName.getName());
-                    writer.write("/>");
+            try (OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+                writer.write("<D:propfind ");
+                for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
+                    writer.write(" xmlns:");
+                    writer.write((char) mapEntry.getValue().intValue());
+                    writer.write("=\"");
+                    writer.write(mapEntry.getKey());
+                    writer.write("\"");
                 }
-                writer.write("</D:prop>");
+                writer.write(">");
+                if (propertyNameSet == null || propertyNameSet.isEmpty()) {
+                    writer.write("<D:allprop/>");
+                } else {
+                    writer.write("<D:prop>");
+                    DavPropertyNameIterator propertyNameIterator = propertyNameSet.iterator();
+                    while (propertyNameIterator.hasNext()) {
+                        DavPropertyName davPropertyName = propertyNameIterator.nextPropertyName();
+                        char nameSpaceChar = (char) nameSpaceMap.get(davPropertyName.getNamespace().getURI()).intValue();
+                        writer.write('<');
+                        writer.write(nameSpaceChar);
+                        writer.write(':');
+                        writer.write(davPropertyName.getName());
+                        writer.write("/>");
+                    }
+                    writer.write("</D:prop>");
+                }
+                writer.write("</D:propfind>");
             }
-            writer.write("</D:propfind>");
-            writer.close();
             return baos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);

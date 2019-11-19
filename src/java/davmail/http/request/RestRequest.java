@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -114,15 +115,13 @@ public class RestRequest extends HttpPost implements ResponseHandler {
     public Object handleResponse(HttpResponse response) {
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
-            try {
-                InputStream inputStream = response.getEntity().getContent();
+            try (InputStream inputStream = response.getEntity().getContent()){
                 if (isGzipEncoded(response)) {
-                    inputStream = new GZIPInputStream(inputStream);
+                    processResponseStream(new GZIPInputStream(inputStream));
+                } else {
+                    processResponseStream(inputStream);
                 }
-                processResponseStream(inputStream);
-            } catch (IOException e) {
-                LOGGER.error("Error while parsing json response: " + e, e);
-            } catch (JSONException e) {
+            } catch (IOException | JSONException e) {
                 LOGGER.error("Error while parsing json response: " + e, e);
             }
         }
@@ -136,14 +135,13 @@ public class RestRequest extends HttpPost implements ResponseHandler {
      * @return true if response is gzip encoded
      */
     public boolean isGzipEncoded(HttpResponse response) {
-        // TODO: move to HttpClientAdapter
         Header header = response.getFirstHeader("Content-Encoding");
         return header != null && "gzip".equals(header.getValue());
     }
 
     private void processResponseStream(InputStream responseBodyAsStream) throws IOException, JSONException {
         // quick non streaming implementation
-        jsonResponse = new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), "UTF-8"));
+        jsonResponse = new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), StandardCharsets.UTF_8));
     }
 
     public JSONObject getJsonResponse() {

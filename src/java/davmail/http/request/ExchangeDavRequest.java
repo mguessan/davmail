@@ -112,7 +112,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
         this.response = response;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml".equals(contentTypeHeader.getValue())) {
-            responses = new ArrayList<MultiStatusResponse>();
+            responses = new ArrayList<>();
             XMLStreamReader reader;
             try {
                 reader = XMLStreamUtil.createXMLStreamReader(new FilterInputStream(response.getEntity().getContent()) {
@@ -143,9 +143,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
                     }
                 }
 
-            } catch (IOException e) {
-                LOGGER.error("Error while parsing soap response: " + e, e);
-            } catch (XMLStreamException e) {
+            } catch (IOException | XMLStreamException e) {
                 LOGGER.error("Error while parsing soap response: " + e, e);
             }
         }
@@ -208,7 +206,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
                 } else {
                     String tagContent = getTagContent(reader);
                     if (tagContent != null) {
-                        multiStatusResponse.add(new DefaultDavProperty<String>(tagLocalName, tagContent, namespace));
+                        multiStatusResponse.add(new DefaultDavProperty<>(tagLocalName, tagContent, namespace));
                     }
                 }
             }
@@ -218,7 +216,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
     protected void handleMultiValuedProperty(XMLStreamReader reader, MultiStatusResponse multiStatusResponse) throws XMLStreamException {
         String tagLocalName = reader.getLocalName();
         Namespace namespace = Namespace.getNamespace(reader.getNamespaceURI());
-        ArrayList<String> values = new ArrayList<String>();
+        ArrayList<String> values = new ArrayList<>();
         while (reader.hasNext() && !XMLStreamUtil.isEndTag(reader, tagLocalName)) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
@@ -228,7 +226,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
                 }
             }
         }
-        multiStatusResponse.add(new DefaultDavProperty<ArrayList<String>>(tagLocalName, values, namespace));
+        multiStatusResponse.add(new DefaultDavProperty<>(tagLocalName, values, namespace));
     }
 
     protected String getTagContent(XMLStreamReader reader) throws XMLStreamException {

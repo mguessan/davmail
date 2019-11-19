@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,9 +57,9 @@ public class ExchangePropPatchRequest extends ExchangeDavRequest {
         try {
             // build namespace map
             int currentChar = 'e';
-            final Map<String, Integer> nameSpaceMap = new HashMap<String, Integer>();
-            final Set<PropertyValue> setPropertyValues = new HashSet<PropertyValue>();
-            final Set<PropertyValue> deletePropertyValues = new HashSet<PropertyValue>();
+            final Map<String, Integer> nameSpaceMap = new HashMap<>();
+            final Set<PropertyValue> setPropertyValues = new HashSet<>();
+            final Set<PropertyValue> deletePropertyValues = new HashSet<>();
             for (PropertyValue propertyValue : propertyValues) {
                 // data type namespace
                 if (!nameSpaceMap.containsKey(TYPE_NAMESPACE) && propertyValue.getTypeString() != null) {
@@ -76,56 +77,58 @@ public class ExchangePropPatchRequest extends ExchangeDavRequest {
                 }
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
-            writer.write("<D:propertyupdate xmlns:D=\"DAV:\"");
-            for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
-                writer.write(" xmlns:");
-                writer.write((char) mapEntry.getValue().intValue());
-                writer.write("=\"");
-                writer.write(mapEntry.getKey());
-                writer.write("\"");
-            }
-            writer.write(">");
-            if (!setPropertyValues.isEmpty()) {
-                writer.write("<D:set><D:prop>");
-                for (PropertyValue propertyValue : setPropertyValues) {
-                    String typeString = propertyValue.getTypeString();
-                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
-                    writer.write('<');
-                    writer.write(nameSpaceChar);
-                    writer.write(':');
-                    writer.write(propertyValue.getName());
-                    if (typeString != null) {
-                        writer.write(' ');
-                        writer.write(nameSpaceMap.get(TYPE_NAMESPACE));
-                        writer.write(":dt=\"");
-                        writer.write(typeString);
-                        writer.write("\"");
+            try (
+                    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)
+            ) {
+                writer.write("<D:propertyupdate xmlns:D=\"DAV:\"");
+                for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
+                    writer.write(" xmlns:");
+                    writer.write((char) mapEntry.getValue().intValue());
+                    writer.write("=\"");
+                    writer.write(mapEntry.getKey());
+                    writer.write("\"");
+                }
+                writer.write(">");
+                if (!setPropertyValues.isEmpty()) {
+                    writer.write("<D:set><D:prop>");
+                    for (PropertyValue propertyValue : setPropertyValues) {
+                        String typeString = propertyValue.getTypeString();
+                        char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
+                        writer.write('<');
+                        writer.write(nameSpaceChar);
+                        writer.write(':');
+                        writer.write(propertyValue.getName());
+                        if (typeString != null) {
+                            writer.write(' ');
+                            writer.write(nameSpaceMap.get(TYPE_NAMESPACE));
+                            writer.write(":dt=\"");
+                            writer.write(typeString);
+                            writer.write("\"");
+                        }
+                        writer.write('>');
+                        writer.write(propertyValue.getXmlEncodedValue());
+                        writer.write("</");
+                        writer.write(nameSpaceChar);
+                        writer.write(':');
+                        writer.write(propertyValue.getName());
+                        writer.write('>');
                     }
-                    writer.write('>');
-                    writer.write(propertyValue.getXmlEncodedValue());
-                    writer.write("</");
-                    writer.write(nameSpaceChar);
-                    writer.write(':');
-                    writer.write(propertyValue.getName());
-                    writer.write('>');
+                    writer.write("</D:prop></D:set>");
                 }
-                writer.write("</D:prop></D:set>");
-            }
-            if (!deletePropertyValues.isEmpty()) {
-                writer.write("<D:remove><D:prop>");
-                for (PropertyValue propertyValue : deletePropertyValues) {
-                    char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
-                    writer.write('<');
-                    writer.write(nameSpaceChar);
-                    writer.write(':');
-                    writer.write(propertyValue.getName());
-                    writer.write("/>");
+                if (!deletePropertyValues.isEmpty()) {
+                    writer.write("<D:remove><D:prop>");
+                    for (PropertyValue propertyValue : deletePropertyValues) {
+                        char nameSpaceChar = (char) nameSpaceMap.get(propertyValue.getNamespaceUri()).intValue();
+                        writer.write('<');
+                        writer.write(nameSpaceChar);
+                        writer.write(':');
+                        writer.write(propertyValue.getName());
+                        writer.write("/>");
+                    }
+                    writer.write("</D:prop></D:remove>");
                 }
-                writer.write("</D:prop></D:remove>");
+                writer.write("</D:propertyupdate>");
             }
-            writer.write("</D:propertyupdate>");
-            writer.close();
             return baos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -25,9 +25,10 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Custom Exchange SEARCH ethod.
+ * Custom Exchange SEARCH method.
  * Does not load full DOM in memory.
  */
 public class ExchangeSearchRequest extends ExchangeDavRequest {
@@ -50,14 +51,14 @@ public class ExchangeSearchRequest extends ExchangeDavRequest {
         try {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
-            writer.write("<?xml version=\"1.0\"?>\n");
-            writer.write("<d:searchrequest xmlns:d=\"DAV:\">\n");
-            writer.write("        <d:sql>");
-            writer.write(StringUtil.xmlEncode(searchRequest));
-            writer.write("</d:sql>\n");
-            writer.write("</d:searchrequest>");
-            writer.close();
+            try (OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+                writer.write("<?xml version=\"1.0\"?>\n");
+                writer.write("<d:searchrequest xmlns:d=\"DAV:\">\n");
+                writer.write("        <d:sql>");
+                writer.write(StringUtil.xmlEncode(searchRequest));
+                writer.write("</d:sql>\n");
+                writer.write("</d:searchrequest>");
+            }
             return baos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);

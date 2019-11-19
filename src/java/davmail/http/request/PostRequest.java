@@ -39,7 +39,7 @@ import java.util.ArrayList;
  * Http post request to handle response transparently.
  */
 public class PostRequest extends HttpPost implements ResponseHandler {
-    ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+    ArrayList<NameValuePair> parameters = new ArrayList<>();
     String responseBodyAsString = null;
     private HttpResponse response;
 
@@ -77,7 +77,7 @@ public class PostRequest extends HttpPost implements ResponseHandler {
     }
 
     public void removeParameter(final String name) {
-        ArrayList<NameValuePair> toDelete = new ArrayList<NameValuePair>();
+        ArrayList<NameValuePair> toDelete = new ArrayList<>();
         for (NameValuePair param: parameters) {
             if (param.getName().equals(name)) {
                 toDelete.add(param);
