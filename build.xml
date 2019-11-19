@@ -395,6 +395,7 @@
                 <exclude name="src/osx/**"/>
                 <exclude name="src/contribs/**"/>
                 <exclude name="*.nsi"/>
+                <exclude name=".scannerwork"/>
             </tarfileset>
         </tar>
     </target>
