@@ -38,7 +38,11 @@ import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.*;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.IdleConnectionEvictor;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.log4j.Level;
 
@@ -49,19 +53,12 @@ import java.util.concurrent.TimeUnit;
 public class TestHttpClient4 extends AbstractDavMailTestCase {
     public void testBasicGetRequest() throws IOException {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
-
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
             HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -73,28 +70,22 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
 
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .setConnectionManager(poolingHttpClientConnectionManager);
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
             for (int i = 0; i < 10; i++) {
 
                 HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-                CloseableHttpResponse response = httpClient.execute(httpget);
-                System.out.println("Pool stats after execute: " + poolingHttpClientConnectionManager.getTotalStats());
-                assertEquals(1, poolingHttpClientConnectionManager.getTotalStats().getLeased());
-                assertEquals(0, poolingHttpClientConnectionManager.getTotalStats().getAvailable());
-                try {
+                try (CloseableHttpResponse response = httpClient.execute(httpget)) {
+                    System.out.println("Pool stats after execute: " + poolingHttpClientConnectionManager.getTotalStats());
+                    assertEquals(1, poolingHttpClientConnectionManager.getTotalStats().getLeased());
+                    assertEquals(0, poolingHttpClientConnectionManager.getTotalStats().getAvailable());
                     String responseString = new BasicResponseHandler().handleResponse(response);
                     System.out.println(responseString);
                     System.out.println("Pool stats after response: " + poolingHttpClientConnectionManager.getTotalStats());
-                } finally {
-                    response.close();
                 }
                 System.out.println("Pool stats after close response: " + poolingHttpClientConnectionManager.getTotalStats());
                 assertEquals(0, poolingHttpClientConnectionManager.getTotalStats().getLeased());
                 assertEquals(1, poolingHttpClientConnectionManager.getTotalStats().getAvailable());
             }
-        } finally {
-            httpClient.close();
         }
         System.out.println("Pool stats after close httpClient: " + poolingHttpClientConnectionManager.getTotalStats());
         assertEquals(0, poolingHttpClientConnectionManager.getTotalStats().getLeased());
@@ -112,18 +103,12 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .disableRedirectHandling()
                 .setConnectionManager(poolingHttpClientConnectionManager);
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
 
             HttpGet httpget = new HttpGet("https://outlook.office365.com");
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 assertEquals(HttpStatus.SC_MOVED_TEMPORARILY, response.getStatusLine().getStatusCode());
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -144,20 +129,14 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
                 .disableRedirectHandling()
                 .setDefaultCredentialsProvider(provider)
                 .setConnectionManager(poolingHttpClientConnectionManager);
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
 
             HttpGet httpget = new HttpGet("https://outlook.office365.com/EWS/Exchange.asmx");
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -170,18 +149,21 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         HttpHost proxy = new HttpHost(proxyHost, proxyPort);
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
         clientBuilder.setProxy(proxy).setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT);
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+
+        // proxy authentication
+        String proxyUser = Settings.getProperty("davmail.proxyUser");
+        String proxyPassword = Settings.getProperty("davmail.proxyPassword");
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
+        credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(proxyUser, proxyPassword));
+        clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
             HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -190,29 +172,20 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
 
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
             String url = "http://davmail.sourceforge.net";
             // get with host
             HttpGet httpget = new HttpGet(url);
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 new BasicResponseHandler().handleResponse(response);
-            } finally {
-                response.close();
             }
 
             // get with path only
             httpget = new HttpGet(URIUtils.resolve(httpget.getURI(), "/version.txt"));
-            response = httpClient.execute(httpget);
-            try {
-                String responseString = new BasicResponseHandler().handleResponse(response);
+            try (CloseableHttpResponse response2 = httpClient.execute(httpget)) {
+                String responseString = new BasicResponseHandler().handleResponse(response2);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -221,30 +194,21 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
 
         HttpClientBuilder clientBuilder = HttpClientBuilder.create().disableRedirectHandling();
-        CloseableHttpClient httpClient = clientBuilder.build();
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
             HttpGet httpget = new HttpGet("https://outlook.office365.com/owa/");
-            CloseableHttpResponse response = httpClient.execute(httpget);
             Header location;
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 assertEquals(HttpStatus.SC_MOVED_TEMPORARILY, response.getStatusLine().getStatusCode());
                 location = response.getFirstHeader("Location");
-            } finally {
-                response.close();
             }
             assertNotNull(location);
             URI targetUri = URIUtils.resolve(httpget.getURI(), location.getValue());
             httpget = new HttpGet(targetUri);
-            response = httpClient.execute(httpget);
-            try {
-                assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-                String responseString = new BasicResponseHandler().handleResponse(response);
+            try (CloseableHttpResponse response2 = httpClient.execute(httpget)) {
+                assertEquals(HttpStatus.SC_OK, response2.getStatusLine().getStatusCode());
+                String responseString = new BasicResponseHandler().handleResponse(response2);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClient.close();
         }
     }
 
@@ -277,19 +241,15 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
 
         IdleConnectionEvictor evictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
         evictor.start();
-        CloseableHttpClient httpClient = clientBuilder.build();
 
-        try {
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
 
             HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
 
-            CloseableHttpResponse response = httpClient.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
             while (connectionManager.getTotalStats().getAvailable() > 0) {
                 Thread.sleep(5000);
@@ -297,7 +257,6 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
             }
         } finally {
             evictor.shutdown();
-            httpClient.close();
         }
 
     }
@@ -324,17 +283,11 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
 
         String ewsUrl;
 
-        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password);
-        try {
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, userid, password)) {
             AutoDiscoverMethod autoDiscoverRequest = new AutoDiscoverMethod(url, userEmail);
-            CloseableHttpResponse httpResponse = httpClientAdapter.executeFollowRedirects(autoDiscoverRequest);
-            try {
+            try (CloseableHttpResponse httpResponse = httpClientAdapter.executeFollowRedirects(autoDiscoverRequest)) {
                 ewsUrl = (String) autoDiscoverRequest.handleResponse(httpResponse);
-            } finally {
-                httpResponse.close();
             }
-        } finally {
-            httpClientAdapter.close();
         }
         System.out.println(ewsUrl);
         assertNotNull(ewsUrl);
