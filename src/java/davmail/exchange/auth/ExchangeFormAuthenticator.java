@@ -60,7 +60,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Various username fields found on custom Exchange authentication forms
      */
-    protected static final Set<String> USER_NAME_FIELDS = new HashSet<String>();
+    protected static final Set<String> USER_NAME_FIELDS = new HashSet<>();
     static {
         USER_NAME_FIELDS.add("username");
         USER_NAME_FIELDS.add("txtusername");
@@ -74,7 +74,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Various password fields found on custom Exchange authentication forms
      */
-    protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
+    protected static final Set<String> PASSWORD_FIELDS = new HashSet<>();
     static {
         PASSWORD_FIELDS.add("password");
         PASSWORD_FIELDS.add("txtUserPass");
@@ -88,7 +88,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * Various OTP (one time password) fields found on custom Exchange authentication forms.
      * Used to open OTP dialog
      */
-    protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
+    protected static final Set<String> TOKEN_FIELDS = new HashSet<>();
     static {
         TOKEN_FIELDS.add("SafeWordPassword");
         TOKEN_FIELDS.add("passcode");
@@ -122,7 +122,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Logon form user name fields.
      */
-    private final List<String> usernameInputs = new ArrayList<String>();
+    private final List<String> usernameInputs = new ArrayList<>();
     /**
      * Logon form password field, default is password.
      */
@@ -225,12 +225,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
             close();
             LOGGER.error(exc.getMessage());
             throw exc;
-        } catch (ConnectException exc) {
-            close();
-            BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
-            LOGGER.error(message);
-            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
-        } catch (UnknownHostException exc) {
+        } catch (ConnectException | UnknownHostException exc) {
             close();
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             LOGGER.error(message);
@@ -350,7 +345,9 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         ((PostMethod) logonMethod).addParameter(name, value);
                     }
                     // custom login form
-                    if (USER_NAME_FIELDS.contains(name)) {
+                    if (name == null) {
+                        LOGGER.debug("Skip invalid input with empty name");
+                    } else if (USER_NAME_FIELDS.contains(name)) {
                         usernameInputs.add(name);
                     } else if (PASSWORD_FIELDS.contains(name)) {
                         passwordInput = name;
