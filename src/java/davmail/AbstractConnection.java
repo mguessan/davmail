@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -174,12 +175,12 @@ public abstract class AbstractConnection extends Thread implements Closeable {
      */
     public void sendClient(String prefix, String message) throws IOException {
         if (prefix != null) {
-            os.write(prefix.getBytes("UTF-8"));
+            os.write(prefix.getBytes(StandardCharsets.UTF_8));
             DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_PREFIX_MESSAGE", prefix, message));
         } else {
             DavGatewayTray.debug(new BundleMessage("LOG_SEND_CLIENT_MESSAGE", message));
         }
-        os.write(message.getBytes("UTF-8"));
+        os.write(message.getBytes(StandardCharsets.UTF_8));
         os.write((char) 13);
         os.write((char) 10);
         os.flush();

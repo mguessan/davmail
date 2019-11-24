@@ -48,7 +48,7 @@ public final class DavGateway {
     private DavGateway() {
     }
 
-    private static final ArrayList<AbstractServer> SERVER_LIST = new ArrayList<AbstractServer>();
+    private static final ArrayList<AbstractServer> SERVER_LIST = new ArrayList<>();
 
     /**
      * Start the gateway, listen on specified smtp and pop3 ports
@@ -241,16 +241,13 @@ public final class DavGateway {
     public static String getReleasedVersion() {
         String version = null;
         if (!Settings.getBooleanProperty("davmail.disableUpdateCheck")) {
-            HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
-            try {
+            try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT)) {
                 GetRequest getRequest = new GetRequest(HTTP_DAVMAIL_SOURCEFORGE_NET_VERSION_TXT);
                 httpClientAdapter.execute(getRequest);
                 version = getRequest.getResponseBodyAsString();
                 LOGGER.debug("DavMail released version: " + version);
             } catch (IOException e) {
                 DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
-            } finally {
-                httpClientAdapter.close();
             }
         }
         return version;

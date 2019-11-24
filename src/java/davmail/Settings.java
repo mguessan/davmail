@@ -26,7 +26,16 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -57,7 +66,7 @@ public final class Settings {
         @Override
         public synchronized Enumeration<Object> keys() {
             Enumeration keysEnumeration = super.keys();
-            TreeSet<String> sortedKeySet = new TreeSet<String>();
+            TreeSet<String> sortedKeySet = new TreeSet<>();
             while (keysEnumeration.hasMoreElements()) {
                 sortedKeySet.add((String) keysEnumeration.nextElement());
             }
@@ -334,13 +343,13 @@ public final class Settings {
             Properties properties = new Properties();
             properties.putAll(SETTINGS);
             // file lines
-            ArrayList<String> lines = new ArrayList<String>();
+            ArrayList<String> lines = new ArrayList<>();
 
             BufferedWriter writer = null;
             try  {
                 readLines(lines, properties);
 
-                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), "ISO-8859-1"));
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), StandardCharsets.ISO_8859_1));
                 for (String value : lines) {
                     writer.write(value);
                     writer.newLine();
@@ -373,7 +382,7 @@ public final class Settings {
         try {
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), "ISO-8859-1"));
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), StandardCharsets.ISO_8859_1));
 
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -674,10 +683,6 @@ public final class Settings {
     public static boolean isUnix() {
         return isLinux() ||
                 System.getProperty("os.name").toLowerCase().startsWith("freebsd");
-    }
-
-    public static boolean isJava8() {
-        return "1.8".equals(System.getProperty("java.specification.version"));
     }
 
 }
