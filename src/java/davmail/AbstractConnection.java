@@ -30,7 +30,7 @@ import java.net.Socket;
 /**
  * Generic connection common to pop3 and smtp implementations
  */
-public abstract class AbstractConnection extends Thread {
+public abstract class AbstractConnection extends Thread implements Closeable {
 
     protected enum State {
         INITIAL, LOGIN, USER, PASSWORD, AUTHENTICATED, STARTMAIL, RECIPIENT, MAILDATA

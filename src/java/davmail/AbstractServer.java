@@ -22,14 +22,23 @@ import davmail.exception.DavMailException;
 import davmail.ui.tray.DavGatewayTray;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.HashSet;
 
@@ -99,9 +108,7 @@ public abstract class AbstractServer extends Thread {
 
                 // create ServerSocketFactory from sslContext
                 serverSocketFactory = sslContext.getServerSocketFactory();
-            } catch (IOException ex) {
-                throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
-            } catch (GeneralSecurityException ex) {
+            } catch (IOException | GeneralSecurityException ex) {
                 throw new DavMailException("LOG_EXCEPTION_CREATING_SSL_SERVER_SOCKET", getProtocolName(), port, ex.getMessage() == null ? ex.toString() : ex.getMessage());
             }
         }
@@ -114,7 +121,7 @@ public abstract class AbstractServer extends Thread {
             }
             if (serverSocket instanceof SSLServerSocket) {
                 // CVE-2014-3566 disable SSLv3
-                HashSet<String> protocols = new HashSet<String>();
+                HashSet<String> protocols = new HashSet<>();
                 for (String protocol : ((SSLServerSocket) serverSocket).getEnabledProtocols()) {
                     if (!protocol.startsWith("SSL")) {
                         protocols.add(protocol);
@@ -143,23 +150,13 @@ public abstract class AbstractServer extends Thread {
         if (truststoreFile == null || truststoreFile.length() == 0) {
             return null;
         }
-        FileInputStream trustStoreInputStream = null;
-        try {
-            trustStoreInputStream = new FileInputStream(truststoreFile);
+        try (FileInputStream trustStoreInputStream = new FileInputStream(truststoreFile)) {
             KeyStore trustStore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.truststoreType"));
             trustStore.load(trustStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.truststorePass"));
 
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             tmf.init(trustStore);
             return tmf.getTrustManagers();
-        } finally {
-            if (trustStoreInputStream != null) {
-                try {
-                    trustStoreInputStream.close();
-                } catch (IOException exc) {
-                    DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
-                }
-            }
         }
     }
 
@@ -177,23 +174,13 @@ public abstract class AbstractServer extends Thread {
         if (keystoreFile == null || keystoreFile.length() == 0) {
             return null;
         }
-        FileInputStream keyStoreInputStream = null;
-        try {
-            keyStoreInputStream = new FileInputStream(keystoreFile);
+        try (FileInputStream keyStoreInputStream = new FileInputStream(keystoreFile)) {
             KeyStore keystore = KeyStore.getInstance(Settings.getProperty("davmail.ssl.keystoreType"));
             keystore.load(keyStoreInputStream, Settings.getCharArrayProperty("davmail.ssl.keystorePass"));
 
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(keystore, Settings.getCharArrayProperty("davmail.ssl.keyPass"));
             return kmf.getKeyManagers();
-        } finally {
-            if (keyStoreInputStream != null) {
-                try {
-                    keyStoreInputStream.close();
-                } catch (IOException exc) {
-                    DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_KEYSTORE_INPUT_STREAM"), exc);
-                }
-            }
         }
     }
 
@@ -205,43 +192,30 @@ public abstract class AbstractServer extends Thread {
      */
     @Override
     public void run() {
-        Socket clientSocket = null;
-        AbstractConnection connection = null;
         try {
-            //noinspection InfiniteLoopStatement
-            while (true) {
-                clientSocket = serverSocket.accept();
-                // set default timeout to 5 minutes
-                clientSocket.setSoTimeout(Settings.getIntProperty("davmail.clientSoTimeout", 300)*1000);
-                DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
-                // only accept localhost connections for security reasons
-                if (Settings.getBooleanProperty("davmail.allowRemote") ||
-                        clientSocket.getInetAddress().isLoopbackAddress() ||
-                        // OSX link local address on loopback interface
-                        clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[]{(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
-                        )) {
-                    connection = createConnectionHandler(clientSocket);
-                    connection.start();
-                } else {
-                    clientSocket.close();
-                    DavGatewayTray.warn(new BundleMessage("LOG_EXTERNAL_CONNECTION_REFUSED"));
+            while (!serverSocket.isClosed()) {
+                try (Socket clientSocket = serverSocket.accept()) {
+                    // set default timeout to 5 minutes
+                    clientSocket.setSoTimeout(Settings.getIntProperty("davmail.clientSoTimeout", 300) * 1000);
+                    DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
+                    // only accept localhost connections for security reasons
+                    if (Settings.getBooleanProperty("davmail.allowRemote") ||
+                            clientSocket.getInetAddress().isLoopbackAddress() ||
+                            // OSX link local address on loopback interface
+                            clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[]{(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+                            )) {
+                        try (AbstractConnection connection = createConnectionHandler(clientSocket)) {
+                            connection.start();
+                        }
+                    } else {
+                        DavGatewayTray.warn(new BundleMessage("LOG_EXTERNAL_CONNECTION_REFUSED"));
+                    }
                 }
             }
         } catch (IOException e) {
             // do not warn if exception on socket close (gateway restart)
             if (!serverSocket.isClosed()) {
                 DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_LISTENING_FOR_CONNECTIONS"), e);
-            }
-        } finally {
-            try {
-                if (clientSocket != null) {
-                    clientSocket.close();
-                }
-            } catch (IOException e) {
-                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e);
-            }
-            if (connection != null) {
-                connection.close();
             }
         }
     }
