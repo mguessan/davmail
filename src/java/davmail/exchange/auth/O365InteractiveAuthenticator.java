@@ -100,7 +100,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             uri = new URIBuilder()
                     .setScheme("https")
                     .setHost("login.microsoftonline.com")
-                    .setPath("/"+tenantId+"/oauth2/authorize")
+                    .setPath("/" + tenantId + "/oauth2/authorize")
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
@@ -136,21 +136,18 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             }
         });
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
-                    o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
-                    o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
-                } catch (NoClassDefFoundError e) {
-                    LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
-                    O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
-                    code = o365ManualAuthenticatorDialog.getCode();
-                    isAuthenticated = code != null;
-                    if (!isAuthenticated) {
-                        errorCode = "User did not provide authentication code";
-                    }
+        SwingUtilities.invokeLater(() -> {
+            try {
+                o365InteractiveAuthenticatorFrame = new O365InteractiveAuthenticatorFrame();
+                o365InteractiveAuthenticatorFrame.setO365InteractiveAuthenticator(O365InteractiveAuthenticator.this);
+                o365InteractiveAuthenticatorFrame.authenticate(initUrl, redirectUri);
+            } catch (NoClassDefFoundError e) {
+                LOGGER.warn("Unable to load JavaFX (OpenJFX), switch to manual mode");
+                O365ManualAuthenticatorDialog o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
+                code = o365ManualAuthenticatorDialog.getCode();
+                isAuthenticated = code != null;
+                if (!isAuthenticated) {
+                    errorCode = "User did not provide authentication code";
                 }
             }
         });
@@ -225,8 +222,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             }
 
         } catch (Exception e) {
-            LOGGER.error(e + " " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error(e + " " + e.getMessage(), e);
         }
         System.exit(0);
     }
