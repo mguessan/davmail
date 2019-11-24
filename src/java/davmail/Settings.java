@@ -157,7 +157,7 @@ public final class Settings {
      */
     public static void setDefaultSettings() {
         SETTINGS.put("davmail.mode", "EWS");
-        SETTINGS.put("davmail.url", "https://outlook.office365.com/EWS/Exchange.asmx");
+        SETTINGS.put("davmail.url", O365_URL);
         SETTINGS.put("davmail.popPort", "1110");
         SETTINGS.put("davmail.imapPort", "1143");
         SETTINGS.put("davmail.smtpPort", "1025");
