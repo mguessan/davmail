@@ -345,11 +345,9 @@ public final class Settings {
             // file lines
             ArrayList<String> lines = new ArrayList<>();
 
-            BufferedWriter writer = null;
-            try  {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), StandardCharsets.ISO_8859_1))) {
                 readLines(lines, properties);
 
-                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFilePath), StandardCharsets.ISO_8859_1));
                 for (String value : lines) {
                     writer.write(value);
                     writer.newLine();
@@ -364,41 +362,24 @@ public final class Settings {
                 }
             } catch (IOException e) {
                 DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_STORE_SETTINGS"), e);
-            } finally {
-                if (writer != null) {
-                    try {
-                        writer.close();
-                    } catch (IOException e) {
-                        DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
-                    }
-                }
             }
         }
         updateLoggingConfig();
     }
 
     private static void readLines(ArrayList<String> lines, Properties properties) {
-        BufferedReader reader = null;
         try {
             File configFile = new File(configFilePath);
             if (configFile.exists()) {
-                reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), StandardCharsets.ISO_8859_1));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(convertLine(line, properties));
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), StandardCharsets.ISO_8859_1))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        lines.add(convertLine(line, properties));
+                    }
                 }
             }
         } catch (IOException e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_LOAD_SETTINGS"), e);
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    DavGatewayTray.debug(new BundleMessage("LOG_ERROR_CLOSING_CONFIG_FILE"), e);
-                }
-            }
         }
     }
 
