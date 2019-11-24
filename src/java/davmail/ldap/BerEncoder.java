@@ -26,6 +26,7 @@
 package davmail.ldap;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A BER encoder.
@@ -37,7 +38,7 @@ import java.io.UnsupportedEncodingException;
 public final class BerEncoder extends Ber {
 
     private int curSeqIndex;
-    private int seqOffset[];
+    private int[] seqOffset;
     private static final int INITIAL_SEQUENCES = 16;
     private static final int DEFAULT_BUFSIZE = 1024;
 
@@ -107,6 +108,7 @@ public final class BerEncoder extends Ber {
      *
      * @throws IllegalStateException If buffer contains unbalanced sequence.
      */
+    @SuppressWarnings("unused")
     public byte[] getTrimmedBuf() {
         int len = getDataLen();
         byte[] trimBuf = new byte[len];
@@ -126,9 +128,7 @@ public final class BerEncoder extends Ber {
         if (curSeqIndex >= seqOffset.length) {
             int[] seqOffsetTmp = new int[seqOffset.length * 2];
 
-            for (int i = 0; i < seqOffset.length; i++) {
-                seqOffsetTmp[i] = seqOffset[i];
-            }
+            System.arraycopy(seqOffset, 0, seqOffsetTmp, 0, seqOffset.length);
             seqOffset = seqOffsetTmp;
         }
 
@@ -267,6 +267,7 @@ public final class BerEncoder extends Ber {
      * BER boolean ::= 0x01 0x01 {0xff|0x00}
      *</pre></blockquote>
      */
+    @SuppressWarnings("unused")
     public void encodeBoolean(boolean b) {
         encodeBoolean(b, ASN_BOOLEAN);
     }
@@ -316,12 +317,8 @@ public final class BerEncoder extends Ber {
         if (str == null) {
             count = 0;
         } else if (encodeUTF8) {
-            try {
-                bytes = str.getBytes("UTF8");
-                count = bytes.length;
-            } catch (UnsupportedEncodingException e) {
-                throw new EncodeException("UTF8 not available on platform");
-            }
+            bytes = str.getBytes(StandardCharsets.UTF_8);
+            count = bytes.length;
         } else {
             try {
                 bytes = str.getBytes("8859_1");
@@ -342,7 +339,7 @@ public final class BerEncoder extends Ber {
     /**
      * Encodes a portion of an octet string and a tag.
      */
-    public void encodeOctetString(byte tb[], int tag, int tboffset, int length)
+    public void encodeOctetString(byte[] tb, int tag, int tboffset, int length)
             throws EncodeException {
 
         encodeByte(tag);
@@ -358,7 +355,7 @@ public final class BerEncoder extends Ber {
     /**
      * Encodes an octet string and a tag.
      */
-    public void encodeOctetString(byte tb[], int tag) throws EncodeException {
+    public void encodeOctetString(byte[] tb, int tag) throws EncodeException {
         encodeOctetString(tb, tag, 0, tb.length);
     }
 
@@ -387,12 +384,13 @@ public final class BerEncoder extends Ber {
     /**
      * Encodes an array of strings.
      */
-    public void encodeStringArray(String strs[], boolean encodeUTF8)
+    @SuppressWarnings("unused")
+    public void encodeStringArray(String[] strs, boolean encodeUTF8)
             throws EncodeException {
         if (strs == null)
             return;
-        for (int i = 0; i < strs.length; i++) {
-            encodeString(strs[i], encodeUTF8);
+        for (String str : strs) {
+            encodeString(str, encodeUTF8);
         }
     }
 /*
@@ -418,7 +416,7 @@ public final class BerEncoder extends Ber {
             if (newsize - offset < len) {
                 newsize += len;
             }
-            byte newbuf[] = new byte[newsize];
+            byte[] newbuf = new byte[newsize];
             // Only copy bytes in the range [0, offset)
             System.arraycopy(buf, 0, newbuf, 0, offset);
 

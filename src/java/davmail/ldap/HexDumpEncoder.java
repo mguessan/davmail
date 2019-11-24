@@ -53,7 +53,7 @@ public class HexDumpEncoder {
     private int offset;
     private int thisLineLength;
     private int currentByte;
-    private byte thisLine[] = new byte[16];
+    private byte[] thisLine = new byte[16];
 
     static void hexDigit(PrintStream p, byte x) {
         char c;
@@ -80,12 +80,12 @@ public class HexDumpEncoder {
         return (16);
     }
 
-    protected void encodeBufferPrefix(OutputStream o) throws IOException {
+    protected void encodeBufferPrefix(OutputStream o) {
         offset = 0;
         pStream = new PrintStream(o);
     }
 
-    protected void encodeLinePrefix(OutputStream o, int len) throws IOException {
+    protected void encodeLinePrefix(int len) {
         hexDigit(pStream, (byte)((offset >>> 8) & 0xff));
         hexDigit(pStream, (byte)(offset & 0xff));
         pStream.print(": ");
@@ -93,7 +93,7 @@ public class HexDumpEncoder {
         thisLineLength = len;
     }
 
-    protected void encodeAtom(OutputStream o, byte buf[], int off, int len) throws IOException {
+    protected void encodeAtom(byte[] buf, int off) {
         thisLine[currentByte] = buf[off];
         hexDigit(pStream, buf[off]);
         pStream.print(" ");
@@ -102,7 +102,7 @@ public class HexDumpEncoder {
             pStream.print("  ");
     }
 
-    protected void encodeLineSuffix(OutputStream o) throws IOException {
+    protected void encodeLineSuffix() {
         if (thisLineLength < 16) {
             for (int i = thisLineLength; i < 16; i++) {
                 pStream.print("   ");
@@ -129,7 +129,7 @@ public class HexDumpEncoder {
      * This method works around the bizarre semantics of BufferedInputStream's
      * read method.
      */
-    protected int readFully(InputStream in, byte buffer[])
+    protected int readFully(InputStream in, byte[] buffer)
             throws java.io.IOException {
         for (int i = 0; i < buffer.length; i++) {
             int q = in.read();
@@ -151,7 +151,7 @@ public class HexDumpEncoder {
     {
         int     j;
         int     numBytes;
-        byte    tmpbuffer[] = new byte[bytesPerLine()];
+        byte[] tmpbuffer = new byte[bytesPerLine()];
 
         encodeBufferPrefix(outStream);
 
@@ -160,19 +160,19 @@ public class HexDumpEncoder {
             if (numBytes == 0) {
                 break;
             }
-            encodeLinePrefix(outStream, numBytes);
+            encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
 
                 if ((j + bytesPerAtom()) <= numBytes) {
-                    encodeAtom(outStream, tmpbuffer, j, bytesPerAtom());
+                    encodeAtom(tmpbuffer, j);
                 } else {
-                    encodeAtom(outStream, tmpbuffer, j, (numBytes)- j);
+                    encodeAtom(tmpbuffer, j);
                 }
             }
             if (numBytes < bytesPerLine()) {
                 break;
             } else {
-                encodeLineSuffix(outStream);
+                encodeLineSuffix();
             }
         }
     }
@@ -181,10 +181,10 @@ public class HexDumpEncoder {
      * A 'streamless' version of encode that simply takes a buffer of
      * bytes and returns a string containing the encoded buffer.
      */
-    public String encode(byte aBuffer[]) {
+    public String encode(byte[] aBuffer) {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         ByteArrayInputStream    inStream = new ByteArrayInputStream(aBuffer);
-        String retVal = null;
+        String retVal;
         try {
             encode(inStream, outStream);
             // explicit ascii->unicode conversion
@@ -264,7 +264,7 @@ public class HexDumpEncoder {
     {
         int     j;
         int     numBytes;
-        byte    tmpbuffer[] = new byte[bytesPerLine()];
+        byte[] tmpbuffer = new byte[bytesPerLine()];
 
         encodeBufferPrefix(outStream);
 
@@ -273,15 +273,15 @@ public class HexDumpEncoder {
             if (numBytes == 0) {
                 break;
             }
-            encodeLinePrefix(outStream, numBytes);
+            encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
                 if ((j + bytesPerAtom()) <= numBytes) {
-                    encodeAtom(outStream, tmpbuffer, j, bytesPerAtom());
+                    encodeAtom(tmpbuffer, j);
                 } else {
-                    encodeAtom(outStream, tmpbuffer, j, (numBytes)- j);
+                    encodeAtom(tmpbuffer, j);
                 }
             }
-            encodeLineSuffix(outStream);
+            encodeLineSuffix();
             if (numBytes < bytesPerLine()) {
                 break;
             }
@@ -292,7 +292,7 @@ public class HexDumpEncoder {
      * Encode the buffer in <i>aBuffer</i> and write the encoded
      * result to the OutputStream <i>aStream</i>.
      */
-    public void encodeBuffer(byte aBuffer[], OutputStream aStream)
+    public void encodeBuffer(byte[] aBuffer, OutputStream aStream)
             throws IOException
     {
         ByteArrayInputStream inStream = new ByteArrayInputStream(aBuffer);
@@ -303,7 +303,8 @@ public class HexDumpEncoder {
      * A 'streamless' version of encode that simply takes a buffer of
      * bytes and returns a string containing the encoded buffer.
      */
-    public String encodeBuffer(byte aBuffer[]) {
+    @SuppressWarnings("unused")
+    public String encodeBuffer(byte[] aBuffer) {
         ByteArrayOutputStream   outStream = new ByteArrayOutputStream();
         ByteArrayInputStream    inStream = new ByteArrayInputStream(aBuffer);
         try {
@@ -321,6 +322,7 @@ public class HexDumpEncoder {
      * <P>
      * The ByteBuffer's position will be advanced to ByteBuffer's limit.
      */
+    @SuppressWarnings("unused")
     public void encodeBuffer(ByteBuffer aBuffer, OutputStream aStream)
             throws IOException
     {

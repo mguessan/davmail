@@ -26,6 +26,7 @@
 package davmail.ldap;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A BER decoder. Contains methods to parse a BER buffer.
@@ -40,7 +41,7 @@ public final class BerDecoder extends Ber {
     /**
      * Creates a BER decoder that reads bytes from the specified buffer.
      */
-    public BerDecoder(byte buf[], int offset, int bufsize) {
+    public BerDecoder(byte[] buf, int offset, int bufsize) {
 
         this.buf = buf;         // shared buffer, be careful to use this class
         this.bufsize = bufsize;
@@ -110,7 +111,7 @@ public final class BerDecoder extends Ber {
      *          the size is not returned.
      * @return The sequence's tag.
      */
-    public int parseSeq(int rlen[]) throws DecodeException {
+    public int parseSeq(int[] rlen) throws DecodeException {
 
         int seq = parseByte();
         int len = parseLength();
@@ -125,6 +126,7 @@ public final class BerDecoder extends Ber {
      * Don't need to be public right now?
      * @param i The number of bytes to skip
      */
+    @SuppressWarnings("unused")
     void seek(int i) throws DecodeException {
         if (offset + i > bufsize || offset + i < 0) {
             throw new DecodeException("array index out of bounds");
@@ -159,8 +161,9 @@ public final class BerDecoder extends Ber {
      * Parses an ASN_BOOLEAN tagged integer from this BER buffer.
      * @return true if the tagged integer is 0; false otherwise.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public boolean parseBoolean() throws DecodeException {
-        return ((parseIntWithTag(ASN_BOOLEAN) == 0x00) ? false : true);
+        return (parseIntWithTag(ASN_BOOLEAN) != 0x00);
     }
 
     /**
@@ -190,8 +193,8 @@ public final class BerDecoder extends Ber {
 
         if (parseByte() != tag) {
             throw new DecodeException("Encountered ASN.1 tag " +
-                    Integer.toString(buf[offset - 1] & 0xff) +
-                    " (expected tag " + Integer.toString(tag) + ")");
+                    (buf[offset - 1] & 0xff) +
+                    " (expected tag " + tag + ")");
         }
 
         int len = parseLength();
@@ -203,7 +206,7 @@ public final class BerDecoder extends Ber {
         }
 
         byte fb = buf[offset++];
-        int value = 0;
+        int value;
 
         value = fb & 0x7F;
         for( int i = 1 /* first byte already read */ ; i < len; i++) {
@@ -237,7 +240,7 @@ public final class BerDecoder extends Ber {
      * @param tag The tag that precedes the string.
      * @return The non-null parsed string.
      */
-    public String parseStringWithTag(int tag, boolean decodeUTF8, int rlen[])
+    public String parseStringWithTag(int tag, boolean decodeUTF8, int[] rlen)
             throws DecodeException {
 
         int st;
@@ -262,11 +265,7 @@ public final class BerDecoder extends Ber {
 
             System.arraycopy(buf, offset, buf2, 0, len);
             if (decodeUTF8) {
-                try {
-                    retstr = new String(buf2, "UTF8");
-                } catch (UnsupportedEncodingException e) {
-                    throw new DecodeException("UTF8 not available on platform");
-                }
+                retstr = new String(buf2, StandardCharsets.UTF_8);
             } else {
                 try {
                     retstr = new String(buf2, "8859_1");
@@ -298,15 +297,15 @@ public final class BerDecoder extends Ber {
      * {@code tag}, or if length specified in the BER buffer exceeds the
      * number of bytes left in the buffer.
      */
-    public byte[] parseOctetString(int tag, int rlen[]) throws DecodeException {
+    public byte[] parseOctetString(int tag, int[] rlen) throws DecodeException {
 
         int origOffset = offset;
         int st;
         if ((st = parseByte()) != tag) {
 
             throw new DecodeException("Encountered ASN.1 tag " +
-                    Integer.toString(st) +
-                    " (expected tag " + Integer.toString(tag) + ")");
+                    st +
+                    " (expected tag " + tag + ")");
         }
 
         int len = parseLength();
@@ -315,7 +314,7 @@ public final class BerDecoder extends Ber {
             throw new DecodeException("Insufficient data");
         }
 
-        byte retarr[] = new byte[len];
+        byte[] retarr = new byte[len];
         if (len > 0) {
             System.arraycopy(buf, offset, retarr, 0, len);
             offset += len;

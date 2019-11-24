@@ -28,6 +28,7 @@ package davmail.ldap;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -35,9 +36,10 @@ import java.io.ByteArrayInputStream;
  *
  * @author Jagane Sundar
  */
+@SuppressWarnings("unused")
 public abstract class Ber {
 
-    protected byte buf[];
+    protected byte[] buf;
     protected int offset;
     protected int bufsize;
 
@@ -49,7 +51,7 @@ public abstract class Ber {
 
         try {
             outStream.write('\n');
-            outStream.write(tag.getBytes("UTF8"));
+            outStream.write(tag.getBytes(StandardCharsets.UTF_8));
 
             new HexDumpEncoder().encodeBuffer(
                     new ByteArrayInputStream(bytes, from, to),
@@ -59,7 +61,7 @@ public abstract class Ber {
         } catch (IOException e) {
             try {
                 outStream.write(
-                        "Ber.dumpBER(): error encountered\n".getBytes("UTF8"));
+                        "Ber.dumpBER(): error encountered\n".getBytes(StandardCharsets.UTF_8));
             } catch (IOException e2) {
                 // ignore
             }
