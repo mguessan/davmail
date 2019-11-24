@@ -86,6 +86,10 @@ public class PostRequest extends HttpPost implements ResponseHandler {
         parameters.removeAll(toDelete);
     }
 
+    public HttpResponse getResponse() {
+        return response;
+    }
+
     public String getResponseBodyAsString() {
         return responseBodyAsString;
     }

@@ -66,6 +66,7 @@ import org.apache.jackrabbit.webdav.client.methods.HttpCopy;
 import org.apache.jackrabbit.webdav.client.methods.HttpMove;
 import org.apache.log4j.Logger;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -76,7 +77,7 @@ import java.security.Security;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class HttpClientAdapter {
+public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
@@ -154,6 +155,10 @@ public class HttpClientAdapter {
         this(URI.create(url), null, null, enablePool);
     }
 
+    public HttpClientAdapter(String url, String username, String password, boolean enablePool) {
+        this(URI.create(url), username, password, enablePool);
+    }
+
     public HttpClientAdapter(URI uri) {
         this(uri, null, null, false);
     }
@@ -169,6 +174,7 @@ public class HttpClientAdapter {
     public HttpClientAdapter(URI uri, String username, String password, boolean enablePool) {
         if (enablePool) {
             connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
+            startEvictorThread();
         } else {
             connectionManager = new BasicHttpClientConnectionManager(SCHEME_REGISTRY);
         }
@@ -297,6 +303,7 @@ public class HttpClientAdapter {
         idleConnectionEvictor.start();
     }
 
+    @Override
     public void close() {
         if (idleConnectionEvictor != null) {
             idleConnectionEvictor.shutdown();
@@ -381,14 +388,11 @@ public class HttpClientAdapter {
 
     public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException, DavException {
         MultiStatus multiStatus = null;
-        CloseableHttpResponse response = execute(request);
-        try {
+        try (CloseableHttpResponse response = execute(request)) {
             request.checkSuccess(response);
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MULTI_STATUS) {
                 multiStatus = request.getResponseBodyAsMultiStatus(response);
             }
-        } finally {
-            response.close();
         }
         return multiStatus;
     }
