@@ -18,9 +18,6 @@
  */
 package davmail.ldap;
 
-import com.sun.jndi.ldap.Ber;
-import com.sun.jndi.ldap.BerDecoder;
-import com.sun.jndi.ldap.BerEncoder;
 import davmail.AbstractConnection;
 import davmail.BundleMessage;
 import davmail.Settings;
@@ -33,17 +30,34 @@ import org.apache.log4j.Logger;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.Rdn;
-import javax.security.auth.callback.*;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
 import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslServer;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Handle a caldav connection.
