@@ -160,7 +160,7 @@ public class O365Token {
 
     static O365Token build(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
         O365Token token = new O365Token(tenantId, clientId, redirectUri, code);
-        if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
+        if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             try {
                 Settings.storeRefreshToken(encryptToken(token.getRefreshToken(), password), token.getUsername());
             } catch (IOException e) {
@@ -173,7 +173,7 @@ public class O365Token {
 
     static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws IOException {
         O365Token token = null;
-        if (Settings.getBooleanProperty("davmail.oauth.persistToken", false)) {
+        if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             String encryptedRefreshToken = Settings.loadRefreshToken(username);
             if (encryptedRefreshToken != null) {
                 String refreshToken = null;
