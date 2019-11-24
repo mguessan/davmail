@@ -34,7 +34,7 @@ import java.io.IOException;
  * DavMail generic test case.
  * Loads DavMail settings
  */
-public class AbstractDavMailTestCase extends TestCase {
+public abstract class AbstractDavMailTestCase extends TestCase {
     protected static boolean loaded;
     protected static String url;
     protected static String certificateHash;
