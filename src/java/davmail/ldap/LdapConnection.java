@@ -41,14 +41,12 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -84,14 +82,14 @@ public class LdapConnection extends AbstractConnection {
     /**
      * Root DSE naming contexts (default and OpenDirectory)
      */
-    static final List<String> NAMING_CONTEXTS = new ArrayList<String>();
+    static final List<String> NAMING_CONTEXTS = new ArrayList<>();
 
     static {
         NAMING_CONTEXTS.add(BASE_CONTEXT);
         NAMING_CONTEXTS.add(OD_BASE_CONTEXT);
     }
 
-    static final List<String> PERSON_OBJECT_CLASSES = new ArrayList<String>();
+    static final List<String> PERSON_OBJECT_CLASSES = new ArrayList<>();
 
     static {
         PERSON_OBJECT_CLASSES.add("top");
@@ -106,7 +104,7 @@ public class LdapConnection extends AbstractConnection {
      * Map Exchange contact attribute names to LDAP attributes.
      * Used only when returningAttributes is empty in LDAP request (return all available attributes)
      */
-    static final HashMap<String, String> CONTACT_TO_LDAP_ATTRIBUTE_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> CONTACT_TO_LDAP_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
         CONTACT_TO_LDAP_ATTRIBUTE_MAP.put("imapUid", "uid");
@@ -138,7 +136,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * OSX constant value for attribute apple-serviceslocator
      */
-    static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> STATIC_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
         STATIC_ATTRIBUTE_MAP.put("apple-serviceslocator", COMPUTER_GUID + ':' + VIRTUALHOST_GUID + ":calendar");
@@ -148,7 +146,7 @@ public class LdapConnection extends AbstractConnection {
      * LDAP to Exchange Criteria Map
      */
     // TODO: remove
-    static final HashMap<String, String> CRITERIA_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> CRITERIA_MAP = new HashMap<>();
 
     static {
         // assume mail starts with firstname
@@ -169,7 +167,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * LDAP to Exchange contact attribute map.
      */
-    static final HashMap<String, String> LDAP_TO_CONTACT_ATTRIBUTE_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> LDAP_TO_CONTACT_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
         LDAP_TO_CONTACT_ATTRIBUTE_MAP.put("uid", "imapUid");
@@ -295,7 +293,7 @@ public class LdapConnection extends AbstractConnection {
      * LDAP filter attributes ignore map
      */
     // TODO remove
-    static final HashSet<String> IGNORE_MAP = new HashSet<String>();
+    static final HashSet<String> IGNORE_MAP = new HashSet<>();
 
     static {
         IGNORE_MAP.add("objectclass");
@@ -383,7 +381,7 @@ public class LdapConnection extends AbstractConnection {
     /**
      * Search threads map
      */
-    protected final HashMap<Integer, SearchRunnable> searchThreadMap = new HashMap<Integer, SearchRunnable>();
+    protected final HashMap<Integer, SearchRunnable> searchThreadMap = new HashMap<>();
 
     /**
      * Initialize the streams and start the thread.
@@ -536,24 +534,22 @@ public class LdapConnection extends AbstractConnection {
                     String mechanism = reqBer.parseString(isLdapV3());
 
                     byte[] serverResponse;
-                    CallbackHandler callbackHandler = new CallbackHandler() {
-                        public void handle(Callback[] callbacks) throws IOException {
-                            // look for username in callbacks
-                            for (Callback callback : callbacks) {
-                                if (callback instanceof NameCallback) {
-                                    userName = extractRdnValue(((NameCallback) callback).getDefaultName());
-                                    // get password from session pool
-                                    password = ExchangeSessionFactory.getUserPassword(userName);
-                                }
+                    CallbackHandler callbackHandler = callbacks -> {
+                        // look for username in callbacks
+                        for (Callback callback : callbacks) {
+                            if (callback instanceof NameCallback) {
+                                userName = extractRdnValue(((NameCallback) callback).getDefaultName());
+                                // get password from session pool
+                                password = ExchangeSessionFactory.getUserPassword(userName);
                             }
-                            // handle other callbacks
-                            for (Callback callback : callbacks) {
-                                if (callback instanceof AuthorizeCallback) {
-                                    ((AuthorizeCallback) callback).setAuthorized(true);
-                                } else if (callback instanceof PasswordCallback) {
-                                    if (password != null) {
-                                        ((PasswordCallback) callback).setPassword(password.toCharArray());
-                                    }
+                        }
+                        // handle other callbacks
+                        for (Callback callback : callbacks) {
+                            if (callback instanceof AuthorizeCallback) {
+                                ((AuthorizeCallback) callback).setAuthorized(true);
+                            } else if (callback instanceof PasswordCallback) {
+                                if (password != null) {
+                                    ((PasswordCallback) callback).setPassword(password.toCharArray());
                                 }
                             }
                         }
@@ -577,7 +573,7 @@ public class LdapConnection extends AbstractConnection {
                         }
 
                     } else {
-                        Map<String, String> properties = new HashMap<String, String>();
+                        Map<String, String> properties = new HashMap<>();
                         properties.put("javax.security.sasl.qop", "auth,auth-int");
                         saslServer = Sasl.createSaslServer(mechanism, "ldap", client.getLocalAddress().getHostAddress(), properties, callbackHandler);
                         if (saslServer == null) {
@@ -659,8 +655,8 @@ public class LdapConnection extends AbstractConnection {
                 }
 
             } else if (requestOperation == LDAP_REQ_ABANDON) {
-                int abandonMessageId = 0;
-                abandonMessageId = (Integer) reqBer.parseIntWithTag(LDAP_REQ_ABANDON);
+                int abandonMessageId;
+                abandonMessageId = reqBer.parseIntWithTag(LDAP_REQ_ABANDON);
                 synchronized (searchThreadMap) {
                     SearchRunnable searchRunnable = searchThreadMap.get(abandonMessageId);
                     if (searchRunnable != null) {
@@ -704,12 +700,7 @@ public class LdapConnection extends AbstractConnection {
     protected void dumpBer(byte[] inbuf, int offset) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Ber.dumpBER(baos, "LDAP request buffer\n", inbuf, 0, offset);
-        try {
-            LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            // should not happen
-            LOGGER.error(e);
-        }
+        LOGGER.debug(new String(baos.toByteArray(), StandardCharsets.UTF_8));
     }
 
     protected LdapFilter parseFilter(BerDecoder reqBer) throws IOException {
@@ -792,7 +783,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     protected Set<String> parseReturningAttributes(BerDecoder reqBer) throws IOException {
-        Set<String> returningAttributes = new HashSet<String>();
+        Set<String> returningAttributes = new HashSet<>();
         int[] seqSize = new int[1];
         reqBer.parseSeq(seqSize);
         int end = reqBer.getParsePosition() + seqSize[0];
@@ -811,7 +802,7 @@ public class LdapConnection extends AbstractConnection {
     protected void sendRootDSE(int currentMessageId) throws IOException {
         DavGatewayTray.debug(new BundleMessage("LOG_LDAP_SEND_ROOT_DSE"));
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put("objectClass", "top");
         attributes.put("namingContexts", NAMING_CONTEXTS);
         //attributes.put("supportedsaslmechanisms", "PLAIN");
@@ -918,10 +909,10 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendComputerContext(int currentMessageId, Set<String> returningAttributes) throws IOException {
-        List<String> objectClasses = new ArrayList<String>();
+        List<String> objectClasses = new ArrayList<>();
         objectClasses.add("top");
         objectClasses.add("apple-computer");
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         addIf(attributes, returningAttributes, "objectClass", objectClasses);
         addIf(attributes, returningAttributes, "apple-generateduid", COMPUTER_GUID);
         addIf(attributes, returningAttributes, "apple-serviceinfo", getServiceInfo());
@@ -943,10 +934,10 @@ public class LdapConnection extends AbstractConnection {
      * @throws IOException on error
      */
     protected void sendBaseContext(int currentMessageId) throws IOException {
-        List<String> objectClasses = new ArrayList<String>();
+        List<String> objectClasses = new ArrayList<>();
         objectClasses.add("top");
         objectClasses.add("organizationalUnit");
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put("objectClass", objectClasses);
         attributes.put("description", "DavMail Gateway LDAP for " + Settings.getProperty("davmail.url"));
         sendEntry(currentMessageId, BASE_CONTEXT, attributes);
@@ -1028,7 +1019,7 @@ public class LdapConnection extends AbstractConnection {
     }
 
     class CompoundFilter implements LdapFilter {
-        final Set<LdapFilter> criteria = new HashSet<LdapFilter>();
+        final Set<LdapFilter> criteria = new HashSet<>();
         final int type;
 
         CompoundFilter(int filterType) {
@@ -1182,7 +1173,7 @@ public class LdapConnection extends AbstractConnection {
 
             if ((persons == null) && !isFullSearch()) {
                 // return an empty map (indicating no results were found)
-                return new HashMap<String, ExchangeSession.Contact>();
+                return new HashMap<>();
             }
 
             return persons;
@@ -1301,7 +1292,8 @@ public class LdapConnection extends AbstractConnection {
             } else if ((operator == LDAP_FILTER_EQUALITY) && personAttributeValue.equalsIgnoreCase(value)) {
                 // Found an exact match
                 return true;
-            } else if ((operator == LDAP_FILTER_SUBSTRINGS) && (personAttributeValue.toLowerCase().contains(value.toLowerCase()))) {
+            } else //noinspection RedundantIfStatement
+                if ((operator == LDAP_FILTER_SUBSTRINGS) && (personAttributeValue.toLowerCase().contains(value.toLowerCase()))) {
                 // Found a substring match
                 return true;
             }
@@ -1324,7 +1316,7 @@ public class LdapConnection extends AbstractConnection {
                 if (operator == LDAP_FILTER_EQUALITY) {
                     // Make sure only exact matches are returned
 
-                    Map<String, ExchangeSession.Contact> results = new HashMap<String, ExchangeSession.Contact>();
+                    Map<String, ExchangeSession.Contact> results = new HashMap<>();
 
                     for (ExchangeSession.Contact person : galPersons.values()) {
                         if (isMatch(person)) {
@@ -1388,7 +1380,7 @@ public class LdapConnection extends AbstractConnection {
     protected Set<String> convertLdapToContactReturningAttributes(Set<String> returningAttributes) {
         Set<String> contactReturningAttributes;
         if (returningAttributes != null && !returningAttributes.isEmpty()) {
-            contactReturningAttributes = new HashSet<String>();
+            contactReturningAttributes = new HashSet<>();
             // always return uid
             contactReturningAttributes.add("imapUid");
             for (String attribute : returningAttributes) {
@@ -1466,7 +1458,7 @@ public class LdapConnection extends AbstractConnection {
                                 ExchangeSession.Contact person = persons.get(uid.toLowerCase());
                                 // filter out non exact results
                                 if (persons.size() > 1 || person == null) {
-                                    persons = new HashMap<String, ExchangeSession.Contact>();
+                                    persons = new HashMap<>();
                                     if (person != null) {
                                         persons.put(uid.toLowerCase(), person);
                                     }
@@ -1486,7 +1478,7 @@ public class LdapConnection extends AbstractConnection {
                     sendComputerContext(currentMessageId, returningAttributes);
                 } else if ((BASE_CONTEXT.equalsIgnoreCase(dn) || OD_USER_CONTEXT.equalsIgnoreCase(dn)) || OD_USER_CONTEXT_LION.equalsIgnoreCase(dn)) {
                     if (session != null) {
-                        Map<String, ExchangeSession.Contact> persons = new HashMap<String, ExchangeSession.Contact>();
+                        Map<String, ExchangeSession.Contact> persons = new HashMap<>();
                         if (ldapFilter.isFullSearch()) {
                             // append personal contacts first
                             for (ExchangeSession.Contact person : contactFind(null, returningAttributes, sizeLimit).values()) {
@@ -1584,7 +1576,7 @@ public class LdapConnection extends AbstractConnection {
          * @throws IOException on error
          */
         public Map<String, ExchangeSession.Contact> contactFind(ExchangeSession.Condition condition, Set<String> returningAttributes, int maxCount) throws IOException {
-            Map<String, ExchangeSession.Contact> results = new HashMap<String, ExchangeSession.Contact>();
+            Map<String, ExchangeSession.Contact> results = new HashMap<>();
 
             Set<String> contactReturningAttributes = convertLdapToContactReturningAttributes(returningAttributes);
             contactReturningAttributes.remove("apple-serviceslocator");
@@ -1620,7 +1612,7 @@ public class LdapConnection extends AbstractConnection {
                     break;
                 }
 
-                Map<String, Object> ldapPerson = new HashMap<String, Object>();
+                Map<String, Object> ldapPerson = new HashMap<>();
 
                 // convert Contact entries
                 if (returnAllAttributes) {
@@ -1648,12 +1640,16 @@ public class LdapConnection extends AbstractConnection {
                                 } catch (ParseException e) {
                                     throw new IOException(e + " " + e.getMessage());
                                 }
-                                if ("birthday".equals(ldapAttribute)) {
-                                    value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
-                                } else if ("birthmonth".equals(ldapAttribute)) {
-                                    value = String.valueOf(calendar.get(Calendar.MONTH) + 1);
-                                } else if ("birthyear".equals(ldapAttribute)) {
-                                    value = String.valueOf(calendar.get(Calendar.YEAR));
+                                switch (ldapAttribute) {
+                                    case "birthday":
+                                        value = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+                                        break;
+                                    case "birthmonth":
+                                        value = String.valueOf(calendar.get(Calendar.MONTH) + 1);
+                                        break;
+                                    case "birthyear":
+                                        value = String.valueOf(calendar.get(Calendar.YEAR));
+                                        break;
                                 }
                             }
                             ldapPerson.put(ldapAttribute, value);
