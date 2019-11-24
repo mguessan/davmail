@@ -150,13 +150,7 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
         clientBuilder.setProxy(proxy).setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT);
 
-        // proxy authentication
-        String proxyUser = Settings.getProperty("davmail.proxyUser");
-        String proxyPassword = Settings.getProperty("davmail.proxyPassword");
-        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
-        credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(proxyUser, proxyPassword));
-        clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+        clientBuilder.setDefaultCredentialsProvider(getProxyCredentialProvider());
 
         try (CloseableHttpClient httpClient = clientBuilder.build()) {
             HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
@@ -165,6 +159,19 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
                 System.out.println(responseString);
             }
         }
+    }
+
+    private CredentialsProvider getProxyCredentialProvider() {
+        String proxyHost = Settings.getProperty("davmail.proxyHost");
+        int proxyPort = Settings.getIntProperty("davmail.proxyPort");
+
+        // proxy authentication
+        String proxyUser = Settings.getProperty("davmail.proxyUser");
+        String proxyPassword = Settings.getProperty("davmail.proxyPassword");
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        AuthScope authScope = new AuthScope(proxyHost, proxyPort, AuthScope.ANY_REALM);
+        credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(proxyUser, proxyPassword));
+        return credentialsProvider;
     }
 
     public void testGetPath() throws IOException {
@@ -238,6 +245,61 @@ public class TestHttpClient4 extends AbstractDavMailTestCase {
                 .disableRedirectHandling()
                 .setDefaultRequestConfig(config)
                 .setConnectionManager(connectionManager);
+
+        IdleConnectionEvictor evictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
+        evictor.start();
+
+        try (CloseableHttpClient httpClient = clientBuilder.build()) {
+
+            HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
+
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
+                assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                String responseString = new BasicResponseHandler().handleResponse(response);
+                System.out.println(responseString);
+            }
+            while (connectionManager.getTotalStats().getAvailable() > 0) {
+                Thread.sleep(5000);
+                System.out.println("Pool: " + connectionManager.getTotalStats());
+            }
+        } finally {
+            evictor.shutdown();
+        }
+
+    }
+
+    public void testTimeoutsWithProxy() throws IOException, InterruptedException {
+        Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
+        Settings.setLoggingLevel("org.apache.http.impl.conn", Level.DEBUG);
+
+        RegistryBuilder<ConnectionSocketFactory> schemeRegistry = RegistryBuilder.create();
+        schemeRegistry.register("http", new PlainConnectionSocketFactory());
+        schemeRegistry.register("https", new SSLConnectionSocketFactory(new DavGatewaySSLSocketFactory(),
+                SSLConnectionSocketFactory.getDefaultHostnameVerifier()));
+
+        Registry<ConnectionSocketFactory> registry = schemeRegistry.build();
+
+        RequestConfig config = RequestConfig.custom()
+                // time to get request from the pool
+                .setConnectionRequestTimeout(5000)
+                // socket connect timeout
+                .setConnectTimeout(5000)
+                // inactivity timeout
+                .setSocketTimeout(5000)
+                // disable redirect
+                .setRedirectsEnabled(false)
+                .build();
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(registry);
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+                .disableRedirectHandling()
+                .setDefaultRequestConfig(config)
+                .setConnectionManager(connectionManager);
+        String proxyHost = Settings.getProperty("davmail.proxyHost");
+        int proxyPort = Settings.getIntProperty("davmail.proxyPort");
+        HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+        clientBuilder.setProxy(proxy);
+
+        clientBuilder.setDefaultCredentialsProvider(getProxyCredentialProvider());
 
         IdleConnectionEvictor evictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
         evictor.start();
