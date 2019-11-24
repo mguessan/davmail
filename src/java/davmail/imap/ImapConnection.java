@@ -42,6 +42,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -349,7 +350,7 @@ public class ImapConnection extends AbstractConnection {
                                                 if (!uidRangeIterator.hasNext()) {
                                                     sendClient(commandId + " NO " + "No message found");
                                                 } else {
-                                                    ArrayList<ExchangeSession.Message> messages = new ArrayList<ExchangeSession.Message>();
+                                                    ArrayList<ExchangeSession.Message> messages = new ArrayList<>();
                                                     while (uidRangeIterator.hasNext()) {
                                                         messages.add(uidRangeIterator.next());
                                                     }
@@ -447,7 +448,7 @@ public class ImapConnection extends AbstractConnection {
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
                                     String folderName = decodeFolderPath(tokens.nextToken());
-                                    HashMap<String, String> properties = new HashMap<String, String>();
+                                    HashMap<String, String> properties = new HashMap<>();
                                     String flags = null;
                                     String date = null;
                                     // handle optional flags
@@ -499,7 +500,7 @@ public class ImapConnection extends AbstractConnection {
                                                 properties.put("junk", "1");
                                             } else {
                                                 if (keywords == null) {
-                                                    keywords = new HashSet<String>();
+                                                    keywords = new HashSet<>();
                                                 }
                                                 keywords.add(flag);
                                             }
@@ -772,7 +773,7 @@ public class ImapConnection extends AbstractConnection {
         // send deleted message expunge notification
         int index = 1;
         for (long previousImapUid : previousImapFlagMap.keySet()) {
-            if (!imapFlagMap.keySet().contains(previousImapUid)) {
+            if (!imapFlagMap.containsKey(previousImapUid)) {
                 sendClient("* " + index + " EXPUNGE");
             } else {
                 // send updated flags
@@ -811,7 +812,7 @@ public class ImapConnection extends AbstractConnection {
                 // flush current buffer
                 String flushString = buffer.toString();
                 LOGGER.debug(flushString);
-                os.write(flushString.getBytes("UTF-8"));
+                os.write(flushString.getBytes(StandardCharsets.UTF_8));
                 buffer.setLength(0);
                 MessageLoadThread.loadMimeMessage(message, os);
             }
@@ -924,8 +925,8 @@ public class ImapConnection extends AbstractConnection {
                         String[] requestedHeaders = getRequestedHeaders(partIndexString);
                         // OSX Lion special flags request
                         if (requestedHeaders != null && requestedHeaders.length == 1 && "content-class".equals(requestedHeaders[0]) && message.contentClass != null) {
-                            baos.write("Content-class: ".getBytes("UTF-8"));
-                            baos.write(message.contentClass.getBytes("UTF-8"));
+                            baos.write("Content-class: ".getBytes(StandardCharsets.UTF_8));
+                            baos.write(message.contentClass.getBytes(StandardCharsets.UTF_8));
                             baos.write(13);
                             baos.write(10);
                         } else if (requestedHeaders == null) {
@@ -935,7 +936,7 @@ public class ImapConnection extends AbstractConnection {
                         } else {
                             Enumeration headerEnumeration = messageWrapper.getMatchingHeaderLines(requestedHeaders);
                             while (headerEnumeration.hasMoreElements()) {
-                                baos.write(((String) headerEnumeration.nextElement()).getBytes("UTF-8"));
+                                baos.write(((String) headerEnumeration.nextElement()).getBytes(StandardCharsets.UTF_8));
                                 baos.write(13);
                                 baos.write(10);
                             }
@@ -1003,7 +1004,7 @@ public class ImapConnection extends AbstractConnection {
                     sendClient(buffer.toString());
                     // log content if less than 2K
                     if (LOGGER.isDebugEnabled() && baos.size() < 2048) {
-                        LOGGER.debug(new String(baos.toByteArray(), "UTF-8"));
+                        LOGGER.debug(new String(baos.toByteArray(), StandardCharsets.UTF_8));
                     }
                     os.write(baos.toByteArray());
                     os.flush();
@@ -1078,7 +1079,7 @@ public class ImapConnection extends AbstractConnection {
 
 
     protected List<Long> handleSearch(ImapTokenizer tokens) throws IOException {
-        List<Long> uidList = new ArrayList<Long>();
+        List<Long> uidList = new ArrayList<>();
         List<Long> localMessagesUidList = null;
         SearchConditions conditions = new SearchConditions();
         ExchangeSession.Condition condition = buildConditions(conditions, tokens);
@@ -1090,7 +1091,7 @@ public class ImapConnection extends AbstractConnection {
         } else if (conditions.indexRange != null) {
             // range iterator is on folder messages, not messages returned from search
             iterator = new RangeIterator(currentFolder.messages, conditions.indexRange);
-            localMessagesUidList = new ArrayList<Long>();
+            localMessagesUidList = new ArrayList<>();
             // build search result uid list
             for (ExchangeSession.Message message : localMessages) {
                 localMessagesUidList.add(message.getImapUid());
@@ -1199,10 +1200,7 @@ public class ImapConnection extends AbstractConnection {
                 } else {
                     buffer.append("NIL");
                 }
-            } catch (AddressException e) {
-                DavGatewayTray.warn(e);
-                buffer.append("NIL");
-            } catch (UnsupportedEncodingException e) {
+            } catch (AddressException | UnsupportedEncodingException e) {
                 DavGatewayTray.warn(e);
                 buffer.append("NIL");
             }
@@ -1237,12 +1235,8 @@ public class ImapConnection extends AbstractConnection {
                 // no multipart, single body
                 appendBodyStructure(buffer, mimeMessage);
             }
-        } catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException | MessagingException e) {
             DavGatewayTray.warn(e);
-            // failover: send default bodystructure
-            buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
-        } catch (MessagingException me) {
-            DavGatewayTray.warn(me);
             // failover: send default bodystructure
             buffer.append("(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"US-ASCII\") NIL NIL NIL NIL NIL)");
         }
@@ -1572,7 +1566,7 @@ public class ImapConnection extends AbstractConnection {
     }
 
     protected void updateFlags(ExchangeSession.Message message, String action, String flags) throws IOException {
-        HashMap<String, String> properties = new HashMap<String, String>();
+        HashMap<String, String> properties = new HashMap<>();
         if ("-Flags".equalsIgnoreCase(action) || "-FLAGS.SILENT".equalsIgnoreCase(action)) {
             ImapTokenizer flagtokenizer = new ImapTokenizer(flags);
             while (flagtokenizer.hasMoreTokens()) {
@@ -1685,7 +1679,7 @@ public class ImapConnection extends AbstractConnection {
                     // ignore, draft is readonly after create
                 } else {
                     if (keywords == null) {
-                        keywords = new HashSet<String>();
+                        keywords = new HashSet<>();
                     }
                     keywords.add(flag);
                 }
@@ -2036,7 +2030,7 @@ public class ImapConnection extends AbstractConnection {
     static class ImapTokenizer {
         char[] value;
         int startIndex;
-        Stack<Character> quotes = new Stack<Character>();
+        Stack<Character> quotes = new Stack<>();
 
         ImapTokenizer(String value) {
             this.value = value.toCharArray();
