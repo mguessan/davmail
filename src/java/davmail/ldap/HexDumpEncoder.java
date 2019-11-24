@@ -162,12 +162,7 @@ public class HexDumpEncoder {
             }
             encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
-
-                if ((j + bytesPerAtom()) <= numBytes) {
-                    encodeAtom(tmpbuffer, j);
-                } else {
-                    encodeAtom(tmpbuffer, j);
-                }
+                encodeAtom(tmpbuffer, j);
             }
             if (numBytes < bytesPerLine()) {
                 break;
@@ -275,11 +270,7 @@ public class HexDumpEncoder {
             }
             encodeLinePrefix(numBytes);
             for (j = 0; j < numBytes; j += bytesPerAtom()) {
-                if ((j + bytesPerAtom()) <= numBytes) {
-                    encodeAtom(tmpbuffer, j);
-                } else {
-                    encodeAtom(tmpbuffer, j);
-                }
+                encodeAtom(tmpbuffer, j);
             }
             encodeLineSuffix();
             if (numBytes < bytesPerLine()) {
