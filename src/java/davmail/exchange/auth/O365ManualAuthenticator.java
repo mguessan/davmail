@@ -118,12 +118,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             code = getCodeFromConsole(initUrl);
         } else {
             try {
-                SwingUtilities.invokeAndWait(new Runnable() {
-                    @Override
-                    public void run() {
-                        o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl);
-                    }
-                });
+                SwingUtilities.invokeAndWait(() -> o365ManualAuthenticatorDialog = new O365ManualAuthenticatorDialog(initUrl));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (InvocationTargetException e) {
@@ -200,8 +195,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             }
 
         } catch (Exception e) {
-            LOGGER.error(e + " " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error(e + " " + e.getMessage(), e);
         }
         System.exit(0);
     }
