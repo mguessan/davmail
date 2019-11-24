@@ -28,6 +28,7 @@ import org.apache.http.client.utils.URIBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
 
 /**
@@ -78,7 +79,7 @@ public class TestURIBuilder extends TestCase {
         System.out.println(uri.getPath());
         System.out.println(URIUtil.decode(uri.getPath()));
 
-        String decoded = new String(URLCodec.decodeUrl(uri.getPath().getBytes("UTF-8")), "UTF-8");
+        String decoded = new String(URLCodec.decodeUrl(uri.getPath().getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
         assertEquals(decoded, URIUtil.decode(uri.getPath()));
     }
 
@@ -87,7 +88,7 @@ public class TestURIBuilder extends TestCase {
         System.out.println(uri.getPath());
         System.out.println(URIUtil.decode(uri.getPath()));
 
-        String decoded = new String(URLCodec.decodeUrl(uri.getPath().getBytes("UTF-8")), "UTF-8");
+        String decoded = new String(URLCodec.decodeUrl(uri.getPath().getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
         assertEquals(decoded, URIUtil.decode(uri.getPath()));
     }
 

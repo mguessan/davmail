@@ -42,69 +42,53 @@ import java.util.List;
 
 public class TestHttpClientAdapter extends AbstractDavMailTestCase {
     public void testBasicGetRequest() throws IOException {
-        HttpClientAdapter httpClientAdapter = new HttpClientAdapter("http://davmail.sourceforge.net/version.txt");
-        try {
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter("http://davmail.sourceforge.net/version.txt")) {
 
             HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-            CloseableHttpResponse response = httpClientAdapter.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpget)) {
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
-        } finally {
-            httpClientAdapter.close();
         }
     }
 
     public void testEWSAuthentication() throws IOException {
         String url = Settings.getProperty("davmail.url");
 
-        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, username, password);
-        httpClientAdapter.startEvictorThread();
-        try {
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(url, username, password, true)) {
             HttpGet httpget = new HttpGet(url);
-            CloseableHttpResponse response = httpClientAdapter.execute(httpget);
-            try {
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpget)) {
                 assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
                 String responseString = new BasicResponseHandler().handleResponse(response);
                 System.out.println(responseString);
-            } finally {
-                response.close();
             }
 
-        } finally {
-            httpClientAdapter.close();
         }
     }
 
     public void testGetMicrosoftOnline() throws URISyntaxException, IOException, JSONException {
-        HttpClientAdapter httpClientAdapter = null;
+        // common DavMail client id
+        String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
+        // standard native app redirectUri
+        String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
 
-        try {
-            // common DavMail client id
-            String clientId = Settings.getProperty("davmail.oauth.clientId", "facd6cff-a294-4415-b59f-c5b01937d7bd");
-            // standard native app redirectUri
-            String redirectUri = Settings.getProperty("davmail.oauth.redirectUri", "https://login.microsoftonline.com/common/oauth2/nativeclient");
+        URI uri = new URIBuilder()
+                .setScheme("https")
+                .setHost("login.microsoftonline.com")
+                .setPath("/common/oauth2/authorize")
+                .addParameter("client_id", clientId)
+                .addParameter("response_type", "code")
+                .addParameter("redirect_uri", redirectUri)
+                .addParameter("response_mode", "query")
+                .addParameter("resource", "https://outlook.office365.com")
+                .addParameter("login_hint", username)
+                // force consent
+                //.addParameter("prompt", "consent")
+                .build();
 
-            URI uri = new URIBuilder()
-                    .setScheme("https")
-                    .setHost("login.microsoftonline.com")
-                    .setPath("/common/oauth2/authorize")
-                    .addParameter("client_id", clientId)
-                    .addParameter("response_type", "code")
-                    .addParameter("redirect_uri", redirectUri)
-                    .addParameter("response_mode", "query")
-                    .addParameter("resource", "https://outlook.office365.com")
-                    .addParameter("login_hint", username)
-                    // force consent
-                    //.addParameter("prompt", "consent")
-                    .build();
-            httpClientAdapter = new HttpClientAdapter(uri.toString());
-            davmail.http.request.GetRequest getRequest = new GetRequest(uri);
-            CloseableHttpResponse response = httpClientAdapter.executeFollowRedirects(getRequest);
-            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(uri.toString())) {
+            GetRequest getRequest = new GetRequest(uri);
+            assertEquals(HttpStatus.SC_OK, getRequest.getStatusCode());
             if ("login.microsoftonline.com".equals(getRequest.getURI().getHost())) {
 
                 System.out.println(getRequest.getResponsePart("Config=([^\n]+);"));
@@ -122,7 +106,7 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
 
                 String referer = getRequest.getURI().toString();
 
-                RestRequest getCredentialRequest = new davmail.http.request.RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
+                RestRequest getCredentialRequest = new RestRequest("https://login.microsoftonline.com/common/GetCredentialType");
                 getCredentialRequest.setHeader("Accept", "application/json");
                 getCredentialRequest.setHeader("canary", apiCanary);
                 getCredentialRequest.setHeader("client-request-id", clientRequestId);
@@ -152,7 +136,7 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
                 System.out.println("federationRedirectUrl=" + federationRedirectUrl);
 
                 if (federationRedirectUrl == null || federationRedirectUrl.isEmpty()) {
-                    davmail.http.request.PostRequest logonMethod = new PostRequest(URI.create("https://login.microsoftonline.com/common/login"));
+                    PostRequest logonMethod = new PostRequest(URI.create("https://login.microsoftonline.com/common/login"));
                     logonMethod.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                     logonMethod.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -166,9 +150,9 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
                     logonMethod.setParameter("loginfmt", username);
                     logonMethod.setParameter("passwd", password);
 
-                    response = httpClientAdapter.execute(logonMethod);
-                    URI location = HttpClientAdapter.getRedirectLocation(response);
-                    System.out.println(HttpClientAdapter.getRedirectLocation(response));
+                    httpClientAdapter.execute(logonMethod);
+                    URI location = HttpClientAdapter.getRedirectLocation(logonMethod.getResponse());
+                    System.out.println(location);
                     if (location == null) {
                         System.out.println(getRequest.getResponsePart("Config=([^\n]+);"));
                     }
@@ -182,8 +166,6 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
 
                 }
             }
-        } finally {
-            HttpClientAdapter.close(httpClientAdapter);
         }
     }
 
