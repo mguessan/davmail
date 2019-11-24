@@ -361,21 +361,6 @@ public class LdapConnection extends AbstractConnection {
     //static final int SCOPE_SUBTREE = 2;
 
     /**
-     * For some unknown reason parseIntWithTag is private !
-     */
-    static final Method PARSE_INT_WITH_TAG_METHOD;
-
-    static {
-        try {
-            PARSE_INT_WITH_TAG_METHOD = BerDecoder.class.getDeclaredMethod("parseIntWithTag", int.class);
-            PARSE_INT_WITH_TAG_METHOD.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_GET_PARSEINTWITHTAG"));
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * Sasl server for DIGEST-MD5 authentication
      */
     protected SaslServer saslServer;
@@ -675,19 +660,13 @@ public class LdapConnection extends AbstractConnection {
 
             } else if (requestOperation == LDAP_REQ_ABANDON) {
                 int abandonMessageId = 0;
-                try {
-                    abandonMessageId = (Integer) PARSE_INT_WITH_TAG_METHOD.invoke(reqBer, LDAP_REQ_ABANDON);
-                    synchronized (searchThreadMap) {
-                        SearchRunnable searchRunnable = searchThreadMap.get(abandonMessageId);
-                        if (searchRunnable != null) {
-                            searchRunnable.abandon();
-                            searchThreadMap.remove(currentMessageId);
-                        }
+                abandonMessageId = (Integer) reqBer.parseIntWithTag(LDAP_REQ_ABANDON);
+                synchronized (searchThreadMap) {
+                    SearchRunnable searchRunnable = searchThreadMap.get(abandonMessageId);
+                    if (searchRunnable != null) {
+                        searchRunnable.abandon();
+                        searchThreadMap.remove(currentMessageId);
                     }
-                } catch (IllegalAccessException e) {
-                    DavGatewayTray.error(e);
-                } catch (InvocationTargetException e) {
-                    DavGatewayTray.error(e);
                 }
                 DavGatewayTray.debug(new BundleMessage("LOG_LDAP_REQ_ABANDON_SEARCH", currentMessageId, abandonMessageId));
             } else {

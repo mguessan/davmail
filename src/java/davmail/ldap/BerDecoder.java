@@ -185,7 +185,7 @@ public final class BerDecoder extends Ber {
      * BER integer ::= tag length byte {byte}*
      *</pre></blockquote>
      */
-    private int parseIntWithTag(int tag) throws DecodeException {
+    protected int parseIntWithTag(int tag) throws DecodeException {
 
 
         if (parseByte() != tag) {
