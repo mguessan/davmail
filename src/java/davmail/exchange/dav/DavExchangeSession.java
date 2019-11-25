@@ -80,11 +80,11 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -113,8 +113,8 @@ public class DavExchangeSession extends ExchangeSession {
         WELL_KNOWN_FOLDERS.add(Field.getPropertyName("outbox"));
     }
 
-    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
-    static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
+    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
+    static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
 
     static {
         //taskTovTodoStatusMap.put("0", null);
@@ -288,7 +288,7 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * LDAP to Exchange Criteria Map
      */
-    static final HashMap<String, String> GALFIND_CRITERIA_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> GALFIND_CRITERIA_MAP = new HashMap<>();
 
     static {
         GALFIND_CRITERIA_MAP.put("imapUid", "AN");
@@ -302,7 +302,7 @@ public class DavExchangeSession extends ExchangeSession {
         GALFIND_CRITERIA_MAP.put("department", "DP");
     }
 
-    static final HashSet<String> GALLOOKUP_ATTRIBUTES = new HashSet<String>();
+    static final HashSet<String> GALLOOKUP_ATTRIBUTES = new HashSet<>();
 
     static {
         GALLOOKUP_ATTRIBUTES.add("givenName");
@@ -319,7 +319,7 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * Exchange to LDAP attribute map
      */
-    static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
+    static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
         GALFIND_ATTRIBUTE_MAP.put("uid", "AN");
@@ -368,7 +368,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
-        Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
+        Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
         //noinspection StatementWithEmptyBody
         if (disableGalFind) {
             // do nothing
@@ -553,7 +553,7 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             method = new GetMethod(uri.toString());
             httpClient.executeMethod(method);
-            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
+            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), StandardCharsets.UTF_8));
             String line;
             //noinspection StatementWithEmptyBody
             while ((line = mainPageReader.readLine()) != null && !line.toLowerCase().contains(BASE_HREF)) {
@@ -894,7 +894,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
     }
 
-    static final Map<Operator, String> OPERATOR_MAP = new HashMap<Operator, String>();
+    static final Map<Operator, String> OPERATOR_MAP = new HashMap<>();
 
     static {
         OPERATOR_MAP.put(Operator.IsEqualTo, " = ");
@@ -1134,7 +1134,7 @@ public class DavExchangeSession extends ExchangeSession {
                         String from = getItemProperty(permanentUrl, "from");
                         messageHeaders = "From: " + from + '\n' + messageHeaders;
                     }
-                    result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
+                    result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
                 }
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
@@ -1187,7 +1187,7 @@ public class DavExchangeSession extends ExchangeSession {
         }
 
         protected Set<PropertyValue> buildProperties() {
-            Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+            Set<PropertyValue> propertyValues = new HashSet<>();
             for (Map.Entry<String, String> entry : entrySet()) {
                 String key = entry.getKey();
                 if (!"photo".equals(key)) {
@@ -1288,7 +1288,7 @@ public class DavExchangeSession extends ExchangeSession {
                         putmethod.releaseConnection();
                     }
 
-                    Set<PropertyValue> picturePropertyValues = new HashSet<PropertyValue>();
+                    Set<PropertyValue> picturePropertyValues = new HashSet<>();
                     picturePropertyValues.add(Field.createPropertyValue("attachmentContactPhoto", "true"));
                     // picturePropertyValues.add(Field.createPropertyValue("renderingPosition", "-1"));
                     picturePropertyValues.add(Field.createPropertyValue("attachExtension", ".jpg"));
@@ -1403,11 +1403,7 @@ public class DavExchangeSession extends ExchangeSession {
                             method.releaseConnection();
                         }
                     }
-                } catch (DavException e) {
-                    LOGGER.warn(e.getMessage());
-                } catch (IOException e) {
-                    LOGGER.warn(e.getMessage());
-                } catch (MessagingException e) {
+                } catch (DavException | IOException | MessagingException e) {
                     LOGGER.warn(e.getMessage());
                 }
             }
@@ -1438,7 +1434,7 @@ public class DavExchangeSession extends ExchangeSession {
 
             try {
                 //MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                Set<String> eventProperties = new HashSet<String>();
+                Set<String> eventProperties = new HashSet<>();
                 eventProperties.add("method");
 
                 eventProperties.add("created");
@@ -1583,11 +1579,8 @@ public class DavExchangeSession extends ExchangeSession {
                 }
 
                 localVCalendar.addVObject(vEvent);
-                result = localVCalendar.toString().getBytes("UTF-8");
-            } catch (MessagingException e) {
-                LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
-                throw buildHttpException(e);
-            } catch (IOException e) {
+                result = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
+            } catch (MessagingException | IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
                 throw buildHttpException(e);
             }
@@ -1638,7 +1631,7 @@ public class DavExchangeSession extends ExchangeSession {
                     folderPath = mailPath + tasksName;
                 }
                 String encodedHref = URIUtil.encodePath(getHref());
-                Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+                Set<PropertyValue> propertyValues = new HashSet<>();
                 // set contentclass on create
                 if (noneMatch != null) {
                     propertyValues.add(Field.createPropertyValue("contentclass", "urn:content-classes:task"));
@@ -1730,7 +1723,7 @@ public class DavExchangeSession extends ExchangeSession {
                 // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
                 if ((status == HttpStatus.SC_OK || status == HttpStatus.SC_CREATED) &&
                         (Settings.getBooleanProperty("davmail.forceActiveSyncUpdate"))) {
-                    ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
+                    ArrayList<PropEntry> propertyList = new ArrayList<>();
                     // Set contentclass to make ActiveSync happy
                     propertyList.add(Field.createDavProperty("contentclass", contentClass));
                     // ... but also set PR_INTERNET_CONTENT to preserve custom properties
@@ -1808,7 +1801,7 @@ public class DavExchangeSession extends ExchangeSession {
         return folder;
     }
 
-    protected static final Set<String> FOLDER_PROPERTIES = new HashSet<String>();
+    protected static final Set<String> FOLDER_PROPERTIES = new HashSet<>();
 
     static {
         FOLDER_PROPERTIES.add("displayname");
@@ -1852,7 +1845,7 @@ public class DavExchangeSession extends ExchangeSession {
     public List<Folder> getSubFolders(String folderPath, Condition condition, boolean recursive) throws IOException {
         boolean isPublic = folderPath.startsWith("/public");
         FolderQueryTraversal mode = (!isPublic && recursive) ? FolderQueryTraversal.Deep : FolderQueryTraversal.Shallow;
-        List<Folder> folders = new ArrayList<Folder>();
+        List<Folder> folders = new ArrayList<>();
 
         MultiStatusResponse[] responses = searchItems(folderPath, FOLDER_PROPERTIES, and(isTrue("isfolder"), isFalse("ishidden"), condition), mode, 0);
 
@@ -1871,7 +1864,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public int createFolder(String folderPath, String folderClass, Map<String, String> properties) throws IOException {
-        Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+        Set<PropertyValue> propertyValues = new HashSet<>();
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 propertyValues.add(Field.createPropertyValue(entry.getKey(), entry.getValue()));
@@ -1898,7 +1891,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public int updateFolder(String folderPath, Map<String, String> properties) throws IOException {
-        Set<PropertyValue> propertyValues = new HashSet<PropertyValue>();
+        Set<PropertyValue> propertyValues = new HashSet<>();
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 propertyValues.add(Field.createPropertyValue(entry.getKey(), entry.getValue()));
@@ -2105,7 +2098,7 @@ public class DavExchangeSession extends ExchangeSession {
      */
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
-        List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
+        List<ExchangeSession.Contact> contacts = new ArrayList<>();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes,
                 and(isEqualTo("outlookmessageclass", "IPM.Contact"), isFalse("isfolder"), isFalse("ishidden"), condition),
                 FolderQueryTraversal.Shallow, maxCount);
@@ -2118,7 +2111,7 @@ public class DavExchangeSession extends ExchangeSession {
     /**
      * Common item properties
      */
-    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<>();
 
     static {
         ITEM_PROPERTIES.add("etag");
@@ -2149,7 +2142,7 @@ public class DavExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
-        List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
+        List<ExchangeSession.Event> events = new ArrayList<>();
         MultiStatusResponse[] responses = searchItems(folderPath, attributes, and(isFalse("isfolder"), isFalse("ishidden"), condition), FolderQueryTraversal.Shallow, 0);
         for (MultiStatusResponse response : responses) {
             String instancetype = getPropertyIfExists(response.getProperties(HttpStatus.SC_OK), "instancetype");
@@ -2217,7 +2210,7 @@ public class DavExchangeSession extends ExchangeSession {
         return responses;
     }
 
-    protected static final Set<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
+    protected static final Set<String> EVENT_REQUEST_PROPERTIES = new HashSet<>();
 
     static {
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
@@ -2375,7 +2368,7 @@ public class DavExchangeSession extends ExchangeSession {
     public void processItem(String folderPath, String itemName) throws IOException {
         String eventPath = URIUtil.encodePath(getFolderPath(folderPath) + '/' + convertItemNameToEML(itemName));
         // do not delete calendar messages, mark read and processed
-        ArrayList<PropEntry> list = new ArrayList<PropEntry>();
+        ArrayList<PropEntry> list = new ArrayList<>();
         list.add(Field.createDavProperty("processed", "true"));
         list.add(Field.createDavProperty("read", "1"));
         PropPatchMethod patchMethod = new PropPatchMethod(eventPath, list);
@@ -2417,7 +2410,7 @@ public class DavExchangeSession extends ExchangeSession {
             }
             // failover for Exchange 2007, use PROPPATCH with forced timezone
             if (fakeEventUrl == null) {
-                ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
+                ArrayList<PropEntry> propertyList = new ArrayList<>();
                 propertyList.add(Field.createDavProperty("contentclass", "urn:content-classes:appointment"));
                 propertyList.add(Field.createDavProperty("outlookmessageclass", "IPM.Appointment"));
                 propertyList.add(Field.createDavProperty("instancetype", "0"));
@@ -2468,7 +2461,7 @@ public class DavExchangeSession extends ExchangeSession {
         String timezoneId = null;
         String timezoneName = null;
         try {
-            Set<String> attributes = new HashSet<String>();
+            Set<String> attributes = new HashSet<>();
             attributes.add("roamingdictionary");
 
             MultiStatusResponse[] responses = searchItems("/users/" + getEmail() + "/NON_IPM_SUBTREE", attributes, isEqualTo("messageclass", "IPM.Configuration.OWA.UserOptions"), DavExchangeSession.FolderQueryTraversal.Deep, 1);
@@ -2483,8 +2476,6 @@ public class DavExchangeSession extends ExchangeSession {
             }
         } catch (MissingResourceException e) {
             LOGGER.warn("Unable to retrieve Exchange timezone id for name " + timezoneName);
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
         } catch (IOException e) {
             LOGGER.warn("Unable to retrieve Exchange timezone id: " + e.getMessage(), e);
         }
@@ -2519,7 +2510,7 @@ public class DavExchangeSession extends ExchangeSession {
     }
 
     protected List<PropEntry> buildProperties(Map<String, String> properties) {
-        ArrayList<PropEntry> list = new ArrayList<PropEntry>();
+        ArrayList<PropEntry> list = new ArrayList<>();
         if (properties != null) {
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if ("read".equals(entry.getKey())) {
@@ -2609,7 +2600,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (code == HttpStatus.SC_NOT_ACCEPTABLE) {
                 LOGGER.warn("Draft message creation failed, failover to property update. Note: attachments are lost");
 
-                ArrayList<PropEntry> propertyList = new ArrayList<PropEntry>();
+                ArrayList<PropEntry> propertyList = new ArrayList<>();
                 propertyList.add(Field.createDavProperty("to", mimeMessage.getHeader("to", ",")));
                 propertyList.add(Field.createDavProperty("cc", mimeMessage.getHeader("cc", ",")));
                 propertyList.add(Field.createDavProperty("message-id", mimeMessage.getHeader("message-id", ",")));
@@ -2673,7 +2664,7 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             // need to update bcc after put
             if (mimeMessage.getHeader("Bcc") != null) {
-                davProperties = new ArrayList<PropEntry>();
+                davProperties = new ArrayList<>();
                 davProperties.add(Field.createDavProperty("bcc", mimeMessage.getHeader("Bcc", ",")));
                 patchMethod = new PropPatchMethod(messageUrl, davProperties);
                 try {
@@ -2753,7 +2744,7 @@ public class DavExchangeSession extends ExchangeSession {
         try {
             // need to create draft first
             String itemName = UUID.randomUUID().toString() + ".EML";
-            HashMap<String, String> properties = new HashMap<String, String>();
+            HashMap<String, String> properties = new HashMap<>();
             properties.put("draft", "9");
             String contentType = mimeMessage.getContentType();
             if (contentType != null && contentType.startsWith("text/plain")) {
@@ -2805,15 +2796,12 @@ public class DavExchangeSession extends ExchangeSession {
                 contentInputStream.close();
             }
 
-        } catch (LoginTimeoutException e) {
+        } catch (LoginTimeoutException | SocketException e) {
             // throw error on expired session
             LOGGER.warn(e.getMessage());
             throw e;
-        } catch (SocketException e) {
-            // throw error on broken connection
-            LOGGER.warn(e.getMessage());
-            throw e;
-        } catch (IOException e) {
+        } // throw error on broken connection
+        catch (IOException e) {
             LOGGER.warn("Broken message at: " + message.messageUrl + " permanentUrl: " + message.permanentUrl + ", trying to rebuild from properties");
 
             try {
@@ -2870,13 +2858,9 @@ public class DavExchangeSession extends ExchangeSession {
                     mimeMessage.writeTo(baos);
                 }
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), "UTF-8"));
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), StandardCharsets.UTF_8));
                 }
-            } catch (IOException e2) {
-                LOGGER.warn(e2);
-            } catch (DavException e2) {
-                LOGGER.warn(e2);
-            } catch (MessagingException e2) {
+            } catch (IOException | DavException | MessagingException e2) {
                 LOGGER.warn(e2);
             }
             // other exception
@@ -3077,7 +3061,7 @@ public class DavExchangeSession extends ExchangeSession {
         return zuluDateValue;
     }
 
-    protected static final Map<String, String> importanceToPriorityMap = new HashMap<String, String>();
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
 
     static {
         importanceToPriorityMap.put("high", "1");
@@ -3085,7 +3069,7 @@ public class DavExchangeSession extends ExchangeSession {
         importanceToPriorityMap.put("low", "9");
     }
 
-    protected static final Map<String, String> priorityToImportanceMap = new HashMap<String, String>();
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
 
     static {
         priorityToImportanceMap.put("1", "high");
