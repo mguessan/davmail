@@ -192,32 +192,46 @@ public abstract class AbstractServer extends Thread {
      */
     @Override
     public void run() {
+        AbstractConnection connection = null;
+        Socket clientSocket = null;
         try {
             while (!serverSocket.isClosed()) {
-                try (Socket clientSocket = serverSocket.accept()) {
-                    // set default timeout to 5 minutes
-                    clientSocket.setSoTimeout(Settings.getIntProperty("davmail.clientSoTimeout", 300) * 1000);
-                    DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
-                    // only accept localhost connections for security reasons
-                    if (Settings.getBooleanProperty("davmail.allowRemote") ||
-                            clientSocket.getInetAddress().isLoopbackAddress() ||
-                            // OSX link local address on loopback interface
-                            clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[]{(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
-                            )) {
-                        try (AbstractConnection connection = createConnectionHandler(clientSocket)) {
-                            connection.start();
-                        }
-                    } else {
-                        DavGatewayTray.warn(new BundleMessage("LOG_EXTERNAL_CONNECTION_REFUSED"));
-                    }
+                clientSocket = serverSocket.accept();
+                // set default timeout to 5 minutes
+                clientSocket.setSoTimeout(Settings.getIntProperty("davmail.clientSoTimeout", 300) * 1000);
+                DavGatewayTray.debug(new BundleMessage("LOG_CONNECTION_FROM", clientSocket.getInetAddress(), port));
+                // only accept localhost connections for security reasons
+                if (Settings.getBooleanProperty("davmail.allowRemote") ||
+                        clientSocket.getInetAddress().isLoopbackAddress() ||
+                        // OSX link local address on loopback interface
+                        clientSocket.getInetAddress().equals(InetAddress.getByAddress(new byte[]{(byte) 0xfe, (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+                        )) {
+                    connection = createConnectionHandler(clientSocket);
+                    connection.start();
+
+                } else {
+                    DavGatewayTray.warn(new BundleMessage("LOG_EXTERNAL_CONNECTION_REFUSED"));
                 }
             }
+
         } catch (IOException e) {
             // do not warn if exception on socket close (gateway restart)
             if (!serverSocket.isClosed()) {
                 DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_LISTENING_FOR_CONNECTIONS"), e);
             }
+        } finally {
+            try {
+                if (clientSocket != null) {
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                DavGatewayTray.warn(new BundleMessage("LOG_EXCEPTION_CLOSING_CLIENT_SOCKET"), e);
+            }
+            if (connection != null) {
+                connection.close();
+            }
         }
+
     }
 
     /**
