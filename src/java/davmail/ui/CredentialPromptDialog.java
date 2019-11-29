@@ -63,12 +63,10 @@ public class CredentialPromptDialog extends JDialog {
         questionPanel.add(imageLabel);
 
         passwordField.setMaximumSize(passwordField.getPreferredSize());
-        passwordField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                principal = principalField.getText();
-                password = passwordField.getPassword();
-                setVisible(false);
-            }
+        passwordField.addActionListener(e -> {
+            principal = principalField.getText();
+            password = passwordField.getPassword();
+            setVisible(false);
         });
         JPanel credentialPanel = new JPanel(new GridLayout(2, 2));
 
@@ -108,19 +106,15 @@ public class CredentialPromptDialog extends JDialog {
         JPanel buttonPanel = new JPanel();
         JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
-        okButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                principal = principalField.getText();
-                password = passwordField.getPassword();
-                setVisible(false);
-            }
+        okButton.addActionListener(evt -> {
+            principal = principalField.getText();
+            password = passwordField.getPassword();
+            setVisible(false);
         });
-        cancelButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                principal = null;
-                password = null;
-                setVisible(false);
-            }
+        cancelButton.addActionListener(evt -> {
+            principal = null;
+            password = null;
+            setVisible(false);
         });
 
         buttonPanel.add(okButton);

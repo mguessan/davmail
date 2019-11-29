@@ -24,8 +24,6 @@ import davmail.ui.tray.DavGatewayTray;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Get smartcard password
@@ -59,7 +57,7 @@ public class PasswordPromptDialog extends JDialog {
     /**
      * Get smartcard password.
      *
-     * @param prompt password prompt from PKCS11 module
+     * @param prompt       password prompt from PKCS11 module
      * @param captchaImage ISA filter pinsafe image
      */
     public PasswordPromptDialog(String prompt, Image captchaImage) {
@@ -81,18 +79,16 @@ public class PasswordPromptDialog extends JDialog {
         questionPanel.add(imageLabel);
 
         passwordField.setMaximumSize(passwordField.getPreferredSize());
-        passwordField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                password = passwordField.getPassword();
-                setVisible(false);
-            }
+        passwordField.addActionListener(e -> {
+            password = passwordField.getPassword();
+            setVisible(false);
         });
         JPanel passwordPanel = new JPanel();
         passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.Y_AXIS));
         if (captchaImage != null) {
             JLabel captchaLabel = new JLabel(new ImageIcon(captchaImage));
             captchaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            captchaLabel.setBorder(new EmptyBorder(10,10,10,10));
+            captchaLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
             passwordPanel.add(captchaLabel);
         }
         passwordPanel.add(passwordField);
@@ -105,10 +101,10 @@ public class PasswordPromptDialog extends JDialog {
         pack();
         // center frame
         setLocation(getToolkit().getScreenSize().width / 2 -
-                getSize().width / 2,
+                        getSize().width / 2,
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
-	setAlwaysOnTop(true);
+        setAlwaysOnTop(true);
         setVisible(true);
     }
 
@@ -116,17 +112,13 @@ public class PasswordPromptDialog extends JDialog {
         JPanel buttonPanel = new JPanel();
         JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
-        okButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                password = passwordField.getPassword();
-                setVisible(false);
-            }
+        okButton.addActionListener(evt -> {
+            password = passwordField.getPassword();
+            setVisible(false);
         });
-        cancelButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                password = null;
-                setVisible(false);
-            }
+        cancelButton.addActionListener(evt -> {
+            password = null;
+            setVisible(false);
         });
 
         buttonPanel.add(okButton);

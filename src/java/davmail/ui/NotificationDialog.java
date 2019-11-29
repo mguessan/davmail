@@ -25,7 +25,6 @@ import davmail.ui.tray.DavGatewayTray;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Edit Caldav scheduling notifications.
@@ -120,18 +119,14 @@ public class NotificationDialog extends JDialog {
         JButton cancel = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         JButton send = new JButton(BundleMessage.format("UI_BUTTON_SEND"));
 
-        send.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                sendNotification = true;
-                setVisible(false);
-            }
+        send.addActionListener(evt -> {
+            sendNotification = true;
+            setVisible(false);
         });
 
-        cancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                // nothing to do, just hide
-                setVisible(false);
-            }
+        cancel.addActionListener(evt -> {
+            // nothing to do, just hide
+            setVisible(false);
         });
 
         buttonPanel.add(send);

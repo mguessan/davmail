@@ -24,8 +24,6 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
@@ -120,17 +118,13 @@ public class AcceptCertificateDialog extends JDialog {
         JPanel buttonPanel = new JPanel();
         JButton accept = new JButton(BundleMessage.format("UI_BUTTON_ACCEPT"));
         JButton deny = new JButton(BundleMessage.format("UI_BUTTON_DENY"));
-        accept.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                accepted = true;
-                setVisible(false);
-            }
+        accept.addActionListener(evt -> {
+            accepted = true;
+            setVisible(false);
         });
-        deny.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                accepted = false;
-                setVisible(false);
-            }
+        deny.addActionListener(evt -> {
+            accepted = false;
+            setVisible(false);
         });
 
         buttonPanel.add(accept);
@@ -148,11 +142,9 @@ public class AcceptCertificateDialog extends JDialog {
     public static boolean isCertificateTrusted(final X509Certificate certificate) {
         final boolean[] answer = new boolean[1];
         try {
-            SwingUtilities.invokeAndWait(new Runnable() {
-                public void run() {
-                    AcceptCertificateDialog certificateDialog = new AcceptCertificateDialog(certificate);
-                    answer[0] = certificateDialog.isAccepted();
-                }
+            SwingUtilities.invokeAndWait(() -> {
+                AcceptCertificateDialog certificateDialog = new AcceptCertificateDialog(certificate);
+                answer[0] = certificateDialog.isAccepted();
             });
         } catch (InterruptedException ie) {
             DavGatewayTray.error(new BundleMessage("UI_ERROR_WAITING_FOR_CERTIFICATE_CHECK"), ie);

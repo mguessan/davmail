@@ -26,13 +26,9 @@ import davmail.ui.tray.DavGatewayTray;
 import org.apache.log4j.Level;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 
 /**
  * DavMail settings frame
@@ -76,21 +72,21 @@ public class SettingsFrame extends JFrame {
     protected JTextField certHashField;
     protected JCheckBox disableUpdateCheck;
 
-    protected JComboBox keystoreTypeCombo;
+    protected JComboBox<String> keystoreTypeCombo;
     protected JTextField keystoreFileField;
     protected JPasswordField keystorePassField;
     protected JPasswordField keyPassField;
 
-    protected JComboBox clientKeystoreTypeCombo;
+    protected JComboBox<String> clientKeystoreTypeCombo;
     protected JTextField clientKeystoreFileField;
     protected JPasswordField clientKeystorePassField;
     protected JTextField pkcs11LibraryField;
     protected JTextArea pkcs11ConfigField;
 
-    protected JComboBox rootLoggingLevelField;
-    protected JComboBox davmailLoggingLevelField;
-    protected JComboBox httpclientLoggingLevelField;
-    protected JComboBox wireLoggingLevelField;
+    protected JComboBox<Level> rootLoggingLevelField;
+    protected JComboBox<Level> davmailLoggingLevelField;
+    protected JComboBox<Level> httpclientLoggingLevelField;
+    protected JComboBox<Level> wireLoggingLevelField;
     protected JTextField logFilePathField;
     protected JTextField logFileSizeField;
 
@@ -105,7 +101,7 @@ public class SettingsFrame extends JFrame {
     protected JCheckBox imapAutoExpungeCheckBox;
     protected JCheckBox enableKeepAliveCheckBox;
     protected JCheckBox popMarkReadOnRetrCheckBox;
-    protected JComboBox modeComboBox;
+    protected JComboBox<String> modeComboBox;
     protected JCheckBox enableKerberosCheckBox;
     protected JTextField folderSizeLimitField;
     protected JCheckBox smtpSaveInSentCheckBox;
@@ -160,7 +156,7 @@ public class SettingsFrame extends JFrame {
         JPanel settingsPanel = new JPanel(new GridLayout(7, 2));
         settingsPanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_GATEWAY")));
 
-        modeComboBox = new JComboBox();
+        modeComboBox = new JComboBox<>();
         modeComboBox.addItem(Settings.EWS);
         modeComboBox.addItem(Settings.O365);
         modeComboBox.addItem(Settings.O365_MODERN);
@@ -169,16 +165,14 @@ public class SettingsFrame extends JFrame {
         modeComboBox.addItem(Settings.WEBDAV);
         modeComboBox.addItem(Settings.AUTO);
         modeComboBox.setSelectedItem(Settings.getProperty("davmail.mode", Settings.EWS));
-        modeComboBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                String selectedItem = (String)modeComboBox.getSelectedItem();
-                modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
-                if (selectedItem != null && selectedItem.startsWith("O365")) {
-                    urlField.setEnabled(false);
-                    urlField.setText(Settings.O365_URL);
-                } else {
-                    urlField.setEnabled(true);
-                }
+        modeComboBox.addActionListener(evt -> {
+            String selectedItem = (String)modeComboBox.getSelectedItem();
+            modeComboBox.setToolTipText(BundleMessage.format("UI_"+selectedItem+"_HELP"));
+            if (selectedItem != null && selectedItem.startsWith("O365")) {
+                urlField.setEnabled(false);
+                urlField.setText(Settings.O365_URL);
+            } else {
+                urlField.setEnabled(true);
             }
         });
         urlField = new JTextField(Settings.getProperty("davmail.url"), 20);
@@ -188,11 +182,9 @@ public class SettingsFrame extends JFrame {
         popPortCheckBox.setSelected(Settings.getProperty("davmail.popPort") != null && Settings.getProperty("davmail.popPort").length() > 0);
         popPortField.setEnabled(popPortCheckBox.isSelected());
         popNoSSLCheckBox.setEnabled(popPortCheckBox.isSelected() && isSslEnabled());
-        popPortCheckBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                popPortField.setEnabled(popPortCheckBox.isSelected());
-                popNoSSLCheckBox.setEnabled(popPortCheckBox.isSelected() && isSslEnabled());
-            }
+        popPortCheckBox.addActionListener(evt -> {
+            popPortField.setEnabled(popPortCheckBox.isSelected());
+            popNoSSLCheckBox.setEnabled(popPortCheckBox.isSelected() && isSslEnabled());
         });
 
         imapPortField = new JTextField(Settings.getProperty("davmail.imapPort"), 4);
@@ -201,11 +193,9 @@ public class SettingsFrame extends JFrame {
         imapPortCheckBox.setSelected(Settings.getProperty("davmail.imapPort") != null && Settings.getProperty("davmail.imapPort").length() > 0);
         imapPortField.setEnabled(imapPortCheckBox.isSelected());
         imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled());
-        imapPortCheckBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                imapPortField.setEnabled(imapPortCheckBox.isSelected());
-                imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled());
-            }
+        imapPortCheckBox.addActionListener(evt -> {
+            imapPortField.setEnabled(imapPortCheckBox.isSelected());
+            imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled());
         });
 
         smtpPortField = new JTextField(Settings.getProperty("davmail.smtpPort"), 4);
@@ -214,11 +204,9 @@ public class SettingsFrame extends JFrame {
         smtpPortCheckBox.setSelected(Settings.getProperty("davmail.smtpPort") != null && Settings.getProperty("davmail.smtpPort").length() > 0);
         smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
         smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled());
-        smtpPortCheckBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
-                smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled());
-            }
+        smtpPortCheckBox.addActionListener(evt -> {
+            smtpPortField.setEnabled(smtpPortCheckBox.isSelected());
+            smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled());
         });
 
         caldavPortField = new JTextField(Settings.getProperty("davmail.caldavPort"), 4);
@@ -227,11 +215,9 @@ public class SettingsFrame extends JFrame {
         caldavPortCheckBox.setSelected(Settings.getProperty("davmail.caldavPort") != null && Settings.getProperty("davmail.caldavPort").length() > 0);
         caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
         caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled());
-        caldavPortCheckBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
-                caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled());
-            }
+        caldavPortCheckBox.addActionListener(evt -> {
+            caldavPortField.setEnabled(caldavPortCheckBox.isSelected());
+            caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled());
         });
 
         ldapPortField = new JTextField(Settings.getProperty("davmail.ldapPort"), 4);
@@ -240,11 +226,9 @@ public class SettingsFrame extends JFrame {
         ldapPortCheckBox.setSelected(Settings.getProperty("davmail.ldapPort") != null && Settings.getProperty("davmail.ldapPort").length() > 0);
         ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
         ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled());
-        ldapPortCheckBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
-                ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled());
-            }
+        ldapPortCheckBox.addActionListener(evt -> {
+            ldapPortField.setEnabled(ldapPortCheckBox.isSelected());
+            ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled());
         });
 
         addSettingComponent(settingsPanel, BundleMessage.format("UI_ENABLE_EWS"), modeComboBox,
@@ -306,33 +290,29 @@ public class SettingsFrame extends JFrame {
         httpProxyPasswordField.setEnabled(enableProxy || useSystemProxies);
         noProxyForField.setEnabled(enableProxy);
 
-        useSystemProxiesField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                boolean newUseSystemProxies = useSystemProxiesField.isSelected();
-                if (newUseSystemProxies) {
-                    enableProxyField.setSelected(false);
-                    enableProxyField.setEnabled(false);
-                    httpProxyField.setEnabled(false);
-                    httpProxyPortField.setEnabled(false);
-                    httpProxyUserField.setEnabled(true);
-                    httpProxyPasswordField.setEnabled(true);
-                    noProxyForField.setEnabled(false);
-                } else {
-                    enableProxyField.setEnabled(true);
-                    httpProxyUserField.setEnabled(false);
-                    httpProxyPasswordField.setEnabled(false);
-                }
+        useSystemProxiesField.addActionListener(evt -> {
+            boolean newUseSystemProxies = useSystemProxiesField.isSelected();
+            if (newUseSystemProxies) {
+                enableProxyField.setSelected(false);
+                enableProxyField.setEnabled(false);
+                httpProxyField.setEnabled(false);
+                httpProxyPortField.setEnabled(false);
+                httpProxyUserField.setEnabled(true);
+                httpProxyPasswordField.setEnabled(true);
+                noProxyForField.setEnabled(false);
+            } else {
+                enableProxyField.setEnabled(true);
+                httpProxyUserField.setEnabled(false);
+                httpProxyPasswordField.setEnabled(false);
             }
         });
-        enableProxyField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                boolean newEnableProxy = enableProxyField.isSelected();
-                httpProxyField.setEnabled(newEnableProxy);
-                httpProxyPortField.setEnabled(newEnableProxy);
-                httpProxyUserField.setEnabled(newEnableProxy);
-                httpProxyPasswordField.setEnabled(newEnableProxy);
-                noProxyForField.setEnabled(newEnableProxy);
-            }
+        enableProxyField.addActionListener(evt -> {
+            boolean newEnableProxy = enableProxyField.isSelected();
+            httpProxyField.setEnabled(newEnableProxy);
+            httpProxyPortField.setEnabled(newEnableProxy);
+            httpProxyUserField.setEnabled(newEnableProxy);
+            httpProxyPasswordField.setEnabled(newEnableProxy);
+            noProxyForField.setEnabled(newEnableProxy);
         });
 
         addSettingComponent(proxyPanel, BundleMessage.format("UI_USE_SYSTEM_PROXIES"), useSystemProxiesField);
@@ -350,7 +330,7 @@ public class SettingsFrame extends JFrame {
         JPanel keyStorePanel = new JPanel(new GridLayout(4, 2));
         keyStorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_DAVMAIL_SERVER_CERTIFICATE")));
 
-        keystoreTypeCombo = new JComboBox(new String[]{"JKS", "PKCS12"});
+        keystoreTypeCombo = new JComboBox<>(new String[]{"JKS", "PKCS12"});
         keystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.keystoreType"));
         keystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.keystoreFile"), 20);
         keystorePassField = new JPasswordField(Settings.getProperty("davmail.ssl.keystorePass"), 20);
@@ -374,9 +354,9 @@ public class SettingsFrame extends JFrame {
         clientKeystorePanel.setBorder(BorderFactory.createTitledBorder(BundleMessage.format("UI_CLIENT_CERTIFICATE")));
 
         if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
-            clientKeystoreTypeCombo = new JComboBox(new String[]{"MSCAPI", "PKCS11", "JKS", "PKCS12"});
+            clientKeystoreTypeCombo = new JComboBox<>(new String[]{"MSCAPI", "PKCS11", "JKS", "PKCS12"});
         } else {
-            clientKeystoreTypeCombo = new JComboBox(new String[]{"PKCS11", "JKS", "PKCS12"});
+            clientKeystoreTypeCombo = new JComboBox<>(new String[]{"PKCS11", "JKS", "PKCS12"});
         }
         clientKeystoreTypeCombo.setSelectedItem(Settings.getProperty("davmail.ssl.clientKeystoreType"));
         clientKeystoreFileField = new JTextField(Settings.getProperty("davmail.ssl.clientKeystoreFile"), 20);
@@ -414,14 +394,12 @@ public class SettingsFrame extends JFrame {
 
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, (String) clientKeystoreTypeCombo.getSelectedItem());
 
-        clientKeystoreTypeCombo.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent event) {
-                CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
-                if ("PKCS11".equals(event.getItem())) {
-                    cardLayout.show(cardPanel, "PKCS11");
-                } else {
-                    cardLayout.show(cardPanel, "FILE");
-                }
+        clientKeystoreTypeCombo.addItemListener(event -> {
+            CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
+            if ("PKCS11".equals(event.getItem())) {
+                cardLayout.show(cardPanel, "PKCS11");
+            } else {
+                cardLayout.show(cardPanel, "FILE");
             }
         });
         updateMaximumSize(clientKeystorePanel);
@@ -563,10 +541,10 @@ public class SettingsFrame extends JFrame {
         loggingLevelPanel.add(leftLoggingPanel);
         loggingLevelPanel.add(rightLoggingPanel);
 
-        rootLoggingLevelField = new JComboBox(LOG_LEVELS);
-        davmailLoggingLevelField = new JComboBox(LOG_LEVELS);
-        httpclientLoggingLevelField = new JComboBox(LOG_LEVELS);
-        wireLoggingLevelField = new JComboBox(LOG_LEVELS);
+        rootLoggingLevelField = new JComboBox<>(LOG_LEVELS);
+        davmailLoggingLevelField = new JComboBox<>(LOG_LEVELS);
+        httpclientLoggingLevelField = new JComboBox<>(LOG_LEVELS);
+        wireLoggingLevelField = new JComboBox<>(LOG_LEVELS);
         logFilePathField = new JTextField(Settings.getProperty("davmail.logFilePath"), 15);
         logFileSizeField = new JTextField(Settings.getProperty("davmail.logFileSize"), 15);
 
@@ -586,13 +564,11 @@ public class SettingsFrame extends JFrame {
 
         JButton defaultButton = new JButton(BundleMessage.format("UI_BUTTON_DEFAULT"));
         defaultButton.setToolTipText(BundleMessage.format("UI_BUTTON_DEFAULT_HELP"));
-        defaultButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                rootLoggingLevelField.setSelectedItem(Level.WARN);
-                davmailLoggingLevelField.setSelectedItem(Level.DEBUG);
-                httpclientLoggingLevelField.setSelectedItem(Level.WARN);
-                wireLoggingLevelField.setSelectedItem(Level.WARN);
-            }
+        defaultButton.addActionListener(e -> {
+            rootLoggingLevelField.setSelectedItem(Level.WARN);
+            davmailLoggingLevelField.setSelectedItem(Level.DEBUG);
+            httpclientLoggingLevelField.setSelectedItem(Level.WARN);
+            wireLoggingLevelField.setSelectedItem(Level.WARN);
         });
 
         JPanel loggingPanel = new JPanel();
@@ -730,15 +706,13 @@ public class SettingsFrame extends JFrame {
                 DesktopBrowser.browse("http://davmail.sourceforge.net");
             }
         });
-        tabbedPane.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                boolean isSslEnabled = isSslEnabled();
-                popNoSSLCheckBox.setEnabled(Settings.getProperty("davmail.popPort") != null && isSslEnabled);
-                imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled);
-                smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled);
-                caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled);
-                ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled);
-            }
+        tabbedPane.addChangeListener(e -> {
+            boolean isSslEnabled = isSslEnabled();
+            popNoSSLCheckBox.setEnabled(Settings.getProperty("davmail.popPort") != null && isSslEnabled);
+            imapNoSSLCheckBox.setEnabled(imapPortCheckBox.isSelected() && isSslEnabled);
+            smtpNoSSLCheckBox.setEnabled(smtpPortCheckBox.isSelected() && isSslEnabled);
+            caldavNoSSLCheckBox.setEnabled(caldavPortCheckBox.isSelected() && isSslEnabled);
+            ldapNoSSLCheckBox.setEnabled(ldapPortCheckBox.isSelected() && isSslEnabled);
         });
 
         JPanel mainPanel = new JPanel();
@@ -797,103 +771,95 @@ public class SettingsFrame extends JFrame {
         JButton cancel = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
         JButton ok = new JButton(BundleMessage.format("UI_BUTTON_SAVE"));
         JButton help = new JButton(BundleMessage.format("UI_BUTTON_HELP"));
-        ActionListener save = new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                // save options
-                Settings.setProperty("davmail.url", urlField.getText().trim());
-                Settings.setProperty("davmail.popPort", popPortCheckBox.isSelected() ? popPortField.getText() : "");
-                Settings.setProperty("davmail.ssl.nosecurepop", String.valueOf(popNoSSLCheckBox.isSelected()));
-                Settings.setProperty("davmail.imapPort", imapPortCheckBox.isSelected() ? imapPortField.getText() : "");
-                Settings.setProperty("davmail.ssl.nosecureimap", String.valueOf(imapNoSSLCheckBox.isSelected()));
-                Settings.setProperty("davmail.smtpPort", smtpPortCheckBox.isSelected() ? smtpPortField.getText() : "");
-                Settings.setProperty("davmail.ssl.nosecuresmtp", String.valueOf(smtpNoSSLCheckBox.isSelected()));
-                Settings.setProperty("davmail.caldavPort", caldavPortCheckBox.isSelected() ? caldavPortField.getText() : "");
-                Settings.setProperty("davmail.ssl.nosecurecaldav", String.valueOf(caldavNoSSLCheckBox.isSelected()));
-                Settings.setProperty("davmail.ldapPort", ldapPortCheckBox.isSelected() ? ldapPortField.getText() : "");
-                Settings.setProperty("davmail.ssl.nosecureldap", String.valueOf(ldapNoSSLCheckBox.isSelected()));
-                Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
-                Settings.setProperty("davmail.sentKeepDelay", sentKeepDelayField.getText());
-                Settings.setProperty("davmail.caldavPastDelay", caldavPastDelayField.getText());
-                Settings.setProperty("davmail.imapIdleDelay", imapIdleDelayField.getText());
-                Settings.setProperty("davmail.useSystemProxies", String.valueOf(useSystemProxiesField.isSelected()));
-                Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
-                Settings.setProperty("davmail.proxyHost", httpProxyField.getText());
-                Settings.setProperty("davmail.proxyPort", httpProxyPortField.getText());
-                Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
-                Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
-                Settings.setProperty("davmail.noProxyFor", noProxyForField.getText());
+        ActionListener save = evt -> {
+            // save options
+            Settings.setProperty("davmail.url", urlField.getText().trim());
+            Settings.setProperty("davmail.popPort", popPortCheckBox.isSelected() ? popPortField.getText() : "");
+            Settings.setProperty("davmail.ssl.nosecurepop", String.valueOf(popNoSSLCheckBox.isSelected()));
+            Settings.setProperty("davmail.imapPort", imapPortCheckBox.isSelected() ? imapPortField.getText() : "");
+            Settings.setProperty("davmail.ssl.nosecureimap", String.valueOf(imapNoSSLCheckBox.isSelected()));
+            Settings.setProperty("davmail.smtpPort", smtpPortCheckBox.isSelected() ? smtpPortField.getText() : "");
+            Settings.setProperty("davmail.ssl.nosecuresmtp", String.valueOf(smtpNoSSLCheckBox.isSelected()));
+            Settings.setProperty("davmail.caldavPort", caldavPortCheckBox.isSelected() ? caldavPortField.getText() : "");
+            Settings.setProperty("davmail.ssl.nosecurecaldav", String.valueOf(caldavNoSSLCheckBox.isSelected()));
+            Settings.setProperty("davmail.ldapPort", ldapPortCheckBox.isSelected() ? ldapPortField.getText() : "");
+            Settings.setProperty("davmail.ssl.nosecureldap", String.valueOf(ldapNoSSLCheckBox.isSelected()));
+            Settings.setProperty("davmail.keepDelay", keepDelayField.getText());
+            Settings.setProperty("davmail.sentKeepDelay", sentKeepDelayField.getText());
+            Settings.setProperty("davmail.caldavPastDelay", caldavPastDelayField.getText());
+            Settings.setProperty("davmail.imapIdleDelay", imapIdleDelayField.getText());
+            Settings.setProperty("davmail.useSystemProxies", String.valueOf(useSystemProxiesField.isSelected()));
+            Settings.setProperty("davmail.enableProxy", String.valueOf(enableProxyField.isSelected()));
+            Settings.setProperty("davmail.proxyHost", httpProxyField.getText());
+            Settings.setProperty("davmail.proxyPort", httpProxyPortField.getText());
+            Settings.setProperty("davmail.proxyUser", httpProxyUserField.getText());
+            Settings.setProperty("davmail.proxyPassword", httpProxyPasswordField.getText());
+            Settings.setProperty("davmail.noProxyFor", noProxyForField.getText());
 
-                Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
-                Settings.setProperty("davmail.clientSoTimeout", String.valueOf(clientSoTimeoutField.getText()));
-                Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
-                Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
-                Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
-                Settings.setProperty("davmail.caldavAutoSchedule", String.valueOf(caldavAutoScheduleCheckBox.isSelected()));
+            Settings.setProperty("davmail.bindAddress", bindAddressField.getText());
+            Settings.setProperty("davmail.clientSoTimeout", String.valueOf(clientSoTimeoutField.getText()));
+            Settings.setProperty("davmail.allowRemote", String.valueOf(allowRemoteField.isSelected()));
+            Settings.setProperty("davmail.server.certificate.hash", certHashField.getText());
+            Settings.setProperty("davmail.disableUpdateCheck", String.valueOf(disableUpdateCheck.isSelected()));
+            Settings.setProperty("davmail.caldavAutoSchedule", String.valueOf(caldavAutoScheduleCheckBox.isSelected()));
 
-                Settings.setProperty("davmail.caldavEditNotifications", String.valueOf(caldavEditNotificationsField.isSelected()));
-                Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
-                Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateCheckBox.isSelected()));
-                Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
-                Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
-                Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
-                Settings.setProperty("davmail.disableTrayActivitySwitch", String.valueOf(disableTrayActivitySwitchCheckBox.isSelected()));
-                Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
-                Settings.setProperty("davmail.imapAlwaysApproxMsgSize", String.valueOf(imapAlwaysApproxMsgSizeCheckBox.isSelected()));
-                Settings.setProperty("davmail.enableKeepAlive", String.valueOf(enableKeepAliveCheckBox.isSelected()));
-                Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
+            Settings.setProperty("davmail.caldavEditNotifications", String.valueOf(caldavEditNotificationsField.isSelected()));
+            Settings.setProperty("davmail.caldavAlarmSound", String.valueOf(caldavAlarmSoundField.getText()));
+            Settings.setProperty("davmail.forceActiveSyncUpdate", String.valueOf(forceActiveSyncUpdateCheckBox.isSelected()));
+            Settings.setProperty("davmail.defaultDomain", String.valueOf(defaultDomainField.getText()));
+            Settings.setProperty("davmail.showStartupBanner", String.valueOf(showStartupBannerCheckBox.isSelected()));
+            Settings.setProperty("davmail.disableGuiNotifications", String.valueOf(disableGuiNotificationsCheckBox.isSelected()));
+            Settings.setProperty("davmail.disableTrayActivitySwitch", String.valueOf(disableTrayActivitySwitchCheckBox.isSelected()));
+            Settings.setProperty("davmail.imapAutoExpunge", String.valueOf(imapAutoExpungeCheckBox.isSelected()));
+            Settings.setProperty("davmail.imapAlwaysApproxMsgSize", String.valueOf(imapAlwaysApproxMsgSizeCheckBox.isSelected()));
+            Settings.setProperty("davmail.enableKeepAlive", String.valueOf(enableKeepAliveCheckBox.isSelected()));
+            Settings.setProperty("davmail.popMarkReadOnRetr", String.valueOf(popMarkReadOnRetrCheckBox.isSelected()));
 
-                Settings.setProperty("davmail.mode", (String) modeComboBox.getSelectedItem());
-                Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
-                Settings.setProperty("davmail.folderSizeLimit", folderSizeLimitField.getText());
-                Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
+            Settings.setProperty("davmail.mode", (String) modeComboBox.getSelectedItem());
+            Settings.setProperty("davmail.enableKerberos", String.valueOf(enableKerberosCheckBox.isSelected()));
+            Settings.setProperty("davmail.folderSizeLimit", folderSizeLimitField.getText());
+            Settings.setProperty("davmail.smtpSaveInSent", String.valueOf(smtpSaveInSentCheckBox.isSelected()));
 
-                Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
-                Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
-                Settings.setProperty("davmail.ssl.keystorePass", String.valueOf(keystorePassField.getPassword()));
-                Settings.setProperty("davmail.ssl.keyPass", String.valueOf(keyPassField.getPassword()));
+            Settings.setProperty("davmail.ssl.keystoreType", (String) keystoreTypeCombo.getSelectedItem());
+            Settings.setProperty("davmail.ssl.keystoreFile", keystoreFileField.getText());
+            Settings.setProperty("davmail.ssl.keystorePass", String.valueOf(keystorePassField.getPassword()));
+            Settings.setProperty("davmail.ssl.keyPass", String.valueOf(keyPassField.getPassword()));
 
-                Settings.setProperty("davmail.ssl.clientKeystoreType", (String) clientKeystoreTypeCombo.getSelectedItem());
-                Settings.setProperty("davmail.ssl.clientKeystoreFile", clientKeystoreFileField.getText());
-                Settings.setProperty("davmail.ssl.clientKeystorePass", String.valueOf(clientKeystorePassField.getPassword()));
-                Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
-                Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
+            Settings.setProperty("davmail.ssl.clientKeystoreType", (String) clientKeystoreTypeCombo.getSelectedItem());
+            Settings.setProperty("davmail.ssl.clientKeystoreFile", clientKeystoreFileField.getText());
+            Settings.setProperty("davmail.ssl.clientKeystorePass", String.valueOf(clientKeystorePassField.getPassword()));
+            Settings.setProperty("davmail.ssl.pkcs11Library", pkcs11LibraryField.getText());
+            Settings.setProperty("davmail.ssl.pkcs11Config", pkcs11ConfigField.getText());
 
-                Settings.setProperty("davmail.oauth.tenantId", oauthTenantIdField.getText());
-                Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
-                Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
+            Settings.setProperty("davmail.oauth.tenantId", oauthTenantIdField.getText());
+            Settings.setProperty("davmail.oauth.clientId", oauthClientIdField.getText());
+            Settings.setProperty("davmail.oauth.redirectUri", oauthRedirectUriField.getText());
 
-                Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
-                Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
-                Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
-                Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
-                Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
-                Settings.setProperty("davmail.logFileSize", logFileSizeField.getText());
+            Settings.setLoggingLevel("rootLogger", (Level) rootLoggingLevelField.getSelectedItem());
+            Settings.setLoggingLevel("davmail", (Level) davmailLoggingLevelField.getSelectedItem());
+            Settings.setLoggingLevel("org.apache.commons.httpclient", (Level) httpclientLoggingLevelField.getSelectedItem());
+            Settings.setLoggingLevel("httpclient.wire", (Level) wireLoggingLevelField.getSelectedItem());
+            Settings.setProperty("davmail.logFilePath", logFilePathField.getText());
+            Settings.setProperty("davmail.logFileSize", logFileSizeField.getText());
 
-                setVisible(false);
-                Settings.save();
+            setVisible(false);
+            Settings.save();
 
-                if (osxHideFromDockCheckBox != null) {
-                    OSXInfoPlist.setOSXHideFromDock(osxHideFromDockCheckBox.isSelected());
-                }
-
-                // restart listeners with new config
-                DavGateway.restart();
+            if (osxHideFromDockCheckBox != null) {
+                OSXInfoPlist.setOSXHideFromDock(osxHideFromDockCheckBox.isSelected());
             }
+
+            // restart listeners with new config
+            DavGateway.restart();
         };
         ok.addActionListener(save);
 
-        cancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                reload();
-                setVisible(false);
-            }
+        cancel.addActionListener(evt -> {
+            reload();
+            setVisible(false);
         });
 
-        help.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                DesktopBrowser.browse("http://davmail.sourceforge.net");
-            }
-        });
+        help.addActionListener(e -> DesktopBrowser.browse("http://davmail.sourceforge.net"));
 
         buttonPanel.add(ok);
         buttonPanel.add(cancel);

@@ -23,14 +23,12 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Let user select a client certificate
  */
 public class SelectCertificateDialog extends JDialog {
-    protected final JList aliasListBox;
+    protected final JList<String> aliasListBox;
     protected final String[] aliases;
     protected String selectedAlias;
 
@@ -66,7 +64,7 @@ public class SelectCertificateDialog extends JDialog {
         imageLabel.setText(BundleMessage.format("UI_CERTIFICATE_ALIAS_PROMPT"));
         questionPanel.add(imageLabel);
 
-        aliasListBox = new JList(descriptions);
+        aliasListBox = new JList<>(descriptions);
         aliasListBox.setMaximumSize(aliasListBox.getPreferredSize());
 
         JPanel aliasPanel = new JPanel();
@@ -92,17 +90,13 @@ public class SelectCertificateDialog extends JDialog {
         JPanel buttonPanel = new JPanel();
         JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
-        okButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                selectedAlias = aliases[aliasListBox.getSelectedIndex()];
-                setVisible(false);
-            }
+        okButton.addActionListener(evt -> {
+            selectedAlias = aliases[aliasListBox.getSelectedIndex()];
+            setVisible(false);
         });
-        cancelButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                selectedAlias = null;
-                setVisible(false);
-            }
+        cancelButton.addActionListener(evt -> {
+            selectedAlias = null;
+            setVisible(false);
         });
 
         buttonPanel.add(okButton);
