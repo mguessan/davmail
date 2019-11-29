@@ -26,18 +26,19 @@ import davmail.ui.SettingsFrame;
 import davmail.util.IOUtil;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.lf5.LF5Appender;
-import org.apache.log4j.lf5.LogLevel;
-import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.internal.gtk.OS;
-import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.ToolTip;
+import org.eclipse.swt.widgets.Tray;
+import org.eclipse.swt.widgets.TrayItem;
 
 import javax.swing.*;
 import java.io.ByteArrayInputStream;
@@ -67,13 +68,10 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
     private static Image inactiveImage;
     private static Display display;
     private static Shell shell;
-    private LogBrokerMonitor logBrokerMonitor;
     private boolean isActive = true;
     private boolean isReady;
     private Error error;
     private boolean firstMessage = true;
-
-    private final Thread mainThread = Thread.currentThread();
 
     /**
      * Return AWT Image icon for frame title.
@@ -90,14 +88,12 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void switchIcon() {
         isActive = true;
-        display.syncExec(new Runnable() {
-            public void run() {
-                Image currentImage = trayItem.getImage();
-                if (currentImage != null && currentImage.equals(image)) {
-                    trayItem.setImage(image2);
-                } else {
-                    trayItem.setImage(image);
-                }
+        display.syncExec(() -> {
+            Image currentImage = trayItem.getImage();
+            if (currentImage != null && currentImage.equals(image)) {
+                trayItem.setImage(image2);
+            } else {
+                trayItem.setImage(image);
             }
         });
 
@@ -107,11 +103,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      * Set tray icon to inactive (network down)
      */
     public void resetIcon() {
-        display.syncExec(new Runnable() {
-            public void run() {
-                trayItem.setImage(image);
-            }
-        });
+        display.syncExec(() -> trayItem.setImage(image));
     }
 
     /**
@@ -119,11 +111,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void inactiveIcon() {
         isActive = false;
-        display.syncExec(new Runnable() {
-            public void run() {
-                trayItem.setImage(inactiveImage);
-            }
-        });
+        display.syncExec(() -> trayItem.setImage(inactiveImage));
     }
 
     /**
@@ -143,34 +131,32 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
      */
     public void displayMessage(final String message, final Level level) {
         if (trayItem != null) {
-            display.asyncExec(new Runnable() {
-                public void run() {
-                    int messageType = 0;
-                    if (level.equals(Level.INFO)) {
-                        messageType = SWT.ICON_INFORMATION;
-                    } else if (level.equals(Level.WARN)) {
-                        messageType = SWT.ICON_WARNING;
-                    } else if (level.equals(Level.ERROR)) {
-                        messageType = SWT.ICON_ERROR;
-                    }
-                    if (messageType != 0) {
-                        final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
-                        toolTip.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
-                        toolTip.setMessage(message);
-                        trayItem.setToolTip(toolTip);
-                        // Wait for tray init 1 second on first message
-                        if (firstMessage) {
-                            firstMessage = false;
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                        toolTip.setVisible(true);
-                    }
-                    trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
+            display.asyncExec(() -> {
+                int messageType = 0;
+                if (level.equals(Level.INFO)) {
+                    messageType = SWT.ICON_INFORMATION;
+                } else if (level.equals(Level.WARN)) {
+                    messageType = SWT.ICON_WARNING;
+                } else if (level.equals(Level.ERROR)) {
+                    messageType = SWT.ICON_ERROR;
                 }
+                if (messageType != 0) {
+                    final ToolTip toolTip = new ToolTip(shell, SWT.BALLOON | messageType);
+                    toolTip.setText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
+                    toolTip.setMessage(message);
+                    trayItem.setToolTip(toolTip);
+                    // Wait for tray init 1 second on first message
+                    if (firstMessage) {
+                        firstMessage = false;
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                    toolTip.setVisible(true);
+                }
+                trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
             });
         }
     }
@@ -261,7 +247,7 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         trayItem = new TrayItem(tray, SWT.NONE);
                         trayItem.setToolTipText(BundleMessage.format("UI_DAVMAIL_GATEWAY"));
 
-                        frameIcons = new ArrayList<java.awt.Image>();
+                        frameIcons = new ArrayList<>();
                         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
                         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
 
@@ -270,125 +256,63 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                         inactiveImage = loadSwtImage(AwtGatewayTray.TRAY_INACTIVE_PNG);
 
                         trayItem.setImage(image);
-                        trayItem.addDisposeListener(new DisposeListener() {
-                            public void widgetDisposed(DisposeEvent e) {
-                                if (image != null && !image.isDisposed()) {
-                                    image.dispose();
-                                }
-                                if (image2 != null && !image2.isDisposed()) {
-                                    image2.dispose();
-                                }
-                                if (inactiveImage != null && !inactiveImage.isDisposed()) {
-                                    inactiveImage.dispose();
-                                }
+                        trayItem.addDisposeListener(e -> {
+                            if (image != null && !image.isDisposed()) {
+                                image.dispose();
+                            }
+                            if (image2 != null && !image2.isDisposed()) {
+                                image2.dispose();
+                            }
+                            if (inactiveImage != null && !inactiveImage.isDisposed()) {
+                                inactiveImage.dispose();
                             }
                         });
 
                         // create a popup menu
                         final Menu popup = new Menu(shell, SWT.POP_UP);
-                        trayItem.addListener(SWT.MenuDetect, new Listener() {
-                            public void handleEvent(Event event) {
-                                display.asyncExec(
-                                        new Runnable() {
-                                            public void run() {
-                                                popup.setVisible(true);
-                                            }
-                                        });
-                            }
-                        });
+                        trayItem.addListener(SWT.MenuDetect, event -> display.asyncExec(
+                                () -> popup.setVisible(true)));
 
                         MenuItem aboutItem = new MenuItem(popup, SWT.PUSH);
                         aboutItem.setText(BundleMessage.format("UI_ABOUT"));
-                        aboutItem.addListener(SWT.Selection, new Listener() {
-                            public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
-                                        new Runnable() {
-                                            public void run() {
-                                                if (aboutFrame == null) {
-                                                    aboutFrame = new AboutFrame();
-                                                }
-                                                aboutFrame.update();
-                                                aboutFrame.setVisible(true);
-                                                aboutFrame.toFront();
-                                                aboutFrame.requestFocus();
-                                            }
-                                        });
-                            }
-                        });
+                        aboutItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
+                                () -> {
+                                    if (aboutFrame == null) {
+                                        aboutFrame = new AboutFrame();
+                                    }
+                                    aboutFrame.update();
+                                    aboutFrame.setVisible(true);
+                                    aboutFrame.toFront();
+                                    aboutFrame.requestFocus();
+                                }));
 
                         // create menu item for the default action
-                        trayItem.addListener(SWT.DefaultSelection, new Listener() {
-                            public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
-                                        new Runnable() {
-                                            public void run() {
-                                                openSettingsFrame();
-                                            }
-                                        });
-                            }
-                        });
+                        trayItem.addListener(SWT.DefaultSelection, event -> SwingUtilities.invokeLater(
+                                () -> openSettingsFrame()));
 
                         MenuItem defaultItem = new MenuItem(popup, SWT.PUSH);
                         defaultItem.setText(BundleMessage.format("UI_SETTINGS"));
-                        defaultItem.addListener(SWT.Selection, new Listener() {
-                            public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
-                                        new Runnable() {
-                                            public void run() {
-                                                openSettingsFrame();
-                                            }
-                                        });
-                            }
-                        });
+                        defaultItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(
+                                () -> openSettingsFrame()));
 
                         MenuItem logItem = new MenuItem(popup, SWT.PUSH);
                         logItem.setText(BundleMessage.format("UI_SHOW_LOGS"));
-                        logItem.addListener(SWT.Selection, new Listener() {
-                            public void handleEvent(Event event) {
-                                SwingUtilities.invokeLater(
-                                        new Runnable() {
-                                            public void run() {
-
-                                                Logger rootLogger = Logger.getRootLogger();
-                                                LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-                                                if (lf5Appender == null) {
-                                                    logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                                                        @Override
-                                                        protected void closeAfterConfirm() {
-                                                            hide();
-                                                        }
-                                                    };
-                                                    lf5Appender = new LF5Appender(logBrokerMonitor);
-                                                    lf5Appender.setName("LF5Appender");
-                                                    rootLogger.addAppender(lf5Appender);
-                                                }
-                                                lf5Appender.getLogBrokerMonitor().show();
-                                            }
-                                        });
-                            }
-                        });
+                        logItem.addListener(SWT.Selection, event -> SwingUtilities.invokeLater(DavGatewayTray::showLogs));
 
                         MenuItem exitItem = new MenuItem(popup, SWT.PUSH);
                         exitItem.setText(BundleMessage.format("UI_EXIT"));
-                        exitItem.addListener(SWT.Selection, new Listener() {
-                            public void handleEvent(Event event) {
-                                DavGateway.stop();
-                            }
-                        });
+                        exitItem.addListener(SWT.Selection, event -> DavGateway.stop());
 
                         // display settings frame on first start
                         if (Settings.isFirstStart()) {
-                            SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    // create frame on first call
-                                    if (settingsFrame == null) {
-                                        settingsFrame = new SettingsFrame();
-                                    }
-                                    settingsFrame.setVisible(true);
-                                    settingsFrame.toFront();
-                                    settingsFrame.requestFocus();
+                            SwingUtilities.invokeLater(() -> {
+                                // create frame on first call
+                                if (settingsFrame == null) {
+                                    settingsFrame = new SettingsFrame();
                                 }
+                                settingsFrame.setVisible(true);
+                                settingsFrame.toFront();
+                                settingsFrame.requestFocus();
                             });
 
                         }
@@ -411,9 +335,6 @@ public class SwtGatewayTray implements DavGatewayTrayInterface {
                     }
                     if (aboutFrame != null) {
                         aboutFrame.dispose();
-                    }
-                    if (logBrokerMonitor != null) {
-                        logBrokerMonitor.dispose();
                     }
                 } catch (Exception exc) {
                     DavGatewayTray.error(exc);

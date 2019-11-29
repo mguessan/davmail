@@ -5,8 +5,6 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Prompt for Exchange credential and password.

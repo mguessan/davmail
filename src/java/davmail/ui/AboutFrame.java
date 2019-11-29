@@ -26,11 +26,9 @@ import davmail.ui.tray.DavGatewayTray;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -57,14 +55,15 @@ public class AboutFrame extends JFrame {
             JLabel imageLabel = new JLabel();
             ClassLoader classloader = this.getClass().getClassLoader();
             URL imageUrl = classloader.getResource("tray32.png");
-            Image iconImage = ImageIO.read(imageUrl);
-            if (iconImage != null) {
+            if (imageUrl != null) {
+                Image iconImage = ImageIO.read(imageUrl);
                 ImageIcon icon = new ImageIcon(iconImage);
                 imageLabel.setIcon(icon);
+
+                JPanel imagePanel = new JPanel();
+                imagePanel.add(imageLabel);
+                add(BorderLayout.WEST, imagePanel);
             }
-            JPanel imagePanel = new JPanel();
-            imagePanel.add(imageLabel);
-            add(BorderLayout.WEST, imagePanel);
         } catch (IOException e) {
             DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_CREATE_ICON"), e);
         }
@@ -73,23 +72,21 @@ public class AboutFrame extends JFrame {
         HTMLEditorKit htmlEditorKit = new HTMLEditorKit();
         StyleSheet stylesheet = htmlEditorKit.getStyleSheet();
         Font font = jEditorPane.getFont();
-        stylesheet.addRule("body { font-size:small;font-family: " + ((font==null)?"Arial":font.getFamily()) + '}');
+        stylesheet.addRule("body { font-size:small;font-family: " + ((font == null) ? "Arial" : font.getFamily()) + '}');
         jEditorPane.setEditorKit(htmlEditorKit);
         jEditorPane.setContentType("text/html");
         jEditorPane.setText(getContent(null));
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
-        jEditorPane.addHyperlinkListener(new HyperlinkListener() {
-            public void hyperlinkUpdate(HyperlinkEvent hle) {
-                if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-                    try {
-                        DesktopBrowser.browse(hle.getURL().toURI());
-                    } catch (URISyntaxException e) {
-                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
-                    }
-                    setVisible(false);
+        jEditorPane.addHyperlinkListener(hle -> {
+            if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+                try {
+                    DesktopBrowser.browse(hle.getURL().toURI());
+                } catch (URISyntaxException e) {
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
                 }
+                setVisible(false);
             }
         });
 
@@ -100,11 +97,7 @@ public class AboutFrame extends JFrame {
 
         JPanel buttonPanel = new JPanel();
         JButton ok = new JButton(BundleMessage.format("UI_BUTTON_OK"));
-        ActionListener close = new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                setVisible(false);
-            }
-        };
+        ActionListener close = evt -> setVisible(false);
         ok.addActionListener(close);
 
         buttonPanel.add(ok);
@@ -115,7 +108,7 @@ public class AboutFrame extends JFrame {
         setResizable(false);
         // center frame
         setLocation(getToolkit().getScreenSize().width / 2 -
-                getSize().width / 2,
+                        getSize().width / 2,
                 getToolkit().getScreenSize().height / 2 -
                         getSize().height / 2);
     }

@@ -47,7 +47,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterfac
         activeImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_ACTIVE_PNG));
         inactiveImage = DavGatewayTray.adjustTrayIcon(DavGatewayTray.loadImage(OSX_TRAY_INACTIVE_PNG));
 
-        frameIcons = new ArrayList<Image>();
+        frameIcons = new ArrayList<>();
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY_PNG));
     }
@@ -70,31 +70,29 @@ public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterfac
         if (!GrowlUtils.isGrowlLoaded()) {
             super.displayMessage(message, level);
         } else {
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    if (trayIcon != null) {
-                        Icon icon = null;
-                        if (level.equals(Level.INFO)) {
-                            icon = UIManager.getIcon("OptionPane.informationIcon");
-                        } else if (level.equals(Level.WARN)) {
-                            icon = UIManager.getIcon("OptionPane.warningIcon");
-                        } else if (level.equals(Level.ERROR)) {
-                            icon = UIManager.getIcon("OptionPane.errorIcon");
-                        }
-
-                        if (icon != null && message != null && message.length() > 0) {
-                            try {
-                                String title = BundleMessage.format("UI_DAVMAIL_GATEWAY");
-                                Growl growl = GrowlUtils.getGrowlInstance("DavMail");
-                                growl.addNotification(title, true);
-                                growl.register();
-                                growl.sendNotification(title, title, message, (RenderedImage) getImageForIcon(icon));
-                            } catch (GrowlException growlException) {
-                                LOGGER.error(growlException);
-                            }
-                        }
-                        trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
+            SwingUtilities.invokeLater(() -> {
+                if (trayIcon != null) {
+                    Icon icon = null;
+                    if (level.equals(Level.INFO)) {
+                        icon = UIManager.getIcon("OptionPane.informationIcon");
+                    } else if (level.equals(Level.WARN)) {
+                        icon = UIManager.getIcon("OptionPane.warningIcon");
+                    } else if (level.equals(Level.ERROR)) {
+                        icon = UIManager.getIcon("OptionPane.errorIcon");
                     }
+
+                    if (icon != null && message != null && message.length() > 0) {
+                        try {
+                            String title = BundleMessage.format("UI_DAVMAIL_GATEWAY");
+                            Growl growl = GrowlUtils.getGrowlInstance("DavMail");
+                            growl.addNotification(title, true);
+                            growl.register();
+                            growl.sendNotification(title, title, message, (RenderedImage) getImageForIcon(icon));
+                        } catch (GrowlException growlException) {
+                            LOGGER.error(growlException);
+                        }
+                    }
+                    trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
                 }
             });
         }

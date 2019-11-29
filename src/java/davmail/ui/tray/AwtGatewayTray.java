@@ -24,10 +24,6 @@ import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.lf5.LF5Appender;
-import org.apache.log4j.lf5.LogLevel;
-import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -61,7 +57,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
     protected static BufferedImage image;
     protected static BufferedImage activeImage;
     protected static BufferedImage inactiveImage;
-    static LogBrokerMonitor logBrokerMonitor;
+
     private boolean isActive = true;
 
     /**
@@ -195,9 +191,6 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         // dispose frames
         settingsFrame.dispose();
         aboutFrame.dispose();
-        if (logBrokerMonitor != null) {
-            logBrokerMonitor.dispose();
-        }
     }
 
     protected void loadIcons() {
@@ -247,20 +240,7 @@ public class AwtGatewayTray implements DavGatewayTrayInterface {
         MenuItem logItem = new MenuItem(BundleMessage.format("UI_SHOW_LOGS"));
         logItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Logger rootLogger = Logger.getRootLogger();
-                LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-                if (lf5Appender == null) {
-                    logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                        @Override
-                        protected void closeAfterConfirm() {
-                            hide();
-                        }
-                    };
-                    lf5Appender = new LF5Appender(logBrokerMonitor);
-                    lf5Appender.setName("LF5Appender");
-                    rootLogger.addAppender(lf5Appender);
-                }
-                lf5Appender.getLogBrokerMonitor().show();
+                DavGatewayTray.showLogs();
             }
         });
         popup.add(logItem);

@@ -117,11 +117,19 @@ public class SettingsFrame extends JFrame {
         addSettingComponent(panel, label, component, null);
     }
 
-    protected void addSettingComponent(JPanel panel, String label, JComponent component, String toolTipText) {
+    protected JLabel buildFieldLabel(String label, String toolTipText) {
         JLabel fieldLabel = new JLabel(label);
         fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         fieldLabel.setVerticalAlignment(SwingConstants.CENTER);
-        panel.add(fieldLabel);
+        if (toolTipText != null) {
+            fieldLabel.setToolTipText(toolTipText);
+        }
+        return fieldLabel;
+    }
+
+    protected void addSettingComponent(JPanel panel, String label, JComponent component, String toolTipText) {
+        panel.add(buildFieldLabel(label, toolTipText));
+
         component.setMaximumSize(component.getPreferredSize());
         JPanel innerPanel = new JPanel();
         innerPanel.setBorder(BorderFactory.createEmptyBorder(1,0,0,0));
@@ -129,16 +137,12 @@ public class SettingsFrame extends JFrame {
         innerPanel.add(component);
         panel.add(innerPanel);
         if (toolTipText != null) {
-            fieldLabel.setToolTipText(toolTipText);
             component.setToolTipText(toolTipText);
         }
     }
 
     protected void addPortSettingComponent(JPanel panel, String label, JComponent component, JComponent checkboxComponent, JComponent checkboxSSLComponent, String toolTipText) {
-        JLabel fieldLabel = new JLabel(label);
-        fieldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        fieldLabel.setVerticalAlignment(SwingConstants.CENTER);
-        panel.add(fieldLabel);
+        panel.add(buildFieldLabel(label, toolTipText));
         component.setMaximumSize(component.getPreferredSize());
         JPanel innerPanel = new JPanel();
         innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.X_AXIS));
@@ -147,7 +151,6 @@ public class SettingsFrame extends JFrame {
         innerPanel.add(checkboxSSLComponent);
         panel.add(innerPanel);
         if (toolTipText != null) {
-            fieldLabel.setToolTipText(toolTipText);
             component.setToolTipText(toolTipText);
         }
     }

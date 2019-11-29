@@ -24,14 +24,9 @@ import davmail.Settings;
 import davmail.ui.AboutFrame;
 import davmail.ui.SettingsFrame;
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.lf5.LF5Appender;
-import org.apache.log4j.lf5.LogLevel;
-import org.apache.log4j.lf5.viewer.LogBrokerMonitor;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
@@ -45,7 +40,6 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     static JFrame mainFrame;
     static AboutFrame aboutFrame;
     static SettingsFrame settingsFrame;
-    LogBrokerMonitor logBrokerMonitor;
     private static JEditorPane errorArea;
     private static JLabel errorLabel;
     private static JEditorPane messageArea;
@@ -70,24 +64,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
      */
     public void switchIcon() {
         isActive = true;
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                Image currentImage = mainFrame.getIconImage();
-                if (currentImage != null && currentImage.equals(image)) {
-                    mainFrame.setIconImage(activeImage);
-                } else {
-                    mainFrame.setIconImage(image);
-                }
-            }
-        });
-    }
-
-    /**
-     * Set tray icon to inactive (network down)
-     */
-    public void resetIcon() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
+        SwingUtilities.invokeLater(() -> {
+            Image currentImage = mainFrame.getIconImage();
+            if (currentImage != null && currentImage.equals(image)) {
+                mainFrame.setIconImage(activeImage);
+            } else {
                 mainFrame.setIconImage(image);
             }
         });
@@ -96,13 +77,16 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
     /**
      * Set tray icon to inactive (network down)
      */
+    public void resetIcon() {
+        SwingUtilities.invokeLater(() -> mainFrame.setIconImage(image));
+    }
+
+    /**
+     * Set tray icon to inactive (network down)
+     */
     public void inactiveIcon() {
         isActive = false;
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                mainFrame.setIconImage(inactiveImage);
-            }
-        });
+        SwingUtilities.invokeLater(() -> mainFrame.setIconImage(inactiveImage));
     }
 
     /**
@@ -121,21 +105,19 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
      * @param level   log level
      */
     public void displayMessage(final String message, final Level level) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                if (errorArea != null && messageArea != null) {
-                    if (level.equals(Level.INFO)) {
-                        errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
-                        errorArea.setText(message);
-                    } else if (level.equals(Level.WARN)) {
-                        errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
-                        errorArea.setText(message);
-                    } else if (level.equals(Level.ERROR)) {
-                        errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
-                        errorArea.setText(message);
-                    }
-                    messageArea.setText(message);
+        SwingUtilities.invokeLater(() -> {
+            if (errorArea != null && messageArea != null) {
+                if (level.equals(Level.INFO)) {
+                    errorLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
+                    errorArea.setText(message);
+                } else if (level.equals(Level.WARN)) {
+                    errorLabel.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
+                    errorArea.setText(message);
+                } else if (level.equals(Level.ERROR)) {
+                    errorLabel.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
+                    errorArea.setText(message);
                 }
+                messageArea.setText(message);
             }
         });
     }
@@ -144,13 +126,11 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
      * Open about window
      */
     public void about() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                aboutFrame.update();
-                aboutFrame.setVisible(true);
-                aboutFrame.toFront();
-                aboutFrame.requestFocus();                
-            }
+        SwingUtilities.invokeLater(() -> {
+            aboutFrame.update();
+            aboutFrame.setVisible(true);
+            aboutFrame.toFront();
+            aboutFrame.requestFocus();
         });
     }
 
@@ -158,55 +138,26 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
      * Open settings window
      */
     public void preferences() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                settingsFrame.reload();
-                settingsFrame.setVisible(true);
-                settingsFrame.toFront();
-                settingsFrame.repaint();
-                settingsFrame.requestFocus();
-            }
+        SwingUtilities.invokeLater(() -> {
+            settingsFrame.reload();
+            settingsFrame.setVisible(true);
+            settingsFrame.toFront();
+            settingsFrame.repaint();
+            settingsFrame.requestFocus();
         });
-    }
-
-    /**
-     * Open logging window.
-     */
-    public void showLogs() {
-        Logger rootLogger = Logger.getRootLogger();
-        LF5Appender lf5Appender = (LF5Appender) rootLogger.getAppender("LF5Appender");
-        if (lf5Appender == null) {
-            logBrokerMonitor = new LogBrokerMonitor(LogLevel.getLog4JLevels()) {
-                @Override
-                protected void closeAfterConfirm() {
-                    hide();
-                }
-            };
-            lf5Appender = new LF5Appender(logBrokerMonitor);
-            lf5Appender.setName("LF5Appender");
-            rootLogger.addAppender(lf5Appender);
-        }
-        lf5Appender.getLogBrokerMonitor().show();
     }
 
     /**
      * Create tray icon and register frame listeners.
      */
     public void init() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowGUI();
-            }
-        });
+        SwingUtilities.invokeLater(this::createAndShowGUI);
     }
 
     public void dispose() {
         // dispose frames
         settingsFrame.dispose();
         aboutFrame.dispose();
-        if (logBrokerMonitor != null) {
-            logBrokerMonitor.dispose();
-        }
     }
 
     protected void buildMenu() {
@@ -217,11 +168,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         mainFrame.setJMenuBar(menuBar);
 
         // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener aboutListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                about();
-            }
-        };
+        ActionListener aboutListener = e -> about();
         // create menu item for the default action
         JMenuItem aboutItem = new JMenuItem(BundleMessage.format("UI_ABOUT"));
         aboutItem.addActionListener(aboutListener);
@@ -229,35 +176,25 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
 
 
         // create an action settingsListener to listen for settings action executed on the tray icon
-        ActionListener settingsListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                preferences();
-            }
-        };
+        ActionListener settingsListener = e -> preferences();
         // create menu item for the default action
         JMenuItem defaultItem = new JMenuItem(BundleMessage.format("UI_SETTINGS"));
         defaultItem.addActionListener(settingsListener);
         menu.add(defaultItem);
 
         JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                showLogs();
-            }
-        });
+        logItem.addActionListener(e -> DavGatewayTray.showLogs());
         menu.add(logItem);
 
         // create an action exitListener to listen for exit action executed on the tray icon
-        ActionListener exitListener = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    DavGateway.stop();
-                } catch (Exception exc) {
-                    DavGatewayTray.error(exc);
-                }
-                // make sure we do exit
-                System.exit(0);
+        ActionListener exitListener = e -> {
+            try {
+                DavGateway.stop();
+            } catch (Exception exc) {
+                DavGatewayTray.error(exc);
             }
+            // make sure we do exit
+            System.exit(0);
         };
         // create menu item for the exit action
         JMenuItem exitItem = new JMenuItem(BundleMessage.format("UI_EXIT"));
@@ -285,7 +222,7 @@ public class FrameGatewayTray implements DavGatewayTrayInterface {
         activeImage = DavGatewayTray.loadImage(activeImageName);
         inactiveImage = DavGatewayTray.loadImage(inactiveImageName);
 
-        frameIcons = new ArrayList<Image>();
+        frameIcons = new ArrayList<>();
         frameIcons.add(image);
         frameIcons.add(DavGatewayTray.loadImage(AwtGatewayTray.TRAY128_PNG));
 

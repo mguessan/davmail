@@ -22,8 +22,6 @@ import davmail.BundleMessage;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * MacOSX specific frame to handle menu
@@ -40,11 +38,7 @@ public class OSXFrameGatewayTray extends FrameGatewayTray implements OSXTrayInte
         mainFrame.setJMenuBar(menuBar);
 
         JMenuItem logItem = new JMenuItem(BundleMessage.format("UI_SHOW_LOGS"));
-        logItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                showLogs();
-            }
-        });
+        logItem.addActionListener(e -> DavGatewayTray.showLogs());
         menu.add(logItem);
     }
 
