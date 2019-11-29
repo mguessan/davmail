@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Handle OSX Info.plist file access
@@ -41,18 +42,8 @@ public class OSXInfoPlist {
     }
 
     protected static String getInfoPlistContent() throws IOException {
-        FileInputStream fileInputStream = null;
-        try {
-            fileInputStream = new FileInputStream(getInfoPlistPath());
-            return new String(IOUtil.readFully(fileInputStream), "UTF-8");
-        } finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
+        try (FileInputStream fileInputStream = new FileInputStream(getInfoPlistPath())) {
+            return new String(IOUtil.readFully(fileInputStream), StandardCharsets.UTF_8);
         }
     }
 
@@ -82,15 +73,11 @@ public class OSXInfoPlist {
                 boolean currentHideFromDock = isHideFromDock();
                 if (currentHideFromDock != hideFromDock) {
                     String content = getInfoPlistContent();
-                    FileOutputStream fileOutputStream = new FileOutputStream(getInfoPlistPath());
-                    try {
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(getInfoPlistPath())) {
                         fileOutputStream.write(content.replaceFirst(
                                 "<key>LSUIElement</key><string>" + (currentHideFromDock ? "1" : "0") + "</string>",
-                                "<key>LSUIElement</key><string>" + (hideFromDock ? "1" : "0") + "</string>").getBytes("UTF-8"));
-                    } finally {
-                        fileOutputStream.close();
+                                "<key>LSUIElement</key><string>" + (hideFromDock ? "1" : "0") + "</string>").getBytes(StandardCharsets.UTF_8));
                     }
-                    fileOutputStream.close();
                 }
             }
         } catch (IOException e) {
