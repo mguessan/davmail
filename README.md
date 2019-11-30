@@ -3,6 +3,7 @@
 [![Build Status: Linux](https://travis-ci.org/mguessan/davmail.svg?branch=master)](https://travis-ci.org/mguessan/davmail)
 [![Build status: Windows](https://ci.appveyor.com/api/projects/status/d7tx645gwqvprd4g?svg=true)](https://ci.appveyor.com/project/mguessan/davmail)
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dm/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
+[![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dt/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
 
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=alert_status)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
