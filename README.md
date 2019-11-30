@@ -4,6 +4,10 @@
 [![Build status: Windows](https://ci.appveyor.com/api/projects/status/d7tx645gwqvprd4g?svg=true)](https://ci.appveyor.com/project/mguessan/davmail)
 [![Download DavMail POP/IMAP/SMTP/Caldav to Exchange](https://img.shields.io/sourceforge/dm/davmail.svg)](https://sourceforge.net/projects/davmail/files/latest/download)
 
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=alert_status)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
+[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=bugs)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
+[![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mguessan_davmail&metric=vulnerabilities)](https://sonarcloud.io/dashboard/index/mguessan_davmail)
+
 Ever wanted to get rid of Outlook ? DavMail is a POP/IMAP/SMTP/Caldav/Carddav/LDAP gateway allowing users to use any mail client with Exchange, even from the internet through Outlook Web Access on any platform, tested on MacOSX, Linux and Windows
 
 ![DavMail Architecture](src/site/resources/images/davmailArchitecture.png)
