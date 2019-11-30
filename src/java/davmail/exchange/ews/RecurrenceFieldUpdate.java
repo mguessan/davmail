@@ -35,7 +35,7 @@ import java.util.Locale;
  */
 public class RecurrenceFieldUpdate extends FieldUpdate {
     public static final Logger LOGGER = Logger.getLogger(RecurrenceFieldUpdate.class);
-    static final HashMap<String, String> calDayToDayOfWeek = new HashMap<String, String>();
+    static final HashMap<String, String> calDayToDayOfWeek = new HashMap<>();
     static {
         calDayToDayOfWeek.put("SU", "Sunday");
         calDayToDayOfWeek.put("MO", "Monday");
@@ -58,7 +58,7 @@ public class RecurrenceFieldUpdate extends FieldUpdate {
     }
 
     public void setByDay(String[] days) {
-        byDays = new HashSet<String>();
+        byDays = new HashSet<>();
         for (String day: days) {
             String value = calDayToDayOfWeek.get(day);
             if (value == null) {

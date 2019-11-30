@@ -27,7 +27,7 @@ import java.util.Set;
  * Field update with multiple values.
  */
 public class IndexedFieldUpdate extends FieldUpdate {
-    final Set<FieldUpdate> updates = new HashSet<FieldUpdate>();
+    final Set<FieldUpdate> updates = new HashSet<>();
     protected final String collectionName;
 
     /**
@@ -61,7 +61,10 @@ public class IndexedFieldUpdate extends FieldUpdate {
             // check if at least one non null value
             boolean hasValue = false;
             for (FieldUpdate fieldUpdate : updates) {
-                if (fieldUpdate.value != null) {hasValue = true; }
+                if (fieldUpdate.value != null) {
+                    hasValue = true;
+                    break;
+                }
             }
             if (hasValue) {
                 // use collection name on create

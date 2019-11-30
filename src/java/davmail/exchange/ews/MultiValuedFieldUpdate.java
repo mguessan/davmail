@@ -27,7 +27,7 @@ import java.util.ArrayList;
  * Specific field update class to handle multiple attendee values
  */
 public class MultiValuedFieldUpdate extends FieldUpdate {
-    ArrayList<String> values = new ArrayList<String>();
+    ArrayList<String> values = new ArrayList<>();
 
     /**
      * Create field update with value.

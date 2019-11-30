@@ -51,6 +51,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -71,7 +72,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @see <a href="http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx">
      * http://msdn.microsoft.com/en-us/library/aa565652%28v=EXCHG.140%29.aspx</a>
      */
-    protected static final Set<String> MESSAGE_TYPES = new HashSet<String>();
+    protected static final Set<String> MESSAGE_TYPES = new HashSet<>();
 
     static {
         MESSAGE_TYPES.add("Message");
@@ -103,11 +104,11 @@ public class EwsExchangeSession extends ExchangeSession {
         //AcceptSharingInvitation
     }
 
-    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<String, String>();
-    static final Map<String, String> taskTovTodoStatusMap = new HashMap<String, String>();
-    static final Map<String, String> partstatToResponseMap = new HashMap<String, String>();
-    static final Map<String, String> responseTypeToPartstatMap = new HashMap<String, String>();
-    static final Map<String, String> statusToBusyStatusMap = new HashMap<String, String>();
+    static final Map<String, String> vTodoToTaskStatusMap = new HashMap<>();
+    static final Map<String, String> taskTovTodoStatusMap = new HashMap<>();
+    static final Map<String, String> partstatToResponseMap = new HashMap<>();
+    static final Map<String, String> responseTypeToPartstatMap = new HashMap<>();
+    static final Map<String, String> statusToBusyStatusMap = new HashMap<>();
 
     static {
         //taskTovTodoStatusMap.put("NotStarted", null);
@@ -316,7 +317,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
 
         try {
-            folderIdMap = new HashMap<String, String>();
+            folderIdMap = new HashMap<>();
             // load actual well known folder ids
             folderIdMap.put(internalGetFolder(INBOX).folderId.value, INBOX);
             folderIdMap.put(internalGetFolder(CALENDAR).folderId.value, CALENDAR);
@@ -383,7 +384,7 @@ public class EwsExchangeSession extends ExchangeSession {
                         messageHeaders = "From: " + from + '\n' + messageHeaders;
                     }
 
-                    result = new ByteArrayInputStream(messageHeaders.getBytes("UTF-8"));
+                    result = new ByteArrayInputStream(messageHeaders.getBytes(StandardCharsets.UTF_8));
                 }
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
@@ -400,7 +401,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * @return field values
      */
     protected List<FieldUpdate> buildProperties(Map<String, String> properties) {
-        ArrayList<FieldUpdate> list = new ArrayList<FieldUpdate>();
+        ArrayList<FieldUpdate> list = new ArrayList<>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if ("read".equals(entry.getKey())) {
                 list.add(Field.createFieldUpdate("read", Boolean.toString("1".equals(entry.getValue()))));
@@ -579,13 +580,11 @@ public class EwsExchangeSession extends ExchangeSession {
 
                 mimeMessage.writeTo(baos);
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), "UTF-8"));
+                    LOGGER.debug("Rebuilt message content: " + new String(baos.toByteArray(), StandardCharsets.UTF_8));
                 }
                 mimeContent = baos.toByteArray();
 
-            } catch (IOException e2) {
-                LOGGER.warn(e2);
-            } catch (MessagingException e2) {
+            } catch (IOException | MessagingException e2) {
                 LOGGER.warn(e2);
             }
             if (mimeContent == null) {
@@ -681,7 +680,7 @@ public class EwsExchangeSession extends ExchangeSession {
             findItemMethod.setSearchExpression((SearchExpression) condition);
         }
         executeMethod(findItemMethod);
-        List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>(findItemMethod.getResponseItems());
+        List<EWSMethod.Item> results = new ArrayList<>(findItemMethod.getResponseItems());
         resultCount = results.size();
         if (resultCount > 0 && LOGGER.isDebugEnabled()) {
             LOGGER.debug("Folder " + folderPath + " - Search items count: " + resultCount + " maxCount: " + maxCount
@@ -705,7 +704,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     protected List<EWSMethod.Item> searchItems(String folderPath, Set<String> attributes, Condition condition, FolderQueryTraversal folderQueryTraversal) throws IOException {
         int resultCount = 0;
-        List<EWSMethod.Item> results = new ArrayList<EWSMethod.Item>();
+        List<EWSMethod.Item> results = new ArrayList<>();
         FolderId folderId = getFolderId(folderPath);
         FindItemMethod findItemMethod;
         do {
@@ -1046,7 +1045,7 @@ public class EwsExchangeSession extends ExchangeSession {
         return new AttributeCondition(attributeName, Operator.IsEqualTo, "false");
     }
 
-    protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<FieldURI>();
+    protected static final HashSet<FieldURI> FOLDER_PROPERTIES = new HashSet<>();
 
     static {
         FOLDER_PROPERTIES.add(Field.get("urlcompname"));
@@ -1090,7 +1089,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 baseFolderPath = baseFolderPath.substring(index + 1);
             }
         }
-        List<ExchangeSession.Folder> folders = new ArrayList<ExchangeSession.Folder>();
+        List<ExchangeSession.Folder> folders = new ArrayList<>();
         appendSubFolders(folders, baseFolderPath, getFolderId(folderPath), condition, recursive);
         return folders;
     }
@@ -1170,7 +1169,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public int updateFolder(String folderPath, Map<String, String> properties) throws IOException {
-        ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+        ArrayList<FieldUpdate> updates = new ArrayList<>();
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             updates.add(new FieldUpdate(Field.get(entry.getKey()), entry.getValue()));
         }
@@ -1208,7 +1207,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public void moveMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
-        ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
+        ArrayList<ItemId> itemIds = new ArrayList<>();
         for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
         }
@@ -1231,7 +1230,7 @@ public class EwsExchangeSession extends ExchangeSession {
      */
     @Override
     public void copyMessages(List<ExchangeSession.Message> messages, String targetFolder) throws IOException {
-        ArrayList<ItemId> itemIds = new ArrayList<ItemId>();
+        ArrayList<ItemId> itemIds = new ArrayList<>();
         for (ExchangeSession.Message message : messages) {
             itemIds.add(((EwsExchangeSession.Message) message).itemId);
         }
@@ -1257,7 +1256,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         // rename folder
         if (!path.folderName.equals(targetPath.folderName)) {
-            ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+            ArrayList<FieldUpdate> updates = new ArrayList<>();
             updates.add(new FieldUpdate(Field.get("folderDisplayName"), targetPath.folderName));
             UpdateFolderMethod updateFolderMethod = new UpdateFolderMethod(folderId, updates);
             executeMethod(updateFolderMethod);
@@ -1414,7 +1413,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 }
             }
 
-            List<FieldUpdate> fieldUpdates = new ArrayList<FieldUpdate>();
+            List<FieldUpdate> fieldUpdates = new ArrayList<>();
             if (currentItemId != null) {
                 buildFieldUpdates(fieldUpdates, false);
                 // update
@@ -1623,7 +1622,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
         protected List<FieldUpdate> buildFieldUpdates(VCalendar vCalendar, VObject vEvent, boolean isMozDismiss) throws DavMailException {
 
-            List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+            List<FieldUpdate> updates = new ArrayList<>();
 
             if (isMozDismiss || "1".equals(vEvent.getPropertyValue("X-MOZ-FAKED-MASTER"))) {
                 String xMozLastack = vCalendar.getFirstVeventPropertyValue("X-MOZ-LASTACK");
@@ -1678,7 +1677,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // Collect categories on multiple lines
                 List<VProperty> categories = vEvent.getProperties("CATEGORIES");
                 if (categories != null) {
-                    HashSet<String> categoryValues = new HashSet<String>();
+                    HashSet<String> categoryValues = new HashSet<>();
                     for (VProperty category : categories) {
                         categoryValues.add(category.getValue());
                     }
@@ -1694,14 +1693,19 @@ public class EwsExchangeSession extends ExchangeSession {
                         if (index >= 0) {
                             String key = rruleValue.substring(0, index);
                             String value = rruleValue.substring(index + 1);
-                            if ("FREQ".equals(key)) {
-                                recurrenceFieldUpdate.setRecurrencePattern(value);
-                            } else if ("UNTIL".equals(key)) {
-                                recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
-                            } else if ("BYDAY".equals(key)) {
-                                recurrenceFieldUpdate.setByDay(value.split(","));
-                            } else if ("INTERVAL".equals(key)) {
-                                recurrenceFieldUpdate.setRecurrenceInterval(value);
+                            switch (key) {
+                                case "FREQ":
+                                    recurrenceFieldUpdate.setRecurrencePattern(value);
+                                    break;
+                                case "UNTIL":
+                                    recurrenceFieldUpdate.setEndDate(parseDateFromExchange(convertCalendarDateToExchange(value) + "Z"));
+                                    break;
+                                case "BYDAY":
+                                    recurrenceFieldUpdate.setByDay(value.split(","));
+                                    break;
+                                case "INTERVAL":
+                                    recurrenceFieldUpdate.setRecurrenceInterval(value);
+                                    break;
                             }
                         }
                     }
@@ -1830,7 +1834,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 // create or update task method
                 EWSMethod.Item newItem = new EWSMethod.Item();
                 newItem.type = "Task";
-                List<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                List<FieldUpdate> updates = new ArrayList<>();
                 updates.add(Field.createFieldUpdate("importance", convertPriorityToExchange(vCalendar.getFirstVeventPropertyValue("PRIORITY"))));
                 updates.add(Field.createFieldUpdate("calendaruid", vCalendar.getFirstVeventPropertyValue("UID")));
                 // force urlcompname
@@ -1939,7 +1943,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     EWSMethod.Item newItem = new EWSMethod.Item();
                     newItem.type = "CalendarItem";
                     newItem.mimeContent = IOUtil.encodeBase64(vCalendar.toString());
-                    ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                    ArrayList<FieldUpdate> updates = new ArrayList<>();
                     if (!vCalendar.hasVAlarm()) {
                         updates.add(Field.createFieldUpdate("reminderset", "false"));
                     }
@@ -1971,8 +1975,8 @@ public class EwsExchangeSession extends ExchangeSession {
                     }
 
                     if (vCalendar.isMeeting() && "Exchange2007_SP1".equals(serverVersion)) {
-                        Set<String> requiredAttendees = new HashSet<String>();
-                        Set<String> optionalAttendees = new HashSet<String>();
+                        Set<String> requiredAttendees = new HashSet<>();
+                        Set<String> optionalAttendees = new HashSet<>();
                         List<VProperty> attendeeProperties = vCalendar.getFirstVeventProperties("ATTENDEE");
                         if (attendeeProperties != null) {
                             for (VProperty property : attendeeProperties) {
@@ -2074,7 +2078,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 executeMethod(createOrUpdateItemMethod);
 
                 // force urlcompname again
-                ArrayList<FieldUpdate> updates = new ArrayList<FieldUpdate>();
+                ArrayList<FieldUpdate> updates = new ArrayList<>();
                 updates.add(Field.createFieldUpdate("urlcompname", convertItemNameToEML(itemName)));
                 createOrUpdateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
                         ConflictResolution.AlwaysOverwrite,
@@ -2182,7 +2186,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     vTodo.setPropertyValue("CATEGORIES", getItemMethod.getResponseItem().get(Field.get("keywords").getResponseName()));
 
                     localVCalendar.addVObject(vTodo);
-                    content = localVCalendar.toString().getBytes("UTF-8");
+                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 } else {
                     content = getItemMethod.getMimeContent();
                     if (content == null) {
@@ -2249,11 +2253,9 @@ public class EwsExchangeSession extends ExchangeSession {
                             getItemMethod.getResponseItem().get(Field.get("xmozsnoozetime").getResponseName()));
                     // overwrite method
                     // localVCalendar.setPropertyValue("METHOD", "REQUEST");
-                    content = localVCalendar.toString().getBytes("UTF-8");
+                    content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 }
-            } catch (IOException e) {
-                throw buildHttpException(e);
-            } catch (MessagingException e) {
+            } catch (IOException | MessagingException e) {
                 throw buildHttpException(e);
             }
             return content;
@@ -2305,7 +2307,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Contact> searchContacts(String folderPath, Set<String> attributes, Condition condition, int maxCount) throws IOException {
-        List<ExchangeSession.Contact> contacts = new ArrayList<ExchangeSession.Contact>();
+        List<ExchangeSession.Contact> contacts = new ArrayList<>();
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes, condition,
                 FolderQueryTraversal.SHALLOW, maxCount);
 
@@ -2337,7 +2339,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public List<ExchangeSession.Event> searchEvents(String folderPath, Set<String> attributes, Condition condition) throws IOException {
-        List<ExchangeSession.Event> events = new ArrayList<ExchangeSession.Event>();
+        List<ExchangeSession.Event> events = new ArrayList<>();
         List<EWSMethod.Item> responses = searchItems(folderPath, attributes,
                 condition,
                 FolderQueryTraversal.SHALLOW, 0);
@@ -2367,7 +2369,7 @@ public class EwsExchangeSession extends ExchangeSession {
     /**
      * Common item properties
      */
-    protected static final Set<String> ITEM_PROPERTIES = new HashSet<String>();
+    protected static final Set<String> ITEM_PROPERTIES = new HashSet<>();
 
     static {
         ITEM_PROPERTIES.add("etag");
@@ -2378,7 +2380,7 @@ public class EwsExchangeSession extends ExchangeSession {
         ITEM_PROPERTIES.add("subject");
     }
 
-    protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<String>();
+    protected static final HashSet<String> EVENT_REQUEST_PROPERTIES = new HashSet<>();
 
     static {
         EVENT_REQUEST_PROPERTIES.add("permanenturl");
@@ -2393,7 +2395,7 @@ public class EwsExchangeSession extends ExchangeSession {
         EVENT_REQUEST_PROPERTIES.add("xmozsnoozetime");
     }
 
-    protected static final HashSet<String> CALENDAR_ITEM_REQUEST_PROPERTIES = new HashSet<String>();
+    protected static final HashSet<String> CALENDAR_ITEM_REQUEST_PROPERTIES = new HashSet<>();
 
     static {
         CALENDAR_ITEM_REQUEST_PROPERTIES.addAll(EVENT_REQUEST_PROPERTIES);
@@ -2616,7 +2618,7 @@ public class EwsExchangeSession extends ExchangeSession {
     public void processItem(String folderPath, String itemName) throws IOException {
         EWSMethod.Item item = getEwsItem(folderPath, itemName, EVENT_REQUEST_PROPERTIES);
         if (item != null) {
-            HashMap<String, String> localProperties = new HashMap<String, String>();
+            HashMap<String, String> localProperties = new HashMap<>();
             localProperties.put("processed", "1");
             localProperties.put("read", "1");
             UpdateItemMethod updateItemMethod = new UpdateItemMethod(MessageDisposition.SaveOnly,
@@ -2739,7 +2741,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=Regional");
         try {
             DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), "UTF-8"));
+            optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
             String line;
             // find timezone
             //noinspection StatementWithEmptyBody
@@ -2978,7 +2980,7 @@ public class EwsExchangeSession extends ExchangeSession {
         }
     }
 
-    protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<String, String>();
+    protected static final HashMap<String, String> GALFIND_ATTRIBUTE_MAP = new HashMap<>();
 
     static {
         GALFIND_ATTRIBUTE_MAP.put("imapUid", "Name");
@@ -3010,7 +3012,7 @@ public class EwsExchangeSession extends ExchangeSession {
         GALFIND_ATTRIBUTE_MAP.put("pager", "Pager");
     }
 
-    protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<String>();
+    protected static final HashSet<String> IGNORE_ATTRIBUTE_SET = new HashSet<>();
 
     static {
         IGNORE_ATTRIBUTE_SET.add("ContactSource");
@@ -3042,7 +3044,7 @@ public class EwsExchangeSession extends ExchangeSession {
 
     @Override
     public Map<String, ExchangeSession.Contact> galFind(Condition condition, Set<String> returningAttributes, int sizeLimit) throws IOException {
-        Map<String, ExchangeSession.Contact> contacts = new HashMap<String, ExchangeSession.Contact>();
+        Map<String, ExchangeSession.Contact> contacts = new HashMap<>();
         if (condition instanceof MultiCondition) {
             List<Condition> conditions = ((ExchangeSession.MultiCondition) condition).getConditions();
             Operator operator = ((ExchangeSession.MultiCondition) condition).getOperator();
@@ -3204,7 +3206,7 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
 
-    protected static final Map<String, String> importanceToPriorityMap = new HashMap<String, String>();
+    protected static final Map<String, String> importanceToPriorityMap = new HashMap<>();
 
     static {
         importanceToPriorityMap.put("High", "1");
@@ -3212,7 +3214,7 @@ public class EwsExchangeSession extends ExchangeSession {
         importanceToPriorityMap.put("Low", "9");
     }
 
-    protected static final Map<String, String> priorityToImportanceMap = new HashMap<String, String>();
+    protected static final Map<String, String> priorityToImportanceMap = new HashMap<>();
 
     static {
         // 0 means undefined, map it to normal

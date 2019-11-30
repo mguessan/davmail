@@ -38,13 +38,13 @@ public final class DistinguishedFolderId extends FolderId {
      * DistinguishedFolderId names
      */
     @SuppressWarnings({"UnusedDeclaration"})
-    public static enum Name {
+    public enum Name {
         calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot,
         publicfoldersroot, root, junkemail, searchfolders, voicemail,
         archivemsgfolderroot
     }
 
-    private static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<Name, DistinguishedFolderId>();
+    private static final Map<Name, DistinguishedFolderId> folderIdMap = new HashMap<>();
 
     static {
         for (Name name : Name.values()) {

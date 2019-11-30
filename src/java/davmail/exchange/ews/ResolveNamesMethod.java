@@ -145,9 +145,7 @@ public class ResolveNamesMethod extends EWSMethod {
                         if (value.startsWith("smtp:") || value.startsWith("SMTP:")) {
                             value = value.substring(5);
                             // get smtp address only if not already available through Mailbox info
-                            if (responseItem.get("EmailAddress") == null) {
-                                responseItem.put("EmailAddress", value);
-                            }
+                            responseItem.putIfAbsent("EmailAddress", value);
                         }
                     }
                 }

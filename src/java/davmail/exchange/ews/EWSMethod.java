@@ -39,6 +39,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
@@ -171,14 +172,14 @@ public abstract class EWSMethod extends PostMethod {
 
     protected void addAdditionalProperty(FieldURI additionalProperty) {
         if (additionalProperties == null) {
-            additionalProperties = new HashSet<FieldURI>();
+            additionalProperties = new HashSet<>();
         }
         additionalProperties.add(additionalProperty);
     }
 
     protected void addMethodOption(AttributeOption attributeOption) {
         if (methodOptions == null) {
-            methodOptions = new HashSet<AttributeOption>();
+            methodOptions = new HashSet<>();
         }
         methodOptions.add(attributeOption);
     }
@@ -365,7 +366,7 @@ public abstract class EWSMethod extends PostMethod {
     protected byte[] generateSoapEnvelope() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+            OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             writer.write("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
                     "xmlns:t=\"http://schemas.microsoft.com/exchange/services/2006/types\" " +
                     "xmlns:m=\"http://schemas.microsoft.com/exchange/services/2006/messages\">" +
@@ -542,7 +543,7 @@ public abstract class EWSMethod extends PostMethod {
         protected List<FieldUpdate> fieldUpdates;
         protected List<FileAttachment> attachments;
         protected List<Attendee> attendees;
-        protected final List<String> fieldNames = new ArrayList<String>();
+        protected final List<String> fieldNames = new ArrayList<>();
         protected List<Occurrence> occurrences;
         protected List<String> members;
         protected ItemId referenceItemId;
@@ -708,7 +709,7 @@ public abstract class EWSMethod extends PostMethod {
          */
         public void addAttendee(Attendee attendee) {
             if (attendees == null) {
-                attendees = new ArrayList<Attendee>();
+                attendees = new ArrayList<>();
             }
             attendees.add(attendee);
         }
@@ -720,7 +721,7 @@ public abstract class EWSMethod extends PostMethod {
          */
         public void addOccurrence(Occurrence occurrence) {
             if (occurrences == null) {
-                occurrences = new ArrayList<Occurrence>();
+                occurrences = new ArrayList<>();
             }
             occurrences.add(occurrence);
         }
@@ -741,7 +742,7 @@ public abstract class EWSMethod extends PostMethod {
          */
         public void addMember(String member) {
             if (members == null) {
-                members = new ArrayList<String>();
+                members = new ArrayList<>();
             }
             members.add(member);
         }
@@ -771,14 +772,10 @@ public abstract class EWSMethod extends PostMethod {
                     && !"ErrorItemNotFound".equals(errorDetail)
                     && !"ErrorCalendarOccurrenceIsDeletedFromRecurrence".equals(errorDetail)
                     ) {
-                try {
-                    throw new EWSException(errorDetail
-                            + ' ' + ((errorDescription != null) ? errorDescription : "")
-                            + ' ' + ((errorValue != null) ? errorValue : "")
-                            + "\n request: " + new String(generateSoapEnvelope(), "UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    throw new EWSException(e.getMessage());
-                }
+                throw new EWSException(errorDetail
+                        + ' ' + ((errorDescription != null) ? errorDescription : "")
+                        + ' ' + ((errorValue != null) ? errorValue : "")
+                        + "\n request: " + new String(generateSoapEnvelope(), StandardCharsets.UTF_8));
             }
         }
         if (getStatusCode() == HttpStatus.SC_BAD_REQUEST || getStatusCode() == HttpStatus.SC_INSUFFICIENT_STORAGE) {
@@ -808,7 +805,7 @@ public abstract class EWSMethod extends PostMethod {
         if (responseItems != null) {
             return responseItems;
         } else {
-            return new ArrayList<Item>();
+            return new ArrayList<>();
         }
     }
 
@@ -1059,7 +1056,7 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected List<FileAttachment> handleAttachments(XMLStreamReader reader) throws XMLStreamException {
-        List<FileAttachment> attachments = new ArrayList<FileAttachment>();
+        List<FileAttachment> attachments = new ArrayList<>();
         while (reader.hasNext() && !(XMLStreamUtil.isEndTag(reader, "Attachments"))) {
             reader.next();
             if (XMLStreamUtil.isStartTag(reader)) {
@@ -1097,11 +1094,7 @@ public abstract class EWSMethod extends PostMethod {
             responseItem.mimeContent = ((TypedXMLStreamReader) reader).getElementAsBinary();
         } else {
             // failover: slow and memory consuming conversion
-            try {
-                responseItem.mimeContent = Base64.decodeBase64(reader.getElementText().getBytes("ASCII"));
-            } catch (UnsupportedEncodingException e) {
-                throw new XMLStreamException(e);
-            }
+            responseItem.mimeContent = Base64.decodeBase64(reader.getElementText().getBytes(StandardCharsets.US_ASCII));
         }
     }
 
@@ -1189,7 +1182,7 @@ public abstract class EWSMethod extends PostMethod {
     }
 
     protected void processResponseStream(InputStream inputStream) {
-        responseItems = new ArrayList<Item>();
+        responseItems = new ArrayList<>();
         XMLStreamReader reader = null;
         try {
             inputStream = new FilterInputStream(inputStream) {
