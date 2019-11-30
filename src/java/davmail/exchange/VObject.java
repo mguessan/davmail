@@ -125,7 +125,7 @@ public class VObject {
      */
     public void addVObject(VObject vObject) {
         if (vObjects == null) {
-            vObjects = new ArrayList<VObject>();
+            vObjects = new ArrayList<>();
         }
         vObjects.add(vObject);
     }
@@ -138,7 +138,7 @@ public class VObject {
     public void addProperty(VProperty property) {
         if (property.getValue() != null) {
             if (properties == null) {
-                properties = new ArrayList<VProperty>();
+                properties = new ArrayList<>();
             }
             properties.add(property);
         }
@@ -211,7 +211,7 @@ public class VObject {
             for (VProperty property : properties) {
                 if (property.getKey() != null && property.getKey().equalsIgnoreCase(name)) {
                     if (result == null) {
-                        result = new ArrayList<VProperty>();
+                        result = new ArrayList<>();
                     }
                     result.add(property);
                 }

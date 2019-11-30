@@ -7,6 +7,7 @@ import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
@@ -66,7 +67,7 @@ public class MessageCreateThread extends Thread {
                     LOGGER.debug("Still loading message, send capabilities untagged response to avoid timeout");
                     try {
                         LOGGER.debug("* "+capabilities);
-                        outputStream.write(("* "+capabilities).getBytes("ASCII"));
+                        outputStream.write(("* "+capabilities).getBytes(StandardCharsets.US_ASCII));
                         outputStream.write((char) 13);
                         outputStream.write((char) 10);
                         outputStream.flush();

@@ -23,6 +23,7 @@ import davmail.util.StringUtil;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -77,7 +78,7 @@ public class VCalendar extends VObject {
      * @throws IOException on error
      */
     public VCalendar(byte[] vCalendarContent, String email, VObject vTimezone) throws IOException {
-        this(new ICSBufferedReader(new InputStreamReader(new ByteArrayInputStream(vCalendarContent), "UTF-8")), email, vTimezone);
+        this(new ICSBufferedReader(new InputStreamReader(new ByteArrayInputStream(vCalendarContent), StandardCharsets.UTF_8)), email, vTimezone);
     }
 
     /**
@@ -274,7 +275,7 @@ public class VCalendar extends VObject {
                         for (String value : values) {
                             if (value.contains("CID:")) {
                                 if (toRemoveValues == null) {
-                                    toRemoveValues = new ArrayList<String>();
+                                    toRemoveValues = new ArrayList<>();
                                 }
                                 toRemoveValues.add(value);
                             }
@@ -487,7 +488,7 @@ public class VCalendar extends VObject {
                 for (VObject vAlarm : vObject.vObjects) {
                     if ("VALARM".equals(vAlarm.type)) {
                         if (vAlarms == null) {
-                            vAlarms = new ArrayList<VObject>();
+                            vAlarms = new ArrayList<>();
                         }
                         vAlarms.add(vAlarm);
                     }
@@ -788,8 +789,8 @@ public class VCalendar extends VObject {
      */
     public Recipients getRecipients(boolean isNotification) {
 
-        HashSet<String> attendees = new HashSet<String>();
-        HashSet<String> optionalAttendees = new HashSet<String>();
+        HashSet<String> attendees = new HashSet<>();
+        HashSet<String> optionalAttendees = new HashSet<>();
 
         // get recipients from first VEVENT
         List<VProperty> attendeeProperties = getFirstVeventProperties("ATTENDEE");
@@ -859,7 +860,7 @@ public class VCalendar extends VObject {
      */
     public List<VObject> getModifiedOccurrences() {
         boolean first = true;
-        ArrayList<VObject> results = new ArrayList<VObject>();
+        ArrayList<VObject> results = new ArrayList<>();
         for (VObject vObject : vObjects) {
             if ("VEVENT".equals(vObject.type)) {
                 if (first) {

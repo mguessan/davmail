@@ -68,7 +68,7 @@ public final class XMLStreamUtil {
      * @throws IOException on error
      */
     public static Map<String, Map<String, String>> getElementContentsAsMap(InputStream inputStream, String rowName, String idName) throws IOException {
-        Map<String, Map<String, String>> results = new HashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> results = new HashMap<>();
         Map<String, String> item = null;
         String currentElement = null;
         XMLStreamReader reader = null;
@@ -78,7 +78,7 @@ public final class XMLStreamUtil {
             while (reader.hasNext()) {
                 int event = reader.next();
                 if (event == XMLStreamConstants.START_ELEMENT && rowName.equals(reader.getLocalName())) {
-                    item = new HashMap<String, String>();
+                    item = new HashMap<>();
                 } else if (event == XMLStreamConstants.END_ELEMENT && rowName.equals(reader.getLocalName())) {
                     if (item != null && item.containsKey(idName)) {
                         results.put(item.get(idName).toLowerCase(), item);
@@ -185,12 +185,11 @@ public final class XMLStreamUtil {
         String value = null;
         try {
             value = reader.getElementText();
-        } catch (XMLStreamException e) {
-            LOGGER.warn(e.getMessage());
-        } catch (RuntimeException e) {
-            // probably com.ctc.wstx.exc.WstxLazyException on invalid character sequence
+        } catch (XMLStreamException | RuntimeException e) {
+            // RuntimeException: probably com.ctc.wstx.exc.WstxLazyException on invalid character sequence
             LOGGER.warn(e.getMessage());
         }
+
         return value;
     }
 

@@ -46,7 +46,7 @@ import java.util.Map;
  */
 public final class ExchangeSessionFactory {
     private static final Object LOCK = new Object();
-    private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<PoolKey, ExchangeSession>();
+    private static final Map<PoolKey, ExchangeSession> POOL_MAP = new HashMap<>();
     private static boolean configChecked;
     private static boolean errorSent;
 
@@ -158,15 +158,19 @@ public final class ExchangeSessionFactory {
                 // check for overridden authenticator
                 String authenticatorClass = Settings.getProperty("davmail.authenticator");
                 if (authenticatorClass == null) {
-                    if (Settings.O365_MODERN.equals(mode)) {
-                        authenticatorClass = "davmail.exchange.auth.O365Authenticator";
-                    } else if (Settings.O365_INTERACTIVE.equals(mode)) {
-                        authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
-                        if (GraphicsEnvironment.isHeadless()) {
-                            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Interactive not supported in headless mode");
-                        }
-                    } else if (Settings.O365_MANUAL.equals(mode)) {
-                        authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
+                    switch (mode) {
+                        case Settings.O365_MODERN:
+                            authenticatorClass = "davmail.exchange.auth.O365Authenticator";
+                            break;
+                        case Settings.O365_INTERACTIVE:
+                            authenticatorClass = "davmail.exchange.auth.O365InteractiveAuthenticator";
+                            if (GraphicsEnvironment.isHeadless()) {
+                                throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", "O365Interactive not supported in headless mode");
+                            }
+                            break;
+                        case Settings.O365_MANUAL:
+                            authenticatorClass = "davmail.exchange.auth.O365ManualAuthenticator";
+                            break;
                     }
                 }
 
@@ -230,13 +234,7 @@ public final class ExchangeSessionFactory {
             configChecked = true;
             // Reset so next time an problem occurs message will be sent once
             errorSent = false;
-        } catch (DavMailAuthenticationException exc) {
-            throw exc;
-        } catch (DavMailException exc) {
-            throw exc;
-        } catch (IllegalStateException exc) {
-            throw exc;
-        } catch (NullPointerException exc) {
+        } catch (DavMailException | IllegalStateException | NullPointerException exc) {
             throw exc;
         } catch (Exception exc) {
             handleNetworkDown(exc);

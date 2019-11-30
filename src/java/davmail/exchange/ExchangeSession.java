@@ -42,6 +42,7 @@ import javax.mail.util.SharedByteArrayInputStream;
 import java.io.*;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -208,9 +209,7 @@ public abstract class ExchangeSession {
         boolean isExpired = false;
         try {
             getFolder("");
-        } catch (UnknownHostException exc) {
-            throw exc;
-        } catch (NoRouteToHostException exc) {
+        } catch (UnknownHostException | NoRouteToHostException exc) {
             throw exc;
         } catch (IOException e) {
             isExpired = true;
@@ -271,7 +270,7 @@ public abstract class ExchangeSession {
      */
     protected abstract byte[] getContent(Message message) throws IOException;
 
-    protected static final Set<String> POP_MESSAGE_ATTRIBUTES = new HashSet<String>();
+    protected static final Set<String> POP_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
         POP_MESSAGE_ATTRIBUTES.add("uid");
@@ -290,7 +289,7 @@ public abstract class ExchangeSession {
         return searchMessages(folderName, POP_MESSAGE_ATTRIBUTES, null);
     }
 
-    protected static final Set<String> IMAP_MESSAGE_ATTRIBUTES = new HashSet<String>();
+    protected static final Set<String> IMAP_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
         IMAP_MESSAGE_ATTRIBUTES.add("permanenturl");
@@ -311,7 +310,7 @@ public abstract class ExchangeSession {
         IMAP_MESSAGE_ATTRIBUTES.add("keywords");
     }
 
-    protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<String>();
+    protected static final Set<String> UID_MESSAGE_ATTRIBUTES = new HashSet<>();
 
     static {
         UID_MESSAGE_ATTRIBUTES.add("uid");
@@ -442,7 +441,7 @@ public abstract class ExchangeSession {
 
         protected MultiCondition(Operator operator, Condition... conditions) {
             this.operator = operator;
-            this.conditions = new ArrayList<Condition>();
+            this.conditions = new ArrayList<>();
             for (Condition condition : conditions) {
                 if (condition != null) {
                     this.conditions.add(condition);
@@ -820,7 +819,7 @@ public abstract class ExchangeSession {
         }
 
         // remove visible recipients from list
-        Set<String> visibleRecipients = new HashSet<String>();
+        Set<String> visibleRecipients = new HashSet<>();
         List<InternetAddress> recipients = getAllRecipients(mimeMessage);
         for (InternetAddress address : recipients) {
             visibleRecipients.add((address.getAddress().toLowerCase()));
@@ -837,7 +836,7 @@ public abstract class ExchangeSession {
     static final String[] RECIPIENT_HEADERS = {"to", "cc", "bcc"};
 
     protected List<InternetAddress> getAllRecipients(MimeMessage mimeMessage) throws MessagingException {
-        List<InternetAddress> recipientList = new ArrayList<InternetAddress>();
+        List<InternetAddress> recipientList = new ArrayList<>();
         for (String recipientHeader : RECIPIENT_HEADERS) {
             final String recipientHeaderValue = mimeMessage.getHeader(recipientHeader, ",");
             if (recipientHeaderValue != null) {
@@ -1090,7 +1089,7 @@ public abstract class ExchangeSession {
      * @return keyword value
      */
     public String convertFlagsToKeywords(HashSet<String> flags) {
-        HashSet<String> keywordSet = new HashSet<String>();
+        HashSet<String> keywordSet = new HashSet<>();
         for (String flag : flags) {
             keywordSet.add(decodeKeyword(convertFlagToKeyword(flag)));
         }
@@ -1172,7 +1171,7 @@ public abstract class ExchangeSession {
         /**
          * Permanent uid (PR_SEARCH_KEY) to IMAP UID map.
          */
-        private final HashMap<String, Long> permanentUrlToImapUidMap = new HashMap<String, Long>();
+        private final HashMap<String, Long> permanentUrlToImapUidMap = new HashMap<>();
 
         /**
          * Get IMAP folder flags.
@@ -1300,7 +1299,7 @@ public abstract class ExchangeSession {
          * @return imap uid list
          */
         public TreeMap<Long, String> getImapFlagMap() {
-            TreeMap<Long, String> imapFlagMap = new TreeMap<Long, String>();
+            TreeMap<Long, String> imapFlagMap = new TreeMap<>();
             for (ExchangeSession.Message message : messages) {
                 imapFlagMap.put(message.getImapUid(), message.getImapFlags());
             }
@@ -1661,7 +1660,7 @@ public abstract class ExchangeSession {
          * @throws IOException on error
          */
         public void markRead() throws IOException {
-            HashMap<String, String> properties = new HashMap<String, String>();
+            HashMap<String, String> properties = new HashMap<>();
             properties.put("read", "1");
             updateMessage(this, properties);
         }
@@ -1707,7 +1706,7 @@ public abstract class ExchangeSession {
         public String removeFlag(String flag) {
             if (keywords != null) {
                 final String exchangeFlag = convertFlagToKeyword(flag);
-                Set<String> keywordSet = new HashSet<String>();
+                Set<String> keywordSet = new HashSet<>();
                 String[] keywordArray = keywords.split(",");
                 for (String value : keywordArray) {
                     if (!value.equalsIgnoreCase(exchangeFlag)) {
@@ -1721,7 +1720,7 @@ public abstract class ExchangeSession {
 
         public String addFlag(String flag) {
             final String exchangeFlag = convertFlagToKeyword(flag);
-            HashSet<String> keywordSet = new HashSet<String>();
+            HashSet<String> keywordSet = new HashSet<>();
             boolean hasFlag = false;
             if (keywords != null) {
                 String[] keywordArray = keywords.split(",");
@@ -1931,7 +1930,7 @@ public abstract class ExchangeSession {
 
         public void addMember(String member) {
             if (distributionListMembers == null) {
-                distributionListMembers = new ArrayList<String>();
+                distributionListMembers = new ArrayList<>();
             }
             distributionListMembers.add(member);
         }
@@ -2063,7 +2062,7 @@ public abstract class ExchangeSession {
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, etag, noneMatch);
             this.contentClass = contentClass;
-            fixICS(itemBody.getBytes("UTF-8"), false);
+            fixICS(itemBody.getBytes(StandardCharsets.UTF_8), false);
             // fix task item name
             if (vCalendar.isTodo() && this.itemName.endsWith(".ics")) {
                 this.itemName = itemName.substring(0, itemName.length() - 3) + "EML";
@@ -2160,7 +2159,7 @@ public abstract class ExchangeSession {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 mimeMessage.writeTo(baos);
                 baos.close();
-                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), "UTF-8"));
+                throw new DavMailException("EXCEPTION_INVALID_MESSAGE_CONTENT", new String(baos.toByteArray(), StandardCharsets.UTF_8));
             }
             return result;
         }
@@ -2168,8 +2167,8 @@ public abstract class ExchangeSession {
         protected void fixICS(byte[] icsContent, boolean fromServer) throws IOException {
             if (LOGGER.isDebugEnabled() && fromServer) {
                 dumpIndex++;
-                String icsBody = new String(icsContent, "UTF-8");
-                dumpICS(icsBody, fromServer, false);
+                String icsBody = new String(icsContent, StandardCharsets.UTF_8);
+                dumpICS(icsBody, true, false);
                 LOGGER.debug("Vcalendar body received from server:\n" + icsBody);
             }
             vCalendar = new VCalendar(icsContent, getEmail(), getVTimezone());
@@ -2177,7 +2176,7 @@ public abstract class ExchangeSession {
             if (LOGGER.isDebugEnabled() && !fromServer) {
                 String resultString = vCalendar.toString();
                 LOGGER.debug("Fixed Vcalendar body to server:\n" + resultString);
-                dumpICS(resultString, fromServer, true);
+                dumpICS(resultString, false, true);
             }
         }
 
@@ -2191,21 +2190,19 @@ public abstract class ExchangeSession {
                     // Delete the oldest dump file
                     final int oldest = dumpIndex - dumpMax;
                     try {
-                        File[] oldestFiles = (new File(logFileDirectory)).listFiles(new FilenameFilter() {
-                            public boolean accept(File dir, String name) {
-                                if (name.endsWith(".ics")) {
-                                    int dashIndex = name.indexOf('-');
-                                    if (dashIndex > 0) {
-                                        try {
-                                            int fileIndex = Integer.parseInt(name.substring(0, dashIndex));
-                                            return fileIndex < oldest;
-                                        } catch (NumberFormatException nfe) {
-                                            // ignore
-                                        }
+                        File[] oldestFiles = (new File(logFileDirectory)).listFiles((dir, name) -> {
+                            if (name.endsWith(".ics")) {
+                                int dashIndex = name.indexOf('-');
+                                if (dashIndex > 0) {
+                                    try {
+                                        int fileIndex = Integer.parseInt(name.substring(0, dashIndex));
+                                        return fileIndex < oldest;
+                                    } catch (NumberFormatException nfe) {
+                                        // ignore
                                     }
                                 }
-                                return false;
                             }
+                            return false;
                         });
                         if (oldestFiles != null) {
                             for (File file : oldestFiles) {
@@ -2228,7 +2225,7 @@ public abstract class ExchangeSession {
                 if ((icsBody != null) && (icsBody.length() > 0)) {
                     OutputStreamWriter writer = null;
                     try {
-                        writer = new OutputStreamWriter(new FileOutputStream(filePath.toString()), "UTF-8");
+                        writer = new OutputStreamWriter(new FileOutputStream(filePath.toString()), StandardCharsets.UTF_8);
                         writer.write(icsBody);
                     } catch (IOException e) {
                         LOGGER.error(e);
@@ -2366,7 +2363,7 @@ public abstract class ExchangeSession {
                 writer.writeHeader("content-transfer-encoding", "8bit");
                 writer.writeLn();
                 writer.flush();
-                baos.write(description.getBytes("UTF-8"));
+                baos.write(description.getBytes(StandardCharsets.UTF_8));
                 writer.writeLn();
                 writer.writeLn("------=_NextPart_" + boundary);
             }
@@ -2378,7 +2375,7 @@ public abstract class ExchangeSession {
             writer.writeHeader("Content-Transfer-Encoding", "8bit");
             writer.writeLn();
             writer.flush();
-            baos.write(vCalendar.toString().getBytes("UTF-8"));
+            baos.write(vCalendar.toString().getBytes(StandardCharsets.UTF_8));
             writer.writeLn();
             writer.writeLn("------=_NextPart_" + boundary + "--");
             writer.close();
@@ -2707,7 +2704,7 @@ public abstract class ExchangeSession {
 
     protected ItemResult createOrUpdateContact(String folderPath, String itemName, String itemBody, String etag, String noneMatch) throws IOException {
         // parse VCARD body to build contact property map
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> properties = new HashMap<>();
 
         VObject vcard = new VObject(new ICSBufferedReader(new StringReader(itemBody)));
         if ("group".equalsIgnoreCase(vcard.getPropertyValue("KIND"))) {
@@ -2959,7 +2956,7 @@ public abstract class ExchangeSession {
             GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
             try {
                 DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), "UTF-8"));
+                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
                 String line;
 
                 // find email and alias
@@ -3027,7 +3024,7 @@ public abstract class ExchangeSession {
     /**
      * Full Contact attribute list
      */
-    public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<String>();
+    public static final Set<String> CONTACT_ATTRIBUTES = new HashSet<>();
 
     static {
         CONTACT_ATTRIBUTES.add("imapUid");
@@ -3096,7 +3093,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("fburl");
     }
 
-    public static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<String>();
+    public static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
 
     static {
         DISTRIBUTION_LIST_ATTRIBUTES.add("imapUid");
@@ -3181,7 +3178,7 @@ public abstract class ExchangeSession {
     public static final class FreeBusy {
         final SimpleDateFormat icalParser;
         boolean knownAttendee = true;
-        static final HashMap<Character, String> FBTYPES = new HashMap<Character, String>();
+        static final HashMap<Character, String> FBTYPES = new HashMap<>();
 
         static {
             FBTYPES.put('1', "BUSY-TENTATIVE");
@@ -3189,7 +3186,7 @@ public abstract class ExchangeSession {
             FBTYPES.put('3', "BUSY-UNAVAILABLE");
         }
 
-        final HashMap<String, StringBuilder> busyMap = new HashMap<String, StringBuilder>();
+        final HashMap<String, StringBuilder> busyMap = new HashMap<>();
 
         StringBuilder getBusyBuffer(char type) {
             String fbType = FBTYPES.get(type);

@@ -29,7 +29,7 @@ public class VProperty {
         KEY, PARAM_NAME, PARAM_VALUE, QUOTED_PARAM_VALUE, VALUE, BACKSLASH
     }
 
-    protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<String>();
+    protected static final HashSet<String> MULTIVALUED_PROPERTIES = new HashSet<>();
 
     static {
         MULTIVALUED_PROPERTIES.add("RESOURCES");
@@ -42,7 +42,7 @@ public class VProperty {
 
         public void addAll(List<String> paramValues) {
             if (values == null) {
-                values = new ArrayList<String>();
+                values = new ArrayList<>();
             }
             values.addAll(paramValues);
         }
@@ -98,7 +98,7 @@ public class VProperty {
                     if (currentChar == '=') {
                         paramName = line.substring(startIndex, i).toUpperCase();
                         state = State.PARAM_VALUE;
-                        paramValues = new ArrayList<String>();
+                        paramValues = new ArrayList<>();
                         startIndex = i + 1;
                     } else if (currentChar == ';') {
                         // param with no value
@@ -199,7 +199,7 @@ public class VProperty {
      * @return values as map
      */
     public Map<String, String> getValuesAsMap() {
-        HashMap<String, String> valuesMap = new HashMap<String, String>();
+        HashMap<String, String> valuesMap = new HashMap<>();
 
         if (values != null) {
             for (String value:values) {
@@ -267,7 +267,7 @@ public class VProperty {
     protected List<String> addParamValue(List<String> paramValues, String value) {
         List<String> result = paramValues;
         if (result == null) {
-            result = new ArrayList<String>();
+            result = new ArrayList<>();
         }
         result.add(value);
         return result;
@@ -299,7 +299,7 @@ public class VProperty {
      */
     public void addParam(String paramName, String paramValue) {
         if (paramValue != null) {
-            List<String> paramValues = new ArrayList<String>();
+            List<String> paramValues = new ArrayList<>();
             paramValues.add(paramValue);
             addParam(paramName, paramValues);
         }
@@ -307,7 +307,7 @@ public class VProperty {
 
     protected void addParam(String paramName, List<String> paramValues) {
         if (params == null) {
-            params = new ArrayList<Param>();
+            params = new ArrayList<>();
         }
         Param currentParam = getParam(paramName);
         if (currentParam == null) {
@@ -356,7 +356,7 @@ public class VProperty {
             values = null;
         } else {
             if (values == null) {
-                values = new ArrayList<String>();
+                values = new ArrayList<>();
             } else {
                 values.clear();
             }
@@ -366,7 +366,7 @@ public class VProperty {
 
     protected void addValue(String value) {
         if (values == null) {
-            values = new ArrayList<String>();
+            values = new ArrayList<>();
         }
         values.add(decodeValue(value));
     }
