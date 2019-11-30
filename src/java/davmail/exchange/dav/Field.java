@@ -26,8 +26,6 @@ import org.apache.jackrabbit.webdav.property.PropEntry;
 import org.apache.jackrabbit.webdav.xml.DomUtil;
 import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.apache.jackrabbit.webdav.xml.XmlSerializable;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +37,7 @@ import java.util.Map;
  */
 public class Field {
 
-    protected static final Map<DistinguishedPropertySetType, String> distinguishedPropertySetMap = new HashMap<DistinguishedPropertySetType, String>();
+    protected static final Map<DistinguishedPropertySetType, String> distinguishedPropertySetMap = new HashMap<>();
 
     static {
         distinguishedPropertySetMap.put(DistinguishedPropertySetType.Meeting, "6ed8da90-450b-101b-98da-00aa003f1305");
@@ -71,7 +69,7 @@ public class Field {
             Namespace.getNamespace(SCHEMAS_MAPI_STRING.getURI() +
                     '{' + distinguishedPropertySetMap.get(DistinguishedPropertySetType.InternetHeaders) + "}/");
 
-    protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<PropertyType, String>();
+    protected static final Map<PropertyType, String> propertyTypeMap = new HashMap<>();
 
     static {
         propertyTypeMap.put(PropertyType.Integer, "0003"); // PT_INT
@@ -88,7 +86,7 @@ public class Field {
     }
 
 
-    protected static final Map<String, Field> fieldMap = new HashMap<String, Field>();
+    protected static final Map<String, Field> fieldMap = new HashMap<>();
 
     static {
         // well known folders
@@ -545,27 +543,23 @@ public class Field {
             return field.updatePropertyName;
         } else if (field.isMultivalued) {
             // multivalued field, split values separated by \n
-            List<XmlSerializable> valueList = new ArrayList<XmlSerializable>();
+            List<XmlSerializable> valueList = new ArrayList<>();
             String[] values = value.split(",");
             for (final String singleValue : values) {
-                valueList.add(new XmlSerializable() {
-                    public Element toXml(Document document) {
-                        return DomUtil.createElement(document, "v", XML, singleValue);
-                    }
-                });
+                valueList.add(document -> DomUtil.createElement(document, "v", XML, singleValue));
             }
 
-            return new DefaultDavProperty<List<XmlSerializable>>(field.updatePropertyName, valueList);
+            return new DefaultDavProperty<>(field.updatePropertyName, valueList);
         } else if (field.isBooleanValue && !"haspicture".equals(alias)) {
             if ("true".equals(value)) {
-                return new DefaultDavProperty<String>(field.updatePropertyName, "1");
+                return new DefaultDavProperty<>(field.updatePropertyName, "1");
             } else if ("false".equals(value)) {
-                return new DefaultDavProperty<String>(field.updatePropertyName, "0");
+                return new DefaultDavProperty<>(field.updatePropertyName, "0");
             } else {
                 throw new RuntimeException("Invalid value for " + field.alias + ": " + value);
             }
         } else {
-            return new DefaultDavProperty<String>(field.updatePropertyName, value);
+            return new DefaultDavProperty<>(field.updatePropertyName, value);
         }
     }
 

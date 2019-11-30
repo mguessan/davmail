@@ -2028,11 +2028,7 @@ public class DavExchangeSession extends ExchangeSession {
         byte[] property = null;
         String base64Property = getPropertyIfExists(properties, alias);
         if (base64Property != null) {
-            try {
-                property = IOUtil.decodeBase64(base64Property);
-            } catch (IOException e) {
-                LOGGER.warn(e);
-            }
+            property = IOUtil.decodeBase64(base64Property);
         }
         return property;
     }

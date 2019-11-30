@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public class ExchangePropFindMethod extends ExchangeDavMethod {
         try {
             // build namespace map
             int currentChar = 'e';
-            final Map<String, Integer> nameSpaceMap = new HashMap<String, Integer>();
+            final Map<String, Integer> nameSpaceMap = new HashMap<>();
             nameSpaceMap.put("DAV:", (int) 'D');
             if (propertyNameSet != null) {
                 DavPropertyNameIterator propertyNameIterator = propertyNameSet.iterator();
@@ -71,7 +72,7 @@ public class ExchangePropFindMethod extends ExchangeDavMethod {
             }
             // <D:propfind xmlns:D="DAV:"><D:prop><D:displayname/></D:prop></D:propfind>
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+            OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             writer.write("<D:propfind ");
             for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
                 writer.write(" xmlns:");

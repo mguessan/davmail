@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -53,9 +54,9 @@ public class ExchangePropPatchMethod extends ExchangeDavMethod {
         try {
             // build namespace map
             int currentChar = 'e';
-            final Map<String, Integer> nameSpaceMap = new HashMap<String, Integer>();
-            final Set<PropertyValue> setPropertyValues = new HashSet<PropertyValue>();
-            final Set<PropertyValue> deletePropertyValues = new HashSet<PropertyValue>();
+            final Map<String, Integer> nameSpaceMap = new HashMap<>();
+            final Set<PropertyValue> setPropertyValues = new HashSet<>();
+            final Set<PropertyValue> deletePropertyValues = new HashSet<>();
             for (PropertyValue propertyValue : propertyValues) {
                 // data type namespace
                 if (!nameSpaceMap.containsKey(TYPE_NAMESPACE) && propertyValue.getTypeString() != null) {
@@ -73,7 +74,7 @@ public class ExchangePropPatchMethod extends ExchangeDavMethod {
                 }
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+            OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             writer.write("<D:propertyupdate xmlns:D=\"DAV:\"");
             for (Map.Entry<String, Integer> mapEntry : nameSpaceMap.entrySet()) {
                 writer.write(" xmlns:");
