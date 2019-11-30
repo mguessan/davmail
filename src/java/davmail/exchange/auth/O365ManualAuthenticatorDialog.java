@@ -25,12 +25,9 @@ import davmail.ui.tray.DavGatewayTray;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.net.URISyntaxException;
 
 public class O365ManualAuthenticatorDialog extends JDialog {
@@ -83,14 +80,12 @@ public class O365ManualAuthenticatorDialog extends JDialog {
 
         jEditorPane.setEditable(false);
         jEditorPane.setOpaque(false);
-        jEditorPane.addHyperlinkListener(new HyperlinkListener() {
-            public void hyperlinkUpdate(HyperlinkEvent hle) {
-                if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-                    try {
-                        DesktopBrowser.browse(hle.getURL().toURI());
-                    } catch (URISyntaxException e) {
-                        DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
-                    }
+        jEditorPane.addHyperlinkListener(hle -> {
+            if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+                try {
+                    DesktopBrowser.browse(hle.getURL().toURI());
+                } catch (URISyntaxException e) {
+                    DavGatewayTray.error(new BundleMessage("LOG_UNABLE_TO_OPEN_LINK"), e);
                 }
             }
         });
@@ -107,11 +102,9 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         credentialPanel.add(promptLabel);
 
         codeField.setMaximumSize(codeField.getPreferredSize());
-        codeField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                code = codeField.getText();
-                setVisible(false);
-            }
+        codeField.addActionListener(evt -> {
+            code = codeField.getText();
+            setVisible(false);
         });
         credentialPanel.add(codeField);
 
@@ -135,22 +128,14 @@ public class O365ManualAuthenticatorDialog extends JDialog {
         JButton openButton = new JButton(BundleMessage.format("UI_BUTTON_OPEN"));
         JButton okButton = new JButton(BundleMessage.format("UI_BUTTON_OK"));
         JButton cancelButton = new JButton(BundleMessage.format("UI_BUTTON_CANCEL"));
-        openButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                 DesktopBrowser.browse(initUrl);
-            }
+        openButton.addActionListener(evt -> DesktopBrowser.browse(initUrl));
+        okButton.addActionListener(evt -> {
+            code = codeField.getText();
+            setVisible(false);
         });
-        okButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                code = codeField.getText();
-                setVisible(false);
-            }
-        });
-        cancelButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                code = null;
-                setVisible(false);
-            }
+        cancelButton.addActionListener(evt -> {
+            code = null;
+            setVisible(false);
         });
 
         buttonPanel.add(openButton);
