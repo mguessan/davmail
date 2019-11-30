@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -169,12 +170,10 @@ public class PopConnection extends AbstractConnection {
                             if (tokens.hasMoreTokens()) {
                                 String token = tokens.nextToken();
                                 try {
-                                    int messageNumber = Integer.valueOf(token);
+                                    int messageNumber = Integer.parseInt(token);
                                     ExchangeSession.Message message = messages.get(messageNumber - 1);
                                     sendOK("" + messageNumber + ' ' + message.size);
-                                } catch (NumberFormatException e) {
-                                    sendERR("Invalid message index: " + token);
-                                } catch (IndexOutOfBoundsException e) {
+                                } catch (NumberFormatException | IndexOutOfBoundsException e) {
                                     sendERR("Invalid message index: " + token);
                                 }
                             } else {
@@ -187,11 +186,9 @@ public class PopConnection extends AbstractConnection {
                             if (tokens.hasMoreTokens()) {
                                 String token = tokens.nextToken();
                                 try {
-                                    int messageNumber = Integer.valueOf(token);
+                                    int messageNumber = Integer.parseInt(token);
                                     sendOK(messageNumber + " " + messages.get(messageNumber - 1).getUid());
-                                } catch (NumberFormatException e) {
-                                    sendERR("Invalid message index: " + token);
-                                } catch (IndexOutOfBoundsException e) {
+                                } catch (NumberFormatException | IndexOutOfBoundsException e) {
                                     sendERR("Invalid message index: " + token);
                                 }
                             } else {
@@ -203,11 +200,11 @@ public class PopConnection extends AbstractConnection {
                         } else if ("RETR".equalsIgnoreCase(command)) {
                             if (tokens.hasMoreTokens()) {
                                 try {
-                                    int messageNumber = Integer.valueOf(tokens.nextToken()) - 1;
+                                    int messageNumber = Integer.parseInt(tokens.nextToken()) - 1;
                                     ExchangeSession.Message message = messages.get(messageNumber);
 
                                     // load big messages in a separate thread
-                                    os.write("+OK ".getBytes("ASCII"));
+                                    os.write("+OK ".getBytes(StandardCharsets.US_ASCII));
                                     os.flush();
                                     MessageLoadThread.loadMimeMessage(message, os);
                                     sendClient("");
@@ -232,14 +229,11 @@ public class PopConnection extends AbstractConnection {
                             if (tokens.hasMoreTokens()) {
                                 ExchangeSession.Message message;
                                 try {
-                                    int messageNumber = Integer.valueOf(tokens.
-                                            nextToken()) - 1;
+                                    int messageNumber = Integer.parseInt(tokens.nextToken()) - 1;
                                     message = messages.get(messageNumber);
                                     message.moveToTrash();
                                     sendOK("DELETE");
-                                } catch (NumberFormatException e) {
-                                    sendERR("invalid message index");
-                                } catch (IndexOutOfBoundsException e) {
+                                } catch (NumberFormatException | IndexOutOfBoundsException e) {
                                     sendERR("invalid message index");
                                 }
                             } else {
@@ -248,8 +242,8 @@ public class PopConnection extends AbstractConnection {
                         } else if ("TOP".equalsIgnoreCase(command)) {
                             int message = 0;
                             try {
-                                message = Integer.valueOf(tokens.nextToken());
-                                int lines = Integer.valueOf(tokens.nextToken());
+                                message = Integer.parseInt(tokens.nextToken());
+                                int lines = Integer.parseInt(tokens.nextToken());
                                 ExchangeSession.Message m = messages.get(message - 1);
                                 sendOK("");
                                 DoubleDotOutputStream doubleDotOutputStream = new DoubleDotOutputStream(os);
@@ -311,7 +305,7 @@ public class PopConnection extends AbstractConnection {
      * Filter to limit output lines to max body lines after header
      */
     private static final class TopOutputStream extends FilterOutputStream {
-        protected static enum State {
+        protected enum State {
             START, CR, CRLF, CRLFCR, BODY
         }
 
