@@ -59,7 +59,7 @@ public class SmtpConnection extends AbstractConnection {
     public void run() {
         String line;
         StringTokenizer tokens;
-        List<String> recipients = new ArrayList<String>();
+        List<String> recipients = new ArrayList<>();
 
         try {
             ExchangeSessionFactory.checkConfig();
