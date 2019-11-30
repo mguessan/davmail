@@ -3093,7 +3093,7 @@ public abstract class ExchangeSession {
         CONTACT_ATTRIBUTES.add("fburl");
     }
 
-    public static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
+    protected static final Set<String> DISTRIBUTION_LIST_ATTRIBUTES = new HashSet<>();
 
     static {
         DISTRIBUTION_LIST_ATTRIBUTES.add("imapUid");
