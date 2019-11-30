@@ -23,7 +23,6 @@ import davmail.DavGateway;
 import davmail.Settings;
 import davmail.ui.tray.DavGatewayTray;
 import org.boris.winrun4j.AbstractService;
-import org.boris.winrun4j.ServiceException;
 
 /**
  * WinRun4J DavMail service.
@@ -37,10 +36,9 @@ public class DavService extends AbstractService {
      *
      * @param control service control.
      * @return return code.
-     * @throws ServiceException on error.
      */
     @Override
-    public int serviceRequest(int control) throws ServiceException {
+    public int serviceRequest(int control) {
         switch (control) {
             case SERVICE_CONTROL_STOP:
             case SERVICE_CONTROL_SHUTDOWN:
@@ -56,9 +54,8 @@ public class DavService extends AbstractService {
      *
      * @param args command line arguments
      * @return return code
-     * @throws ServiceException on error
      */
-    public int serviceMain(String[] args) throws ServiceException {
+    public int serviceMain(String[] args) {
         if (args.length >= 1) {
             Settings.setConfigFilePath(args[0]);
         }
