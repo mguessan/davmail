@@ -30,6 +30,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Wrapper for HttpURLConnection to fix missing content type and add logging.
+ */
 public class HttpURLConnectionWrapper extends HttpURLConnection {
     private static final Logger LOGGER = Logger.getLogger(HttpURLConnectionWrapper.class);
     HttpURLConnection httpURLConnection;
@@ -145,6 +148,10 @@ public class HttpURLConnectionWrapper extends HttpURLConnection {
         return httpURLConnection.getRequestProperty(key);
     }
 
+    /**
+     * Fix missing content type
+     * @return content type or text/html if mising
+     */
     @Override
     public String getContentType() {
         final String contentType = httpURLConnection.getContentType();
