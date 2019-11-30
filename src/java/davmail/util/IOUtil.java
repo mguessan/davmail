@@ -24,6 +24,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Input output functions.
@@ -53,10 +54,9 @@ public final class IOUtil {
      *
      * @param encoded Base64 encoded string
      * @return decoded content as byte arrey
-     * @throws IOException on error
      */
-    public static byte[] decodeBase64(String encoded) throws IOException {
-        return Base64.decodeBase64(encoded.getBytes("ASCII"));
+    public static byte[] decodeBase64(String encoded) {
+        return Base64.decodeBase64(encoded.getBytes(StandardCharsets.US_ASCII));
     }
 
     /**
@@ -64,10 +64,9 @@ public final class IOUtil {
      *
      * @param encoded Base64 encoded string
      * @return decoded content as byte arrey
-     * @throws IOException on error
      */
-    public static String decodeBase64AsString(String encoded) throws IOException {
-        return new String(decodeBase64(encoded), "UTF-8");
+    public static String decodeBase64AsString(String encoded) {
+        return new String(decodeBase64(encoded), StandardCharsets.UTF_8);
     }
 
     /**
@@ -75,10 +74,9 @@ public final class IOUtil {
      *
      * @param value input value
      * @return base64  value
-     * @throws IOException on error
      */
-    public static String encodeBase64AsString(String value) throws IOException {
-        return new String(Base64.encodeBase64(value.getBytes("UTF-8")), "ASCII");
+    public static String encodeBase64AsString(String value) {
+        return new String(Base64.encodeBase64(value.getBytes(StandardCharsets.UTF_8)), StandardCharsets.US_ASCII);
     }
 
     /**
@@ -86,10 +84,9 @@ public final class IOUtil {
      *
      * @param value input value
      * @return base64  value
-     * @throws IOException on error
      */
-    public static String encodeBase64AsString(byte[] value) throws IOException {
-        return new String(Base64.encodeBase64(value), "ASCII");
+    public static String encodeBase64AsString(byte[] value) {
+        return new String(Base64.encodeBase64(value), StandardCharsets.US_ASCII);
     }
 
     /**
@@ -97,10 +94,9 @@ public final class IOUtil {
      *
      * @param value input value
      * @return base64  value
-     * @throws IOException on error
      */
-    public static byte[] encodeBase64(String value) throws IOException {
-        return Base64.encodeBase64(value.getBytes("UTF-8"));
+    public static byte[] encodeBase64(String value) {
+        return Base64.encodeBase64(value.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

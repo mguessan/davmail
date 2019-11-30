@@ -22,7 +22,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -170,7 +170,7 @@ public final class StringUtil {
     private static final Pattern CR_PATTERN = Pattern.compile("\r");
     private static final Pattern LF_PATTERN = Pattern.compile("\n");
 
-    private static final List<PatternMap> URLENCODED_PATTERNS = new ArrayList<PatternMap>();
+    private static final List<PatternMap> URLENCODED_PATTERNS = new ArrayList<>();
     static {
         URLENCODED_PATTERNS.add(new PatternMap(String.valueOf((char) 0xF8FF), "_xF8FF_"));
         URLENCODED_PATTERNS.add(new PatternMap("%26", "&"));
@@ -193,7 +193,7 @@ public final class StringUtil {
         URLENCODED_PATTERNS.add(new PatternMap("%25", "%"));
     }
 
-    private static final List<PatternMap> URLENCODE_PATTERNS = new ArrayList<PatternMap>();
+    private static final List<PatternMap> URLENCODE_PATTERNS = new ArrayList<>();
     static {
         // first replace %
         URLENCODE_PATTERNS.add(new PatternMap("%", "%25"));
@@ -216,14 +216,14 @@ public final class StringUtil {
 
     }
 
-    private static final List<PatternMap> XML_DECODE_PATTERNS = new ArrayList<PatternMap>();
+    private static final List<PatternMap> XML_DECODE_PATTERNS = new ArrayList<>();
     static {
         XML_DECODE_PATTERNS.add(new PatternMap("&amp;", "&"));
         XML_DECODE_PATTERNS.add(new PatternMap("&lt;", "<"));
         XML_DECODE_PATTERNS.add(new PatternMap("&gt;", ">"));
     }
 
-    private static final List<PatternMap> XML_ENCODE_PATTERNS = new ArrayList<PatternMap>();
+    private static final List<PatternMap> XML_ENCODE_PATTERNS = new ArrayList<>();
     static {
         XML_ENCODE_PATTERNS.add(new PatternMap("&", AMP_PATTERN, "&amp;"));
         XML_ENCODE_PATTERNS.add(new PatternMap("<", "&lt;"));
@@ -297,10 +297,11 @@ public final class StringUtil {
      * @param value base64 value
      * @return hex value
      */
-    public static String base64ToHex(String value) throws UnsupportedEncodingException {
+    @SuppressWarnings("unused")
+    public static String base64ToHex(String value) {
         String hexValue = null;
         if (value != null) {
-            hexValue = new String(Hex.encodeHex(Base64.decodeBase64(value.getBytes("UTF-8"))));
+            hexValue = new String(Hex.encodeHex(Base64.decodeBase64(value.getBytes(StandardCharsets.UTF_8))));
         }
         return hexValue;
     }
@@ -312,10 +313,11 @@ public final class StringUtil {
      * @return base64 value
      * @throws DecoderException on error
      */
-    public static String hexToBase64(String value) throws DecoderException, UnsupportedEncodingException {
+    @SuppressWarnings("unused")
+    public static String hexToBase64(String value) throws DecoderException {
         String base64Value = null;
         if (value != null) {
-            base64Value = new String(Base64.encodeBase64(Hex.decodeHex(value.toCharArray())), "UTF-8");
+            base64Value = new String(Base64.encodeBase64(Hex.decodeHex(value.toCharArray())), StandardCharsets.UTF_8);
         }
         return base64Value;
     }

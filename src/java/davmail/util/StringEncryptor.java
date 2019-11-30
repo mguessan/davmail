@@ -26,8 +26,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
@@ -55,7 +55,7 @@ public class StringEncryptor {
 
     public String encryptString(String value) throws IOException {
         try {
-            byte[] plaintext = value.getBytes("UTF-8");
+            byte[] plaintext = value.getBytes(StandardCharsets.UTF_8);
 
             // Encrypt
             Cipher enc = Cipher.getInstance(ALGO);
@@ -76,7 +76,7 @@ public class StringEncryptor {
                 Cipher dec = Cipher.getInstance(ALGO);
                 dec.init(Cipher.DECRYPT_MODE, getSecretKey(), getPBEParameterSpec());
                 byte[] decrypted = dec.doFinal(encrypted);
-                return new String(decrypted, "UTF-8");
+                return new String(decrypted, StandardCharsets.UTF_8);
 
             } catch (Exception e) {
                 throw new IOException(e);
@@ -93,8 +93,8 @@ public class StringEncryptor {
         return kf.generateSecret(keySpec);
     }
 
-    private PBEParameterSpec getPBEParameterSpec() throws UnsupportedEncodingException {
-        byte[] bytes = fingerprint.getBytes("UTF-8");
+    private PBEParameterSpec getPBEParameterSpec() {
+        byte[] bytes = fingerprint.getBytes(StandardCharsets.UTF_8);
         return new PBEParameterSpec(bytes, 10000, new IvParameterSpec(bytes));
     }
 }
