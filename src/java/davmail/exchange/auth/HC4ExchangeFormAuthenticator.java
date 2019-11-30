@@ -52,6 +52,7 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +64,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Various username fields found on custom Exchange authentication forms
      */
-    protected static final Set<String> USER_NAME_FIELDS = new HashSet<String>();
+    protected static final Set<String> USER_NAME_FIELDS = new HashSet<>();
 
     static {
         USER_NAME_FIELDS.add("username");
@@ -78,7 +79,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Various password fields found on custom Exchange authentication forms
      */
-    protected static final Set<String> PASSWORD_FIELDS = new HashSet<String>();
+    protected static final Set<String> PASSWORD_FIELDS = new HashSet<>();
 
     static {
         PASSWORD_FIELDS.add("password");
@@ -93,7 +94,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * Various OTP (one time password) fields found on custom Exchange authentication forms.
      * Used to open OTP dialog
      */
-    protected static final Set<String> TOKEN_FIELDS = new HashSet<String>();
+    protected static final Set<String> TOKEN_FIELDS = new HashSet<>();
 
     static {
         TOKEN_FIELDS.add("SafeWordPassword");
@@ -128,7 +129,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Logon form user name fields.
      */
-    private final List<String> usernameInputs = new ArrayList<String>();
+    private final List<String> usernameInputs = new ArrayList<>();
     /**
      * Logon form password field, default is password.
      */
@@ -220,12 +221,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
             close();
             LOGGER.error(exc.getMessage());
             throw exc;
-        } catch (ConnectException exc) {
-            close();
-            BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
-            LOGGER.error(message);
-            throw new DavMailException("EXCEPTION_DAVMAIL_CONFIGURATION", message);
-        } catch (UnknownHostException exc) {
+        } catch (ConnectException | UnknownHostException exc) {
             close();
             BundleMessage message = new BundleMessage("EXCEPTION_CONNECT", exc.getClass().getName(), exc.getMessage());
             LOGGER.error(message);
@@ -311,9 +307,8 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * @param uri                  current form uri
      * @param responseBodyAsString form body
      * @return logon method
-     * @throws IOException on error
      */
-    protected PostRequest buildLogonMethod(HttpClientAdapter httpClient, URI uri, String responseBodyAsString) throws IOException {
+    protected PostRequest buildLogonMethod(HttpClientAdapter httpClient, URI uri, String responseBodyAsString) {
         PostRequest logonMethod = null;
 
         // create an instance of HtmlCleaner
@@ -323,7 +318,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         usernameInputs.clear();
 
         try {
-            TagNode node = cleaner.clean(new ByteArrayInputStream(responseBodyAsString.getBytes("UTF-8")));
+            TagNode node = cleaner.clean(new ByteArrayInputStream(responseBodyAsString.getBytes(StandardCharsets.UTF_8)));
             List forms = node.getElementListByName("form", true);
             TagNode logonForm = null;
             // select form
@@ -354,7 +349,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     String name = ((TagNode) input).getAttributeByName("name");
                     String value = ((TagNode) input).getAttributeByName("value");
                     if ("hidden".equalsIgnoreCase(type) && name != null && value != null) {
-                        ((PostRequest) logonMethod).setParameter(name, value);
+                        logonMethod.setParameter(name, value);
                     }
                     // custom login form
                     if (USER_NAME_FIELDS.contains(name)) {
@@ -367,7 +362,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         logonMethod = buildLogonMethod(httpClient, logonMethod.getURI(), logonMethod.getResponseBodyAsString());
                     } else if (TOKEN_FIELDS.contains(name)) {
                         // one time password, ask it to the user
-                        ((PostRequest) logonMethod).setParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
+                        logonMethod.setParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
                     } else if ("otc".equals(name)) {
                         // captcha image, get image and ask user
                         String pinsafeUser = getAliasFromLogin();
@@ -375,8 +370,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                             pinsafeUser = username;
                         }
                         HttpGet pinRequest = new HttpGet("/PINsafeISAFilter.dll?username=" + pinsafeUser);
-                        CloseableHttpResponse pinResponse = httpClient.execute(pinRequest);
-                        try {
+                        try (CloseableHttpResponse pinResponse = httpClient.execute(pinRequest)) {
                             int status = pinResponse.getStatusLine().getStatusCode();
                             if (status != HttpStatus.SC_OK) {
                                 throw HttpClientAdapter.buildHttpException(pinRequest, pinResponse);
@@ -384,8 +378,6 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                             BufferedImage captchaImage = ImageIO.read(pinResponse.getEntity().getContent());
                             logonMethod.setParameter(name, DavGatewayOTPPrompt.getCaptchaValue(captchaImage));
 
-                        } finally {
-                            pinResponse.close();
                         }
                     }
                 }
@@ -435,9 +427,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
             }
-        } catch (IOException e) {
-            LOGGER.error("Error parsing login form at " + uri);
-        } catch (URISyntaxException e) {
+        } catch (IOException | URISyntaxException e) {
             LOGGER.error("Error parsing login form at " + uri);
         }
 
@@ -521,7 +511,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 String name = ((TagNode) input).getAttributeByName("name");
                 String value = ((TagNode) input).getAttributeByName("value");
                 if (name != null && value != null) {
-                    ((PostRequest) postLanguageFormMethod).setParameter(name, value);
+                    postLanguageFormMethod.setParameter(name, value);
                 }
             }
             List selectList = languageForm.getElementListByName("select", true);
@@ -536,14 +526,10 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
                 if (name != null && value != null) {
-                    ((PostRequest) postLanguageFormMethod).setParameter(name, value);
+                    postLanguageFormMethod.setParameter(name, value);
                 }
             }
-        } catch (IOException e) {
-            String errorMessage = "Error parsing language selection form at " + uri;
-            LOGGER.error(errorMessage);
-            throw new IOException(errorMessage);
-        } catch (URISyntaxException e) {
+        } catch (IOException | URISyntaxException e) {
             String errorMessage = "Error parsing language selection form at " + uri;
             LOGGER.error(errorMessage);
             throw new IOException(errorMessage);
@@ -607,7 +593,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         URIBuilder uriBuilder = new URIBuilder(uri);
         if (path != null) {
             // reset query string
-            uriBuilder.setQuery(null);
+            uriBuilder.clearParameters();
             if (path.startsWith("/")) {
                 // path is absolute, replace method path
                 uriBuilder.setPath(path);
@@ -649,7 +635,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
             }
-            uriBuilder.setQuery(pathQuery.substring(queryIndex + 1));
+            uriBuilder.setCustomQuery(pathQuery.substring(queryIndex + 1));
         }
         return uriBuilder.build();
     }
@@ -725,7 +711,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
      * @return http client
      */
     public org.apache.commons.httpclient.HttpClient getHttpClientAdapter() throws DavMailException {
-        org.apache.commons.httpclient.HttpClient oldHttpClient = null;
+        org.apache.commons.httpclient.HttpClient oldHttpClient;
         oldHttpClient = DavGatewayHttpClientFacade.getInstance(url);
         DavGatewayHttpClientFacade.setCredentials(oldHttpClient, username, password);
         DavGatewayHttpClientFacade.createMultiThreadedHttpConnectionManager(oldHttpClient);

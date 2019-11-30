@@ -23,17 +23,12 @@ import davmail.BundleMessage;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebErrorEvent;
-import javafx.scene.web.WebEvent;
 import javafx.scene.web.WebView;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -52,17 +47,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 public class O365InteractiveAuthenticatorFrame extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveAuthenticatorFrame.class);
@@ -120,12 +112,12 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         @Override
                                         public InputStream getInputStream() throws IOException {
                                             byte[] content = IOUtil.readFully(httpsURLConnection.getInputStream());
-                                            String contentAsString = new String(content, "UTF-8")
+                                            String contentAsString = new String(content, StandardCharsets.UTF_8)
                                                     .replaceAll("integrity ?=", "integrity.disabled=")
                                                     .replaceAll("setAttribute\\(\"integrity\"", "setAttribute(\"integrity.disabled\"");
                                             LOGGER.debug(contentAsString);
                                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                            baos.write(contentAsString.getBytes("UTF-8"));
+                                            baos.write(contentAsString.getBytes(StandardCharsets.UTF_8));
                                             return new ByteArrayInputStream(baos.toByteArray());
                                         }
 
@@ -216,65 +208,48 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
         Scene scene = new Scene(hBox);
         fxPanel.setScene(scene);
 
-        webViewEngine.setOnAlert(new EventHandler<WebEvent<String>>() {
-            @Override
-            public void handle(final WebEvent<String> stringWebEvent) {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        String message = stringWebEvent.getData();
-                        JOptionPane.showMessageDialog(O365InteractiveAuthenticatorFrame.this, message);
+        webViewEngine.setOnAlert(stringWebEvent -> SwingUtilities.invokeLater(() -> {
+            String message = stringWebEvent.getData();
+            JOptionPane.showMessageDialog(O365InteractiveAuthenticatorFrame.this, message);
+        }));
+        webViewEngine.setOnError(event -> LOGGER.error(event.getMessage()));
+
+
+        webViewEngine.getLoadWorker().stateProperty().addListener((ov, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                loadProgress.setVisible(false);
+                location = webViewEngine.getLocation();
+                updateTitleAndFocus(location);
+                LOGGER.debug("Webview location: " + location);
+                // override console.log
+                O365InteractiveJSLogger.register(webViewEngine);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
+                }
+                if (location.startsWith(redirectUri)) {
+                    LOGGER.debug("Location starts with redirectUri, check code");
+
+                    authenticator.isAuthenticated = location.contains("code=") && location.contains("&session_state=");
+                    if (!authenticator.isAuthenticated && location.contains("error=")) {
+                        authenticator.errorCode = location.substring(location.indexOf("error="));
                     }
-                });
-            }
-        });
-        webViewEngine.setOnError(new EventHandler<WebErrorEvent>() {
-            @Override
-            public void handle(WebErrorEvent event) {
-                LOGGER.error(event.getMessage());
-            }
-        });
+                    if (authenticator.isAuthenticated) {
+                        LOGGER.debug("Authenticated location: " + location);
+                        String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+                        String sessionState = location.substring(location.lastIndexOf('='));
 
-
-        webViewEngine.getLoadWorker().stateProperty().addListener(new ChangeListener<Worker.State>() {
-            @Override
-            public void changed(ObservableValue ov, Worker.State oldState, Worker.State newState) {
-                if (newState == Worker.State.SUCCEEDED) {
-                    loadProgress.setVisible(false);
-                    location = webViewEngine.getLocation();
-                    updateTitleAndFocus(location);
-                    LOGGER.debug("Webview location: " + location);
-                    // override console.log
-                    O365InteractiveJSLogger.register(webViewEngine);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(dumpDocument(webViewEngine.getDocument()));
-                    }
-                    if (location.startsWith(redirectUri)) {
-                        LOGGER.debug("Location starts with redirectUri, check code");
-
-                        authenticator.isAuthenticated = location.contains("code=") && location.contains("&session_state=");
-                        if (!authenticator.isAuthenticated && location.contains("error=")) {
-                            authenticator.errorCode = location.substring(location.indexOf("error="));
-                        }
-                        if (authenticator.isAuthenticated) {
-                            LOGGER.debug("Authenticated location: " + location);
-                            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
-                            String sessionState = location.substring(location.lastIndexOf('='));
-
-                            LOGGER.debug("Authentication Code: " + code);
-                            LOGGER.debug("Authentication session state: " + sessionState);
-                            authenticator.code = code;
-                        }
-                        close();
-                    }
-                } else if (newState == Worker.State.FAILED) {
-                    Throwable e = webViewEngine.getLoadWorker().getException();
-                    if (e != null) {
-                        handleError(e);
+                        LOGGER.debug("Authentication Code: " + code);
+                        LOGGER.debug("Authentication session state: " + sessionState);
+                        authenticator.code = code;
                     }
                     close();
                 }
-
+            } else if (newState == Worker.State.FAILED) {
+                Throwable e = webViewEngine.getLoadWorker().getException();
+                if (e != null) {
+                    handleError(e);
+                }
+                close();
             }
 
         });
@@ -282,14 +257,11 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
     }
 
     private void updateTitleAndFocus(final String location) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                setState(JFrame.NORMAL);
-                setAlwaysOnTop(true);
-                setAlwaysOnTop(false);
-                setTitle("DavMail: " + location);
-            }
+        SwingUtilities.invokeLater(() -> {
+            setState(JFrame.NORMAL);
+            setAlwaysOnTop(true);
+            setAlwaysOnTop(false);
+            setTitle("DavMail: " + location);
         });
     }
 
@@ -307,7 +279,7 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
             transformer.transform(new DOMSource(document),
-                    new StreamResult(new OutputStreamWriter(baos, "UTF-8")));
+                    new StreamResult(new OutputStreamWriter(baos, StandardCharsets.UTF_8)));
             result = baos.toString("UTF-8");
         } catch (Exception e) {
             result = e + " " + e.getMessage();
@@ -317,17 +289,14 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
 
     public void authenticate(final String initUrl, final String redirectUri) {
         // Run initFX as JavaFX-Thread
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Platform.setImplicitExit(false);
+        Platform.runLater(() -> {
+            try {
+                Platform.setImplicitExit(false);
 
-                    initFX(fxPanel, initUrl, redirectUri);
-                } catch (Throwable t) {
-                    handleError(t);
-                    close();
-                }
+                initFX(fxPanel, initUrl, redirectUri);
+            } catch (Throwable t) {
+                handleError(t);
+                close();
             }
         });
     }
@@ -341,12 +310,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
     }
 
     public void close() {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                setVisible(false);
-                dispose();
-            }
+        SwingUtilities.invokeLater(() -> {
+            setVisible(false);
+            dispose();
         });
     }
 

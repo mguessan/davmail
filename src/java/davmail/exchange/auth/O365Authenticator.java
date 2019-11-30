@@ -208,9 +208,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 throw new IOException("Authenticated username " + token.getUsername() + " does not match " + username);
             }
 
-        } catch (JSONException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (URISyntaxException e) {
+        } catch (JSONException | URISyntaxException e) {
             throw new IOException(e + " " + e.getMessage());
         } finally {
             // do not keep login connections open
