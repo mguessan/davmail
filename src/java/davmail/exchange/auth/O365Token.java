@@ -60,7 +60,7 @@ public class O365Token {
         this.redirectUri = redirectUri;
         this.tokenUrl = "https://login.microsoftonline.com/"+tenantId+"/oauth2/token";
 
-        ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+        ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("grant_type", "authorization_code"));
         parameters.add(new BasicNameValuePair("code", code));
         parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
@@ -133,7 +133,7 @@ public class O365Token {
     }
 
     public void refreshToken() throws IOException {
-        ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+        ArrayList<NameValuePair> parameters = new ArrayList<>();
         parameters.add(new BasicNameValuePair("grant_type", "refresh_token"));
         parameters.add(new BasicNameValuePair("refresh_token", refreshToken));
         parameters.add(new BasicNameValuePair("redirect_uri", redirectUri));
@@ -146,16 +146,11 @@ public class O365Token {
     }
 
     private void executeRequest(RestRequest tokenMethod) throws IOException {
-        HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL);
-        try {
+        // do not keep login connections open (no pooling)
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL)) {
             httpClientAdapter.execute(tokenMethod);
             setJsonToken(tokenMethod.getJsonResponse());
-
-        } finally {
-            // do not keep login connections open
-            httpClientAdapter.close();
         }
-
     }
 
     static O365Token build(String tenantId, String clientId, String redirectUri, String code, String password) throws IOException {
@@ -171,12 +166,12 @@ public class O365Token {
     }
 
 
-    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) throws IOException {
+    static O365Token load(String tenantId, String clientId, String redirectUri, String username, String password) {
         O365Token token = null;
         if (Settings.getBooleanProperty("davmail.oauth.persistToken", true)) {
             String encryptedRefreshToken = Settings.loadRefreshToken(username);
             if (encryptedRefreshToken != null) {
-                String refreshToken = null;
+                String refreshToken;
                 try {
                     refreshToken = decryptToken(encryptedRefreshToken, password);
                     LOGGER.debug("Loaded stored token for " + username);
