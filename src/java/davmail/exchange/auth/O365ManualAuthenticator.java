@@ -29,7 +29,6 @@ import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -39,7 +38,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 public class O365ManualAuthenticator implements ExchangeAuthenticator {
 
@@ -93,25 +91,7 @@ public class O365ManualAuthenticator implements ExchangeAuthenticator {
             return;
         }
 
-        URI uri;
-        try {
-            uri = new URIBuilder()
-                    .setScheme("https")
-                    .setHost("login.microsoftonline.com")
-                    .setPath("/" + tenantId + "/oauth2/authorize")
-                    .addParameter("client_id", clientId)
-                    .addParameter("response_type", "code")
-                    .addParameter("redirect_uri", redirectUri)
-                    .addParameter("response_mode", "query")
-                    .addParameter("resource", resource)
-                    .addParameter("login_hint", username)
-                    // force consent
-                    //.addParameter("prompt", "consent")
-                    .build();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
-        final String initUrl = uri.toString();
+        final String initUrl = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
 
         if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
             // command line mode

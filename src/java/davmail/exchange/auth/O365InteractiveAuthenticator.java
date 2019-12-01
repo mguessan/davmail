@@ -27,7 +27,6 @@ import davmail.exchange.ews.GetFolderMethod;
 import davmail.exchange.ews.GetUserConfigurationMethod;
 import davmail.http.DavGatewayHttpClientFacade;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -35,7 +34,6 @@ import java.io.IOException;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
@@ -95,33 +93,7 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
             return;
         }
 
-        URI uri;
-        try {
-            URIBuilder uriBuilder = new URIBuilder()
-                    .setScheme("https")
-                    .setHost("login.microsoftonline.com")
-                    .addParameter("client_id", clientId)
-                    .addParameter("response_type", "code")
-                    .addParameter("redirect_uri", redirectUri)
-                    .addParameter("response_mode", "query")
-                    .addParameter("login_hint", username);
-
-            // force consent
-            //uriBuilder.addParameter("prompt", "consent")
-            // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
-            if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
-                uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
-                        .addParameter("scope", "openid https://outlook.office365.com/EWS.AccessAsUser.All");
-            } else {
-                uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
-                        .addParameter("resource", resource);
-            }
-
-            uri = uriBuilder.build();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
-        final String initUrl = uri.toString();
+        final String initUrl = O365Authenticator.buildAuthorizeUrl(tenantId, clientId, redirectUri, username);
 
         // set default authenticator
         Authenticator.setDefault(new Authenticator() {
