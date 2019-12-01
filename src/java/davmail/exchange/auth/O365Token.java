@@ -90,10 +90,18 @@ public class O365Token {
 
             LOGGER.debug("Access token expires " + new Date(expiresOn));
 
-            String decodedBearer = IOUtil.decodeBase64AsString(accessToken.substring(accessToken.indexOf('.') + 1, accessToken.lastIndexOf('.')) + "==");
-            JSONObject tokenBody = new JSONObject(decodedBearer);
-            LOGGER.debug("Token: " + tokenBody);
-            username = tokenBody.getString("unique_name");
+            String idToken = jsonToken.optString("id_token");
+            if (idToken != null) {
+                String decodedJwt = IOUtil.decodeBase64AsString(idToken.substring(idToken.indexOf("."),idToken.lastIndexOf(".")));
+                JSONObject tokenBody = new JSONObject(decodedJwt);
+                LOGGER.debug("Token: " + tokenBody);
+                username = tokenBody.getString("unique_name");
+            } else {
+                String decodedBearer = IOUtil.decodeBase64AsString(accessToken.substring(accessToken.indexOf('.') + 1, accessToken.lastIndexOf('.')) + "==");
+                JSONObject tokenBody = new JSONObject(decodedBearer);
+                LOGGER.debug("Token: " + tokenBody);
+                username = tokenBody.getString("unique_name");
+            }
 
         } catch (JSONException e) {
             throw new IOException("Exception parsing token", e);
