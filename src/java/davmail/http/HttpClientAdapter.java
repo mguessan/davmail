@@ -81,7 +81,6 @@ public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
 
     static final Registry<ConnectionSocketFactory> SCHEME_REGISTRY;
-    static final Registry<AuthSchemeProvider> AUTH_SCHEME_REGISTRY;
     static final RequestConfig DEFAULT_REQUEST_CONFIG;
     static String WORKSTATION_NAME = "UNKNOWN";
     static final int MAX_REDIRECTS = 10;
@@ -109,14 +108,6 @@ public class HttpClientAdapter implements Closeable {
         } catch (Throwable t) {
             // ignore
         }
-
-        AUTH_SCHEME_REGISTRY = RegistryBuilder.<AuthSchemeProvider>create()
-                .register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
-                .register(AuthSchemes.BASIC, new BasicSchemeFactory())
-                .register(AuthSchemes.DIGEST, new DigestSchemeFactory())
-                .register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
-                .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory())
-                .build();
 
         DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
                 // socket connect timeout
@@ -182,7 +173,7 @@ public class HttpClientAdapter implements Closeable {
                 .disableRedirectHandling()
                 .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
                 .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
-                .setDefaultAuthSchemeRegistry(AUTH_SCHEME_REGISTRY)
+                .setDefaultAuthSchemeRegistry(getAuthSchemeRegistry())
                 .setConnectionManager(connectionManager);
 
         SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(ProxySelector.getDefault());
@@ -244,6 +235,45 @@ public class HttpClientAdapter implements Closeable {
         clientBuilder.setDefaultCredentialsProvider(provider);
 
         httpClient = clientBuilder.build();
+    }
+
+    /**
+     * Get current uri host
+     *
+     * @return current host
+     */
+    public String getHost() {
+        return uri.getHost();
+    }
+
+    /**
+     * Force current uri.
+     *
+     * @param uri new uri
+     */
+    public void setUri(URI uri) {
+        this.uri = uri;
+    }
+
+    /**
+     * Current uri.
+     * @return current uri
+     */
+    public URI getUri() {
+        return uri;
+    }
+
+    private Registry<AuthSchemeProvider> getAuthSchemeRegistry() {
+        final RegistryBuilder<AuthSchemeProvider> registryBuilder = RegistryBuilder.create();
+        registryBuilder.register(AuthSchemes.NTLM, new JCIFSNTLMSchemeFactory())
+                .register(AuthSchemes.BASIC, new BasicSchemeFactory())
+                .register(AuthSchemes.DIGEST, new DigestSchemeFactory());
+        if (Settings.getBooleanProperty("davmail.enableKerberos")) {
+            registryBuilder.register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory())
+                    .register(AuthSchemes.KERBEROS, new KerberosSchemeFactory());
+        }
+
+        return registryBuilder.build();
     }
 
     private void parseUserName(String username) {
@@ -343,11 +373,7 @@ public class HttpClientAdapter implements Closeable {
      * @throws IOException on error
      */
     public CloseableHttpResponse execute(HttpRequestBase request, HttpClientContext context) throws IOException {
-        URI requestURI = request.getURI();
-        if (!requestURI.isAbsolute()) {
-            request.setURI(URIUtils.resolve(uri, requestURI));
-        }
-        uri = request.getURI();
+        handleURI(request);
         CloseableHttpResponse response = httpClient.execute(request, context);
         if (request instanceof ResponseHandler) {
             try {
@@ -357,6 +383,18 @@ public class HttpClientAdapter implements Closeable {
             }
         }
         return response;
+    }
+
+    /**
+     * fix relative uri and update current uri.
+     * @param request http request
+     */
+    private void handleURI(HttpRequestBase request) {
+        URI requestURI = request.getURI();
+        if (!requestURI.isAbsolute()) {
+            request.setURI(URIUtils.resolve(uri, requestURI));
+        }
+        uri = request.getURI();
     }
 
     /**
@@ -387,6 +425,7 @@ public class HttpClientAdapter implements Closeable {
     }
 
     public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException, DavException {
+        handleURI(request);
         MultiStatus multiStatus = null;
         try (CloseableHttpResponse response = execute(request)) {
             request.checkSuccess(response);
@@ -474,7 +513,4 @@ public class HttpClientAdapter implements Closeable {
         }
     }
 
-    public String getHost() {
-        return uri.getHost();
-    }
 }
