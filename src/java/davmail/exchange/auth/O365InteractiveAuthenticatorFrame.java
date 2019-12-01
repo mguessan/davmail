@@ -102,7 +102,9 @@ public class O365InteractiveAuthenticatorFrame extends JFrame {
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/login"))
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/SAS/ProcessAuth"))
                                         || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/federation/oauth2"))
-                                        // Okta authentication form
+                                        // v2 OIDC endpoint
+                                        || ("login.microsoftonline.com".equals(url.getHost()) && url.getPath().endsWith("/oauth2/v2.0/authorize"))
+                                        // Okta authentication form /oauth2/v2.0/authorize
                                         || (url.getHost().endsWith(".okta.com") &&
                                         !url.getPath().startsWith("/api/v1/authn"))
                                 ) {
