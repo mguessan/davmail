@@ -97,19 +97,27 @@ public class O365InteractiveAuthenticator implements ExchangeAuthenticator {
 
         URI uri;
         try {
-            uri = new URIBuilder()
+            URIBuilder uriBuilder = new URIBuilder()
                     .setScheme("https")
                     .setHost("login.microsoftonline.com")
-                    .setPath("/" + tenantId + "/oauth2/authorize")
                     .addParameter("client_id", clientId)
                     .addParameter("response_type", "code")
                     .addParameter("redirect_uri", redirectUri)
                     .addParameter("response_mode", "query")
-                    .addParameter("resource", resource)
-                    .addParameter("login_hint", username)
-                    // force consent
-                    //.addParameter("prompt", "consent")
-                    .build();
+                    .addParameter("login_hint", username);
+
+            // force consent
+            //uriBuilder.addParameter("prompt", "consent")
+            // switch to new v2.0 OIDC compliant endpoint https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison
+            if (Settings.getBooleanProperty("davmail.enableOidc", false)) {
+                uriBuilder.setPath("/" + tenantId + "/oauth2/v2.0/authorize")
+                        .addParameter("scope", "openid https://outlook.office365.com/EWS.AccessAsUser.All");
+            } else {
+                uriBuilder.setPath("/" + tenantId + "/oauth2/authorize")
+                        .addParameter("resource", resource);
+            }
+
+            uri = uriBuilder.build();
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }
