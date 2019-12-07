@@ -842,7 +842,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             // update public folder URI
             publicFolderUrl = httpPropfind.getURI().toString();
 
-        } catch (IOException|DavException e) {
+        } catch (IOException e) {
             LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
             // default public folder path
             publicFolderUrl = PUBLIC_ROOT;
@@ -890,7 +890,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     " Outbox URL: " + outboxUrl +
                     " Public folder URL: " + publicFolderUrl
             );
-        } catch (IOException|DavException e) {
+        } catch (IOException e) {
             LOGGER.error(e.getMessage());
             throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
@@ -1868,8 +1868,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
      */
     @Override
     protected Folder internalGetFolder(String folderPath) throws IOException {
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                httpClient, URIUtil.encodePath(getFolderPath(folderPath)), 0, FOLDER_PROPERTIES_NAME_SET);
+        MultiStatus multiStatus = httpClientAdapter.executeDavRequest(new HttpPropfind(
+                URIUtil.encodePath(getFolderPath(folderPath)),
+                FOLDER_PROPERTIES_NAME_SET, 0));
+        MultiStatusResponse[] responses = multiStatus.getResponses();
+
         Folder folder = null;
         if (responses.length > 0) {
             folder = buildFolder(responses[0]);
