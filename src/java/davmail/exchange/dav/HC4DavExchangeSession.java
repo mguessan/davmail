@@ -852,14 +852,13 @@ public class HC4DavExchangeSession extends ExchangeSession {
 
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
-        MultiStatusResponse[] responses;
         try {
-            responses = DavGatewayHttpClientFacade.executePropFindMethod(
-                    httpClient, URIUtil.encodePath(mailPath), 0, WELL_KNOWN_FOLDERS);
+            MultiStatus multiStatus = httpClientAdapter.executeDavRequest(new HttpPropfind(mailPath, WELL_KNOWN_FOLDERS, 0));
+            MultiStatusResponse[] responses = multiStatus.getResponses();
             if (responses.length == 0) {
                 throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
             }
-            DavPropertySet properties = responses[0].getProperties(HttpStatus.SC_OK);
+            DavPropertySet properties = responses[0].getProperties(org.apache.http.HttpStatus.SC_OK);
             inboxUrl = getURIPropertyIfExists(properties, "inbox");
             inboxName = getFolderName(inboxUrl);
             deleteditemsUrl = getURIPropertyIfExists(properties, "deleteditems");
@@ -891,7 +890,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     " Outbox URL: " + outboxUrl +
                     " Public folder URL: " + publicFolderUrl
             );
-        } catch (IOException e) {
+        } catch (IOException|DavException e) {
             LOGGER.error(e.getMessage());
             throw new WebdavNotAvailableException("EXCEPTION_UNABLE_TO_GET_MAIL_FOLDER", mailPath);
         }
