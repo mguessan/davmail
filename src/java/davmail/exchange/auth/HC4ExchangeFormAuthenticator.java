@@ -706,11 +706,19 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     }
 
     /**
+     * Return authenticated HttpClient 4 HttpClientAdapter
+     * @return HttpClientAdapter instance
+     */
+    public HttpClientAdapter getHttpClientAdapter() {
+        return httpClientAdapter;
+    }
+
+    /**
      * Authenticated httpClientAdapter (with cookies).
      *
      * @return http client
      */
-    public org.apache.commons.httpclient.HttpClient getHttpClientAdapter() throws DavMailException {
+    public org.apache.commons.httpclient.HttpClient getHttpClient() throws DavMailException {
         org.apache.commons.httpclient.HttpClient oldHttpClient;
         oldHttpClient = DavGatewayHttpClientFacade.getInstance(url);
         DavGatewayHttpClientFacade.setCredentials(oldHttpClient, username, password);
