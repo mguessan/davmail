@@ -21,6 +21,8 @@ package davmail.exchange.dav;
 
 import davmail.AbstractExchange2007TestCase;
 import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
+import davmail.http.URIUtil;
+import org.apache.http.client.utils.URIUtils;
 
 import java.io.IOException;
 
@@ -53,6 +55,11 @@ public class TestHC4DavExchangeSession extends AbstractExchange2007TestCase {
                 authenticator.getHttpClientAdapter(),
                 authenticator.getExchangeUri(),
                 authenticator.getUsername());
-        assertEquals(username, session.getEmail());
+        assertEquals(email, session.getEmail());
+        assertEquals(username, session.getAlias());
+        assertEquals(URIUtils.resolve(authenticator.getExchangeUri(), "/public/").toString(), session.getCmdBasePath());
+
+        assertNotNull(session.getFolderPath("/users/"+email+"/inbox"));
+        assertNotNull(session.getFolderPath("/users/"+email+"/calendar"));
     }
 }
