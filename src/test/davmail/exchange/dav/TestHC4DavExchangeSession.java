@@ -20,9 +20,11 @@
 package davmail.exchange.dav;
 
 import davmail.AbstractExchange2007TestCase;
+import davmail.Settings;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
-import davmail.http.URIUtil;
 import org.apache.http.client.utils.URIUtils;
+import org.apache.log4j.Level;
 
 import java.io.IOException;
 
@@ -36,7 +38,7 @@ public class TestHC4DavExchangeSession extends AbstractExchange2007TestCase {
     public void setUp() throws IOException {
         super.setUp();
 
-        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
+        Settings.setLoggingLevel("org.apache.http.wire", Level.DEBUG);
         url = "https://" + server + "/owa";
 
         if (authenticator == null) {
@@ -51,15 +53,41 @@ public class TestHC4DavExchangeSession extends AbstractExchange2007TestCase {
     public void testOpenSession() throws IOException {
         assertEquals("https://" + server + "/owa/", authenticator.getExchangeUri().toString());
         assertNotNull(authenticator.getHttpClientAdapter());
-        HC4DavExchangeSession session = new HC4DavExchangeSession(
-                authenticator.getHttpClientAdapter(),
-                authenticator.getExchangeUri(),
-                authenticator.getUsername());
+        initSession();
         assertEquals(email, session.getEmail());
         assertEquals(username, session.getAlias());
-        assertEquals(URIUtils.resolve(authenticator.getExchangeUri(), "/public/").toString(), session.getCmdBasePath());
+        assertEquals(URIUtils.resolve(authenticator.getExchangeUri(), "/public/").toString(), ((HC4DavExchangeSession)session).getCmdBasePath());
 
-        assertNotNull(session.getFolderPath("/users/"+email+"/inbox"));
-        assertNotNull(session.getFolderPath("/users/"+email+"/calendar"));
+        assertNotNull(((HC4DavExchangeSession)session).getFolderPath("/users/"+email+"/inbox"));
+        assertNotNull(((HC4DavExchangeSession)session).getFolderPath("/users/"+email+"/calendar"));
+    }
+
+    private void initSession() throws IOException {
+        if (session == null) {
+            session = new HC4DavExchangeSession(
+                    authenticator.getHttpClientAdapter(),
+                    authenticator.getExchangeUri(),
+                    authenticator.getUsername());
+        }
+    }
+
+    public void testGetFolder() throws IOException {
+        initSession();
+        ExchangeSession.Folder folder = session.getFolder("INBOX");
+        assertNotNull(folder);
+        folder.loadMessages();
+    }
+
+    public void testCreateFolder() throws IOException {
+        initSession();
+        session.createMessageFolder("testfolder");
+        session.createMessageFolder("testfolder");
+    }
+
+    public void testDeleteFolder() throws IOException {
+        initSession();
+        session.deleteFolder("testfolder");
+        // delete folder again
+        session.deleteFolder("testfolder");
     }
 }

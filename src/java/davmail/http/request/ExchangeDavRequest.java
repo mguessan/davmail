@@ -44,7 +44,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ExchangeDavRequest extends HttpPost implements ResponseHandler {
+public abstract class ExchangeDavRequest extends HttpPost implements ResponseHandler<List<MultiStatusResponse>> {
     protected static final Logger LOGGER = Logger.getLogger(ExchangeDavMethod.class);
     private static final String XML_CONTENT_TYPE = "text/xml; charset=UTF-8";
 
@@ -108,7 +108,7 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
     protected abstract byte[] generateRequestContent();
 
     @Override
-    public Object handleResponse(HttpResponse response) {
+    public List<MultiStatusResponse> handleResponse(HttpResponse response) {
         this.response = response;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && "text/xml".equals(contentTypeHeader.getValue())) {

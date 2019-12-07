@@ -35,6 +35,7 @@ import davmail.exchange.XMLStreamUtil;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
+import davmail.http.request.ExchangePropPatchRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -52,6 +53,7 @@ import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
@@ -60,14 +62,19 @@ import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
+import org.apache.jackrabbit.webdav.client.methods.HttpMkcol;
 import org.apache.jackrabbit.webdav.client.methods.HttpPropfind;
+import org.apache.jackrabbit.webdav.client.methods.HttpProppatch;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
 import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
 import org.apache.jackrabbit.webdav.property.DavPropertySet;
+import org.apache.jackrabbit.webdav.property.DefaultDavProperty;
 import org.apache.jackrabbit.webdav.property.PropEntry;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.w3c.dom.Node;
 
 import javax.mail.MessagingException;
@@ -1915,17 +1922,25 @@ public class HC4DavExchangeSession extends ExchangeSession {
         }
         propertyValues.add(Field.createPropertyValue("folderclass", folderClass));
 
-        // standard MkColMethod does not take properties, override PropPatchMethod instead
-        ExchangePropPatchMethod method = new ExchangePropPatchMethod(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues) {
+        // standard MkColMethod does not take properties, override ExchangePropPatchRequest instead
+        ExchangePropPatchRequest propPatchRequest = new ExchangePropPatchRequest(URIUtil.encodePath(getFolderPath(folderPath)), propertyValues) {
             @Override
-            public String getName() {
+            public String getMethod() {
                 return "MKCOL";
             }
         };
-        int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
-        if (status == HttpStatus.SC_MULTI_STATUS) {
-            status = method.getResponseStatusCode();
+        int status;
+        try (CloseableHttpResponse response = httpClientAdapter.execute(propPatchRequest)) {
+            status = response.getStatusLine().getStatusCode();
+            if (status == HttpStatus.SC_MULTI_STATUS) {
+                status = propPatchRequest.getResponseStatusCode();
+            } else if (status == HttpStatus.SC_METHOD_NOT_ALLOWED) {
+                LOGGER.info("Folder "+folderPath+" already exists");
+            }
+        } catch (org.apache.http.HttpException e) {
+            throw new IOException(e.getMessage(), e);
         }
+        LOGGER.debug("Create folder "+folderPath+" returned "+status);
         return status;
     }
 
@@ -1955,7 +1970,13 @@ public class HC4DavExchangeSession extends ExchangeSession {
      */
     @Override
     public void deleteFolder(String folderPath) throws IOException {
-        DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, URIUtil.encodePath(getFolderPath(folderPath)));
+        HttpDelete httpDelete = new HttpDelete(URIUtil.encodePath(getFolderPath(folderPath)));
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
+            int status = response.getStatusLine().getStatusCode();
+            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                throw HttpClientAdapter.buildHttpException(httpDelete, response);
+            }
+        }
     }
 
     /**
