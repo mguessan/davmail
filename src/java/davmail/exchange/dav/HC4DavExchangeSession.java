@@ -53,6 +53,8 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -161,6 +163,56 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected String outboxName;
 
     protected static final String USERS = "/users/";
+
+    /**
+     * HttpClient4 conversion.
+     * TODO: move up to ExchangeSession
+     */
+    @Override
+    protected void getEmailAndAliasFromOptions() {
+        // get user mail URL from html body
+        HttpGet optionsMethod = new HttpGet("/owa/?ae=Options&t=About");
+        try (
+                CloseableHttpResponse response = httpClientAdapter.execute(optionsMethod, cloneContext());
+                InputStream inputStream = response.getEntity().getContent();
+                BufferedReader optionsPageReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        ) {
+            String line;
+
+            // find email and alias
+            //noinspection StatementWithEmptyBody
+            while ((line = optionsPageReader.readLine()) != null
+                    && (line.indexOf('[') == -1
+                    || line.indexOf('@') == -1
+                    || line.indexOf(']') == -1
+                    || !line.toLowerCase().contains(MAILBOX_BASE))) {
+            }
+            if (line != null) {
+                int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                int end = line.indexOf('<', start);
+                alias = line.substring(start, end);
+                end = line.lastIndexOf(']');
+                start = line.lastIndexOf('[', end) + 1;
+                email = line.substring(start, end);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error parsing options page at " + optionsMethod.getURI());
+        }
+    }
+
+    /**
+     * Create a separate Http context to protect session cookies.
+     *
+     * @return HttpClientContext instance with cookies
+     */
+    private HttpClientContext cloneContext() {
+        // Create a local context to avoid cookie reset on error
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        cookieStore.addCookies(httpClientAdapter.getCookies().toArray(new org.apache.http.cookie.Cookie[0]));
+        HttpClientContext context = HttpClientContext.create();
+        context.setCookieStore(cookieStore);
+        return context;
+    }
 
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
@@ -772,7 +824,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected void fixClientHost(java.net.URI currentUri) {
         // update client host, workaround for Exchange 2003 mailbox with an Exchange 2007 frontend
         if (currentUri != null && currentUri.getHost() != null && currentUri.getScheme() != null) {
-            httpClient.getHostConfiguration().setHost(currentUri.getHost(), currentUri.getPort(), currentUri.getScheme());
+            httpClientAdapter.setUri(currentUri);
         }
     }
 
