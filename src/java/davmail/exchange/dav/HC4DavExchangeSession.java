@@ -54,11 +54,13 @@ import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.client.utils.URIUtils;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
+import org.apache.jackrabbit.webdav.client.methods.HttpPropfind;
 import org.apache.jackrabbit.webdav.client.methods.MoveMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropFindMethod;
 import org.apache.jackrabbit.webdav.client.methods.PropPatchMethod;
@@ -829,34 +831,24 @@ public class HC4DavExchangeSession extends ExchangeSession {
     }
 
     protected void checkPublicFolder() {
-        synchronized (httpClient.getState()) {
-            Cookie[] currentCookies = httpClient.getState().getCookies();
-            // check public folder access
-            try {
-                publicFolderUrl = httpClient.getHostConfiguration().getHostURL() + PUBLIC_ROOT;
-                DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
-                davPropertyNameSet.add(Field.getPropertyName("displayname"));
-                PropFindMethod propFindMethod = new PropFindMethod(publicFolderUrl, davPropertyNameSet, 0);
-                try {
-                    DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                } catch (IOException e) {
-                    // workaround for NTLM authentication only on /public
-                    if (!DavGatewayHttpClientFacade.hasNTLMorNegotiate(httpClient)) {
-                        DavGatewayHttpClientFacade.addNTLM(httpClient);
-                        DavGatewayHttpClientFacade.executeMethod(httpClient, propFindMethod);
-                    }
-                }
-                // update public folder URI
-                publicFolderUrl = propFindMethod.getURI().getURI();
-            } catch (IOException e) {
-                // restore cookies on error
-                httpClient.getState().addCookies(currentCookies);
-                LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
-                // default public folder path
-                publicFolderUrl = PUBLIC_ROOT;
-            }
+        // check public folder access
+        try {
+            publicFolderUrl = URIUtils.resolve(httpClientAdapter.getUri(), PUBLIC_ROOT).toString();
+            DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
+            davPropertyNameSet.add(Field.getPropertyName("displayname"));
+
+            HttpPropfind httpPropfind = new HttpPropfind(publicFolderUrl, davPropertyNameSet, 0);
+            httpClientAdapter.executeDavRequest(httpPropfind);
+            // update public folder URI
+            publicFolderUrl = httpPropfind.getURI().toString();
+
+        } catch (IOException|DavException e) {
+            LOGGER.warn("Public folders not available: " + (e.getMessage() == null ? e : e.getMessage()));
+            // default public folder path
+            publicFolderUrl = PUBLIC_ROOT;
         }
     }
+
 
     protected void getWellKnownFolders() throws DavMailException {
         // Retrieve well known URLs
