@@ -2243,8 +2243,8 @@ public class HC4DavExchangeSession extends ExchangeSession {
         }
         searchRequest.append(" ORDER BY ").append(Field.getRequestPropertyString("imapUid")).append(" DESC");
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_QUERY", searchRequest));
-        MultiStatusResponse[] responses = DavGatewayHttpClientFacade.executeSearchMethod(
-                httpClient, encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
+        MultiStatusResponse[] responses = httpClientAdapter.executeSearchRequest(
+                encodeAndFixUrl(folderUrl), searchRequest.toString(), maxCount);
         DavGatewayTray.debug(new BundleMessage("LOG_SEARCH_RESULT", responses.length));
         return responses;
     }

@@ -25,6 +25,10 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpServerErrorException;
 import davmail.exception.LoginTimeoutException;
+import davmail.exchange.dav.ExchangeSearchMethod;
+import davmail.http.request.ExchangeDavRequest;
+import davmail.http.request.ExchangeSearchRequest;
+import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -61,6 +65,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.jackrabbit.webdav.client.methods.HttpCopy;
 import org.apache.jackrabbit.webdav.client.methods.HttpMove;
@@ -427,6 +432,12 @@ public class HttpClientAdapter implements Closeable {
         return httpResponse;
     }
 
+    /**
+     * Execute WebDav request
+     * @param request WebDav request
+     * @return multistatus response
+     * @throws IOException on error
+     */
     public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException {
         handleURI(request);
         MultiStatus multiStatus = null;
@@ -440,6 +451,44 @@ public class HttpClientAdapter implements Closeable {
             throw new IOException(e.getErrorCode()+" "+e.getStatusPhrase(), e);
         }
         return multiStatus;
+    }
+
+    /**
+     * Execute Exchange WebDav request
+     * @param request WebDav request
+     * @return multistatus response
+     * @throws IOException on error
+     */
+    public MultiStatusResponse[] executeDavRequest(ExchangeDavRequest request) throws IOException {
+        handleURI(request);
+        MultiStatusResponse[] responses = null;
+        try (CloseableHttpResponse response = execute(request)) {
+            // TODO
+            //request.checkSuccess(response);
+            responses = request.getResponses();
+        } catch (org.apache.http.HttpException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new IOException(e.getMessage(), e);
+        }
+        return responses;
+    }
+
+
+    /**
+     * Execute webdav search method.
+     *
+     * @param path          <i>encoded</i> searched folder path
+     * @param searchStatement (SQL like) search statement
+     * @param maxCount      max item count
+     * @return Responses enumeration
+     * @throws IOException on error
+     */
+    public MultiStatusResponse[] executeSearchRequest(String path, String searchStatement, int maxCount) throws IOException {
+        ExchangeSearchRequest searchRequest = new ExchangeSearchRequest(path, searchStatement);
+        if (maxCount > 0) {
+            searchRequest.setHeader("Range", "rows=0-" + (maxCount - 1));
+        }
+        return executeDavRequest(searchRequest);
     }
 
     public static boolean isRedirect(HttpResponse response) {

@@ -2946,7 +2946,7 @@ public abstract class ExchangeSession {
      */
     public abstract boolean isMainCalendar(String folderPath) throws IOException;
 
-    static final String MAILBOX_BASE = "/cn=";
+    protected static final String MAILBOX_BASE = "/cn=";
 
     protected void getEmailAndAliasFromOptions() {
         synchronized (httpClient.getState()) {
