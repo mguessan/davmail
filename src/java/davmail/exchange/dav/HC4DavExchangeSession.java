@@ -51,6 +51,8 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -553,12 +555,13 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected String getMailpathFromWelcomePage(java.net.URI uri) {
         String welcomePageMailPath = null;
         // get user mail URL from html body (multi frame)
-        BufferedReader mainPageReader = null;
-        GetMethod method = null;
-        try {
-            method = new GetMethod(uri.toString());
-            httpClient.executeMethod(method);
-            mainPageReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), StandardCharsets.UTF_8));
+        HttpGet method = new HttpGet(uri.toString());
+
+        try (
+                CloseableHttpResponse response = httpClientAdapter.execute(method);
+                InputStream inputStream = response.getEntity().getContent();
+                BufferedReader mainPageReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+        ) {
             String line;
             //noinspection StatementWithEmptyBody
             while ((line = mainPageReader.readLine()) != null && !line.toLowerCase().contains(BASE_HREF)) {
@@ -573,18 +576,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 LOGGER.debug("Base href found in body, mailPath is " + welcomePageMailPath);
             }
         } catch (IOException e) {
-            LOGGER.error("Error parsing main page at " + method.getPath(), e);
-        } finally {
-            if (mainPageReader != null) {
-                try {
-                    mainPageReader.close();
-                } catch (IOException e) {
-                    LOGGER.error("Error parsing main page at " + method.getPath());
-                }
-            }
-            if (method != null) {
-                method.releaseConnection();
-            }
+            LOGGER.error("Error parsing main page at " + method.getURI(), e);
         }
         return welcomePageMailPath;
     }
