@@ -33,7 +33,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.jackrabbit.webdav.*;
+import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.DavException;
+import org.apache.jackrabbit.webdav.DavMethods;
+import org.apache.jackrabbit.webdav.DavServletResponse;
+import org.apache.jackrabbit.webdav.MultiStatus;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.jackrabbit.webdav.client.methods.HttpPropfind;
 import org.apache.jackrabbit.webdav.client.methods.HttpProppatch;
@@ -69,76 +74,55 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
 
     public void testGetRoot() throws IOException {
         HttpGet method = new HttpGet("/");
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testGetUserRoot() throws IOException {
         HttpGet method = new HttpGet("/users/" + session.getEmail() + '/');
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testGetCalendar() throws IOException {
         HttpGet method = new HttpGet("/users/" + session.getEmail() + "/calendar/");
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testGetInbox() throws IOException {
         HttpGet method = new HttpGet("/users/" + session.getEmail() + "/inbox/");
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testGetContacts() throws IOException {
         HttpGet method = new HttpGet("/users/" + session.getEmail() + "/contacts/");
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testPropfindCalendar() throws IOException {
         HttpPropfind method = new HttpPropfind("/users/" + session.getEmail() + "/calendar/", null, 1);
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_MULTI_STATUS, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
     public void testGetOtherUserCalendar() throws IOException {
         HttpPropfind method = new HttpPropfind("/principals/users/" + Settings.getProperty("davmail.usera"),
                 DavConstants.PROPFIND_ALL_PROP, new DavPropertyNameSet(), DavConstants.DEPTH_INFINITY);
-        CloseableHttpResponse response = httpClient.execute(method);
-        try {
+        try (CloseableHttpResponse response = httpClient.execute(method)) {
             assertEquals(HttpStatus.SC_MULTI_STATUS, response.getStatusLine().getStatusCode());
-        } finally {
-            response.close();
         }
     }
 
-    public void testReportCalendar() throws IOException, DavException {
+    public void testReportCalendar() throws IOException {
         SimpleDateFormat formatter = ExchangeSession.getZuluDateFormat();
         Calendar cal = Calendar.getInstance();
         Date end = cal.getTime();
@@ -177,7 +161,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(events.size(), responses.length);
     }
 
-    public void testReportInbox() throws IOException, DavException {
+    public void testReportInbox() throws IOException {
         String buffer = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">" +
                 "<D:prop>" +
@@ -196,7 +180,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testReportTasks() throws IOException, DavException {
+    public void testReportTasks() throws IOException {
         String buffer = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">" +
                 "<D:prop>" +
@@ -219,7 +203,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testReportEventsOnly() throws IOException, DavException {
+    public void testReportEventsOnly() throws IOException {
         String buffer = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<C:calendar-query xmlns:C=\"urn:ietf:params:xml:ns:caldav\" xmlns:D=\"DAV:\">" +
                 "<D:prop>" +
@@ -242,7 +226,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testCreateCalendar() throws IOException, DavException, URISyntaxException {
+    public void testCreateCalendar() throws IOException, URISyntaxException {
         String folderName = "test & accentué";
         //String folderName = "justatest";
         URI uri = new URIBuilder().setPath("/users/" + session.getEmail() + "/calendar/" + folderName + '/').build();
@@ -282,7 +266,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(org.apache.commons.httpclient.HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
     }
 
-    public void testPropfindPrincipal() throws IOException, DavException {
+    public void testPropfindPrincipal() throws IOException {
         //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
 
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
@@ -296,7 +280,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(1, responses.length);
     }
 
-    public void testRenameCalendar() throws IOException, DavException, URISyntaxException {
+    public void testRenameCalendar() throws IOException, URISyntaxException {
         String folderName = "testcalendarfolder";
         String renamedFolderName = "renamedcalendarfolder";
         URI uri = new URIBuilder().setPath("/users/" + session.getEmail() + "/calendar/" + folderName + '/').build();
@@ -317,7 +301,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
 
     }
 
-    public void testWellKnown() throws IOException, DavException {
+    public void testWellKnown() throws IOException {
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(DavPropertyName.create("current-user-principal", Namespace.getNamespace("DAV:")));
         davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
@@ -331,14 +315,14 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testPrincipalUrl() throws IOException, DavException {
+    public void testPrincipalUrl() throws IOException {
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
         HttpPropfind method = new HttpPropfind("/principals/users/" + session.getEmail(), davPropertyNameSet, 0);
         httpClient.executeDavRequest(method);
     }
 
-    public void testPropfindRoot() throws IOException, DavException {
+    public void testPropfindRoot() throws IOException {
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(DavPropertyName.create("current-user-principal", Namespace.getNamespace("DAV:")));
         davPropertyNameSet.add(DavPropertyName.create("principal-URL", Namespace.getNamespace("DAV:")));
@@ -347,7 +331,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         httpClient.executeDavRequest(method);
     }
 
-    public void testPropfindPublicPrincipal() throws IOException, DavException {
+    public void testPropfindPublicPrincipal() throws IOException {
         DavPropertyNameSet davPropertyNameSet = new DavPropertyNameSet();
         davPropertyNameSet.add(DavPropertyName.create("calendar-home-set", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
         davPropertyNameSet.add(DavPropertyName.create("calendar-user-address-set", Namespace.getNamespace("urn:ietf:params:xml:ns:caldav")));
@@ -359,7 +343,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         assertEquals(1, responses.length);
     }
 
-    public void testInvalidDavRequest() throws IOException {
+    public void testInvalidDavRequest() {
         BaseDavRequest method = new BaseDavRequest(URI.create("/users/" + session.getEmail() + "/calendar/")) {
             @Override
             public String getMethod() {
@@ -371,8 +355,10 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         try {
             httpClient.executeDavRequest(method);
             fail("Should fail");
-        } catch (DavException e) {
-            assertEquals(503, e.getErrorCode());
+        } catch (IOException e) {
+            assertNotNull(e.getMessage());
+            assertEquals(503, ((DavException)e.getCause()).getErrorCode());
+
         }
 
     }
