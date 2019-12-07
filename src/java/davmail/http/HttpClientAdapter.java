@@ -163,6 +163,9 @@ public class HttpClientAdapter implements Closeable {
     }
 
     public HttpClientAdapter(URI uri, String username, String password, boolean enablePool) {
+        // init current uri
+        this.uri = uri;
+
         if (enablePool) {
             connectionManager = new PoolingHttpClientConnectionManager(SCHEME_REGISTRY);
             startEvictorThread();
@@ -424,7 +427,7 @@ public class HttpClientAdapter implements Closeable {
         return httpResponse;
     }
 
-    public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException, DavException {
+    public MultiStatus executeDavRequest(BaseDavRequest request) throws IOException {
         handleURI(request);
         MultiStatus multiStatus = null;
         try (CloseableHttpResponse response = execute(request)) {
@@ -432,6 +435,9 @@ public class HttpClientAdapter implements Closeable {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MULTI_STATUS) {
                 multiStatus = request.getResponseBodyAsMultiStatus(response);
             }
+        } catch (DavException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new IOException(e.getErrorCode()+" "+e.getStatusPhrase(), e);
         }
         return multiStatus;
     }
