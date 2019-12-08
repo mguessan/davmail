@@ -45,16 +45,20 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.HeadMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
 import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -1342,14 +1346,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     }
                 }
                 // need to retrieve new etag
-                HeadMethod headMethod = new HeadMethod(URIUtil.encodePath(getHref()));
-                try {
-                    httpClient.executeMethod(headMethod);
-                    if (headMethod.getResponseHeader("ETag") != null) {
-                        itemResult.etag = headMethod.getResponseHeader("ETag").getValue();
+                HttpHead headMethod = new HttpHead(URIUtil.encodePath(getHref()));
+                try (CloseableHttpResponse response = httpClientAdapter.execute(headMethod)){
+                    if (response.getFirstHeader("ETag") != null) {
+                        itemResult.etag = response.getFirstHeader("ETag").getValue();
                     }
-                } finally {
-                    headMethod.releaseConnection();
                 }
             }
             return itemResult;
@@ -2421,14 +2422,17 @@ public class HC4DavExchangeSession extends ExchangeSession {
 
             String fakeEventUrl = null;
             if ("Exchange2003".equals(serverVersion)) {
-                PostMethod postMethod = new PostMethod(URIUtil.encodePath(folderPath));
-                postMethod.addParameter("Cmd", "saveappt");
-                postMethod.addParameter("FORMTYPE", "appointment");
-                try {
+                HttpPost postMethod = new HttpPost(URIUtil.encodePath(folderPath));
+                ArrayList<BasicNameValuePair> postParameters = new ArrayList<>();
+                postParameters.add(new BasicNameValuePair("Cmd", "saveappt"));
+                postParameters.add(new BasicNameValuePair("FORMTYPE", "appointment"));
+
+                postMethod.setEntity(new UrlEncodedFormEntity(postParameters, Consts.UTF_8));
+                try (CloseableHttpResponse response = httpClientAdapter.execute(postMethod)){
                     // create fake event
-                    int statusCode = httpClient.executeMethod(postMethod);
+                    int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_OK) {
-                        fakeEventUrl = StringUtil.getToken(postMethod.getResponseBodyAsString(), "<span id=\"itemHREF\">", "</span>");
+                        fakeEventUrl = StringUtil.getToken(new BasicResponseHandler().handleResponse(response), "<span id=\"itemHREF\">", "</span>");
                         if (fakeEventUrl != null) {
                             fakeEventUrl = URIUtil.decode(fakeEventUrl);
                         }
