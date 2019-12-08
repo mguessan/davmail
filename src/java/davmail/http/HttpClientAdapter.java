@@ -128,6 +128,17 @@ public class HttpClientAdapter implements Closeable {
         ProxySelector.setDefault(new DavGatewayProxySelector(ProxySelector.getDefault()));
     }
 
+    /**
+     * Test if the response is gzip encoded
+     *
+     * @param response http response
+     * @return true if response is gzip encoded
+     */
+    public static boolean isGzipEncoded(HttpResponse response) {
+        Header header = response.getFirstHeader("Content-Encoding");
+        return header != null && "gzip".equals(header.getValue());
+    }
+
     HttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
     CredentialsProvider provider = new BasicCredentialsProvider();

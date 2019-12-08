@@ -36,6 +36,7 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
 import davmail.http.request.ExchangePropPatchRequest;
+import davmail.http.request.GetRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
@@ -44,8 +45,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.DeleteMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
@@ -87,6 +86,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.NoRouteToHostException;
 import java.net.SocketException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -99,6 +99,7 @@ import java.util.zip.GZIPInputStream;
  * Webdav Exchange adapter.
  * Compatible with Exchange 2003 and 2007 with webdav available.
  */
+@SuppressWarnings("rawtypes")
 public class HC4DavExchangeSession extends ExchangeSession {
     protected enum FolderQueryTraversal {
         Shallow, Deep
@@ -219,17 +220,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         // experimental: try to reset session timeout
         if ("Exchange2007".equals(serverVersion)) {
-            GetMethod getMethod = null;
-            try {
-                getMethod = new GetMethod("/owa/");
-                getMethod.setFollowRedirects(false);
-                httpClient.executeMethod(getMethod);
+            HttpGet getMethod = new HttpGet("/owa/");
+            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+                LOGGER.debug(response.getStatusLine().getStatusCode() +" at /owa/");
             } catch (IOException e) {
                 LOGGER.warn(e.getMessage());
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
             }
         }
 
@@ -408,10 +403,9 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected Map<String, Map<String, String>> galFind(String query) throws IOException {
         Map<String, Map<String, String>> results;
         String path = getCmdBasePath() + "?Cmd=galfind" + query;
-        GetMethod getMethod = new GetMethod(path);
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "item", "AN");
+        HttpGet getMethod = new HttpGet(path);
+        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+            results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "item", "AN");
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(path + ": " + results.size() + " result(s)");
             }
@@ -531,11 +525,9 @@ public class HC4DavExchangeSession extends ExchangeSession {
     public void galLookup(Contact contact) {
         if (!disableGalLookup) {
             LOGGER.debug("galLookup(" + contact.get("smtpemail1") + ')');
-            GetMethod getMethod = null;
-            try {
-                getMethod = new GetMethod(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(getMethod.getResponseBodyAsStream(), "person", "alias");
+            HttpGet getMethod = new HttpGet(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
+            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+                Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "person", "alias");
                 // add detailed information
                 if (!results.isEmpty()) {
                     Map<String, String> personGalLookupDetails = results.get(contact.get("uid").toLowerCase());
@@ -546,10 +538,6 @@ public class HC4DavExchangeSession extends ExchangeSession {
             } catch (IOException e) {
                 LOGGER.warn("Unable to gallookup person: " + contact + ", disable GalLookup");
                 disableGalLookup = true;
-            } finally {
-                if (getMethod != null) {
-                    getMethod.releaseConnection();
-                }
             }
         }
     }
@@ -570,12 +558,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 "&end=" + end +
                 "&interval=" + interval +
                 "&u=SMTP:" + attendee;
-        GetMethod getMethod = new GetMethod(freebusyUrl);
-        getMethod.setRequestHeader("Content-Type", "text/xml");
+        GetRequest getMethod = new GetRequest(freebusyUrl);
+        getMethod.setHeader("Content-Type", "text/xml");
         String fbdata;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, getMethod, true);
-            fbdata = StringUtil.getLastToken(getMethod.getResponseBodyAsString(), "<a:fbdata>", "</a:fbdata>");
+        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+            fbdata = StringUtil.getLastToken(getMethod.handleResponse(response), "<a:fbdata>", "</a:fbdata>");
         } finally {
             getMethod.releaseConnection();
         }
@@ -1345,15 +1332,13 @@ public class HC4DavExchangeSession extends ExchangeSession {
 
                 } else {
                     // try to delete picture
-                    DeleteMethod deleteMethod = new DeleteMethod(contactPictureUrl);
-                    try {
-                        status = httpClient.executeMethod(deleteMethod);
+                    HttpDelete deleteMethod = new HttpDelete(contactPictureUrl);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(deleteMethod)){
+                        status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
                             LOGGER.error("Error in contact photo delete: " + status);
                             throw new IOException("Unable to delete contact picture");
                         }
-                    } finally {
-                        deleteMethod.releaseConnection();
                     }
                 }
                 // need to retrieve new etag
@@ -1396,10 +1381,6 @@ public class HC4DavExchangeSession extends ExchangeSession {
             contentClass = getPropertyIfExists(properties, "contentclass");
         }
 
-        protected String getPermanentUrl() {
-            return permanentUrl;
-        }
-
 
         public Event(String folderPath, String itemName, String contentClass, String itemBody, String etag, String noneMatch) throws IOException {
             super(folderPath, itemName, contentClass, itemBody, etag, noneMatch);
@@ -1432,14 +1413,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 try {
                     result = getICSFromInternetContentProperty();
                     if (result == null) {
-                        GetMethod method = new GetMethod(encodeAndFixUrl(permanentUrl));
-                        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-                        method.setRequestHeader("Translate", "f");
-                        try {
-                            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-                            result = getICS(method.getResponseBodyAsStream());
-                        } finally {
-                            method.releaseConnection();
+                        HttpGet httpGet = new HttpGet(encodeAndFixUrl(permanentUrl));
+                        httpGet.setHeader("Content-Type", "text/xml; charset=utf-8");
+                        httpGet.setHeader("Translate", "f");
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)){
+                            result = getICS(response.getEntity().getContent());
                         }
                     }
                 } catch (DavException | IOException | MessagingException e) {
@@ -1826,12 +1804,12 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 }
             } else {
                 try {
-                    URI folderURI = new URI(href, false);
+                    java.net.URI folderURI = new java.net.URI(href);
                     folder.folderPath = folderURI.getPath();
                     if (folder.folderPath == null) {
-                        throw new URIException();
+                        throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                     }
-                } catch (URIException e) {
+                } catch (URISyntaxException e) {
                     throw new DavMailException("EXCEPTION_INVALID_FOLDER_URL", href);
                 }
             }
@@ -2354,17 +2332,16 @@ public class HC4DavExchangeSession extends ExchangeSession {
     @Override
     public ExchangeSession.ContactPhoto getContactPhoto(ExchangeSession.Contact contact) throws IOException {
         ContactPhoto contactPhoto;
-        final GetMethod method = new GetMethod(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
-        method.setRequestHeader("Translate", "f");
-        method.setRequestHeader("Accept-Encoding", "gzip");
+        final HttpGet method = new HttpGet(URIUtil.encodePath(contact.getHref()) + "/ContactPicture.jpg");
+        method.setHeader("Translate", "f");
+        method.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream = null;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
-                inputStream = (new GZIPInputStream(method.getResponseBodyAsStream()));
+        try (CloseableHttpResponse response = httpClientAdapter.execute(method)){
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                inputStream = (new GZIPInputStream(response.getEntity().getContent()));
             } else {
-                inputStream = method.getResponseBodyAsStream();
+                inputStream = response.getEntity().getContent();
             }
 
             contactPhoto = new ContactPhoto();
@@ -2488,12 +2465,11 @@ public class HC4DavExchangeSession extends ExchangeSession {
             }
             if (fakeEventUrl != null) {
                 // get fake event body
-                GetMethod getMethod = new GetMethod(URIUtil.encodePath(fakeEventUrl));
-                getMethod.setRequestHeader("Translate", "f");
-                try {
-                    httpClient.executeMethod(getMethod);
+                GetRequest getMethod = new GetRequest(URIUtil.encodePath(fakeEventUrl));
+                getMethod.setHeader("Translate", "f");
+                try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
                     this.vTimezone = new VObject("BEGIN:VTIMEZONE" +
-                            StringUtil.getToken(getMethod.getResponseBodyAsString(), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
+                            StringUtil.getToken(getMethod.handleResponse(response), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
                             "END:VTIMEZONE\r\n");
                 } finally {
                     getMethod.releaseConnection();
@@ -2940,18 +2916,17 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected InputStream getContentInputStream(String url) throws IOException {
         String encodedUrl = encodeAndFixUrl(url);
 
-        final GetMethod method = new GetMethod(encodedUrl);
-        method.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
-        method.setRequestHeader("Translate", "f");
-        method.setRequestHeader("Accept-Encoding", "gzip");
+        final HttpGet method = new HttpGet(encodedUrl);
+        method.setHeader("Content-Type", "text/xml; charset=utf-8");
+        method.setHeader("Translate", "f");
+        method.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream;
-        try {
-            DavGatewayHttpClientFacade.executeGetMethod(httpClient, method, true);
-            if (DavGatewayHttpClientFacade.isGzipEncoded(method)) {
-                inputStream = new GZIPInputStream(method.getResponseBodyAsStream());
+        try (CloseableHttpResponse response = httpClientAdapter.execute(method)){
+            if (HttpClientAdapter.isGzipEncoded(response)) {
+                inputStream = new GZIPInputStream(response.getEntity().getContent());
             } else {
-                inputStream = method.getResponseBodyAsStream();
+                inputStream = response.getEntity().getContent();
             }
             inputStream = new FilterInputStream(inputStream) {
                 int totalCount;

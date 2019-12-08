@@ -25,7 +25,6 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.regex.Matcher;
@@ -34,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Http get request to handle response transparently.
  */
-public class GetRequest extends HttpGet implements ResponseHandler {
+public class GetRequest extends HttpGet implements ResponseHandler<String> {
     protected  HttpResponse response;
     protected String responseBodyAsString;
 
@@ -47,7 +46,7 @@ public class GetRequest extends HttpGet implements ResponseHandler {
     }
 
     @Override
-    public Object handleResponse(HttpResponse response) throws IOException {
+    public String handleResponse(HttpResponse response) throws IOException {
         this.response = response;
         if (HttpClientAdapter.isRedirect(response)) {
             return null;
