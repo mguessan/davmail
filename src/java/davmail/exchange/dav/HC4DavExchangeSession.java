@@ -40,12 +40,9 @@ import davmail.http.request.GetRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -54,8 +51,11 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.message.BasicNameValuePair;
@@ -225,8 +225,8 @@ public class HC4DavExchangeSession extends ExchangeSession {
         // experimental: try to reset session timeout
         if ("Exchange2007".equals(serverVersion)) {
             HttpGet getMethod = new HttpGet("/owa/");
-            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
-                LOGGER.debug(response.getStatusLine().getStatusCode() +" at /owa/");
+            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
+                LOGGER.debug(response.getStatusLine().getStatusCode() + " at /owa/");
             } catch (IOException e) {
                 LOGGER.warn(e.getMessage());
             }
@@ -408,7 +408,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         Map<String, Map<String, String>> results;
         String path = getCmdBasePath() + "?Cmd=galfind" + query;
         HttpGet getMethod = new HttpGet(path);
-        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
             results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "item", "AN");
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(path + ": " + results.size() + " result(s)");
@@ -530,7 +530,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         if (!disableGalLookup) {
             LOGGER.debug("galLookup(" + contact.get("smtpemail1") + ')');
             HttpGet getMethod = new HttpGet(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
-            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+            try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "person", "alias");
                 // add detailed information
                 if (!results.isEmpty()) {
@@ -565,7 +565,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         GetRequest getMethod = new GetRequest(freebusyUrl);
         getMethod.setHeader("Content-Type", "text/xml");
         String fbdata;
-        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+        try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
             fbdata = StringUtil.getLastToken(getMethod.handleResponse(response), "<a:fbdata>", "</a:fbdata>");
         } finally {
             getMethod.releaseConnection();
@@ -1298,24 +1298,25 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 String contactPictureUrl = URIUtil.encodePath(getHref() + "/ContactPicture.jpg");
                 String photo = get("photo");
                 if (photo != null) {
-                    final PutMethod putmethod = new PutMethod(contactPictureUrl);
                     try {
+                        final HttpPut httpPut = new HttpPut(contactPictureUrl);
                         // need to update photo
                         byte[] resizedImageBytes = IOUtil.resizeImage(IOUtil.decodeBase64(photo), 90);
 
-                        putmethod.setRequestHeader("Overwrite", "t");
-                        putmethod.setRequestHeader("Content-Type", "image/jpeg");
-                        putmethod.setRequestEntity(new ByteArrayRequestEntity(resizedImageBytes, "image/jpeg"));
+                        httpPut.setHeader("Overwrite", "t");
+                        // TODO: required ?
+                        httpPut.setHeader("Content-Type", "image/jpeg");
+                        httpPut.setEntity(new ByteArrayEntity(resizedImageBytes, ContentType.IMAGE_JPEG));
 
-                        status = httpClient.executeMethod(putmethod);
-                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
-                            throw new IOException("Unable to update contact picture: " + status + ' ' + putmethod.getStatusLine());
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpPut)) {
+                            status = response.getStatusLine().getStatusCode();
+                            if (status != HttpStatus.SC_OK && status != HttpStatus.SC_CREATED) {
+                                throw new IOException("Unable to update contact picture: " + status + ' ' + response.getStatusLine().getReasonPhrase());
+                            }
                         }
                     } catch (IOException e) {
                         LOGGER.error("Error in contact photo create or update", e);
                         throw e;
-                    } finally {
-                        putmethod.releaseConnection();
                     }
 
                     Set<PropertyValue> picturePropertyValues = new HashSet<>();
@@ -1337,7 +1338,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 } else {
                     // try to delete picture
                     HttpDelete deleteMethod = new HttpDelete(contactPictureUrl);
-                    try (CloseableHttpResponse response = httpClientAdapter.execute(deleteMethod)){
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(deleteMethod)) {
                         status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
                             LOGGER.error("Error in contact photo delete: " + status);
@@ -1347,7 +1348,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 }
                 // need to retrieve new etag
                 HttpHead headMethod = new HttpHead(URIUtil.encodePath(getHref()));
-                try (CloseableHttpResponse response = httpClientAdapter.execute(headMethod)){
+                try (CloseableHttpResponse response = httpClientAdapter.execute(headMethod)) {
                     if (response.getFirstHeader("ETag") != null) {
                         itemResult.etag = response.getFirstHeader("ETag").getValue();
                     }
@@ -1402,7 +1403,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
          * User Translate: f header to get MIME event content and get ICS attachment from it
          *
          * @return ICS (iCalendar) event
-         * @throws HttpException on error
+         * @throws IOException on error
          */
         @Override
         public byte[] getEventContent() throws IOException {
@@ -1417,7 +1418,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                         HttpGet httpGet = new HttpGet(encodeAndFixUrl(permanentUrl));
                         httpGet.setHeader("Content-Type", "text/xml; charset=utf-8");
                         httpGet.setHeader("Translate", "f");
-                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)){
+                        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
                             result = getICS(response.getEntity().getContent());
                         }
                     }
@@ -1430,7 +1431,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (result == null) {
                 try {
                     result = getICSFromItemProperties();
-                } catch (HttpException e) {
+                } catch (IOException e) {
                     deleteBroken();
                     throw e;
                 }
@@ -1600,7 +1601,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 result = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
             } catch (MessagingException | IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
-                throw buildHttpException(e);
+                throw HttpClientAdapter.buildHttpException("Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage(), e);
             }
 
             return result;
@@ -1618,24 +1619,21 @@ public class HC4DavExchangeSession extends ExchangeSession {
             }
         }
 
-        protected PutMethod internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {
-            PutMethod putmethod = new PutMethod(encodedHref);
-            putmethod.setRequestHeader("Translate", "f");
-            putmethod.setRequestHeader("Overwrite", "f");
+        protected CloseableHttpResponse internalCreateOrUpdate(String encodedHref, byte[] mimeContent) throws IOException {
+            HttpPut putmethod = new HttpPut(encodedHref);
+            putmethod.setHeader("Translate", "f");
+            putmethod.setHeader("Overwrite", "f");
             if (etag != null) {
-                putmethod.setRequestHeader("If-Match", etag);
+                putmethod.setHeader("If-Match", etag);
             }
             if (noneMatch != null) {
-                putmethod.setRequestHeader("If-None-Match", noneMatch);
+                putmethod.setHeader("If-None-Match", noneMatch);
             }
-            putmethod.setRequestHeader("Content-Type", "message/rfc822");
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(mimeContent, "message/rfc822"));
-            try {
-                httpClient.executeMethod(putmethod);
-            } finally {
-                putmethod.releaseConnection();
+            putmethod.setHeader("Content-Type", "message/rfc822");
+            putmethod.setEntity(new ByteArrayEntity(mimeContent, ContentType.getByMimeType("message/rfc822")));
+            try (CloseableHttpResponse response = httpClientAdapter.execute(putmethod)) {
+                return response;
             }
-            return putmethod;
         }
 
         /**
@@ -1700,8 +1698,8 @@ public class HC4DavExchangeSession extends ExchangeSession {
             } else {
                 String encodedHref = URIUtil.encodePath(getHref());
                 byte[] mimeContent = createMimeContent();
-                PutMethod putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-                int status = putMethod.getStatusCode();
+                HttpResponse httpResponse = internalCreateOrUpdate(encodedHref, mimeContent);
+                int status = httpResponse.getStatusLine().getStatusCode();
 
                 if (status == HttpStatus.SC_OK) {
                     LOGGER.debug("Updated event " + encodedHref);
@@ -1714,16 +1712,16 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     if (responses.length == 1) {
                         encodedHref = getPropertyIfExists(responses[0].getProperties(HttpStatus.SC_OK), "permanenturl");
                         LOGGER.warn("Event found, permanenturl is " + encodedHref);
-                        putMethod = internalCreateOrUpdate(encodedHref, mimeContent);
-                        status = putMethod.getStatusCode();
+                        httpResponse = internalCreateOrUpdate(encodedHref, mimeContent);
+                        status = httpResponse.getStatusLine().getStatusCode();
                         if (status == HttpStatus.SC_OK) {
                             LOGGER.debug("Updated event " + encodedHref);
                         } else {
-                            LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                            LOGGER.warn("Unable to create or update event " + status + ' ' + httpResponse.getStatusLine().getReasonPhrase());
                         }
                     }
                 } else {
-                    LOGGER.warn("Unable to create or update event " + status + ' ' + putMethod.getStatusLine());
+                    LOGGER.warn("Unable to create or update event " + status + ' ' + httpResponse.getStatusLine().getReasonPhrase());
                 }
 
                 // 440 means forbidden on Exchange
@@ -1734,8 +1732,8 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     status = HttpStatus.SC_OK;
                 }
                 itemResult.status = status;
-                if (putMethod.getResponseHeader("GetETag") != null) {
-                    itemResult.etag = putMethod.getResponseHeader("GetETag").getValue();
+                if (httpResponse.getFirstHeader("GetETag") != null) {
+                    itemResult.etag = httpResponse.getFirstHeader("GetETag").getValue();
                 }
 
                 // trigger activeSync push event, only if davmail.forceActiveSyncUpdate setting is true
@@ -2338,7 +2336,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         method.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream = null;
-        try (CloseableHttpResponse response = httpClientAdapter.execute(method)){
+        try (CloseableHttpResponse response = httpClientAdapter.execute(method)) {
             if (HttpClientAdapter.isGzipEncoded(response)) {
                 inputStream = (new GZIPInputStream(response.getEntity().getContent()));
             } else {
@@ -2401,7 +2399,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         list.add(Field.createDavProperty("read", "1"));
         HttpProppatch patchMethod = new HttpProppatch(eventPath, list);
         try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
-            LOGGER.debug("Processed "+itemName+" "+response.getStatusLine().getStatusCode());
+            LOGGER.debug("Processed " + itemName + " " + response.getStatusLine().getStatusCode());
         }
     }
 
@@ -2428,7 +2426,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 postParameters.add(new BasicNameValuePair("FORMTYPE", "appointment"));
 
                 postMethod.setEntity(new UrlEncodedFormEntity(postParameters, Consts.UTF_8));
-                try (CloseableHttpResponse response = httpClientAdapter.execute(postMethod)){
+                try (CloseableHttpResponse response = httpClientAdapter.execute(postMethod)) {
                     // create fake event
                     int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_OK) {
@@ -2460,7 +2458,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 }
                 String patchMethodUrl = folderPath + '/' + UUID.randomUUID().toString() + ".EML";
                 HttpProppatch patchMethod = new HttpProppatch(URIUtil.encodePath(patchMethodUrl), propertyList);
-                try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)){
+                try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
                     int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_MULTI_STATUS) {
                         fakeEventUrl = patchMethodUrl;
@@ -2471,7 +2469,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 // get fake event body
                 GetRequest getMethod = new GetRequest(URIUtil.encodePath(fakeEventUrl));
                 getMethod.setHeader("Translate", "f");
-                try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)){
+                try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
                     this.vTimezone = new VObject("BEGIN:VTIMEZONE" +
                             StringUtil.getToken(getMethod.handleResponse(response), "BEGIN:VTIMEZONE", "END:VTIMEZONE") +
                             "END:VTIMEZONE\r\n");
@@ -2601,7 +2599,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         }
         if (!davProperties.isEmpty()) {
             HttpProppatch patchMethod = new HttpProppatch(messageUrl, davProperties);
-            try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)){
+            try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
                 // update message with blind carbon copy and other flags
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode != HttpStatus.SC_MULTI_STATUS) {
@@ -2614,17 +2612,23 @@ public class HC4DavExchangeSession extends ExchangeSession {
         }
 
         // update message body
-        PutMethod putmethod = new PutMethod(messageUrl);
-        putmethod.setRequestHeader("Translate", "f");
-        putmethod.setRequestHeader("Content-Type", "message/rfc822");
+        HttpPut putmethod = new HttpPut(messageUrl);
+        putmethod.setHeader("Translate", "f");
+        putmethod.setHeader("Content-Type", "message/rfc822");
 
         try {
             // use same encoding as client socket reader
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             mimeMessage.writeTo(baos);
             baos.close();
-            putmethod.setRequestEntity(new ByteArrayRequestEntity(baos.toByteArray()));
-            int code = httpClient.executeMethod(putmethod);
+            putmethod.setEntity(new ByteArrayEntity(baos.toByteArray()));
+
+            int code;
+            String reasonPhrase;
+            try (CloseableHttpResponse response = httpClientAdapter.execute(putmethod)) {
+                code = response.getStatusLine().getStatusCode();
+                reasonPhrase = response.getStatusLine().getReasonPhrase();
+            }
 
             // workaround for misconfigured Exchange server
             if (code == HttpStatus.SC_NOT_ACCEPTABLE) {
@@ -2667,20 +2671,26 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 }
             }
 
+
             if (code != HttpStatus.SC_OK && code != HttpStatus.SC_CREATED) {
 
                 // first delete draft message
                 if (!davProperties.isEmpty()) {
-                    try {
+                    HttpDelete httpDelete = new HttpDelete(messageUrl);
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)){
                         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
+                        int status = response.getStatusLine().getStatusCode();
+                        if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
+                            throw HttpClientAdapter.buildHttpException(httpDelete, response);
+                        }
                     } catch (IOException e) {
                         LOGGER.warn("Unable to delete draft message");
                     }
                 }
                 if (code == HttpStatus.SC_INSUFFICIENT_STORAGE) {
-                    throw new InsufficientStorageException(putmethod.getStatusText());
+                    throw new InsufficientStorageException(reasonPhrase);
                 } else {
-                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', putmethod.getStatusLine());
+                    throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, code, ' ', reasonPhrase);
                 }
             }
         } catch (MessagingException e) {
@@ -2696,7 +2706,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 davProperties.add(Field.createDavProperty("bcc", mimeMessage.getHeader("Bcc", ",")));
                 HttpProppatch httpProppatch = new HttpProppatch(messageUrl, davProperties);
                 // update message with blind carbon copy
-                try (CloseableHttpResponse response = httpClientAdapter.execute(httpProppatch)){
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpProppatch)) {
                     int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                         throw new DavMailException("EXCEPTION_UNABLE_TO_CREATE_MESSAGE", messageUrl, statusCode, ' ', response.getStatusLine().getReasonPhrase());
@@ -2721,7 +2731,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 throw new UnsupportedOperationException();
             }
         };
-        try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)){
+        try (CloseableHttpResponse response = httpClientAdapter.execute(patchMethod)) {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_MULTI_STATUS) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_UPDATE_MESSAGE");
@@ -2920,13 +2930,13 @@ public class HC4DavExchangeSession extends ExchangeSession {
     protected InputStream getContentInputStream(String url) throws IOException {
         String encodedUrl = encodeAndFixUrl(url);
 
-        final HttpGet method = new HttpGet(encodedUrl);
-        method.setHeader("Content-Type", "text/xml; charset=utf-8");
-        method.setHeader("Translate", "f");
-        method.setHeader("Accept-Encoding", "gzip");
+        final HttpGet httpGet = new HttpGet(encodedUrl);
+        httpGet.setHeader("Content-Type", "text/xml; charset=utf-8");
+        httpGet.setHeader("Translate", "f");
+        httpGet.setHeader("Accept-Encoding", "gzip");
 
         InputStream inputStream;
-        try (CloseableHttpResponse response = httpClientAdapter.execute(method)){
+        try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
             if (HttpClientAdapter.isGzipEncoded(response)) {
                 inputStream = new GZIPInputStream(response.getEntity().getContent());
             } else {
@@ -2941,7 +2951,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     int count = super.read(buffer, offset, length);
                     totalCount += count;
                     if (totalCount - lastLogCount > 1024 * 128) {
-                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), method.getURI()));
+                        DavGatewayTray.debug(new BundleMessage("LOG_DOWNLOAD_PROGRESS", String.valueOf(totalCount / 1024), httpGet.getURI()));
                         DavGatewayTray.switchIcon();
                         lastLogCount = totalCount;
                     }
@@ -2953,13 +2963,12 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     try {
                         super.close();
                     } finally {
-                        method.releaseConnection();
+                        httpGet.releaseConnection();
                     }
                 }
             };
 
-        } catch (HttpException e) {
-            method.releaseConnection();
+        } catch (IOException e) {
             LOGGER.warn("Unable to retrieve message at: " + url);
             throw e;
         }
