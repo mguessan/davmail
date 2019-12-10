@@ -38,7 +38,7 @@ import java.util.ArrayList;
 /**
  * Http post request to handle response transparently.
  */
-public class PostRequest extends HttpPost implements ResponseHandler {
+public class PostRequest extends HttpPost implements ResponseHandler<String> {
     ArrayList<NameValuePair> parameters = new ArrayList<>();
     String responseBodyAsString = null;
     private HttpResponse response;
@@ -61,7 +61,7 @@ public class PostRequest extends HttpPost implements ResponseHandler {
     }
 
     @Override
-    public Object handleResponse(HttpResponse response) throws IOException {
+    public String handleResponse(HttpResponse response) throws IOException {
         this.response = response;
         if (HttpClientAdapter.isRedirect(response)) {
             return null;
