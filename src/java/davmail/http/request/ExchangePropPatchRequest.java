@@ -20,6 +20,9 @@
 package davmail.http.request;
 
 import davmail.exchange.dav.PropertyValue;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +31,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +44,7 @@ public class ExchangePropPatchRequest extends ExchangeDavRequest {
     protected static final Logger LOGGER = Logger.getLogger(ExchangePropPatchRequest.class);
     static final String TYPE_NAMESPACE = "urn:schemas-microsoft-com:datatypes";
     final Set<PropertyValue> propertyValues;
+    private StatusLine statusLine;
 
     /**
      * Create PROPPATCH method.
@@ -140,5 +145,14 @@ public class ExchangePropPatchRequest extends ExchangeDavRequest {
         return "PROPPATCH";
     }
 
+    @Override
+    public List<MultiStatusResponse> handleResponse(HttpResponse response) {
+        this.statusLine = response.getStatusLine();
+        return super.handleResponse(response);
+    }
 
+
+    public StatusLine getStatusLine() {
+        return statusLine;
+    }
 }
