@@ -40,8 +40,6 @@ import davmail.http.request.GetRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.URIException;
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -1613,7 +1611,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 LOGGER.warn("Deleting broken event at: " + permanentUrl);
                 try {
                     DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, encodeAndFixUrl(permanentUrl));
-                } catch (IOException ioe) {
+                } catch (IOException e) {
                     LOGGER.warn("Unable to delete broken event at: " + permanentUrl);
                 }
             }
@@ -2677,7 +2675,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 // first delete draft message
                 if (!davProperties.isEmpty()) {
                     HttpDelete httpDelete = new HttpDelete(messageUrl);
-                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)){
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
                         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
                         int status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
@@ -2912,19 +2910,28 @@ public class HC4DavExchangeSession extends ExchangeSession {
         return baos.toByteArray();
     }
 
-    protected String getEscapedUrlFromPath(String escapedPath) throws URIException {
-        URI uri = new URI(httpClient.getHostConfiguration().getHostURL(), true);
-        uri.setEscapedPath(escapedPath);
-        return uri.getEscapedURI();
+    /**
+     * Build url string from base Exchange uri and provided escaped path.
+     *
+     * @param escapedPath escaped path
+     * @return uri based on server uri and escaped path
+     */
+    protected String getEscapedUrlFromPath(String escapedPath) {
+        return URIUtils.extractHost(httpClientAdapter.getUri()).toURI() + escapedPath;
     }
 
-    protected String encodeAndFixUrl(String url) throws URIException {
-        String originalUrl = URIUtil.encodePath(url);
-        if (restoreHostName && originalUrl.startsWith("http")) {
-            String targetPath = new URI(originalUrl, true).getEscapedPath();
-            originalUrl = getEscapedUrlFromPath(targetPath);
+    protected String encodeAndFixUrl(String url) throws IOException {
+        String fixedurl = URIUtil.encodePath(url);
+        // sometimes permanenturis inside items are wrong after an Exchange version migration
+        // need to restore base uri to actual public Exchange uri
+        if (restoreHostName && fixedurl.startsWith("http")) {
+            try {
+                return URIUtils.rewriteURI(new java.net.URI(fixedurl), URIUtils.extractHost(httpClientAdapter.getUri())).toString();
+            } catch (URISyntaxException e) {
+                throw new IOException(e.getMessage(), e);
+            }
         }
-        return originalUrl;
+        return fixedurl;
     }
 
     protected InputStream getContentInputStream(String url) throws IOException {
