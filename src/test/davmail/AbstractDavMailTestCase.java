@@ -81,12 +81,6 @@ public abstract class AbstractDavMailTestCase extends TestCase {
             DavGatewaySSLProtocolSocketFactory.register();
             // force server mode
             Settings.setProperty("davmail.server", "true");
-
-            // enable WIRE debug log
-            //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
-            // enable EWS support
-            //Settings.setProperty("davmail.mode", "EWS");
-
         }
     }
 
