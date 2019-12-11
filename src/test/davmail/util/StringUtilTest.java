@@ -30,8 +30,8 @@ public class StringUtilTest extends TestCase {
      */
     public void testGetToken() {
         assertNull(StringUtil.getToken(null, null, null));
-        assertNull(StringUtil.getToken(null, "\'", "\'"));
-        assertNull(StringUtil.getToken("'test", "\'", "\'"));
+        assertNull(StringUtil.getToken(null, "'", "'"));
+        assertNull(StringUtil.getToken("'test", "'", "'"));
         assertEquals("test", StringUtil.getToken("'test'", "'", "'"));
         assertEquals("test", StringUtil.getToken("value=\"test\"", "value=\"", "\""));
     }
@@ -68,7 +68,7 @@ public class StringUtilTest extends TestCase {
                 //String result = value.replaceAll("\\+", "%2B");
                                                  
                 int length = value.length();
-                StringBuilder buffer = new StringBuilder(length);
+                @SuppressWarnings("MismatchedQueryAndUpdateOfStringBuilder") StringBuilder buffer = new StringBuilder(length);
                 /*int startIndex = 0;
                 int endIndex = value.indexOf('+');
                 while (endIndex >= 0) {
