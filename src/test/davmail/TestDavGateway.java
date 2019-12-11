@@ -47,24 +47,18 @@ public class TestDavGateway extends AbstractDavMailTestCase {
      * @throws InterruptedException on error
      */
     public void testLoopGetReleasedVersion() throws InterruptedException {
-        HttpClientAdapter httpClientAdapter = new HttpClientAdapter("http://davmail.sourceforge.net/version.txt");
-        try {
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter("http://davmail.sourceforge.net/version.txt")){
             int count = 0;
             while (count++ < 100) {
                 HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-                CloseableHttpResponse response = httpClientAdapter.execute(httpget);
-                try {
+                try (CloseableHttpResponse response = httpClientAdapter.execute(httpget)){
                     String version = new BasicResponseHandler().handleResponse(response);
                     System.out.println("DavMail released version: " + version);
-                } finally {
-                    response.close();
                 }
                 Thread.sleep(1000);
             }
         } catch (IOException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
-        } finally {
-            httpClientAdapter.close();
         }
     }
 }
