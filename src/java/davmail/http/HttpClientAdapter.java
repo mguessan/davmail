@@ -25,10 +25,8 @@ import davmail.exception.HttpNotFoundException;
 import davmail.exception.HttpPreconditionFailedException;
 import davmail.exception.HttpServerErrorException;
 import davmail.exception.LoginTimeoutException;
-import davmail.exchange.dav.ExchangeSearchMethod;
 import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
-import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -276,6 +274,7 @@ public class HttpClientAdapter implements Closeable {
 
     /**
      * Current uri.
+     *
      * @return current uri
      */
     public URI getUri() {
@@ -406,6 +405,7 @@ public class HttpClientAdapter implements Closeable {
 
     /**
      * fix relative uri and update current uri.
+     *
      * @param request http request
      */
     private void handleURI(HttpRequestBase request) {
@@ -445,6 +445,7 @@ public class HttpClientAdapter implements Closeable {
 
     /**
      * Execute WebDav request
+     *
      * @param request WebDav request
      * @return multistatus response
      * @throws IOException on error
@@ -459,13 +460,14 @@ public class HttpClientAdapter implements Closeable {
             }
         } catch (DavException e) {
             LOGGER.error(e.getMessage(), e);
-            throw new IOException(e.getErrorCode()+" "+e.getStatusPhrase(), e);
+            throw new IOException(e.getErrorCode() + " " + e.getStatusPhrase(), e);
         }
         return multiStatus;
     }
 
     /**
      * Execute Exchange WebDav request
+     *
      * @param request WebDav request
      * @return multistatus response
      * @throws IOException on error
@@ -488,9 +490,9 @@ public class HttpClientAdapter implements Closeable {
     /**
      * Execute webdav search method.
      *
-     * @param path          <i>encoded</i> searched folder path
+     * @param path            <i>encoded</i> searched folder path
      * @param searchStatement (SQL like) search statement
-     * @param maxCount      max item count
+     * @param maxCount        max item count
      * @return Responses enumeration
      * @throws IOException on error
      */
@@ -550,8 +552,20 @@ public class HttpClientAdapter implements Closeable {
     }
 
     /**
+     * Build HttpException from message and exception.
+     * // TODO use HC4 HttpException
+     * @param message message
+     * @param e exception
+     * @return Http Exception
+     */
+    public static HttpException buildHttpException(String message, Exception e) {
+        LOGGER.warn(message);
+        return new HttpException(message, e);
+    }
+
+    /**
      * Build Http Exception from method status
-     *
+     * // TODO use HC4 HttpException
      * @param method Http Method
      * @return Http Exception
      */
