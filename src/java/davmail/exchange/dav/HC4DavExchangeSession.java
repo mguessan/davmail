@@ -2685,7 +2685,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 } else if (contentType.startsWith("text/html")) {
                     propertyList.add(Field.createDavProperty("htmldescription", (String) mimePart.getContent()));
                 } else {
-                    LOGGER.warn("Unsupported content type: " + contentType + " message body will be empty");
+                    LOGGER.warn("Unsupported content type: " + contentType.replaceAll("[\n\r\t]", "_") + " message body will be empty");
                 }
 
                 propertyList.add(Field.createDavProperty("subject", mimeMessage.getHeader("subject", ",")));
