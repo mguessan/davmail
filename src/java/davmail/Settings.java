@@ -622,12 +622,14 @@ public final class Settings {
      * @param level    logging level
      */
     public static synchronized void setLoggingLevel(String category, Level level) {
-        String prefix = getLoggingPrefix(category);
-        SETTINGS.setProperty(prefix + category, level.toString());
-        if ("rootLogger".equals(category)) {
-            Logger.getRootLogger().setLevel(level);
-        } else {
-            Logger.getLogger(category).setLevel(level);
+        if (level != null) {
+            String prefix = getLoggingPrefix(category);
+            SETTINGS.setProperty(prefix + category, level.toString());
+            if ("rootLogger".equals(category)) {
+                Logger.getRootLogger().setLevel(level);
+            } else {
+                Logger.getLogger(category).setLevel(level);
+            }
         }
     }
 
