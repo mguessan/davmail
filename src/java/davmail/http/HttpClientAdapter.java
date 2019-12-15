@@ -189,7 +189,7 @@ public class HttpClientAdapter implements Closeable {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .disableRedirectHandling()
                 .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
-                .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
+                .setUserAgent(DavGatewayHttpClientFacade.getUserAgent())
                 .setDefaultAuthSchemeRegistry(getAuthSchemeRegistry())
                 .setConnectionManager(connectionManager);
 
