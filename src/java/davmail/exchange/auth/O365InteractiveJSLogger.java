@@ -23,6 +23,10 @@ import javafx.scene.web.WebEngine;
 import netscape.javascript.JSObject;
 import org.apache.log4j.Logger;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class O365InteractiveJSLogger {
     private static final Logger LOGGER = Logger.getLogger(O365InteractiveJSLogger.class);
     public void log(String message) {
@@ -30,8 +34,18 @@ public class O365InteractiveJSLogger {
     }
 
     public static void register(WebEngine webEngine) {
-        JSObject window = (JSObject) webEngine.executeScript("window");
-        window.setMember("davmail", new O365InteractiveJSLogger());
-        webEngine.executeScript("console.log = function(message) { davmail.log(message); }");
+
+        try {
+            Class jsObjectClass = Class.forName("netscape.javascript.JSObject");
+            Method setMemberMethod = jsObjectClass.getDeclaredMethod("setMember", String.class,Object.class);
+
+            JSObject window = (JSObject) webEngine.executeScript("window");
+            setMemberMethod.invoke(window, "davmail", new O365InteractiveJSLogger());
+
+            webEngine.executeScript("console.log = function(message) { davmail.log(message); }");
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            LOGGER.info("netscape.javascript.JSObject not available");
+        }
+
     }
 }
