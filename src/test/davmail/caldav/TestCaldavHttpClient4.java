@@ -291,7 +291,7 @@ public class TestCaldavHttpClient4 extends AbstractDavMailTestCase {
         session.createCalendarFolder("calendar/" + folderName, null);
 
         DavPropertySet davPropertySet = new DavPropertySet();
-        davPropertySet.add(new DefaultDavProperty(DavPropertyName.create("displayname", Namespace.getNamespace("DAV:")), renamedFolderName));
+        davPropertySet.add(new DefaultDavProperty<>(DavPropertyName.create("displayname", Namespace.getNamespace("DAV:")), renamedFolderName));
 
         HttpProppatch propPatchMethod = new HttpProppatch(uri, davPropertySet, new DavPropertyNameSet());
         httpClient.executeDavRequest(propPatchMethod);
