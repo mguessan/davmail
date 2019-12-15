@@ -19,16 +19,11 @@
 package davmail.ui.tray;
 
 import davmail.BundleMessage;
-import info.growl.Growl;
-import info.growl.GrowlException;
-import info.growl.GrowlUtils;
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
 import java.util.ArrayList;
 
 /**
@@ -38,8 +33,6 @@ public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterfac
     protected static final String OSX_TRAY_ACTIVE_PNG = "osxtray2.png";
     protected static final String OSX_TRAY_PNG = "osxtray.png";
     protected static final String OSX_TRAY_INACTIVE_PNG = "osxtrayinactive.png";
-
-    private static final Logger LOGGER = Logger.getLogger(OSXAwtGatewayTray.class);
 
     @Override
     protected void loadIcons() {
@@ -67,35 +60,7 @@ public class OSXAwtGatewayTray extends AwtGatewayTray implements OSXTrayInterfac
 
     @Override
     public void displayMessage(final String message, final Level level) {
-        if (!GrowlUtils.isGrowlLoaded()) {
-            super.displayMessage(message, level);
-        } else {
-            SwingUtilities.invokeLater(() -> {
-                if (trayIcon != null) {
-                    Icon icon = null;
-                    if (level.equals(Level.INFO)) {
-                        icon = UIManager.getIcon("OptionPane.informationIcon");
-                    } else if (level.equals(Level.WARN)) {
-                        icon = UIManager.getIcon("OptionPane.warningIcon");
-                    } else if (level.equals(Level.ERROR)) {
-                        icon = UIManager.getIcon("OptionPane.errorIcon");
-                    }
-
-                    if (icon != null && message != null && message.length() > 0) {
-                        try {
-                            String title = BundleMessage.format("UI_DAVMAIL_GATEWAY");
-                            Growl growl = GrowlUtils.getGrowlInstance("DavMail");
-                            growl.addNotification(title, true);
-                            growl.register();
-                            growl.sendNotification(title, title, message, (RenderedImage) getImageForIcon(icon));
-                        } catch (GrowlException growlException) {
-                            LOGGER.error(growlException);
-                        }
-                    }
-                    trayIcon.setToolTip(BundleMessage.format("UI_DAVMAIL_GATEWAY") + '\n' + message);
-                }
-            });
-        }
+        super.displayMessage(message, level);
     }
 
     protected Image getImageForIcon(Icon icon) {
