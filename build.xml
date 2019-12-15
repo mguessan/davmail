@@ -154,6 +154,7 @@
                 <batchtest>
                     <!--fileset dir="src/test" includes="**/Test*.java"/-->
                     <fileset dir="src/test" includes="**/TestDoubleDotInputStream.java"/>
+                    <fileset dir="src/test" includes="davmail/caldav/TestCaldavHttpClient4.java"/>
                 </batchtest>
             </junit>
         </coverage>
@@ -173,6 +174,14 @@
             <html destdir="target/jacocoreport"/>
             <xml destfile="target/jacoco.xml"/>
         </report>
+    </target>
+
+    <!-- upload jacoco report to sourceforge -->
+    <target name='upload-coverage' depends="test">
+        <scp todir="${username},davmail@web.sourceforge.net:htdocs"
+             keyfile="${keyfile}" passphrase="${passphrase}" verbose="true" trust="true">
+            <fileset file="target/jacoco.xml"/>
+        </scp>
     </target>
 
     <target name="dist-nsis" if="is.windows">
