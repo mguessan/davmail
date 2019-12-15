@@ -87,10 +87,10 @@
         <javac srcdir="src/java" destdir="target/classes" source="9" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <exclude name="davmail/exchange/auth/*Interactive*" unless="is.javafx"/>
-            <compilerarg value="--add-exports" />
-            <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED" />
-            <compilerarg value="--add-exports" />
-            <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED" />
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.naming/com.sun.jndi.ldap=ALL-UNNAMED"/>
+            <compilerarg value="--add-exports"/>
+            <compilerarg value="java.base/sun.net.www.protocol.https=ALL-UNNAMED"/>
             <classpath>
                 <path refid="classpath"/>
             </classpath>
@@ -135,17 +135,44 @@
     </target>
 
     <target name="test" depends="test-compile">
-        <junit printsummary="on" haltonfailure="no" fork="true">
+        <taskdef resource="org/jacoco/ant/antlib.xml">
             <classpath>
-                <path refid="classpath"/>
-                <pathelement location="target/classes"/>
-                <pathelement location="target/test-classes"/>
+                <fileset dir="lib">
+                    <include name="jacocoant-*"/>
+                </fileset>
             </classpath>
-            <formatter type="brief" usefile="false" />
-            <batchtest>
-                <fileset dir="src/test" includes="**/Test*.java" />
-            </batchtest>
-        </junit>
+        </taskdef>
+        <!-- execute tests with coverage -->
+        <coverage output="file" destfile="target/jacoco.exec">
+            <junit printsummary="on" haltonfailure="no" fork="true">
+                <classpath>
+                    <path refid="classpath"/>
+                    <pathelement location="target/classes"/>
+                    <pathelement location="target/test-classes"/>
+                </classpath>
+                <formatter type="brief" usefile="false"/>
+                <batchtest>
+                    <!--fileset dir="src/test" includes="**/Test*.java"/-->
+                    <fileset dir="src/test" includes="**/TestDoubleDotInputStream.java"/>
+                </batchtest>
+            </junit>
+        </coverage>
+        <!-- create coverage report -->
+        <report>
+            <executiondata>
+                <file file="target/jacoco.exec"/>
+            </executiondata>
+            <structure name="DavMail">
+                <classfiles>
+                    <fileset dir="target/classes"/>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="src/java"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="target/jacocoreport"/>
+            <xml destfile="target/jacoco.xml"/>
+        </report>
     </target>
 
     <target name="dist-nsis" if="is.windows">
@@ -187,7 +214,8 @@
                 <expandproperties/>
             </filterchain>
         </copy>
-        <zip file="dist/DavMail-MacOSX-${release-name}.app.zip" comment="In order to run DavMail on OSX Mountain Lion or later, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
+        <zip file="dist/DavMail-MacOSX-${release-name}.app.zip"
+             comment="In order to run DavMail on OSX Mountain Lion or later, you will need to disable Gatekeeper temporarily, see http://davmail.sourceforge.net/macosxsetup.html">
             <zipfileset dir="dist">
                 <include name="DavMail.app/**/*"/>
                 <exclude name="DavMail.app/Contents/MacOS/davmail"/>
@@ -340,7 +368,7 @@
                 <exclude name="lib/junit-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
             </zipfileset>
-            <zipfileset  dir="src/bin" filemode="755">
+            <zipfileset dir="src/bin" filemode="755">
                 <include name="davmail"/>
             </zipfileset>
         </zip>
@@ -411,8 +439,9 @@
             <fileset dir="target/site"/>
         </replaceregexp>
 
-        <replaceregexp match="&lt;a href=&quot;#&quot; id=&quot;bannerRight&quot;&gt;&lt;img src=&quot;#&quot;  alt=&quot;#&quot;/&gt;&lt;/a&gt;"
-                       replace="&lt;div class=&quot;navbar&quot;&gt;&lt;div class=&quot;container&quot;&gt;&lt;a class=&quot;btn btn-navbar&quot; data-toggle=&quot;collapse&quot; data-target=&quot;.nav-collapse&quot;&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;">
+        <replaceregexp
+                match="&lt;a href=&quot;#&quot; id=&quot;bannerRight&quot;&gt;&lt;img src=&quot;#&quot;  alt=&quot;#&quot;/&gt;&lt;/a&gt;"
+                replace="&lt;div class=&quot;navbar&quot;&gt;&lt;div class=&quot;container&quot;&gt;&lt;a class=&quot;btn btn-navbar&quot; data-toggle=&quot;collapse&quot; data-target=&quot;.nav-collapse&quot;&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;span class=&quot;icon-bar&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;">
             <fileset dir="target/site"/>
         </replaceregexp>
     </target>
@@ -464,8 +493,8 @@
             </fileset>
         </concat>
     </target>
-    
-     <target name="sonar">
+
+    <target name="sonar">
         <property file="sonar.properties"/>
         <property name="sonar.projectVersion" value="${version}"/>
         <taskdef resource="org/sonar/ant/antlib.xml" classpath="lib/sonarqube-ant-task-2.7.0.1612.jar"/>
