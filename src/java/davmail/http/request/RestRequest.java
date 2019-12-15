@@ -41,7 +41,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Generic Rest request.
  */
-public class RestRequest extends HttpPost implements ResponseHandler {
+public class RestRequest extends HttpPost implements ResponseHandler<JSONObject> {
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
     protected static final Logger LOGGER = Logger.getLogger(RestRequest.class);
 
@@ -112,7 +112,7 @@ public class RestRequest extends HttpPost implements ResponseHandler {
     }
 
     @Override
-    public Object handleResponse(HttpResponse response) {
+    public JSONObject handleResponse(HttpResponse response) {
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
             try (InputStream inputStream = response.getEntity().getContent()){
