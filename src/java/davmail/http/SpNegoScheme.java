@@ -61,7 +61,7 @@ public class SpNegoScheme implements AuthScheme {
         if (spaceIndex != -1) {
             // step 2: received server challenge
             serverToken = Base64.decodeBase64(EncodingUtil.getBytes(
-                    challenge.substring(spaceIndex, challenge.length()).trim(), "ASCII"));
+                    challenge.substring(spaceIndex).trim(), "ASCII"));
             this.state = TYPE2_MSG_RECEIVED;
         } else {
             this.serverToken = null;
@@ -134,15 +134,9 @@ public class SpNegoScheme implements AuthScheme {
      * @param method      method name
      * @param uri         URI
      * @return an Negotiate authorization string
-     * @throws org.apache.commons.httpclient.auth.InvalidCredentialsException
-     *          if authentication credentials
-     *          are not valid or not applicable for this authentication scheme
-     * @throws org.apache.commons.httpclient.auth.AuthenticationException
-     *          if authorization string cannot
-     *          be generated due to an authentication failure
      */
     @Deprecated
-    public String authenticate(final Credentials credentials, String method, String uri) throws AuthenticationException {
+    public String authenticate(final Credentials credentials, String method, String uri) {
         throw new UnsupportedOperationException();
     }
 
