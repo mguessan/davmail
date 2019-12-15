@@ -119,7 +119,7 @@
 
     <target name="test-compile" depends="compile">
         <mkdir dir="target/test-classes"/>
-        <javac srcdir="src/test" destdir="target/test-classes" source="1.6" target="1.6" debug="on" encoding="UTF-8"
+        <javac srcdir="src/test" destdir="target/test-classes"  source="1.8" target="1.8" debug="on" encoding="UTF-8"
                includeantruntime="false">
             <classpath>
                 <path refid="classpath"/>
