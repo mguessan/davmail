@@ -32,7 +32,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -83,11 +83,7 @@ public class RestMethod extends PostMethod {
     }
 
     protected byte[] getJsonContent() {
-        try {
-            return jsonBody.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return jsonBody.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -100,9 +96,7 @@ public class RestMethod extends PostMethod {
                 } else {
                     processResponseStream(getResponseBodyAsStream());
                 }
-            } catch (IOException e) {
-                LOGGER.error("Error while parsing json response: " + e, e);
-            } catch (JSONException e) {
+            } catch (IOException | JSONException e) {
                 LOGGER.error("Error while parsing json response: " + e, e);
             }
         }
@@ -110,6 +104,6 @@ public class RestMethod extends PostMethod {
 
     private void processResponseStream(InputStream responseBodyAsStream) throws IOException, JSONException {
         // quick non streaming implementation
-        jsonResponse = new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), "UTF-8"));
+        jsonResponse = new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), StandardCharsets.UTF_8));
     }
 }

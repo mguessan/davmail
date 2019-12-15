@@ -33,7 +33,6 @@ import davmail.ui.NotificationDialog;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
@@ -2256,7 +2255,7 @@ public class EwsExchangeSession extends ExchangeSession {
                     content = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
                 }
             } catch (IOException | MessagingException e) {
-                throw buildHttpException(e);
+                throw buildHttpNotFoundException(e);
             }
             return content;
         }
@@ -2351,7 +2350,7 @@ public class EwsExchangeSession extends ExchangeSession {
                 try {
                     event.getEventContent();
                     events.add(event);
-                } catch (HttpException e) {
+                } catch (HttpNotFoundException e) {
                     LOGGER.warn("Ignore invalid event " + event.getHref());
                 }
                 // exclude exceptions

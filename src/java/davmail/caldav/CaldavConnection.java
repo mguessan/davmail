@@ -36,8 +36,8 @@ import davmail.http.URIUtil;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.apache.log4j.Logger;
 
@@ -574,7 +574,7 @@ public class CaldavConnection extends AbstractConnection {
                 ExchangeSession.Folder folder = session.getFolder(folderPath);
                 ctag = IOUtil.encodeBase64AsString(folder.ctag);
                 etag = IOUtil.encodeBase64AsString(folder.etag);
-            } catch (HttpException e) {
+            } catch (HttpResponseException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", folderPath, e.getMessage()));
             }
@@ -662,7 +662,7 @@ public class CaldavConnection extends AbstractConnection {
                 List<ExchangeSession.Event> events = session.getEventMessages(request.getFolderPath());
                 DavGatewayTray.debug(new BundleMessage("LOG_FOUND_CALENDAR_MESSAGES", events.size()));
                 appendEventsResponses(response, request, events);
-            } catch (HttpException e) {
+            } catch (HttpResponseException e) {
                 // unauthorized access, probably an inbox on shared calendar
                 DavGatewayTray.debug(new BundleMessage("LOG_ACCESS_FORBIDDEN", request.getFolderPath(), e.getMessage()));
             }

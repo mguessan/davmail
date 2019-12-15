@@ -18,18 +18,19 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 412 precondition failed status.
+ * HttpResponseException with 412 precondition failed status.
  */
-public class HttpPreconditionFailedException extends HttpException {
+public class HttpPreconditionFailedException extends HttpResponseException {
     /**
-     * HttpException with 412 precondition failed status.
+     * HttpResponseException with 412 precondition failed status.
      *
      * @param message exception message
      */
     public HttpPreconditionFailedException(String message) {
-        super(message);
+        super(HttpStatus.SC_PRECONDITION_FAILED, message);
     }
 }

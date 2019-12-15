@@ -32,7 +32,7 @@ import davmail.exchange.*;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.client.HttpResponseException;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
@@ -198,7 +198,7 @@ public class ImapConnection extends AbstractConnection {
                                                 } catch (HttpNotFoundException e) {
                                                     // not found, ignore
                                                     DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_NOT_FOUND", folderQuery));
-                                                } catch (HttpException e) {
+                                                } catch (HttpResponseException e) {
                                                     // other errors, ignore
                                                     DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_ACCESS_ERROR", folderQuery, e.getMessage()));
                                                 }
@@ -282,7 +282,7 @@ public class ImapConnection extends AbstractConnection {
                                     try {
                                         session.moveFolder(folderName, targetName);
                                         sendClient(commandId + " OK rename completed");
-                                    } catch (HttpException e) {
+                                    } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("delete".equalsIgnoreCase(command)) {
@@ -290,7 +290,7 @@ public class ImapConnection extends AbstractConnection {
                                     try {
                                         session.deleteFolder(folderName);
                                         sendClient(commandId + " OK folder deleted");
-                                    } catch (HttpException e) {
+                                    } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("uid".equalsIgnoreCase(command)) {
@@ -363,7 +363,7 @@ public class ImapConnection extends AbstractConnection {
                                                 }
                                             } catch (HttpNotFoundException e) {
                                                 sendClient(commandId + " NO [TRYCREATE] " + e.getMessage());
-                                            } catch (HttpException e) {
+                                            } catch (HttpResponseException e) {
                                                 sendClient(commandId + " NO " + e.getMessage());
                                             }
                                         }
@@ -443,7 +443,7 @@ public class ImapConnection extends AbstractConnection {
                                             }
                                             sendClient(commandId + " OK " + command + " completed");
                                         }
-                                    } catch (HttpException e) {
+                                    } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO " + e.getMessage());
                                     }
                                 } else if ("append".equalsIgnoreCase(command)) {
@@ -640,7 +640,7 @@ public class ImapConnection extends AbstractConnection {
                                         }
                                         sendClient(" STATUS \"" + encodedFolderName + "\" (" + answer.toString().trim() + ')');
                                         sendClient(commandId + " OK " + command + " completed");
-                                    } catch (HttpException e) {
+                                    } catch (HttpResponseException e) {
                                         sendClient(commandId + " NO folder not found");
                                     }
                                 } else {
@@ -1386,7 +1386,7 @@ public class ImapConnection extends AbstractConnection {
         } catch (HttpNotFoundException e) {
             // not found, ignore
             DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_NOT_FOUND", folderPath));
-        } catch (HttpException e) {
+        } catch (HttpResponseException e) {
             // other errors, ignore
             DavGatewayTray.debug(new BundleMessage("LOG_FOLDER_ACCESS_ERROR", folderPath, e.getMessage()));
         }

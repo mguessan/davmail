@@ -40,16 +40,15 @@ import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
 import org.apache.http.Consts;
-import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
@@ -840,8 +839,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         try {
             HttpPropfind httpPropfind = new HttpPropfind(mailPath, WELL_KNOWN_FOLDERS, 0);
             MultiStatus multiStatus;
-            try (CloseableHttpResponse response = httpClientAdapter.execute(httpPropfind);
-            ) {
+            try (CloseableHttpResponse response = httpClientAdapter.execute(httpPropfind)) {
                 multiStatus = httpPropfind.getResponseBodyAsMultiStatus(response);
             }
             MultiStatusResponse[] responses = multiStatus.getResponses();
@@ -1260,7 +1258,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (status == HttpStatus.SC_MULTI_STATUS) {
                 try {
                     status = propPatchRequest.getResponseStatusCode();
-                } catch (HttpException e) {
+                } catch (HttpResponseException e) {
                     throw new IOException(e.getMessage(), e);
                 }
                 //noinspection VariableNotUsedInsideIf
@@ -1281,7 +1279,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                     if (status == HttpStatus.SC_MULTI_STATUS) {
                         try {
                             status = propPatchRequest.getResponseStatusCode();
-                        } catch (HttpException e) {
+                        } catch (HttpResponseException e) {
                             throw new IOException(e.getMessage(), e);
                         }
                         LOGGER.debug("Updated contact " + encodedHref);
@@ -1451,7 +1449,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             return result;
         }
 
-        private byte[] getICSFromItemProperties() throws IOException {
+        private byte[] getICSFromItemProperties() throws HttpNotFoundException {
             byte[] result;
 
             // experimental: build VCALENDAR from properties
@@ -1606,7 +1604,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                 result = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
             } catch (MessagingException | IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
-                throw HttpClientAdapter.buildHttpException("Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage(), e);
+                throw new HttpNotFoundException("Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage());
             }
 
             return result;
@@ -1696,7 +1694,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                         Item newItem = getItem(folderPath, itemName);
                         try {
                             itemResult.status = propPatchMethod.getResponseStatusCode();
-                        } catch (HttpException e) {
+                        } catch (HttpResponseException e) {
                             throw new IOException(e.getMessage(), e);
                         }
                         itemResult.etag = newItem.etag;
@@ -1918,7 +1916,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             } else if (status == HttpStatus.SC_METHOD_NOT_ALLOWED) {
                 LOGGER.info("Folder " + folderPath + " already exists");
             }
-        } catch (org.apache.http.HttpException e) {
+        } catch (HttpResponseException e) {
             throw new IOException(e.getMessage(), e);
         }
         LOGGER.debug("Create folder " + folderPath + " returned " + status);
@@ -1943,7 +1941,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         if (status == HttpStatus.SC_MULTI_STATUS) {
             try {
                 status = propPatchRequest.getResponseStatusCode();
-            } catch (HttpException e) {
+            } catch (HttpResponseException e) {
                 throw new IOException(e.getMessage(), e);
             }
         }
@@ -1961,7 +1959,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
         try (CloseableHttpResponse response = httpClientAdapter.execute(httpDelete)) {
             int status = response.getStatusLine().getStatusCode();
             if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-                throw HttpClientAdapter.buildHttpException(httpDelete, response);
+                throw HttpClientAdapter.buildHttpResponseException(httpDelete, response);
             }
         }
     }
@@ -1978,7 +1976,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpPreconditionFailedException(BundleMessage.format("EXCEPTION_UNABLE_TO_MOVE_FOLDER"));
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw HttpClientAdapter.buildHttpException(httpMove, response);
+                throw HttpClientAdapter.buildHttpResponseException(httpMove, response);
             } else if (folderPath.equalsIgnoreCase("/users/" + getEmail() + "/calendar")) {
                 // calendar renamed, need to reload well known folders
                 getWellKnownFolders();
@@ -2002,7 +2000,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_ITEM");
             } else if (statusCode != HttpStatus.SC_CREATED && statusCode != HttpStatus.SC_OK) {
-                throw HttpClientAdapter.buildHttpException(httpMove, response);
+                throw HttpClientAdapter.buildHttpResponseException(httpMove, response);
             }
         }
     }
@@ -2708,7 +2706,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
                         DavGatewayHttpClientFacade.executeDeleteMethod(httpClient, messageUrl);
                         int status = response.getStatusLine().getStatusCode();
                         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-                            throw HttpClientAdapter.buildHttpException(httpDelete, response);
+                            throw HttpClientAdapter.buildHttpResponseException(httpDelete, response);
                         }
                     } catch (IOException e) {
                         LOGGER.warn("Unable to delete draft message");
@@ -3031,7 +3029,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw HttpClientAdapter.buildHttpException(method, response);
+                throw HttpClientAdapter.buildHttpResponseException(method, response);
             }
         } finally {
             method.releaseConnection();
@@ -3061,7 +3059,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_COPY_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw HttpClientAdapter.buildHttpException(httpCopy, response);
+                throw HttpClientAdapter.buildHttpResponseException(httpCopy, response);
             }
         }
     }
@@ -3077,7 +3075,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
             int status = response.getStatusLine().getStatusCode();
             // do not throw error if already deleted
             if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
-                throw HttpClientAdapter.buildHttpException(method, response);
+                throw HttpClientAdapter.buildHttpResponseException(method, response);
             }
             if (response.getFirstHeader("Location") != null) {
                 destination = method.getFirstHeader("Location").getValue();

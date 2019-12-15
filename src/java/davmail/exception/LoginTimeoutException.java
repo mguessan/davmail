@@ -18,18 +18,18 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 440 login timeout status.
+ * HttpResponseException with 440 login timeout status.
  */
-public class LoginTimeoutException extends HttpException {
+public class LoginTimeoutException extends HttpResponseException {
     /**
-     * HttpException with 550 login timeout status.
+     * HttpResponseException with 550 login timeout status.
      *
      * @param message exception message
      */
     public LoginTimeoutException(String message) {
-        super(message);
+        super(440, message);
     }
 }

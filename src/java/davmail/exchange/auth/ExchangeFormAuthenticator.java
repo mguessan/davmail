@@ -43,9 +43,11 @@ import org.htmlcleaner.TagNode;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -202,7 +204,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                     } else if (status != HttpStatus.SC_OK) {
                         method.releaseConnection();
-                        throw DavGatewayHttpClientFacade.buildHttpException(method);
+                        throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
                     }
                     // workaround for basic authentication on /exchange and form based authentication at /owa
                     if ("/owa/auth/logon.aspx".equals(method.getPath())) {
@@ -368,7 +370,7 @@ public class ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         try {
                             int status = httpClient.executeMethod(getMethod);
                             if (status != HttpStatus.SC_OK) {
-                                throw DavGatewayHttpClientFacade.buildHttpException(getMethod);
+                                throw DavGatewayHttpClientFacade.buildHttpResponseException(getMethod);
                             }
                             BufferedImage captchaImage = ImageIO.read(getMethod.getResponseBodyAsStream());
                             ((PostMethod) logonMethod).addParameter(name, DavGatewayOTPPrompt.getCaptchaValue(captchaImage));

@@ -21,13 +21,13 @@ package davmail.exchange;
 import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
+import davmail.exception.HttpNotFoundException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.URIUtil;
 import davmail.ui.NotificationDialog;
 import davmail.util.StringUtil;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
@@ -2085,10 +2085,10 @@ public abstract class ExchangeSession {
             return vCalendar.toString();
         }
 
-        protected HttpException buildHttpException(Exception e) {
+        protected HttpNotFoundException buildHttpNotFoundException(Exception e) {
             String message = "Unable to get event " + getName() + " subject: " + subject + " at " + permanentUrl + ": " + e.getMessage();
             LOGGER.warn(message);
-            return new HttpException(message);
+            return new HttpNotFoundException(message);
         }
 
         /**

@@ -18,18 +18,20 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 507 Insufficient Storage status.
+ * HttpResponseException with 507 Insufficient Storage status.
  */
-public class InsufficientStorageException extends HttpException {
+public class InsufficientStorageException extends HttpResponseException {
     /**
-     * HttpException with 507 Insufficient Storage status.
+     * HttpResponseException with 507 Insufficient Storage status.
      *
      * @param message exception message
      */
     public InsufficientStorageException(String message) {
-        super(message);
+        super(HttpStatus.SC_INSUFFICIENT_STORAGE, message);
     }
 }

@@ -40,7 +40,6 @@ import davmail.util.StringUtil;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpConnection;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpState;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
@@ -51,6 +50,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.http.client.HttpResponseException;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -1381,7 +1381,7 @@ public class DavExchangeSession extends ExchangeSession {
          * User Translate: f header to get MIME event content and get ICS attachment from it
          *
          * @return ICS (iCalendar) event
-         * @throws HttpException on error
+         * @throws IOException on error
          */
         @Override
         public byte[] getEventContent() throws IOException {
@@ -1412,7 +1412,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (result == null) {
                 try {
                     result = getICSFromItemProperties();
-                } catch (HttpException e) {
+                } catch (HttpResponseException e) {
                     deleteBroken();
                     throw e;
                 }
@@ -1582,7 +1582,7 @@ public class DavExchangeSession extends ExchangeSession {
                 result = localVCalendar.toString().getBytes(StandardCharsets.UTF_8);
             } catch (MessagingException | IOException e) {
                 LOGGER.warn("Unable to rebuild event content: " + e.getMessage(), e);
-                throw buildHttpException(e);
+                throw buildHttpNotFoundException(e);
             }
 
             return result;
@@ -1927,7 +1927,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new HttpPreconditionFailedException(BundleMessage.format("EXCEPTION_UNABLE_TO_MOVE_FOLDER"));
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
+                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
             } else if (folderPath.equalsIgnoreCase("/users/" + getEmail() + "/calendar")) {
                 // calendar renamed, need to reload well known folders 
                 getWellKnownFolders();
@@ -1953,7 +1953,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_ITEM");
             } else if (statusCode != HttpStatus.SC_CREATED && statusCode != HttpStatus.SC_OK) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
+                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
             }
         } finally {
             method.releaseConnection();
@@ -2931,7 +2931,7 @@ public class DavExchangeSession extends ExchangeSession {
                 }
             };
 
-        } catch (HttpException e) {
+        } catch (HttpResponseException e) {
             method.releaseConnection();
             LOGGER.warn("Unable to retrieve message at: " + url);
             throw e;
@@ -2962,7 +2962,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
+                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
             }
         } finally {
             method.releaseConnection();
@@ -2992,7 +2992,7 @@ public class DavExchangeSession extends ExchangeSession {
             if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_COPY_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
-                throw DavGatewayHttpClientFacade.buildHttpException(method);
+                throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
             }
         } finally {
             method.releaseConnection();
@@ -3009,7 +3009,7 @@ public class DavExchangeSession extends ExchangeSession {
         int status = DavGatewayHttpClientFacade.executeHttpMethod(httpClient, method);
         // do not throw error if already deleted
         if (status != HttpStatus.SC_CREATED && status != HttpStatus.SC_NOT_FOUND) {
-            throw DavGatewayHttpClientFacade.buildHttpException(method);
+            throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
         }
         if (method.getResponseHeader("Location") != null) {
             destination = method.getResponseHeader("Location").getValue();

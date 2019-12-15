@@ -27,7 +27,6 @@ import davmail.exception.HttpServerErrorException;
 import davmail.exception.LoginTimeoutException;
 import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
-import org.apache.commons.httpclient.HttpException;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -35,7 +34,7 @@ import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -391,16 +390,10 @@ public class HttpClientAdapter implements Closeable {
      * @throws IOException on error
      */
     public CloseableHttpResponse execute(HttpRequestBase request, HttpClientContext context) throws IOException {
+        // make sure request path is absolute
         handleURI(request);
-        CloseableHttpResponse response = httpClient.execute(request, context);
-        if (request instanceof ResponseHandler) {
-            try {
-                ((ResponseHandler) request).handleResponse(response);
-            } finally {
-                response.close();
-            }
-        }
-        return response;
+        // execute request and return response
+        return httpClient.execute(request, context);
     }
 
     /**
@@ -474,14 +467,12 @@ public class HttpClientAdapter implements Closeable {
      */
     public MultiStatusResponse[] executeDavRequest(ExchangeDavRequest request) throws IOException {
         handleURI(request);
-        MultiStatusResponse[] responses = null;
+        MultiStatusResponse[] responses;
         try (CloseableHttpResponse response = execute(request)) {
-            // TODO
+            List<MultiStatusResponse> responseList = request.handleResponse(response);
+            // TODO check error handling
             //request.checkSuccess(response);
-            responses = request.getResponses();
-        } catch (org.apache.http.HttpException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IOException(e.getMessage(), e);
+            responses = responseList.toArray(new MultiStatusResponse[0]);
         }
         return responses;
     }
@@ -551,25 +542,15 @@ public class HttpClientAdapter implements Closeable {
         cookieStore.addCookie(cookie);
     }
 
-    /**
-     * Build HttpException from message and exception.
-     * // TODO use HC4 HttpException
-     * @param message message
-     * @param e exception
-     * @return Http Exception
-     */
-    public static HttpException buildHttpException(String message, Exception e) {
-        LOGGER.warn(message);
-        return new HttpException(message, e);
-    }
+
 
     /**
      * Build Http Exception from method status
-     * // TODO use HC4 HttpException
+     *
      * @param method Http Method
      * @return Http Exception
      */
-    public static HttpException buildHttpException(HttpRequestBase method, HttpResponse response) {
+    public static HttpResponseException buildHttpResponseException(HttpRequestBase method, HttpResponse response) {
         int status = response.getStatusLine().getStatusCode();
         StringBuilder message = new StringBuilder();
         message.append(status).append(' ').append(response.getStatusLine().getReasonPhrase());
@@ -580,16 +561,16 @@ public class HttpClientAdapter implements Closeable {
         // 440 means forbidden on Exchange
         if (status == 440) {
             return new LoginTimeoutException(message.toString());
-        } else if (status == org.apache.http.HttpStatus.SC_FORBIDDEN) {
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN) {
             return new HttpForbiddenException(message.toString());
-        } else if (status == org.apache.http.HttpStatus.SC_NOT_FOUND) {
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
-        } else if (status == org.apache.http.HttpStatus.SC_PRECONDITION_FAILED) {
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_PRECONDITION_FAILED) {
             return new HttpPreconditionFailedException(message.toString());
-        } else if (status == org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return new HttpServerErrorException(message.toString());
         } else {
-            return new HttpException(message.toString());
+            return new HttpResponseException(status, message.toString());
         }
     }
 

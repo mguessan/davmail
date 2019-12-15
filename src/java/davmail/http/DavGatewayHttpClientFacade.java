@@ -34,6 +34,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.IdleConnectionTimeoutThread;
+import org.apache.http.client.HttpResponseException;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.CopyMethod;
@@ -437,7 +438,7 @@ public final class DavGatewayHttpClientFacade {
             }
             if (locationValue != null) {
                 currentMethod.releaseConnection();
-                throw new HttpException("Maximum redirections reached");
+                throw new HttpServerErrorException("Maximum redirections reached");
             }
         } catch (IOException e) {
             currentMethod.releaseConnection();
@@ -515,7 +516,7 @@ public final class DavGatewayHttpClientFacade {
         int status = executeHttpMethod(httpClient, deleteMethod);
         // do not throw error if already deleted
         if (status != HttpStatus.SC_OK && status != HttpStatus.SC_NOT_FOUND) {
-            throw DavGatewayHttpClientFacade.buildHttpException(deleteMethod);
+            throw DavGatewayHttpClientFacade.buildHttpResponseException(deleteMethod);
         }
         return status;
     }
@@ -534,7 +535,7 @@ public final class DavGatewayHttpClientFacade {
             int status = executeMethodFollowRedirectOnce(httpClient, method);
 
             if (status != HttpStatus.SC_MULTI_STATUS) {
-                throw buildHttpException(method);
+                throw buildHttpResponseException(method);
             }
             responses = method.getResponseBodyAsMultiStatus().getResponses();
 
@@ -582,7 +583,7 @@ public final class DavGatewayHttpClientFacade {
             int status = executeMethodFollowRedirectOnce(httpClient, method);
 
             if (status != HttpStatus.SC_MULTI_STATUS) {
-                throw buildHttpException(method);
+                throw buildHttpResponseException(method);
             }
             responses = method.getResponses();
 
@@ -728,7 +729,7 @@ public final class DavGatewayHttpClientFacade {
             if (status != HttpStatus.SC_NOT_FOUND && status != HttpStatus.SC_FORBIDDEN) {
                 LOGGER.warn(method.getResponseBodyAsString());
             }
-            throw DavGatewayHttpClientFacade.buildHttpException(method);
+            throw DavGatewayHttpClientFacade.buildHttpResponseException(method);
         }
         // check for expired session
         if (followRedirects) {
@@ -757,7 +758,7 @@ public final class DavGatewayHttpClientFacade {
      * @param method Http Method
      * @return Http Exception
      */
-    public static HttpException buildHttpException(HttpMethod method) {
+    public static HttpResponseException buildHttpResponseException(HttpMethod method) {
         int status = method.getStatusCode();
         StringBuilder message = new StringBuilder();
         message.append(status).append(' ').append(method.getStatusText());
@@ -781,7 +782,7 @@ public final class DavGatewayHttpClientFacade {
         } else if (status == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return new HttpServerErrorException(message.toString());
         } else {
-            return new HttpException(message.toString());
+            return new HttpResponseException(status, message.toString());
         }
     }
 

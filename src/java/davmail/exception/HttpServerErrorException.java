@@ -18,18 +18,19 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 500 internal server error status.
+ * HttpResponseException with 500 internal server error status.
  */
-public class HttpServerErrorException extends HttpException {
+public class HttpServerErrorException extends HttpResponseException {
     /**
-     * HttpException with 500 internal server error status.
+     * HttpResponseException with 500 internal server error status.
      *
      * @param message exception message
      */
     public HttpServerErrorException(String message) {
-        super(message);
+        super(HttpStatus.SC_INTERNAL_SERVER_ERROR, message);
     }
 }

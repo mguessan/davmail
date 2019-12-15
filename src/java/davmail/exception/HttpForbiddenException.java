@@ -18,18 +18,19 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 403 forbidden status.
+ * HttpResponseException with 403 forbidden status.
  */
-public class HttpForbiddenException extends HttpException {
+public class HttpForbiddenException extends HttpResponseException {
     /**
-     * HttpException with 403 forbidden status.
+     * HttpResponseException with 403 forbidden status.
      *
      * @param message exception message
      */
     public HttpForbiddenException(String message) {
-        super(message);
+        super(HttpStatus.SC_FORBIDDEN, message);
     }
 }

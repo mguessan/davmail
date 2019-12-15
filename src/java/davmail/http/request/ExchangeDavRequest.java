@@ -22,9 +22,9 @@ package davmail.http.request;
 import davmail.exchange.XMLStreamUtil;
 import davmail.exchange.dav.ExchangeDavMethod;
 import org.apache.http.Header;
-import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.AbstractHttpEntity;
@@ -250,11 +250,13 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
      * Get Multistatus responses.
      *
      * @return responses
-     * @throws HttpException on error
+     * @throws HttpResponseException on error
      */
-    public MultiStatusResponse[] getResponses() throws HttpException {
+    public MultiStatusResponse[] getResponses() throws HttpResponseException {
         if (responses == null) {
-            throw new HttpException(response.getStatusLine().getReasonPhrase());
+            // TODO: compare with native HttpClient error handling
+            throw new HttpResponseException(response.getStatusLine().getStatusCode(),
+                    response.getStatusLine().getReasonPhrase());
         }
         return responses.toArray(new MultiStatusResponse[0]);
     }
@@ -263,11 +265,11 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
      * Get single Multistatus response.
      *
      * @return response
-     * @throws HttpException on error
+     * @throws HttpResponseException on error
      */
-    public MultiStatusResponse getResponse() throws HttpException {
+    public MultiStatusResponse getResponse() throws HttpResponseException {
         if (responses == null || responses.size() != 1) {
-            throw new HttpException(response.getStatusLine().getReasonPhrase());
+            throw new HttpResponseException(response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase());
         }
         return responses.get(0);
     }
@@ -276,9 +278,9 @@ public abstract class ExchangeDavRequest extends HttpPost implements ResponseHan
      * Return method http status code.
      *
      * @return http status code
-     * @throws HttpException on error
+     * @throws HttpResponseException on error
      */
-    public int getResponseStatusCode() throws HttpException {
+    public int getResponseStatusCode() throws HttpResponseException {
         String responseDescription = getResponse().getResponseDescription();
         if ("HTTP/1.1 201 Created".equals(responseDescription)) {
             return HttpStatus.SC_CREATED;

@@ -18,18 +18,19 @@
  */
 package davmail.exception;
 
-import org.apache.commons.httpclient.HttpException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpResponseException;
 
 /**
- * HttpException with 404 not found status.
+ * HttpResponseException with 404 not found status.
  */
-public class HttpNotFoundException extends HttpException {
+public class HttpNotFoundException extends HttpResponseException {
     /**
-     * HttpException with 404 not found status.
+     * HttpResponseException with 404 not found status.
      *
      * @param message exception message
      */
     public HttpNotFoundException(String message) {
-        super(message);
+        super(HttpStatus.SC_NOT_FOUND, message);
     }
 }
