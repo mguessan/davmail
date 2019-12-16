@@ -167,7 +167,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 getCredentialMethod.setJsonBody(jsonObject);
 
                 JSONObject credentialType = executeRequestGetConfig(httpClientAdapter, getCredentialMethod);
-                getCredentialMethod.releaseConnection();
+
                 LOGGER.debug("CredentialType=" + credentialType);
 
                 JSONObject credentials = credentialType.getJSONObject("Credentials");
@@ -191,8 +191,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     logonMethod.setParameter("loginfmt", username);
                     logonMethod.setParameter("passwd", password);
 
-                    httpClientAdapter.execute(logonMethod);
-                    responseBodyAsString = logonMethod.getResponseBodyAsString();
+                    try (CloseableHttpResponse response = httpClientAdapter.execute(logonMethod)) {
+                        responseBodyAsString = logonMethod.handleResponse(response);
+                    }
                     if (responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
                         logonMethod = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
                     }
@@ -406,9 +407,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
         beginAuthJson.put("Method", "BeginAuth");
         beginAuthMethod.setJsonBody(beginAuthJson);
 
-        httpClientAdapter.execute(beginAuthMethod);
-        config = beginAuthMethod.getJsonResponse();
-        beginAuthMethod.releaseConnection();
+        try (CloseableHttpResponse response = httpClientAdapter.execute(beginAuthMethod)) {
+            config = beginAuthMethod.handleResponse(response);
+        }
         LOGGER.debug(config);
 
         if (!config.getBoolean("Success")) {
@@ -448,9 +449,9 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             endAuthMethod.setJsonBody(endAuthJson);
 
-            httpClientAdapter.execute(endAuthMethod);
-            config = endAuthMethod.getJsonResponse();
-            endAuthMethod.releaseConnection();
+            try (CloseableHttpResponse response = httpClientAdapter.execute(endAuthMethod)) {
+                config = endAuthMethod.handleResponse(response);
+            }
             LOGGER.debug(config);
             String resultValue = config.getString("ResultValue");
             if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
@@ -499,11 +500,11 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     private JSONObject executeRequestGetConfig(HttpClientAdapter httpClientAdapter, RestRequest restRequest) throws IOException {
         LOGGER.debug(restRequest.getURI());
-        httpClientAdapter.execute(restRequest);
-
-        JSONObject jsonResponse = restRequest.getJsonResponse();
-        LOGGER.debug(jsonResponse);
-        return jsonResponse;
+        try (CloseableHttpResponse response = httpClientAdapter.execute(restRequest)) {
+            JSONObject jsonResponse = restRequest.handleResponse(response);
+            LOGGER.debug(jsonResponse);
+            return jsonResponse;
+        }
     }
 
     public JSONObject extractConfig(String content) throws IOException {
