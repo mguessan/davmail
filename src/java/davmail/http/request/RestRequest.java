@@ -46,7 +46,6 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
     protected static final Logger LOGGER = Logger.getLogger(RestRequest.class);
 
     JSONObject jsonBody;
-    JSONObject jsonResponse;
 
     public RestRequest(String uri) {
         super(uri);
@@ -112,18 +111,22 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
     }
 
     @Override
-    public JSONObject handleResponse(HttpResponse response) {
+    public JSONObject handleResponse(HttpResponse response) throws IOException {
+        JSONObject jsonResponse;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
             try (InputStream inputStream = response.getEntity().getContent()){
                 if (isGzipEncoded(response)) {
-                    processResponseStream(new GZIPInputStream(inputStream));
+                    jsonResponse = processResponseStream(new GZIPInputStream(inputStream));
                 } else {
-                    processResponseStream(inputStream);
+                    jsonResponse = processResponseStream(inputStream);
                 }
-            } catch (IOException | JSONException e) {
+            } catch (JSONException e) {
                 LOGGER.error("Error while parsing json response: " + e, e);
+                throw new IOException(e.getMessage(), e);
             }
+        } else {
+            throw new IOException("Invalid response content");
         }
         return jsonResponse;
     }
@@ -139,12 +142,8 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
         return header != null && "gzip".equals(header.getValue());
     }
 
-    private void processResponseStream(InputStream responseBodyAsStream) throws IOException, JSONException {
+    private JSONObject processResponseStream(InputStream responseBodyAsStream) throws IOException, JSONException {
         // quick non streaming implementation
-        jsonResponse = new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), StandardCharsets.UTF_8));
-    }
-
-    public JSONObject getJsonResponse() {
-        return jsonResponse;
+        return new JSONObject(new String(IOUtil.readFully(responseBodyAsStream), StandardCharsets.UTF_8));
     }
 }

@@ -130,8 +130,10 @@ public class TestHttpClientAdapter extends AbstractDavMailTestCase {
 
                     getCredentialRequest.setJsonBody(jsonObject);
 
-                    httpClientAdapter.execute(getCredentialRequest);
-                    JSONObject credentialType = getCredentialRequest.getJsonResponse();
+                    JSONObject credentialType;
+                    try (CloseableHttpResponse getCredentialResponse = httpClientAdapter.execute(getCredentialRequest)) {
+                        credentialType = getCredentialRequest.handleResponse(getCredentialResponse);
+                    }
                     System.out.println("CredentialType=" + credentialType);
 
                     JSONObject credentials = credentialType.getJSONObject("Credentials");
