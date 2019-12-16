@@ -27,6 +27,7 @@ import davmail.util.StringEncryptor;
 import org.apache.http.Consts;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
@@ -162,9 +163,11 @@ public class O365Token {
 
     private void executeRequest(RestRequest tokenMethod) throws IOException {
         // do not keep login connections open (no pooling)
-        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL)) {
-            httpClientAdapter.execute(tokenMethod);
-            setJsonToken(tokenMethod.getJsonResponse());
+        try (
+                HttpClientAdapter httpClientAdapter = new HttpClientAdapter(RESOURCE_URL);
+                CloseableHttpResponse response = httpClientAdapter.execute(tokenMethod)
+        ) {
+            setJsonToken(tokenMethod.handleResponse(response));
         }
     }
 
