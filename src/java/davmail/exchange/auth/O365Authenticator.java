@@ -263,12 +263,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
             logonMethod.setParameter("Password", password);
             logonMethod.setParameter("AuthMethod", "FormsAuthentication");
 
-            httpClientAdapter.execute(logonMethod);
-
-            if (logonMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || logonMethod.getResponseHeader("Location") == null) {
-                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+            try (CloseableHttpResponse response = httpClientAdapter.execute(logonMethod)) {
+                Header locationHeader = response.getFirstHeader("Location");
+                if (logonMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || locationHeader == null) {
+                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
+                }
+                location = locationHeader.getValue();
             }
-            location = logonMethod.getResponseHeader("Location").getValue();
+
             HttpGet redirectMethod = new HttpGet(location);
             try (CloseableHttpResponse response = httpClientAdapter.execute(redirectMethod)){
                 responseBodyAsString = new BasicResponseHandler().handleResponse(response);
