@@ -30,6 +30,7 @@ import davmail.http.request.ExchangeSearchRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
@@ -543,6 +544,9 @@ public class HttpClientAdapter implements Closeable {
     }
 
 
+    public static HttpResponseException buildHttpResponseException(HttpRequestBase request, HttpResponse response) {
+        return buildHttpResponseException(request, response.getStatusLine());
+    }
 
     /**
      * Build Http Exception from method status
@@ -550,10 +554,10 @@ public class HttpClientAdapter implements Closeable {
      * @param method Http Method
      * @return Http Exception
      */
-    public static HttpResponseException buildHttpResponseException(HttpRequestBase method, HttpResponse response) {
-        int status = response.getStatusLine().getStatusCode();
+    public static HttpResponseException buildHttpResponseException(HttpRequestBase method, StatusLine statusLine) {
+        int status = statusLine.getStatusCode();
         StringBuilder message = new StringBuilder();
-        message.append(status).append(' ').append(response.getStatusLine().getReasonPhrase());
+        message.append(status).append(' ').append(statusLine.getReasonPhrase());
         message.append(" at ").append(method.getURI());
         if (method instanceof HttpCopy || method instanceof HttpMove) {
             message.append(" to ").append(method.getFirstHeader("Destination"));
