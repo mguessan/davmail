@@ -21,10 +21,8 @@ package davmail.ldap;
 import davmail.AbstractDavMailTestCase;
 import davmail.DavGateway;
 import davmail.Settings;
-import davmail.exchange.AbstractExchangeSessionTestCase;
 import davmail.exchange.ExchangeSessionFactory;
 
-import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -39,7 +37,6 @@ import java.util.Hashtable;
 /**
  * Test LDAP.
  */
-@SuppressWarnings({"JavaDoc"})
 public class TestLdap extends AbstractDavMailTestCase {
     InitialLdapContext ldapContext;
 
@@ -52,7 +49,7 @@ public class TestLdap extends AbstractDavMailTestCase {
             DavGateway.start();
         }
         if (ldapContext == null) {
-            Hashtable<String, String> env = new Hashtable<String, String>();
+            Hashtable<String, String> env = new Hashtable<>();
             //env.put("java.naming.security.authentication", "CRAM-MD5");
             env.put("java.naming.security.authentication", "simple");
             env.put("java.naming.security.principal", Settings.getProperty("davmail.username"));
@@ -78,6 +75,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(objectclass=*)", searchControls);
+        searchResults.close();
     }
 
     public void testSearchMail() throws NamingException {
@@ -85,6 +83,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"mail"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(objectclass=*)", searchControls);
+        searchResults.close();
     }
 
     public void testMozillaSearchAttributes() throws NamingException {
@@ -92,6 +91,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"custom1", "mozillausehtmlmail", "postalcode", "custom2", "custom3", "custom4", "street", "surname", "telephonenumber", "mozillahomelocalityname", "orgunit", "mozillaworkstreet2", "xmozillanickname", "mozillahomestreet", "description", "cellphone", "homeurl", "mozillahomepostalcode", "departmentnumber", "postofficebox", "st", "objectclass", "sn", "ou", "fax", "mozillahomeurl", "mozillahomecountryname", "streetaddress", "cn", "company", "mozillaworkurl", "mobile", "region", "birthmonth", "birthday", "labeleduri", "carphone", "department", "xmozillausehtmlmail", "givenname", "nsaimid", "workurl", "facsimiletelephonenumber", "mozillanickname", "title", "nscpaimscreenname", "xmozillasecondemail", "mozillacustom3", "countryname", "mozillacustom4", "mozillacustom1", "mozillacustom2", "homephone", "mozillasecondemail", "pager", "zip", "mail", "c", "mozillahomestate", "o", "l", "birthyear", "modifytimestamp", "locality", "commonname", "notes", "pagerphone", "mozillahomestreet2"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(objectclass=*)", searchControls);
+        searchResults.close();
     }
 
     public void testGalfind() throws NamingException {
@@ -105,14 +105,16 @@ public class TestLdap extends AbstractDavMailTestCase {
         assertEquals(session.getAlias(), attribute.get());
         // given name not available on Exchange 2007 over Dav (no gallookup)
         //assertNotNull(attributes.get("givenName"));
+        searchResults.close();
     }
 
     public void testOSXSearch() throws NamingException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"uid", "jpegphoto", "postalcode", "mail", "sn", "apple-emailcontacts", "c", "street", "givenname", "l", "apple-user-picture", "telephonenumber", "cn", "st", "apple-imhandle"});
-        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od", "(&(objectclass=inetOrgPerson)(|(givenname=Charles*)(|(uid=Ch*)(cn=Ch*))(sn=Ch*))(objectclass=shadowAccount)(objectclass=extensibleObject)(objectclass=posixAccount)(objectclass=apple-user))", searchControls);
+        NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od", "(&(objectclass=inetOrgPerson)(|(givenname=Test*)(|(uid=te*)(cn=te*))(sn=te*))(objectclass=shadowAccount)(objectclass=extensibleObject)(objectclass=posixAccount)(objectclass=apple-user))", searchControls);
         assertTrue(searchResults.hasMore());
+        searchResults.close();
     }
 
     public void testOSXICalSearch() throws NamingException {
@@ -121,6 +123,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od",
                 "(&(objectclass=inetOrgPerson)(objectclass=extensibleObject)(objectclass=apple-user)(|(|(uid=fair*)(cn=fair*))(givenname=fair*)(sn=fair*)(cn=fair*)(mail=fair*))(objectclass=posixAccount)(objectclass=shadowAccount))", searchControls);
+        searchResults.close();
     }
 
     public void testSearchByGivenNameWithoutReturningAttributes() throws NamingException {
@@ -128,12 +131,14 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"uid"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(givenName=mic*)", searchControls);
+        searchResults.close();
     }
 
     public void testSearchByGalfindUnsupportedAttribute() throws NamingException {
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(postalcode=N18 1ZF)", searchControls);
+        searchResults.close();
     }
 
     public void testSearchByCnReturnSn() throws NamingException {
@@ -141,6 +146,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"sn"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(cn=*)", searchControls);
+        searchResults.close();
     }
 
     public void testSearchByCnReturnGivenName() throws NamingException {
@@ -148,6 +154,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"givenName"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(cn=*a*)", searchControls);
+        searchResults.close();
     }
 
     public void testSearchIPad() throws NamingException {
@@ -155,6 +162,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"postalcode", "labeleduri", "street", "givenname", "telephonenumber", "facsimiletelephonenumber", "title", "imhandle", "homepostaladdress", "st", "homephone", "applefloor", "jpegphoto", "pager", "mail", "sn", "buildingname", "ou", "destinationindicator", "c", "o", "l", "co", "postaladdress", "cn", "mobile"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(|(mail=Test*)(cn=Test*)(givenname=Test*)(sn=Test*))", searchControls);
+        searchResults.close();
     }
 
     public void testThunderbird() throws NamingException {
@@ -164,6 +172,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(returningAttributes);
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", filter, searchControls);
+        searchResults.close();
     }
 
      public void testSearchNotFilter() throws NamingException {
@@ -171,6 +180,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
         searchControls.setReturningAttributes(new String[]{"mail"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people", "(!(objectclass=test))", searchControls);
+         searchResults.close();
     }
 
     public void testEmailSearch() throws NamingException {
@@ -179,6 +189,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setReturningAttributes(new String[]{"uid", "mail", "sn", "cn", "description", "apple-generateduid", "givenname", "apple-serviceslocator", "uidnumber"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, o=od",
                 "(mail="+"CHARLEPG@intersmtp.com"+")", searchControls);
+        searchResults.close();
     }
 
     public void testIcalLionInitialSearch() throws NamingException {
@@ -187,6 +198,7 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setReturningAttributes(new String[]{"gidnumber", "altsecurityidentities", "uid", "mail", "cn", "apple-generateduid", "givenname", "apple-serviceslocator", "objectclass", "uidnumber"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("cn=users, ou=people",
                 "(&(|(mail=702820784)(uid=702820784)(cn=702820784)(altsecurityidentities=702820784))(&(objectclass=extensibleObject)(objectclass=posixAccount)(objectclass=shadowAccount)(objectclass=inetOrgPerson)(objectclass=apple-user)))", searchControls);
+        searchResults.close();
     }
 
     public void testTBGalSearch() throws NamingException {
@@ -195,11 +207,12 @@ public class TestLdap extends AbstractDavMailTestCase {
         searchControls.setReturningAttributes(new String[]{"mail", "cn"});
         NamingEnumeration<SearchResult> searchResults = ldapContext.search("ou=people",
                 "(|(sn=mich*)(mail=mich*)(cn=mich*))", searchControls);
+        searchResults.close();
     }
 
     public void testLdapDnAuthentication() throws NamingException {
         String dn = new Rdn("uid", Settings.getProperty("davmail.username"))+",ou=people";
-        Hashtable<String, String> env = new Hashtable<String, String>();
+        Hashtable<String, String> env = new Hashtable<>();
         //env.put("java.naming.security.authentication", "CRAM-MD5");
         env.put("java.naming.security.authentication", "simple");
         env.put("java.naming.security.principal", dn);
