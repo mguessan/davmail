@@ -687,8 +687,12 @@ public class LdapConnection extends AbstractConnection {
      */
     private String extractRdnValue(String dn) throws IOException {
         if (dn.startsWith("uid=")) {
+            String rdn = dn;
+            if (rdn.indexOf(',') > 0) {
+                rdn = rdn.substring(0, rdn.indexOf(','));
+            }
             try {
-                return (String) new Rdn(dn.substring(0, Math.max(dn.indexOf(','), dn.length()))).getValue();
+                return (String) new Rdn(rdn).getValue();
             } catch (InvalidNameException e) {
                 throw new IOException(e);
             }
