@@ -20,39 +20,49 @@
 package davmail.util;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.*;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 /**
- * Created by 702820784 on 18/08/2015.
+ * Create a server socket listener
  */
-public class ServerSocketTest {
+public class ServerSocketRunner {
     public static void main(String[] argv) throws NoSuchAlgorithmException, KeyManagementException, IOException, KeyStoreException, CertificateException, UnrecoverableKeyException {
+        // SSL debug levels
         //System.setProperty("javax.net.debug", "ssl,handshake");
         System.setProperty("javax.net.debug", "all");
 
+        // local truststore
         System.setProperty("javax.net.ssl.trustStore", "cacerts");
         System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
+        // access windows client certificates
         //System.setProperty("javax.net.ssl.trustStoreProvider", "SunMSCAPI");
         //System.setProperty("javax.net.ssl.trustStoreType", "Windows-ROOT");
 
+        // load default trustmanager factory
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.getProvider();
+        System.out.println(trustManagerFactory.getProvider());
 
-
-        FileInputStream keyStoreInputStream = null;
-
-        keyStoreInputStream = new FileInputStream("mail.company.com.p12");
-        // keystore for keys and certificates
-        // keystore and private keys should be password protected...
+        // load server keystore
         KeyStore keystore = KeyStore.getInstance("PKCS12");
-        keystore.load(keyStoreInputStream, "password".toCharArray());
+        try(FileInputStream keyStoreInputStream = new FileInputStream("davmail.p12")) {
+            keystore.load(keyStoreInputStream, "password".toCharArray());
+        }
 
         // KeyManagerFactory to create key managers
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -64,24 +74,18 @@ public class ServerSocketTest {
         // create ServerSocketFactory
         SSLContext sslContext = SSLContext.getInstance("TLS");
 
-        // initialize sslContext to work with key managers
+        // initialize sslContext to work with key managers and default trust manager
         sslContext.init(kmf.getKeyManagers(), null, null);
-        keyStoreInputStream.close();
 
         // create ServerSocketFactory from sslContext
         ServerSocketFactory serverSocketFactory = sslContext.getServerSocketFactory();
         SSLServerSocket serverSocket = (SSLServerSocket) serverSocketFactory.createServerSocket(443);
         serverSocket.setNeedClientAuth(true);
-        while (true) {
-            try {
-                SSLSocket socket = (SSLSocket) serverSocket.accept();
-                SSLSession session = socket.getSession();
-                System.out.println("test" + ((X509Certificate)session.getPeerCertificates()[0]).getSubjectDN());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            //socket.get
+        int count = 100;
+        while (count-- > 0) {
+            SSLSocket socket = (SSLSocket) serverSocket.accept();
+            SSLSession session = socket.getSession();
+            System.out.println("SubjectDN " + ((X509Certificate) session.getPeerCertificates()[0]).getSubjectDN());
         }
-
     }
 }
