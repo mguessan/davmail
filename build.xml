@@ -155,6 +155,10 @@
                     <!--fileset dir="src/test" includes="**/Test*.java"/-->
                     <fileset dir="src/test" includes="**/TestDoubleDotInputStream.java"/>
                     <fileset dir="src/test" includes="davmail/caldav/TestCaldavHttpClient4.java"/>
+                    <fileset dir="src/test" includes="davmail/util/*.java"/>
+                    <fileset dir="src/test" includes="davmail/smtp/*.java"/>
+                    <fileset dir="src/test" includes="davmail/ldap/*.java"/>
+                    <fileset dir="src/test" includes="davmail/imap/*.java"/>
                 </batchtest>
             </junit>
         </coverage>
@@ -165,10 +169,14 @@
             </executiondata>
             <structure name="DavMail">
                 <classfiles>
-                    <fileset dir="target/classes"/>
+                    <fileset dir="target/classes">
+                        <exclude name="**/StreamScanner.class"/>
+                    </fileset>
                 </classfiles>
                 <sourcefiles encoding="UTF-8">
-                    <fileset dir="src/java"/>
+                    <fileset dir="src/java">
+                        <exclude name="**/StreamScanner.java"/>
+                    </fileset>
                 </sourcefiles>
             </structure>
             <html destdir="target/jacocoreport"/>
@@ -207,6 +215,7 @@
                 <include name="*.jnilib"/>
                 <exclude name="swt*.jar"/>
                 <exclude name="junit-*.jar"/>
+                <exclude name="hamcrest-core-*.jar"/>
                 <exclude name="winrun4j-*.jar"/>
             </fileset>
         </copy>
@@ -305,6 +314,7 @@
                     <include name="*.jar"/>
                     <exclude name="ant-deb*.jar"/>
                     <exclude name="junit-*.jar"/>
+                    <exclude name="hamcrest-core-*.jar"/>
                     <exclude name="libgrowl-*.jar"/>
                     <exclude name="nsisant-*.jar"/>
                     <exclude name="servlet-api-*.jar"/>
@@ -375,6 +385,7 @@
                 <exclude name="lib/swt*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
+                <exclude name="lib/hamcrest-core-*.jar"/>
                 <exclude name="lib/winrun4j-*.jar"/>
             </zipfileset>
             <zipfileset dir="src/bin" filemode="755">
@@ -392,6 +403,7 @@
                 <exclude name="lib/swt-*-gtk-*.jar"/>
                 <exclude name="lib/libgrowl-*.jar"/>
                 <exclude name="lib/junit-*.jar"/>
+                <exclude name="lib/hamcrest-core-*.jar"/>
             </fileset>
         </zip>
         <antcall target="dist-nsis"/>
