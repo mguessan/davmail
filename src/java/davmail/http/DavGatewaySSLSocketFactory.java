@@ -26,6 +26,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
+/**
+ * SSLSocketFactory implementation.
+ * Wrapper for DavGatewaySSLProtocolSocketFactory used by HttpClient 4
+ */
 public class DavGatewaySSLSocketFactory extends SSLSocketFactory {
     static final Logger LOGGER = Logger.getLogger(DavGatewaySSLSocketFactory.class);
 

@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.Provider;
 import java.security.Security;
 
@@ -44,7 +45,7 @@ public final class SunPKCS11ProviderHandler {
         try {
             Class sunPkcs11Class = Class.forName("sun.security.pkcs11.SunPKCS11");
             @SuppressWarnings("unchecked") Constructor sunPkcs11Constructor = sunPkcs11Class.getDeclaredConstructor(InputStream.class);
-            p = (Provider) sunPkcs11Constructor.newInstance(new ByteArrayInputStream(pkcs11Config.getBytes("UTF-8")));
+            p = (Provider) sunPkcs11Constructor.newInstance(new ByteArrayInputStream(pkcs11Config.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchMethodException e) {
             // try java 9 configuration
             p = configurePkcs11Provider(pkcs11Config);

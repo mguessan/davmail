@@ -29,6 +29,9 @@ import org.apache.http.impl.auth.NTLMEngineException;
 
 import java.io.IOException;
 
+/**
+ * JCIFS based NTLM authentication.
+ */
 public final class JCIFSEngine implements NTLMEngine {
 
     private static final int TYPE_1_FLAGS =

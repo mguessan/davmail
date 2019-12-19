@@ -61,7 +61,7 @@ public class DavGatewayProxySelector extends ProxySelector {
                 && !DavGatewayHttpClientFacade.isNoProxyFor(uri)
                 && ("http".equals(scheme) || "https".equals(scheme))) {
             // DavMail defined proxies
-            ArrayList<Proxy> proxies = new ArrayList<Proxy>();
+            ArrayList<Proxy> proxies = new ArrayList<>();
             proxies.add(new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(proxyHost, proxyPort)));
             return proxies;
         } else {

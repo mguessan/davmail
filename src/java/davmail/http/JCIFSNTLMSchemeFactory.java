@@ -24,6 +24,9 @@ import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.impl.auth.NTLMScheme;
 import org.apache.http.protocol.HttpContext;
 
+/**
+ * JCIFS based AuthSchemeProvider.
+ */
 public class JCIFSNTLMSchemeFactory implements AuthSchemeProvider {
 
     @Override

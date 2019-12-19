@@ -68,7 +68,7 @@ public final class DavGatewayHttpClientFacade {
 
     private static IdleConnectionTimeoutThread httpConnectionManagerThread;
 
-    private static Set<MultiThreadedHttpConnectionManager> ALL_CONNECTION_MANAGERS = new HashSet<MultiThreadedHttpConnectionManager>();
+    private static Set<MultiThreadedHttpConnectionManager> ALL_CONNECTION_MANAGERS = new HashSet<>();
 
     static {
         // disable Client-initiated TLS renegotiation
@@ -202,11 +202,11 @@ public final class DavGatewayHttpClientFacade {
 
         if (Settings.getBooleanProperty("davmail.enableKerberos", false)) {
             AuthPolicy.registerAuthScheme("Negotiate", SpNegoScheme.class);
-            ArrayList<String> authPrefs = new ArrayList<String>();
+            ArrayList<String> authPrefs = new ArrayList<>();
             authPrefs.add("Negotiate");
             httpClient.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, authPrefs);
         } else if (!needNTLM) {
-            ArrayList<String> authPrefs = new ArrayList<String>();
+            ArrayList<String> authPrefs = new ArrayList<>();
             authPrefs.add(AuthPolicy.DIGEST);
             authPrefs.add(AuthPolicy.BASIC);
             // exclude NTLM authentication scheme
@@ -632,7 +632,7 @@ public final class DavGatewayHttpClientFacade {
         // disable preemptive authentication
         httpClient.getParams().setParameter(HttpClientParams.PREEMPTIVE_AUTHENTICATION, false);
 
-        ArrayList<String> authPrefs = new ArrayList<String>();
+        ArrayList<String> authPrefs = new ArrayList<>();
         authPrefs.add(AuthPolicy.NTLM);
         authPrefs.add(AuthPolicy.DIGEST);
         authPrefs.add(AuthPolicy.BASIC);

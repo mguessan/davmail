@@ -76,7 +76,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
         LOGGER.debug("Find client certificates issued by: " + Arrays.asList(issuers));
         // Build a list of all aliases
-        ArrayList<String> aliases = new ArrayList<String>();
+        ArrayList<String> aliases = new ArrayList<>();
         for (String keyTypeValue : keyType) {
             String[] keyAliases = keyManager.getClientAliases(keyTypeValue, issuers);
 
@@ -101,7 +101,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
                 cachedAlias = null;
             }
 
-            String[] aliasesArray = aliases.toArray(new String[aliases.size()]);
+            String[] aliasesArray = aliases.toArray(new String[0]);
             String[] descriptionsArray = new String[aliasesArray.length];
             int i = 0;
             for (String alias : aliasesArray) {
@@ -131,7 +131,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
                 }
                 descriptionsArray[i++] = subject + " [" + issuer + "]";
             }
-            String selectedAlias = null;
+            String selectedAlias;
             if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
                 // headless or server mode
                 selectedAlias = chooseClientAlias(aliasesArray, descriptionsArray);
@@ -171,9 +171,7 @@ public class DavMailX509KeyManager implements X509KeyManager {
             try {
                 System.out.print("Alias: ");
                 chosenIndex = Integer.parseInt(inReader.readLine());
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid");
-            } catch (IOException e) {
+            } catch (NumberFormatException | IOException e) {
                 System.out.println("Invalid");
             }
         }

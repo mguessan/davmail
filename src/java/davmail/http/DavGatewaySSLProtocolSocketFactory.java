@@ -28,11 +28,14 @@ import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
 
-import javax.net.ssl.*;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyStoreBuilderParameters;
+import javax.net.ssl.ManagerFactoryParameters;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509KeyManager;
 import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,12 +45,18 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.util.ArrayList;
 
 /**
  * Manual Socket Factory.
  * Let user choose to accept or reject certificate
+ * Used by commons httpclient 3
  */
 public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketFactory {
     /**
@@ -77,18 +86,16 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
             return new KeyStore.PasswordProtection(password.toCharArray());
         } else {
             // request password at runtime through a callback
-            return new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
-                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                    if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
-                        if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
-                            // headless or server mode
-                            System.out.print(((PasswordCallback) callbacks[0]).getPrompt()+": ");
-                            String password = new BufferedReader(new InputStreamReader(System.in)).readLine();
-                            ((PasswordCallback) callbacks[0]).setPassword(password.toCharArray());
-                        } else {
-                            PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
-                            ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
-                        }
+            return new KeyStore.CallbackHandlerProtection(callbacks -> {
+                if (callbacks.length > 0 && callbacks[0] instanceof PasswordCallback) {
+                    if (Settings.getBooleanProperty("davmail.server") || GraphicsEnvironment.isHeadless()) {
+                        // headless or server mode
+                        System.out.print(((PasswordCallback) callbacks[0]).getPrompt() + ": ");
+                        String password1 = new BufferedReader(new InputStreamReader(System.in)).readLine();
+                        ((PasswordCallback) callbacks[0]).setPassword(password1.toCharArray());
+                    } else {
+                        PasswordPromptDialog passwordPromptDialog = new PasswordPromptDialog(((PasswordCallback) callbacks[0]).getPrompt());
+                        ((PasswordCallback) callbacks[0]).setPassword(passwordPromptDialog.getPassword());
                     }
                 }
             });
@@ -143,7 +150,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
         }
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
 
-        ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<KeyStore.Builder>();
+        ArrayList<KeyStore.Builder> keyStoreBuilders = new ArrayList<>();
         // PKCS11 (smartcard) keystore with password callback
         KeyStore.Builder scBuilder = KeyStore.Builder.newInstance("PKCS11", null, getProtectionParameter(null));
         keyStoreBuilders.add(scBuilder);
@@ -199,13 +206,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(host, port, clientHost, clientPort);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }
@@ -213,13 +214,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(String host, int port, InetAddress clientHost, int clientPort, HttpConnectionParams params) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(host, port, clientHost, clientPort);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }
@@ -227,13 +222,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(String host, int port) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(host, port);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }
@@ -241,13 +230,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }
@@ -255,13 +238,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(InetAddress host, int port) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(host, port);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }
@@ -269,13 +246,7 @@ public class DavGatewaySSLProtocolSocketFactory implements SecureProtocolSocketF
     public Socket createSocket(InetAddress host, int port, InetAddress clientHost, int clientPort) throws IOException {
         try {
             return getSSLContext().getSocketFactory().createSocket(host, port, clientHost, clientPort);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyManagementException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (KeyStoreException e) {
-            throw new IOException(e + " " + e.getMessage());
-        } catch (InvalidAlgorithmParameterException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | InvalidAlgorithmParameterException e) {
             throw new IOException(e + " " + e.getMessage());
         }
     }

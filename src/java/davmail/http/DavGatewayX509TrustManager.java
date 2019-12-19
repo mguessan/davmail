@@ -68,7 +68,6 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             } else {
                 throw e;
             }
-
         }
     }
 
@@ -187,10 +186,8 @@ public class DavGatewayX509TrustManager implements X509TrustManager {
             MessageDigest md = MessageDigest.getInstance("SHA1");
             byte[] digest = md.digest(certificate.getEncoded());
             sha1Hash = formatHash(digest);
-        } catch (NoSuchAlgorithmException nsa) {
+        } catch (NoSuchAlgorithmException | CertificateEncodingException nsa) {
             sha1Hash = nsa.getMessage();
-        } catch (CertificateEncodingException cee) {
-            sha1Hash = cee.getMessage();
         }
         return sha1Hash;
     }

@@ -41,7 +41,7 @@ public class KerberosLoginConfiguration extends Configuration {
     protected static final AppConfigurationEntry[] SERVER_LOGIN_MODULE;
 
     static {
-        HashMap<String, String> clientLoginModuleOptions = new HashMap<String, String>();
+        HashMap<String, String> clientLoginModuleOptions = new HashMap<>();
         if (LOGGER.isDebugEnabled()) {
             clientLoginModuleOptions.put("debug", "true");
         }
@@ -61,7 +61,7 @@ public class KerberosLoginConfiguration extends Configuration {
                 AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
                 clientLoginModuleOptions)};
 
-        HashMap<String, String> serverLoginModuleOptions = new HashMap<String, String>();
+        HashMap<String, String> serverLoginModuleOptions = new HashMap<>();
         if (LOGGER.isDebugEnabled()) {
             serverLoginModuleOptions.put("debug", "true");
         }
