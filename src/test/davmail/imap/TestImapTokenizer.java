@@ -29,7 +29,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals(".", imapTokenizer.nextQuotedToken());
         assertEquals("CREATE", imapTokenizer.nextQuotedToken());
         assertEquals("testfolder", imapTokenizer.nextQuotedToken());
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
     public void testStoreFlags() {
@@ -40,7 +40,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals("10", imapTokenizer.nextQuotedToken());
         assertEquals("-FLAGS", imapTokenizer.nextQuotedToken());
         assertEquals("(\\Deleted)", imapTokenizer.nextQuotedToken());
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
     public void testSearchHeader() {
@@ -51,7 +51,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals("HEADER", imapTokenizer.nextQuotedToken());
         assertEquals("X-OfflineIMAP", imapTokenizer.nextQuotedToken());
         assertEquals("\"testvalue\"", imapTokenizer.nextQuotedToken());
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
     public void testCreateQuotedFolder() {
@@ -59,7 +59,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals(".", imapTokenizer.nextQuotedToken());
         assertEquals("CREATE", imapTokenizer.nextQuotedToken());
         assertEquals("\"test \\\"quoted\\\" folder\"", imapTokenizer.nextQuotedToken());
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
 
@@ -72,7 +72,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals("UNDELETED", imapTokenizer.nextQuotedToken());
         assertEquals("(OR (OR (OR FROM \"test\" OR TO \"test\" HEADER CC \"test\") SUBJECT test) BODY \"test\")", imapTokenizer.nextQuotedToken());
 
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
     public void testAppend() {
@@ -84,7 +84,7 @@ public class TestImapTokenizer extends TestCase {
         assertEquals("\"01-Mar-2015 20:43:04 +0100\"", imapTokenizer.nextQuotedToken());
         assertEquals("{4608}", imapTokenizer.nextQuotedToken());
 
-        assertEquals(false, imapTokenizer.hasMoreTokens());
+        assertFalse(imapTokenizer.hasMoreTokens());
     }
 
 

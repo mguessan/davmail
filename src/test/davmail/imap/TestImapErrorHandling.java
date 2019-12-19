@@ -19,6 +19,8 @@
 package davmail.imap;
 
 import davmail.Settings;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -30,6 +32,7 @@ import java.util.Random;
 /**
  * IMAP error handling tests.
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestImapErrorHandling extends AbstractImapTestCase {
     public void testSelectInbox() throws IOException {
         writeLine(". SELECT INBOX");
@@ -44,14 +47,14 @@ public class TestImapErrorHandling extends AbstractImapTestCase {
         assertEquals(". OK [READ-WRITE] SELECT completed", readFullAnswer("."));
     }
 
-    public void testBrokenPipe() throws IOException, InterruptedException {
+    /*public void testBrokenPipe() throws IOException, InterruptedException {
         testSelectInbox();
         writeLine(". UID FETCH 1:* (RFC822.SIZE BODY.TEXT)");
         socketReader.readLine();
         // force close connection
         clientSocket.close();
         Thread.sleep(5000);
-    }
+    }*/
 
     public void testFetchBigMessage() throws IOException, MessagingException {
         testCreateFolder();
@@ -84,7 +87,7 @@ public class TestImapErrorHandling extends AbstractImapTestCase {
 
     }
 
-    public void testSelectInboxTimeout() throws IOException {
+    /*public void testSelectInboxTimeout() throws IOException {
         writeLine(". SELECT INBOX");
         // simulate client timeout
         try {
@@ -93,10 +96,10 @@ public class TestImapErrorHandling extends AbstractImapTestCase {
             // ignore
         }
         socketWriter.close();
-        System.in.read();
-    }
+        //System.in.read();
+    }*/
 
-    public void testLogout() throws IOException {
+    public void test_ZZ_Logout() throws IOException {
         writeLine(". LOGOUT");
         assertEquals("* BYE Closing connection", socketReader.readLine());
         assertEquals(". OK LOGOUT completed", socketReader.readLine());

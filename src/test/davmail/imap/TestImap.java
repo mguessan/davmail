@@ -28,6 +28,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.util.SharedByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
@@ -575,9 +576,9 @@ public class TestImap extends AbstractImapTestCase {
         mimeMessage.writeTo(baos);
         byte[] content = baos.toByteArray();
         String invalidMessageContent = "MAIL FROM: " + Settings.getProperty("davmail.bcc") + "\n" +
-                "RCPT TO: " + Settings.getProperty("davmail.to") + "\n\n" + new String(content, "UTF-8");
+                "RCPT TO: " + Settings.getProperty("davmail.to") + "\n\n" + new String(content, StandardCharsets.UTF_8);
 
-        mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(invalidMessageContent.getBytes("UTF-8")));
+        mimeMessage = new MimeMessage(null, new SharedByteArrayInputStream(invalidMessageContent.getBytes(StandardCharsets.UTF_8)));
         baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);
 
