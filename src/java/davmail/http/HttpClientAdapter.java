@@ -27,6 +27,7 @@ import davmail.exception.HttpServerErrorException;
 import davmail.exception.LoginTimeoutException;
 import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
+import davmail.http.request.GetRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -140,7 +141,13 @@ public class HttpClientAdapter implements Closeable {
     HttpClientConnectionManager connectionManager;
     CloseableHttpClient httpClient;
     CredentialsProvider provider = new BasicCredentialsProvider();
-    BasicCookieStore cookieStore = new BasicCookieStore();
+    BasicCookieStore cookieStore = new BasicCookieStore() {
+        @Override
+        public void addCookie(final Cookie cookie) {
+            LOGGER.debug("Add cookie "+cookie);
+            super.addCookie(cookie);
+        }
+    };
     IdleConnectionEvictor idleConnectionEvictor;
     // current URI
     URI uri;
@@ -435,6 +442,21 @@ public class HttpClientAdapter implements Closeable {
         }
 
         return httpResponse;
+    }
+
+    /**
+     * Execute get request and return response body as string.
+     * @param getRequest get request
+     * @return response body
+     * @throws IOException on error
+     */
+    public String executeGetRequest(GetRequest getRequest) throws IOException {
+        handleURI(getRequest);
+        String responseBodyAsString;
+        try (CloseableHttpResponse response = execute(getRequest)) {
+            responseBodyAsString = getRequest.handleResponse(response);
+        }
+        return responseBodyAsString;
     }
 
     /**
