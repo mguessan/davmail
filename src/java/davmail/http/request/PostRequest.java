@@ -36,11 +36,11 @@ import java.net.URI;
 import java.util.ArrayList;
 
 /**
- * Http post request to handle response transparently.
+ * Http post request with a string response handler.
  */
 public class PostRequest extends HttpPost implements ResponseHandler<String> {
-    ArrayList<NameValuePair> parameters = new ArrayList<>();
-    String responseBodyAsString = null;
+    private ArrayList<NameValuePair> parameters = new ArrayList<>();
+    private String responseBodyAsString = null;
     private HttpResponse response;
 
     public PostRequest(final URI uri) {
@@ -86,32 +86,45 @@ public class PostRequest extends HttpPost implements ResponseHandler<String> {
         parameters.removeAll(toDelete);
     }
 
-    public HttpResponse getResponse() {
-        return response;
-    }
 
-    public String getResponseBodyAsString() {
+    public String getResponseBodyAsString() throws IOException {
+        if (responseBodyAsString == null) {
+            throw new IOException("No response body available");
+        }
         return responseBodyAsString;
     }
 
     public Header getResponseHeader(String name) {
-        if (response == null) {
-            throw new RuntimeException("Should execute request first");
-        }
+        checkResponse();
         return response.getFirstHeader(name);
     }
 
+    /**
+     * Get status code from response.
+     * @return Http status code
+     */
     public int getStatusCode() {
-        if (response == null) {
-            throw new RuntimeException("Should execute request first");
-        }
+        checkResponse();
         return response.getStatusLine().getStatusCode();
     }
 
-    public Object getStatusLine() {
-        if (response == null) {
-            throw new RuntimeException("Should execute request first");
-        }
+    /**
+     * Get reason phrase from response.
+     * @return reason phrase
+     */
+    public String getReasonPhrase() {
+        checkResponse();
         return response.getStatusLine().getReasonPhrase();
     }
+
+    /**
+     * Check if response is available.
+     */
+    private void checkResponse() {
+        if (response == null) {
+            throw new IllegalStateException("Should execute request first");
+        }
+    }
+
+
 }

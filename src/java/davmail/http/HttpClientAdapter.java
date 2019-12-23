@@ -28,6 +28,7 @@ import davmail.exception.LoginTimeoutException;
 import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
 import davmail.http.request.GetRequest;
+import davmail.http.request.PostRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -455,6 +456,21 @@ public class HttpClientAdapter implements Closeable {
         String responseBodyAsString;
         try (CloseableHttpResponse response = execute(getRequest)) {
             responseBodyAsString = getRequest.handleResponse(response);
+        }
+        return responseBodyAsString;
+    }
+
+    /**
+     * Execute post request and return response body as string.
+     * @param postRequest post request
+     * @return response body
+     * @throws IOException on error
+     */
+    public String executePostRequest(PostRequest postRequest) throws IOException {
+        handleURI(postRequest);
+        String responseBodyAsString;
+        try (CloseableHttpResponse response = execute(postRequest)) {
+            responseBodyAsString = postRequest.handleResponse(response);
         }
         return responseBodyAsString;
     }
