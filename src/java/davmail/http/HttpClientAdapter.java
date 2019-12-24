@@ -29,6 +29,7 @@ import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
 import davmail.http.request.GetRequest;
 import davmail.http.request.PostRequest;
+import davmail.http.request.RestRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -59,7 +60,6 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.IdleConnectionEvictor;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
@@ -70,6 +70,7 @@ import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.apache.jackrabbit.webdav.client.methods.HttpCopy;
 import org.apache.jackrabbit.webdav.client.methods.HttpMove;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -80,7 +81,6 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.security.Security;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class HttpClientAdapter implements Closeable {
     static final Logger LOGGER = Logger.getLogger("davmail.http.HttpClientAdapter");
@@ -145,11 +145,10 @@ public class HttpClientAdapter implements Closeable {
     BasicCookieStore cookieStore = new BasicCookieStore() {
         @Override
         public void addCookie(final Cookie cookie) {
-            LOGGER.debug("Add cookie "+cookie);
+            LOGGER.debug("Add cookie " + cookie);
             super.addCookie(cookie);
         }
     };
-    IdleConnectionEvictor idleConnectionEvictor;
     // current URI
     URI uri;
     String domain;
@@ -354,16 +353,12 @@ public class HttpClientAdapter implements Closeable {
     }
 
     public void startEvictorThread() {
-        // TODO: create a common connection evictor for all connection managers
-        idleConnectionEvictor = new IdleConnectionEvictor(connectionManager, 1, TimeUnit.MINUTES);
-        idleConnectionEvictor.start();
+        DavMailIdleConnectionEvictor.addConnectionManager(connectionManager);
     }
 
     @Override
     public void close() {
-        if (idleConnectionEvictor != null) {
-            idleConnectionEvictor.shutdown();
-        }
+        DavMailIdleConnectionEvictor.removeConnectionManager(connectionManager);
         try {
             httpClient.close();
         } catch (IOException e) {
@@ -447,6 +442,7 @@ public class HttpClientAdapter implements Closeable {
 
     /**
      * Execute get request and return response body as string.
+     *
      * @param getRequest get request
      * @return response body
      * @throws IOException on error
@@ -462,6 +458,7 @@ public class HttpClientAdapter implements Closeable {
 
     /**
      * Execute post request and return response body as string.
+     *
      * @param postRequest post request
      * @return response body
      * @throws IOException on error
@@ -473,6 +470,15 @@ public class HttpClientAdapter implements Closeable {
             responseBodyAsString = postRequest.handleResponse(response);
         }
         return responseBodyAsString;
+    }
+
+    public JSONObject executeRestRequest(RestRequest restRequest) throws IOException {
+        handleURI(restRequest);
+        JSONObject responseBody;
+        try (CloseableHttpResponse response = execute(restRequest)) {
+            responseBody = restRequest.handleResponse(response);
+        }
+        return responseBody;
     }
 
     /**
@@ -552,7 +558,7 @@ public class HttpClientAdapter implements Closeable {
     }
 
     /**
-     * Check if status is a redirect (various 30x values).
+     * Get redirect location from header.
      *
      * @param response Http response
      * @return URI target location
