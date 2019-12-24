@@ -170,7 +170,11 @@ public class SmtpConnection extends AbstractConnection {
                             } catch (Exception e) {
                                 DavGatewayTray.error(e);
                                 state = State.AUTHENTICATED;
-                                sendClient("451 Error : " + e + ' ' + e.getMessage());
+                                String error = e.getMessage();
+                                if (error == null) {
+                                    error = e.toString();
+                                }
+                                sendClient("451 Error : " + error.replaceAll("[\\r\\n]", ""));
                             }
 
                         } else {
