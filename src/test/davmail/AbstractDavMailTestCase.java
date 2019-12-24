@@ -88,7 +88,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
         return createMimeMessage("test@test.local");
     }
 
-    protected MimeMessage createMimeMessage(String recipient) throws MessagingException {
+    protected MimeMessage createMimeMessage(@SuppressWarnings("SameParameterValue") String recipient) throws MessagingException {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         mimeMessage.addHeader("To", recipient);
         mimeMessage.setText("Test message\n");
@@ -96,6 +96,7 @@ public abstract class AbstractDavMailTestCase extends TestCase {
         return mimeMessage;
     }
 
+    @SuppressWarnings("unused")
     protected byte[] getMimeBody(MimeMessage mimeMessage) throws IOException, MessagingException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         mimeMessage.writeTo(baos);

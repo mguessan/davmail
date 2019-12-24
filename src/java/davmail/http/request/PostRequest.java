@@ -117,6 +117,11 @@ public class PostRequest extends HttpPost implements ResponseHandler<String> {
         return response.getStatusLine().getReasonPhrase();
     }
 
+    public URI getRedirectLocation() {
+        checkResponse();
+        return HttpClientAdapter.getRedirectLocation(response);
+    }
+
     /**
      * Check if response is available.
      */
@@ -125,6 +130,5 @@ public class PostRequest extends HttpPost implements ResponseHandler<String> {
             throw new IllegalStateException("Should execute request first");
         }
     }
-
 
 }

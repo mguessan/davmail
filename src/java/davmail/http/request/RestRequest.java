@@ -19,6 +19,7 @@
 
 package davmail.http.request;
 
+import davmail.http.HttpClientAdapter;
 import davmail.util.IOUtil;
 import org.apache.http.Consts;
 import org.apache.http.Header;
@@ -43,9 +44,10 @@ import java.util.zip.GZIPInputStream;
  */
 public class RestRequest extends HttpPost implements ResponseHandler<JSONObject> {
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
-    protected static final Logger LOGGER = Logger.getLogger(RestRequest.class);
+    private static final Logger LOGGER = Logger.getLogger(RestRequest.class);
 
-    JSONObject jsonBody;
+    private HttpResponse response;
+    private JSONObject jsonBody;
 
     public RestRequest(String uri) {
         super(uri);
@@ -89,14 +91,12 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
         };
         httpEntity.setContentType(JSON_CONTENT_TYPE);
         setEntity(httpEntity);
-
     }
 
     public RestRequest(String uri, HttpEntity entity) {
         super(uri);
         setEntity(entity);
     }
-
 
     protected byte[] getJsonContent() {
         return jsonBody.toString().getBytes(Consts.UTF_8);
@@ -112,11 +112,12 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
 
     @Override
     public JSONObject handleResponse(HttpResponse response) throws IOException {
+        this.response = response;
         JSONObject jsonResponse;
         Header contentTypeHeader = response.getFirstHeader("Content-Type");
         if (contentTypeHeader != null && JSON_CONTENT_TYPE.equals(contentTypeHeader.getValue())) {
             try (InputStream inputStream = response.getEntity().getContent()){
-                if (isGzipEncoded(response)) {
+                if (HttpClientAdapter.isGzipEncoded(response)) {
                     jsonResponse = processResponseStream(new GZIPInputStream(inputStream));
                 } else {
                     jsonResponse = processResponseStream(inputStream);
@@ -129,17 +130,6 @@ public class RestRequest extends HttpPost implements ResponseHandler<JSONObject>
             throw new IOException("Invalid response content");
         }
         return jsonResponse;
-    }
-
-    /**
-     * Test if the response is gzip encoded
-     *
-     * @param response http response
-     * @return true if response is gzip encoded
-     */
-    public boolean isGzipEncoded(HttpResponse response) {
-        Header header = response.getFirstHeader("Content-Encoding");
-        return header != null && "gzip".equals(header.getValue());
     }
 
     private JSONObject processResponseStream(InputStream responseBodyAsStream) throws IOException, JSONException {
