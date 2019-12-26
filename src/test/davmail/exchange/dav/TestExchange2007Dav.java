@@ -20,7 +20,11 @@
 package davmail.exchange.dav;
 
 import davmail.AbstractExchange2007TestCase;
+import davmail.Settings;
+import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
+import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
+import org.apache.log4j.Level;
 
 import java.io.IOException;
 
@@ -104,6 +108,34 @@ public class TestExchange2007Dav extends AbstractExchange2007TestCase {
         authenticator.setUsername(username + "\"" + domain + "\\" + username);
         authenticator.setPassword(password);
         authenticator.authenticate();
+        // create session
+        DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
+                authenticator.getExchangeUri(), authenticator.getUsername());
+        assertEquals(username, session.getAlias());
+        assertEquals(email, session.getEmail());
+        assertEquals("/exchange/" + email + "/", session.getFolderPath(""));
+    }
+
+    public void testCreateSession() throws IOException {
+        Settings.setProperty("davmail.url", "https://" + server + "/owa");
+        Settings.setProperty("davmail.defaultDomain", domain);
+        ExchangeSessionFactory.getInstance(username, password);
+    }
+
+    public void testHC4OWAFormAuthenticator() throws IOException {
+        String url = "https://" + server + "/owa";
+        HC4ExchangeFormAuthenticator authenticator = new HC4ExchangeFormAuthenticator();
+        authenticator.setUrl(url);
+        authenticator.setUsername(username);
+        authenticator.setPassword(password);
+
+        //Settings.setLoggingLevel("org.apache.http.wire", Level.DEBUG);
+        //Settings.setLoggingLevel("org.apache.http", Level.DEBUG);
+
+        authenticator.authenticate();
+        assertEquals("https://" + server + "/owa/", authenticator.getExchangeUri().toString());
+
+        //Settings.setLoggingLevel("httpclient.wire", Level.DEBUG);
         // create session
         DavExchangeSession session = new DavExchangeSession(authenticator.getHttpClient(),
                 authenticator.getExchangeUri(), authenticator.getUsername());
