@@ -40,6 +40,7 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.log4j.Logger;
+import org.htmlcleaner.BaseToken;
 import org.htmlcleaner.CommentNode;
 import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
@@ -220,10 +221,10 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                     // workaround for basic authentication on /exchange and form based authentication at /owa
                     if ("/owa/auth/logon.aspx".equals(getRequest.getURI().getPath())) {
-                        formLogin(httpClientAdapter, getRequest, statusLine, responseBodyAsString, password);
+                        formLogin(httpClientAdapter, getRequest, responseBodyAsString, password);
                     }
                 } else {
-                    formLogin(httpClientAdapter, getRequest, statusLine, responseBodyAsString, password);
+                    formLogin(httpClientAdapter, getRequest, responseBodyAsString, password);
                 }
             }
 
@@ -256,14 +257,12 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
      */
     protected boolean isHttpAuthentication(HttpClientAdapter httpClient, String url) {
         boolean isHttpAuthentication = false;
-        org.apache.http.client.methods.HttpGet httpGet = new org.apache.http.client.methods.HttpGet(url);
+        HttpGet httpGet = new HttpGet(url);
         // Create a local context to avoid cookies in main httpClient
         HttpClientContext context = HttpClientContext.create();
         context.setCookieStore(new BasicCookieStore());
-        try {
-            CloseableHttpResponse response = httpClient.execute(httpGet, context);
+        try (CloseableHttpResponse response = httpClient.execute(httpGet, context)) {
             isHttpAuthentication = response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED;
-            response.close();
         } catch (IOException e) {
             // ignore
         }
@@ -297,7 +296,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         return authenticated;
     }
 
-    protected void formLogin(HttpClientAdapter httpClient, HttpGet initRequest, StatusLine statusLine, String responseBodyAsString, String password) throws IOException {
+    protected void formLogin(HttpClientAdapter httpClient, HttpGet initRequest, String responseBodyAsString, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
 
         PostRequest postRequest = buildLogonMethod(httpClient, initRequest.getURI(), responseBodyAsString);
@@ -329,11 +328,11 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         try {
             TagNode node = cleaner.clean(new ByteArrayInputStream(responseBodyAsString.getBytes(StandardCharsets.UTF_8)));
-            List forms = node.getElementListByName("form", true);
+            List<? extends TagNode> forms = node.getElementListByName("form", true);
             TagNode logonForm = null;
             // select form
             if (forms.size() == 1) {
-                logonForm = (TagNode) forms.get(0);
+                logonForm = forms.get(0);
             } else if (forms.size() > 1) {
                 for (Object form : forms) {
                     if ("logonForm".equals(((TagNode) form).getAttributeByName("name"))) {
@@ -352,7 +351,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 logonMethod = new PostRequest(getAbsoluteUri(uri, logonMethodPath));
 
                 // retrieve lost inputs attached to body
-                List inputList = node.getElementListByName("input", true);
+                List<? extends TagNode> inputList = node.getElementListByName("input", true);
 
                 for (Object input : inputList) {
                     String type = ((TagNode) input).getAttributeByName("type");
@@ -394,9 +393,9 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
             } else {
-                List frameList = node.getElementListByName("frame", true);
+                List<? extends TagNode> frameList = node.getElementListByName("frame", true);
                 if (frameList.size() == 1) {
-                    String src = ((TagNode) frameList.get(0)).getAttributeByName("src");
+                    String src = frameList.get(0).getAttributeByName("src");
                     if (src != null) {
                         LOGGER.debug("Frames detected in form page, try frame content");
                         HttpGet newInitMethod = new HttpGet(src);
@@ -406,9 +405,9 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 } else {
                     // another failover for script based logon forms (Exchange 2007)
-                    List scriptList = node.getElementListByName("script", true);
+                    List<? extends TagNode> scriptList = node.getElementListByName("script", true);
                     for (Object script : scriptList) {
-                        List contents = ((TagNode) script).getAllChildren();
+                        List<? extends BaseToken> contents = ((TagNode) script).getAllChildren();
                         for (Object content : contents) {
                             if (content instanceof CommentNode) {
                                 String scriptValue = ((CommentNode) content).getCommentedContent();
@@ -464,7 +463,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         String responseBodyAsString;
         StatusLine statusLine;
-        try (CloseableHttpResponse response = httpClient.execute(logonMethod)) {
+        try (CloseableHttpResponse response = httpClient.executeFollowRedirects(logonMethod)) {
             statusLine = response.getStatusLine();
             responseBodyAsString = new BasicResponseHandler().handleResponse(response);
         }
@@ -517,11 +516,11 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
         try {
             TagNode node = cleaner.clean(responseBodyAsString);
-            List forms = node.getElementListByName("form", true);
+            List<? extends TagNode> forms = node.getElementListByName("form", true);
             TagNode languageForm;
             // select form
             if (forms.size() == 1) {
-                languageForm = (TagNode) forms.get(0);
+                languageForm = forms.get(0);
             } else {
                 throw new IOException("Form not found");
             }
@@ -529,7 +528,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
             postLanguageFormMethod = new PostRequest(getAbsoluteUri(uri, languageMethodPath));
 
-            List inputList = languageForm.getElementListByName("input", true);
+            List<? extends TagNode> inputList = languageForm.getElementListByName("input", true);
             for (Object input : inputList) {
                 String name = ((TagNode) input).getAttributeByName("name");
                 String value = ((TagNode) input).getAttributeByName("value");
@@ -537,10 +536,10 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     postLanguageFormMethod.setParameter(name, value);
                 }
             }
-            List selectList = languageForm.getElementListByName("select", true);
+            List<? extends TagNode> selectList = languageForm.getElementListByName("select", true);
             for (Object select : selectList) {
                 String name = ((TagNode) select).getAttributeByName("name");
-                List optionList = ((TagNode) select).getElementListByName("option", true);
+                List<? extends TagNode> optionList = ((TagNode) select).getElementListByName("option", true);
                 String value = null;
                 for (Object option : optionList) {
                     if (((TagNode) option).getAttributeByName("selected") != null) {
