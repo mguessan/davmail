@@ -65,7 +65,7 @@ public final class Settings {
     private static final Properties SETTINGS = new Properties() {
         @Override
         public synchronized Enumeration<Object> keys() {
-            Enumeration keysEnumeration = super.keys();
+            Enumeration<Object> keysEnumeration = super.keys();
             TreeSet<String> sortedKeySet = new TreeSet<>();
             while (keysEnumeration.hasMoreElements()) {
                 sortedKeySet.add((String) keysEnumeration.nextElement());
@@ -354,7 +354,7 @@ public final class Settings {
                 }
 
                 // write remaining lines
-                Enumeration propertyEnumeration = properties.propertyNames();
+                Enumeration<?> propertyEnumeration = properties.propertyNames();
                 while (propertyEnumeration.hasMoreElements()) {
                     String propertyName = (String) propertyEnumeration.nextElement();
                     writer.write(propertyName+"="+ escapeValue(properties.getProperty(propertyName)));
@@ -605,7 +605,7 @@ public final class Settings {
             keyStart = scope + '.';
         }
         Properties result = new Properties();
-        for (Map.Entry entry : SETTINGS.entrySet()) {
+        for (Map.Entry<Object, Object> entry : SETTINGS.entrySet()) {
             String key = (String) entry.getKey();
             if (key.startsWith(keyStart)) {
                 String value = (String) entry.getValue();
