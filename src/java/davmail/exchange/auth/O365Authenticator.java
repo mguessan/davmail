@@ -22,7 +22,9 @@ package davmail.exchange.auth;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
 import davmail.http.HttpClientAdapter;
+import davmail.http.request.GetRequest;
 import davmail.http.request.PostRequest;
+import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -125,8 +127,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             httpClientAdapter = new HttpClientAdapter(url, userid, password);
 
-            HttpGet getMethod = new HttpGet(url);
-            String responseBodyAsString = executeRequest(httpClientAdapter, getMethod);
+            GetRequest getRequest = new GetRequest(url);
+            String responseBodyAsString = executeRequest(httpClientAdapter, getRequest);
             String code;
             if (!responseBodyAsString.contains("Config=")) {
                 // we are no longer on Microsoft, try ADFS
@@ -143,7 +145,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                 String canary = config.getString("canary");
                 String sessionId = config.getString("sessionId");
 
-                String referer = getMethod.getURI().toString();
+                String referer = getRequest.getURI().toString();
 
                 RestRequest getCredentialMethod = new RestRequest("https://login.microsoftonline.com/" + tenantId + "/GetCredentialType");
                 getCredentialMethod.setRequestHeader("Accept", "application/json");
@@ -177,7 +179,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     LOGGER.debug("Detected ADFS, redirecting to " + federationRedirectUrl);
                     code = authenticateRedirectADFS(httpClientAdapter, federationRedirectUrl, url);
                 } else {
-                    PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/login");
+                    PostRequest logonMethod = new PostRequest("https://login.microsoftonline.com/" + tenantId + "/login");
                     logonMethod.setRequestHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                     logonMethod.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -208,7 +210,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             LOGGER.debug(url);
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if (config.optString("strServiceExceptionMessage") != null) {
-                            LOGGER.debug("O365 returned error: "+config.optString("strServiceExceptionMessage"));
+                            LOGGER.debug("O365 returned error: " + config.optString("strServiceExceptionMessage"));
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
                         } else if ("50126".equals(config.optString("sErrorCode"))) {
                             throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -273,7 +275,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             }
 
             HttpGet redirectMethod = new HttpGet(location);
-            try (CloseableHttpResponse response = httpClientAdapter.execute(redirectMethod)){
+            try (CloseableHttpResponse response = httpClientAdapter.execute(redirectMethod)) {
                 responseBodyAsString = new BasicResponseHandler().handleResponse(response);
             }
         }
@@ -350,7 +352,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             processMethod.setParameter("ctx", ctx);
             processMethod.setParameter("flowtoken", flowtoken);
 
-            try (CloseableHttpResponse response = httpClient.execute(processMethod)){
+            try (CloseableHttpResponse response = httpClient.execute(processMethod)) {
                 Header locationHeader = response.getFirstHeader("Location");
                 if (response.getStatusLine().getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || locationHeader == null) {
                     throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
@@ -475,7 +477,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         flowToken = config.getString("FlowToken");
 
         // process auth
-        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/"+tenantId+"/SAS/ProcessAuth");
+        PostRequest processAuthMethod = new PostRequest("https://login.microsoftonline.com/" + tenantId + "/SAS/ProcessAuth");
         processAuthMethod.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         processAuthMethod.setParameter("type", type);
         processAuthMethod.setParameter("request", context);
@@ -493,15 +495,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     }
 
-    private String executeRequest(HttpClientAdapter httpClientAdapter, HttpGet httpGet) throws IOException {
-        LOGGER.debug(httpGet.getURI());
-        try (CloseableHttpResponse response = httpClientAdapter.executeFollowRedirects(httpGet)) {
-            if (httpGet.getURI().getHost().endsWith("okta.com")) {
-                throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
-            }
-
-            return new BasicResponseHandler().handleResponse(response);
+    private String executeRequest(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
+        LOGGER.debug(getRequest.getURI());
+        ResponseWrapper responseWrapper = httpClientAdapter.executeFollowRedirect(getRequest);
+        if (responseWrapper.getURI().getHost().endsWith("okta.com")) {
+            throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
         }
+        return responseWrapper.getResponseBodyAsString();
     }
 
     private JSONObject executeRequestGetConfig(HttpClientAdapter httpClientAdapter, RestRequest restRequest) throws IOException {
