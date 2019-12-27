@@ -629,13 +629,13 @@ public class HttpClientAdapter implements Closeable {
         // 440 means forbidden on Exchange
         if (status == 440) {
             return new LoginTimeoutException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN) {
+        } else if (status == HttpStatus.SC_FORBIDDEN) {
             return new HttpForbiddenException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND) {
+        } else if (status == HttpStatus.SC_NOT_FOUND) {
             return new HttpNotFoundException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_PRECONDITION_FAILED) {
+        } else if (status == HttpStatus.SC_PRECONDITION_FAILED) {
             return new HttpPreconditionFailedException(message.toString());
-        } else if (status == org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+        } else if (status == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             return new HttpServerErrorException(message.toString());
         } else {
             return new HttpResponseException(status, message.toString());
