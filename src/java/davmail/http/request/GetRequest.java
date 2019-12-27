@@ -32,7 +32,7 @@ import java.net.URI;
 /**
  * Http get request with a string response handler.
  */
-public class GetRequest extends HttpGet implements ResponseHandler<String> {
+public class GetRequest extends HttpGet implements ResponseHandler<String>, ResponseWrapper {
     private HttpResponse response;
     private String responseBodyAsString;
 
@@ -97,6 +97,15 @@ public class GetRequest extends HttpGet implements ResponseHandler<String> {
     public String getReasonPhrase() {
         checkResponse();
         return response.getStatusLine().getReasonPhrase();
+    }
+
+    public URI getRedirectLocation() {
+        checkResponse();
+        return HttpClientAdapter.getRedirectLocation(response);
+    }
+
+    public HttpResponse getHttpResponse() {
+        return response;
     }
 
     /**

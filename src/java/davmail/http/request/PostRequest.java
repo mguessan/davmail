@@ -38,7 +38,7 @@ import java.util.ArrayList;
 /**
  * Http post request with a string response handler.
  */
-public class PostRequest extends HttpPost implements ResponseHandler<String> {
+public class PostRequest extends HttpPost implements ResponseHandler<String>, ResponseWrapper {
     private ArrayList<NameValuePair> parameters = new ArrayList<>();
     private String responseBodyAsString = null;
     private HttpResponse response;
@@ -120,6 +120,10 @@ public class PostRequest extends HttpPost implements ResponseHandler<String> {
     public URI getRedirectLocation() {
         checkResponse();
         return HttpClientAdapter.getRedirectLocation(response);
+    }
+
+    public HttpResponse getHttpResponse() {
+        return response;
     }
 
     /**
