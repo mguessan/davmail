@@ -86,6 +86,9 @@ public class PostRequest extends HttpPost implements ResponseHandler<String>, Re
         parameters.removeAll(toDelete);
     }
 
+    public ArrayList<NameValuePair> getParameters() {
+        return parameters;
+    }
 
     public String getResponseBodyAsString() throws IOException {
         if (responseBodyAsString == null) {

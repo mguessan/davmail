@@ -26,9 +26,10 @@ import davmail.exception.WebdavNotAvailableException;
 import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.DavGatewayOTPPrompt;
 import davmail.http.HttpClientAdapter;
+import davmail.http.URIUtil;
 import davmail.http.request.GetRequest;
-import davmail.http.request.ResponseWrapper;
 import davmail.http.request.PostRequest;
+import davmail.http.request.ResponseWrapper;
 import davmail.util.StringUtil;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -38,7 +39,6 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.log4j.Logger;
 import org.htmlcleaner.BaseToken;
@@ -63,7 +63,6 @@ import java.util.Set;
 
 /**
  * New Exchange form authenticator based on HttpClient 4.
- * TODO: refactor to avoir request/response reuse
  */
 public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     protected static final Logger LOGGER = Logger.getLogger("davmail.exchange.ExchangeSession");
@@ -216,10 +215,10 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                     // workaround for basic authentication on /exchange and form based authentication at /owa
                     if ("/owa/auth/logon.aspx".equals(getRequest.getURI().getPath())) {
-                        formLogin(httpClientAdapter, getRequest, getRequest.getResponseBodyAsString(), password);
+                        formLogin(httpClientAdapter, getRequest, password);
                     }
                 } else {
-                    formLogin(httpClientAdapter, getRequest, getRequest.getResponseBodyAsString(), password);
+                    formLogin(httpClientAdapter, getRequest, password);
                 }
             }
 
@@ -291,10 +290,10 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         return authenticated;
     }
 
-    protected void formLogin(HttpClientAdapter httpClient, HttpGet initRequest, String responseBodyAsString, String password) throws IOException {
+    protected void formLogin(HttpClientAdapter httpClient, ResponseWrapper initRequest, String password) throws IOException {
         LOGGER.debug("Form based authentication detected");
 
-        PostRequest postRequest = buildLogonMethod(httpClient, initRequest.getURI(), responseBodyAsString);
+        PostRequest postRequest = buildLogonMethod(httpClient, initRequest);
         if (postRequest == null) {
             LOGGER.debug("Authentication form not found at " + initRequest.getURI() + ", trying default url");
             postRequest = new PostRequest("/owa/auth/owaauth.dll");
@@ -306,12 +305,11 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
     /**
      * Try to find logon method path from logon form body.
      *
-     * @param httpClient           httpClientAdapter instance
-     * @param uri                  current form uri
-     * @param responseBodyAsString form body
+     * @param httpClient      httpClientAdapter instance
+     * @param responseWrapper init request response wrapper
      * @return logon method
      */
-    protected PostRequest buildLogonMethod(HttpClientAdapter httpClient, URI uri, String responseBodyAsString) {
+    protected PostRequest buildLogonMethod(HttpClientAdapter httpClient, ResponseWrapper responseWrapper) {
         PostRequest logonMethod = null;
 
         // create an instance of HtmlCleaner
@@ -321,7 +319,9 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         usernameInputs.clear();
 
         try {
-            TagNode node = cleaner.clean(new ByteArrayInputStream(responseBodyAsString.getBytes(StandardCharsets.UTF_8)));
+            URI uri = responseWrapper.getURI();
+            String responseBody = responseWrapper.getResponseBodyAsString();
+            TagNode node = cleaner.clean(new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)));
             List<? extends TagNode> forms = node.getElementListByName("form", true);
             TagNode logonForm = null;
             // select form
@@ -342,7 +342,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     logonMethodPath = "/owa/auth.owa";
                 }
 
-                logonMethod = new PostRequest(getAbsoluteUri(httpClientAdapter.getUri(), logonMethodPath));
+                logonMethod = new PostRequest(getAbsoluteUri(uri, logonMethodPath));
 
                 // retrieve lost inputs attached to body
                 List<? extends TagNode> inputList = node.getElementListByName("input", true);
@@ -361,8 +361,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         passwordInput = name;
                     } else if ("addr".equals(name)) {
                         // this is not a logon form but a redirect form
-                        ResponseWrapper targetRequest = httpClient.executeFollowRedirect(logonMethod);
-                        logonMethod = buildLogonMethod(httpClient, targetRequest.getURI(),targetRequest.getResponseBodyAsString());
+                        logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(logonMethod));
                     } else if (TOKEN_FIELDS.contains(name)) {
                         // one time password, ask it to the user
                         logonMethod.setParameter(name, DavGatewayOTPPrompt.getOneTimePassword());
@@ -372,7 +371,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                         if (pinsafeUser == null) {
                             pinsafeUser = username;
                         }
-                        org.apache.http.client.methods.HttpGet pinRequest = new org.apache.http.client.methods.HttpGet("/PINsafeISAFilter.dll?username=" + pinsafeUser);
+                        HttpGet pinRequest = new HttpGet("/PINsafeISAFilter.dll?username=" + pinsafeUser);
                         try (CloseableHttpResponse pinResponse = httpClient.execute(pinRequest)) {
                             int status = pinResponse.getStatusLine().getStatusCode();
                             if (status != HttpStatus.SC_OK) {
@@ -380,7 +379,6 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                             }
                             BufferedImage captchaImage = ImageIO.read(pinResponse.getEntity().getContent());
                             logonMethod.setParameter(name, DavGatewayOTPPrompt.getCaptchaValue(captchaImage));
-
                         }
                     }
                 }
@@ -390,10 +388,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     String src = frameList.get(0).getAttributeByName("src");
                     if (src != null) {
                         LOGGER.debug("Frames detected in form page, try frame content");
-                        HttpGet newInitMethod = new HttpGet(src);
-                        try (CloseableHttpResponse response = httpClient.executeFollowRedirects(newInitMethod)) {
-                            logonMethod = buildLogonMethod(httpClient, newInitMethod.getURI(), new BasicResponseHandler().handleResponse(response));
-                        }
+                        logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(new GetRequest(src)));
                     }
                 } else {
                     // another failover for script based logon forms (Exchange 2007)
@@ -411,10 +406,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                                 if (sUrl != null && sLgn != null) {
                                     URI src = getScriptBasedFormURL(uri, sLgn + sUrl);
                                     LOGGER.debug("Detected script based logon, redirect to form at " + src);
-                                    HttpGet newInitMethod = new HttpGet(src);
-                                    try (CloseableHttpResponse response = httpClient.executeFollowRedirects(newInitMethod)) {
-                                        logonMethod = buildLogonMethod(httpClient, newInitMethod.getURI(), new BasicResponseHandler().handleResponse(response));
-                                    }
+                                    logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(new GetRequest(src)));
                                 }
 
                             } else if (content instanceof ContentNode) {
@@ -423,9 +415,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                                 String location = StringUtil.getToken(scriptValue, "window.location.replace(\"", "\"");
                                 if (location != null) {
                                     LOGGER.debug("Post logon redirect to: " + location);
-                                    GetRequest newInitMethod = new GetRequest(location);
-                                    newInitMethod = httpClient.executeFollowRedirect(newInitMethod);
-                                    logonMethod = buildLogonMethod(httpClient, newInitMethod.getURI(), newInitMethod.getResponseBodyAsString());
+                                    logonMethod = buildLogonMethod(httpClient, httpClient.executeFollowRedirect(new GetRequest(location)));
                                 }
                             }
                         }
@@ -433,7 +423,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                 }
             }
         } catch (IOException | URISyntaxException e) {
-            LOGGER.error("Error parsing login form at " + uri);
+            LOGGER.error("Error parsing login form at " + responseWrapper.getURI());
         }
 
         return logonMethod;
@@ -458,7 +448,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         // workaround for post logon script redirect
         if (!isAuthenticated(resultRequest)) {
             // try to get new method from script based redirection
-            logonMethod = buildLogonMethod(httpClient, resultRequest.getURI(), resultRequest.getResponseBodyAsString());
+            logonMethod = buildLogonMethod(httpClient, resultRequest);
 
             if (logonMethod != null) {
                 if (otpPreAuthFound && otpPreAuthRetries < MAX_OTP_RETRIES) {
@@ -484,14 +474,14 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         }
 
         // check for language selection form
-        if (resultRequest != null && "/owa/languageselection.aspx".equals(resultRequest.getURI().getPath())) {
+        if ("/owa/languageselection.aspx".equals(resultRequest.getURI().getPath())) {
             // need to submit form
             resultRequest = submitLanguageSelectionForm(resultRequest.getURI(), resultRequest.getResponseBodyAsString());
         }
         return resultRequest;
     }
 
-    protected PostRequest submitLanguageSelectionForm(URI uri, String responseBodyAsString) throws IOException {
+    protected ResponseWrapper submitLanguageSelectionForm(URI uri, String responseBodyAsString) throws IOException {
         PostRequest postLanguageFormMethod;
         // create an instance of HtmlCleaner
         HtmlCleaner cleaner = new HtmlCleaner();
@@ -539,8 +529,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
             throw new IOException(errorMessage);
         }
 
-        httpClientAdapter.executeFollowRedirects(postLanguageFormMethod);
-        return postLanguageFormMethod;
+        return httpClientAdapter.executeFollowRedirect(postLanguageFormMethod);
     }
 
     protected void setAuthFormFields(HttpRequestBase logonMethod, HttpClientAdapter httpClient, String password) throws IllegalArgumentException {
@@ -617,7 +606,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
         return uriBuilder.build();
     }
 
-    protected URI getScriptBasedFormURL(URI uri, String pathQuery) throws URISyntaxException {
+    protected URI getScriptBasedFormURL(URI uri, String pathQuery) throws URISyntaxException, IOException {
         URIBuilder uriBuilder = new URIBuilder(uri);
         int queryIndex = pathQuery.indexOf('?');
         if (queryIndex >= 0) {
@@ -639,7 +628,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
                     }
                 }
             }
-            uriBuilder.setCustomQuery(pathQuery.substring(queryIndex + 1));
+            uriBuilder.setCustomQuery(URIUtil.decode(pathQuery.substring(queryIndex + 1)));
         }
         return uriBuilder.build();
     }
@@ -710,6 +699,7 @@ public class HC4ExchangeFormAuthenticator implements ExchangeAuthenticator {
 
     /**
      * Return authenticated HttpClient 4 HttpClientAdapter
+     *
      * @return HttpClientAdapter instance
      */
     public HttpClientAdapter getHttpClientAdapter() {
