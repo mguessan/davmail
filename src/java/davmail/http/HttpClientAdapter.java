@@ -28,6 +28,7 @@ import davmail.exception.LoginTimeoutException;
 import davmail.http.request.ExchangeDavRequest;
 import davmail.http.request.ExchangeSearchRequest;
 import davmail.http.request.GetRequest;
+import davmail.http.request.ResponseWrapper;
 import davmail.http.request.PostRequest;
 import davmail.http.request.RestRequest;
 import org.apache.http.Header;
@@ -42,6 +43,7 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
@@ -58,6 +60,7 @@ import org.apache.http.impl.auth.KerberosSchemeFactory;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
@@ -196,7 +199,7 @@ public class HttpClientAdapter implements Closeable {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create()
                 .disableRedirectHandling()
                 .setDefaultRequestConfig(DEFAULT_REQUEST_CONFIG)
-                .setUserAgent(DavGatewayHttpClientFacade.IE_USER_AGENT)
+                .setUserAgent(getUserAgent())
                 .setDefaultAuthSchemeRegistry(getAuthSchemeRegistry())
                 .setConnectionManager(connectionManager);
 
@@ -421,6 +424,7 @@ public class HttpClientAdapter implements Closeable {
      * @throws IOException on error
      */
     public CloseableHttpResponse executeFollowRedirects(HttpRequestBase request) throws IOException {
+        LOGGER.debug(request.getMethod()+" "+request.getURI().toString());
         CloseableHttpResponse httpResponse;
         int count = 0;
         int maxRedirect = Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS);
@@ -433,11 +437,53 @@ public class HttpClientAdapter implements Closeable {
             String location = httpResponse.getFirstHeader("Location").getValue();
             LOGGER.debug("Redirect " + request.getURI() + " to " + location);
             // replace uri with target location
-            request.setURI(URI.create(location));
-            httpResponse = execute(request);
+            HttpGet redirectRequest = new HttpGet(URI.create(location));
+            httpResponse = execute(redirectRequest);
         }
 
         return httpResponse;
+    }
+
+    public ResponseWrapper executeFollowRedirect(PostRequest request) throws IOException {
+        ResponseWrapper responseWrapper = request;
+        LOGGER.debug(request.getMethod()+" "+request.getURI().toString());
+
+        int count = 0;
+        int maxRedirect = Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS);
+
+        executePostRequest(request);
+        URI redirectLocation = request.getRedirectLocation();
+
+        while (count++ < maxRedirect && redirectLocation != null) {
+            LOGGER.debug("Redirect " + request.getURI() + " to " + redirectLocation);
+            // replace uri with target location
+            responseWrapper = new GetRequest(redirectLocation);
+            executeGetRequest((GetRequest)responseWrapper);
+            redirectLocation = ((GetRequest)responseWrapper).getRedirectLocation();
+        }
+
+        return responseWrapper;
+    }
+
+    public GetRequest executeFollowRedirect(GetRequest request) throws IOException {
+        GetRequest result = request;
+        LOGGER.debug(request.getMethod()+" "+request.getURI().toString());
+
+        int count = 0;
+        int maxRedirect = Settings.getIntProperty("davmail.httpMaxRedirects", MAX_REDIRECTS);
+
+        executeGetRequest(request);
+        URI redirectLocation = request.getRedirectLocation();
+
+        while (count++ < maxRedirect && redirectLocation != null) {
+            LOGGER.debug("Redirect " + request.getURI() + " to " + redirectLocation);
+            // replace uri with target location
+            result = new GetRequest(redirectLocation);
+            executeGetRequest(result);
+            redirectLocation = result.getRedirectLocation();
+        }
+
+        return result;
     }
 
     /**
@@ -587,6 +633,9 @@ public class HttpClientAdapter implements Closeable {
         cookieStore.addCookie(cookie);
     }
 
+    public String getUserAgent() {
+        return Settings.getProperty("davmail.userAgent", DavGatewayHttpClientFacade.IE_USER_AGENT);
+    }
 
     public static HttpResponseException buildHttpResponseException(HttpRequestBase request, HttpResponse response) {
         return buildHttpResponseException(request, response.getStatusLine());
