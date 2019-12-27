@@ -36,19 +36,17 @@ import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.HttpClientAdapter;
 import davmail.http.URIUtil;
 import davmail.http.request.ExchangePropPatchRequest;
+import davmail.http.request.PostRequest;
 import davmail.ui.tray.DavGatewayTray;
 import davmail.util.IOUtil;
 import davmail.util.StringUtil;
-import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
@@ -56,7 +54,6 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.jackrabbit.webdav.DavException;
 import org.apache.jackrabbit.webdav.MultiStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
@@ -222,7 +219,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
         // experimental: try to reset session timeout
         if ("Exchange2007".equals(serverVersion)) {
-            org.apache.http.client.methods.HttpGet getMethod = new org.apache.http.client.methods.HttpGet("/owa/");
+            HttpGet getMethod = new HttpGet("/owa/");
             try (CloseableHttpResponse response = httpClientAdapter.execute(getMethod)) {
                 LOGGER.debug(response.getStatusLine().getStatusCode() + " at /owa/");
             } catch (IOException e) {
@@ -525,7 +522,7 @@ public class HC4DavExchangeSession extends ExchangeSession {
     public void galLookup(Contact contact) {
         if (!disableGalLookup) {
             LOGGER.debug("galLookup(" + contact.get("smtpemail1") + ')');
-            org.apache.http.client.methods.HttpGet httpGet = new org.apache.http.client.methods.HttpGet(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
+            HttpGet httpGet = new HttpGet(URIUtil.encodePathQuery(getCmdBasePath() + "?Cmd=gallookup&ADDR=" + contact.get("smtpemail1")));
             try (CloseableHttpResponse response = httpClientAdapter.execute(httpGet)) {
                 Map<String, Map<String, String>> results = XMLStreamUtil.getElementContentsAsMap(response.getEntity().getContent(), "person", "alias");
                 // add detailed information
@@ -2451,12 +2448,9 @@ public class HC4DavExchangeSession extends ExchangeSession {
 
             String fakeEventUrl = null;
             if ("Exchange2003".equals(serverVersion)) {
-                HttpPost httpPost = new HttpPost(URIUtil.encodePath(folderPath));
-                ArrayList<BasicNameValuePair> postParameters = new ArrayList<>();
-                postParameters.add(new BasicNameValuePair("Cmd", "saveappt"));
-                postParameters.add(new BasicNameValuePair("FORMTYPE", "appointment"));
-
-                httpPost.setEntity(new UrlEncodedFormEntity(postParameters, Consts.UTF_8));
+                PostRequest httpPost = new PostRequest(URIUtil.encodePath(folderPath));
+                httpPost.setParameter("Cmd", "saveappt");
+                httpPost.setParameter("FORMTYPE", "appointment");
                 try (CloseableHttpResponse response = httpClientAdapter.execute(httpPost)) {
                     // create fake event
                     int statusCode = response.getStatusLine().getStatusCode();
