@@ -21,10 +21,10 @@ package davmail.exchange.dav;
 
 import davmail.AbstractExchange2007TestCase;
 import davmail.Settings;
+import davmail.exception.DavMailAuthenticationException;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
-import org.apache.log4j.Level;
 
 import java.io.IOException;
 
@@ -48,6 +48,22 @@ public class TestExchange2007Dav extends AbstractExchange2007TestCase {
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
         assertEquals("/exchange/" + email + "/", session.getFolderPath(""));
+    }
+
+    public void testSimpleUsernameOWAFormAuthenticatorInvalid() throws IOException {
+        String url = "https://" + server + "/owa";
+        HC4ExchangeFormAuthenticator authenticator = new HC4ExchangeFormAuthenticator();
+        //ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
+        authenticator.setUrl(url);
+        authenticator.setUsername(username);
+        authenticator.setPassword("invalid");
+        try {
+            authenticator.authenticate();
+            fail("Should fail");
+        } catch (DavMailAuthenticationException e) {
+            assertEquals("Authentication failed: invalid user or password, retry with domain\\user or use default domain setting", e.getMessage());
+        }
+
     }
 
     public void testDomainUsernameOWAFormAuthenticator() throws IOException {
