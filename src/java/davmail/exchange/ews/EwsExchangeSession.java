@@ -138,6 +138,8 @@ public class EwsExchangeSession extends ExchangeSession {
         // Unable to map CANCELLED: cancelled events are directly deleted on Exchange
     }
 
+    protected HttpClient httpClient;
+
     protected Map<String, String> folderIdMap;
     protected boolean directEws;
 
@@ -197,15 +199,15 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
-     * Override authentication mode test: EWS is never form based.
+     * Authentication mode test: EWS is never form based.
      *
      * @param url        exchange base URL
      * @param httpClient httpClient instance
      * @return true if basic authentication detected
      */
-    @Override
     protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
-        return !url.toLowerCase().endsWith("/ews/exchange.asmx") && super.isBasicAuthentication(httpClient, url);
+        return !url.toLowerCase().endsWith("/ews/exchange.asmx")
+                && DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == org.apache.http.HttpStatus.SC_UNAUTHORIZED;
     }
 
     /**
@@ -265,11 +267,12 @@ public class EwsExchangeSession extends ExchangeSession {
                 || "/ews/services.wsdl".equalsIgnoreCase(uri.getPath())
                 || "/ews/exchange.asmx".equalsIgnoreCase(uri.getPath());
 
+        // TODO: no longer needed
         // options page is not available in direct EWS mode
-        if (!directEws && (email == null || alias == null)) {
+        //if (!directEws && (email == null || alias == null)) {
             // retrieve email and alias from options page
-            getEmailAndAliasFromOptions();
-        }
+        //    getEmailAndAliasFromOptions();
+        //}
 
         // failover, should not happen
         if (email == null || alias == null) {
@@ -331,6 +334,16 @@ public class EwsExchangeSession extends ExchangeSession {
             throw new DavMailAuthenticationException("EXCEPTION_EWS_NOT_AVAILABLE");
         }
         LOGGER.debug("Current user email is " + email + ", alias is " + alias + " on " + serverVersion);
+    }
+
+    protected String getEmailSuffixFromHostname() {
+        String domain = httpClient.getHostConfiguration().getHost();
+        int start = domain.lastIndexOf('.', domain.lastIndexOf('.') - 1);
+        if (start >= 0) {
+            return '@' + domain.substring(start + 1);
+        } else {
+            return '@' + domain;
+        }
     }
 
     protected void resolveEmailAddress(String userName) {
@@ -3245,5 +3258,15 @@ public class EwsExchangeSession extends ExchangeSession {
         }
         return value;
     }
+
+    /**
+     * Close session.
+     * Shutdown http client connection manager
+     */
+    @Override
+    public void close() {
+        DavGatewayHttpClientFacade.close(httpClient);
+    }
+
 }
 

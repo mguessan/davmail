@@ -94,6 +94,7 @@ import java.util.zip.GZIPInputStream;
  * Webdav Exchange adapter.
  * Compatible with Exchange 2003 and 2007 with webdav available.
  */
+@SuppressWarnings({"rawtypes", "deprecation"})
 public class DavExchangeSession extends ExchangeSession {
     protected enum FolderQueryTraversal {
         Shallow, Deep
@@ -154,6 +155,8 @@ public class DavExchangeSession extends ExchangeSession {
     protected String outboxName;
 
     protected static final String USERS = "/users/";
+
+    protected HttpClient httpClient;
 
     @Override
     public boolean isExpired() throws NoRouteToHostException, UnknownHostException {
@@ -535,6 +538,50 @@ public class DavExchangeSession extends ExchangeSession {
 
         // get base http mailbox http urls
         getWellKnownFolders();
+    }
+
+    protected void getEmailAndAliasFromOptions() {
+        synchronized (httpClient.getState()) {
+            Cookie[] currentCookies = httpClient.getState().getCookies();
+            // get user mail URL from html body
+            BufferedReader optionsPageReader = null;
+            GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
+            try {
+                DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
+                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
+                String line;
+
+                // find email and alias
+                //noinspection StatementWithEmptyBody
+                while ((line = optionsPageReader.readLine()) != null
+                        && (line.indexOf('[') == -1
+                        || line.indexOf('@') == -1
+                        || line.indexOf(']') == -1
+                        || !line.toLowerCase().contains(MAILBOX_BASE))) {
+                }
+                if (line != null) {
+                    int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
+                    int end = line.indexOf('<', start);
+                    alias = line.substring(start, end);
+                    end = line.lastIndexOf(']');
+                    start = line.lastIndexOf('[', end) + 1;
+                    email = line.substring(start, end);
+                }
+            } catch (IOException e) {
+                // restore cookies on error
+                httpClient.getState().addCookies(currentCookies);
+                LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+            } finally {
+                if (optionsPageReader != null) {
+                    try {
+                        optionsPageReader.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
+                    }
+                }
+                optionsMethod.releaseConnection();
+            }
+        }
     }
 
     static final String BASE_HREF = "<base href=\"";
@@ -3151,5 +3198,14 @@ public class DavExchangeSession extends ExchangeSession {
             }
         }
         return result;
+    }
+
+    /**
+     * Close session.
+     * Shutdown http client connection manager
+     */
+    @Override
+    public void close() {
+        DavGatewayHttpClientFacade.close(httpClient);
     }
 }
