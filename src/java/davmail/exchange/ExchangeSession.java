@@ -22,14 +22,9 @@ import davmail.BundleMessage;
 import davmail.Settings;
 import davmail.exception.DavMailException;
 import davmail.exception.HttpNotFoundException;
-import davmail.http.DavGatewayHttpClientFacade;
 import davmail.http.URIUtil;
 import davmail.ui.NotificationDialog;
 import davmail.util.StringUtil;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
@@ -39,7 +34,13 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.util.SharedByteArrayInputStream;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -101,7 +102,6 @@ public abstract class ExchangeSession {
      * /users/<i>email</i>
      */
     protected String currentMailboxPath;
-    protected HttpClient httpClient;
 
     protected String userName;
 
@@ -118,24 +118,10 @@ public abstract class ExchangeSession {
     }
 
     /**
-     * Build an ExchangeSession from an already authenticated HttpClient.
-     *
-     * @param httpClient httpClient instance with session cookies
-     * @param userName   User name
-     */
-    public ExchangeSession(HttpClient httpClient, String userName) throws IOException {
-        this.httpClient = httpClient;
-        this.userName = userName;
-        buildSessionInfo(null);
-    }
-
-    /**
      * Close session.
      * Shutdown http client connection manager
      */
-    public void close() {
-        DavGatewayHttpClientFacade.close(httpClient);
-    }
+    public abstract void close();
 
     /**
      * Format date to exchange search format.
@@ -216,17 +202,6 @@ public abstract class ExchangeSession {
         }
 
         return isExpired;
-    }
-
-    /**
-     * Test authentication mode : form based or basic.
-     *
-     * @param url        exchange base URL
-     * @param httpClient httpClient instance
-     * @return true if basic authentication detected
-     */
-    protected boolean isBasicAuthentication(HttpClient httpClient, String url) {
-        return DavGatewayHttpClientFacade.getHttpStatus(httpClient, url) == HttpStatus.SC_UNAUTHORIZED;
     }
 
     protected abstract void buildSessionInfo(java.net.URI uri) throws IOException;
@@ -1033,7 +1008,7 @@ public abstract class ExchangeSession {
     public String convertKeywordToFlag(String value) {
         // first test for keyword in settings
         Properties flagSettings = Settings.getSubProperties("davmail.imapFlags");
-        Enumeration flagSettingsEnum = flagSettings.propertyNames();
+        Enumeration<?> flagSettingsEnum = flagSettings.propertyNames();
         while (flagSettingsEnum.hasMoreElements()) {
             String key = (String) flagSettingsEnum.nextElement();
             if (value.equalsIgnoreCase(flagSettings.getProperty(key))) {
@@ -1548,8 +1523,8 @@ public abstract class ExchangeSession {
             return mimeMessage;
         }
 
-        public Enumeration getMatchingHeaderLinesFromHeaders(String[] headerNames) throws MessagingException {
-            Enumeration result = null;
+        public Enumeration<?> getMatchingHeaderLinesFromHeaders(String[] headerNames) throws MessagingException {
+            Enumeration<?> result = null;
             if (mimeMessage == null) {
                 // message not loaded, try to get headers only
                 InputStream headers = getMimeHeaders();
@@ -1569,8 +1544,8 @@ public abstract class ExchangeSession {
             return result;
         }
 
-        public Enumeration getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
-            Enumeration result = getMatchingHeaderLinesFromHeaders(headerNames);
+        public Enumeration<?> getMatchingHeaderLines(String[] headerNames) throws MessagingException, IOException {
+            Enumeration<?> result = getMatchingHeaderLinesFromHeaders(headerNames);
             if (result == null) {
                 if (headerNames == null) {
                     result = getMimeMessage().getAllHeaderLines();
@@ -2920,16 +2895,6 @@ public abstract class ExchangeSession {
         return result;
     }
 
-    protected String getEmailSuffixFromHostname() {
-        String domain = httpClient.getHostConfiguration().getHost();
-        int start = domain.lastIndexOf('.', domain.lastIndexOf('.') - 1);
-        if (start >= 0) {
-            return '@' + domain.substring(start + 1);
-        } else {
-            return '@' + domain;
-        }
-    }
-
     /**
      * Test if folderPath is inside user mailbox.
      *
@@ -2947,50 +2912,6 @@ public abstract class ExchangeSession {
     public abstract boolean isMainCalendar(String folderPath) throws IOException;
 
     protected static final String MAILBOX_BASE = "/cn=";
-
-    protected void getEmailAndAliasFromOptions() {
-        synchronized (httpClient.getState()) {
-            Cookie[] currentCookies = httpClient.getState().getCookies();
-            // get user mail URL from html body
-            BufferedReader optionsPageReader = null;
-            GetMethod optionsMethod = new GetMethod("/owa/?ae=Options&t=About");
-            try {
-                DavGatewayHttpClientFacade.executeGetMethod(httpClient, optionsMethod, false);
-                optionsPageReader = new BufferedReader(new InputStreamReader(optionsMethod.getResponseBodyAsStream(), StandardCharsets.UTF_8));
-                String line;
-
-                // find email and alias
-                //noinspection StatementWithEmptyBody
-                while ((line = optionsPageReader.readLine()) != null
-                        && (line.indexOf('[') == -1
-                        || line.indexOf('@') == -1
-                        || line.indexOf(']') == -1
-                        || !line.toLowerCase().contains(MAILBOX_BASE))) {
-                }
-                if (line != null) {
-                    int start = line.toLowerCase().lastIndexOf(MAILBOX_BASE) + MAILBOX_BASE.length();
-                    int end = line.indexOf('<', start);
-                    alias = line.substring(start, end);
-                    end = line.lastIndexOf(']');
-                    start = line.lastIndexOf('[', end) + 1;
-                    email = line.substring(start, end);
-                }
-            } catch (IOException e) {
-                // restore cookies on error
-                httpClient.getState().addCookies(currentCookies);
-                LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-            } finally {
-                if (optionsPageReader != null) {
-                    try {
-                        optionsPageReader.close();
-                    } catch (IOException e) {
-                        LOGGER.error("Error parsing options page at " + optionsMethod.getPath());
-                    }
-                }
-                optionsMethod.releaseConnection();
-            }
-        }
-    }
 
     /**
      * Get current user email
@@ -3267,12 +3188,4 @@ public abstract class ExchangeSession {
 
     protected abstract void loadVtimezone();
 
-    /**
-     * Return internal HttpClient instance
-     *
-     * @return http client
-     */
-    public HttpClient getHttpClient() {
-        return httpClient;
-    }
 }
