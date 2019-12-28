@@ -22,17 +22,19 @@ package davmail.exchange.dav;
 import davmail.AbstractExchange2007TestCase;
 import davmail.Settings;
 import davmail.exception.DavMailAuthenticationException;
+import davmail.exchange.ExchangeSession;
 import davmail.exchange.ExchangeSessionFactory;
 import davmail.exchange.auth.ExchangeFormAuthenticator;
 import davmail.exchange.auth.HC4ExchangeFormAuthenticator;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Test cases for on premise Exchange 2007 in DAV mode.
  * Get connection info from test.properties
  */
-public class TestExchange2007Dav extends AbstractExchange2007TestCase {
+public class TestDavSessionExchange2007 extends AbstractExchange2007TestCase {
 
     public void testSimpleUsernameOWAFormAuthenticator() throws IOException {
         String url = "https://" + server + "/owa";
@@ -52,8 +54,7 @@ public class TestExchange2007Dav extends AbstractExchange2007TestCase {
 
     public void testSimpleUsernameOWAFormAuthenticatorInvalid() throws IOException {
         String url = "https://" + server + "/owa";
-        HC4ExchangeFormAuthenticator authenticator = new HC4ExchangeFormAuthenticator();
-        //ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
+        ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
         authenticator.setUrl(url);
         authenticator.setUsername(username);
         authenticator.setPassword("invalid");
@@ -158,5 +159,21 @@ public class TestExchange2007Dav extends AbstractExchange2007TestCase {
         assertEquals(username, session.getAlias());
         assertEquals(email, session.getEmail());
         assertEquals("/exchange/" + email + "/", session.getFolderPath(""));
+    }
+
+    // TODO: check
+    public void testPublicFolder() throws IOException {
+
+        //String url = "https://" + server + "/EWS/Exchange.asmx";
+        String url = "https://" + server + "/owa";
+        Settings.setProperty("davmail.mode", "WebDav");
+
+        ExchangeSession session = ExchangeSessionFactory.getInstance(url, username,  password);
+        List<ExchangeSession.Folder> folders = session.getSubFolders("/public", true, false);
+        assertTrue(folders.size() > 0);
+        for (ExchangeSession.Folder folder:folders) {
+            System.out.println(folder.folderPath);
+        }
+
     }
 }
