@@ -199,6 +199,14 @@ public class EwsExchangeSession extends ExchangeSession {
     }
 
     /**
+     * EWS fetch page size.
+     * @return page size
+     */
+    private int getPageSize() {
+        return Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE);
+    }
+
+    /**
      * Authentication mode test: EWS is never form based.
      *
      * @param url        exchange base URL
@@ -721,7 +729,7 @@ public class EwsExchangeSession extends ExchangeSession {
         FindItemMethod findItemMethod;
         do {
             // search items in folder, do not retrieve all properties
-            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, folderId, resultCount, PAGE_SIZE);
+            findItemMethod = new FindItemMethod(folderQueryTraversal, BaseShape.ID_ONLY, folderId, resultCount, getPageSize());
             for (String attribute : attributes) {
                 findItemMethod.addAdditionalProperty(Field.get(attribute));
             }
@@ -754,7 +762,7 @@ public class EwsExchangeSession extends ExchangeSession {
             }
             resultCount = results.size();
             if (resultCount > 0 && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + PAGE_SIZE
+                LOGGER.debug("Folder " + folderPath + " - Search items current count: " + resultCount + " fetchCount: " + getPageSize()
                         + " highest uid: " + results.get(resultCount - 1).get(Field.get("imapUid").getResponseName())
                         + " lowest uid: " + results.get(0).get(Field.get("imapUid").getResponseName()));
             }
@@ -1113,7 +1121,7 @@ public class EwsExchangeSession extends ExchangeSession {
         FindFolderMethod findFolderMethod;
         do {
             findFolderMethod = new FindFolderMethod(FolderQueryTraversal.SHALLOW,
-                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition, resultCount, PAGE_SIZE);
+                    BaseShape.ID_ONLY, parentFolderId, FOLDER_PROPERTIES, (SearchExpression) condition, resultCount, getPageSize());
             executeMethod(findFolderMethod);
             for (EWSMethod.Item item : findFolderMethod.getResponseItems()) {
                 resultCount++;
