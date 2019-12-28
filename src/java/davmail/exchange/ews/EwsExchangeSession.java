@@ -202,7 +202,7 @@ public class EwsExchangeSession extends ExchangeSession {
      * EWS fetch page size.
      * @return page size
      */
-    private int getPageSize() {
+    private static int getPageSize() {
         return Settings.getIntProperty("davmail.folderFetchPageSize", PAGE_SIZE);
     }
 
