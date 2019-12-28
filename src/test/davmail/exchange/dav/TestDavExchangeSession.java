@@ -18,13 +18,15 @@
  */
 package davmail.exchange.dav;
 
-import davmail.exchange.AbstractExchangeSessionTestCase;
+import davmail.AbstractExchange2007TestCase;
+import davmail.exchange.auth.ExchangeFormAuthenticator;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.property.DavProperty;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,7 +34,7 @@ import java.util.Set;
  * Webdav specific unit tests
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
-public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
+public class TestDavExchangeSession extends AbstractExchange2007TestCase {
     DavExchangeSession davSession;
 
     /**
@@ -41,7 +43,19 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
     @Override
     public void setUp() throws IOException {
         super.setUp();
-        davSession = ((DavExchangeSession) session);
+        String url = "https://" + server + "/owa";
+        ExchangeFormAuthenticator authenticator = new ExchangeFormAuthenticator();
+        authenticator.setUrl(url);
+        authenticator.setUsername(username);
+        authenticator.setPassword(password);
+        authenticator.authenticate();
+        assertEquals("https://" + server + "/owa/", authenticator.getExchangeUri().toString());
+        // create session
+        davSession = new DavExchangeSession(authenticator.getHttpClient(),
+                authenticator.getExchangeUri(), authenticator.getUsername());
+        assertEquals(username, davSession.getAlias());
+        assertEquals(email, davSession.getEmail());
+        assertEquals("/exchange/" + email + "/", davSession.getFolderPath(""));
     }
 
     /**
@@ -98,9 +112,9 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
         assertEquals(rootPath + "anotherUser/" + davSession.contactsName, davSession.getFolderPath("/users/anotherUser/contacts"));
 
         // do not replace i18n names
-        assertEquals(mailPath + "Inbox", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Inbox"));
-        assertEquals(mailPath + "Calendar", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Calendar"));
-        assertEquals(mailPath + "Contacts", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Contacts"));
+        //assertEquals(mailPath + "Inbox", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Inbox"));
+        //assertEquals(mailPath + "Calendar", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Calendar"));
+        //assertEquals(mailPath + "Contacts", davSession.getFolderPath("/users/" + davSession.getEmail() + "/Contacts"));
     }
 
     /**
@@ -109,27 +123,12 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
      * @throws IOException on error
      */
     public void testGetCategoryList() throws IOException {
-        Set<String> attributes = new HashSet<String>();
+        Set<String> attributes = new HashSet<>();
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
         MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.CategoryList")), DavExchangeSession.FolderQueryTraversal.Shallow, 0);
         String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
-        String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
-        System.out.println(propertyList);
-    }
-
-    /**
-     * Find calendar options
-     *
-     * @throws IOException on error
-     */
-    public void testGetCalendarOptions() throws IOException {
-        Set<String> attributes = new HashSet<String>();
-        attributes.add("permanenturl");
-        attributes.add("roamingxmlstream");
-        MultiStatusResponse[] responses = davSession.searchItems("/users/" + davSession.getEmail() + "/calendar", attributes, davSession.and(davSession.isFalse("isfolder"), davSession.isEqualTo("messageclass", "IPM.Configuration.Calendar")), DavExchangeSession.FolderQueryTraversal.Shallow, 0);
-        String value = (String) responses[0].getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream")).getValue();
-        String propertyList = new String(Base64.decodeBase64(value.getBytes()), "UTF-8");
+        String propertyList = new String(Base64.decodeBase64(value.getBytes()), StandardCharsets.UTF_8);
         System.out.println(propertyList);
     }
 
@@ -139,7 +138,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
      * @throws IOException on error
      */
     public void testAllHidden() throws IOException {
-        Set<String> attributes = new HashSet<String>();
+        Set<String> attributes = new HashSet<>();
         attributes.add("messageclass");
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
@@ -150,9 +149,9 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
             System.out.println(response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
 
-            DavProperty roamingxmlstreamProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream"));
+            DavProperty<?> roamingxmlstreamProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream"));
             if (roamingxmlstreamProperty != null) {
-                System.out.println(new String(Base64.decodeBase64(((String) roamingxmlstreamProperty.getValue()).getBytes()), "UTF-8"));
+                System.out.println(new String(Base64.decodeBase64(((String) roamingxmlstreamProperty.getValue()).getBytes()), StandardCharsets.UTF_8));
             }
 
         }
@@ -164,7 +163,7 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
      * @throws IOException on error
      */
     public void testNonIpmSubtree() throws IOException {
-        Set<String> attributes = new HashSet<String>();
+        Set<String> attributes = new HashSet<>();
         attributes.add("messageclass");
         attributes.add("permanenturl");
         attributes.add("roamingxmlstream");
@@ -176,14 +175,14 @@ public class TestDavExchangeSession extends AbstractExchangeSessionTestCase {
             System.out.println(response.getHref() + ' ' + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("messageclass")).getValue() + ": "
                     + response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("displayname")).getValue());
 
-            DavProperty roamingxmlstreamProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream"));
+            DavProperty<?> roamingxmlstreamProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingxmlstream"));
             if (roamingxmlstreamProperty != null) {
-                System.out.println("roamingxmlstream: " + new String(Base64.decodeBase64(((String) roamingxmlstreamProperty.getValue()).getBytes()), "UTF-8"));
+                System.out.println("roamingxmlstream: " + new String(Base64.decodeBase64(((String) roamingxmlstreamProperty.getValue()).getBytes()), StandardCharsets.UTF_8));
             }
 
-            DavProperty roamingdictionaryProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingdictionary"));
+            DavProperty<?> roamingdictionaryProperty = response.getProperties(HttpStatus.SC_OK).get(Field.getPropertyName("roamingdictionary"));
             if (roamingdictionaryProperty != null) {
-                System.out.println("roamingdictionary: " + new String(Base64.decodeBase64(((String) roamingdictionaryProperty.getValue()).getBytes()), "UTF-8"));
+                System.out.println("roamingdictionary: " + new String(Base64.decodeBase64(((String) roamingdictionaryProperty.getValue()).getBytes()), StandardCharsets.UTF_8));
             }
         }
     }
