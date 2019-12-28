@@ -3033,7 +3033,8 @@ public class HC4DavExchangeSession extends ExchangeSession {
         method.setHeader("Allow-Rename", "t");
         try (CloseableHttpResponse response = httpClientAdapter.execute(method)) {
             int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED) {
+            if (statusCode == HttpStatus.SC_PRECONDITION_FAILED ||
+                statusCode == HttpStatus.SC_CONFLICT) {
                 throw new DavMailException("EXCEPTION_UNABLE_TO_MOVE_MESSAGE");
             } else if (statusCode != HttpStatus.SC_CREATED) {
                 throw HttpClientAdapter.buildHttpResponseException(method, response);
