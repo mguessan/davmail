@@ -26,12 +26,8 @@ import davmail.http.request.GetRequest;
 import davmail.http.request.PostRequest;
 import davmail.http.request.ResponseWrapper;
 import davmail.http.request.RestRequest;
-import org.apache.http.Header;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -128,7 +124,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
             httpClientAdapter = new HttpClientAdapter(url, userid, password);
 
             GetRequest getRequest = new GetRequest(url);
-            String responseBodyAsString = executeRequest(httpClientAdapter, getRequest);
+            String responseBodyAsString = executeFollowRedirect(httpClientAdapter, getRequest);
             String code;
             if (!responseBodyAsString.contains("Config=")) {
                 // we are no longer on Microsoft, try ADFS
@@ -168,7 +164,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
                 getCredentialMethod.setJsonBody(jsonObject);
 
-                JSONObject credentialType = executeRequestGetConfig(httpClientAdapter, getCredentialMethod);
+                JSONObject credentialType = httpClientAdapter.executeRestRequest(getCredentialMethod);
 
                 LOGGER.debug("CredentialType=" + credentialType);
 
@@ -193,16 +189,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
                     logonMethod.setParameter("loginfmt", username);
                     logonMethod.setParameter("passwd", password);
 
-                    Header locationHeader;
-                    try (CloseableHttpResponse response = httpClientAdapter.execute(logonMethod)) {
-                        responseBodyAsString = logonMethod.handleResponse(response);
-                        locationHeader = response.getFirstHeader("Location");
-                    }
+                    responseBodyAsString = httpClientAdapter.executePostRequest(logonMethod);
+                    URI location = logonMethod.getRedirectLocation();
+
                     if (responseBodyAsString != null && responseBodyAsString.indexOf("arrUserProofs") > 0) {
-                        locationHeader = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
+                        location = handleMfa(httpClientAdapter, logonMethod, username, clientRequestId);
                     }
 
-                    if (locationHeader == null || !locationHeader.getValue().startsWith(redirectUri)) {
+                    if (location == null || !location.toString().startsWith(redirectUri)) {
                         // extract response
                         config = extractConfig(logonMethod.getResponseBodyAsString());
                         if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
@@ -218,8 +212,8 @@ public class O365Authenticator implements ExchangeAuthenticator {
                             throw new DavMailAuthenticationException("LOG_MESSAGE", "Authentication failed, unknown error: " + config);
                         }
                     }
-                    String location = locationHeader.getValue();
-                    code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+                    String query = location.toString();
+                    code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
                 }
             }
             LOGGER.debug("Authentication Code: " + code);
@@ -244,16 +238,13 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
     private String authenticateRedirectADFS(HttpClientAdapter httpClientAdapter, String federationRedirectUrl, String authorizeUrl) throws IOException {
         // get ADFS login form
-        HttpGet logonFormMethod = new HttpGet(federationRedirectUrl);
-
-        try (CloseableHttpResponse response = httpClientAdapter.execute(logonFormMethod)) {
-            String responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-            return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
-        }
+        GetRequest logonFormMethod = new GetRequest(federationRedirectUrl);
+        String responseBodyAsString = httpClientAdapter.executeGetRequest(logonFormMethod);
+        return authenticateADFS(httpClientAdapter, responseBodyAsString, authorizeUrl);
     }
 
     private String authenticateADFS(HttpClientAdapter httpClientAdapter, String responseBodyAsString, String authorizeUrl) throws IOException {
-        String location;
+        URI location;
 
         if (responseBodyAsString.contains("login.microsoftonline.com")) {
             LOGGER.info("Already authenticated through Basic or NTLM");
@@ -266,18 +257,14 @@ public class O365Authenticator implements ExchangeAuthenticator {
             logonMethod.setParameter("Password", password);
             logonMethod.setParameter("AuthMethod", "FormsAuthentication");
 
-            try (CloseableHttpResponse response = httpClientAdapter.execute(logonMethod)) {
-                Header locationHeader = response.getFirstHeader("Location");
-                if (response.getStatusLine().getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || locationHeader == null) {
-                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                }
-                location = locationHeader.getValue();
+            httpClientAdapter.executePostRequest(logonMethod);
+            location = logonMethod.getRedirectLocation();
+            if (location == null) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
 
-            HttpGet redirectMethod = new HttpGet(location);
-            try (CloseableHttpResponse response = httpClientAdapter.execute(redirectMethod)) {
-                responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-            }
+            GetRequest redirectMethod = new GetRequest(location);
+            responseBodyAsString = httpClientAdapter.executeGetRequest(redirectMethod);
         }
 
         if (!responseBodyAsString.contains("login.microsoftonline.com")) {
@@ -299,49 +286,44 @@ public class O365Authenticator implements ExchangeAuthenticator {
         targetMethod.setParameter("wresult", wresult);
         targetMethod.setParameter("wctx", wctx);
 
-        try (CloseableHttpResponse response = httpClientAdapter.execute(targetMethod)) {
-            responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-            Header locationHeader = response.getFirstHeader("Location");
+        responseBodyAsString = httpClientAdapter.executePostRequest(targetMethod);
+        location = targetMethod.getRedirectLocation();
 
-            LOGGER.debug(targetMethod.getURI().toString());
-            LOGGER.debug(response.getStatusLine().getReasonPhrase());
-            LOGGER.debug(responseBodyAsString);
+        LOGGER.debug(targetMethod.getURI().toString());
+        LOGGER.debug(targetMethod.getReasonPhrase());
+        LOGGER.debug(responseBodyAsString);
 
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                JSONObject config = extractConfig(responseBodyAsString);
-                if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
-                    LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
-                    LOGGER.debug(authorizeUrl);
-                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                }
-            } else if (response.getStatusLine().getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || locationHeader == null) {
-                throw new IOException("Unknown ADFS authentication failure");
+        if (targetMethod.getStatusCode() == HttpStatus.SC_OK) {
+            JSONObject config = extractConfig(responseBodyAsString);
+            if (config.optJSONArray("arrScopes") != null || config.optJSONArray("urlPostRedirect") != null) {
+                LOGGER.debug("Authentication successful but user consent or validation needed, please open the following url in a browser");
+                LOGGER.debug(authorizeUrl);
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
-
-            location = locationHeader.getValue();
+        } else if (targetMethod.getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || location == null) {
+            throw new IOException("Unknown ADFS authentication failure");
         }
-        if (location.startsWith("https://device.login.microsoftonline.com")) {
+
+        if ("device.login.microsoftonline.com".equals(location.getHost())) {
             location = processDeviceLogin(httpClientAdapter, location);
         }
+        String query = location.getQuery();
 
-        if (location.contains("code=") && location.contains("&session_state=")) {
-            String code = location.substring(location.indexOf("code=") + 5, location.indexOf("&session_state="));
+        if (query.contains("code=") && query.contains("&session_state=")) {
+            String code = query.substring(query.indexOf("code=") + 5, query.indexOf("&session_state="));
             LOGGER.debug("Authentication Code: " + code);
             return code;
         }
         throw new IOException("Unknown ADFS authentication failure");
     }
 
-    private String processDeviceLogin(HttpClientAdapter httpClient, String location) throws IOException {
-        String result = location;
+    private URI processDeviceLogin(HttpClientAdapter httpClient, URI location) throws IOException {
+        URI result = location;
         LOGGER.debug("Proceed to device authentication");
-        HttpGet deviceLoginMethod = new HttpGet(location);
+        GetRequest deviceLoginMethod = new GetRequest(location);
 
-        String responseBodyAsString;
+        String responseBodyAsString = httpClient.executeGetRequest(deviceLoginMethod);
 
-        try (CloseableHttpResponse response = httpClient.execute(deviceLoginMethod)) {
-            responseBodyAsString = new BasicResponseHandler().handleResponse(response);
-        }
         if (responseBodyAsString.contains("login.microsoftonline.com")) {
             String ctx = extract("name=\"ctx\" value=\"([^\"]+)\"", responseBodyAsString);
             String flowtoken = extract("name=\"flowtoken\" value=\"([^\"]+)\"", responseBodyAsString);
@@ -352,19 +334,18 @@ public class O365Authenticator implements ExchangeAuthenticator {
             processMethod.setParameter("ctx", ctx);
             processMethod.setParameter("flowtoken", flowtoken);
 
-            try (CloseableHttpResponse response = httpClient.execute(processMethod)) {
-                Header locationHeader = response.getFirstHeader("Location");
-                if (response.getStatusLine().getStatusCode() != HttpStatus.SC_MOVED_TEMPORARILY || locationHeader == null) {
-                    throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
-                }
-                result = locationHeader.getValue();
+            httpClient.executePostRequest(processMethod);
+            result = processMethod.getRedirectLocation();
+
+            if (result == null) {
+                throw new DavMailAuthenticationException("EXCEPTION_AUTHENTICATION_FAILED");
             }
 
         }
         return result;
     }
 
-    private Header handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws JSONException, IOException {
+    private URI handleMfa(HttpClientAdapter httpClientAdapter, PostRequest logonMethod, String username, String clientRequestId) throws JSONException, IOException {
         JSONObject config = extractConfig(logonMethod.getResponseBodyAsString());
         LOGGER.debug("Config=" + config);
 
@@ -412,9 +393,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
         beginAuthJson.put("Method", "BeginAuth");
         beginAuthMethod.setJsonBody(beginAuthJson);
 
-        try (CloseableHttpResponse response = httpClientAdapter.execute(beginAuthMethod)) {
-            config = beginAuthMethod.handleResponse(response);
-        }
+        config = httpClientAdapter.executeRestRequest(beginAuthMethod);
         LOGGER.debug(config);
 
         if (!config.getBoolean("Success")) {
@@ -454,9 +433,7 @@ public class O365Authenticator implements ExchangeAuthenticator {
 
             endAuthMethod.setJsonBody(endAuthJson);
 
-            try (CloseableHttpResponse response = httpClientAdapter.execute(endAuthMethod)) {
-                config = endAuthMethod.handleResponse(response);
-            }
+            config = httpClientAdapter.executeRestRequest(endAuthMethod);
             LOGGER.debug(config);
             String resultValue = config.getString("ResultValue");
             if ("PhoneAppDenied".equals(resultValue) || "PhoneAppNoResponse".equals(resultValue)) {
@@ -487,30 +464,18 @@ public class O365Authenticator implements ExchangeAuthenticator {
         processAuthMethod.setParameter("flowToken", flowToken);
         processAuthMethod.setParameter("hpgrequestid", hpgrequestid);
 
-        Header locationHeader;
-        try (CloseableHttpResponse response = httpClientAdapter.execute(processAuthMethod)) {
-            locationHeader = response.getFirstHeader("Location");
-        }
-        return locationHeader;
+        httpClientAdapter.executePostRequest(processAuthMethod);
+        return processAuthMethod.getRedirectLocation();
 
     }
 
-    private String executeRequest(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
+    private String executeFollowRedirect(HttpClientAdapter httpClientAdapter, GetRequest getRequest) throws IOException {
         LOGGER.debug(getRequest.getURI());
         ResponseWrapper responseWrapper = httpClientAdapter.executeFollowRedirect(getRequest);
         if (responseWrapper.getURI().getHost().endsWith("okta.com")) {
             throw new DavMailAuthenticationException("LOG_MESSAGE", "Okta authentication not supported, please try O365Interactive");
         }
         return responseWrapper.getResponseBodyAsString();
-    }
-
-    private JSONObject executeRequestGetConfig(HttpClientAdapter httpClientAdapter, RestRequest restRequest) throws IOException {
-        LOGGER.debug(restRequest.getURI());
-        try (CloseableHttpResponse response = httpClientAdapter.execute(restRequest)) {
-            JSONObject jsonResponse = restRequest.handleResponse(response);
-            LOGGER.debug(jsonResponse);
-            return jsonResponse;
-        }
     }
 
     public JSONObject extractConfig(String content) throws IOException {
