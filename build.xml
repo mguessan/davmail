@@ -28,6 +28,9 @@
     <condition property="is.svn">
         <available file=".svn"/>
     </condition>
+    <condition property="is.git">
+        <available file=".git"/>
+    </condition>
 
     <condition property="is.javafx">
         <available classname="javafx.embed.swing.JFXPanel" classpathref="classpath"/>
@@ -67,16 +70,34 @@
         <svn refid="svn.settings">
             <wcversion path="."/>
         </svn>
+        <!-- try to get svn revision from git -->
+        <exec executable="git" outputproperty="revision.max">
+            <arg value = "svn" />
+            <arg value = "find-rev" />
+            <arg value = "HEAD" />
+        </exec>
         <!-- failover value for revision -->
         <property name="revision.max" value=""/>
-        <property name="release" value="${version}-${revision.max}"/>
+        <property name="release" value="${version}.${revision.max}"/>
+    </target>
+
+    <target name="gitsvnrelease" if="is.git">
+        <!-- try to get svn revision from git -->
+        <exec executable="git" outputproperty="revision.max" failifexecutionfails="false">
+            <arg value="svn" />
+            <arg value="find-rev" />
+            <arg value="HEAD" />
+        </exec>
+        <property name="revision.max" value=""/>
+        <property name="release" value="${version}.${revision.max}"/>
+        <echo message="release"/>
     </target>
 
     <target name="defaultrelease" unless="is.svn">
         <property name="release" value="${version}"/>
     </target>
 
-    <target name="init" depends="check-encoding, check-java8, svnrelease, defaultrelease">
+    <target name="init" depends="check-encoding, check-java8, svnrelease, gitsvnrelease, defaultrelease">
         <echo message="Creating DavMail ${release} dist package" level="info"/>
         <echo message="Java ${ant.java.version} and JavaFX ${is.javafx.message}" level="info"/>
         <mkdir dir="target/classes"/>
