@@ -82,6 +82,7 @@
     </target>
 
     <target name="gitsvnrelease" if="is.git">
+        <mkdir dir=".git/svn"/>
         <!-- try to get svn revision from git -->
         <exec executable="git" outputproperty="revision.max" failifexecutionfails="false">
             <arg value="svn" />
