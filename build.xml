@@ -91,7 +91,6 @@
         </exec>
         <property name="revision.max" value=""/>
         <property name="release" value="${version}.${revision.max}"/>
-        <echo message="release"/>
     </target>
 
     <target name="defaultrelease" unless="is.svn">
@@ -322,7 +321,7 @@
     <target name="jar" depends="compile">
         <delete dir="dist"/>
         <mkdir dir="dist"/>
-        <property name="release-name" value="${release}-trunk"/>
+        <property name="release-name" value="${version}-trunk"/>
         <pathconvert property="manifest-classpath" pathsep=" ">
             <mapper>
                 <chainedmapper>
