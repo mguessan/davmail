@@ -20,10 +20,8 @@
 package davmail;
 
 import davmail.http.HttpClientAdapter;
+import davmail.http.request.GetRequest;
 import davmail.ui.tray.DavGatewayTray;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 
 import java.io.IOException;
 
@@ -31,31 +29,27 @@ public class TestDavGateway extends AbstractDavMailTestCase {
     /**
      * Loop on getReleasedVersion.
      * As the method closes HttpClient instance, this will create and close 100 connections
-     * @throws InterruptedException on error
      */
-    public void testGetReleasedVersion() throws InterruptedException {
+    public void testGetReleasedVersion() {
         int count = 0;
         while (count++ < 100) {
             DavGateway.getReleasedVersion();
-            Thread.sleep(1000);
         }
     }
 
     /**
      * Loop on getReleasedVersion.
      * Use a single HttpClient instance to reuse connections
-     * @throws InterruptedException on error
      */
-    public void testLoopGetReleasedVersion() throws InterruptedException {
-        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter("http://davmail.sourceforge.net/version.txt")){
+    public void testLoopGetReleasedVersion() {
+        String versionUrl = "http://davmail.sourceforge.net/version.txt";
+        try (HttpClientAdapter httpClientAdapter = new HttpClientAdapter(versionUrl)) {
             int count = 0;
             while (count++ < 100) {
-                HttpGet httpget = new HttpGet("http://davmail.sourceforge.net/version.txt");
-                try (CloseableHttpResponse response = httpClientAdapter.execute(httpget)){
-                    String version = new BasicResponseHandler().handleResponse(response);
-                    System.out.println("DavMail released version: " + version);
-                }
-                Thread.sleep(1000);
+                GetRequest getRequest = new GetRequest(versionUrl);
+                getRequest = httpClientAdapter.executeFollowRedirect(getRequest);
+                String version = getRequest.getResponseBodyAsString();
+                System.out.println("DavMail released version: " + version);
             }
         } catch (IOException e) {
             DavGatewayTray.debug(new BundleMessage("LOG_UNABLE_TO_GET_RELEASED_VERSION"));
